@@ -15,15 +15,12 @@ export default async function ResourcesPage(props: {
   params: Promise<{ workspaceSlug: string; environmentId: string }>;
 }) {
   const { workspaceSlug, environmentId } = await props.params;
-
-  const [workspace, environment] = await Promise.all([
-    api.workspace.bySlug(workspaceSlug),
-    api.environment.byId(environmentId),
-  ]);
-
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  const environment = await api.environment.byId(environmentId);
   if (workspace == null || environment == null) return notFound();
-  const { resourceFilter: resourceSelector } = environment;
-  if (resourceSelector == null)
+
+  const { resourceFilter } = environment;
+  if (resourceFilter == null)
     return (
       <Card>
         <CardHeader>
@@ -46,9 +43,8 @@ export default async function ResourcesPage(props: {
       </CardHeader>
       <CardContent>
         <ResourcesPageContent
-          id={environment.id}
-          resourceSelector={resourceSelector}
           workspaceId={workspace.id}
+          environment={environment}
         />
       </CardContent>
     </Card>

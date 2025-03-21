@@ -118,8 +118,8 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
           )}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Approval & Governance */}
-            <div className="flex h-full flex-col overflow-hidden rounded-md border border-neutral-800 bg-neutral-900/50">
-              <div className="border-b border-neutral-800 p-4 pb-3">
+            <div className="flex h-full flex-col overflow-hidden rounded-md border bg-neutral-900/50">
+              <div className="border-b p-4 pb-3">
                 <div className="flex items-center justify-between">
                   <h3 className="flex items-center gap-2 text-sm font-medium text-neutral-100">
                     <IconShieldCheck className="h-5 w-5 text-blue-400" />
@@ -200,7 +200,7 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
                   </div>
                 </div>
               </div>
-              <div className="mt-auto border-t border-neutral-800 bg-neutral-900/60 p-2 text-right">
+              <div className="mt-auto border-t bg-neutral-900/60 p-2 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -215,8 +215,8 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
             </div>
 
             {/* Deployment Control */}
-            <div className="flex h-full flex-col overflow-hidden rounded-md border border-neutral-800 bg-neutral-900/50">
-              <div className="border-b border-neutral-800 p-4 pb-3">
+            <div className="flex h-full flex-col overflow-hidden rounded-md border  bg-neutral-900/50">
+              <div className="border-b p-4 pb-3">
                 <div className="flex items-center justify-between">
                   <h3 className="flex items-center gap-2 text-sm font-medium text-neutral-100">
                     <IconAdjustments className="h-5 w-5 text-indigo-400" />
@@ -248,7 +248,7 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
                   </div>
                 </div>
               </div>
-              <div className="mt-auto border-t border-neutral-800 bg-neutral-900/60 p-2 text-right">
+              <div className="mt-auto border-t  bg-neutral-900/60 p-2 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -265,8 +265,8 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
             </div>
 
             {/* Release Management */}
-            <div className="flex h-full flex-col overflow-hidden rounded-md border border-neutral-800 bg-neutral-900/50">
-              <div className="border-b border-neutral-800 p-4 pb-3">
+            <div className="flex h-full flex-col overflow-hidden rounded-md border  bg-neutral-900/50">
+              <div className="border-b  p-4 pb-3">
                 <div className="flex items-center justify-between">
                   <h3 className="flex items-center gap-2 text-sm font-medium text-neutral-100">
                     <IconSwitchHorizontal className="h-5 w-5 text-emerald-400" />
@@ -315,7 +315,7 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
                   </div>
                 </div>
               </div>
-              <div className="mt-auto border-t border-neutral-800 bg-neutral-900/60 p-2 text-right">
+              <div className="mt-auto border-t  bg-neutral-900/60 p-2 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -332,8 +332,8 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
             </div>
 
             {/* Deployment Version Channels */}
-            <div className="flex h-full flex-col overflow-hidden rounded-md border border-neutral-800 bg-neutral-900/50">
-              <div className="border-b border-neutral-800 p-4 pb-3">
+            <div className="flex h-full flex-col overflow-hidden rounded-md border  bg-neutral-900/50">
+              <div className="border-b  p-4 pb-3">
                 <div className="flex items-center justify-between">
                   <h3 className="flex items-center gap-2 text-sm font-medium text-neutral-100">
                     <IconShield className="h-5 w-5 text-amber-400" />
@@ -415,7 +415,7 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
                   )}
                 </div>
               </div>
-              <div className="mt-auto border-t border-neutral-800 bg-neutral-900/60 p-2 text-right">
+              <div className="mt-auto border-t  bg-neutral-900/60 p-2 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -432,8 +432,8 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
             </div>
 
             {/* Rollout & Timing */}
-            <div className="flex h-full flex-col overflow-hidden rounded-md border border-neutral-800 bg-neutral-900/50">
-              <div className="border-b border-neutral-800 p-4 pb-3">
+            <div className="flex h-full flex-col overflow-hidden rounded-md border  bg-neutral-900/50">
+              <div className="border-b  p-4 pb-3">
                 <div className="flex items-center justify-between">
                   <h3 className="flex items-center gap-2 text-sm font-medium text-neutral-100">
                     <IconClock className="h-5 w-5 text-rose-400" />
@@ -501,7 +501,7 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
                   </div>
                 </div>
               </div>
-              <div className="mt-auto border-t border-neutral-800 bg-neutral-900/60 p-2 text-right">
+              <div className="mt-auto border-t  bg-neutral-900/60 p-2 text-right">
                 <Button
                   variant="ghost"
                   size="sm"

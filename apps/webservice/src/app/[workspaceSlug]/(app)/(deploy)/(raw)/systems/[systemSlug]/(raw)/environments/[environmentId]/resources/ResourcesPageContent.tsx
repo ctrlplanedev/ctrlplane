@@ -9,6 +9,7 @@ import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IconFilter, IconSearch } from "@tabler/icons-react";
 import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -23,8 +24,8 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { api } from "~/trpc/react";
-import { ResourceCard } from "./_components/ResourceCard";
+import { ResourceCard } from "./ResourceCard";
+import { useFilteredResources } from "./useFilteredResources";
 
 const PAGE_SIZE = 8;
 
@@ -51,44 +52,32 @@ const usePagination = (total: number) => {
 };
 
 export const ResourcesPageContent: React.FC<{
-  id: string;
-  resourceSelector: ResourceCondition;
+  environment: SCHEMA.Environment;
   workspaceId: string;
-}> = ({ id, resourceSelector, workspaceId }) => {
+}> = ({ environment, workspaceId }) => {
+  const { resources } = useFilteredResources(
+    workspaceId,
+    environment.resourceFilter,
+  );
+
   const [selectedView, setSelectedView] = useState("grid");
   const [showFilterEditor, setShowFilterEditor] = useState(false);
   const [resourceFilter, setResourceFilter] = useState<ComparisonCondition>({
     type: "comparison",
     operator: "and",
     not: false,
-    conditions: [resourceSelector],
+    conditions: [environment.resourceFilter].filter(isPresent),
   });
 
-  const { data: allResources } = api.resource.byWorkspaceId.list.useQuery({
-    workspaceId,
-    filter: resourceSelector,
-    limit: 0,
-  });
+  // Group resources by component
+  const resourcesByVersion = _(resources)
+    .groupBy((t) => t.version)
+    .value() as Record<string, typeof resources>;
+  const resourcesByKind = _(resources)
+    .groupBy((t) => t.version + ": " + t.kind)
+    .value() as Record<string, typeof resources>;
 
-  const totalResources = allResources?.total ?? 0;
-  const { page, setPage } = usePagination(totalResources);
-
-  const hasNextPage = (page + 1) * PAGE_SIZE < totalResources;
-  const hasPreviousPage = page > 0;
-
-  const { data: resourcesResult, isLoading: isResourcesLoading } =
-    api.resource.byWorkspaceId.list.useQuery({
-      workspaceId,
-      filter: resourceFilter,
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
-    });
-
-  const resources = resourcesResult?.items ?? [];
-
-  const getStatusCount = (status: string) => {
-    return resources.filter((r) => r.status === status).length;
-  };
+  const filteredResources = resources;
 
   return (
     <div className="space-y-6">
@@ -100,7 +89,9 @@ export const ResourcesPageContent: React.FC<{
             {resources.length}
           </div>
           <div className="mt-1 flex items-center text-xs">
-            <span className="text-neutral-400">Across 3 components</span>
+            <span className="text-neutral-400">
+              Across {Object.keys(resourcesByKind).length} kinds
+            </span>
           </div>
         </div>
 
@@ -109,14 +100,9 @@ export const ResourcesPageContent: React.FC<{
             <div className="h-2 w-2 rounded-full bg-green-500"></div>
             <span>Healthy</span>
           </div>
-          <div className="text-2xl font-semibold text-green-400">
-            {getStatusCount("healthy")}
-          </div>
+          <div className="text-2xl font-semibold text-green-400">10</div>
           <div className="mt-1 flex items-center text-xs">
-            <span className="text-green-400">
-              {Math.round((getStatusCount("healthy") / resources.length) * 100)}
-              % of resources
-            </span>
+            <span className="text-green-400">{10}% of resources</span>
           </div>
         </div>
 
@@ -125,14 +111,10 @@ export const ResourcesPageContent: React.FC<{
             <div className="h-2 w-2 rounded-full bg-amber-500"></div>
             <span>Needs Attention</span>
           </div>
-          <div className="text-2xl font-semibold text-amber-400">
-            {getStatusCount("degraded")}
-          </div>
+          <div className="text-2xl font-semibold text-amber-400">{0}</div>
           <div className="mt-1 flex items-center text-xs">
             <span className="text-amber-400">
-              {getStatusCount("degraded") > 0
-                ? "Action required"
-                : "No issues detected"}
+              {0 > 0 ? "Action required" : "No issues detected"}
             </span>
           </div>
         </div>
@@ -142,14 +124,10 @@ export const ResourcesPageContent: React.FC<{
             <div className="h-2 w-2 rounded-full bg-blue-500"></div>
             <span>Deploying</span>
           </div>
-          <div className="text-2xl font-semibold text-blue-400">
-            {getStatusCount("updating") + getStatusCount("failed")}
-          </div>
+          <div className="text-2xl font-semibold text-blue-400">{0 + 0}</div>
           <div className="mt-1 flex items-center text-xs">
             <span className="text-blue-400">
-              {getStatusCount("updating") > 0
-                ? "Updates in progress"
-                : "No active deployments"}
+              {0 > 0 ? "Updates in progress" : "No active deployments"}
             </span>
           </div>
         </div>
@@ -177,18 +155,19 @@ export const ResourcesPageContent: React.FC<{
           </Badge>
           <select className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-neutral-300">
             <option value="all">All Kinds</option>
-            <option value="pod">Pods</option>
-            <option value="service">Services</option>
-            <option value="database">Databases</option>
-            <option value="vm">VMs</option>
+            {Object.keys(resourcesByKind).map((kind) => (
+              <option key={kind} value={kind.toLowerCase()}>
+                {kind}
+              </option>
+            ))}
           </select>
           <select className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-neutral-300">
-            <option value="all">All Components</option>
-            {/* {Object.keys(resourcesByComponent).map((component) => (
-              <option key={component} value={component.toLowerCase()}>
-                {component}
+            <option value="all">All Versions</option>
+            {Object.keys(resourcesByVersion).map((version) => (
+              <option key={version} value={version.toLowerCase()}>
+                {version}
               </option>
-            ))} */}
+            ))}
           </select>
           <select className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-neutral-300">
             <option value="all">All Status</option>
@@ -249,14 +228,9 @@ export const ResourcesPageContent: React.FC<{
       {/* Resource Content */}
       {selectedView === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {isResourcesLoading &&
-            Array.from({ length: PAGE_SIZE }).map((_, index) => (
-              <Skeleton key={index} className="h-[264px] w-full rounded-lg" />
-            ))}
-          {!isResourcesLoading &&
-            resources.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
-            ))}
+          {filteredResources.map((resource) => (
+            <ResourceCard key={resource.id} resource={resource} />
+          ))}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border border-neutral-800">
@@ -302,13 +276,13 @@ export const ResourcesPageContent: React.FC<{
                     {resource.kind}
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    my-component
+                    {resource.version}
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    my-provider
+                    {resource.providerId}
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    my-region
+                    {resource.providerId}
                   </TableCell>
                   <TableCell className="py-3">
                     <div className="flex items-center gap-2">
