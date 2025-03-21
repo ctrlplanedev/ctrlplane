@@ -26,7 +26,7 @@ const config = {
 
   experimental: {
     turbo: {},
-    reactCompiler: true,
+    reactCompiler: false,
     optimizePackageImports: ["googleapis"],
   },
 

@@ -19,22 +19,24 @@ import { WorkspaceResources } from "./overview-cards/WorkspaceResources";
 import { ResourceTypeBreakdown } from "./ResourceTypeBreakdown";
 import { SystemHealthOverview } from "./SystemHealthOverview";
 
-export const generateMetadata = async (props: {
+export const generateMetadata = async ({
+  params,
+}: {
   params: { workspaceSlug: string };
 }): Promise<Metadata> => {
-  try {
-    const workspace = await api.workspace.bySlug(props.params.workspaceSlug);
-    return {
-      title: `Insights | ${workspace?.name ?? props.params.workspaceSlug} | Ctrlplane`,
-      description: `Analytics and performance metrics for the ${workspace?.name ?? props.params.workspaceSlug} workspace.`,
-    };
-  } catch {
-    return {
+  const { workspaceSlug } = params;
+
+  return api.workspace
+    .bySlug(workspaceSlug)
+    .then((workspace) => ({
+      title: `Insights | ${workspace?.name ?? workspaceSlug} | Ctrlplane`,
+      description: `Analytics and performance metrics for the ${workspace?.name ?? workspaceSlug} workspace.`,
+    }))
+    .catch(() => ({
       title: "Insights | Ctrlplane",
       description:
         "Analytics and performance metrics for your Ctrlplane workspace.",
-    };
-  }
+    }));
 };
 
 type Props = {
