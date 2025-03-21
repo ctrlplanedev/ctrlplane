@@ -53,7 +53,7 @@ export const JobAgentSelector: React.FC<{
       onChange={onChange}
     />
     <Link
-      href={urls.workspace(workspace.slug).agents().integrations()}
+      href={urls.workspace(workspace.slug).agents().integrations().baseUrl()}
       passHref
     >
       <Button className="flex items-center" variant="outline" size="icon">
