@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
 import type { EntityRole, Role, User, Workspace } from "@ctrlplane/db/schema";
@@ -197,7 +198,6 @@ const columns: ColumnDef<Member>[] = [
       const { id: entityRoleId } = row.original.entityRole;
       const roles = api.workspace.roles.useQuery(row.original.workspace.id);
       const updateRole = api.workspace.iam.set.useMutation();
-      // eslint-disable-next-line react-hooks/rules-of-hooks
       const router = useRouter();
       const isCurrentUser = row.original.user.id === viewer.data?.id;
 
@@ -245,7 +245,6 @@ const columns: ColumnDef<Member>[] = [
     cell: ({ row }) => {
       const viewer = api.user.viewer.useQuery();
       const { id } = row.original.entityRole;
-      // eslint-disable-next-line react-hooks/rules-of-hooks
       const router = useRouter();
       const remove = api.workspace.iam.remove.useMutation();
       if (id == null) return null;
