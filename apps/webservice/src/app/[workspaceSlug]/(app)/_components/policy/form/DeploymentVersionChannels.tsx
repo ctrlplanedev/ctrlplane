@@ -17,6 +17,7 @@ import { urls } from "~/app/urls";
 
 type Deployment = SCHEMA.Deployment & {
   versionChannels: SCHEMA.DeploymentVersionChannel[];
+  system: SCHEMA.System;
 };
 
 type Policy = { versionChannels: SCHEMA.DeploymentVersionChannel[] };
@@ -44,10 +45,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   const onChange = (channelId: string | null) =>
     updateDeploymentVersionChannel(deployment.id, channelId);
 
-  const { workspaceSlug, systemSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug?: string;
-  }>();
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
   const sortedDeploymentVersionChannels = deployment.versionChannels.sort(
     (a, b) => a.name.localeCompare(b.name),
@@ -55,7 +53,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
 
   const versionChannelsUrl = urls
     .workspace(workspaceSlug)
-    .system(systemSlug ?? "")
+    .system(deployment.system.slug)
     .deployment(deployment.slug)
     .channels();
 
@@ -84,9 +82,9 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
                 <CommandItem>
                   <Link
                     href={versionChannelsUrl}
-                    className="w-full hover:text-blue-300"
+                    className="flex w-full items-center gap-2 hover:text-blue-300"
                   >
-                    <IconPlus className="h-4 w-4" /> Create version channel
+                    <IconPlus className="h-4 w-4" /> Create channel
                   </Link>
                 </CommandItem>
               )}

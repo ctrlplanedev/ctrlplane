@@ -50,7 +50,7 @@ const workspace = (slug: string) => {
 };
 
 const workspaceJobAgents = (slug: string) => {
-  const base = [slug, "job-agents"];
+  const base = [slug, "agents"];
   return {
     baseUrl: () => buildUrl(...base),
     integrations: () => buildUrl(...base, "integrations"),

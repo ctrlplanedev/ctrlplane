@@ -83,9 +83,9 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
                 <CommandItem>
                   <Link
                     href={deploymentVersionChannelsUrl}
-                    className="w-full hover:text-blue-300"
+                    className="flex w-full items-center gap-2 hover:text-blue-300"
                   >
-                    <IconPlus className="h-4 w-4" /> Create version channel
+                    <IconPlus className="h-4 w-4" /> Create channel
                   </Link>
                 </CommandItem>
               )}

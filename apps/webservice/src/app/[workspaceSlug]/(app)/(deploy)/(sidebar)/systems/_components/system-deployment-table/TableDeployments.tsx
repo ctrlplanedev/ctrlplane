@@ -27,9 +27,10 @@ import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 const EnvHeader: React.FC<{
+  systemSlug: string;
   environment: SCHEMA.Environment;
   workspace: SCHEMA.Workspace;
-}> = ({ environment: env, workspace }) => {
+}> = ({ systemSlug, environment: env, workspace }) => {
   const filter = env.resourceFilter ?? undefined;
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.id, filter, limit: 0 },
@@ -37,7 +38,8 @@ const EnvHeader: React.FC<{
   );
   const total = data?.total ?? 0;
 
-  const envUrl = `/${workspace.slug}/systems?environment_id=${env.id}`;
+  const systemUrls = urls.workspace(workspace.slug).system(systemSlug);
+  const envUrl = systemUrls.environment(env.id).baseUrl();
   return (
     <TableHead className="w-[220px] p-2" key={env.id}>
       <Link
@@ -123,7 +125,12 @@ const DeploymentTable: React.FC<{
               Deployments
             </TableHead>
             {environments.map((env) => (
-              <EnvHeader key={env.id} environment={env} workspace={workspace} />
+              <EnvHeader
+                key={env.id}
+                systemSlug={systemSlug}
+                environment={env}
+                workspace={workspace}
+              />
             ))}
             {directories.map((dir) => (
               <DirectoryHeader

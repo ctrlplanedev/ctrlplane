@@ -28,8 +28,7 @@ export const generateMetadata = async (props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
 }) => {
   const params = await props.params;
-  const system = await api.system.bySlug(params).catch(() => null);
-  if (system == null) return { title: "System Not Found" };
+  const system = await api.system.bySlug(params).catch(() => notFound());
 
   return {
     title: `${system.name} - Ctrlplane`,
@@ -48,6 +47,8 @@ export default async function SystemsLayout(props: {
   const selectedSystem = systems.items.find(
     (system) => system.slug === params.systemSlug,
   );
+
+  await api.system.bySlug(params).catch(() => notFound());
 
   return (
     <div className="relative h-full rounded-tl-lg">
