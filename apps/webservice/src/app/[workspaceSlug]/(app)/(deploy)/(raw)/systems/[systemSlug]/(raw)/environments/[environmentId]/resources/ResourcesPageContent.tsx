@@ -1,5 +1,6 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import { IconFilter, IconSearch } from "@tabler/icons-react";
 import _ from "lodash";
@@ -15,9 +16,18 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
-  environmentId,
-}) => {
+import { ResourceCard } from "./ResourceCard";
+import { useFilteredResources } from "./useFilteredResources";
+
+export const ResourcesPageContent: React.FC<{
+  environment: SCHEMA.Environment;
+  workspaceId: string;
+}> = ({ environment, workspaceId }) => {
+  const { resources } = useFilteredResources(
+    workspaceId,
+    environment.resourceFilter,
+  );
+
   const [selectedView, setSelectedView] = useState("grid");
   const [showFilterEditor, setShowFilterEditor] = useState(false);
   const [resourceFilter, setResourceFilter] = useState({
@@ -34,360 +44,15 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
     ],
   });
 
-  // Sample static resource data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const resources = [
-    {
-      id: "res-1",
-      name: "api-server-pod-1",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "nginx:1.21",
-      lastUpdated: new Date("2024-03-15T10:30:00"),
-      component: "API Server",
-      healthScore: 98,
-      metrics: {
-        cpu: 32,
-        memory: 45,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T10:30:00"),
-          message: "Pod started successfully",
-        },
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T10:28:00"),
-          message: "Container image pulled successfully",
-        },
-      ],
-      relatedResources: [
-        { name: "api-server-service", kind: "Service", status: "healthy" },
-        {
-          name: "api-data-volume",
-          kind: "PersistentVolume",
-          status: "healthy",
-        },
-      ],
-      deploymentHistory: [
-        {
-          date: new Date("2024-03-15"),
-          version: "v1.21",
-          deploymentName: "API Server Rollout",
-          duration: 3,
-          status: "success",
-        },
-        {
-          date: new Date("2024-02-28"),
-          version: "v1.20",
-          deploymentName: "February Release",
-          duration: 5,
-          status: "success",
-        },
-      ],
-    },
-    {
-      id: "res-2",
-      name: "frontend-service",
-      kind: "Service",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "ClusterIP",
-      lastUpdated: new Date("2024-03-15T09:45:00"),
-      component: "Frontend",
-      healthScore: 100,
-      metrics: {
-        cpu: 12,
-        memory: 25,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T09:45:00"),
-          message: "Service created",
-        },
-      ],
-    },
-    {
-      id: "res-3",
-      name: "main-db-instance",
-      kind: "Database",
-      provider: "aws",
-      region: "us-west-2",
-      status: "degraded",
-      version: "postgres-13.4",
-      lastUpdated: new Date("2024-03-14T22:15:00"),
-      component: "Database",
-      healthScore: 75,
-      metrics: {
-        cpu: 78,
-        memory: 65,
-        disk: 82,
-      },
-      events: [
-        {
-          type: "warning",
-          timestamp: new Date("2024-03-15T02:12:00"),
-          message: "High disk usage detected",
-        },
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-14T22:15:00"),
-          message: "Database backup completed",
-        },
-      ],
-      relatedResources: [
-        { name: "db-backup-bucket", kind: "Storage", status: "healthy" },
-      ],
-    },
-    {
-      id: "res-4",
-      name: "cache-redis-01",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "failed",
-      version: "redis:6.2",
-      lastUpdated: new Date("2024-03-15T08:12:00"),
-      component: "Cache",
-      healthScore: 0,
-      metrics: {
-        cpu: 0,
-        memory: 0,
-      },
-      events: [
-        {
-          type: "error",
-          timestamp: new Date("2024-03-15T08:12:00"),
-          message: "Container failed to start: OOMKilled",
-        },
-        {
-          type: "warning",
-          timestamp: new Date("2024-03-15T08:11:30"),
-          message: "Memory usage exceeded limit",
-        },
-      ],
-    },
-    {
-      id: "res-5",
-      name: "monitoring-server",
-      kind: "VM",
-      provider: "gcp",
-      region: "us-west-1",
-      status: "healthy",
-      version: "n/a",
-      lastUpdated: new Date("2024-03-10T15:30:00"),
-      component: "Monitoring",
-      healthScore: 96,
-      metrics: {
-        cpu: 15,
-        memory: 40,
-        disk: 30,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-10T15:30:00"),
-          message: "VM started successfully",
-        },
-      ],
-    },
-    {
-      id: "res-6",
-      name: "backend-pod-1",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "backend:4.1.0",
-      lastUpdated: new Date("2024-03-10T11:45:00"),
-      component: "Backend",
-      healthScore: 99,
-      metrics: {
-        cpu: 45,
-        memory: 38,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-10T11:45:00"),
-          message: "Pod started successfully",
-        },
-      ],
-    },
-    {
-      id: "res-7",
-      name: "backend-pod-2",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "backend:4.1.0",
-      lastUpdated: new Date("2024-03-10T11:45:00"),
-      component: "Backend",
-      healthScore: 97,
-      metrics: {
-        cpu: 49,
-        memory: 42,
-      },
-    },
-    {
-      id: "res-8",
-      name: "analytics-queue",
-      kind: "Service",
-      provider: "aws",
-      region: "us-west-2",
-      status: "updating",
-      version: "n/a",
-      lastUpdated: new Date("2024-03-15T14:22:00"),
-      component: "Analytics",
-      healthScore: 90,
-      metrics: {
-        cpu: 28,
-        memory: 35,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T14:22:00"),
-          message: "Service configuration update in progress",
-        },
-      ],
-    },
-  ];
-
   // Group resources by component
-  const resourcesByComponent = _(resources)
-    .groupBy((t) => t.component)
+  const resourcesByVersion = _(resources)
+    .groupBy((t) => t.version)
+    .value() as Record<string, typeof resources>;
+  const resourcesByKind = _(resources)
+    .groupBy((t) => t.version + ": " + t.kind)
     .value() as Record<string, typeof resources>;
 
-  // Apply filters to resources
-  const filteredResources = React.useMemo(() => {
-    // Start with all resources
-    let filtered = [...resources];
-
-    // Apply resource condition filters
-    if (resourceFilter.conditions.length > 0) {
-      // If it's an AND operator, each condition must match
-      if (resourceFilter.operator === "and") {
-        resourceFilter.conditions.forEach((condition: any) => {
-          filtered = filtered.filter((resource) => {
-            switch (condition.type) {
-              case "kind":
-                return resource.kind === condition.value;
-              case "provider":
-                return resource.provider === condition.value;
-              case "status":
-                return resource.status === condition.value;
-              case "component":
-                return resource.component === condition.value;
-              default:
-                return true;
-            }
-          });
-        });
-      }
-      // If it's an OR operator, any condition can match
-      else if (resourceFilter.operator === "or") {
-        filtered = filtered.filter((resource) =>
-          resourceFilter.conditions.some((condition: any) => {
-            switch (condition.type) {
-              case "kind":
-                return resource.kind === condition.value;
-              case "provider":
-                return resource.provider === condition.value;
-              case "status":
-                return resource.status === condition.value;
-              case "component":
-                return resource.component === condition.value;
-              default:
-                return true;
-            }
-          }),
-        );
-      }
-    }
-
-    return filtered;
-  }, [resources, resourceFilter]);
-
-  const getStatusCount = (status: string) => {
-    return resources.filter((r) => r.status === status).length;
-  };
-
-  const renderResourceCard = (resource: any) => {
-    const statusColor = {
-      healthy: "bg-green-500",
-      degraded: "bg-amber-500",
-      failed: "bg-red-500",
-      updating: "bg-blue-500",
-      unknown: "bg-neutral-500",
-    };
-
-    return (
-      <div
-        key={resource.id}
-        className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 transition-all hover:border-neutral-700 hover:bg-neutral-900"
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-2.5 w-2.5 rounded-full ${statusColor[resource.status as keyof typeof statusColor] || "bg-neutral-500"}`}
-            ></div>
-            <h3 className="font-medium text-neutral-200">{resource.name}</h3>
-          </div>
-          <Badge
-            variant="outline"
-            className="bg-neutral-800/50 text-xs text-neutral-300"
-          >
-            {resource.kind}
-          </Badge>
-        </div>
-
-        <div className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-          <div className="text-neutral-400">Component</div>
-          <div className="text-neutral-300">{resource.component}</div>
-
-          <div className="text-neutral-400">Provider</div>
-          <div className="text-neutral-300">{resource.provider}</div>
-
-          <div className="text-neutral-400">Region</div>
-          <div className="text-neutral-300">{resource.region}</div>
-
-          <div className="text-neutral-400">Updated</div>
-          <div className="text-neutral-300">
-            {resource.lastUpdated.toLocaleDateString()}
-          </div>
-        </div>
-
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-400">Provider</span>
-            <span className="text-neutral-300">{resource.provider}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-400">Deployment Success</span>
-            <span
-              className={`text-${resource.healthScore > 90 ? "green" : resource.healthScore > 70 ? "amber" : "red"}-400`}
-            >
-              {resource.healthScore}%
-            </span>
-          </div>
-
-          <div className="mt-2 rounded-md bg-neutral-800/50 px-2 py-1.5 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="text-neutral-300">ID: {resource.id}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const filteredResources = resources;
 
   return (
     <div className="space-y-6">
@@ -400,7 +65,7 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
           </div>
           <div className="mt-1 flex items-center text-xs">
             <span className="text-neutral-400">
-              Across {Object.keys(resourcesByComponent).length} components
+              Across {Object.keys(resourcesByKind).length} kinds
             </span>
           </div>
         </div>
@@ -410,14 +75,9 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
             <div className="h-2 w-2 rounded-full bg-green-500"></div>
             <span>Healthy</span>
           </div>
-          <div className="text-2xl font-semibold text-green-400">
-            {getStatusCount("healthy")}
-          </div>
+          <div className="text-2xl font-semibold text-green-400">10</div>
           <div className="mt-1 flex items-center text-xs">
-            <span className="text-green-400">
-              {Math.round((getStatusCount("healthy") / resources.length) * 100)}
-              % of resources
-            </span>
+            <span className="text-green-400">{10}% of resources</span>
           </div>
         </div>
 
@@ -426,14 +86,10 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
             <div className="h-2 w-2 rounded-full bg-amber-500"></div>
             <span>Needs Attention</span>
           </div>
-          <div className="text-2xl font-semibold text-amber-400">
-            {getStatusCount("degraded")}
-          </div>
+          <div className="text-2xl font-semibold text-amber-400">{0}</div>
           <div className="mt-1 flex items-center text-xs">
             <span className="text-amber-400">
-              {getStatusCount("degraded") > 0
-                ? "Action required"
-                : "No issues detected"}
+              {0 > 0 ? "Action required" : "No issues detected"}
             </span>
           </div>
         </div>
@@ -443,14 +99,10 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
             <div className="h-2 w-2 rounded-full bg-blue-500"></div>
             <span>Deploying</span>
           </div>
-          <div className="text-2xl font-semibold text-blue-400">
-            {getStatusCount("updating") + getStatusCount("failed")}
-          </div>
+          <div className="text-2xl font-semibold text-blue-400">{0 + 0}</div>
           <div className="mt-1 flex items-center text-xs">
             <span className="text-blue-400">
-              {getStatusCount("updating") > 0
-                ? "Updates in progress"
-                : "No active deployments"}
+              {0 > 0 ? "Updates in progress" : "No active deployments"}
             </span>
           </div>
         </div>
@@ -478,16 +130,17 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
           </Badge>
           <select className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-neutral-300">
             <option value="all">All Kinds</option>
-            <option value="pod">Pods</option>
-            <option value="service">Services</option>
-            <option value="database">Databases</option>
-            <option value="vm">VMs</option>
+            {Object.keys(resourcesByKind).map((kind) => (
+              <option key={kind} value={kind.toLowerCase()}>
+                {kind}
+              </option>
+            ))}
           </select>
           <select className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-neutral-300">
-            <option value="all">All Components</option>
-            {Object.keys(resourcesByComponent).map((component) => (
-              <option key={component} value={component.toLowerCase()}>
-                {component}
+            <option value="all">All Versions</option>
+            {Object.keys(resourcesByVersion).map((version) => (
+              <option key={version} value={version.toLowerCase()}>
+                {version}
               </option>
             ))}
           </select>
@@ -550,7 +203,9 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
       {/* Resource Content */}
       {selectedView === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredResources.map((resource) => renderResourceCard(resource))}
+          {filteredResources.map((resource) => (
+            <ResourceCard key={resource.id} resource={resource} />
+          ))}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border border-neutral-800">
@@ -596,13 +251,13 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
                     {resource.kind}
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    {resource.component}
+                    {resource.version}
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    {resource.provider}
+                    {resource.providerId}
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    {resource.region}
+                    {resource.providerId}
                   </TableCell>
                   <TableCell className="py-3">
                     <div className="flex items-center gap-2">

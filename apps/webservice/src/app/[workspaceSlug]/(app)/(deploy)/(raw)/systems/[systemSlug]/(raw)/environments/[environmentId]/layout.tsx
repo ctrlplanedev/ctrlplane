@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconArrowLeft, IconChartBar } from "@tabler/icons-react";
@@ -72,12 +73,14 @@ export default async function EnvironmentLayout(props: {
         </SidebarTrigger>
       </PageHeader>
 
-      <div className="container mx-auto space-y-8 py-8">
-        <div className="flex flex-col space-y-2">
+      <div className="container mx-auto py-8">
+        <div className="mb-6 flex flex-col space-y-2">
           <h1 className="text-3xl font-bold text-neutral-100">
             {environment.name} Environment
           </h1>
-          <p className="text-neutral-400">{environment.description}</p>
+          <p className="text-neutral-400">
+            {environment.description || "No description provided"}
+          </p>
         </div>
 
         <EnvironmentTabs />
