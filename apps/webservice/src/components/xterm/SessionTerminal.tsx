@@ -1,6 +1,4 @@
-/* eslint-disable react-compiler/react-compiler */
 "use client";
-"use no memo";
 
 import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";

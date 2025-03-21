@@ -1,5 +1,4 @@
 "use client";
-"use no memo";
 
 import type * as schema from "@ctrlplane/db/schema";
 import React from "react";

@@ -6,8 +6,7 @@
   "exports": {
     "./base": "./base.js",
     "./nextjs": "./nextjs.js",
-    "./react": "./react.js",
-    "./react-compiler": "./react-compiler.js"
+    "./react": "./react.js"
   },
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
@@ -28,7 +27,6 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "eslint": "catalog:",
-    "eslint-plugin-react-compiler": "19.0.0-beta-3229e95-20250315",
     "prettier": "catalog:",
     "typescript": "catalog:"
   },
