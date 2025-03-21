@@ -17,14 +17,18 @@ import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { AgentCard } from "./AgentCard";
 
-export const generateMetadata = async (props: {
-  params: { workspaceSlug: string };
+export const generateMetadata = async ({
+  params,
+}: {
+  params: Promise<{ workspaceSlug: string }>;
 }): Promise<Metadata> => {
+  const { workspaceSlug } = await params;
+
   try {
-    const workspace = await api.workspace.bySlug(props.params.workspaceSlug);
+    const workspace = await api.workspace.bySlug(workspaceSlug);
     return {
-      title: `Agents | ${workspace?.name ?? props.params.workspaceSlug} | Ctrlplane`,
-      description: `Manage deployment agents for the ${workspace?.name ?? props.params.workspaceSlug} workspace.`,
+      title: `Agents | ${workspace?.name ?? workspaceSlug} | Ctrlplane`,
+      description: `Manage deployment agents for the ${workspace?.name ?? workspaceSlug} workspace.`,
     };
   } catch {
     return {
