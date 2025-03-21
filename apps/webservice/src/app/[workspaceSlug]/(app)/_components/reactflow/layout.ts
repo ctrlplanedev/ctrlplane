@@ -1,4 +1,6 @@
+/* eslint-disable react-compiler/react-compiler */
 "use client";
+"use no memo";
 
 import type { Edge, Node, ReactFlowInstance } from "reactflow";
 import { useCallback, useEffect, useState } from "react";

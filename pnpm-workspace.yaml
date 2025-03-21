@@ -24,7 +24,7 @@ catalog:
   "@next/eslint-plugin-next": ^15.2.2
   "bullmq": ^5.15.0
   "ts-is-present": ^1.2.2
-  react-hook-form: ^7.54.2
+  react-hook-form: ^7.50.1
   semver: ^7.7.1
   superjson: ^2.2.2
   "@octokit/auth-app": ^7.1.5
