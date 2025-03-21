@@ -51,12 +51,8 @@ const EnvIcon: React.FC<{
     );
   const total = resourcesResult?.total ?? 0;
 
-  const deploymentsUrl = urls
-    .workspace(workspace.slug)
-    .system(systemSlug)
-    .deployments();
-
-  const envUrl = `${deploymentsUrl}?environment_id=${env.id}`;
+  const systemUrls = urls.workspace(workspace.slug).system(systemSlug);
+  const envUrl = systemUrls.environment(env.id).baseUrl();
   return (
     <Icon key={env.id} className={className}>
       <Link href={envUrl}>

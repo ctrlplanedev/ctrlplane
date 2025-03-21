@@ -1,5 +1,5 @@
 import React from "react";
-import { IconCube, IconSettings } from "@tabler/icons-react";
+import { IconCube, IconRocket, IconSettings } from "@tabler/icons-react";
 
 import { EnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment/drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
@@ -8,7 +8,6 @@ import { DeploymentVersionChannelDrawer } from "./_components/channel/drawer/Dep
 import { DeploymentResourceDrawer } from "./_components/deployments/resource-drawer/DeploymentResourceDrawer";
 import { JobDrawer } from "./_components/job/drawer/JobDrawer";
 import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
-import { DeploymentsSidebarIcon } from "./DeploymentsSidebarIcon";
 import { TopNav } from "./TopNav";
 import { TopSidebarIcon } from "./TopSidebarIcon";
 
@@ -27,11 +26,15 @@ export default async function Layout(props: {
 
         <div className="flex h-full flex-1">
           <aside className="flex flex-col bg-[#111111] pt-2">
-            <DeploymentsSidebarIcon />
+            <TopSidebarIcon
+              icon={<IconRocket />}
+              label="Deploys"
+              href={workspaceUrls.systems()}
+            />
 
             <TopSidebarIcon
               icon={<IconCube />}
-              label="Resources"
+              label="Inventory"
               href={workspaceUrls.resources().baseUrl()}
             />
             {/* <TopSidebarIcon
