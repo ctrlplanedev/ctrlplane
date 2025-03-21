@@ -50,3 +50,12 @@ export const analyticsStatuses = [
   JobStatus.ExternalRunNotFound,
   JobStatus.Successful,
 ];
+
+export const failedStatuses = [
+  JobStatus.Failure,
+  JobStatus.InvalidJobAgent,
+  JobStatus.InvalidIntegration,
+  JobStatus.ExternalRunNotFound,
+];
+
+export const notDeployedStatuses = [JobStatus.Skipped, JobStatus.Cancelled];

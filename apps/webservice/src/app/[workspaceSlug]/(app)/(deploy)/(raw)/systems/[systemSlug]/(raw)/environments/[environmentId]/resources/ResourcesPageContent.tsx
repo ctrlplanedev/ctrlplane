@@ -13,6 +13,7 @@ import _ from "lodash";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Input } from "@ctrlplane/ui/input";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -40,7 +41,7 @@ const safeParseInt = (value: string, total: number) => {
 const usePagination = (total: number) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const page = safeParseInt(searchParams.get("page") ?? "0");
+  const page = safeParseInt(searchParams.get("page") ?? "0", total);
   const setPage = (page: number) => {
     const url = new URL(window.location.href);
     url.searchParams.set("page", page.toString());
@@ -63,12 +64,11 @@ export const ResourcesPageContent: React.FC<{
     conditions: [resourceSelector],
   });
 
-  const { data: allResources, isLoading: isAllResourcesLoading } =
-    api.resource.byWorkspaceId.list.useQuery({
-      workspaceId,
-      filter: resourceSelector,
-      limit: 0,
-    });
+  const { data: allResources } = api.resource.byWorkspaceId.list.useQuery({
+    workspaceId,
+    filter: resourceSelector,
+    limit: 0,
+  });
 
   const totalResources = allResources?.total ?? 0;
   const { page, setPage } = usePagination(totalResources);
@@ -249,9 +249,14 @@ export const ResourcesPageContent: React.FC<{
       {/* Resource Content */}
       {selectedView === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {resources.map((resource) => (
-            <ResourceCard key={resource.id} resource={resource} />
-          ))}
+          {isResourcesLoading &&
+            Array.from({ length: PAGE_SIZE }).map((_, index) => (
+              <Skeleton key={index} className="h-[264px] w-full rounded-lg" />
+            ))}
+          {!isResourcesLoading &&
+            resources.map((resource) => (
+              <ResourceCard key={resource.id} resource={resource} />
+            ))}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border border-neutral-800">

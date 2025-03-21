@@ -1,6 +1,8 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
+import { useParams } from "next/navigation";
 
+import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import {
@@ -10,19 +12,42 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
+import { api } from "~/trpc/react";
+
 export const ResourceCard: React.FC<{
   resource: SCHEMA.Resource;
 }> = ({ resource }) => {
+  const { environmentId } = useParams<{ environmentId: string }>();
+  const { data: deploymentsHealth } =
+    api.resource.stats.health.byEnvironmentId.useQuery({
+      environmentId,
+      resourceId: resource.id,
+    });
+
   const statusColor = {
     healthy: "bg-green-500",
-    degraded: "bg-amber-500",
     failed: "bg-red-500",
     updating: "bg-blue-500",
     unknown: "bg-neutral-500",
+    pending: "bg-yellow-500",
+    "not deployed": "bg-neutral-500",
   };
 
+  const succeeded =
+    deploymentsHealth?.filter((deployment) => deployment.status === "healthy")
+      .length ?? 0;
+
+  const failed =
+    deploymentsHealth?.filter((deployment) => deployment.status === "failed")
+      .length ?? 0;
+
+  const failedOrSucceeded = succeeded + failed;
+
+  const successRate =
+    failedOrSucceeded > 0 ? succeeded / failedOrSucceeded : "-";
+
   return (
-    <Card key={resource.id} className="rounded-md">
+    <Card key={resource.id} className="h-[264px] rounded-md">
       <CardHeader className="p-4">
         <CardTitle className="mb-3 flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2">
@@ -71,7 +96,20 @@ export const ResourceCard: React.FC<{
 
           <div className="flex items-center justify-between text-xs">
             <span className="text-neutral-400">Deployment Success</span>
-            <span className={`text-green-400`}>100%</span>
+            {typeof successRate === "number" && (
+              <span
+                className={cn(
+                  successRate === 1 && "text-green-400",
+                  successRate < 1 && successRate > 0.8 && "text-yellow-400",
+                  successRate < 0.8 && "text-red-400",
+                )}
+              >
+                {successRate * 100}%
+              </span>
+            )}
+            {typeof successRate !== "number" && (
+              <span className="text-neutral-400">{successRate}</span>
+            )}
           </div>
 
           <div className="mt-2 rounded-md bg-neutral-800/50 px-2 py-1.5 text-xs">

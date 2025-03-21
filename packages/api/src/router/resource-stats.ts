@@ -1,5 +1,7 @@
 import type { SQL, Tx } from "@ctrlplane/db";
 import { add, endOfDay } from "date-fns";
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import {
@@ -17,7 +19,12 @@ import {
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { analyticsStatuses } from "@ctrlplane/validators/jobs";
+import {
+  analyticsStatuses,
+  failedStatuses,
+  JobStatus,
+  notDeployedStatuses,
+} from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -58,7 +65,114 @@ const getDateRangeCounts = (db: Tx, range: Date[], where?: SQL) =>
     return { date, count: resourceCount };
   });
 
+const getDeploymentsForResource = async (
+  db: Tx,
+  resourceId: string,
+  deployments: SCHEMA.Deployment[],
+) => {
+  const [deploymentsWithSelectors, deploymentsWithoutSelectors] = _.partition(
+    deployments,
+    (deployment) => isPresent(deployment.resourceFilter),
+  );
+
+  const deploymentsWithSelectorsMatchingResourcePromises =
+    deploymentsWithSelectors.map(async (deployment) => {
+      const resource = await db
+        .select()
+        .from(SCHEMA.resource)
+        .where(
+          and(
+            eq(SCHEMA.resource.id, resourceId),
+            SCHEMA.resourceMatchesMetadata(db, deployment.resourceFilter),
+          ),
+        )
+        .then(takeFirstOrNull);
+
+      return resource != null ? deployment : null;
+    });
+
+  const deploymentsWithSelectorsMatchingResource = await Promise.all(
+    deploymentsWithSelectorsMatchingResourcePromises,
+  ).then((rows) => rows.filter(isPresent));
+
+  return [
+    ...deploymentsWithSelectorsMatchingResource,
+    ...deploymentsWithoutSelectors,
+  ];
+};
+
 const healthRouter = createTRPCRouter({
+  byEnvironmentId: protectedProcedure
+    .input(
+      z.object({
+        resourceId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceGet)
+          .on({ type: "resource", id: input.resourceId }),
+    })
+    .query(async ({ ctx, input }) => {
+      const deployments = await ctx.db
+        .select()
+        .from(SCHEMA.environment)
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.deployment.systemId, SCHEMA.environment.systemId),
+        )
+        .where(eq(SCHEMA.environment.id, input.environmentId))
+        .then((rows) => rows.map((r) => r.deployment));
+
+      const deploymentsForResource = await getDeploymentsForResource(
+        ctx.db,
+        input.resourceId,
+        deployments,
+      );
+
+      const deploymentsWithStatus = await ctx.db
+        .selectDistinctOn([SCHEMA.deploymentVersion.deploymentId], {
+          status: SCHEMA.job.status,
+          deploymentId: SCHEMA.deploymentVersion.deploymentId,
+        })
+        .from(SCHEMA.releaseJobTrigger)
+        .innerJoin(
+          SCHEMA.job,
+          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+        )
+        .innerJoin(
+          SCHEMA.deploymentVersion,
+          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
+        )
+        .where(
+          inArray(
+            SCHEMA.deploymentVersion.deploymentId,
+            deploymentsForResource.map((d) => d.id),
+          ),
+        )
+        .orderBy(
+          SCHEMA.deploymentVersion.deploymentId,
+          desc(SCHEMA.job.createdAt),
+        );
+
+      return deploymentsWithStatus.map((deployment) => {
+        const res = { deploymentId: deployment.deploymentId };
+        if (deployment.status === JobStatus.Successful)
+          return { ...res, status: "healthy" };
+        if (failedStatuses.includes(deployment.status as JobStatus))
+          return { ...res, status: "failed" };
+        if (notDeployedStatuses.includes(deployment.status as JobStatus))
+          return { ...res, status: "not-deployed" };
+        if (deployment.status === JobStatus.Pending)
+          return { ...res, status: "pending" };
+        if (deployment.status === JobStatus.InProgress)
+          return { ...res, status: "updating" };
+        return { ...res, status: "unknown" };
+      });
+    }),
+
   byResourceAndSystem: protectedProcedure
     .input(
       z.object({
