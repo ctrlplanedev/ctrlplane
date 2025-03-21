@@ -4,15 +4,21 @@ import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
-  info: {
-    title: "Ctrlplane API",
-    version: "1.0.0",
-  },
+  info: { title: "Ctrlplane API", version: "1.0.0" },
   paths: {
-    "/v1/releases": {
-      post: {
-        summary: "Upserts a release",
-        operationId: "upsertRelease",
+    "/v1/deployments/versions/{versionId}": {
+      patch: {
+        summary: "Updates a deployment version",
+        operationId: "updateDeploymentVersion",
+        parameters: [
+          {
+            name: "versionId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "The ID of the deployment version",
+          },
+        ],
         requestBody: {
           required: true,
           content: {
@@ -20,7 +26,7 @@ export const openapi: Swagger.SwaggerV3 = {
               schema: {
                 type: "object",
                 properties: {
-                  version: { type: "string" },
+                  tag: { type: "string" },
                   deploymentId: { type: "string" },
                   createdAt: { type: "string", format: "date-time" },
                   name: { type: "string" },
@@ -39,7 +45,6 @@ export const openapi: Swagger.SwaggerV3 = {
                     additionalProperties: { type: "string" },
                   },
                 },
-                required: ["version", "deploymentId"],
               },
             },
           },
@@ -49,21 +54,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "OK",
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/Release" },
-              },
-            },
-          },
-          "409": {
-            description: "Release already exists",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    error: { type: "string" },
-                    id: { type: "string" },
-                  },
-                },
+                schema: { $ref: "#/components/schemas/DeploymentVersion" },
               },
             },
           },

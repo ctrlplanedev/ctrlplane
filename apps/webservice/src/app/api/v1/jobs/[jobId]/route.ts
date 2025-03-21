@@ -58,7 +58,7 @@ export const GET = request()
     }),
   )
   .handle<object, { params: { jobId: string } }>(async ({ db }, { params }) => {
-    const rows = await db
+    const row = await db
       .select()
       .from(schema.job)
       .leftJoin(
@@ -91,9 +91,8 @@ export const GET = request()
       )
       .where(
         and(eq(schema.job.id, params.jobId), isNull(schema.resource.deletedAt)),
-      );
-
-    const row = rows.at(0);
+      )
+      .then(takeFirstOrNull);
 
     if (row == null)
       return NextResponse.json(
@@ -101,9 +100,25 @@ export const GET = request()
         { status: 404 },
       );
 
-    const version =
+    const deploymentVersionMetadata =
       row.deployment_version != null
-        ? { ...row.deployment_version, metadata: {} }
+        ? await db
+            .select()
+            .from(schema.deploymentVersionMetadata)
+            .where(
+              eq(
+                schema.deploymentVersionMetadata.versionId,
+                row.deployment_version.id,
+              ),
+            )
+            .then((rows) =>
+              Object.fromEntries(rows.map((m) => [m.key, m.value])),
+            )
+        : {};
+
+    const deploymentVersion =
+      row.deployment_version != null
+        ? { ...row.deployment_version, metadata: deploymentVersionMetadata }
         : null;
 
     const je = {
@@ -112,14 +127,14 @@ export const GET = request()
       environment: row.environment,
       resource: row.resource,
       deployment: row.deployment,
-      version,
+      deploymentVersion,
     };
 
     const policyId = je.environment?.policyId;
 
     const approval =
-      je.version?.id && policyId
-        ? await getApprovalDetails(je.version.id, policyId)
+      je.deploymentVersion?.id && policyId
+        ? await getApprovalDetails(je.deploymentVersion.id, policyId)
         : undefined;
 
     const jobVariableRows = await db
@@ -138,10 +153,6 @@ export const GET = request()
     const jobWithVariables = {
       ...je,
       variables,
-      release:
-        je.version != null
-          ? { ...je.version, version: je.version.tag }
-          : { version: undefined },
     };
     if (je.resource == null) return NextResponse.json(jobWithVariables);
 
