@@ -17,7 +17,6 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
-import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Input } from "@ctrlplane/ui/input";
 import {
@@ -28,14 +27,6 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@ctrlplane/ui/table";
 import {
   ComparisonOperator,
   FilterType,
@@ -48,6 +39,7 @@ import {
 import { ResourceConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionDialog";
 import { api } from "~/trpc/react";
 import { ResourceCard } from "./_components/ResourceCard";
+import { ResourceTable } from "./_components/ResourceTable";
 import { useFilteredResources } from "./_hooks/useFilteredResources";
 
 const PAGE_SIZE = 8;
@@ -362,7 +354,7 @@ export const ResourcesPageContent: React.FC<{
       </div>
 
       {/* Resource Content */}
-      {selectedView === "grid" ? (
+      {selectedView === "grid" && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {!isLoading &&
             filteredResources.map((resource) => (
@@ -373,93 +365,9 @@ export const ResourcesPageContent: React.FC<{
               <Skeleton key={index} className="h-[196px] w-full" />
             ))}
         </div>
-      ) : (
-        <div className="overflow-hidden rounded-md border border-neutral-800">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-neutral-800 hover:bg-transparent">
-                <TableHead className="w-1/6 font-medium text-neutral-400">
-                  Name
-                </TableHead>
-                <TableHead className="w-1/12 font-medium text-neutral-400">
-                  Kind
-                </TableHead>
-                <TableHead className="w-1/6 font-medium text-neutral-400">
-                  Component
-                </TableHead>
-                <TableHead className="w-1/12 font-medium text-neutral-400">
-                  Provider
-                </TableHead>
-                <TableHead className="w-1/12 font-medium text-neutral-400">
-                  Region
-                </TableHead>
-                <TableHead className="w-1/12 font-medium text-neutral-400">
-                  Success Rate
-                </TableHead>
-                <TableHead className="w-1/6 font-medium text-neutral-400">
-                  Last Updated
-                </TableHead>
-                <TableHead className="w-1/12 font-medium text-neutral-400">
-                  Status
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {resources.map((resource) => (
-                <TableRow
-                  key={resource.id}
-                  className="border-b border-neutral-800/50 hover:bg-neutral-800/20"
-                >
-                  <TableCell className="py-3 font-medium text-neutral-200">
-                    {resource.name}
-                  </TableCell>
-                  <TableCell className="py-3 text-neutral-300">
-                    {resource.kind}
-                  </TableCell>
-                  <TableCell className="py-3 text-neutral-300">
-                    {resource.version}
-                  </TableCell>
-                  <TableCell className="py-3 text-neutral-300">
-                    {resource.providerId}
-                  </TableCell>
-                  <TableCell className="py-3 text-neutral-300">
-                    {resource.providerId}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 rounded-full bg-neutral-800">
-                        <div className={`h-full rounded-full bg-green-500`} />
-                      </div>
-                      <span className="text-sm">100%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-neutral-400">
-                    {resource.updatedAt?.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Badge
-                      variant="outline"
-                      className={`bg-green-500/10 text-green-400`}
-                      // className={
-                      //   resource.status === "healthy"
-                      //     ? "border-green-500/30 bg-green-500/10 text-green-400"
-                      //     : resource.status === "degraded"
-                      //       ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                      //       : resource.status === "failed"
-                      //         ? "border-red-500/30 bg-red-500/10 text-red-400"
-                      //         : resource.status === "updating"
-                      //           ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
-                      //           : "border-neutral-500/30 bg-neutral-500/10 text-neutral-400"
-                      // }
-                    >
-                      Healthy
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      )}
+      {selectedView === "list" && (
+        <ResourceTable resources={filteredResources} />
       )}
 
       <div className="mt-4 flex items-center justify-between text-sm text-neutral-400">
