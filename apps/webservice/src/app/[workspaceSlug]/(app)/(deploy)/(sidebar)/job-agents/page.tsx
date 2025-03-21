@@ -20,22 +20,20 @@ import { AgentCard } from "./AgentCard";
 export const generateMetadata = async ({
   params,
 }: {
-  params: Promise<{ workspaceSlug: string }>;
+  params: { workspaceSlug: string };
 }): Promise<Metadata> => {
-  const { workspaceSlug } = await params;
+  const { workspaceSlug } = params;
 
-  try {
-    const workspace = await api.workspace.bySlug(workspaceSlug);
-    return {
+  return api.workspace
+    .bySlug(workspaceSlug)
+    .then((workspace) => ({
       title: `Agents | ${workspace?.name ?? workspaceSlug} | Ctrlplane`,
       description: `Manage deployment agents for the ${workspace?.name ?? workspaceSlug} workspace.`,
-    };
-  } catch {
-    return {
+    }))
+    .catch(() => ({
       title: "Agents | Ctrlplane",
       description: "Manage and monitor deployment agents in Ctrlplane.",
-    };
-  }
+    }));
 };
 
 export default async function AgentsPage(props: {
