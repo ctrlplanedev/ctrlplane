@@ -125,24 +125,6 @@ const getDeploymentStats = async (
     ),
   };
 
-  // const latestJobsSubquery = db
-  //   .selectDistinctOn([SCHEMA.releaseJobTrigger.resourceId])
-  //   .from(SCHEMA.releaseJobTrigger)
-  //   .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id))
-  //   .innerJoin(
-  //     SCHEMA.resource,
-  //     eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
-  //   )
-  //   .where(
-  //     and(
-  //       eq(SCHEMA.releaseJobTrigger.environmentId, environment.id),
-  //       isNull(SCHEMA.resource.deletedAt),
-  //       SCHEMA.resourceMatchesMetadata(db, resourceSelector),
-  //     ),
-  //   )
-  //   .orderBy(SCHEMA.releaseJobTrigger.resourceId, desc(SCHEMA.job.createdAt))
-  //   .as("latestJobs");
-
   const row = await db
     .select()
     .from(SCHEMA.deploymentVersion)
@@ -169,8 +151,6 @@ const getDeploymentStats = async (
     .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
     .limit(1)
     .then(takeFirstOrNull);
-
-  console.log({ row });
 
   if (row == null) return null;
 
