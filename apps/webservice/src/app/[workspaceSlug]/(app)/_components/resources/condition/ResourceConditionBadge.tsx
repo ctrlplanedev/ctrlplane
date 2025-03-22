@@ -10,6 +10,7 @@ import type {
   NameCondition,
   ProviderCondition,
   ResourceCondition,
+  VersionCondition,
 } from "@ctrlplane/validators/resources";
 import React from "react";
 import { format } from "date-fns";
@@ -32,6 +33,7 @@ import {
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
+  isVersionCondition,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -246,6 +248,18 @@ const StringifiedLastSyncCondition: React.FC<{
   </ConditionBadge>
 );
 
+const StringifiedVersionCondition: React.FC<{
+  condition: VersionCondition;
+}> = ({ condition }) => (
+  <ConditionBadge>
+    <span className="text-white">version</span>
+    <span className="text-muted-foreground">
+      {operatorVerbs[condition.operator]}
+    </span>
+    <span className="text-white">{condition.value}</span>
+  </ConditionBadge>
+);
+
 const StringifiedResourceCondition: React.FC<{
   condition: ResourceCondition;
   depth?: number;
@@ -286,6 +300,9 @@ const StringifiedResourceCondition: React.FC<{
 
   if (isLastSyncCondition(condition))
     return <StringifiedLastSyncCondition condition={condition} />;
+
+  if (isVersionCondition(condition))
+    return <StringifiedVersionCondition condition={condition} />;
 };
 
 export const ResourceConditionBadge: React.FC<{

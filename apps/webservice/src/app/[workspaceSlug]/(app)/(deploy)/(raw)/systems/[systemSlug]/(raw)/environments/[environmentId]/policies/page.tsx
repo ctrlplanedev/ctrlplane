@@ -1,13 +1,13 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
-export default function PoliciesPage(props: {
-  params: {
-    workspaceSlug: string;
-    systemSlug: string;
-    environmentId: string;
-  };
+import { api } from "~/trpc/server";
+import { PoliciesPageContent } from "./PoliciesPageContent";
+
+export default async function PoliciesPage(props: {
+  params: Promise<{ environmentId: string }>;
 }) {
-  return redirect(
-    `/${props.params.workspaceSlug}/systems/${props.params.systemSlug}/environments/${props.params.environmentId}/policies/approval`,
-  );
+  const { environmentId } = await props.params;
+  const environment = await api.environment.byId(environmentId);
+  if (environment == null) return notFound();
+  return <PoliciesPageContent environment={environment} />;
 }

@@ -5,3 +5,4 @@ export * from "./resource-condition.js";
 export * from "./provider-condition.js";
 export * from "./identifier-condition.js";
 export * from "./last-sync-condition.js";
+export * from "./version-condition.js";

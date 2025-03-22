@@ -63,14 +63,17 @@ const useEnvironmentPolicyDrawerTab = () => {
   return { tab, setTab };
 };
 
-const param = "environment_policy_id";
+export const param = "environment_policy_id";
 export const useEnvironmentPolicyDrawer = () => {
   const router = useRouter();
   const params = useSearchParams();
   const environmentPolicyId = params.get(param);
   const { tab, setTab } = useEnvironmentPolicyDrawerTab();
 
-  const setEnvironmentPolicyId = (id: string | null) => {
+  const setEnvironmentPolicyId = (
+    id: string | null,
+    tab?: EnvironmentPolicyDrawerTab,
+  ) => {
     const url = new URL(window.location.href);
     if (id === null) {
       url.searchParams.delete(param);
@@ -79,6 +82,7 @@ export const useEnvironmentPolicyDrawer = () => {
       return;
     }
     url.searchParams.set(param, id);
+    if (tab != null) url.searchParams.set(tabParam, tab);
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 

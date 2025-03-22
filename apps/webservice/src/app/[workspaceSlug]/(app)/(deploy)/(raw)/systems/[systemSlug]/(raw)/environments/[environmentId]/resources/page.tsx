@@ -1,21 +1,48 @@
 import { notFound } from "next/navigation";
 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@ctrlplane/ui/card";
+
 import { api } from "~/trpc/server";
-import { EditFilterForm } from "./EditFilterForm";
+import { ResourcesPageContent } from "./ResourcesPageContent";
 
 export default async function ResourcesPage(props: {
   params: Promise<{ workspaceSlug: string; environmentId: string }>;
 }) {
-  const params = await props.params;
-  const workspace = await api.workspace.bySlug(params.workspaceSlug);
-  if (workspace == null) notFound();
+  const { environmentId } = await props.params;
+  const environment = await api.environment.byId(environmentId);
+  if (environment == null) return notFound();
 
-  const environment = await api.environment.byId(params.environmentId);
-  if (environment == null) notFound();
+  const { resourceFilter } = environment;
+  if (resourceFilter == null)
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Resources</CardTitle>
+          <CardDescription>
+            Resources managed in this environment
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>No resource filter set for this environment</p>
+        </CardContent>
+      </Card>
+    );
 
   return (
-    <div className="container m-8 mx-auto">
-      <EditFilterForm environment={environment} workspaceId={workspace.id} />
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Resources</CardTitle>
+        <CardDescription>Resources managed in this environment</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResourcesPageContent environment={environment} />
+      </CardContent>
+    </Card>
   );
 }

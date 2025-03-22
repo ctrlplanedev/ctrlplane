@@ -723,6 +723,22 @@ export const resourceRouter = createTRPCRouter({
         .then((r) => r.map((row) => row.key)),
     ),
 
+  versions: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceList)
+          .on({ type: "workspace", id: input }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .selectDistinct({ version: schema.resource.version })
+        .from(schema.resource)
+        .where(and(eq(schema.resource.workspaceId, input), isNotDeleted))
+        .then((r) => r.map((row) => row.version)),
+    ),
+
   lock: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

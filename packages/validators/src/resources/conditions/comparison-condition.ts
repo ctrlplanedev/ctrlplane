@@ -9,6 +9,7 @@ import type { KindCondition } from "./kind-condition.js";
 import type { LastSyncCondition } from "./last-sync-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
+import type { VersionCondition } from "./version-condition.js";
 import {
   createdAtCondition,
   metadataCondition,
@@ -18,6 +19,7 @@ import { kindCondition } from "./kind-condition.js";
 import { lastSyncCondition } from "./last-sync-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
+import { versionCondition } from "./version-condition.js";
 
 export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
   z.object({
@@ -34,6 +36,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         identifierCondition,
         createdAtCondition,
         lastSyncCondition,
+        versionCondition,
       ]),
     ),
   }),
@@ -52,5 +55,6 @@ export type ComparisonCondition = {
     | IdentifierCondition
     | CreatedAtCondition
     | LastSyncCondition
+    | VersionCondition
   >;
 };

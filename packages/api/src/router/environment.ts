@@ -39,12 +39,14 @@ import {
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { environmentPageRouter } from "./environment-page/router";
 import { policyRouter } from "./environment-policy";
 import { environmentStatsRouter } from "./environment-stats";
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
   stats: environmentStatsRouter,
+  page: environmentPageRouter,
 
   byId: protectedProcedure
     .meta({
@@ -125,7 +127,7 @@ export const environmentRouter = createTRPCRouter({
               .filter(isPresent)
               .uniqBy((r) => r.id)
               .value(),
-            isOverride:
+            isDefaultPolicy:
               env.environment_policy.environmentId === env.environment.id,
           };
 

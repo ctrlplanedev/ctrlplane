@@ -1,13 +1,26 @@
-import { DeploymentsCard } from "~/app/[workspaceSlug]/(app)/_components/deployments/Card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@ctrlplane/ui/card";
+
+import { EnvironmentDeploymentsPageContent } from "./EnvironmentDeploymentsPageContent";
 
 export default async function DeploymentsPage(props: {
   params: Promise<{ environmentId: string }>;
 }) {
   const { environmentId } = await props.params;
-
   return (
-    <div className="container m-8 mx-auto">
-      <DeploymentsCard environmentId={environmentId} />
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Deployments</CardTitle>
+        <CardDescription>View detailed deployment information</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <EnvironmentDeploymentsPageContent environmentId={environmentId} />
+      </CardContent>
+    </Card>
   );
 }

@@ -10,6 +10,7 @@ import type { KindCondition } from "./kind-condition.js";
 import type { LastSyncCondition } from "./last-sync-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
+import type { VersionCondition } from "./version-condition.js";
 import {
   createdAtCondition,
   FilterType,
@@ -21,6 +22,7 @@ import { kindCondition } from "./kind-condition.js";
 import { lastSyncCondition } from "./last-sync-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
+import { versionCondition } from "./version-condition.js";
 
 export type ResourceCondition =
   | ComparisonCondition
@@ -30,7 +32,8 @@ export type ResourceCondition =
   | ProviderCondition
   | IdentifierCondition
   | CreatedAtCondition
-  | LastSyncCondition;
+  | LastSyncCondition
+  | VersionCondition;
 
 export const resourceCondition = z.union([
   comparisonCondition,
@@ -41,6 +44,7 @@ export const resourceCondition = z.union([
   identifierCondition,
   createdAtCondition,
   lastSyncCondition,
+  versionCondition,
 ]);
 
 export enum ResourceOperator {
@@ -59,6 +63,7 @@ export enum ResourceFilterType {
   Provider = "provider",
   Comparison = "comparison",
   LastSync = "last-sync",
+  Version = "version",
 }
 
 export const defaultCondition: ResourceCondition = {
@@ -125,6 +130,11 @@ export const isLastSyncCondition = (
   condition: ResourceCondition,
 ): condition is LastSyncCondition =>
   condition.type === ResourceFilterType.LastSync;
+
+export const isVersionCondition = (
+  condition: ResourceCondition,
+): condition is VersionCondition =>
+  condition.type === ResourceFilterType.Version;
 
 export const isValidResourceCondition = (
   condition: ResourceCondition,
