@@ -1,6 +1,7 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 
+import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import {
   Table,
@@ -11,8 +12,17 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+const statusColor = {
+  healthy: "bg-green-500/30 text-green-400 border-green-400",
+  unhealthy: "bg-red-500/30 text-red-400 border-red-400",
+  deploying: "bg-blue-500/30 text-blue-400 border-blue-400",
+};
+
+type ResourceStatus = keyof typeof statusColor;
+
 type Resource = SCHEMA.Resource & {
-  provider: SCHEMA.ResourceProvider | null;
+  status: ResourceStatus;
+  successRate: number;
 };
 
 export const ResourceRow: React.FC<{
@@ -22,45 +32,44 @@ export const ResourceRow: React.FC<{
     key={resource.id}
     className="border-b border-neutral-800/50 hover:bg-neutral-800/20"
   >
-    <TableCell className="py-3 font-medium text-neutral-200">
+    <TableCell className="truncate py-3 font-medium text-neutral-200">
       {resource.name}
     </TableCell>
-    <TableCell className="py-3 text-neutral-300">{resource.kind}</TableCell>
-    <TableCell className="py-3 text-neutral-300">{resource.version}</TableCell>
-    <TableCell className="py-3 text-neutral-300">
-      {resource.providerId}
+    <TableCell className="truncate py-3 text-neutral-300">
+      {resource.kind}
     </TableCell>
-    <TableCell className="py-3 text-neutral-300">
+    <TableCell className="truncate py-3 text-neutral-300">
+      {resource.version}
+    </TableCell>
+    <TableCell className="truncate py-3 text-neutral-300">
       {resource.providerId}
     </TableCell>
     <TableCell className="py-3">
       <div className="flex items-center gap-2">
         <div className="h-1.5 w-16 rounded-full bg-neutral-800">
-          <div className={`h-full rounded-full bg-green-500`} />
+          <div
+            style={{ width: `${resource.successRate * 100}%` }}
+            className={cn(
+              "h-full rounded-full",
+              resource.successRate >= 0.9
+                ? "bg-green-500"
+                : resource.successRate >= 0.5
+                  ? "bg-yellow-500"
+                  : "bg-red-500",
+            )}
+          />
         </div>
-        <span className="text-sm">100%</span>
+        <span className="text-sm">
+          {(resource.successRate * 100).toFixed(0)}%
+        </span>
       </div>
     </TableCell>
-    <TableCell className="py-3 text-sm text-neutral-400">
+    <TableCell className="truncate py-3 text-sm text-neutral-400">
       {resource.updatedAt?.toLocaleString()}
     </TableCell>
     <TableCell className="py-3">
-      <Badge
-        variant="outline"
-        className={`bg-green-500/10 text-green-400`}
-        // className={
-        //   resource.status === "healthy"
-        //     ? "border-green-500/30 bg-green-500/10 text-green-400"
-        //     : resource.status === "degraded"
-        //       ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-        //       : resource.status === "failed"
-        //         ? "border-red-500/30 bg-red-500/10 text-red-400"
-        //         : resource.status === "updating"
-        //           ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
-        //           : "border-neutral-500/30 bg-neutral-500/10 text-neutral-400"
-        // }
-      >
-        Healthy
+      <Badge variant="outline" className={statusColor[resource.status]}>
+        {resource.status}
       </Badge>
     </TableCell>
   </TableRow>
@@ -79,15 +88,15 @@ export const ResourceTable: React.FC<{
           <TableHead className="w-1/12 font-medium text-neutral-400">
             Kind
           </TableHead>
-          <TableHead className="w-1/6 font-medium text-neutral-400">
-            Component
+
+          <TableHead className="w-1/12 font-medium text-neutral-400">
+            Version
           </TableHead>
+
           <TableHead className="w-1/12 font-medium text-neutral-400">
             Provider
           </TableHead>
-          <TableHead className="w-1/12 font-medium text-neutral-400">
-            Region
-          </TableHead>
+
           <TableHead className="w-1/12 font-medium text-neutral-400">
             Success Rate
           </TableHead>

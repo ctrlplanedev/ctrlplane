@@ -14,6 +14,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import _ from "lodash";
+import { useDebounce } from "react-use";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
@@ -28,6 +29,7 @@ import {
 } from "@ctrlplane/ui/select";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
+  ColumnOperator,
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
@@ -37,7 +39,6 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import { ResourceConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionDialog";
-import { api } from "~/trpc/react";
 import { ResourceCard } from "./_components/ResourceCard";
 import { ResourceTable } from "./_components/ResourceTable";
 import { useFilteredResources } from "./_hooks/useFilteredResources";
@@ -126,17 +127,68 @@ const getResourceFilterFromDropdownChange = (
   return parseResourceFilter(newResourceFilter);
 };
 
+const getResourceFilterWithSearch = (
+  resourceFilter: ComparisonCondition | null,
+  searchTerm: string,
+): ComparisonCondition | null => {
+  if (searchTerm.length === 0) {
+    if (resourceFilter == null) return null;
+
+    const conditionsExcludingSearch = resourceFilter.conditions.filter(
+      (c) => c.type !== ResourceFilterType.Name,
+    );
+
+    return parseResourceFilter({
+      ...resourceFilter,
+      conditions: conditionsExcludingSearch,
+    });
+  }
+
+  const newNameCondition: ResourceCondition = {
+    type: ResourceFilterType.Name,
+    operator: ColumnOperator.Contains,
+    value: searchTerm,
+  };
+
+  if (resourceFilter == null) {
+    return parseResourceFilter({
+      type: FilterType.Comparison,
+      operator: ComparisonOperator.And,
+      not: false,
+      conditions: [newNameCondition],
+    });
+  }
+
+  const conditionsExcludingSearch = resourceFilter.conditions.filter(
+    (c) => c.type !== ResourceFilterType.Name,
+  );
+
+  return parseResourceFilter({
+    ...resourceFilter,
+    conditions: [...conditionsExcludingSearch, newNameCondition],
+  });
+};
+
 export const ResourcesPageContent: React.FC<{
   environment: SCHEMA.Environment;
-  workspaceId: string;
-}> = ({ environment, workspaceId }) => {
-  const allResourcesQ = api.resource.byWorkspaceId.list.useQuery({
-    workspaceId,
-    filter: environment.resourceFilter ?? undefined,
-    limit: 0,
-  });
+}> = ({ environment }) => {
+  const allResourcesQ = useFilteredResources(
+    environment.id,
+    environment.resourceFilter,
+  );
 
-  const totalResources = allResourcesQ.data?.total ?? 0;
+  const totalResources = allResourcesQ.resources.length;
+  const healthyResources = allResourcesQ.resources.filter(
+    (r) => r.status === "healthy",
+  ).length;
+  const healthyPercentage =
+    totalResources > 0 ? (healthyResources / totalResources) * 100 : 0;
+  const unhealthyResources = allResourcesQ.resources.filter(
+    (r) => r.status === "unhealthy",
+  ).length;
+  const deployingResources = allResourcesQ.resources.filter(
+    (r) => r.status === "deploying",
+  ).length;
 
   const { page, setPage } = usePagination(totalResources);
 
@@ -155,7 +207,7 @@ export const ResourcesPageContent: React.FC<{
   };
 
   const { resources, isLoading } = useFilteredResources(
-    workspaceId,
+    environment.id,
     finalFilter,
     PAGE_SIZE,
     page * PAGE_SIZE,
@@ -173,6 +225,16 @@ export const ResourcesPageContent: React.FC<{
     setResourceFilter(parseResourceFilter(newResourceFilter));
   };
 
+  const [search, setSearch] = useState("");
+
+  useDebounce(
+    () => {
+      setResourceFilter(getResourceFilterWithSearch(resourceFilter, search));
+    },
+    500,
+    [search],
+  );
+
   // Group resources by component
   const resourcesByVersion = _(resources)
     .groupBy((t) => t.version)
@@ -180,8 +242,6 @@ export const ResourcesPageContent: React.FC<{
   const resourcesByKind = _(resources)
     .groupBy((t) => t.version + ": " + t.kind)
     .value() as Record<string, typeof resources>;
-
-  const filteredResources = resources;
 
   return (
     <div className="space-y-6">
@@ -204,21 +264,29 @@ export const ResourcesPageContent: React.FC<{
             <div className="h-2 w-2 rounded-full bg-green-500"></div>
             <span>Healthy</span>
           </div>
-          <div className="text-2xl font-semibold text-green-400">10</div>
+          <div className="text-2xl font-semibold text-green-400">
+            {healthyResources}
+          </div>
           <div className="mt-1 flex items-center text-xs">
-            <span className="text-green-400">{10}% of resources</span>
+            <span className="text-green-400">
+              {Number(healthyPercentage).toFixed(0)}% of resources
+            </span>
           </div>
         </div>
 
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
           <div className="mb-1 flex items-center gap-1.5 text-xs text-neutral-400">
-            <div className="h-2 w-2 rounded-full bg-amber-500"></div>
-            <span>Needs Attention</span>
+            <div className="h-2 w-2 rounded-full bg-red-500"></div>
+            <span>Unhealthy</span>
           </div>
-          <div className="text-2xl font-semibold text-amber-400">{0}</div>
+          <div className="text-2xl font-semibold text-red-400">
+            {unhealthyResources}
+          </div>
           <div className="mt-1 flex items-center text-xs">
-            <span className="text-amber-400">
-              {0 > 0 ? "Action required" : "No issues detected"}
+            <span className="text-red-400">
+              {unhealthyResources > 0
+                ? "Action required"
+                : "No issues detected"}
             </span>
           </div>
         </div>
@@ -228,10 +296,14 @@ export const ResourcesPageContent: React.FC<{
             <div className="h-2 w-2 rounded-full bg-blue-500"></div>
             <span>Deploying</span>
           </div>
-          <div className="text-2xl font-semibold text-blue-400">{0 + 0}</div>
+          <div className="text-2xl font-semibold text-blue-400">
+            {deployingResources}
+          </div>
           <div className="mt-1 flex items-center text-xs">
             <span className="text-blue-400">
-              {0 > 0 ? "Updates in progress" : "No active deployments"}
+              {deployingResources > 0
+                ? "Updates in progress"
+                : "No active deployments"}
             </span>
           </div>
         </div>
@@ -244,6 +316,8 @@ export const ResourcesPageContent: React.FC<{
           <Input
             placeholder="Search resources..."
             className="w-full pl-8 md:w-80"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -253,10 +327,7 @@ export const ResourcesPageContent: React.FC<{
               setResourceFilter(parseResourceFilter(condition))
             }
           >
-            <Button
-              variant="outline"
-              // className="cursor-pointer transition-colors hover:bg-neutral-800/50"
-            >
+            <Button variant="outline">
               <IconFilter className="mr-1 h-3.5 w-3.5" />
               {resourceFilter != null && resourceFilter.conditions.length > 0
                 ? `Filter (${resourceFilter.conditions.length})`
@@ -312,18 +383,6 @@ export const ResourcesPageContent: React.FC<{
             </SelectContent>
           </Select>
 
-          <Select>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="healthy">Healthy</SelectItem>
-              <SelectItem value="degraded">Degraded</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="updating">Updating</SelectItem>
-            </SelectContent>
-          </Select>
           <div className="flex">
             <Button
               variant="outline"
@@ -357,7 +416,7 @@ export const ResourcesPageContent: React.FC<{
       {selectedView === "grid" && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {!isLoading &&
-            filteredResources.map((resource) => (
+            resources.map((resource) => (
               <ResourceCard key={resource.id} resource={resource} />
             ))}
           {isLoading &&
@@ -366,9 +425,7 @@ export const ResourcesPageContent: React.FC<{
             ))}
         </div>
       )}
-      {selectedView === "list" && (
-        <ResourceTable resources={filteredResources} />
-      )}
+      {selectedView === "list" && <ResourceTable resources={resources} />}
 
       <div className="mt-4 flex items-center justify-between text-sm text-neutral-400">
         <div>

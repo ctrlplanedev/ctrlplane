@@ -12,10 +12,8 @@ import {
 
 const statusColor = {
   healthy: "bg-green-500",
-  degraded: "bg-amber-500",
-  failed: "bg-red-500",
-  updating: "bg-blue-500",
-  unknown: "bg-neutral-500",
+  unhealthy: "bg-red-500",
+  deploying: "bg-blue-500",
 };
 
 type ResourceStatus = keyof typeof statusColor;
@@ -35,10 +33,14 @@ const PropertyWithTooltip: React.FC<{
   );
 };
 
+type Resource = SCHEMA.Resource & {
+  status: ResourceStatus;
+  successRate: number;
+};
+
 export const ResourceCard: React.FC<{
-  resource: SCHEMA.Resource;
-  resourceStatus?: ResourceStatus;
-}> = ({ resource, resourceStatus }) => {
+  resource: Resource;
+}> = ({ resource }) => {
   const handleCopyId = () => {
     navigator.clipboard.writeText(resource.id);
     toast("Resource ID copied", {
@@ -55,7 +57,7 @@ export const ResourceCard: React.FC<{
       <div className="mb-3 flex items-center justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <div
-            className={`h-2.5 w-2.5 rounded-full ${resourceStatus ? statusColor[resourceStatus] : "bg-neutral-500"} flex-shrink-0`}
+            className={`h-2.5 w-2.5 rounded-full ${statusColor[resource.status]} flex-shrink-0`}
           />
           <PropertyWithTooltip content={resource.name} />
         </div>
@@ -98,7 +100,9 @@ export const ResourceCard: React.FC<{
         </div>
 
         <div className="truncate text-muted-foreground">Deployment Success</div>
-        <div className="truncate text-right text-neutral-300">10%</div>
+        <div className="truncate text-right text-neutral-300">
+          {(resource.successRate * 100).toFixed(0)}%
+        </div>
       </div>
     </div>
   );

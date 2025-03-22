@@ -12,14 +12,14 @@ import { api } from "~/trpc/react";
  * @returns Query result containing filtered resources
  */
 export const useFilteredResources = (
-  workspaceId: string,
+  environmentId: string,
   filter?: ResourceCondition | null,
   limit?: number,
   offset?: number,
 ) => {
-  const resourcesQ = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter: filter ?? undefined, limit, offset },
-    { enabled: workspaceId !== "" },
+  const resourcesQ = api.environment.page.resources.list.useQuery(
+    { environmentId, filter: filter ?? undefined, limit, offset },
+    { enabled: environmentId !== "" },
   );
-  return { ...resourcesQ, resources: resourcesQ.data?.items ?? [] };
+  return { ...resourcesQ, resources: resourcesQ.data ?? [] };
 };
