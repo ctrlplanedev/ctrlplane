@@ -43,7 +43,7 @@ import { ResourceCard } from "./_components/ResourceCard";
 import { ResourceTable } from "./_components/ResourceTable";
 import { useFilteredResources } from "./_hooks/useFilteredResources";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 16;
 
 const safeParseInt = (value: string, total: number) => {
   try {
