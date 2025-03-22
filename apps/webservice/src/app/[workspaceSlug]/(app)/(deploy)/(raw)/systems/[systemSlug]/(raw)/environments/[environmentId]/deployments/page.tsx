@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import {
   Card,
   CardContent,
@@ -6,12 +8,16 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 
+import { api } from "~/trpc/server";
 import { EnvironmentDeploymentsPageContent } from "./EnvironmentDeploymentsPageContent";
 
 export default async function DeploymentsPage(props: {
-  params: Promise<{ environmentId: string }>;
+  params: Promise<{ environmentId: string; workspaceSlug: string }>;
 }) {
-  const { environmentId } = await props.params;
+  const { environmentId, workspaceSlug } = await props.params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
+
   return (
     <Card>
       <CardHeader>
@@ -19,7 +25,10 @@ export default async function DeploymentsPage(props: {
         <CardDescription>View detailed deployment information</CardDescription>
       </CardHeader>
       <CardContent>
-        <EnvironmentDeploymentsPageContent environmentId={environmentId} />
+        <EnvironmentDeploymentsPageContent
+          environmentId={environmentId}
+          workspaceId={workspace.id}
+        />
       </CardContent>
     </Card>
   );
