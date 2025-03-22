@@ -10,6 +10,7 @@ import {
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
+  isVersionCondition,
 } from "@ctrlplane/validators/resources";
 
 import type { ResourceConditionRenderProps } from "./resource-condition-props";
@@ -21,6 +22,7 @@ import { ProviderConditionRender } from "./ProviderConditionRender";
 import { ResourceCreatedAtConditionRender } from "./ResourceCreatedAtConditionRender";
 import { ResourceLastSyncConditionRender } from "./ResourceLastSyncConditionRender";
 import { ResourceMetadataConditionRender } from "./ResourceMetadataConditionRender";
+import { ResourceVersionConditionRender } from "./ResourceVersionConditionRender";
 
 /**
  * The parent container should have min width of 1000px
@@ -102,5 +104,13 @@ export const ResourceConditionRender: React.FC<
       />
     );
 
+  if (isVersionCondition(condition))
+    return (
+      <ResourceVersionConditionRender
+        condition={condition}
+        onChange={onChange}
+        className={className}
+      />
+    );
   return null;
 };

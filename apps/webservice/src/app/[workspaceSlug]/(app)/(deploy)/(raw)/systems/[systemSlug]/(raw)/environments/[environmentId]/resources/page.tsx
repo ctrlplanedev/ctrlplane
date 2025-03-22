@@ -14,10 +14,26 @@ import { ResourcesPageContent } from "./ResourcesPageContent";
 export default async function ResourcesPage(props: {
   params: Promise<{ workspaceSlug: string; environmentId: string }>;
 }) {
-  const { workspaceSlug, environmentId } = await props.params;
-  const workspace = await api.workspace.bySlug(workspaceSlug);
+  const { environmentId } = await props.params;
   const environment = await api.environment.byId(environmentId);
-  if (workspace == null || environment == null) return notFound();
+  if (environment == null) return notFound();
+
+  const { resourceFilter } = environment;
+  if (resourceFilter == null)
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Resources</CardTitle>
+          <CardDescription>
+            Resources managed in this environment
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>No resource filter set for this environment</p>
+        </CardContent>
+      </Card>
+    );
+
   return (
     <Card>
       <CardHeader>
@@ -25,10 +41,7 @@ export default async function ResourcesPage(props: {
         <CardDescription>Resources managed in this environment</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResourcesPageContent
-          workspaceId={workspace.id}
-          environment={environment}
-        />
+        <ResourcesPageContent environment={environment} />
       </CardContent>
     </Card>
   );
