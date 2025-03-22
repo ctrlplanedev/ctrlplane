@@ -18,18 +18,24 @@ import { getVersionDistro } from "./version-distro";
 
 export const overviewRouter = createTRPCRouter({
   latestDeploymentStats: protectedProcedure
-    .input(z.string().uuid())
+    .input(
+      z.object({
+        environmentId: z.string().uuid(),
+        workspaceId: z.string().uuid(),
+      }),
+    )
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.EnvironmentGet)
-          .on({ type: "environment", id: input }),
+          .on({ type: "environment", id: input.environmentId }),
     })
     .query(async ({ ctx, input }) => {
+      const { environmentId, workspaceId } = input;
       const environment = await ctx.db
         .select()
         .from(SCHEMA.environment)
-        .where(eq(SCHEMA.environment.id, input))
+        .where(eq(SCHEMA.environment.id, environmentId))
         .then(takeFirst);
 
       const deployments = await ctx.db
@@ -58,6 +64,7 @@ export const overviewRouter = createTRPCRouter({
           and(
             isNull(SCHEMA.resource.deletedAt),
             SCHEMA.resourceMatchesMetadata(ctx.db, environment.resourceFilter),
+            eq(SCHEMA.resource.workspaceId, workspaceId),
           ),
         );
 

@@ -171,8 +171,10 @@ const getResourceFilterWithSearch = (
 
 export const ResourcesPageContent: React.FC<{
   environment: SCHEMA.Environment;
-}> = ({ environment }) => {
+  workspaceId: string;
+}> = ({ environment, workspaceId }) => {
   const allResourcesQ = useFilteredResources(
+    workspaceId,
     environment.id,
     environment.resourceFilter,
   );
@@ -207,6 +209,7 @@ export const ResourcesPageContent: React.FC<{
   };
 
   const { resources, isLoading } = useFilteredResources(
+    workspaceId,
     environment.id,
     finalFilter,
     PAGE_SIZE,
