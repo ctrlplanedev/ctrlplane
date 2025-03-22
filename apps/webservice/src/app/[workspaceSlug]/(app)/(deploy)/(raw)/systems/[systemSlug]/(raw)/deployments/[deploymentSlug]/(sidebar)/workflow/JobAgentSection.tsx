@@ -83,7 +83,7 @@ const JobAgentForm: React.FC<{
                   disabled={update.isPending}
                 />
               )}
-              {selectedJobAgent?.type.startsWith("exec-") && (
+              {selectedJobAgent?.type.startsWith("exec") && (
                 <JobAgentScriptConfig
                   type={
                     selectedJobAgent.type.startsWith(JobAgentType.ExecWindows)
