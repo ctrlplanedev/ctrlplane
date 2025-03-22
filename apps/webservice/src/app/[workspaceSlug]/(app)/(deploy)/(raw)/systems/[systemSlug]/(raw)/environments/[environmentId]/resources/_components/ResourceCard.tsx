@@ -36,6 +36,7 @@ const PropertyWithTooltip: React.FC<{
 type Resource = SCHEMA.Resource & {
   status: ResourceStatus;
   successRate: number;
+  provider: SCHEMA.ResourceProvider | null;
 };
 
 export const ResourceCard: React.FC<{
@@ -91,7 +92,7 @@ export const ResourceCard: React.FC<{
         <PropertyWithTooltip content={resource.identifier} />
 
         <div className="truncate text-muted-foreground">Provider</div>
-        <PropertyWithTooltip content={resource.providerId ?? ""} />
+        <PropertyWithTooltip content={resource.provider?.name ?? ""} />
 
         <div className="truncate text-muted-foreground">Updated</div>
         <div className="truncate text-right text-neutral-300">

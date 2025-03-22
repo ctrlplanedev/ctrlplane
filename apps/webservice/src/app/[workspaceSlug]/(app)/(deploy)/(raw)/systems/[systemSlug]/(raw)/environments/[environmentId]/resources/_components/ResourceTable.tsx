@@ -23,6 +23,7 @@ type ResourceStatus = keyof typeof statusColor;
 type Resource = SCHEMA.Resource & {
   status: ResourceStatus;
   successRate: number;
+  provider: SCHEMA.ResourceProvider | null;
 };
 
 export const ResourceRow: React.FC<{
@@ -42,7 +43,7 @@ export const ResourceRow: React.FC<{
       {resource.version}
     </TableCell>
     <TableCell className="truncate py-3 text-neutral-300">
-      {resource.providerId}
+      {resource.provider?.name ?? ""}
     </TableCell>
     <TableCell className="py-3">
       <div className="flex items-center gap-2">
