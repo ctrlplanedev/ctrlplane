@@ -4,3 +4,4 @@ export { GradualRolloutRule } from "./gradual-rollout-rule.js";
 export { MaintenanceWindowRule } from "./maintenance-window-rule.js";
 export { TimeWindowRule } from "./time-window-rule.js";
 export { VersionRegexRule } from "./version-regex-rule.js";
+export { VersionCooldownRule } from "./version-cooldown-rule.js";
