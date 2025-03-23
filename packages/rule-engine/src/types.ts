@@ -13,6 +13,8 @@ export type Release = {
 export type Deployment = {
   id: string;
   name: string;
+  resourceSelector?: object;
+  versionSelector?: object;
 };
 
 export type Resource = {
@@ -51,3 +53,4 @@ export interface DeploymentResourceRule {
     currentCandidates: Release[],
   ): DeploymentResourceRuleResult | Promise<DeploymentResourceRuleResult>;
 }
+

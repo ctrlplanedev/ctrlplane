@@ -2,7 +2,6 @@ import { and, count, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
-import crypto from "crypto";
 
 import type {
   DeploymentResourceContext,
@@ -12,21 +11,6 @@ import type {
 } from "../types.js";
 
 /**
- * Configuration for deterministic rollout behavior
- */
-export type DeterministicRolloutConfig = {
-  /**
-   * Seed string used to generate deterministic hashes
-   */
-  seed: string;
-  
-  /**
-   * Percentage of resources to roll out per day (e.g., 25 = 25% per day)
-   */
-  percentagePerDay: number;
-};
-
-/**
  * Options for configuring the GradualRolloutRule
  */
 export type GradualRolloutRuleOptions = {
@@ -34,16 +18,11 @@ export type GradualRolloutRuleOptions = {
    * Maximum number of deployments allowed within the time window
    */
   maxDeploymentsPerTimeWindow: number;
-  
+
   /**
    * Size of the time window in minutes
    */
   timeWindowMinutes: number;
-  
-  /**
-   * Optional configuration for deterministic rollout behavior
-   */
-  deterministicRollout?: DeterministicRolloutConfig;
 };
 
 /**
@@ -59,24 +38,12 @@ export type GradualRolloutRuleOptions = {
  *   maxDeploymentsPerTimeWindow: 5,
  *   timeWindowMinutes: 30
  * });
- * 
- * // Deterministic rollout with 25% of resources over 24 hours
- * new GradualRolloutRule({
- *   maxDeploymentsPerTimeWindow: 5,
- *   timeWindowMinutes: 30,
- *   deterministicRollout: {
- *     seed: "my-release-seed",
- *     percentagePerDay: 25
- *   }
- * });
  * ```
  */
 export class GradualRolloutRule implements DeploymentResourceRule {
   public readonly name = "GradualRolloutRule";
 
-  constructor(
-    private options: GradualRolloutRuleOptions,
-  ) {}
+  constructor(private options: GradualRolloutRuleOptions) {}
 
   private async getRecentDeploymentCount(releaseId: string): Promise<number> {
     const timeWindowMs = this.options.timeWindowMinutes * 60 * 1000;
@@ -98,73 +65,48 @@ export class GradualRolloutRule implements DeploymentResourceRule {
       .then((r) => r[0]?.count ?? 0);
   }
 
-  private isResourceEligibleForDeterministicRollout(
-    resourceId: string,
-    releaseId: string,
-    daysSinceRelease: number
-  ): boolean {
-    if (!this.options.deterministicRollout) return true;
-
-    const { seed, percentagePerDay } = this.options.deterministicRollout;
-    
-    // Calculate max percentage based on days since release, capped at 100%
-    const maxPercentage = Math.min(percentagePerDay * daysSinceRelease, 100);
-    
-    // Create a deterministic hash from the resource ID, release ID, and seed
-    const hash = crypto
-      .createHash("sha256")
-      .update(`${resourceId}-${releaseId}-${seed}`)
-      .digest("hex");
-    
-    // Convert first 4 bytes of hash to a number between 0-100
-    const hashValue = parseInt(hash.substring(0, 8), 16) % 100;
-    
-    // Resource is eligible if its hash value falls within the allowed percentage
-    return hashValue < maxPercentage;
-  }
-
-  private getDaysSinceRelease(release: Release): number {
-    const releaseDate = release.createdAt;
-    const now = new Date();
-    const msDiff = now.getTime() - releaseDate.getTime();
-    return Math.floor(msDiff / (1000 * 60 * 60 * 24));
-  }
-
+  /**
+   * Filters releases based on gradual rollout rules.
+   *
+   * This function tracks the number of successful deployments of a release within a time window
+   * and prevents additional deployments if the limit is reached.
+   *
+   * The desired release ID is tracked per-call, so if it changes between calls, the counts
+   * will be tracked separately. For example:
+   *
+   * @example
+   * ```ts
+   * // First call with release-1
+   * await rule.filter({
+   *   desiredReleaseId: 'release-1',
+   *   // ... other context
+   * }, candidates); // Allows release-1 if under limit
+   *
+   * // Later call with release-2
+   * await rule.filter({
+   *   desiredReleaseId: 'release-2',
+   *   // ... other context
+   * }, candidates); // Tracks release-2 separately
+   *
+   * // Back to release-1
+   * await rule.filter({
+   *   desiredReleaseId: 'release-1',
+   *   // ... other context
+   * }, candidates); // Uses release-1's count
+   * ```
+   */
   async filter(
     ctx: DeploymentResourceContext,
     currentCandidates: Release[],
   ): Promise<DeploymentResourceRuleResult> {
-    // If we don't have the desired release, nothing to do
+    // If the desired release isn't in the candidates list, we can't enforce
+    // gradual rollout limits on it, so we allow all candidates through
+    // unchanged
     const desiredRelease = currentCandidates.find(
       (r) => r.id === ctx.desiredReleaseId,
     );
     if (!desiredRelease) {
       return { allowedReleases: currentCandidates };
-    }
-
-    // Check deterministic rollout eligibility if configured
-    if (this.options.deterministicRollout) {
-      const daysSinceRelease = this.getDaysSinceRelease(desiredRelease);
-      const isEligible = this.isResourceEligibleForDeterministicRollout(
-        ctx.resource.id,
-        ctx.desiredReleaseId,
-        daysSinceRelease
-      );
-
-      if (!isEligible) {
-        // Filter out the desired release
-        const filteredReleases = currentCandidates.filter(
-          (r) => r.id !== ctx.desiredReleaseId,
-        );
-
-        const { percentagePerDay } = this.options.deterministicRollout;
-        const currentPercentage = Math.min(percentagePerDay * daysSinceRelease, 100);
-
-        return {
-          allowedReleases: filteredReleases,
-          reason: `Resource not eligible for release yet. Currently at ${currentPercentage}% rollout (${daysSinceRelease} days since release).`,
-        };
-      }
     }
 
     // Get count of recent deployments for this release

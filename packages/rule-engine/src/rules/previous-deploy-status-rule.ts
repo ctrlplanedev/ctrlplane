@@ -11,6 +11,21 @@ import type {
 } from "../types.js";
 
 /**
+ * Function to get count of resources in environments
+ */
+export type GetResourceCountFunction = (
+  environments: string[],
+) => Promise<number>;
+
+/**
+ * Function to get count of successful deployments
+ */
+export type GetSuccessfulDeploymentsFunction = (
+  releaseId: string,
+  environmentIds: string[],
+) => Promise<number>;
+
+/**
  * Options for configuring the PreviousDeployStatusRule
  */
 export type PreviousDeployStatusRuleOptions = {
@@ -18,16 +33,26 @@ export type PreviousDeployStatusRuleOptions = {
    * List of environment IDs that must have successful deployments
    */
   dependentEnvironments: string[];
-  
+
   /**
    * Minimum number of resources that must be successfully deployed
    */
   minSuccessfulDeployments?: number;
-  
+
   /**
    * If true, all resources in the dependent environments must be deployed
    */
   requireAllResources?: boolean;
+
+  /**
+   * Function to get count of resources in environments
+   */
+  getResourceCount?: GetResourceCountFunction;
+
+  /**
+   * Function to get count of successful deployments
+   */
+  getSuccessfulDeployments?: GetSuccessfulDeploymentsFunction;
 };
 
 /**
@@ -54,20 +79,28 @@ export type PreviousDeployStatusRuleOptions = {
  */
 export class PreviousDeployStatusRule implements DeploymentResourceRule {
   public readonly name = "PreviousDeployStatusRule";
+  private getResourceCount: GetResourceCountFunction;
+  private getSuccessfulDeployments: GetSuccessfulDeploymentsFunction;
 
-  constructor(
-    private options: PreviousDeployStatusRuleOptions,
-  ) {
+  constructor(private options: PreviousDeployStatusRuleOptions) {
     // Set default values
-    if (this.options.requireAllResources === undefined && 
-        this.options.minSuccessfulDeployments === undefined) {
+    if (
+      this.options.requireAllResources === undefined &&
+      this.options.minSuccessfulDeployments === undefined
+    ) {
       this.options.minSuccessfulDeployments = 0;
     }
+
+    // Set default get functions if not provided
+    this.getResourceCount =
+      options.getResourceCount ?? this.defaultGetResourceCount;
+    this.getSuccessfulDeployments =
+      options.getSuccessfulDeployments ?? this.defaultGetSuccessfulDeployments;
   }
 
-  private async getResourceCountInEnvironments(
+  private defaultGetResourceCount: GetResourceCountFunction = async (
     environments: string[],
-  ): Promise<number> {
+  ) => {
     return db
       .select({ count: count() })
       .from(schema.resource)
@@ -77,32 +110,30 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
       )
       .where(inArray(schema.deployment.environmentId, environments))
       .then((r) => r[0]?.count ?? 0);
-  }
+  };
 
-  private async getSuccessfulDeploymentsCount(
-    releaseId: string,
-    environmentIds: string[],
-  ): Promise<number> {
-    return db
-      .select({ count: count() })
-      .from(schema.job)
-      .innerJoin(
-        schema.releaseJobTrigger,
-        eq(schema.job.id, schema.releaseJobTrigger.jobId),
-      )
-      .innerJoin(
-        schema.deployment,
-        eq(schema.job.deploymentId, schema.deployment.id),
-      )
-      .where(
-        and(
-          eq(schema.releaseJobTrigger.versionId, releaseId),
-          eq(schema.job.status, JobStatus.Successful),
-          inArray(schema.deployment.environmentId, environmentIds),
-        ),
-      )
-      .then((r) => r[0]?.count ?? 0);
-  }
+  private defaultGetSuccessfulDeployments: GetSuccessfulDeploymentsFunction =
+    async (releaseId: string, environmentIds: string[]) => {
+      return db
+        .select({ count: count() })
+        .from(schema.job)
+        .innerJoin(
+          schema.releaseJobTrigger,
+          eq(schema.job.id, schema.releaseJobTrigger.jobId),
+        )
+        .innerJoin(
+          schema.deployment,
+          eq(schema.job.deploymentId, schema.deployment.id),
+        )
+        .where(
+          and(
+            eq(schema.releaseJobTrigger.versionId, releaseId),
+            eq(schema.job.status, JobStatus.Successful),
+            inArray(schema.deployment.environmentId, environmentIds),
+          ),
+        )
+        .then((r) => r[0]?.count ?? 0);
+    };
 
   async filter(
     ctx: DeploymentResourceContext,
@@ -111,7 +142,8 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
     // Skip validation if no dependent environments or minimum is 0
     if (
       this.options.dependentEnvironments.length === 0 ||
-      (this.options.minSuccessfulDeployments === 0 && !this.options.requireAllResources)
+      (this.options.minSuccessfulDeployments === 0 &&
+        !this.options.requireAllResources)
     ) {
       return { allowedReleases: currentCandidates };
     }
@@ -125,7 +157,7 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
     }
 
     // Get count of successful deployments in dependent environments
-    const successfulDeployments = await this.getSuccessfulDeploymentsCount(
+    const successfulDeployments = await this.getSuccessfulDeployments(
       ctx.desiredReleaseId,
       this.options.dependentEnvironments,
     );
@@ -133,9 +165,9 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
     // If we're requiring all resources, get the total count of resources
     let requiredDeployments = this.options.minSuccessfulDeployments ?? 0;
     let totalResources = 0;
-    
+
     if (this.options.requireAllResources) {
-      totalResources = await this.getResourceCountInEnvironments(
+      totalResources = await this.getResourceCount(
         this.options.dependentEnvironments,
       );
       requiredDeployments = totalResources;
@@ -150,7 +182,7 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
 
       const envNames = this.options.dependentEnvironments.join(", ");
       let reasonMessage = "";
-      
+
       if (this.options.requireAllResources) {
         reasonMessage = `Not all resources in ${envNames} have been successfully deployed (${successfulDeployments}/${totalResources}).`;
       } else {
