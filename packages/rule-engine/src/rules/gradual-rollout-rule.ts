@@ -2,6 +2,7 @@ import { and, count, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
+import crypto from "crypto";
 
 import type {
   DeploymentResourceContext,
@@ -23,6 +24,16 @@ import type {
  *   maxDeploymentsPerTimeWindow: 5,
  *   timeWindowMinutes: 30
  * });
+ * 
+ * // Deterministic rollout with 25% of resources over 24 hours
+ * new GradualRolloutRule({
+ *   maxDeploymentsPerTimeWindow: 5,
+ *   timeWindowMinutes: 30,
+ *   deterministicRollout: {
+ *     seed: "my-release-seed",
+ *     percentagePerDay: 25
+ *   }
+ * });
  * ```
  */
 export class GradualRolloutRule implements DeploymentResourceRule {
@@ -32,6 +43,10 @@ export class GradualRolloutRule implements DeploymentResourceRule {
     private options: {
       maxDeploymentsPerTimeWindow: number;
       timeWindowMinutes: number;
+      deterministicRollout?: {
+        seed: string;
+        percentagePerDay: number;
+      };
     },
   ) {}
 
@@ -55,6 +70,38 @@ export class GradualRolloutRule implements DeploymentResourceRule {
       .then((r) => r[0]?.count ?? 0);
   }
 
+  private isResourceEligibleForDeterministicRollout(
+    resourceId: string,
+    releaseId: string,
+    daysSinceRelease: number
+  ): boolean {
+    if (!this.options.deterministicRollout) return true;
+
+    const { seed, percentagePerDay } = this.options.deterministicRollout;
+    
+    // Calculate max percentage based on days since release, capped at 100%
+    const maxPercentage = Math.min(percentagePerDay * daysSinceRelease, 100);
+    
+    // Create a deterministic hash from the resource ID, release ID, and seed
+    const hash = crypto
+      .createHash("sha256")
+      .update(`${resourceId}-${releaseId}-${seed}`)
+      .digest("hex");
+    
+    // Convert first 4 bytes of hash to a number between 0-100
+    const hashValue = parseInt(hash.substring(0, 8), 16) % 100;
+    
+    // Resource is eligible if its hash value falls within the allowed percentage
+    return hashValue < maxPercentage;
+  }
+
+  private getDaysSinceRelease(release: Release): number {
+    const releaseDate = release.createdAt;
+    const now = new Date();
+    const msDiff = now.getTime() - releaseDate.getTime();
+    return Math.floor(msDiff / (1000 * 60 * 60 * 24));
+  }
+
   async filter(
     ctx: DeploymentResourceContext,
     currentCandidates: Release[],
@@ -65,6 +112,31 @@ export class GradualRolloutRule implements DeploymentResourceRule {
     );
     if (!desiredRelease) {
       return { allowedReleases: currentCandidates };
+    }
+
+    // Check deterministic rollout eligibility if configured
+    if (this.options.deterministicRollout) {
+      const daysSinceRelease = this.getDaysSinceRelease(desiredRelease);
+      const isEligible = this.isResourceEligibleForDeterministicRollout(
+        ctx.resource.id,
+        ctx.desiredReleaseId,
+        daysSinceRelease
+      );
+
+      if (!isEligible) {
+        // Filter out the desired release
+        const filteredReleases = currentCandidates.filter(
+          (r) => r.id !== ctx.desiredReleaseId,
+        );
+
+        const { percentagePerDay } = this.options.deterministicRollout;
+        const currentPercentage = Math.min(percentagePerDay * daysSinceRelease, 100);
+
+        return {
+          allowedReleases: filteredReleases,
+          reason: `Resource not eligible for release yet. Currently at ${currentPercentage}% rollout (${daysSinceRelease} days since release).`,
+        };
+      }
     }
 
     // Get count of recent deployments for this release

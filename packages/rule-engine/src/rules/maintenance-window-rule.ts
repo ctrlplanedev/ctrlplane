@@ -25,47 +25,35 @@ import type {
  */
 export class MaintenanceWindowRule implements DeploymentResourceRule {
   public readonly name = "MaintenanceWindowRule";
-  
-  constructor(private maintenanceWindows: Array<{
-    name: string;
-    start: Date;
-    end: Date;
-    affectedResources?: string[];
-    affectedDeployments?: string[];
-  }>) {}
-  
-  async filter(
+
+  constructor(
+    private maintenanceWindows: Array<{
+      name: string;
+      start: Date;
+      end: Date;
+    }>,
+  ) {}
+
+  filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[]
-  ): Promise<DeploymentResourceRuleResult> {
+    currentCandidates: Release[],
+  ): DeploymentResourceRuleResult {
     const now = new Date();
-    
+
     // Find active maintenance windows that apply to this resource/deployment
-    const activeWindows = this.maintenanceWindows.filter(window => {
-      // Check if window is currently active
+    const activeWindows = this.maintenanceWindows.filter((window) => {
       const isActive = now >= window.start && now <= window.end;
-      if (!isActive) return false;
-      
-      // Check if this resource/deployment is affected
-      const isResourceAffected = !window.affectedResources || 
-        window.affectedResources.includes(ctx.resource.id) || 
-        window.affectedResources.includes(ctx.resource.name);
-        
-      const isDeploymentAffected = !window.affectedDeployments || 
-        window.affectedDeployments.includes(ctx.deployment.id) || 
-        window.affectedDeployments.includes(ctx.deployment.name);
-        
-      return isResourceAffected && isDeploymentAffected;
+      return isActive;
     });
-    
+
     if (activeWindows.length > 0) {
-      const windowNames = activeWindows.map(w => w.name).join(", ");
+      const windowNames = activeWindows.map((w) => w.name).join(", ");
       return {
         allowedReleases: [],
         reason: `Deployment blocked due to active maintenance window(s): ${windowNames}`,
       };
     }
-    
+
     return { allowedReleases: currentCandidates };
   }
 }
