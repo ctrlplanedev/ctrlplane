@@ -28,9 +28,9 @@ export type DeploymentResourceContext = {
 };
 
 /**
- * After a single policy filters versions, it yields this result.
+ * After a single rule filters versions, it yields this result.
  */
-export type DeploymentResourcePolicyResult = {
+export type DeploymentResourceRuleResult = {
   allowedReleases: Release[];
   reason?: string;
 };
@@ -42,12 +42,12 @@ export type DeploymentResourceSelectionResult = {
 };
 
 /**
- * A policy to filter/reorder the candidate versions.
+ * A rule to filter/reorder the candidate versions.
  */
-export interface DeploymentResourcePolicy {
+export interface DeploymentResourceRule {
   name: string;
   filter(
     context: DeploymentResourceContext,
     currentCandidates: Release[],
-  ): DeploymentResourcePolicyResult | Promise<DeploymentResourcePolicyResult>;
+  ): DeploymentResourceRuleResult | Promise<DeploymentResourceRuleResult>;
 }

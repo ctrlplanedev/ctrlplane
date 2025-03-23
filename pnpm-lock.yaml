@@ -1221,7 +1221,7 @@ importers:
         specifier: 'catalog:'
         version: 5.8.2
 
-  packages/policy-engine:
+  packages/rule-engine:
     dependencies:
       '@ctrlplane/db':
         specifier: workspace:*

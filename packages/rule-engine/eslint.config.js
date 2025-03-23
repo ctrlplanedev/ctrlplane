@@ -4,6 +4,9 @@ import baseConfig, { requireJsSuffix } from "@ctrlplane/eslint-config/base";
 export default [
   {
     ignores: ["dist/**"],
+    rules: {
+      "@typescript-eslint/require-await": "off",
+    },
   },
   ...requireJsSuffix,
   ...baseConfig,

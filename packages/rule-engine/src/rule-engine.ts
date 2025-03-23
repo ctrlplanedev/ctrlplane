@@ -1,29 +1,29 @@
 import type {
   DeploymentResourceContext,
-  DeploymentResourcePolicy,
+  DeploymentResourceRule,
   DeploymentResourceSelectionResult,
   Release,
 } from "./types.js";
 
 /**
- * The engine that applies policies in sequence, then picks a version.
+ * The engine that applies rules in sequence, then picks a version.
  */
-export class PolicyEngine {
-  constructor(private policies: DeploymentResourcePolicy[]) {}
+export class RuleEngine {
+  constructor(private rules: DeploymentResourceRule[]) {}
 
   async evaluate(
     context: DeploymentResourceContext,
   ): Promise<DeploymentResourceSelectionResult> {
     let candidateReleases = [...context.availableReleases];
 
-    for (const policy of this.policies) {
-      const result = await policy.filter(context, candidateReleases);
+    for (const rule of this.rules) {
+      const result = await rule.filter(context, candidateReleases);
 
-      // If the policy yields no candidates, we must stop.
+      // If the rule yields no candidates, we must stop.
       if (result.allowedReleases.length === 0) {
         return {
           allowed: false,
-          reason: `${policy.name} disqualified all versions. Additional info: ${result.reason ?? ""}`,
+          reason: `${rule.name} disqualified all versions. Additional info: ${result.reason ?? ""}`,
         };
       }
 
@@ -34,7 +34,7 @@ export class PolicyEngine {
     if (!chosen) {
       return {
         allowed: false,
-        reason: `No suitable version chosen after applying all policies.`,
+        reason: `No suitable version chosen after applying all rules.`,
       };
     }
 
@@ -55,7 +55,7 @@ export class PolicyEngine {
     context: DeploymentResourceContext,
     candidates: Release[],
   ): Release | undefined {
-    // If a desiredVersion is specified and it’s still in the candidates, choose
+    // If a desiredVersion is specified and it's still in the candidates, choose
     // it:
     if (
       context.desiredReleaseId &&

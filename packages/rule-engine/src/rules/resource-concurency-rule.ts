@@ -1,21 +1,30 @@
-import { and, count, eq } from "@ctrlplane/db";
+import { and, count, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type {
   DeploymentResourceContext,
-  DeploymentResourcePolicy,
-  DeploymentResourcePolicyResult,
+  DeploymentResourceRule,
+  DeploymentResourceRuleResult,
   Release,
-} from "./types.js";
+} from "../types.js";
 
 /**
- * This policy ensures that only one deployment run can be active at a time.
- * It prevents multiple concurrent deployments from executing simultaneously.
+ * A rule that limits the number of concurrent jobs running on a resource.
+ *
+ * This rule checks the number of currently running jobs for a resource and
+ * prevents new jobs from being created if the concurrency limit has been
+ * reached.
+ *
+ * @example
+ * ```ts
+ * // Allow up to 3 concurrent jobs running on a resource
+ * new ResourceConcurrencyRule(3);
+ * ```
  */
-export class ResourceConcurrencyPolicy implements DeploymentResourcePolicy {
-  public readonly name = "ResourceConcurrencyPolicy";
+export class ResourceConcurrencyRule implements DeploymentResourceRule {
+  public readonly name = "ResourceConcurrencyRule";
 
   constructor(private concurrencyLimit: number) {}
 
@@ -30,7 +39,7 @@ export class ResourceConcurrencyPolicy implements DeploymentResourcePolicy {
       .where(
         and(
           eq(schema.releaseJobTrigger.id, resourceId),
-          eq(schema.job.status, JobStatus.InProgress),
+          inArray(schema.job.status, [JobStatus.InProgress, JobStatus.Pending]),
         ),
       )
 
@@ -40,7 +49,7 @@ export class ResourceConcurrencyPolicy implements DeploymentResourcePolicy {
   async filter(
     ctx: DeploymentResourceContext,
     currentCandidates: Release[],
-  ): Promise<DeploymentResourcePolicyResult> {
+  ): Promise<DeploymentResourceRuleResult> {
     const runningDeployments = await this.getRunningCount(ctx.deployment.id);
 
     if (runningDeployments >= this.concurrencyLimit)
