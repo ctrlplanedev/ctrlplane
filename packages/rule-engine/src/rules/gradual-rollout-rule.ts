@@ -12,6 +12,41 @@ import type {
 } from "../types.js";
 
 /**
+ * Configuration for deterministic rollout behavior
+ */
+export type DeterministicRolloutConfig = {
+  /**
+   * Seed string used to generate deterministic hashes
+   */
+  seed: string;
+  
+  /**
+   * Percentage of resources to roll out per day (e.g., 25 = 25% per day)
+   */
+  percentagePerDay: number;
+};
+
+/**
+ * Options for configuring the GradualRolloutRule
+ */
+export type GradualRolloutRuleOptions = {
+  /**
+   * Maximum number of deployments allowed within the time window
+   */
+  maxDeploymentsPerTimeWindow: number;
+  
+  /**
+   * Size of the time window in minutes
+   */
+  timeWindowMinutes: number;
+  
+  /**
+   * Optional configuration for deterministic rollout behavior
+   */
+  deterministicRollout?: DeterministicRolloutConfig;
+};
+
+/**
  * A rule that implements gradual rollout of new versions.
  *
  * This rule controls the pace of deployment for new versions, ensuring
@@ -40,14 +75,7 @@ export class GradualRolloutRule implements DeploymentResourceRule {
   public readonly name = "GradualRolloutRule";
 
   constructor(
-    private options: {
-      maxDeploymentsPerTimeWindow: number;
-      timeWindowMinutes: number;
-      deterministicRollout?: {
-        seed: string;
-        percentagePerDay: number;
-      };
-    },
+    private options: GradualRolloutRuleOptions,
   ) {}
 
   private async getRecentDeploymentCount(releaseId: string): Promise<number> {

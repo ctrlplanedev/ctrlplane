@@ -6,6 +6,33 @@ import type {
 } from "../types.js";
 
 /**
+ * Options for configuring the TimeWindowRule
+ */
+export type TimeWindowRuleOptions = {
+  /**
+   * Hour to start allowing deployments (0-23)
+   */
+  startHour: number;
+  
+  /**
+   * Hour to stop allowing deployments (0-23)
+   */
+  endHour: number;
+  
+  /**
+   * Days of the week to allow deployments
+   */
+  days?: Array<
+    "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
+  >;
+  
+  /**
+   * Optional timezone for time calculations (e.g., "America/New_York")
+   */
+  timezone?: string;
+};
+
+/**
  * A rule that only allows deployments during specific time windows.
  *
  * This rule restricts deployments to occur only during specified time windows,
@@ -26,20 +53,7 @@ export class TimeWindowRule implements DeploymentResourceRule {
   public readonly name = "TimeWindowRule";
 
   constructor(
-    private options: {
-      startHour: number;
-      endHour: number;
-      days?: Array<
-        | "Monday"
-        | "Tuesday"
-        | "Wednesday"
-        | "Thursday"
-        | "Friday"
-        | "Saturday"
-        | "Sunday"
-      >;
-      timezone?: string;
-    },
+    private options: TimeWindowRuleOptions,
   ) {}
 
   filter(

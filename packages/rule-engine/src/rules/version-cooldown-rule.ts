@@ -11,32 +11,39 @@ import type {
 } from "../types.js";
 
 /**
- * A rule that enforces a cooldown period between deployments.
- *
- * This rule ensures a minimum amount of time passes between active releases for
- * a given deployment and resource.
- *
- * @example
- * ```ts
- * // Set a 24-hour cooldown period between deployments
- * new VersionCooldownRule({
- *   cooldownMinutes: 1440, // 24 hours
- * });
- * ```
+ * Function that retrieves the timestamp of the last successful deployment for a
+ * given resource and version
  */
-export class VersionCooldownRule implements DeploymentResourceRule {
-  public readonly name = "VersionCooldownRule";
+export type GetLastSuccessfulDeploymentTime = (
+  resourceId: string,
+  versionId: string,
+) => Promise<Date | null>;
 
-  constructor(
-    private options: {
-      cooldownMinutes: number;
-    },
-  ) {}
+/**
+ * Options for configuring the VersionCooldownRule
+ */
+export type VersionCooldownRuleOptions = {
+  /**
+   * Number of minutes to enforce as cooldown period between deployments
+   */
+  cooldownMinutes: number;
 
-  private async getLastSuccessfulDeploymentTime(
-    resourceId: string,
-    versionId: string,
-  ): Promise<Date | null> {
+  /**
+   * Function to retrieve last successful deployment time
+   */
+  getLastSuccessfulDeploymentTime: GetLastSuccessfulDeploymentTime;
+};
+
+/**
+ * Retrieves the timestamp of the last successful deployment for a given
+ * resource and version
+ * @param resourceId - The ID of the resource to check
+ * @param versionId - The ID of the version to check
+ * @returns Promise that resolves to the timestamp of the last successful
+ * deployment, or null if none found
+ */
+export const getLastSuccessfulDeploymentTime: GetLastSuccessfulDeploymentTime =
+  async (resourceId, versionId) => {
     const result = await db
       .select({ createdAt: schema.job.createdAt })
       .from(schema.job)
@@ -54,17 +61,48 @@ export class VersionCooldownRule implements DeploymentResourceRule {
       .orderBy(desc(schema.job.createdAt))
       .limit(1);
     return result[0]?.createdAt ?? null;
-  }
+  };
 
+/**
+ * A rule that enforces a cooldown period between deployments.
+ *
+ * This rule ensures a minimum amount of time passes between active releases for
+ * a given deployment and resource.
+ *
+ * @example
+ * ```ts
+ * // Set a 24-hour cooldown period between deployments
+ * new VersionCooldownRule({
+ *   cooldownMinutes: 1440, // 24 hours
+ * });
+ * ```
+ */
+export class VersionCooldownRule implements DeploymentResourceRule {
+  public readonly name = "VersionCooldownRule";
+
+  constructor(
+    private options: VersionCooldownRuleOptions = {
+      cooldownMinutes: 1440, // 24 hours
+      getLastSuccessfulDeploymentTime,
+    },
+  ) {}
+
+  /**
+   * Filters releases based on the cooldown period since the last successful deployment
+   * @param ctx - Context containing information about the deployment and resource
+   * @param currentCandidates - List of releases to filter
+   * @returns Promise resolving to the filtered list of releases and optional reason if blocked
+   */
   async filter(
     ctx: DeploymentResourceContext,
     currentCandidates: Release[],
   ): Promise<DeploymentResourceRuleResult> {
     // Get the time of the last successful deployment
-    const lastDeploymentTime = await this.getLastSuccessfulDeploymentTime(
-      ctx.deployment.id,
-      ctx.resource.id,
-    );
+    const lastDeploymentTime =
+      await this.options.getLastSuccessfulDeploymentTime(
+        ctx.deployment.id,
+        ctx.resource.id,
+      );
 
     // If there's no previous deployment, cooldown doesn't apply
     if (lastDeploymentTime == null)

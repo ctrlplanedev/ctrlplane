@@ -6,6 +6,26 @@ import type {
 } from "../types.js";
 
 /**
+ * Defines a maintenance window period during which deployments are blocked
+ */
+export type MaintenanceWindow = {
+  /**
+   * Descriptive name of the maintenance window
+   */
+  name: string;
+  
+  /**
+   * Start date and time of the maintenance window
+   */
+  start: Date;
+  
+  /**
+   * End date and time of the maintenance window
+   */
+  end: Date;
+};
+
+/**
  * A rule that blocks deployments during configured maintenance windows.
  *
  * This rule prevents deployments during scheduled maintenance periods for
@@ -27,15 +47,11 @@ export class MaintenanceWindowRule implements DeploymentResourceRule {
   public readonly name = "MaintenanceWindowRule";
 
   constructor(
-    private maintenanceWindows: Array<{
-      name: string;
-      start: Date;
-      end: Date;
-    }>,
+    private maintenanceWindows: MaintenanceWindow[],
   ) {}
 
   filter(
-    ctx: DeploymentResourceContext,
+    _: DeploymentResourceContext,
     currentCandidates: Release[],
   ): DeploymentResourceRuleResult {
     const now = new Date();

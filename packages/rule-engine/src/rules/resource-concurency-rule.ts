@@ -10,6 +10,32 @@ import type {
   Release,
 } from "../types.js";
 
+type ResourceConcurrencyRuleOptions = {
+  /**
+   * The maximum number of concurrent jobs allowed for the resource.
+   */
+  concurrencyLimit: number;
+
+  getRunningCount: (resourceId: string) => Promise<number>;
+};
+
+const getRunningCount = async (resourceId: string): Promise<number> => {
+  return db
+    .select({ count: count() })
+    .from(schema.job)
+    .innerJoin(
+      schema.releaseJobTrigger,
+      eq(schema.job.id, schema.releaseJobTrigger.jobId),
+    )
+    .where(
+      and(
+        eq(schema.releaseJobTrigger.id, resourceId),
+        inArray(schema.job.status, [JobStatus.InProgress, JobStatus.Pending]),
+      ),
+    )
+    .then((r) => r[0]?.count ?? 0);
+};
+
 /**
  * A rule that limits the number of concurrent jobs running on a resource.
  *
@@ -20,42 +46,30 @@ import type {
  * @example
  * ```ts
  * // Allow up to 3 concurrent jobs running on a resource
- * new ResourceConcurrencyRule(3);
+ * new ResourceConcurrencyRule({ concurrencyLimit: 3 });
  * ```
  */
 export class ResourceConcurrencyRule implements DeploymentResourceRule {
   public readonly name = "ResourceConcurrencyRule";
 
-  constructor(private concurrencyLimit: number) {}
-
-  private async getRunningCount(resourceId: string): Promise<number> {
-    return db
-      .select({ count: count() })
-      .from(schema.job)
-      .innerJoin(
-        schema.releaseJobTrigger,
-        eq(schema.job.id, schema.releaseJobTrigger.jobId),
-      )
-      .where(
-        and(
-          eq(schema.releaseJobTrigger.id, resourceId),
-          inArray(schema.job.status, [JobStatus.InProgress, JobStatus.Pending]),
-        ),
-      )
-
-      .then((r) => r[0]?.count ?? 0);
-  }
+  constructor(
+    private options: ResourceConcurrencyRuleOptions = {
+      concurrencyLimit: 1,
+      getRunningCount,
+    },
+  ) {}
 
   async filter(
     ctx: DeploymentResourceContext,
     currentCandidates: Release[],
   ): Promise<DeploymentResourceRuleResult> {
-    const runningDeployments = await this.getRunningCount(ctx.deployment.id);
+    const { concurrencyLimit, getRunningCount } = this.options;
+    const runningDeployments = await getRunningCount(ctx.deployment.id);
 
-    if (runningDeployments >= this.concurrencyLimit)
+    if (runningDeployments >= concurrencyLimit)
       return {
         allowedReleases: [],
-        reason: `Concurrency limit reached (${runningDeployments} of ${this.concurrencyLimit}). No new deployments allowed.`,
+        reason: `Concurrency limit reached (${runningDeployments} of ${concurrencyLimit}). No new deployments allowed.`,
       };
 
     return { allowedReleases: currentCandidates };

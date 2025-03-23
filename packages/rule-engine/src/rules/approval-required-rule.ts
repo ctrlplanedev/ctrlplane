@@ -6,6 +6,36 @@ import type {
 } from "../types.js";
 
 /**
+ * Options for configuring the ApprovalRequiredRule
+ */
+export type ApprovalRequiredRuleOptions = {
+  /**
+   * Optional pattern to match environment names
+   */
+  environmentPattern?: RegExp;
+
+  /**
+   * Optional pattern to match resource names
+   */
+  resourcePattern?: RegExp;
+
+  /**
+   * Optional pattern to match version tags
+   */
+  versionPattern?: RegExp;
+
+  /**
+   * The metadata key that contains approval information
+   */
+  approvalMetadataKey: string;
+
+  /**
+   * Optional minimum number of approvers required
+   */
+  requiredApprovers?: number;
+};
+
+/**
  * A rule that requires explicit approval for specific versions or environments.
  *
  * This rule ensures that certain deployments can only proceed after receiving
@@ -23,20 +53,12 @@ import type {
 export class ApprovalRequiredRule implements DeploymentResourceRule {
   public readonly name = "ApprovalRequiredRule";
 
-  constructor(
-    private options: {
-      environmentPattern?: RegExp;
-      resourcePattern?: RegExp;
-      versionPattern?: RegExp;
-      approvalMetadataKey: string;
-      requiredApprovers?: number;
-    },
-  ) {}
+  constructor(private options: ApprovalRequiredRuleOptions) {}
 
-  async filter(
+  filter(
     ctx: DeploymentResourceContext,
     currentCandidates: Release[],
-  ): Promise<DeploymentResourceRuleResult> {
+  ): DeploymentResourceRuleResult {
     // Skip approval check if deployment environment/resource doesn't match our patterns
     if (
       this.options.environmentPattern &&
@@ -64,7 +86,7 @@ export class ApprovalRequiredRule implements DeploymentResourceRule {
 
       // Check for approval in metadata
       const approvalValue =
-        release.version.metadata?.[this.options.approvalMetadataKey];
+        release.version.metadata[this.options.approvalMetadataKey];
 
       // If no approval data found, can't deploy
       if (!approvalValue) {
