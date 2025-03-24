@@ -60,7 +60,8 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   } = event.workflow_run;
 
   const job = await getJob(id, name);
-  if (job == null) return;
+  if (job == null)
+    throw new Error(`Job not found: externalId=${id} name=${name}`);
 
   const status =
     conclusion != null

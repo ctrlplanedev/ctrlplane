@@ -91,7 +91,7 @@ export const updateJob = async (
     with: { metadata: true },
   });
 
-  if (jobBeforeUpdate == null) throw new Error("Job not found");
+  if (jobBeforeUpdate == null) throw new Error(`Job not found: id=${jobId}`);
 
   const startedAt = getStartedAt(jobBeforeUpdate, data);
   const completedAt = getCompletedAt(jobBeforeUpdate, data);
