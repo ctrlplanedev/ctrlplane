@@ -20,12 +20,16 @@ export default async function EnvironmentOverviewPage(props: {
     environmentId: string;
   }>;
 }) {
-  const { environmentId } = await props.params;
+  const { environmentId, workspaceSlug } = await props.params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
   const environment = await api.environment.byId(environmentId);
   if (environment == null) return notFound();
 
-  const stats =
-    await api.environment.page.overview.latestDeploymentStats(environmentId);
+  const stats = await api.environment.page.overview.latestDeploymentStats({
+    environmentId,
+    workspaceId: workspace.id,
+  });
 
   const deploymentSuccess = (
     (stats.deployments.successful / (stats.deployments.total || 1)) *

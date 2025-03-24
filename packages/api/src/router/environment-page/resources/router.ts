@@ -25,6 +25,7 @@ export const resourcesRouter = createTRPCRouter({
     .input(
       z.object({
         environmentId: z.string().uuid(),
+        workspaceId: z.string().uuid(),
         filter: resourceCondition.optional(),
         limit: z.number().min(1).max(1000).default(500),
         offset: z.number().min(0).default(0),
@@ -62,6 +63,7 @@ export const resourcesRouter = createTRPCRouter({
           and(
             SCHEMA.resourceMatchesMetadata(ctx.db, selector),
             isNull(SCHEMA.resource.deletedAt),
+            eq(SCHEMA.resource.workspaceId, input.workspaceId),
           ),
         )
         .limit(input.limit)
