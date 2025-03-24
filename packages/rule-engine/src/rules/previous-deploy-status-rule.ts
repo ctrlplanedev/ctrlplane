@@ -1,8 +1,3 @@
-import { and, count, eq, gte, inArray } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
-import { JobStatus } from "@ctrlplane/validators/jobs";
-
 import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
@@ -15,7 +10,7 @@ import type {
  */
 export type GetResourceCountFunction = (
   environments: string[],
-) => Promise<number>;
+) => Promise<number> | number;
 
 /**
  * Function to get count of successful deployments
@@ -23,7 +18,7 @@ export type GetResourceCountFunction = (
 export type GetSuccessfulDeploymentsFunction = (
   releaseId: string,
   environmentIds: string[],
-) => Promise<number>;
+) => Promise<number> | number;
 
 /**
  * Options for configuring the PreviousDeployStatusRule
@@ -32,7 +27,7 @@ export type PreviousDeployStatusRuleOptions = {
   /**
    * List of environment IDs that must have successful deployments
    */
-  dependentEnvironments: string[];
+  dependentEnvironments: { name: string; id: string }[];
 
   /**
    * Minimum number of resources that must be successfully deployed
@@ -55,24 +50,37 @@ export type PreviousDeployStatusRuleOptions = {
   getSuccessfulDeployments?: GetSuccessfulDeploymentsFunction;
 };
 
+const getResourceCount: GetResourceCountFunction = (_: string[]) => {
+  // TODO: Sum of all resources in the dependent environments
+  return 0;
+};
+
+const getSuccessfulDeployments: GetSuccessfulDeploymentsFunction = (
+  _: string,
+  __: string[],
+) => {
+  // TODO: Count of successful deployments in the dependent environments
+  return 0;
+};
+
 /**
  * A rule that ensures a minimum number of resources in dependent environments
  * are successfully deployed before allowing a release.
  *
- * This rule can be used to enforce deployment gates between environments,
- * such as requiring QA deployments before PROD.
+ * This rule can be used to enforce deployment gates between environments, such
+ * as requiring QA deployments before PROD.
  *
  * @example
  * ```ts
  * // Require at least 5 successful deployments in QA before PROD
  * new PreviousDeployStatusRule({
- *   dependentEnvironments: ["qa"],
+ *   dependentEnvironments: [{ name: "qa", id: "qa" }],
  *   minSuccessfulDeployments: 5
  * });
  *
  * // Require ALL resources in STAGING to be successfully deployed first
  * new PreviousDeployStatusRule({
- *   dependentEnvironments: ["staging"],
+ *   dependentEnvironments: [{ name: "staging", id: "staging" }],
  *   requireAllResources: true
  * });
  * ```
@@ -85,116 +93,75 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
   constructor(private options: PreviousDeployStatusRuleOptions) {
     // Set default values
     if (
-      this.options.requireAllResources === undefined &&
-      this.options.minSuccessfulDeployments === undefined
+      this.options.requireAllResources == null &&
+      this.options.minSuccessfulDeployments == null
     ) {
       this.options.minSuccessfulDeployments = 0;
     }
 
     // Set default get functions if not provided
-    this.getResourceCount =
-      options.getResourceCount ?? this.defaultGetResourceCount;
+    this.getResourceCount = options.getResourceCount ?? getResourceCount;
     this.getSuccessfulDeployments =
-      options.getSuccessfulDeployments ?? this.defaultGetSuccessfulDeployments;
+      options.getSuccessfulDeployments ?? getSuccessfulDeployments;
   }
 
-  private defaultGetResourceCount: GetResourceCountFunction = async (
-    environments: string[],
-  ) => {
-    return db
-      .select({ count: count() })
-      .from(schema.resource)
-      .innerJoin(
-        schema.deployment,
-        eq(schema.resource.deploymentId, schema.deployment.id),
-      )
-      .where(inArray(schema.deployment.environmentId, environments))
-      .then((r) => r[0]?.count ?? 0);
-  };
-
-  private defaultGetSuccessfulDeployments: GetSuccessfulDeploymentsFunction =
-    async (releaseId: string, environmentIds: string[]) => {
-      return db
-        .select({ count: count() })
-        .from(schema.job)
-        .innerJoin(
-          schema.releaseJobTrigger,
-          eq(schema.job.id, schema.releaseJobTrigger.jobId),
-        )
-        .innerJoin(
-          schema.deployment,
-          eq(schema.job.deploymentId, schema.deployment.id),
-        )
-        .where(
-          and(
-            eq(schema.releaseJobTrigger.versionId, releaseId),
-            eq(schema.job.status, JobStatus.Successful),
-            inArray(schema.deployment.environmentId, environmentIds),
-          ),
-        )
-        .then((r) => r[0]?.count ?? 0);
-    };
-
   async filter(
-    ctx: DeploymentResourceContext,
+    _: DeploymentResourceContext,
     currentCandidates: Release[],
   ): Promise<DeploymentResourceRuleResult> {
-    // Skip validation if no dependent environments or minimum is 0
-    if (
-      this.options.dependentEnvironments.length === 0 ||
-      (this.options.minSuccessfulDeployments === 0 &&
-        !this.options.requireAllResources)
-    ) {
+    const {
+      dependentEnvironments,
+      minSuccessfulDeployments,
+      requireAllResources,
+    } = this.options;
+
+    const hasDependentEnvironments = dependentEnvironments.length > 0;
+    const hasMinimumRequirement =
+      (minSuccessfulDeployments ?? 0) > 0 || requireAllResources;
+
+    if (!hasDependentEnvironments || !hasMinimumRequirement)
       return { allowedReleases: currentCandidates };
-    }
 
-    // If we don't have the desired release, nothing to do
-    const desiredRelease = currentCandidates.find(
-      (r) => r.id === ctx.desiredReleaseId,
+    const requiredDeployments = requireAllResources
+      ? await this.getResourceCount(dependentEnvironments.map(({ id }) => id))
+      : (minSuccessfulDeployments ?? 0);
+
+    // Process all releases in parallel and get deployment counts
+    const releaseChecks = await Promise.all(
+      currentCandidates.map(async (release) => ({
+        release,
+        successfulDeployments: await this.getSuccessfulDeployments(
+          release.id,
+          dependentEnvironments.map(({ id }) => id),
+        ),
+      })),
     );
-    if (!desiredRelease) {
-      return { allowedReleases: currentCandidates };
-    }
 
-    // Get count of successful deployments in dependent environments
-    const successfulDeployments = await this.getSuccessfulDeployments(
-      ctx.desiredReleaseId,
-      this.options.dependentEnvironments,
+    // Filter allowed releases
+    const allowedReleases = releaseChecks
+      .filter(
+        ({ successfulDeployments }) =>
+          successfulDeployments >= requiredDeployments,
+      )
+      .map(({ release }) => release);
+
+    if (allowedReleases.length > 0) return { allowedReleases };
+
+    // If no releases allowed, find best candidate and return reason
+    const bestCandidate = releaseChecks.reduce((best, current) =>
+      current.successfulDeployments > best.successfulDeployments
+        ? current
+        : best,
     );
 
-    // If we're requiring all resources, get the total count of resources
-    let requiredDeployments = this.options.minSuccessfulDeployments ?? 0;
-    let totalResources = 0;
+    const envNames = dependentEnvironments.map(({ name }) => name).join(", ");
+    const reasonMessage = this.options.requireAllResources
+      ? `Not all resources in ${envNames} have been successfully deployed for any release candidate. Best candidate (${bestCandidate.release.id}) has ${bestCandidate.successfulDeployments}/${requiredDeployments} deployments.`
+      : `Minimum deployment requirement not met for any release candidate. Need at least ${requiredDeployments} successful deployments in ${envNames}. Best candidate (${bestCandidate.release.id}) has ${bestCandidate.successfulDeployments} deployments.`;
 
-    if (this.options.requireAllResources) {
-      totalResources = await this.getResourceCount(
-        this.options.dependentEnvironments,
-      );
-      requiredDeployments = totalResources;
-    }
-
-    // Check if we've met the requirements
-    if (successfulDeployments < requiredDeployments) {
-      // Filter out the desired release
-      const filteredReleases = currentCandidates.filter(
-        (r) => r.id !== ctx.desiredReleaseId,
-      );
-
-      const envNames = this.options.dependentEnvironments.join(", ");
-      let reasonMessage = "";
-
-      if (this.options.requireAllResources) {
-        reasonMessage = `Not all resources in ${envNames} have been successfully deployed (${successfulDeployments}/${totalResources}).`;
-      } else {
-        reasonMessage = `Minimum deployment requirement not met. Need at least ${requiredDeployments} successful deployments in ${envNames} (currently: ${successfulDeployments}).`;
-      }
-
-      return {
-        allowedReleases: filteredReleases,
-        reason: reasonMessage,
-      };
-    }
-
-    return { allowedReleases: currentCandidates };
+    return {
+      allowedReleases: [],
+      reason: reasonMessage,
+    };
   }
 }

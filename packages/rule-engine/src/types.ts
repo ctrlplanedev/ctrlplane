@@ -22,9 +22,16 @@ export type Resource = {
   name: string;
 };
 
+export type Environment = {
+  id: string;
+  name: string;
+  resourceSelector?: object;
+};
+
 export type DeploymentResourceContext = {
   desiredReleaseId: string;
   deployment: Deployment;
+  environment: Environment;
   resource: Resource;
   availableReleases: Release[];
 };
@@ -53,4 +60,3 @@ export interface DeploymentResourceRule {
     currentCandidates: Release[],
   ): DeploymentResourceRuleResult | Promise<DeploymentResourceRuleResult>;
 }
-

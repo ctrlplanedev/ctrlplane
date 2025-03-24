@@ -1254,6 +1254,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.8.2
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.13.10)(jsdom@25.0.1)(terser@5.36.0)
 
   packages/secrets:
     dependencies:

@@ -1,7 +1,7 @@
 export { ResourceConcurrencyRule } from "./resource-concurency-rule.js";
 export { ApprovalRequiredRule } from "./approval-required-rule.js";
 export { DependencyCheckRule } from "./dependency-check-rule.js";
-export { GradualRolloutRule } from "./gradual-rollout-rule.js";
+export { GradualRolloutRule } from "./gradual-version-rollout-rule.js";
 export { MaintenanceWindowRule } from "./maintenance-window-rule.js";
 export { PreviousDeployStatusRule } from "./previous-deploy-status-rule.js";
 export { DeploymentResourceSelectorRule } from "./deployment-resource-selector-rule.js";

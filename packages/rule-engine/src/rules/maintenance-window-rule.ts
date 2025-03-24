@@ -13,12 +13,12 @@ export type MaintenanceWindow = {
    * Descriptive name of the maintenance window
    */
   name: string;
-  
+
   /**
    * Start date and time of the maintenance window
    */
   start: Date;
-  
+
   /**
    * End date and time of the maintenance window
    */
@@ -46,19 +46,25 @@ export type MaintenanceWindow = {
 export class MaintenanceWindowRule implements DeploymentResourceRule {
   public readonly name = "MaintenanceWindowRule";
 
-  constructor(
-    private maintenanceWindows: MaintenanceWindow[],
-  ) {}
+  constructor(private maintenanceWindows: MaintenanceWindow[]) {}
+
+  // For testing: allow injecting a custom "now" timestamp
+  protected getCurrentTime(): Date {
+    return new Date();
+  }
 
   filter(
     _: DeploymentResourceContext,
     currentCandidates: Release[],
   ): DeploymentResourceRuleResult {
-    const now = new Date();
+    const now = this.getCurrentTime();
 
     // Find active maintenance windows that apply to this resource/deployment
     const activeWindows = this.maintenanceWindows.filter((window) => {
-      const isActive = now >= window.start && now <= window.end;
+      // Validate start date is before end date
+      const isValid = window.start <= window.end;
+      // Check if window is currently active
+      const isActive = isValid && now >= window.start && now <= window.end;
       return isActive;
     });
 
