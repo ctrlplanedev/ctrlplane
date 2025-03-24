@@ -2,8 +2,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 /**
  * Function to get count of resources in environments
@@ -107,7 +107,7 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
 
   async filter(
     _: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): Promise<DeploymentResourceRuleResult> {
     const {
       dependentEnvironments,
@@ -120,7 +120,7 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
       (minSuccessfulDeployments ?? 0) > 0 || requireAllResources;
 
     if (!hasDependentEnvironments || !hasMinimumRequirement)
-      return { allowedReleases: currentCandidates };
+      return { allowedReleases: releases };
 
     const requiredDeployments = requireAllResources
       ? await this.getResourceCount(dependentEnvironments.map(({ id }) => id))
@@ -128,7 +128,7 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
 
     // Process all releases in parallel and get deployment counts
     const releaseChecks = await Promise.all(
-      currentCandidates.map(async (release) => ({
+      releases.getAll().map(async (release) => ({
         release,
         successfulDeployments: await this.getSuccessfulDeployments(
           release.id,
@@ -145,7 +145,8 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
       )
       .map(({ release }) => release);
 
-    if (allowedReleases.length > 0) return { allowedReleases };
+    if (allowedReleases.length > 0)
+      return { allowedReleases: new Releases(allowedReleases) };
 
     // If no releases allowed, find best candidate and return reason
     const bestCandidate = releaseChecks.reduce((best, current) =>
@@ -160,7 +161,7 @@ export class PreviousDeployStatusRule implements DeploymentResourceRule {
       : `Minimum deployment requirement not met for any release candidate. Need at least ${requiredDeployments} successful deployments in ${envNames}. Best candidate (${bestCandidate.release.id}) has ${bestCandidate.successfulDeployments} deployments.`;
 
     return {
-      allowedReleases: [],
+      allowedReleases: Releases.empty(),
       reason: reasonMessage,
     };
   }

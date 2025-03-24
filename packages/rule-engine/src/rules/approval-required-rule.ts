@@ -2,8 +2,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 /**
  * Options for configuring the ApprovalRequiredRule
@@ -57,7 +57,7 @@ export class ApprovalRequiredRule implements DeploymentResourceRule {
 
   filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[],
+    currentCandidates: Releases,
   ): DeploymentResourceRuleResult {
     // Skip approval check if deployment environment/resource doesn't match our patterns
     if (
@@ -107,9 +107,9 @@ export class ApprovalRequiredRule implements DeploymentResourceRule {
       return true;
     });
 
-    if (filteredReleases.length === 0) {
+    if (filteredReleases.isEmpty()) {
       return {
-        allowedReleases: [],
+        allowedReleases: Releases.empty(),
         reason: `Required approval is missing. Deployment to ${ctx.deployment.name}/${ctx.resource.name} requires explicit approval via the '${this.options.approvalMetadataKey}' metadata field.`,
       };
     }

@@ -7,8 +7,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 type ResourceConcurrencyRuleOptions = {
   /**
@@ -61,17 +61,17 @@ export class ResourceConcurrencyRule implements DeploymentResourceRule {
 
   async filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): Promise<DeploymentResourceRuleResult> {
     const { concurrencyLimit, getRunningCount } = this.options;
     const runningDeployments = await getRunningCount(ctx.deployment.id);
 
     if (runningDeployments >= concurrencyLimit)
       return {
-        allowedReleases: [],
+        allowedReleases: Releases.empty(),
         reason: `Concurrency limit reached (${runningDeployments} of ${concurrencyLimit}). No new deployments allowed.`,
       };
 
-    return { allowedReleases: currentCandidates };
+    return { allowedReleases: releases };
   }
 }

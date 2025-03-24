@@ -2,8 +2,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 /**
  * Options for configuring the TimeWindowRule
@@ -13,19 +13,25 @@ export type TimeWindowRuleOptions = {
    * Hour to start allowing deployments (0-23)
    */
   startHour: number;
-  
+
   /**
    * Hour to stop allowing deployments (0-23)
    */
   endHour: number;
-  
+
   /**
    * Days of the week to allow deployments
    */
   days?: Array<
-    "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
+    | "Monday"
+    | "Tuesday"
+    | "Wednesday"
+    | "Thursday"
+    | "Friday"
+    | "Saturday"
+    | "Sunday"
   >;
-  
+
   /**
    * Optional timezone for time calculations (e.g., "America/New_York")
    */
@@ -52,13 +58,11 @@ export type TimeWindowRuleOptions = {
 export class TimeWindowRule implements DeploymentResourceRule {
   public readonly name = "TimeWindowRule";
 
-  constructor(
-    private options: TimeWindowRuleOptions,
-  ) {}
+  constructor(private options: TimeWindowRuleOptions) {}
 
   filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[],
+    currentCandidates: Releases,
   ): DeploymentResourceRuleResult {
     const now = new Date();
     const days = this.options.days ?? [
@@ -95,7 +99,7 @@ export class TimeWindowRule implements DeploymentResourceRule {
         localHour = parseInt(hourStr, 10);
       } catch {
         return {
-          allowedReleases: [],
+          allowedReleases: Releases.empty(),
           reason: `Invalid timezone: ${this.options.timezone}`,
         };
       }
@@ -108,7 +112,7 @@ export class TimeWindowRule implements DeploymentResourceRule {
 
     if (!isAllowedHour || !isAllowedDay) {
       return {
-        allowedReleases: [],
+        allowedReleases: Releases.empty(),
         reason: `Deployment not allowed outside of permitted time window (${this.options.startHour}:00-${this.options.endHour}:00 on ${days.join(", ")})`,
       };
     }

@@ -2,8 +2,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 /**
  * Defines a maintenance window period during which deployments are blocked
@@ -55,7 +55,7 @@ export class MaintenanceWindowRule implements DeploymentResourceRule {
 
   filter(
     _: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): DeploymentResourceRuleResult {
     const now = this.getCurrentTime();
 
@@ -71,11 +71,11 @@ export class MaintenanceWindowRule implements DeploymentResourceRule {
     if (activeWindows.length > 0) {
       const windowNames = activeWindows.map((w) => w.name).join(", ");
       return {
-        allowedReleases: [],
+        allowedReleases: Releases.empty(),
         reason: `Deployment blocked due to active maintenance window(s): ${windowNames}`,
       };
     }
 
-    return { allowedReleases: currentCandidates };
+    return { allowedReleases: releases };
   }
 }

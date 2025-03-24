@@ -2,30 +2,30 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 type DeploymentVersionSelectorOptions = object;
 
 export class DeploymentVersionSelectorRule implements DeploymentResourceRule {
   public readonly name = "DeploymentVersionSelectorRule";
 
-  constructor(private options: DeploymentVersionSelectorOptions) {}
+  constructor(private _: DeploymentVersionSelectorOptions) {}
 
   filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): DeploymentResourceRuleResult {
     if (ctx.deployment.versionSelector) {
       // TODO: Implement resource validation
       return {
-        allowedReleases: [],
+        allowedReleases: Releases.empty(),
         reason: "Resource validation failed",
       };
     }
 
     return {
-      allowedReleases: currentCandidates,
+      allowedReleases: releases,
       reason: "Resource validation passed",
     };
   }

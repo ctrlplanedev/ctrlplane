@@ -7,8 +7,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 /**
  * Function that retrieves the timestamp of the last successful deployment for a
@@ -90,12 +90,12 @@ export class VersionCooldownRule implements DeploymentResourceRule {
   /**
    * Filters releases based on the cooldown period since the last successful deployment
    * @param ctx - Context containing information about the deployment and resource
-   * @param currentCandidates - List of releases to filter
+   * @param currentCandidates - Collection of releases to filter
    * @returns Promise resolving to the filtered list of releases and optional reason if blocked
    */
   async filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[],
+    currentCandidates: Releases,
   ): Promise<DeploymentResourceRuleResult> {
     // Get the time of the last successful deployment
     const lastDeploymentTime =
@@ -131,7 +131,7 @@ export class VersionCooldownRule implements DeploymentResourceRule {
         : `${remainingMinutes} minute${remainingMinutes > 1 ? "s" : ""}`;
 
     return {
-      allowedReleases: [],
+      allowedReleases: Releases.empty(),
       reason: `Deployment cooldown period not yet elapsed. Please wait ${remainingTimeStr} before deploying again.`,
     };
   }

@@ -8,3 +8,4 @@ export { DeploymentResourceSelectorRule } from "./deployment-resource-selector-r
 export { TimeWindowRule } from "./time-window-rule.js";
 export { VersionCooldownRule } from "./version-cooldown-rule.js";
 export { WebhookCheckRule } from "./webhook-check-rule.js";
+export { SequentialUpgradeRule } from "./sequential-upgrade-rule.js";

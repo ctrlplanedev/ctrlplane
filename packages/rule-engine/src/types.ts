@@ -1,3 +1,5 @@
+import type { Releases } from "./utils/releases.js";
+
 export type Release = {
   id: string;
   createdAt: Date;
@@ -40,7 +42,7 @@ export type DeploymentResourceContext = {
  * After a single rule filters versions, it yields this result.
  */
 export type DeploymentResourceRuleResult = {
-  allowedReleases: Release[];
+  allowedReleases: Releases;
   reason?: string;
 };
 
@@ -57,6 +59,6 @@ export interface DeploymentResourceRule {
   name: string;
   filter(
     context: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): DeploymentResourceRuleResult | Promise<DeploymentResourceRuleResult>;
 }

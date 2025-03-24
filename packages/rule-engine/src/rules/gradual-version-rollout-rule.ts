@@ -7,8 +7,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 /**
  * Function to get count of recent deployments for a release
@@ -93,13 +93,13 @@ export class GradualVersionRolloutRule implements DeploymentResourceRule {
    */
   async filter(
     _: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): Promise<DeploymentResourceRuleResult> {
     const timeWindowMs = this.options.timeWindowMinutes * 60 * 1000;
 
     // Process all releases in parallel for efficiency
     const releaseChecks = await Promise.all(
-      currentCandidates.map(async (release) => {
+      releases.getAll().map(async (release) => {
         const recentDeployments = await this.getRecentDeploymentCount(
           release.id,
           timeWindowMs,
@@ -157,6 +157,12 @@ export class GradualVersionRolloutRule implements DeploymentResourceRule {
       }
     }
 
-    return { allowedReleases, reason };
+    return {
+      allowedReleases:
+        allowedReleases.length > 0
+          ? new Releases(allowedReleases)
+          : Releases.empty(),
+      reason,
+    };
   }
 }
