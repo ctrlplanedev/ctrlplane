@@ -432,11 +432,11 @@ export const ResourcesPageContent: React.FC<{
 
       <div className="mt-4 flex items-center justify-between text-sm text-neutral-400">
         <div>
-          {resources.length === resources.length ? (
+          {totalResources === resources.length ? (
             <>Showing all {resources.length} resources</>
           ) : (
             <>
-              Showing {resources.length} of {resources.length} resources
+              Showing {resources.length} of {totalResources} resources
             </>
           )}
           {resourceFilter != null && resourceFilter.conditions.length > 0 && (

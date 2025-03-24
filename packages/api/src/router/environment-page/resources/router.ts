@@ -127,12 +127,14 @@ export const resourcesRouter = createTRPCRouter({
           const isUnhealthy = completedStatuses.some((status) =>
             failedStatuses.includes(status as JobStatus),
           );
-          if (isUnhealthy) return [resourceId, "unhealthy"];
+          if (isUnhealthy)
+            return [resourceId, { status: "unhealthy", successRate }];
 
           const isDeploying = statuses.some((status) =>
             activeStatus.includes(status as JobStatus),
           );
-          if (isDeploying) return [resourceId, "deploying"];
+          if (isDeploying)
+            return [resourceId, { status: "deploying", successRate }];
 
           return [resourceId, { status: "healthy", successRate }];
         })

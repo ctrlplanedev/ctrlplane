@@ -262,6 +262,13 @@ export const DeploymentTelemetryTable: React.FC<{
             </TableRow>
           </TableHeader>
           <TableBody>
+            {deployments.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="py-3">
+                  No deployments found
+                </TableCell>
+              </TableRow>
+            )}
             {deployments.map((deployment) => (
               <DeploymentRow key={deployment.id} deployment={deployment} />
             ))}
