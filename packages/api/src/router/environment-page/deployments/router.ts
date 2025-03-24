@@ -114,6 +114,7 @@ const getDeploymentStats = async (
   environment: SCHEMA.Environment,
   deployment: SCHEMA.Deployment,
   workspaceId: string,
+  statusFilter?: "pending" | "failed" | "deploying" | "success",
 ) => {
   const versionSelector = await getVersionSelector(db, environment, deployment);
 
@@ -191,6 +192,7 @@ const getDeploymentStats = async (
     .then((rows) => rows.map((row) => row.job));
 
   const status = getStatus(jobs, approval);
+  if (statusFilter != null && statusFilter !== status) return null;
 
   const duration = getDuration(jobs);
 
@@ -218,6 +220,10 @@ export const deploymentsRouter = createTRPCRouter({
         environmentId: z.string().uuid(),
         workspaceId: z.string().uuid(),
         search: z.string().optional(),
+        status: z
+          .enum(["pending", "failed", "deploying", "success"])
+          .optional(),
+        orderBy: z.enum(["recent", "oldest", "duration", "success"]).optional(),
       }),
     )
     .meta({
@@ -227,7 +233,7 @@ export const deploymentsRouter = createTRPCRouter({
           .on({ type: "environment", id: input.environmentId }),
     })
     .query(async ({ ctx, input }) => {
-      const { environmentId, workspaceId, search } = input;
+      const { environmentId, workspaceId, search, status, orderBy } = input;
 
       const environment = await ctx.db
         .select()
@@ -249,9 +255,31 @@ export const deploymentsRouter = createTRPCRouter({
 
       const deploymentStats = await Promise.all(
         deployments.map((deployment) =>
-          getDeploymentStats(ctx.db, environment, deployment, workspaceId),
+          getDeploymentStats(
+            ctx.db,
+            environment,
+            deployment,
+            workspaceId,
+            status,
+          ),
         ),
-      ).then((stats) => stats.filter(isPresent));
+      )
+        .then((stats) => stats.filter(isPresent))
+        .then((stats) => {
+          if (orderBy == "recent")
+            return stats.sort(
+              (a, b) => b.deployedAt.getTime() - a.deployedAt.getTime(),
+            );
+          if (orderBy == "oldest")
+            return stats.sort(
+              (a, b) => a.deployedAt.getTime() - b.deployedAt.getTime(),
+            );
+          if (orderBy == "duration")
+            return stats.sort((a, b) => b.duration - a.duration);
+          if (orderBy == "success")
+            return stats.sort((a, b) => b.successRate - a.successRate);
+          return stats;
+        });
 
       return deploymentStats;
     }),
