@@ -35,7 +35,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -253,18 +253,18 @@ export const environmentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const { resourceFilter } = input.data;
-      const isUpdatingResourceFilter =
-        resourceFilter != null || oldEnv.environment.resourceFilter != null;
-      if (isUpdatingResourceFilter) {
-        const hasResourceFiltersChanged = !_.isEqual(
-          oldEnv.environment.resourceFilter,
-          resourceFilter,
+      const { resourceSelector } = input.data;
+      const isUpdatingResourceSelector =
+        resourceSelector != null || oldEnv.environment.resourceSelector != null;
+      if (isUpdatingResourceSelector) {
+        const hasResourceSelectorsChanged = !_.isEqual(
+          oldEnv.environment.resourceSelector,
+          resourceSelector,
         );
 
-        if (hasResourceFiltersChanged) {
+        if (hasResourceSelectorsChanged) {
           const isOtherEnv = and(
-            isNotNull(environment.resourceFilter),
+            isNotNull(environment.resourceSelector),
             ne(environment.id, input.id),
           );
           const sys = await ctx.db.query.system.findFirst({
@@ -273,14 +273,14 @@ export const environmentRouter = createTRPCRouter({
           });
 
           const otherEnvFilters =
-            sys?.environments.map((e) => e.resourceFilter).filter(isPresent) ??
+            sys?.environments.map((e) => e.resourceSelector).filter(isPresent) ??
             [];
 
           const oldQuery = resourceMatchesMetadata(
             ctx.db,
-            oldEnv.environment.resourceFilter,
+            oldEnv.environment.resourceSelector,
           );
-          const newQuery = resourceMatchesMetadata(ctx.db, resourceFilter);
+          const newQuery = resourceMatchesMetadata(ctx.db, resourceSelector);
 
           const newResources =
             newQuery != null
@@ -311,7 +311,7 @@ export const environmentRouter = createTRPCRouter({
 
           if (removedResources.length > 0) {
             const sysFilter: ResourceCondition = {
-              type: FilterType.Comparison,
+              type: SelectorType.Comparison,
               operator: ComparisonOperator.Or,
               not: true,
               conditions: otherEnvFilters,

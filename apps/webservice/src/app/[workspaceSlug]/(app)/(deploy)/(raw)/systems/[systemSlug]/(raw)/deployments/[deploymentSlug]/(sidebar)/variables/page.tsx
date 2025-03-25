@@ -8,7 +8,7 @@ import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
 import {
-  ResourceFilterType,
+  ResourceSelectorType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -49,12 +49,12 @@ export default async function VariablesPage(props: {
     deployment.id,
   );
 
-  const systemResourcesFilter: ComparisonCondition = {
-    type: ResourceFilterType.Comparison,
+  const systemResourcesSelector: ComparisonCondition = {
+    type: ResourceSelectorType.Comparison,
     operator: ResourceOperator.Or,
     conditions: await api.environment
       .bySystemId(deployment.systemId)
-      .then((envs) => envs.map((e) => e.resourceFilter).filter(isPresent)),
+      .then((envs) => envs.map((e) => e.resourceSelector).filter(isPresent)),
   };
 
   const variablesPromises = variablesByDeployment.map(async (variable) => {
@@ -64,7 +64,7 @@ export default async function VariablesPage(props: {
     const rest = variable.values.filter((v) => v.id !== defaultValue?.id);
 
     const valuesPromises = rest.map(async (v) => {
-      if (v.resourceFilter == null)
+      if (v.resourceSelector == null)
         return {
           ...v,
           resourceCount: 0,
@@ -73,13 +73,13 @@ export default async function VariablesPage(props: {
         };
 
       const filterHash = LZString.compressToEncodedURIComponent(
-        JSON.stringify(v.resourceFilter),
+        JSON.stringify(v.resourceSelector),
       );
 
       const filter: ComparisonCondition = {
-        type: ResourceFilterType.Comparison,
+        type: ResourceSelectorType.Comparison,
         operator: ResourceOperator.And,
-        conditions: [systemResourcesFilter, v.resourceFilter],
+        conditions: [systemResourcesFilter, v.resourceSelector],
       };
 
       const resources = await api.resource.byWorkspaceId.list({
@@ -99,18 +99,18 @@ export default async function VariablesPage(props: {
     const values = await Promise.all(valuesPromises);
 
     if (defaultValue != null) {
-      const restFilters = rest.map((v) => v.resourceFilter).filter(isPresent);
+      const restFilters = rest.map((v) => v.resourceSelector).filter(isPresent);
 
       const filter: ResourceCondition =
         restFilters.length === 0
           ? systemResourcesFilter
           : {
-              type: ResourceFilterType.Comparison,
+              type: ResourceSelectorType.Comparison,
               operator: ResourceOperator.And,
               conditions: [
                 systemResourcesFilter,
                 {
-                  type: ResourceFilterType.Comparison,
+                  type: ResourceSelectorType.Comparison,
                   operator: ResourceOperator.Or,
                   not: true,
                   conditions: restFilters,

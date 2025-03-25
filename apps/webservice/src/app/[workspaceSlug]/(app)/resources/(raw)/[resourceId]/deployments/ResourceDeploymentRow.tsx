@@ -10,9 +10,9 @@ import { TableCell, TableRow } from "@ctrlplane/ui/table";
 import {
   ColumnOperator,
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
-import { JobFilterType } from "@ctrlplane/validators/jobs";
+import { JobSelectorType } from "@ctrlplane/validators/jobs";
 
 import { LazyDeploymentHistoryGraph } from "~/app/[workspaceSlug]/(app)/_components/deployments/DeploymentHistoryGraph";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
@@ -28,22 +28,22 @@ type ResourceDeploymentRowProps = {
 };
 
 const getFilter = (resourceId: string, deploymentId: string): JobCondition => {
-  const resourceFilter: JobCondition = {
-    type: JobFilterType.JobResource,
+  const resourceSelector: JobCondition = {
+    type: JobSelectorType.JobResource,
     operator: ColumnOperator.Equals,
     value: resourceId,
   };
 
   const deploymentFilter: JobCondition = {
-    type: JobFilterType.Deployment,
+    type: JobSelectorType.Deployment,
     operator: ColumnOperator.Equals,
     value: deploymentId,
   };
 
   return {
-    type: FilterType.Comparison,
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [resourceFilter, deploymentFilter],
+    conditions: [resourceSelector, deploymentFilter],
   };
 };
 

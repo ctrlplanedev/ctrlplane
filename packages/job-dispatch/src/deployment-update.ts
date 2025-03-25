@@ -8,7 +8,7 @@ import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 
 import { getEventsForDeploymentRemoved, handleEvent } from "./events/index.js";
@@ -43,7 +43,7 @@ const moveRunbooksLinkedToHooksToNewSystem = async (
 };
 
 const getResourcesInNewSystem = async (deployment: SCHEMA.Deployment) => {
-  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
+  const hasFilter = isNotNull(SCHEMA.environment.resourceSelector);
   const newSystem = await db.query.system.findFirst({
     where: eq(SCHEMA.system.id, deployment.systemId),
     with: { environments: { where: hasFilter } },
@@ -52,13 +52,13 @@ const getResourcesInNewSystem = async (deployment: SCHEMA.Deployment) => {
   if (newSystem == null) return [];
 
   const filters = newSystem.environments
-    .map((env) => env.resourceFilter)
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
 
   if (filters.length === 0) return [];
 
   const systemFilter: ResourceCondition = {
-    type: FilterType.Comparison,
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: filters,
   };
@@ -109,21 +109,21 @@ const handleDeploymentFilterChanged = async (
   });
 
   const isInSystem: ResourceCondition = {
-    type: FilterType.Comparison,
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.Or,
-    conditions: environments.map((e) => e.resourceFilter).filter(isPresent),
+    conditions: environments.map((e) => e.resourceSelector).filter(isPresent),
   };
 
   const oldResourcesFilter: ResourceCondition = {
-    type: FilterType.Comparison,
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [prevFilter, isInSystem].filter(isPresent),
   };
 
   const newResourcesFilter: ResourceCondition = {
-    type: FilterType.Comparison,
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [deployment.resourceFilter, isInSystem].filter(isPresent),
+    conditions: [deployment.resourceSelector, isInSystem].filter(isPresent),
   };
 
   const oldResources = await db.query.resource.findMany({
@@ -193,11 +193,11 @@ export const updateDeployment = async (
     );
 
   if (
-    !_.isEqual(prevDeployment.resourceFilter, updatedDeployment.resourceFilter)
+    !_.isEqual(prevDeployment.resourceSelector, updatedDeployment.resourceSelector)
   )
     await handleDeploymentFilterChanged(
       updatedDeployment,
-      prevDeployment.resourceFilter,
+      prevDeployment.resourceSelector,
       userId,
     );
 

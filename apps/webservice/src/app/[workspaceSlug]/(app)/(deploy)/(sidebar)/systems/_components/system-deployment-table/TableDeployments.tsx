@@ -18,7 +18,7 @@ import {
 } from "@ctrlplane/ui/table";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 
 import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
@@ -31,7 +31,7 @@ const EnvHeader: React.FC<{
   environment: SCHEMA.Environment;
   workspace: SCHEMA.Workspace;
 }> = ({ systemSlug, environment: env, workspace }) => {
-  const filter = env.resourceFilter ?? undefined;
+  const filter = env.resourceSelector ?? undefined;
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.id, filter, limit: 0 },
     { enabled: filter != null },
@@ -66,15 +66,15 @@ const DirectoryHeader: React.FC<{
   };
   workspace: SCHEMA.Workspace;
 }> = ({ directory, workspace }) => {
-  const resourceFilters = directory.environments
-    .map((env) => env.resourceFilter)
+  const resourceSelectors = directory.environments
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
   const filter: ResourceCondition | undefined =
-    resourceFilters.length > 0
+    resourceSelectors.length > 0
       ? {
-          type: FilterType.Comparison,
+          type: SelectorType.Comparison,
           operator: ComparisonOperator.Or,
-          conditions: resourceFilters,
+          conditions: resourceSelectors,
         }
       : undefined;
 

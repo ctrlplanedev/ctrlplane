@@ -35,13 +35,13 @@ import {
   ColumnOperator,
   ComparisonOperator,
   DateOperator,
-  FilterType,
+  SelectorType,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
-  JobFilterType,
+  JobSelectorType,
   JobStatus,
 } from "@ctrlplane/validators/jobs";
 
@@ -82,7 +82,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
     if (!doesConvertingToComparisonRespectMaxDepth(depth + 1, cond)) return;
 
     const newComparisonCondition: ComparisonCondition = {
-      type: FilterType.Comparison,
+      type: SelectorType.Comparison,
       operator: ComparisonOperator.And,
       conditions: [cond],
     };
@@ -117,7 +117,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
     }
 
     const newNotComparisonCondition: ComparisonCondition = {
-      type: FilterType.Comparison,
+      type: SelectorType.Comparison,
       operator: ComparisonOperator.And,
       not: true,
       conditions: [cond],
@@ -276,7 +276,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: FilterType.Metadata,
+                    type: SelectorType.Metadata,
                     operator: MetadataOperator.Equals,
                     key: "",
                     value: "",
@@ -288,7 +288,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: FilterType.CreatedAt,
+                    type: SelectorType.CreatedAt,
                     operator: DateOperator.Before,
                     value: new Date().toISOString(),
                   })
@@ -299,7 +299,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: JobFilterType.Status,
+                    type: JobSelectorType.Status,
                     operator: ColumnOperator.Equals,
                     value: JobStatus.Successful,
                   })
@@ -311,7 +311,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
                 <DropdownMenuItem
                   onClick={() =>
                     addCondition({
-                      type: FilterType.Comparison,
+                      type: SelectorType.Comparison,
                       operator: ComparisonOperator.And,
                       conditions: [],
                       not: false,
@@ -325,7 +325,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
                 <DropdownMenuItem
                   onClick={() =>
                     addCondition({
-                      type: FilterType.Comparison,
+                      type: SelectorType.Comparison,
                       operator: ComparisonOperator.And,
                       not: true,
                       conditions: [],

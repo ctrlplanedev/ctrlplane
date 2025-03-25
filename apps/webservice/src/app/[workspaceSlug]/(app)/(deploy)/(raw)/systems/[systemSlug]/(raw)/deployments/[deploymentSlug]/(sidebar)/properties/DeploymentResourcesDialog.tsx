@@ -21,7 +21,7 @@ import {
 } from "@ctrlplane/ui/select";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 import { isValidResourceCondition } from "@ctrlplane/validators/resources";
 
@@ -32,32 +32,32 @@ import { api } from "~/trpc/react";
 type Environment = {
   id: string;
   name: string;
-  resourceFilter: ResourceCondition;
+  resourceSelector: ResourceCondition;
 };
 type DeploymentResourcesDialogProps = {
   environments: Environment[];
-  resourceFilter: ResourceCondition;
+  resourceSelector: ResourceCondition;
   workspaceId: string;
 };
 
 export const DeploymentResourcesDialog: React.FC<
   DeploymentResourcesDialogProps
-> = ({ environments, resourceFilter, workspaceId }) => {
+> = ({ environments, resourceSelector, workspaceId }) => {
   const [selectedEnvironment, setSelectedEnvironment] =
     useState<Environment | null>(environments[0] ?? null);
 
-  const filter: ResourceCondition = {
-    type: FilterType.Comparison,
+  const selector: ResourceCondition = {
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [selectedEnvironment?.resourceFilter, resourceFilter].filter(
+    conditions: [selectedEnvironment?.resourceSelector, resourceSelector].filter(
       isPresent,
     ),
   };
-  const isFilterValid = isValidResourceCondition(filter);
+  const isSelectorValid = isValidResourceCondition(selector);
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter, limit: 5 },
-    { enabled: selectedEnvironment != null && isFilterValid },
+    { workspaceId, selector, limit: 5 },
+    { enabled: selectedEnvironment != null && isSelectorValid },
   );
 
   const resources = data?.items ?? [];
@@ -71,7 +71,7 @@ export const DeploymentResourcesDialog: React.FC<
           variant="outline"
           className="flex items-center gap-2"
           type="button"
-          disabled={!isValidResourceCondition(resourceFilter)}
+          disabled={!isValidResourceCondition(resourceSelector)}
         >
           <IconFilter className="h-4 w-4" /> View Resources
         </Button>
@@ -81,7 +81,7 @@ export const DeploymentResourcesDialog: React.FC<
           <DialogTitle>View Resources</DialogTitle>
           <DialogDescription>
             Select an environment to view the resources based on the combined
-            environment and deployment filter.
+            environment and deployment selector.
           </DialogDescription>
         </DialogHeader>
 
@@ -106,12 +106,12 @@ export const DeploymentResourcesDialog: React.FC<
 
         {selectedEnvironment != null && (
           <>
-            <ResourceConditionRender condition={filter} onChange={() => {}} />
+            <ResourceConditionRender condition={selector} onChange={() => {}} />
             {!isLoading && (
               <ResourceList
                 resources={resources}
                 count={count}
-                filter={filter}
+                selector={selector}
               />
             )}
           </>

@@ -60,7 +60,7 @@ export const deploymentVariableValue = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
     value: jsonb("value").$type<any>().notNull(),
-    resourceFilter: jsonb("resource_filter")
+    resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
   },
@@ -79,7 +79,7 @@ export type DeploymentVariableValue = InferSelectModel<
 >;
 export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
-  { resourceFilter: resourceCondition },
+  { resourceSelector: resourceCondition },
 )
   .omit({
     id: true,

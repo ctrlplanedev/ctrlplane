@@ -20,13 +20,13 @@ export const EditSelector: React.FC<{
     updateEnvironment
       .mutateAsync({
         id: environment.id,
-        data: { resourceFilter: resourceCondition ?? undefined },
+        data: { resourceSelector: resourceCondition ?? undefined },
       })
       .then(() => router.refresh());
 
   return (
     <ResourceConditionDialog
-      condition={environment.resourceFilter}
+      condition={environment.resourceSelector}
       onChange={onChange}
     >
       <Button size="sm" variant="outline">

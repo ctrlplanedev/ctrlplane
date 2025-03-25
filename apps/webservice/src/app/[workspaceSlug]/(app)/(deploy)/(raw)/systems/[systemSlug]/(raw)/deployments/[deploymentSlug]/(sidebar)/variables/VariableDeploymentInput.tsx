@@ -54,7 +54,7 @@ export const VariableDeploymentInput: React.FC<
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[462px] p-0">
-          <Command shouldFilter={false}>
+          <Command shouldSelector={false}>
             <div className="relative">
               <CommandInput value={search} onValueChange={setSearch} />
               {isLoading && (

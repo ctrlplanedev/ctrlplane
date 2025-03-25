@@ -24,7 +24,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
@@ -74,7 +74,7 @@ const ResourceViewsCombobox: React.FC<{
                 <CommandItem
                   key={resourceView.id}
                   onSelect={() => {
-                    onChange(resourceView.filter);
+                    onChange(resourceView.selector);
                     setOpen(false);
                   }}
                   className="cursor-pointer"
@@ -94,20 +94,6 @@ const filterForm = z.object({
   resourceFilter: resourceCondition.optional(),
 });
 
-const getFilter = (
-  resourceFilter: ResourceCondition | null,
-): ResourceCondition | undefined => {
-  if (resourceFilter == null) return undefined;
-  if (!isComparisonCondition(resourceFilter))
-    return {
-      type: FilterType.Comparison,
-      operator: ComparisonOperator.And,
-      not: false,
-      conditions: [resourceFilter],
-    };
-  return resourceFilter;
-};
-
 export const EditFilterForm: React.FC<{
   environment: SCHEMA.Environment;
   workspaceId: string;
@@ -115,7 +101,7 @@ export const EditFilterForm: React.FC<{
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
-    defaultValues: { resourceFilter: getFilter(environment.resourceFilter) },
+    defaultValues: { resourceFilter: getFilter(environment.resourceSelector) },
   });
 
   const { resourceFilter } = form.watch();
@@ -132,7 +118,7 @@ export const EditFilterForm: React.FC<{
     update
       .mutateAsync({
         id: environment.id,
-        data: { ...data, resourceFilter: resourceFilter ?? null },
+        data: { ...data, resourceSelector: resourceFilter ?? null },
       })
       .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
@@ -208,4 +194,18 @@ export const EditFilterForm: React.FC<{
       </form>
     </Form>
   );
+};
+
+const getFilter = (
+    resourceFilter: ResourceCondition | null,
+): ResourceCondition | undefined => {
+  if (resourceFilter == null) return undefined;
+  if (!isComparisonCondition(resourceFilter))
+    return {
+      type: SelectorType.Comparison,
+      operator: ComparisonOperator.And,
+      not: false,
+      conditions: [resourceFilter],
+    };
+  return resourceFilter;
 };

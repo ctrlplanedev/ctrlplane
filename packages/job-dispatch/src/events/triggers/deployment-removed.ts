@@ -6,13 +6,13 @@ import { and, eq, isNotNull, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceSelectorType } from "@ctrlplane/validators/resources";
 
 export const getEventsForDeploymentRemoved = async (
   deployment: SCHEMA.Deployment,
   systemId: string,
 ): Promise<HookEvent[]> => {
-  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
+  const hasFilter = isNotNull(SCHEMA.environment.resourceSelector);
   const system = await db.query.system.findFirst({
     where: eq(SCHEMA.system.id, systemId),
     with: { environments: { where: hasFilter } },
@@ -20,12 +20,12 @@ export const getEventsForDeploymentRemoved = async (
   if (system == null) return [];
 
   const envFilters = system.environments
-    .map((e) => e.resourceFilter)
+    .map((e) => e.resourceSelector)
     .filter(isPresent);
   if (envFilters.length === 0) return [];
 
   const systemFilter: ResourceCondition = {
-    type: ResourceFilterType.Comparison,
+    type: ResourceSelectorType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: envFilters,
   };

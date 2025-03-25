@@ -6,20 +6,20 @@ import { useDebounce } from "react-use";
 
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
-export const useResourceFilter = () => {
+export const useResourceSelector = () => {
   const [search, setSearch] = React.useState("");
   const urlParams = useSearchParams();
   const router = useRouter();
 
-  const filterHash = urlParams.get("filter");
+  const selectorHash = urlParams.get("selector");
   const filter = useMemo<ResourceCondition | null>(() => {
-    if (filterHash == null) return null;
+    if (selectorHash == null) return null;
     try {
-      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterHash));
+      return JSON.parse(LZString.decompressFromEncodedURIComponent(selectorHash));
     } catch {
       return null;
     }
-  }, [filterHash]);
+  }, [selectorHash]);
 
   const viewId = urlParams.get("view");
 
@@ -68,5 +68,5 @@ export const useResourceFilter = () => {
     [search],
   );
 
-  return { filter, setFilter, viewId, search, setSearch };
+  return { filter, setSelector: setFilter, viewId, search, setSearch };
 };

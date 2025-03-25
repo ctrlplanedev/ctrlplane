@@ -78,7 +78,7 @@ const useSystemFilter = () => {
   return {
     filter,
     sort,
-    setFilter: (filter: string) => setParams({ filter }),
+    setFilter: (filter: string) => setParams({ selector: selector }),
     setSort: (sort: SortOrder) => setParams({ sort }),
     setParams,
   };

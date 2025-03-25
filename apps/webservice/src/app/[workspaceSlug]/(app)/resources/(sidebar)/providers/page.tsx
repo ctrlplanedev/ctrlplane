@@ -37,7 +37,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceSelectorType } from "@ctrlplane/validators/resources";
 
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
@@ -122,7 +122,7 @@ export default async function ResourceProvidersPage(props: {
 
   const providers = resourceProviders.map((provider) => {
     const filter: ResourceCondition = {
-      type: ResourceFilterType.Provider,
+      type: ResourceSelectorType.Provider,
       value: provider.id,
       operator: "equals",
     };

@@ -21,9 +21,9 @@ import {
   ColumnOperator,
   ComparisonOperator,
   DateOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
-import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
+import { JobSelectorType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { dateRange } from "~/utils/date/range";
 
@@ -207,37 +207,37 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
               const end = addDays(start, 1);
 
               const afterStartCondition: JobCondition = {
-                type: FilterType.CreatedAt,
+                type: SelectorType.CreatedAt,
                 operator: DateOperator.AfterOrOn,
                 value: start.toISOString(),
               };
 
               const beforeEndCondition: JobCondition = {
-                type: FilterType.CreatedAt,
+                type: SelectorType.CreatedAt,
                 operator: DateOperator.Before,
                 value: end.toISOString(),
               };
 
               const isCancelledCondition: JobCondition = {
-                type: JobFilterType.Status,
+                type: JobSelectorType.Status,
                 operator: ColumnOperator.Equals,
                 value: JobStatus.Cancelled,
               };
 
               const isPendingCondition: JobCondition = {
-                type: JobFilterType.Status,
+                type: JobSelectorType.Status,
                 operator: ColumnOperator.Equals,
                 value: JobStatus.Pending,
               };
 
               const isSkippedCondition: JobCondition = {
-                type: JobFilterType.Status,
+                type: JobSelectorType.Status,
                 operator: ColumnOperator.Equals,
                 value: JobStatus.Skipped,
               };
 
               const statusCondition: JobCondition = {
-                type: FilterType.Comparison,
+                type: SelectorType.Comparison,
                 not: true,
                 operator: ComparisonOperator.Or,
                 conditions: [
@@ -248,7 +248,7 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
               };
 
               const filter: JobCondition = {
-                type: FilterType.Comparison,
+                type: SelectorType.Comparison,
                 operator: ComparisonOperator.And,
                 conditions: [
                   afterStartCondition,

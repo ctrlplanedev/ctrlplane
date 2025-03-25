@@ -4,10 +4,10 @@ export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
   info: { title: "Ctrlplane API", version: "1.0.0" },
   paths: {
-    "/v1/workspaces/{workspaceId}/resources/{filter}": {
+    "/v1/workspaces/{workspaceId}/resources/{selector}": {
       get: {
-        summary: "Get resources by filter",
-        operationId: "getResourcesByFilter",
+        summary: "Get resources by selector",
+        operationId: "getResourcesBySelector",
         parameters: [
           {
             name: "workspaceId",
@@ -17,11 +17,11 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "ID of the workspace",
           },
           {
-            name: "filter",
+            name: "selector",
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "Filter to apply to the resources",
+            description: "Selector to apply to the resources",
           },
         ],
         responses: {
@@ -37,7 +37,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           "400": {
-            description: "Invalid filter",
+            description: "Invalid selector",
             content: {
               "application/json": {
                 schema: {

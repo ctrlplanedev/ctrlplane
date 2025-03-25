@@ -6,7 +6,7 @@ import { and, eq, isNotNull, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceSelectorType } from "@ctrlplane/validators/resources";
 
 /**
  * Get events for a resource that has been deleted.
@@ -18,18 +18,18 @@ export const getEventsForResourceDeleted = async (
   const systems = await db.query.system.findMany({
     where: eq(SCHEMA.system.workspaceId, resource.workspaceId),
     with: {
-      environments: { where: isNotNull(SCHEMA.environment.resourceFilter) },
+      environments: { where: isNotNull(SCHEMA.environment.resourceSelector) },
       deployments: true,
     },
   });
 
   const deploymentPromises = systems.map(async (s) => {
     const filters = s.environments
-      .map((e) => e.resourceFilter)
+      .map((e) => e.resourceSelector)
       .filter(isPresent);
 
     const systemFilter: ResourceCondition = {
-      type: ResourceFilterType.Comparison,
+      type: ResourceSelectorType.Comparison,
       operator: ComparisonOperator.Or,
       conditions: filters,
     };

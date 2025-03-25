@@ -275,18 +275,18 @@ type RunbookConfigFieldsFC<T extends RunbookVariableConfigType> = React.FC<{
 export const ResourceConfigFields: RunbookConfigFieldsFC<
   ResourceVariableConfigType
 > = ({ config, updateConfig }) => {
-  const onFilterChange = (condition: ResourceCondition | null) => {
+  const onSelectorChange = (condition: ResourceCondition | null) => {
     const cond = condition ?? defaultCondition;
-    if (isEmptyCondition(cond)) updateConfig({ ...config, filter: undefined });
-    if (!isEmptyCondition(cond)) updateConfig({ ...config, filter: cond });
+    if (isEmptyCondition(cond)) updateConfig({ ...config, selector: undefined });
+    if (!isEmptyCondition(cond)) updateConfig({ ...config, selector: cond });
   };
 
   return (
     <>
-      {config.filter && <ResourceConditionBadge condition={config.filter} />}
+      {config.selector && <ResourceConditionBadge condition={config.selector} />}
       <ResourceConditionDialog
-        condition={config.filter ?? defaultCondition}
-        onChange={onFilterChange}
+        condition={config.selector ?? defaultCondition}
+        onChange={onSelectorChange}
       >
         <Button variant="outline">Edit Filter</Button>
       </ResourceConditionDialog>

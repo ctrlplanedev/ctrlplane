@@ -37,7 +37,7 @@ import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job/drawer
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
-import { useFilter } from "~/app/[workspaceSlug]/(app)/_hooks/useFilter";
+import { useSelector } from "~/app/[workspaceSlug]/(app)/_hooks/useSelector";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
 import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
@@ -471,9 +471,9 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
   deployment,
   environments,
 }) => {
-  const { filter, setFilter } = useFilter<JobCondition>();
+  const { selector, setSelector } = useSelector<JobCondition>();
   const releaseJobTriggerQuery = api.job.config.byDeploymentVersionId.useQuery(
-    { versionId: deploymentVersion.id, filter: filter ?? undefined },
+    { versionId: deploymentVersion.id, selector: selector ?? undefined },
     { refetchInterval: 5_000 },
   );
   const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];
@@ -499,7 +499,7 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
         <SidebarTrigger name={Sidebars.Release}>
           <IconMenu2 className="h-4 w-4" />
         </SidebarTrigger>
-        <JobConditionDialog condition={filter} onChange={setFilter}>
+        <JobConditionDialog condition={selector} onChange={setFilter}>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <IconFilter className="h-4 w-4" />

@@ -165,7 +165,7 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
                           className="flex items-center gap-2"
                         >
                           <IconFilter className="h-4 w-4" />
-                          Edit filter
+                          Edit selector
                         </Button>
                       </DeploymentVersionConditionDialog>
 

@@ -91,7 +91,7 @@ const isReleaseLatestActiveForEnvironment = async (
   const releaseChannelSubquery = db
     .select({
       rcPolicyId: schema.environmentPolicyDeploymentVersionChannel.policyId,
-      rcReleaseFilter: schema.deploymentVersionChannel.versionSelector,
+      rcReleaseSelector: schema.deploymentVersionChannel.versionSelector,
     })
     .from(schema.environmentPolicyDeploymentVersionChannel)
     .innerJoin(
@@ -148,7 +148,7 @@ const isReleaseLatestActiveForEnvironment = async (
         eq(schema.releaseJobTrigger.environmentId, environmentId),
         schema.deploymentVersionMatchesCondition(
           db,
-          environment.release_channel?.rcReleaseFilter,
+          environment.release_channel?.rcReleaseSelector,
         ),
       ),
     )

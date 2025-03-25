@@ -5,7 +5,7 @@ import React from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
-import { JobFilterType } from "@ctrlplane/validators/jobs";
+import { JobSelectorType } from "@ctrlplane/validators/jobs";
 
 import { DailyJobsChart } from "~/app/[workspaceSlug]/(app)/insights/DailyJobsChart";
 import { api } from "~/trpc/react";
@@ -25,8 +25,8 @@ export const JobHistoryPopover: React.FC<JobHistoryPopoverProps> = ({
     { refetchInterval: 60_000 },
   );
 
-  const inDeploymentFilter: JobCondition = {
-    type: JobFilterType.Deployment,
+  const inDeploymentSelector: JobCondition = {
+    type: JobSelectorType.Deployment,
     operator: ColumnOperator.Equals,
     value: deploymentId,
   };
@@ -42,7 +42,7 @@ export const JobHistoryPopover: React.FC<JobHistoryPopoverProps> = ({
           </p>
           <DailyJobsChart
             dailyCounts={dailyCounts.data ?? []}
-            baseFilter={inDeploymentFilter}
+            baseFilter={inDeploymentSelector}
           />
         </div>
       </PopoverContent>

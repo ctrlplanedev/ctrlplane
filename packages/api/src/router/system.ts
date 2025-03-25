@@ -29,7 +29,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -228,14 +228,14 @@ export const systemRouter = createTRPCRouter({
         .where(
           and(
             eq(environment.systemId, input.systemId),
-            isNotNull(environment.resourceFilter),
+            isNotNull(environment.resourceSelector),
           ),
         );
 
       const filter: ResourceCondition = {
-        type: FilterType.Comparison,
+        type: SelectorType.Comparison,
         operator: ComparisonOperator.Or,
-        conditions: envsWithFilter.map((env) => env.resourceFilter!),
+        conditions: envsWithFilter.map((env) => env.resourceSelector!),
       };
 
       const itemsPromise = ctx.db

@@ -395,9 +395,9 @@
                     "description": "The timeout for the deployment",
                     "example": 60
                   },
-                  "resourceFilter": {
+                  "resourceSelector": {
                     "type": "object",
-                    "description": "The resource filter for the deployment",
+                    "description": "The resource selector for the deployment",
                     "example": {
                       "key": "value"
                     }
@@ -565,7 +565,7 @@
                   "description": {
                     "type": "string"
                   },
-                  "resourceFilter": {
+                  "resourceSelector": {
                     "type": "object",
                     "additionalProperties": true
                   },
@@ -1258,7 +1258,7 @@
                 "required": [
                   "deploymentId",
                   "name",
-                  "releaseFilter"
+                  "releaseSelector"
                 ],
                 "properties": {
                   "deploymentId": {
@@ -1271,7 +1271,7 @@
                     "type": "string",
                     "nullable": true
                   },
-                  "releaseFilter": {
+                  "releaseSelector": {
                     "type": "object",
                     "additionalProperties": true
                   }
@@ -1305,7 +1305,7 @@
                       "type": "string",
                       "format": "date-time"
                     },
-                    "releaseFilter": {
+                    "releaseSelector": {
                       "type": "object",
                       "additionalProperties": true
                     }
@@ -2620,7 +2620,7 @@
         }
       }
     },
-    "/v1/workspaces/{workspaceId}/resources/{filter}": {
+    "/v1/workspaces/{workspaceId}/resources/{selector}": {
       "get": {
         "summary": "Get resources by filter",
         "operationId": "getResourcesByFilter",

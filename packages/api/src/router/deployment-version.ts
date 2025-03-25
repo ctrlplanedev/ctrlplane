@@ -30,7 +30,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 import {
   activeStatus,
@@ -792,19 +792,19 @@ export const versionRouter = createTRPCRouter({
           .where(eq(SCHEMA.deployment.id, deploymentId))
           .then(takeFirst);
 
-        if (env.environment.resourceFilter == null)
+        if (env.environment.resourceSelector == null)
           return {
             ...version.deployment_version,
             approval: version.environment_policy_approval,
             resourceCount: 0,
           };
 
-        const resourceFilter: ResourceCondition = {
-          type: FilterType.Comparison,
+        const resourceSelector: ResourceCondition = {
+          type: SelectorType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
-            env.environment.resourceFilter,
-            dep.resourceFilter,
+            env.environment.resourceSelector,
+            dep.resourceSelector,
           ].filter(isPresent),
         };
 
@@ -814,7 +814,7 @@ export const versionRouter = createTRPCRouter({
           .where(
             and(
               eq(SCHEMA.resource.workspaceId, env.system.workspaceId),
-              SCHEMA.resourceMatchesMetadata(ctx.db, resourceFilter),
+              SCHEMA.resourceMatchesMetadata(ctx.db, resourceSelector),
               isNull(SCHEMA.resource.deletedAt),
             ),
           )

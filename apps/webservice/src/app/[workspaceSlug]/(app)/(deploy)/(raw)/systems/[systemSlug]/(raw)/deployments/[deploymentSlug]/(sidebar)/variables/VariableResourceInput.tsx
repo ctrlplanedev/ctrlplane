@@ -18,7 +18,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
-  ResourceFilterType,
+  ResourceSelectorType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -29,52 +29,52 @@ import { api } from "~/trpc/react";
  */
 const useResourcesFromEnvironment = (
   system?: System,
-  existingFilter?: ResourceCondition,
+  existingSelector?: ResourceCondition,
 ) => {
   const { data: envs = [] } = api.environment.bySystemId.useQuery(
     system?.id ?? "",
     { enabled: system != null },
   );
 
-  const filter: ResourceCondition = {
-    type: ResourceFilterType.Comparison,
+  const selector: ResourceCondition = {
+    type: ResourceSelectorType.Comparison,
     operator: ResourceOperator.And,
     conditions: [
       {
-        type: ResourceFilterType.Comparison,
+        type: ResourceSelectorType.Comparison,
         operator: ResourceOperator.Or,
-        conditions: envs.map((e) => e.resourceFilter).filter(isPresent),
+        conditions: envs.map((e) => e.resourceSelector).filter(isPresent),
       },
-      ...(existingFilter ? [existingFilter] : []),
+      ...(existingSelector ? [existingSelector] : []),
     ],
   };
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: system?.workspaceId ?? "", filter },
+    { workspaceId: system?.workspaceId ?? "", selector },
     { enabled: system != null, placeholderData: (prev) => prev },
   );
 
-  return { filter, resources: data?.items ?? [], isLoading };
+  return { selector, resources: data?.items ?? [], isLoading };
 };
 
 const useResourcesWithSearch = (
   system?: System,
-  existingFilter?: ResourceCondition,
+  existingSelector?: ResourceCondition,
 ) => {
   const [search, setSearch] = useState("");
   const {
-    filter: environmentFilters,
+    selector: environmentSelectors,
     resources,
     isLoading: allResourcesLoading,
-  } = useResourcesFromEnvironment(system, existingFilter);
+  } = useResourcesFromEnvironment(system, existingSelector);
 
-  const filterWithSearch: ResourceCondition = {
-    type: ResourceFilterType.Comparison,
+  const selectorWithSearch: ResourceCondition = {
+    type: ResourceSelectorType.Comparison,
     operator: ResourceOperator.And,
     conditions: [
       environmentFilters,
       {
-        type: ResourceFilterType.Name,
+        type: ResourceSelectorType.Name,
         operator: ColumnOperator.Contains,
         value: search,
       },

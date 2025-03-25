@@ -12,7 +12,7 @@ import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
@@ -48,22 +48,22 @@ const useGetResourceCount = (
   const { data: workspace, isLoading: isWorkspaceLoading } =
     api.workspace.bySlug.useQuery(workspaceSlug);
 
-  const filter: ResourceCondition | undefined =
-    environment.resourceFilter != null
+  const selector: ResourceCondition | undefined =
+    environment.resourceSelector != null
       ? {
-          type: FilterType.Comparison,
+          type: SelectorType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
-            environment.resourceFilter,
-            deployment.resourceFilter,
+            environment.resourceSelector,
+            deployment.resourceSelector,
           ].filter(isPresent),
         }
       : undefined;
 
   const { data: resources, isLoading: isResourcesLoading } =
     api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId: workspace?.id ?? "", filter, limit: 0 },
-      { enabled: workspace != null && filter != null },
+      { workspaceId: workspace?.id ?? "", selector, limit: 0 },
+      { enabled: workspace != null && selector != null },
     );
 
   return {

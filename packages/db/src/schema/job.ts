@@ -39,10 +39,10 @@ import {
   ColumnOperator,
   ComparisonOperator,
   DateOperator,
-  FilterType,
+  SelectorType,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
-import { JobFilterType } from "@ctrlplane/validators/jobs";
+import { JobSelectorType } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../common.js";
 import { deploymentVersion } from "./deployment-version.js";
@@ -252,18 +252,18 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
-  if (cond.type === FilterType.Metadata)
+  if (cond.type === SelectorType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
-  if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
-  if (cond.type === JobFilterType.Deployment)
+  if (cond.type === SelectorType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === JobSelectorType.Status) return eq(job.status, cond.value);
+  if (cond.type === JobSelectorType.Deployment)
     return eq(deploymentVersion.deploymentId, cond.value);
-  if (cond.type === JobFilterType.Environment)
+  if (cond.type === JobSelectorType.Environment)
     return eq(releaseJobTrigger.environmentId, cond.value);
-  if (cond.type === FilterType.Version) return buildVersionCondition(cond);
-  if (cond.type === JobFilterType.JobResource)
+  if (cond.type === SelectorType.Version) return buildVersionCondition(cond);
+  if (cond.type === JobSelectorType.JobResource)
     return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
-  if (cond.type === JobFilterType.Release)
+  if (cond.type === JobSelectorType.Release)
     return eq(deploymentVersion.id, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
@@ -274,17 +274,17 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
 
 const buildRunbookCondition = (tx: Tx, cond: JobCondition): SQL | undefined => {
   if (
-    cond.type !== FilterType.Metadata &&
-    cond.type !== FilterType.CreatedAt &&
-    cond.type !== JobFilterType.Status &&
-    cond.type !== FilterType.Comparison
+    cond.type !== SelectorType.Metadata &&
+    cond.type !== SelectorType.CreatedAt &&
+    cond.type !== JobSelectorType.Status &&
+    cond.type !== SelectorType.Comparison
   )
     return undefined;
 
-  if (cond.type === FilterType.Metadata)
+  if (cond.type === SelectorType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
-  if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
+  if (cond.type === SelectorType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === JobSelectorType.Status) return eq(job.status, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =

@@ -19,18 +19,18 @@ export const GET = request()
         .on({ type: "workspace", id: params.workspaceId }),
     ),
   )
-  .handle<unknown, { params: { workspaceId: string; filter: string } }>(
+  .handle<unknown, { params: { workspaceId: string; selector: string } }>(
     async (_, { params }) => {
       try {
-        const filterJson = JSON.parse(params.filter);
-        const parseFilterResult = resourceCondition.safeParse(filterJson);
-        if (parseFilterResult.error != null)
+        const selectorJson = JSON.parse(params.selector);
+        const parseSelectorResult = resourceCondition.safeParse(selectorJson);
+        if (parseSelectorResult.error != null)
           return NextResponse.json(
-            { error: parseFilterResult.error.message },
+            { error: parseSelectorResult.error.message },
             { status: httpStatus.BAD_REQUEST },
           );
 
-        const { data: filter } = parseFilterResult;
+        const { data: selector } = parseSelectorResult;
 
         const resources = await db
           .select()
@@ -38,7 +38,7 @@ export const GET = request()
           .where(
             and(
               eq(SCHEMA.resource.workspaceId, params.workspaceId),
-              SCHEMA.resourceMatchesMetadata(db, filter),
+              SCHEMA.resourceMatchesMetadata(db, selector),
             ),
           )
           .limit(100);

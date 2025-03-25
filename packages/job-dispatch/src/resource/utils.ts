@@ -76,7 +76,7 @@ export const getEnvironmentsByResourceWithIdentifiers = (
   tx
     .select({
       id: schema.environment.id,
-      resourceFilter: schema.environment.resourceFilter,
+      resourceFilter: schema.environment.resourceSelector,
       systemId: schema.environment.systemId,
     })
     .from(schema.environment)
@@ -84,7 +84,7 @@ export const getEnvironmentsByResourceWithIdentifiers = (
     .where(
       and(
         eq(schema.system.workspaceId, workspaceId),
-        isNotNull(schema.environment.resourceFilter),
+        isNotNull(schema.environment.resourceSelector),
       ),
     )
     .then((envs) =>

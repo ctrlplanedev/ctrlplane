@@ -20,9 +20,9 @@ import { Separator } from "@ctrlplane/ui/separator";
 import {
   ColumnOperator,
   ComparisonOperator,
-  FilterType,
+  SelectorType,
 } from "@ctrlplane/validators/conditions";
-import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
+import { JobSelectorType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
 import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
@@ -45,44 +45,44 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   environmentId,
 }) => {
   const isSameEnvironment: EnvironmentCondition = {
-    type: JobFilterType.Environment,
+    type: JobSelectorType.Environment,
     operator: ColumnOperator.Equals,
     value: environmentId,
   };
 
   const isPending: StatusCondition = {
-    type: JobFilterType.Status,
+    type: JobSelectorType.Status,
     operator: ColumnOperator.Equals,
     value: JobStatus.Pending,
   };
 
   const isInProgress: StatusCondition = {
-    type: JobFilterType.Status,
+    type: JobSelectorType.Status,
     operator: ColumnOperator.Equals,
     value: JobStatus.InProgress,
   };
 
   const isSameVersion: JobReleaseCondition = {
-    type: JobFilterType.Release,
+    type: JobSelectorType.Release,
     operator: ColumnOperator.Equals,
     value: versionId,
   };
 
   const isDifferentVersion: JobCondition = {
-    type: FilterType.Comparison,
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.And,
     not: true,
     conditions: [isSameVersion],
   };
 
-  const pendingJobsForCurrentVersionAndEnvFilter: JobCondition = {
-    type: FilterType.Comparison,
+  const pendingJobsForCurrentVersionAndEnvSelector: JobCondition = {
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [isSameEnvironment, isPending, isSameVersion],
   };
 
-  const inProgressJobsForDifferentVersionAndCurrentEnvFilter: JobCondition = {
-    type: FilterType.Comparison,
+  const inProgressJobsForDifferentVersionAndCurrentEnvSelector: JobCondition = {
+    type: SelectorType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [isSameEnvironment, isInProgress, isDifferentVersion],
   };
@@ -90,7 +90,7 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   const pendingJobsQ = api.job.config.byWorkspaceId.list.useQuery(
     {
       workspaceId,
-      filter: pendingJobsForCurrentVersionAndEnvFilter,
+      selector: pendingJobsForCurrentVersionAndEnvSelector,
       limit: 1,
     },
     { refetchInterval: 5_000 },
@@ -99,7 +99,7 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   const inProgressJobsQ = api.job.config.byWorkspaceId.list.useQuery(
     {
       workspaceId,
-      filter: inProgressJobsForDifferentVersionAndCurrentEnvFilter,
+      selector: inProgressJobsForDifferentVersionAndCurrentEnvSelector,
       limit: 1,
     },
     { refetchInterval: 5_000 },
