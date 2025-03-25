@@ -486,6 +486,11 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
       resources: _.groupBy(triggers, (t) => t.resource.id),
     }))
     .filter((t) => isPresent(t.environment))
+    .sort((a, b) =>
+      a.environment!.name.localeCompare(b.environment!.name, undefined, {
+        sensitivity: "accent",
+      }),
+    )
     .value();
 
   return (
