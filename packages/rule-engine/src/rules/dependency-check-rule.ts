@@ -37,9 +37,9 @@ export type DependencyCheckRuleOptions = {
  *   dependencyChecks: {
  *     "database-migrations": async (ctx, release) => {
  *       const migrationStatus = await getDatabaseMigrationStatus(release.version.tag);
- *       return { 
+ *       return {
  *         satisfied: migrationStatus === "completed",
- *         message: migrationStatus !== "completed" ? 
+ *         message: migrationStatus !== "completed" ?
  *           "Database migrations must be completed before deployment" : undefined
  *       };
  *     }
@@ -50,9 +50,7 @@ export type DependencyCheckRuleOptions = {
 export class DependencyCheckRule implements DeploymentResourceRule {
   public readonly name = "DependencyCheckRule";
 
-  constructor(
-    private options: DependencyCheckRuleOptions,
-  ) {}
+  constructor(private options: DependencyCheckRuleOptions) {}
 
   /**
    * Filters releases based on the satisfaction of all dependency checks
@@ -66,7 +64,7 @@ export class DependencyCheckRule implements DeploymentResourceRule {
   ): Promise<DeploymentResourceRuleResult> {
     const { dependencyChecks } = this.options;
     const dependencyNames = Object.keys(dependencyChecks);
-    
+
     // If no dependency checks defined, pass through all candidates
     if (dependencyNames.length === 0) {
       return { allowedReleases: currentCandidates };
@@ -81,16 +79,20 @@ export class DependencyCheckRule implements DeploymentResourceRule {
 
       for (const [name, checkFn] of Object.entries(dependencyChecks)) {
         const result = await checkFn(ctx, release);
-        
+
         if (!result.satisfied) {
           failedChecks.push(
-            result.message ?? `Dependency "${name}" check failed`
+            result.message ?? `Dependency "${name}" check failed`,
           );
         }
       }
 
       if (failedChecks.length === 0) {
-        allowedReleases.push(release);
+        allowedReleases.push(
+          failedChecks.length === 0
+            ? release
+            : { release, reasons: failedChecks },
+        );
       } else {
         blockedReleases.push({ release, reasons: failedChecks });
       }
@@ -99,10 +101,12 @@ export class DependencyCheckRule implements DeploymentResourceRule {
     if (allowedReleases.length === 0 && blockedReleases.length > 0) {
       // Provide details about the first blocked release
       const firstBlocked = blockedReleases[0];
-      const reasons = firstBlocked?.reasons ?? ["Unknown dependency check failed"];
+      const reasons = firstBlocked?.reasons ?? [
+        "Unknown dependency check failed",
+      ];
       return {
         allowedReleases: [],
-        reason: `Dependency checks failed: ${reasons.join(", ")}`
+        reason: `Dependency checks failed: ${reasons.join(", ")}`,
       };
     }
 

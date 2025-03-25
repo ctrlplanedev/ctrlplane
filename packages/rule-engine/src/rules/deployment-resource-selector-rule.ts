@@ -2,8 +2,8 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
-  Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 type DeploymentResourceSelectorOptions = object;
 
@@ -14,18 +14,18 @@ export class DeploymentResourceSelectorRule implements DeploymentResourceRule {
 
   filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): DeploymentResourceRuleResult {
     if (ctx.deployment.resourceSelector) {
       // TODO: Implement resource validation
       return {
-        allowedReleases: [],
+        allowedReleases: Releases.empty(),
         reason: "Resource validation failed",
       };
     }
 
     return {
-      allowedReleases: currentCandidates,
+      allowedReleases: releases,
       reason: "Resource validation passed",
     };
   }

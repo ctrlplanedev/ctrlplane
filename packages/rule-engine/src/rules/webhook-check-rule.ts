@@ -4,6 +4,7 @@ import type {
   DeploymentResourceRuleResult,
   Release,
 } from "../types.js";
+import { Releases } from "../utils/releases.js";
 
 /**
  * Webhook response structure
@@ -232,18 +233,18 @@ export class WebhookCheckRule implements DeploymentResourceRule {
   /**
    * Filters releases based on webhook responses
    * @param ctx - Context containing information about the deployment and resource
-   * @param currentCandidates - List of releases to filter
+   * @param releases - List of releases to filter
    * @returns Promise resolving to the filtered list of releases and optional reason if blocked
    */
   async filter(
     ctx: DeploymentResourceContext,
-    currentCandidates: Release[],
+    releases: Releases,
   ): Promise<DeploymentResourceRuleResult> {
     const now = Date.now();
     const allowedReleases: Release[] = [];
     const deniedReleases: { release: Release; reason: string }[] = [];
 
-    for (const release of currentCandidates) {
+    for (const release of releases.getAll()) {
       const cacheKey = this.getCacheKey(ctx, release);
       const cached = this.resultCache.get(cacheKey);
 
@@ -277,7 +278,7 @@ export class WebhookCheckRule implements DeploymentResourceRule {
         if (response.allowed) {
           allowedReleases.push(release);
           this.resultCache.set(cacheKey, {
-            result: { allowedReleases: [release] },
+            result: { allowedReleases: Releases.from(release) },
             timestamp: now,
           });
         } else {
@@ -286,7 +287,7 @@ export class WebhookCheckRule implements DeploymentResourceRule {
           deniedReleases.push({ release, reason });
           this.resultCache.set(cacheKey, {
             result: {
-              allowedReleases: [],
+              allowedReleases: Releases.empty(),
               reason,
             },
             timestamp: now,
@@ -302,7 +303,7 @@ export class WebhookCheckRule implements DeploymentResourceRule {
           deniedReleases.push({ release, reason });
           this.resultCache.set(cacheKey, {
             result: {
-              allowedReleases: [],
+              allowedReleases: Releases.empty(),
               reason,
             },
             timestamp: now,
@@ -312,7 +313,7 @@ export class WebhookCheckRule implements DeploymentResourceRule {
           allowedReleases.push(release);
           this.resultCache.set(cacheKey, {
             result: {
-              allowedReleases: [release],
+              allowedReleases: Releases.from(release),
               reason: `Warning: ${reason} (deployment allowed because blockOnFailure=false)`,
             },
             timestamp: now,
@@ -325,11 +326,11 @@ export class WebhookCheckRule implements DeploymentResourceRule {
     if (allowedReleases.length === 0 && deniedReleases.length > 0) {
       const firstDenied = deniedReleases[0];
       return {
-        allowedReleases: [],
+        allowedReleases: Releases.empty(),
         reason: firstDenied?.reason ?? "Denied by webhook",
       };
     }
 
-    return { allowedReleases };
+    return { allowedReleases: Releases.from(allowedReleases) };
   }
 }

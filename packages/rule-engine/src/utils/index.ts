@@ -1,1 +1,1 @@
-export { Releases as CandidateReleases } from "./releases.js";
+export * from "./releases.js";

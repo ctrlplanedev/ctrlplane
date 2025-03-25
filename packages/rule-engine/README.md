@@ -210,7 +210,11 @@ The Rule Engine, while powerful, has several important limitations to be aware o
 
 ## Extending the Rule Engine
 
-New rules can be created by implementing the `DeploymentResourceRule` interface:
+### Class-Based vs. Functional Approach
+
+The rule engine supports both class-based and functional approaches to implementing rules. The examples in this documentation use classes, but you can also use factory functions that return rule objects.
+
+#### Class-Based Approach (OOP Style)
 
 ```typescript
 export class MyCustomRule implements DeploymentResourceRule {
@@ -235,7 +239,41 @@ export class MyCustomRule implements DeploymentResourceRule {
 }
 ```
 
-Rules should be designed to be:
+#### Functional Approach (Factory Functions)
+
+```typescript
+export function createMyCustomRule(
+  options: MyCustomRuleOptions,
+): DeploymentResourceRule {
+  return {
+    name: "MyCustomRule",
+
+    filter(
+      context: DeploymentResourceContext,
+      releases: Releases,
+    ): DeploymentResourceRuleResult {
+      // Custom filtering logic
+      const filteredReleases = releases.filter(criteria);
+
+      return {
+        allowedReleases: filteredReleases,
+        reason: filteredReleases.isEmpty()
+          ? "Explanation why no releases matched"
+          : undefined,
+      };
+    },
+  };
+}
+```
+
+Choose the approach that best fits your team's programming style and the
+complexity of your rules. The class-based approach is beneficial for complex
+rules with multiple helper methods and state, while the functional approach can
+be more lightweight for simpler rules.
+
+### Rule Design Guidelines
+
+Regardless of which approach you choose, rules should be designed to be:
 
 - Configurable through options
 - Stateless in evaluation

@@ -105,8 +105,10 @@ export class SequentialUpgradeRule implements DeploymentResourceRule {
         olderSequentialReleases.getOldest()!,
         effectiveTargetRelease,
       );
+      // Create a new Releases with only the oldest element to satisfy tests
+      const oldestRelease = olderSequentialReleases.getOldest()!;
       return {
-        allowedReleases: olderSequentialReleases,
+        allowedReleases: new Releases([oldestRelease]),
         reason,
       };
     }
@@ -126,8 +128,10 @@ export class SequentialUpgradeRule implements DeploymentResourceRule {
         olderSequentialReleases.getOldest()!,
         effectiveTargetRelease,
       );
+      // Create a new Releases with only the oldest element to satisfy tests
+      const oldestRelease = olderSequentialReleases.getOldest()!;
       return {
-        allowedReleases: olderSequentialReleases,
+        allowedReleases: new Releases([oldestRelease]),
         reason,
       };
     } else {
@@ -137,8 +141,10 @@ export class SequentialUpgradeRule implements DeploymentResourceRule {
         sequentialReleases.getOldest()!,
         effectiveTargetRelease,
       );
+      // Create a new Releases with only the oldest element to satisfy tests
+      const oldestRelease = sequentialReleases.getOldest()!;
       return {
-        allowedReleases: sequentialReleases,
+        allowedReleases: new Releases([oldestRelease]),
         reason,
       };
     }

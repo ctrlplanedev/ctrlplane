@@ -45,8 +45,9 @@ export class Releases {
    * @param releases - The array of releases to manage
    * @returns A new CandidateReleases instance
    */
-  static from(releases: Release[]): Releases {
-    return new Releases(releases);
+  static from(releases: Release | Release[]): Releases {
+    const releasesToInclude = Array.isArray(releases) ? releases : [releases];
+    return new Releases(releasesToInclude);
   }
 
   /**
@@ -228,17 +229,6 @@ export class Releases {
   }
 
   /**
-   * Creates a new CandidateReleases instance with only the specified releases.
-   *
-   * @param releases - Releases to include in the new collection
-   * @returns A new CandidateReleases instance
-   */
-  only(releases: Release | Release[]): Releases {
-    const releasesToInclude = Array.isArray(releases) ? releases : [releases];
-    return new Releases(releasesToInclude);
-  }
-
-  /**
    * Maps the releases using a mapping function.
    *
    * @param mapper - Function to transform each release
@@ -301,12 +291,12 @@ export class Releases {
   }
 
   /**
-   * Filters releases by version tag.
+   * Returns the release at the specified index.
    *
-   * @param tag - The version tag to match
-   * @returns A new CandidateReleases instance with filtered releases
+   * @param index - The index of the release to return
+   * @returns The release at the specified index, or undefined if the index is out of bounds
    */
-  filterByTag(tag: string): Releases {
-    return this.filter((release) => release.version.tag === tag);
+  at(index: number): Release | undefined {
+    return this.releases[index];
   }
 }

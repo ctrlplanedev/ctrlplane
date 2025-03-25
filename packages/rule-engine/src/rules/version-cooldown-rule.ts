@@ -17,7 +17,7 @@ import { Releases } from "../utils/releases.js";
 export type GetLastSuccessfulDeploymentTime = (
   resourceId: string,
   versionId: string,
-) => Promise<Date | null>;
+) => Promise<Date | null> | Date | null;
 
 /**
  * Options for configuring the VersionCooldownRule

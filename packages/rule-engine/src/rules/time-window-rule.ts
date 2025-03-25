@@ -61,7 +61,7 @@ export class TimeWindowRule implements DeploymentResourceRule {
   constructor(private options: TimeWindowRuleOptions) {}
 
   filter(
-    ctx: DeploymentResourceContext,
+    _: DeploymentResourceContext,
     currentCandidates: Releases,
   ): DeploymentResourceRuleResult {
     const now = new Date();

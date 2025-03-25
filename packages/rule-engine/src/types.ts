@@ -4,10 +4,10 @@ export type Release = {
   id: string;
   createdAt: Date;
   version: {
+    id: string;
     tag: string;
-    config: string;
+    config: Record<string, any>;
     metadata: Record<string, string>;
-    statusHistory: Record<string, string>;
   };
   variables: Record<string, unknown>;
 };
@@ -31,11 +31,10 @@ export type Environment = {
 };
 
 export type DeploymentResourceContext = {
-  desiredReleaseId: string;
+  desiredReleaseId: string | null;
   deployment: Deployment;
   environment: Environment;
   resource: Resource;
-  availableReleases: Release[];
 };
 
 /**

@@ -1,11 +1,12 @@
 export { ResourceConcurrencyRule } from "./resource-concurency-rule.js";
 export { ApprovalRequiredRule } from "./approval-required-rule.js";
 export { DependencyCheckRule } from "./dependency-check-rule.js";
-export { GradualRolloutRule } from "./gradual-version-rollout-rule.js";
-export { MaintenanceWindowRule } from "./maintenance-window-rule.js";
-export { PreviousDeployStatusRule } from "./previous-deploy-status-rule.js";
 export { DeploymentResourceSelectorRule } from "./deployment-resource-selector-rule.js";
+export { GradualVersionRolloutRule } from "./gradual-version-rollout-rule.js";
+export { MaintenanceWindowRule } from "./maintenance-window-rule.js";
+export { VersionMetadataValidationRule } from "./version-metadata-validation-rule.js";
+export { PreviousDeployStatusRule } from "./previous-deploy-status-rule.js";
+export { SequentialUpgradeRule } from "./sequential-upgrade-rule.js";
 export { TimeWindowRule } from "./time-window-rule.js";
 export { VersionCooldownRule } from "./version-cooldown-rule.js";
 export { WebhookCheckRule } from "./webhook-check-rule.js";
-export { SequentialUpgradeRule } from "./sequential-upgrade-rule.js";
