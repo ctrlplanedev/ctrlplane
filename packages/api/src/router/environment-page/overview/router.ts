@@ -125,7 +125,7 @@ export const overviewRouter = createTRPCRouter({
           deploymentPromise,
         ]);
 
-        if (environment.resourceFilter == null) return undefined;
+        if (environment.resourceFilter == null) return null;
 
         const resourceSelector: ResourceCondition = {
           type: FilterType.Comparison,
