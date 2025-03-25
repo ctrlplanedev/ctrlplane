@@ -31,10 +31,10 @@ export default async function EnvironmentOverviewPage(props: {
     workspaceId: workspace.id,
   });
 
-  const deploymentSuccess = (
-    (stats.deployments.successful / (stats.deployments.total || 1)) *
-    100
-  ).toFixed(1);
+  const deploymentSuccess =
+    stats.deployments.total > 0
+      ? (stats.deployments.successful / stats.deployments.total) * 100
+      : 0;
 
   const deployments = await api.deployment.bySystemId(environment.systemId);
 
@@ -114,7 +114,7 @@ export default async function EnvironmentOverviewPage(props: {
                   Success Rate
                 </span>
                 <span className="text-sm text-neutral-400">
-                  {deploymentSuccess}%
+                  {Number(deploymentSuccess).toFixed(1)}%
                 </span>
               </div>
               <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-neutral-800">
@@ -187,7 +187,7 @@ export default async function EnvironmentOverviewPage(props: {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="rounded-lg border border-neutral-800/40 bg-gradient-to-r from-purple-900/10 to-blue-900/10 p-4">
+            {/* <div className="rounded-lg border border-neutral-800/40 bg-gradient-to-r from-purple-900/10 to-blue-900/10 p-4">
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500"></div>
@@ -209,7 +209,7 @@ export default async function EnvironmentOverviewPage(props: {
                 <span>Started 24 minutes ago</span>
                 <span>ETA: ~8 minutes</span>
               </div>
-            </div>
+            </div> */}
 
             <DeploymentTelemetryTable deployments={deployments} />
           </CardContent>

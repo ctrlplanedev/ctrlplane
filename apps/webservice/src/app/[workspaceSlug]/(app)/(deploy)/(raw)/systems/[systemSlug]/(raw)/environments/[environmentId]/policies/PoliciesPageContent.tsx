@@ -497,7 +497,9 @@ export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
                     </TooltipProvider>
                   </div>
                   <div className="text-right font-medium text-neutral-100">
-                    {environmentPolicy.releaseWindows.length}
+                    {formatDurationText(
+                      environmentPolicy.minimumReleaseInterval,
+                    )}
                   </div>
                 </div>
               </div>

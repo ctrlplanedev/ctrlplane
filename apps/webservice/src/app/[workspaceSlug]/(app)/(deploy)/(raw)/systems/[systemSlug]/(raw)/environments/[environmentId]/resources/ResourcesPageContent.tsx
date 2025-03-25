@@ -56,8 +56,10 @@ const PAGE_SIZE = 16;
 const safeParseInt = (value: string, total: number) => {
   try {
     const page = parseInt(value);
-    if (Number.isNaN(page) || page < 0 || page * PAGE_SIZE >= total) return 0;
-    return page;
+    const isValidNumber = !Number.isNaN(page);
+    const isWithinBounds =
+      page >= 0 && (total > 0 ? page * PAGE_SIZE < total : true);
+    return isValidNumber && isWithinBounds ? page : 0;
   } catch {
     return 0;
   }
