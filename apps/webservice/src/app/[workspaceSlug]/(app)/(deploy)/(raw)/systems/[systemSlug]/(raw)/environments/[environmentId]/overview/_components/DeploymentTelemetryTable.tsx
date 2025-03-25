@@ -42,8 +42,10 @@ const OtherTooltip: React.FC<{
       <TooltipContent className="flex max-h-64 flex-col items-center gap-2 overflow-y-auto">
         {distros.reverse().map(({ version, percentage }) => (
           <div key={version} className="flex w-20 justify-between">
-            <span>{version}</span>
-            <span>{Number(percentage * 100).toFixed(1)}%</span>
+            <span className="truncate">{version}</span>
+            <span className="flex-shrink-0">
+              {Number(percentage * 100).toFixed(1)}%
+            </span>
           </div>
         ))}
       </TooltipContent>
@@ -60,8 +62,10 @@ const DistroTooltip: React.FC<{
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent className="flex max-w-[284px] items-center gap-2">
-        <div>{version}</div>
-        <div>{Number(percentage * 100).toFixed(1)}%</div>
+        <div className="truncate">{version}</div>
+        <div className="flex-shrink-0">
+          {Number(percentage * 100).toFixed(1)}%
+        </div>
       </TooltipContent>
     </Tooltip>
   </TooltipProvider>
