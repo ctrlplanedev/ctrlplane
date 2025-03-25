@@ -3,11 +3,14 @@ import type { Tx } from "@ctrlplane/db";
 import { eq, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { onJobCompletion } from "./job-creation.js";
 import { onJobFailure } from "./job-failure.js";
+
+const log = logger.child({ module: "job-update" });
 
 const updateJobMetadata = async (
   jobId: string,
@@ -86,6 +89,8 @@ export const updateJob = async (
   data: schema.UpdateJob,
   metadata?: Record<string, any>,
 ) => {
+  log.info(`updating job: ${jobId}`, { data, metadata });
+
   const jobBeforeUpdate = await db.query.job.findFirst({
     where: eq(schema.job.id, jobId),
     with: { metadata: true },
