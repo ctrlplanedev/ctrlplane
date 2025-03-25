@@ -40,7 +40,7 @@ export const createDispatchExecutionJobWorker = () =>
           await dispatchGithubJob(je.job);
         }
       } catch (error: unknown) {
-        await updateJob(db, je.job.id, {
+        await updateJob(je.job.id, {
           status: JobStatus.Failure,
           message: (error as Error).message,
         });

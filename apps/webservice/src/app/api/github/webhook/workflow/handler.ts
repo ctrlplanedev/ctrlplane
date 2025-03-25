@@ -80,7 +80,6 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   const Run = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
   const Workflow = `${Run}/workflow`;
   await updateJob(
-    db,
     job.id,
     { status, externalId, startedAt, completedAt },
     { [String(ReservedMetadataKey.Links)]: { Run, Workflow } },

@@ -79,7 +79,7 @@ class DispatchBuilder {
           const wf = wfsWithJobAgent[index];
           if (!wf) return null;
 
-          return updateJob(this.db, wf.id, {
+          return updateJob(wf.id, {
             status: JobStatus.Failure,
             message: `Variable resolution failed during job dispatch: ${result.reason.message}`,
           });
@@ -102,14 +102,14 @@ class DispatchBuilder {
 
       await Promise.all(
         validJobsWithResolvedVariables.map((j) =>
-          updateJob(this.db, j.id, { status: JobStatus.InProgress }),
+          updateJob(j.id, { status: JobStatus.InProgress }),
         ),
       );
     }
 
     await Promise.all(
       wfsWithoutJobAgent.map((j) =>
-        updateJob(this.db, j.id, {
+        updateJob(j.id, {
           status: JobStatus.InvalidJobAgent,
           message: "No job agent found",
         }),

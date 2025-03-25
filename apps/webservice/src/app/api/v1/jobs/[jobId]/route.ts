@@ -168,7 +168,7 @@ export const PATCH = async (
   const response = await req.json();
   const body = bodySchema.parse(response);
 
-  const job = await updateJob(db, params.jobId, body);
+  const job = await updateJob(params.jobId, body);
 
   return NextResponse.json(job);
 };

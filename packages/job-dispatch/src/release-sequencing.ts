@@ -65,7 +65,7 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
 
   await Promise.all(
     jobsToCancel.map((jobId) =>
-      updateJob(db, jobId, { status: JobStatus.Cancelled }),
+      updateJob(jobId, { status: JobStatus.Cancelled }),
     ),
   );
 };

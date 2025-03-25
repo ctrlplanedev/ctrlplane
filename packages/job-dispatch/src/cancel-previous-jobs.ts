@@ -36,7 +36,7 @@ export const cancelPreviousJobsForRedeployedTriggers = async (
   const jobIdsToCancel = jobsToCancel.map((job) => job.job.id);
   await Promise.all(
     jobIdsToCancel.map((jobId) =>
-      updateJob(db, jobId, { status: JobStatus.Cancelled }),
+      updateJob(jobId, { status: JobStatus.Cancelled }),
     ),
   );
 };

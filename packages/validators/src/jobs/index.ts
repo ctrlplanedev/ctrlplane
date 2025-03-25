@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export * from "./conditions/index.js";
 export * from "./agents/index.js";
 
@@ -13,6 +15,8 @@ export enum JobStatus {
   InvalidIntegration = "invalid_integration",
   ExternalRunNotFound = "external_run_not_found",
 }
+
+export const jobStatusZodEnum = z.nativeEnum(JobStatus);
 
 export type JobStatusType = `${JobStatus}`;
 

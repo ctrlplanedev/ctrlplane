@@ -100,7 +100,7 @@ export const dispatchGithubJob = async (je: Job) => {
     logger.error(
       `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
     );
-    await updateJob(db, je.id, {
+    await updateJob(je.id, {
       status: JobStatus.InvalidJobAgent,
       message: `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
     });
@@ -117,14 +117,14 @@ export const dispatchGithubJob = async (je: Job) => {
     mergedConfig.owner,
   );
   if (ghEntity == null)
-    return updateJob(db, je.id, {
+    return updateJob(je.id, {
       status: JobStatus.InvalidIntegration,
       message: `GitHub entity not found for job ${je.id}`,
     });
 
   const octokit = getInstallationOctokit(ghEntity.installationId);
   if (octokit == null)
-    return updateJob(db, je.id, {
+    return updateJob(je.id, {
       status: JobStatus.InvalidJobAgent,
       message: "GitHub bot not configured",
     });
@@ -152,7 +152,7 @@ export const dispatchGithubJob = async (je: Job) => {
       }));
 
   if (ref == null)
-    return updateJob(db, je.id, {
+    return updateJob(je.id, {
       status: JobStatus.InvalidJobAgent,
       message: "Failed to get ref for github action job",
     });

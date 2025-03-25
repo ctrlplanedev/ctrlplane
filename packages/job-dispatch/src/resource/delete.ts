@@ -41,7 +41,7 @@ const cancelJobsForDeletedResources = (tx: Tx, resources: Resource[]) =>
     .then((jobIds) =>
       Promise.all(
         jobIds.map((jobId) =>
-          updateJob(tx, jobId, { status: JobStatus.Cancelled }),
+          updateJob(jobId, { status: JobStatus.Cancelled }),
         ),
       ),
     );
