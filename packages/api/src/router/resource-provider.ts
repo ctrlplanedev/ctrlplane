@@ -27,8 +27,11 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { resourceScanQueue } from "../dispatch";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { resourceProviderPageRouter } from "./resource-provider-page/router";
 
 export const resourceProviderRouter = createTRPCRouter({
+  page: resourceProviderPageRouter,
+
   byWorkspaceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
