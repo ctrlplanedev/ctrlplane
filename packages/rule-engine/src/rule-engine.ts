@@ -77,7 +77,8 @@ export class RuleEngine {
    */
   constructor(
     private rules: Array<
-      (() => Promise<DeploymentResourceRule>) | DeploymentResourceRule
+      | (() => Promise<DeploymentResourceRule> | DeploymentResourceRule)
+      | DeploymentResourceRule
     >,
   ) {}
 
@@ -114,10 +115,9 @@ export class RuleEngine {
   ): Promise<DeploymentResourceSelectionResult> {
     // Apply each rule in sequence to filter candidate releases
     for (const rule of this.rules) {
-      const result = await (typeof rule === "function" ? rule() : rule).filter(
-        context,
-        releases,
-      );
+      const result = await (
+        typeof rule === "function" ? await rule() : rule
+      ).filter(context, releases);
 
       // If the rule yields no candidates, we must stop.
       if (result.allowedReleases.isEmpty()) {
@@ -132,17 +132,15 @@ export class RuleEngine {
 
     // Once all rules pass, select the final release
     const chosen = this.selectFinalRelease(context, releases);
-    if (chosen == null) {
-      return {
-        allowed: false,
-        reason: `No suitable version chosen after applying all rules.`,
-      };
-    }
-
-    return {
-      allowed: true,
-      chosenRelease: chosen,
-    };
+    return chosen == null
+      ? {
+          allowed: false,
+          reason: `No suitable version chosen after applying all rules.`,
+        }
+      : {
+          allowed: true,
+          chosenRelease: chosen,
+        };
   }
 
   /**

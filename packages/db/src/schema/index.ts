@@ -23,6 +23,8 @@ export * from "./event.js";
 export * from "./release-channel.js";
 export * from "./release-job-trigger.js";
 export * from "./release.js";
+export * from "./rule.js";
+
 // relations
 export * from "./environment-relations.js";
 export * from "./environment-policy-relations.js";

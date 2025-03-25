@@ -1,12 +1,12 @@
-import { and, count, eq } from "@ctrlplane/db";
+import { and, count, eq, gte } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
+  Release,
 } from "../types.js";
 import { Releases } from "../utils/releases.js";
 
@@ -14,7 +14,7 @@ import { Releases } from "../utils/releases.js";
  * Function to get count of recent deployments for a release
  */
 export type GetRecentDeploymentCountFunction = (
-  releaseId: string,
+  release: Release,
   timeWindowMs: number,
 ) => Promise<number> | number;
 
@@ -35,28 +35,27 @@ export type GradualVersionRolloutRuleOptions = {
   /**
    * Function to get count of recent deployments
    */
-  getRecentDeploymentCount?: GetRecentDeploymentCountFunction;
+  getRecentDeploymentCount: GetRecentDeploymentCountFunction;
 };
 
-const getRecentDeploymentCount: GetRecentDeploymentCountFunction = async (
-  releaseId: string,
-  _: number,
-) => {
-  return db
-    .select({ count: count() })
-    .from(schema.job)
-    .innerJoin(
-      schema.releaseJobTrigger,
-      eq(schema.job.id, schema.releaseJobTrigger.jobId),
-    )
-    .where(
-      and(
-        eq(schema.releaseJobTrigger.versionId, releaseId),
-        eq(schema.job.status, JobStatus.Successful),
-      ),
-    )
-    .then((r) => r[0]?.count ?? 0);
-};
+export const getRecentDeploymentCount: GetRecentDeploymentCountFunction =
+  async (release: Release, timeWindowMs: number) => {
+    return db
+      .select({ count: count() })
+      .from(schema.job)
+      .innerJoin(schema.releaseJob, eq(schema.job.id, schema.releaseJob.jobId))
+      .innerJoin(
+        schema.release,
+        eq(schema.releaseJob.releaseId, schema.release.id),
+      )
+      .where(
+        and(
+          eq(schema.release.versionId, release.version.id),
+          gte(schema.job.createdAt, new Date(Date.now() - timeWindowMs)),
+        ),
+      )
+      .then((r) => r[0]?.count ?? 0);
+  };
 
 /**
  * A rule that implements gradual rollout of new versions.
@@ -75,12 +74,8 @@ const getRecentDeploymentCount: GetRecentDeploymentCountFunction = async (
  */
 export class GradualVersionRolloutRule implements DeploymentResourceRule {
   public readonly name = "GradualVersionRolloutRule";
-  private getRecentDeploymentCount: GetRecentDeploymentCountFunction;
 
-  constructor(private options: GradualVersionRolloutRuleOptions) {
-    this.getRecentDeploymentCount =
-      options.getRecentDeploymentCount ?? getRecentDeploymentCount;
-  }
+  constructor(private options: GradualVersionRolloutRuleOptions) {}
 
   /**
    * Filters releases based on gradual rollout rules.
@@ -100,8 +95,8 @@ export class GradualVersionRolloutRule implements DeploymentResourceRule {
     // Process all releases in parallel for efficiency
     const releaseChecks = await Promise.all(
       releases.getAll().map(async (release) => {
-        const recentDeployments = await this.getRecentDeploymentCount(
-          release.id,
+        const recentDeployments = await this.options.getRecentDeploymentCount(
+          release,
           timeWindowMs,
         );
 

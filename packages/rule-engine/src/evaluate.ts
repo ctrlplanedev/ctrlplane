@@ -1,42 +1,64 @@
-import { and, desc, eq } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import type * as schema from "@ctrlplane/db/schema";
 
 import type { DeploymentResourceContext } from "./types.js";
 import type { Releases } from "./utils/releases.js";
 import { RuleEngine } from "./rule-engine.js";
-import { VersionCooldownRule } from "./rules/version-cooldown-rule.js";
+import {
+  getRecentDeploymentCount,
+  GradualVersionRolloutRule,
+} from "./rules/gradual-version-rollout-rule.js";
+import { MaintenanceWindowRule } from "./rules/maintenance-window-rule.js";
+import { TimeWindowRule } from "./rules/time-window-rule.js";
+import { VersionMetadataValidationRule } from "./rules/version-metadata-validation-rule.js";
 
-const versionCooldownRule = (policy: schema.EnvironmentPolicy) =>
-  new VersionCooldownRule({
-    cooldownMinutes: policy.minimumReleaseInterval,
-    getLastSuccessfulDeploymentTime: async (resourceId, versionId) => {
-      const result = await db
-        .select({ createdAt: schema.job.createdAt })
-        .from(schema.job)
-        .innerJoin(
-          schema.releaseJobTrigger,
-          eq(schema.job.id, schema.releaseJobTrigger.jobId),
-        )
-        .where(
-          and(
-            eq(schema.releaseJobTrigger.versionId, versionId),
-            eq(schema.releaseJobTrigger.resourceId, resourceId),
-            eq(schema.job.status, JobStatus.Successful),
-          ),
-        )
-        .orderBy(desc(schema.job.createdAt))
-        .limit(1);
-      return result[0]?.createdAt ?? null;
-    },
-  });
+type Rule = schema.Rule & {
+  rollouts?: schema.RuleRollout;
+  approvals?: schema.RuleApproval[];
+  maintenanceWindows?: schema.RuleMaintenanceWindow[];
+  resourceConcurrency?: schema.RuleResourceConcurrency;
+  versionMetadataValidation?: schema.RuleVersionMetadataValidation[];
+  timeWindows?: schema.RuleTimeWindow[];
+};
 
-export const evaluate = async (
-  policy: SCHEMA.EnvironmentPolicy,
+const maintenanceWindows = (rule: Rule) =>
+  new MaintenanceWindowRule(rule.maintenanceWindows ?? []);
+
+const versionMetadataValidation = (rule: Rule) =>
+  rule.versionMetadataValidation?.map(
+    (v) =>
+      new VersionMetadataValidationRule({
+        metadataKey: v.metadataKey,
+        requiredValue: v.requiredValue,
+        allowMissingMetadata: v.allowMissingMetadata,
+      }),
+  ) ?? [];
+
+const timeWindow = (rule: Rule) =>
+  rule.timeWindows?.map(
+    (t) =>
+      new TimeWindowRule({
+        startHour: t.startHour,
+        endHour: t.endHour,
+        days: t.days,
+        timezone: t.timezone,
+      }),
+  ) ?? [];
+
+const gradualVersionRollout = ({ rollouts }: Rule) =>
+  rollouts != null
+    ? [new GradualVersionRolloutRule({ ...rollouts, getRecentDeploymentCount })]
+    : [];
+
+export const evaluate = (
+  rule: Rule,
   releases: Releases,
   context: DeploymentResourceContext,
 ) => {
-  const ruleEngine = new RuleEngine([versionCooldownRule(policy)]);
-  const result = await ruleEngine.evaluate(releases, context);
+  const ruleEngine = new RuleEngine([
+    maintenanceWindows(rule),
+    ...versionMetadataValidation(rule),
+    ...timeWindow(rule),
+    ...gradualVersionRollout(rule),
+  ]);
+  return ruleEngine.evaluate(releases, context);
 };
