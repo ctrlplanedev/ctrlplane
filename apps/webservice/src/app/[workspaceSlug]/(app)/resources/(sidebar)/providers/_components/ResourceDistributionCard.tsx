@@ -1,5 +1,5 @@
 import React from "react";
-import { IconChartBar, IconExternalLink, IconGraph } from "@tabler/icons-react";
+import { IconChartBar } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import {
@@ -29,18 +29,16 @@ const getFormattedNumber = (number: number) =>
 export const ResourceDistributionCard: React.FC<{
   workspaceId: string;
 }> = ({ workspaceId }) => {
-  const { data, isLoading } =
+  const { data } =
     api.resource.provider.page.distribution.byWorkspaceId.useQuery(workspaceId);
 
   const {
-    resourcesByVersion,
     totalResources,
     uniqueApiVersions,
     averageResourcesPerVersion,
     mostCommonVersion,
     versionDistributions,
   } = data ?? {
-    resourcesByVersion: [],
     totalResources: 0,
     uniqueApiVersions: 0,
     averageResourcesPerVersion: 0,
@@ -131,7 +129,7 @@ export const ResourceDistributionCard: React.FC<{
                     <Badge
                       key={kind}
                       variant="secondary"
-                      className="font-normal text-muted-foreground"
+                      className="h-5 p-1 text-xs font-normal text-muted-foreground"
                     >
                       {kind}
                     </Badge>
@@ -166,14 +164,6 @@ export const ResourceDistributionCard: React.FC<{
               <span className="text-neutral-300">Most common version</span>
               <span className="text-neutral-400">{mostCommonVersion}</span>
             </div>
-            {/* {Object.keys(resourceVersionGroups).length > 5 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-neutral-300">Other versions</span>
-                <span className="text-neutral-400">
-                  {Object.keys(resourceVersionGroups).length - 5}
-                </span>
-              </div>
-            )} */}
           </div>
         </div>
       </CardContent>

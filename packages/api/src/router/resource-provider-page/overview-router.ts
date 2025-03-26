@@ -74,7 +74,7 @@ export const overviewRouter = createTRPCRouter({
 
       const popularKinds = resources
         .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+        .slice(0, 4);
 
       return {
         providers,

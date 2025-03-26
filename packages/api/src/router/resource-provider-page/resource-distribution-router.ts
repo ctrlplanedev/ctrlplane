@@ -49,7 +49,6 @@ export const resourceDistributionRouter = createTRPCRouter({
       }));
 
       return {
-        resourcesByVersion,
         totalResources,
         uniqueApiVersions,
         averageResourcesPerVersion,
