@@ -156,7 +156,7 @@ export const DeploymentVersion: React.FC<{
   };
 
   const filter: JobCondition = {
-    type: FilterType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [isSameVersion, isSameEnvironment],
   };

@@ -48,7 +48,7 @@ const useGetResourceCount = (
   const { data: workspace, isLoading: isWorkspaceLoading } =
     api.workspace.bySlug.useQuery(workspaceSlug);
 
-  const selector: ResourceCondition | undefined =
+  const condition: ResourceCondition | undefined =
     environment.resourceSelector != null
       ? {
           type: ConditionType.Comparison,
@@ -62,8 +62,8 @@ const useGetResourceCount = (
 
   const { data: resources, isLoading: isResourcesLoading } =
     api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId: workspace?.id ?? "", selector, limit: 0 },
-      { enabled: workspace != null && selector != null },
+      { workspaceId: workspace?.id ?? "", filter: condition, limit: 0 },
+      { enabled: workspace != null && condition != null },
     );
 
   return {

@@ -277,15 +277,15 @@ export const ResourceConfigFields: RunbookConfigFieldsFC<
 > = ({ config, updateConfig }) => {
   const onSelectorChange = (condition: ResourceCondition | null) => {
     const cond = condition ?? defaultCondition;
-    if (isEmptyCondition(cond)) updateConfig({ ...config, selector: undefined });
-    if (!isEmptyCondition(cond)) updateConfig({ ...config, selector: cond });
+    if (isEmptyCondition(cond)) updateConfig({ ...config, filter: undefined });
+    if (!isEmptyCondition(cond)) updateConfig({ ...config, filter: cond });
   };
 
   return (
     <>
-      {config.selector && <ResourceConditionBadge condition={config.selector} />}
+      {config.filter && <ResourceConditionBadge condition={config.filter} />}
       <ResourceConditionDialog
-        condition={config.selector ?? defaultCondition}
+        condition={config.filter ?? defaultCondition}
         onChange={onSelectorChange}
       >
         <Button variant="outline">Edit Filter</Button>

@@ -266,7 +266,7 @@ export const VariableTable: React.FC<{
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7 text-muted-foreground hover:text-white">
                                         <Link
                                           className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6"
-                                          href={`${workspaceUrls.resources().baseUrl()}?selector=${v.selectorHash}`}
+                                          href={`${workspaceUrls.resources().baseUrl()}?condition=${v.filterHash}`}
                                           target="_blank"
                                         >
                                           <IconDotsVertical className="h-4 w-4" />

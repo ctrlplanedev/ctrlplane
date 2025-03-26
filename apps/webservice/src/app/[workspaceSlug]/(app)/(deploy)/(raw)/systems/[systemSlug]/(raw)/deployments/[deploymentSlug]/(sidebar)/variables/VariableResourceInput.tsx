@@ -36,7 +36,7 @@ const useResourcesFromEnvironment = (
     { enabled: system != null },
   );
 
-  const selector: ResourceCondition = {
+  const filter: ResourceCondition = {
     type: ResourceConditionType.Comparison,
     operator: ResourceOperator.And,
     conditions: [
@@ -50,11 +50,11 @@ const useResourcesFromEnvironment = (
   };
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: system?.workspaceId ?? "", selector },
+    { workspaceId: system?.workspaceId ?? "", filter },
     { enabled: system != null, placeholderData: (prev) => prev },
   );
 
-  return { selector, resources: data?.items ?? [], isLoading };
+  return { filter: filter, resources: data?.items ?? [], isLoading };
 };
 
 const useResourcesWithSearch = (
@@ -63,12 +63,12 @@ const useResourcesWithSearch = (
 ) => {
   const [search, setSearch] = useState("");
   const {
-    selector: environmentSelectors,
+    filter: environmentFilters,
     resources,
     isLoading: allResourcesLoading,
   } = useResourcesFromEnvironment(system, existingSelector);
 
-  const selectorWithSearch: ResourceCondition = {
+  const filterWithSearch: ResourceCondition = {
     type: ResourceConditionType.Comparison,
     operator: ResourceOperator.And,
     conditions: [

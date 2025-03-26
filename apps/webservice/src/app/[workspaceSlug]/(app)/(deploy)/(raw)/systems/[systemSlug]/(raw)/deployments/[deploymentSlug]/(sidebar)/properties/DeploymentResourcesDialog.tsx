@@ -46,18 +46,18 @@ export const DeploymentResourcesDialog: React.FC<
   const [selectedEnvironment, setSelectedEnvironment] =
     useState<Environment | null>(environments[0] ?? null);
 
-  const selector: ResourceCondition = {
+  const condition: ResourceCondition = {
     type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [selectedEnvironment?.resourceSelector, resourceSelector].filter(
       isPresent,
     ),
   };
-  const isSelectorValid = isValidResourceCondition(selector);
+  const isFilterValid = isValidResourceCondition(condition);
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, selector, limit: 5 },
-    { enabled: selectedEnvironment != null && isSelectorValid },
+    { workspaceId, filter: condition, limit: 5 },
+    { enabled: selectedEnvironment != null && isFilterValid },
   );
 
   const resources = data?.items ?? [];
@@ -106,12 +106,12 @@ export const DeploymentResourcesDialog: React.FC<
 
         {selectedEnvironment != null && (
           <>
-            <ResourceConditionRender condition={selector} onChange={() => {}} />
+            <ResourceConditionRender condition={condition} onChange={() => {}} />
             {!isLoading && (
               <ResourceList
                 resources={resources}
                 count={count}
-                selector={selector}
+                filter={condition}
               />
             )}
           </>

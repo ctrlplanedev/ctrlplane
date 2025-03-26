@@ -48,7 +48,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
     {
       workspaceId: workspace.data?.id ?? workspaceId,
       limit: 500,
-      selector: {
+      filter: {
         type: "kind",
         operator: "equals",
         value: "AccessNode",

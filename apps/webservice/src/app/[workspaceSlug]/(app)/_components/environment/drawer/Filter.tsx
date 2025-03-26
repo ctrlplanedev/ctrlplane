@@ -74,7 +74,7 @@ const ResourceViewsCombobox: React.FC<{
                 <CommandItem
                   key={resourceView.id}
                   onSelect={() => {
-                    onChange(resourceView.selector);
+                    onChange(resourceView.filter);
                     setOpen(false);
                   }}
                   className="cursor-pointer"

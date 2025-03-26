@@ -133,7 +133,7 @@ export const Overview: React.FC<OverviewProps> = ({
 
   const versionsQ = api.deployment.version.list.useQuery({
     deploymentId,
-    selector,
+    filter: selector,
     limit: 5,
   });
   const versions = versionsQ.data;
