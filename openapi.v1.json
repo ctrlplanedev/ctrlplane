@@ -2620,7 +2620,7 @@
         }
       }
     },
-    "/v1/workspaces/{workspaceId}/resources/{selector}": {
+    "/v1/workspaces/{workspaceId}/resources/{filter}": {
       "get": {
         "summary": "Get resources by filter",
         "operationId": "getResourcesByFilter",
@@ -2659,7 +2659,7 @@
             }
           },
           "400": {
-            "description": "Invalid filter",
+            "description": "Invalid selector",
             "content": {
               "application/json": {
                 "schema": {
@@ -3371,7 +3371,7 @@
             "format": "uuid",
             "nullable": true
           },
-          "resourceFilter": {
+          "resourceSelector": {
             "type": "object",
             "nullable": true,
             "additionalProperties": true

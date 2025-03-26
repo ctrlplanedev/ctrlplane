@@ -83,7 +83,7 @@ export const ResourceViewActionsDropdown: React.FC<{
   const pathname = usePathname();
   const isResourcePage = pathname.includes("/resources");
   const { setFilter } = useResourceFilter();
-  const setView = (v: schema.ResourceView) => setFilter(v.selector, v.id);
+  const setView = (v: schema.ResourceView) => setFilter(v.filter, v.id);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
