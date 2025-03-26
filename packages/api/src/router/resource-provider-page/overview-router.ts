@@ -5,7 +5,7 @@ import { and, count, eq, isNotNull, isNull, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../../../trpc";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
 
 export const overviewRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure

@@ -62,13 +62,12 @@ export const ProviderStatisticsCard: React.FC<{
   const providerDistro = getProviderDistro(data?.providers);
   const popularKinds = data?.resources.popularKinds ?? [];
   return (
-    <Card className="col-span-1 flex flex-col bg-neutral-900/50 shadow-md transition duration-200 hover:shadow-lg">
+    <Card className="col-span-1 flex flex-col">
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <IconServer className="h-4 w-4 text-blue-400" />
           Provider Statistics
-        </div>
-        <CardTitle className="text-lg">Overview</CardTitle>
+        </CardTitle>
         <CardDescription>Summary of resource providers</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-grow flex-col space-y-6">
