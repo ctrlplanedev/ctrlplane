@@ -140,7 +140,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
       .input(
         z.object({
           workspaceId: z.string().uuid(),
-          filter: jobCondition.optional(),
+          selector: jobCondition.optional(),
           limit: z.number().int().nonnegative().max(1000).default(500),
           offset: z.number().int().nonnegative().default(0),
         }),
@@ -169,7 +169,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             and(
               eq(schema.system.workspaceId, input.workspaceId),
               isNull(schema.resource.deletedAt),
-              schema.releaseJobMatchesCondition(ctx.db, input.filter),
+              schema.releaseJobMatchesCondition(ctx.db, input.selector),
             ),
           )
           .orderBy(desc(schema.job.createdAt))

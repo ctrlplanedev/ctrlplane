@@ -18,7 +18,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
-  ResourceSelectorType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -37,11 +37,11 @@ const useResourcesFromEnvironment = (
   );
 
   const selector: ResourceCondition = {
-    type: ResourceSelectorType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ResourceOperator.And,
     conditions: [
       {
-        type: ResourceSelectorType.Comparison,
+        type: ResourceConditionType.Comparison,
         operator: ResourceOperator.Or,
         conditions: envs.map((e) => e.resourceSelector).filter(isPresent),
       },
@@ -69,12 +69,12 @@ const useResourcesWithSearch = (
   } = useResourcesFromEnvironment(system, existingSelector);
 
   const selectorWithSearch: ResourceCondition = {
-    type: ResourceSelectorType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ResourceOperator.And,
     conditions: [
       environmentFilters,
       {
-        type: ResourceSelectorType.Name,
+        type: ResourceConditionType.Name,
         operator: ColumnOperator.Contains,
         value: search,
       },

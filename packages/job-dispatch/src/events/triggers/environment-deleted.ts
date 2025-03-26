@@ -6,7 +6,7 @@ import { and, eq, inArray, isNotNull, isNull, ne } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceSelectorType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 export const getEventsForEnvironmentDeleted = async (
   environment: SCHEMA.Environment,
@@ -38,7 +38,7 @@ export const getEventsForEnvironmentDeleted = async (
     .filter(isPresent);
 
   const removedFromSystemFilter: ResourceCondition = {
-    type: ResourceSelectorType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ComparisonOperator.Or,
     not: true,
     conditions: envFilters,

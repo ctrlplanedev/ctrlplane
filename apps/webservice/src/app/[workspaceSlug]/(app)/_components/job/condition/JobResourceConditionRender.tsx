@@ -19,9 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   ColumnOperator,
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
-import { ResourceSelectorType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import type { JobConditionRenderProps } from "./job-condition-props";
 import { api } from "~/trpc/react";
@@ -46,7 +46,7 @@ export const JobResourceConditionRender: React.FC<
   const workspace = workspaceQ.data;
 
   const searchFilter: ResourceCondition = {
-    type: ResourceSelectorType.Name,
+    type: ResourceConditionType.Name,
     operator: ColumnOperator.Contains,
     value: searchDebounced,
   };
@@ -61,7 +61,7 @@ export const JobResourceConditionRender: React.FC<
     [];
 
   const systemFilter: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: envFilters,
   };
@@ -69,7 +69,7 @@ export const JobResourceConditionRender: React.FC<
   const systemResourcesFilter: ResourceCondition | undefined =
     system != null
       ? {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [searchFilter, systemFilter],
         }

@@ -39,10 +39,10 @@ import {
   ColumnOperator,
   ComparisonOperator,
   DateOperator,
-  SelectorType,
+  ConditionType,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
-import { JobSelectorType } from "@ctrlplane/validators/jobs";
+import { JobConditionType } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../common.js";
 import { deploymentVersion } from "./deployment-version.js";
@@ -252,18 +252,18 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
-  if (cond.type === SelectorType.Metadata)
+  if (cond.type === ConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === SelectorType.CreatedAt) return buildCreatedAtCondition(cond);
-  if (cond.type === JobSelectorType.Status) return eq(job.status, cond.value);
-  if (cond.type === JobSelectorType.Deployment)
+  if (cond.type === ConditionType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === JobConditionType.Status) return eq(job.status, cond.value);
+  if (cond.type === JobConditionType.Deployment)
     return eq(deploymentVersion.deploymentId, cond.value);
-  if (cond.type === JobSelectorType.Environment)
+  if (cond.type === JobConditionType.Environment)
     return eq(releaseJobTrigger.environmentId, cond.value);
-  if (cond.type === SelectorType.Version) return buildVersionCondition(cond);
-  if (cond.type === JobSelectorType.JobResource)
+  if (cond.type === ConditionType.Version) return buildVersionCondition(cond);
+  if (cond.type === JobConditionType.JobResource)
     return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
-  if (cond.type === JobSelectorType.Release)
+  if (cond.type === JobConditionType.Release)
     return eq(deploymentVersion.id, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
@@ -274,17 +274,17 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
 
 const buildRunbookCondition = (tx: Tx, cond: JobCondition): SQL | undefined => {
   if (
-    cond.type !== SelectorType.Metadata &&
-    cond.type !== SelectorType.CreatedAt &&
-    cond.type !== JobSelectorType.Status &&
-    cond.type !== SelectorType.Comparison
+    cond.type !== ConditionType.Metadata &&
+    cond.type !== ConditionType.CreatedAt &&
+    cond.type !== JobConditionType.Status &&
+    cond.type !== ConditionType.Comparison
   )
     return undefined;
 
-  if (cond.type === SelectorType.Metadata)
+  if (cond.type === ConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === SelectorType.CreatedAt) return buildCreatedAtCondition(cond);
-  if (cond.type === JobSelectorType.Status) return eq(job.status, cond.value);
+  if (cond.type === ConditionType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === JobConditionType.Status) return eq(job.status, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =

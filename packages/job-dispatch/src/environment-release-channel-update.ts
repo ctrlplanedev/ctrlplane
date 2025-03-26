@@ -5,7 +5,7 @@ import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -34,7 +34,7 @@ const createSelectorForExcludedVersions = (
   if (oldVersionSelector == null && newVersionSelector == null) return null;
   if (oldVersionSelector == null && newVersionSelector != null)
     return {
-      type: SelectorType.Comparison,
+      type: ConditionType.Comparison,
       not: true,
       operator: ComparisonOperator.And,
       conditions: [newVersionSelector],
@@ -42,11 +42,11 @@ const createSelectorForExcludedVersions = (
   if (oldVersionSelector != null && newVersionSelector == null) return null;
   if (oldVersionSelector != null && newVersionSelector != null)
     return {
-      type: SelectorType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       conditions: [
         {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           not: true,
           operator: ComparisonOperator.And,
           conditions: [newVersionSelector],

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useForm } from "@ctrlplane/ui/form";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   isComparisonCondition,
@@ -22,7 +22,7 @@ const getSelector = (
   if (resourceSelector == null) return undefined;
   if (!isComparisonCondition(resourceSelector))
     return {
-      type: SelectorType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [resourceSelector],

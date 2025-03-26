@@ -6,7 +6,7 @@ import { and, eq, isNotNull, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceSelectorType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 /**
  * Get events for a resource that has been deleted.
@@ -29,7 +29,7 @@ export const getEventsForResourceDeleted = async (
       .filter(isPresent);
 
     const systemFilter: ResourceCondition = {
-      type: ResourceSelectorType.Comparison,
+      type: ResourceConditionType.Comparison,
       operator: ComparisonOperator.Or,
       conditions: filters,
     };

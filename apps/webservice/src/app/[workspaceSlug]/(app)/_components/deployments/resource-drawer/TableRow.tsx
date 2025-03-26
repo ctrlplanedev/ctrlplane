@@ -17,10 +17,10 @@ import { TableCell, TableRow } from "@ctrlplane/ui/table";
 import {
   ColumnOperator,
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
   ReservedMetadataKey,
 } from "@ctrlplane/validators/conditions";
-import { JobSelectorType, JobStatusReadable } from "@ctrlplane/validators/jobs";
+import { JobConditionType, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { urls } from "../../../../../urls";
@@ -236,25 +236,25 @@ export const VersionRows: React.FC<VersionRowsProps> = ({
   const [open, setOpen] = useState(false);
 
   const isSameRelease: JobCondition = {
-    type: JobSelectorType.Release,
+    type: JobConditionType.Release,
     operator: ColumnOperator.Equals,
     value: version.id,
   };
 
   const isSameResource: JobCondition = {
-    type: JobSelectorType.JobResource,
+    type: JobConditionType.JobResource,
     operator: ColumnOperator.Equals,
     value: resource.id,
   };
 
   const isSameEnvironment: JobCondition = {
-    type: JobSelectorType.Environment,
+    type: JobConditionType.Environment,
     operator: ColumnOperator.Equals,
     value: environment.id,
   };
 
   const filter: JobCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [isSameRelease, isSameResource, isSameEnvironment],
   };

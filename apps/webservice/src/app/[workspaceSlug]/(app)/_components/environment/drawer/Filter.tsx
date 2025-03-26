@@ -24,7 +24,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
@@ -202,7 +202,7 @@ const getFilter = (
   if (resourceFilter == null) return undefined;
   if (!isComparisonCondition(resourceFilter))
     return {
-      type: SelectorType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [resourceFilter],

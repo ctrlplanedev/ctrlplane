@@ -12,9 +12,9 @@ import {
 import {
   ColumnOperator,
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
-import { JobSelectorType } from "@ctrlplane/validators/jobs";
+import { JobConditionType } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { DeploymentVersionTable } from "./DeploymentVersionTable";
@@ -52,21 +52,21 @@ export const DeploymentResourceDrawer: React.FC = () => {
     ) ?? {};
 
   const jobFilter: JobCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [
       {
-        type: JobSelectorType.JobResource,
+        type: JobConditionType.JobResource,
         operator: ColumnOperator.Equals,
         value: resourceId ?? "",
       },
       {
-        type: JobSelectorType.Environment,
+        type: JobConditionType.Environment,
         operator: ColumnOperator.Equals,
         value: environmentId ?? "",
       },
       {
-        type: JobSelectorType.Deployment,
+        type: JobConditionType.Deployment,
         operator: ColumnOperator.Equals,
         value: deploymentId ?? "",
       },

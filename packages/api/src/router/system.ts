@@ -29,7 +29,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -233,7 +233,7 @@ export const systemRouter = createTRPCRouter({
         );
 
       const filter: ResourceCondition = {
-        type: SelectorType.Comparison,
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.Or,
         conditions: envsWithFilter.map((env) => env.resourceSelector!),
       };

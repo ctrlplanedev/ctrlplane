@@ -6,7 +6,7 @@ import { and, eq, isNotNull, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceSelectorType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 export const getEventsForDeploymentRemoved = async (
   deployment: SCHEMA.Deployment,
@@ -25,7 +25,7 @@ export const getEventsForDeploymentRemoved = async (
   if (envFilters.length === 0) return [];
 
   const systemFilter: ResourceCondition = {
-    type: ResourceSelectorType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: envFilters,
   };

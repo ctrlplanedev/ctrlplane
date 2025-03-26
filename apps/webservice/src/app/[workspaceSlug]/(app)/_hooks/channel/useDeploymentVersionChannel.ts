@@ -4,7 +4,7 @@ import _ from "lodash";
 import {
   ColumnOperator,
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import { DeploymentVersionConditionType } from "@ctrlplane/validators/releases";
 
@@ -33,7 +33,7 @@ export const useDeploymentVersionChannel = (
   };
 
   const selector: DeploymentVersionCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: _.compact([tagSelector, versionSelector]),
   };

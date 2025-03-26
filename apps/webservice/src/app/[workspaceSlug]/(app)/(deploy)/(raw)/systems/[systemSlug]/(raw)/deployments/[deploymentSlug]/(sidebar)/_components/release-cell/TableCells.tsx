@@ -31,11 +31,11 @@ import {
 import {
   ColumnOperator,
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   activeStatusType,
-  JobSelectorType,
+  JobConditionType,
   JobStatus,
 } from "@ctrlplane/validators/jobs";
 
@@ -144,13 +144,13 @@ export const DeploymentVersion: React.FC<{
   } = props;
 
   const isSameVersion: JobCondition = {
-    type: JobSelectorType.Release,
+    type: JobConditionType.Release,
     operator: ColumnOperator.Equals,
     value: versionId,
   };
 
   const isSameEnvironment: JobCondition = {
-    type: JobSelectorType.Environment,
+    type: JobConditionType.Environment,
     operator: ColumnOperator.Equals,
     value: environment.id,
   };

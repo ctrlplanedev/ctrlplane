@@ -19,7 +19,7 @@ export enum ComparisonOperator {
   Or = "or",
 }
 
-export enum SelectorType {
+export enum ConditionType {
   Metadata = "metadata",
   CreatedAt = "created-at",
   Comparison = "comparison",

@@ -20,9 +20,9 @@ import { Separator } from "@ctrlplane/ui/separator";
 import {
   ColumnOperator,
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
-import { JobSelectorType, JobStatus } from "@ctrlplane/validators/jobs";
+import { JobConditionType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
 import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
@@ -45,44 +45,44 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   environmentId,
 }) => {
   const isSameEnvironment: EnvironmentCondition = {
-    type: JobSelectorType.Environment,
+    type: JobConditionType.Environment,
     operator: ColumnOperator.Equals,
     value: environmentId,
   };
 
   const isPending: StatusCondition = {
-    type: JobSelectorType.Status,
+    type: JobConditionType.Status,
     operator: ColumnOperator.Equals,
     value: JobStatus.Pending,
   };
 
   const isInProgress: StatusCondition = {
-    type: JobSelectorType.Status,
+    type: JobConditionType.Status,
     operator: ColumnOperator.Equals,
     value: JobStatus.InProgress,
   };
 
   const isSameVersion: JobReleaseCondition = {
-    type: JobSelectorType.Release,
+    type: JobConditionType.Release,
     operator: ColumnOperator.Equals,
     value: versionId,
   };
 
   const isDifferentVersion: JobCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     not: true,
     conditions: [isSameVersion],
   };
 
   const pendingJobsForCurrentVersionAndEnvSelector: JobCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [isSameEnvironment, isPending, isSameVersion],
   };
 
   const inProgressJobsForDifferentVersionAndCurrentEnvSelector: JobCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [isSameEnvironment, isInProgress, isDifferentVersion],
   };

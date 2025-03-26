@@ -6,7 +6,7 @@ import { useDebounce } from "react-use";
 
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
-export const useResourceSelector = () => {
+export const useResourceFilter = () => {
   const [search, setSearch] = React.useState("");
   const urlParams = useSearchParams();
   const router = useRouter();
@@ -68,5 +68,5 @@ export const useResourceSelector = () => {
     [search],
   );
 
-  return { filter, setSelector: setFilter, viewId, search, setSearch };
+  return { filter, setFilter: setFilter, viewId, search, setSearch };
 };

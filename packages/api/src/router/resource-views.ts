@@ -94,7 +94,7 @@ export const resourceViews = createTRPCRouter({
             .from(schema.resource)
             .where(
               and(
-                schema.resourceMatchesMetadata(ctx.db, view.selector),
+                schema.resourceMatchesMetadata(ctx.db, view.filter),
                 isNotDeleted,
               ),
             )

@@ -21,7 +21,7 @@ import {
 } from "@ctrlplane/ui/select";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import { isValidResourceCondition } from "@ctrlplane/validators/resources";
 
@@ -47,7 +47,7 @@ export const DeploymentResourcesDialog: React.FC<
     useState<Environment | null>(environments[0] ?? null);
 
   const selector: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [selectedEnvironment?.resourceSelector, resourceSelector].filter(
       isPresent,

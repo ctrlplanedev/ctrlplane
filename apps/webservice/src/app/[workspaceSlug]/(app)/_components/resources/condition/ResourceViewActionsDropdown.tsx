@@ -25,7 +25,7 @@ import {
 
 import { api } from "~/trpc/react";
 import { EditResourceViewDialog } from "./ResourceConditionDialog";
-import { useResourceSelector } from "./useResourceSelector";
+import { useResourceFilter } from "./useResourceFilter";
 
 const DeleteResourceViewDialog: React.FC<{
   viewId: string;
@@ -34,7 +34,7 @@ const DeleteResourceViewDialog: React.FC<{
 }> = ({ viewId, onClose, children }) => {
   const [open, setOpen] = useState(false);
   const deleteResourceView = api.resource.view.delete.useMutation();
-  const { setSelector } = useResourceSelector();
+  const { setFilter } = useResourceFilter();
 
   return (
     <AlertDialog
@@ -63,7 +63,7 @@ const DeleteResourceViewDialog: React.FC<{
             onClick={() =>
               deleteResourceView
                 .mutateAsync(viewId)
-                .then(() => setSelector(null, null))
+                .then(() => setFilter(null, null))
                 .then(onClose)
             }
           >
@@ -82,8 +82,8 @@ export const ResourceViewActionsDropdown: React.FC<{
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isResourcePage = pathname.includes("/resources");
-  const { setSelector } = useResourceSelector();
-  const setView = (v: schema.ResourceView) => setSelector(v.selector, v.id);
+  const { setFilter } = useResourceFilter();
+  const setView = (v: schema.ResourceView) => setFilter(v.selector, v.id);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

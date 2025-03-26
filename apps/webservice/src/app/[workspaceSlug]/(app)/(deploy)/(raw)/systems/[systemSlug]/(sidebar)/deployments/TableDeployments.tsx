@@ -12,7 +12,7 @@ import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
@@ -87,7 +87,7 @@ const DirectoryHeader: React.FC<{
   const filter: ResourceCondition | undefined =
     resourceSelectors.length > 0
       ? {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
           conditions: resourceSelectors,
         }

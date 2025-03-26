@@ -41,12 +41,12 @@ import {
   ColumnOperator,
   ComparisonOperator,
   DateOperator,
-  SelectorType,
+  ConditionType,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
   resourceCondition,
-  ResourceSelectorType,
+  ResourceConditionType,
 } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../common.js";
@@ -135,13 +135,13 @@ export const resourceView = pgTable("resource_view", {
     .references(() => workspace.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description").default(""),
-  selector: jsonb("selector").notNull().$type<ResourceCondition>(),
+  filter: jsonb("filter").notNull().$type<ResourceCondition>(),
 });
 
 export type ResourceView = InferSelectModel<typeof resourceView>;
 
 export const createResourceView = createInsertSchema(resourceView, {
-  selector: resourceCondition,
+  filter: resourceCondition,
 }).omit({ id: true });
 
 export const updateResourceView = createResourceView.partial();
@@ -288,21 +288,21 @@ const buildLastSyncCondition = (tx: Tx, cond: LastSyncCondition): SQL => {
 };
 
 const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
-  if (cond.type === ResourceSelectorType.Metadata)
+  if (cond.type === ResourceConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === ResourceSelectorType.Kind)
+  if (cond.type === ResourceConditionType.Kind)
     return eq(resource.kind, cond.value);
-  if (cond.type === ResourceSelectorType.Name)
+  if (cond.type === ResourceConditionType.Name)
     return buildNameCondition(tx, cond);
-  if (cond.type === ResourceSelectorType.Provider)
+  if (cond.type === ResourceConditionType.Provider)
     return eq(resource.providerId, cond.value);
-  if (cond.type === ResourceSelectorType.Identifier)
+  if (cond.type === ResourceConditionType.Identifier)
     return buildIdentifierCondition(tx, cond);
-  if (cond.type === SelectorType.CreatedAt)
+  if (cond.type === ConditionType.CreatedAt)
     return buildCreatedAtCondition(tx, cond);
-  if (cond.type === ResourceSelectorType.LastSync)
+  if (cond.type === ResourceConditionType.LastSync)
     return buildLastSyncCondition(tx, cond);
-  if (cond.type === ResourceSelectorType.Version)
+  if (cond.type === ResourceConditionType.Version)
     return eq(resource.version, cond.value);
 
   if (cond.conditions.length === 0) return sql`FALSE`;

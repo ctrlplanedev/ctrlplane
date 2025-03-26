@@ -12,7 +12,7 @@ import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
@@ -51,7 +51,7 @@ const useGetResourceCount = (
   const selector: ResourceCondition | undefined =
     environment.resourceSelector != null
       ? {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
             environment.resourceSelector,

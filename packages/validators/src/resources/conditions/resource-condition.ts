@@ -13,7 +13,7 @@ import type { ProviderCondition } from "./provider-condition.js";
 import type { VersionCondition } from "./version-condition.js";
 import {
   createdAtCondition,
-  SelectorType,
+  ConditionType,
   metadataCondition,
 } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
@@ -55,7 +55,7 @@ export enum ResourceOperator {
   Or = "or",
 }
 
-export enum ResourceSelectorType {
+export enum ResourceConditionType {
   Metadata = "metadata",
   Kind = "kind",
   Name = "name",
@@ -67,7 +67,7 @@ export enum ResourceSelectorType {
 }
 
 export const defaultCondition: ResourceCondition = {
-  type: ResourceSelectorType.Comparison,
+  type: ResourceConditionType.Comparison,
   operator: ResourceOperator.And,
   not: false,
   conditions: [],
@@ -76,7 +76,7 @@ export const defaultCondition: ResourceCondition = {
 export const isComparisonCondition = (
   condition: ResourceCondition,
 ): condition is ComparisonCondition =>
-  condition.type === ResourceSelectorType.Comparison;
+  condition.type === ResourceConditionType.Comparison;
 
 export const MAX_DEPTH_ALLOWED = 2; // 0 indexed
 
@@ -102,39 +102,39 @@ export const isEmptyCondition = (condition: ResourceCondition): boolean =>
 export const isMetadataCondition = (
   condition: ResourceCondition,
 ): condition is MetadataCondition =>
-  condition.type === ResourceSelectorType.Metadata;
+  condition.type === ResourceConditionType.Metadata;
 
 export const isKindCondition = (
   condition: ResourceCondition,
-): condition is KindCondition => condition.type === ResourceSelectorType.Kind;
+): condition is KindCondition => condition.type === ResourceConditionType.Kind;
 
 export const isNameCondition = (
   condition: ResourceCondition,
-): condition is NameCondition => condition.type === ResourceSelectorType.Name;
+): condition is NameCondition => condition.type === ResourceConditionType.Name;
 
 export const isProviderCondition = (
   condition: ResourceCondition,
 ): condition is ProviderCondition =>
-  condition.type === ResourceSelectorType.Provider;
+  condition.type === ResourceConditionType.Provider;
 
 export const isIdentifierCondition = (
   condition: ResourceCondition,
 ): condition is IdentifierCondition =>
-  condition.type === ResourceSelectorType.Identifier;
+  condition.type === ResourceConditionType.Identifier;
 
 export const isCreatedAtCondition = (
   condition: ResourceCondition,
-): condition is CreatedAtCondition => condition.type === SelectorType.CreatedAt;
+): condition is CreatedAtCondition => condition.type === ConditionType.CreatedAt;
 
 export const isLastSyncCondition = (
   condition: ResourceCondition,
 ): condition is LastSyncCondition =>
-  condition.type === ResourceSelectorType.LastSync;
+  condition.type === ResourceConditionType.LastSync;
 
 export const isVersionCondition = (
   condition: ResourceCondition,
 ): condition is VersionCondition =>
-  condition.type === ResourceSelectorType.Version;
+  condition.type === ResourceConditionType.Version;
 
 export const isValidResourceCondition = (
   condition: ResourceCondition,

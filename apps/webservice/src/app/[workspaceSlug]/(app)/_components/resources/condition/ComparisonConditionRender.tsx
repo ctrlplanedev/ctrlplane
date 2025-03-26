@@ -33,12 +33,12 @@ import {
 import {
   ColumnOperator,
   DateOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
-  ResourceSelectorType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -79,7 +79,7 @@ export const ComparisonConditionRender: React.FC<
     if (!cond) return;
 
     const newComparisonCondition: ComparisonCondition = {
-      type: ResourceSelectorType.Comparison,
+      type: ResourceConditionType.Comparison,
       operator: ResourceOperator.And,
       conditions: [cond],
     };
@@ -114,7 +114,7 @@ export const ComparisonConditionRender: React.FC<
     }
 
     const newNotComparisonCondition: ComparisonCondition = {
-      type: ResourceSelectorType.Comparison,
+      type: ResourceConditionType.Comparison,
       operator: ResourceOperator.And,
       not: true,
       conditions: [cond],
@@ -268,7 +268,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: ResourceSelectorType.Metadata,
+                  type: ResourceConditionType.Metadata,
                   operator: ResourceOperator.Equals,
                   key: "",
                   value: "",
@@ -280,7 +280,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: ResourceSelectorType.Kind,
+                  type: ResourceConditionType.Kind,
                   operator: ResourceOperator.Equals,
                   value: "",
                 })
@@ -291,7 +291,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: ResourceSelectorType.Name,
+                  type: ResourceConditionType.Name,
                   operator: ColumnOperator.Equals,
                   value: "",
                 })
@@ -302,7 +302,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: ResourceSelectorType.Identifier,
+                  type: ResourceConditionType.Identifier,
                   operator: ColumnOperator.Equals,
                   value: "",
                 })
@@ -313,7 +313,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: ResourceSelectorType.Provider,
+                  type: ResourceConditionType.Provider,
                   operator: ResourceOperator.Equals,
                   value: "",
                 })
@@ -324,7 +324,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: SelectorType.CreatedAt,
+                  type: ConditionType.CreatedAt,
                   operator: DateOperator.Before,
                   value: new Date().toISOString(),
                 })
@@ -335,7 +335,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: ResourceSelectorType.LastSync,
+                  type: ResourceConditionType.LastSync,
                   operator: DateOperator.Before,
                   value: new Date().toISOString(),
                 })
@@ -346,7 +346,7 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: ResourceSelectorType.Version,
+                  type: ResourceConditionType.Version,
                   operator: ResourceOperator.Equals,
                   value: "",
                 })
@@ -358,7 +358,7 @@ export const ComparisonConditionRender: React.FC<
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: ResourceSelectorType.Comparison,
+                    type: ResourceConditionType.Comparison,
                     operator: ResourceOperator.And,
                     conditions: [],
                     not: false,
@@ -372,7 +372,7 @@ export const ComparisonConditionRender: React.FC<
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: ResourceSelectorType.Comparison,
+                    type: ResourceConditionType.Comparison,
                     operator: ResourceOperator.And,
                     not: true,
                     conditions: [],

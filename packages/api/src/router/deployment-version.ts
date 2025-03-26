@@ -30,7 +30,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   activeStatus,
@@ -800,7 +800,7 @@ export const versionRouter = createTRPCRouter({
           };
 
         const resourceSelector: ResourceCondition = {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
             env.environment.resourceSelector,

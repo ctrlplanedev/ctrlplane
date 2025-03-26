@@ -14,7 +14,7 @@ import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceSelectorType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { handleEvent } from "../events/index.js";
 import { dispatchReleaseJobTriggers } from "../job-dispatch.js";
@@ -173,7 +173,7 @@ const getNotInSystemFilter = async (
   if (filters.length === 0) return null;
 
   return {
-    type: ResourceSelectorType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ComparisonOperator.Or,
     not: true,
     conditions: filters,

@@ -39,7 +39,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -127,7 +127,7 @@ const valueRouter = createTRPCRouter({
         .then((d) => d?.system.environments ?? []);
 
       const systemCondition: ResourceCondition = {
-        type: SelectorType.Comparison,
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.Or,
         conditions: dep.map((e) => e.resourceSelector).filter(isPresent),
       };
@@ -182,7 +182,7 @@ const valueRouter = createTRPCRouter({
           .map((v) => v.resourceSelector)
           .filter(isPresent);
         return {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
           not: true,
           conditions,
@@ -196,7 +196,7 @@ const valueRouter = createTRPCRouter({
           .map((v) => v.resourceSelector)
           .filter(isPresent);
         return {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
           not: true,
           conditions,
@@ -204,12 +204,12 @@ const valueRouter = createTRPCRouter({
       };
 
       const oldResourceSelector: ResourceCondition = {
-        type: SelectorType.Comparison,
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.And,
         conditions: [systemCondition, getOldResourceSelector()].filter(isPresent),
       };
       const newResourceSelector: ResourceCondition = {
-        type: SelectorType.Comparison,
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.And,
         conditions: [systemCondition, getNewResourceSelector()].filter(isPresent),
       };

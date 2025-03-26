@@ -38,10 +38,10 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ColumnOperator,
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
-  ResourceSelectorType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -96,7 +96,7 @@ const parseResourceSelector = (
 const getResourceFilterFromDropdownChange = (
   resourceFilter: ComparisonCondition | null,
   value: string,
-  type: ResourceSelectorType.Kind | ResourceSelectorType.Version,
+  type: ResourceConditionType.Kind | ResourceConditionType.Version,
 ): ComparisonCondition | null => {
   if (value === "all") {
     if (resourceFilter == null) return null;
@@ -116,7 +116,7 @@ const getResourceFilterFromDropdownChange = (
 
   if (resourceFilter == null) {
     return {
-      type: SelectorType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [condition],
@@ -128,7 +128,7 @@ const getResourceFilterFromDropdownChange = (
   );
 
   const newResourceFilter: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     not: false,
     conditions: [...conditionsExcludingType, condition],
@@ -145,7 +145,7 @@ const getResourceFilterWithSearch = (
     if (resourceFilter == null) return null;
 
     const conditionsExcludingSearch = resourceFilter.conditions.filter(
-      (c) => c.type !== ResourceSelectorType.Name,
+      (c) => c.type !== ResourceConditionType.Name,
     );
 
     return parseResourceSelector({
@@ -155,14 +155,14 @@ const getResourceFilterWithSearch = (
   }
 
   const newNameCondition: ResourceCondition = {
-    type: ResourceSelectorType.Name,
+    type: ResourceConditionType.Name,
     operator: ColumnOperator.Contains,
     value: searchTerm,
   };
 
   if (resourceFilter == null) {
     return parseResourceSelector({
-      type: SelectorType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [newNameCondition],
@@ -170,7 +170,7 @@ const getResourceFilterWithSearch = (
   }
 
   const conditionsExcludingSearch = resourceFilter.conditions.filter(
-    (c) => c.type !== ResourceSelectorType.Name,
+    (c) => c.type !== ResourceConditionType.Name,
   );
 
   return parseResourceSelector({
@@ -212,7 +212,7 @@ export const ResourcesPageContent: React.FC<{
     useState<ComparisonCondition | null>(null);
 
   const finalFilter: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     not: false,
     conditions: [environment.resourceSelector, resourceFilter].filter(isPresent),
@@ -228,7 +228,7 @@ export const ResourcesPageContent: React.FC<{
 
   const handleFilterDropdownChange = (
     value: string,
-    type: ResourceSelectorType.Kind | ResourceSelectorType.Version,
+    type: ResourceConditionType.Kind | ResourceConditionType.Version,
   ) => {
     const newResourceFilter = getResourceFilterFromDropdownChange(
       resourceFilter,
@@ -383,7 +383,7 @@ export const ResourcesPageContent: React.FC<{
               <Select
                 onValueChange={(value) => {
                   if (value === "all") {
-                    handleFilterDropdownChange(value, ResourceSelectorType.Kind);
+                    handleFilterDropdownChange(value, ResourceConditionType.Kind);
                     return;
                   }
 
@@ -396,7 +396,7 @@ export const ResourcesPageContent: React.FC<{
 
                   handleFilterDropdownChange(
                     trimmedKind,
-                    ResourceSelectorType.Kind,
+                    ResourceConditionType.Kind,
                   );
                 }}
               >
@@ -415,7 +415,7 @@ export const ResourcesPageContent: React.FC<{
 
               <Select
                 onValueChange={(value) =>
-                  handleFilterDropdownChange(value, ResourceSelectorType.Version)
+                  handleFilterDropdownChange(value, ResourceConditionType.Version)
                 }
               >
                 <SelectTrigger className="w-40">

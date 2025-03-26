@@ -8,7 +8,7 @@ import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { getEventsForDeploymentRemoved, handleEvent } from "./events/index.js";
@@ -58,7 +58,7 @@ const getResourcesInNewSystem = async (deployment: SCHEMA.Deployment) => {
   if (filters.length === 0) return [];
 
   const systemFilter: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: filters,
   };
@@ -109,19 +109,19 @@ const handleDeploymentFilterChanged = async (
   });
 
   const isInSystem: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: environments.map((e) => e.resourceSelector).filter(isPresent),
   };
 
   const oldResourcesFilter: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [prevFilter, isInSystem].filter(isPresent),
   };
 
   const newResourcesFilter: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [deployment.resourceSelector, isInSystem].filter(isPresent),
   };

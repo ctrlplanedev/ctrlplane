@@ -8,7 +8,7 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../../../trpc";
@@ -128,7 +128,7 @@ export const overviewRouter = createTRPCRouter({
         if (environment.resourceSelector == null) return null;
 
         const resourceSelector: ResourceCondition = {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
             environment.resourceSelector,

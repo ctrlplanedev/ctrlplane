@@ -31,7 +31,7 @@ import {
   ResourceConditionDialog,
 } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionDialog";
 import { ResourceViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceViewActionsDropdown";
-import { useResourceSelector } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/useResourceSelector";
+import { useResourceFilter } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/useResourceFilter";
 import { api } from "~/trpc/react";
 import { exportResources } from "./export-resources";
 import { ResourceGettingStarted } from "./ResourceGettingStarted";
@@ -83,7 +83,7 @@ export const ResourcePageContent: React.FC<{
   view: schema.ResourceView | null;
 }> = ({ workspace, view }) => {
   const [search, setSearch] = React.useState("");
-  const { filter, setSelector } = useResourceSelector();
+  const { filter, setFilter } = useResourceFilter();
 
   useDebounce(
     () => {

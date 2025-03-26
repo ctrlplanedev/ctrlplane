@@ -5,7 +5,7 @@ import React from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
-import { JobSelectorType } from "@ctrlplane/validators/jobs";
+import { JobConditionType } from "@ctrlplane/validators/jobs";
 
 import { DailyJobsChart } from "~/app/[workspaceSlug]/(app)/insights/DailyJobsChart";
 import { api } from "~/trpc/react";
@@ -26,7 +26,7 @@ export const JobHistoryPopover: React.FC<JobHistoryPopoverProps> = ({
   );
 
   const inDeploymentSelector: JobCondition = {
-    type: JobSelectorType.Deployment,
+    type: JobConditionType.Deployment,
     operator: ColumnOperator.Equals,
     value: deploymentId,
   };

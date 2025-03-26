@@ -35,7 +35,7 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
@@ -66,7 +66,7 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({
   const { resourceSelector: deploymentResourceSelector } = deployment;
 
   const selector: ResourceCondition = {
-    type: SelectorType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     conditions: [envResourceSelector, deploymentResourceSelector].filter(isPresent),
   };
@@ -111,7 +111,7 @@ const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
   const selector: ResourceCondition | undefined =
     resourceSelectors.length > 0
       ? {
-          type: SelectorType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
           conditions: resourceSelectors,
         }

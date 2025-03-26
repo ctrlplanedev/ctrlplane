@@ -8,7 +8,7 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   activeStatus,
@@ -45,7 +45,7 @@ export const resourcesRouter = createTRPCRouter({
         .then(takeFirst);
 
       const selector: ResourceCondition = {
-        type: SelectorType.Comparison,
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.And,
         conditions: [environment.resourceSelector, input.filter].filter(
           isPresent,

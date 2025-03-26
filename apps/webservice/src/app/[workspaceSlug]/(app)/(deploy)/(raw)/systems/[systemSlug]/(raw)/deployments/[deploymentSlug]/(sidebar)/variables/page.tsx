@@ -8,7 +8,7 @@ import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
 import {
-  ResourceSelectorType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -50,7 +50,7 @@ export default async function VariablesPage(props: {
   );
 
   const systemResourcesSelector: ComparisonCondition = {
-    type: ResourceSelectorType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ResourceOperator.Or,
     conditions: await api.environment
       .bySystemId(deployment.systemId)
@@ -77,7 +77,7 @@ export default async function VariablesPage(props: {
       );
 
       const filter: ComparisonCondition = {
-        type: ResourceSelectorType.Comparison,
+        type: ResourceConditionType.Comparison,
         operator: ResourceOperator.And,
         conditions: [systemResourcesFilter, v.resourceSelector],
       };
@@ -105,12 +105,12 @@ export default async function VariablesPage(props: {
         restFilters.length === 0
           ? systemResourcesFilter
           : {
-              type: ResourceSelectorType.Comparison,
+              type: ResourceConditionType.Comparison,
               operator: ResourceOperator.And,
               conditions: [
                 systemResourcesFilter,
                 {
-                  type: ResourceSelectorType.Comparison,
+                  type: ResourceConditionType.Comparison,
                   operator: ResourceOperator.Or,
                   not: true,
                   conditions: restFilters,

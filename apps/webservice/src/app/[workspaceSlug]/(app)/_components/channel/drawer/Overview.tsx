@@ -22,7 +22,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   ComparisonOperator,
-  SelectorType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
@@ -79,7 +79,7 @@ const getVersionSelector = (
   if (versionSelector == null) return null;
   if (!isComparisonCondition(versionSelector))
     return {
-      type: SelectorType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [versionSelector],
