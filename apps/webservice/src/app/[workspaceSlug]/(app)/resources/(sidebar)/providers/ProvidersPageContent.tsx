@@ -59,6 +59,7 @@ import { ResourceFilterType } from "@ctrlplane/validators/resources";
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
+import { HealthCard } from "./_components/HealthCard";
 import { ProviderStatisticsCard } from "./_components/ProviderStatisticsCard";
 import { ResourceDistributionCard } from "./_components/ResourceDistributionCard";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
@@ -780,93 +781,7 @@ export const ProviderPageContent: React.FC<{
             <ResourceDistributionCard workspaceId={workspace.id} />
 
             {/* Sync Status Card */}
-            <Card className="col-span-1 flex flex-col bg-neutral-900/50 shadow-md transition duration-200 hover:shadow-lg">
-              <CardHeader className="pb-2">
-                <div className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-400">
-                  <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                  Sync Status
-                </div>
-                <CardTitle className="text-lg">Health</CardTitle>
-                <CardDescription>Provider connectivity status</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-grow flex-col space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-3 shadow-inner">
-                    <div className="text-2xl font-semibold text-green-400">
-                      {syncStatusStats.success}
-                    </div>
-                    <div className="flex items-center justify-center gap-1 text-xs text-neutral-400">
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                      Healthy
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 shadow-inner">
-                    <div className="text-2xl font-semibold text-yellow-400">
-                      {syncStatusStats.warning}
-                    </div>
-                    <div className="flex items-center justify-center gap-1 text-xs text-neutral-400">
-                      <div className="h-1.5 w-1.5 rounded-full bg-yellow-500"></div>
-                      Warning
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 shadow-inner">
-                    <div className="text-2xl font-semibold text-red-400">
-                      {syncStatusStats.error}
-                    </div>
-                    <div className="flex items-center justify-center gap-1 text-xs text-neutral-400">
-                      <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>
-                      Error
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-neutral-800/40 bg-gradient-to-r from-purple-900/10 to-blue-900/10 p-4">
-                  <div className="mb-2">
-                    <h5 className="text-sm font-medium text-neutral-200">
-                      Resource Syncing
-                    </h5>
-                    <p className="text-xs text-neutral-400">
-                      Last sync completed {healthStats.syncTime}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-neutral-300">
-                        Auto-sync enabled
-                      </span>
-                    </div>
-                    <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
-                      Healthy
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
-                  <h5 className="text-sm font-medium text-neutral-200">
-                    Recent Issues
-                  </h5>
-                  <div className="max-h-[120px] space-y-2 overflow-y-auto pr-1 text-xs">
-                    {healthStats.recentIssues.map((issue, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`h-2 w-2 rounded-full ${issue.type === "warning" ? "bg-yellow-500" : "bg-red-500"}`}
-                          ></div>
-                          <span className="text-neutral-300">
-                            {issue.message}
-                          </span>
-                        </div>
-                        <span className="text-neutral-400">{issue.time}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <HealthCard workspaceId={workspace.id} />
 
             {/* All Providers Section */}
             <div className="col-span-3 mt-8">
