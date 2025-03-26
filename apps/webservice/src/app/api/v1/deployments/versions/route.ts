@@ -23,16 +23,14 @@ import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
-import { authn, authz } from "../auth";
-import { parseBody } from "../body-parser";
-import { request } from "../middleware";
+import { authn, authz } from "~/app/api/v1/auth";
+import { parseBody } from "~/app/api/v1/body-parser";
+import { request } from "~/app/api/v1/middleware";
 
-const bodySchema = schema.createDeploymentVersion.omit({ tag: true }).and(
+const bodySchema = schema.createDeploymentVersion.and(
   z.object({
     metadata: z.record(z.string()).optional(),
     status: z.nativeEnum(DeploymentVersionStatus).optional(),
-    tag: z.string().optional(),
-    version: z.string().optional(),
   }),
 );
 
@@ -49,33 +47,9 @@ export const POST = request()
   .handle<{ user: schema.User; body: z.infer<typeof bodySchema> }>(
     async (ctx) => {
       const { req, body } = ctx;
-      const { name, version, tag, metadata = {} } = body;
-      const getVersionName = () => {
-        if (name != null && name !== "") return name;
-        if (tag != null && tag !== "") return tag;
-        if (version != null && version !== "") return version;
-        return null;
-      };
+      const { name, tag, metadata = {} } = body;
 
-      const versionName = getVersionName();
-      if (versionName == null)
-        return NextResponse.json(
-          { error: "Invalid version name" },
-          { status: httpStatus.BAD_REQUEST },
-        );
-
-      const getVersionTag = () => {
-        if (tag != null && tag !== "") return tag;
-        if (version != null && version !== "") return version;
-        return null;
-      };
-
-      const versionTag = getVersionTag();
-      if (versionTag == null)
-        return NextResponse.json(
-          { error: "Invalid version tag" },
-          { status: httpStatus.BAD_REQUEST },
-        );
+      const versionName = name ?? tag;
 
       try {
         const prevVersion = await db
@@ -84,14 +58,14 @@ export const POST = request()
           .where(
             and(
               eq(schema.deploymentVersion.deploymentId, body.deploymentId),
-              eq(schema.deploymentVersion.tag, versionTag),
+              eq(schema.deploymentVersion.tag, tag),
             ),
           )
           .then(takeFirstOrNull);
 
         const depVersion = await db
           .insert(schema.deploymentVersion)
-          .values({ ...body, name: versionName, tag: versionTag })
+          .values({ ...body, name: versionName, tag })
           .onConflictDoUpdate({
             target: [
               schema.deploymentVersion.deploymentId,
@@ -150,7 +124,7 @@ export const POST = request()
             })
             .then(() =>
               logger.info(
-                `Release for ${depVersion.id} job triggers created and dispatched.`,
+                `Jobs for deployment version ${depVersion.id} created and dispatched.`,
                 req,
               ),
             );
@@ -166,7 +140,7 @@ export const POST = request()
             { status: httpStatus.BAD_REQUEST },
           );
 
-        logger.error("Error creating release:", error);
+        logger.error("Error creating deployment version:", error);
         return NextResponse.json(
           { error: "Internal Server Error" },
           { status: httpStatus.INTERNAL_SERVER_ERROR },

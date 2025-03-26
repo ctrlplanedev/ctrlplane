@@ -71,15 +71,6 @@ export const GET = async (
           environment: jobRows[0]!.environment,
           target: jobRows[0]!.resource,
           deployment: jobRows[0]!.deployment,
-          release:
-            jobRows[0]!.deployment_version != null
-              ? {
-                  ...jobRows[0]!.deployment_version,
-                  metadata: jobRows
-                    .map((r) => r.deployment_version_metadata)
-                    .filter(isPresent),
-                }
-              : null,
           version:
             jobRows[0]!.deployment_version != null
               ? {

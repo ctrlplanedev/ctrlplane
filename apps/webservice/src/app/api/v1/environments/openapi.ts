@@ -41,7 +41,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   policyId: {
                     type: "string",
                   },
-                  releaseChannels: {
+                  channels: {
                     type: "array",
                     items: {
                       type: "string",

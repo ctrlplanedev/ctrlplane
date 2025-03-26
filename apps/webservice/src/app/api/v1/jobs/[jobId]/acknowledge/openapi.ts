@@ -34,7 +34,7 @@ export const openapi: Swagger.SwaggerV3 = {
                       type: "boolean",
                     },
                   },
-                  required: ["sucess"],
+                  required: ["success"],
                 },
               },
             },

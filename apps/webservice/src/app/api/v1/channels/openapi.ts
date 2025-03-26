@@ -7,22 +7,22 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/release-channels": {
+    "/v1/channels": {
       post: {
-        summary: "Create a release channel",
-        operationId: "createReleaseChannel",
+        summary: "Create a channel",
+        operationId: "createChannel",
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["deploymentId", "name", "releaseFilter"],
+                required: ["deploymentId", "name", "versionSelector"],
                 properties: {
                   deploymentId: { type: "string" },
                   name: { type: "string" },
                   description: { type: "string", nullable: true },
-                  releaseFilter: {
+                  versionSelector: {
                     type: "object",
                     additionalProperties: true,
                   },
@@ -33,7 +33,7 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         responses: {
           "200": {
-            description: "Release channel created successfully",
+            description: "Channel created successfully",
             content: {
               "application/json": {
                 schema: {
@@ -44,7 +44,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     name: { type: "string" },
                     description: { type: "string", nullable: true },
                     createdAt: { type: "string", format: "date-time" },
-                    releaseFilter: {
+                    versionSelector: {
                       type: "object",
                       additionalProperties: true,
                     },
@@ -55,7 +55,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           "409": {
-            description: "Release channel already exists",
+            description: "Channel already exists",
             content: {
               "application/json": {
                 schema: {
@@ -70,7 +70,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           "500": {
-            description: "Failed to create release channel",
+            description: "Failed to create channel",
             content: {
               "application/json": {
                 schema: {

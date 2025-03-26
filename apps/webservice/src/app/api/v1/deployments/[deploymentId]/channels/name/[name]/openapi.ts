@@ -7,10 +7,10 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/deployments/{deploymentId}/release-channels/name/{name}": {
+    "/v1/deployments/{deploymentId}/channels/name/{name}": {
       delete: {
-        summary: "Delete a release channel",
-        operationId: "deleteReleaseChannel",
+        summary: "Delete a channel",
+        operationId: "deleteChannel",
         parameters: [
           {
             name: "deploymentId",
@@ -27,7 +27,7 @@ export const openapi: Swagger.SwaggerV3 = {
         ],
         responses: {
           "200": {
-            description: "Release channel deleted",
+            description: "Channel deleted",
             content: {
               "application/json": {
                 schema: {
@@ -51,7 +51,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           "404": {
-            description: "Release channel not found",
+            description: "Channel not found",
             content: {
               "application/json": {
                 schema: {
@@ -63,7 +63,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           "500": {
-            description: "Failed to delete release channel",
+            description: "Failed to delete channel",
             content: {
               "application/json": {
                 schema: {
