@@ -12,8 +12,8 @@ import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
 import type { VersionCondition } from "./version-condition.js";
 import {
-  createdAtCondition,
   ConditionType,
+  createdAtCondition,
   metadataCondition,
 } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
@@ -124,7 +124,8 @@ export const isIdentifierCondition = (
 
 export const isCreatedAtCondition = (
   condition: ResourceCondition,
-): condition is CreatedAtCondition => condition.type === ConditionType.CreatedAt;
+): condition is CreatedAtCondition =>
+  condition.type === ConditionType.CreatedAt;
 
 export const isLastSyncCondition = (
   condition: ResourceCondition,

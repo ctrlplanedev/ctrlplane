@@ -55,7 +55,9 @@ export const deploymentSchema = z.object({
   resourceSelector: resourceCondition
     .nullable()
     .optional()
-    .refine((selector) => selector == null || isValidResourceCondition(selector)),
+    .refine(
+      (selector) => selector == null || isValidResourceCondition(selector),
+    ),
 });
 
 export const deployment = pgTable(
