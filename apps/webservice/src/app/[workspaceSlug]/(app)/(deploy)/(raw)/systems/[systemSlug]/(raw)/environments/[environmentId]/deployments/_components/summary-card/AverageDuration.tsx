@@ -24,7 +24,6 @@ export const PercentChange: React.FC<{
       )}
     >
       <span>
-        {percentChange === 0 && "-"}
         {percentChange > 0 && "↑"}
         {percentChange < 0 && "↓"} {Number(percentChange).toFixed(0)}% from
         previous period
