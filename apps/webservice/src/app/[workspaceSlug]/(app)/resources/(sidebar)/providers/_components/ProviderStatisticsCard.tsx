@@ -62,13 +62,12 @@ export const ProviderStatisticsCard: React.FC<{
   const providerDistro = getProviderDistro(data?.providers);
   const popularKinds = data?.resources.popularKinds ?? [];
   return (
-    <Card className="col-span-1 flex flex-col bg-neutral-900/50 shadow-md transition duration-200 hover:shadow-lg">
+    <Card className="col-span-1 flex flex-col">
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <IconServer className="h-4 w-4 text-blue-400" />
           Provider Statistics
-        </div>
-        <CardTitle className="text-lg">Overview</CardTitle>
+        </CardTitle>
         <CardDescription>Summary of resource providers</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-grow flex-col space-y-6">
@@ -174,19 +173,21 @@ export const ProviderStatisticsCard: React.FC<{
         </div>
 
         {popularKinds.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-neutral-300">
-              Popular Resource Kinds
-            </h4>
-            <div className="space-y-1">
-              {popularKinds.map(({ version, kind, count }) => (
-                <div key={kind} className="flex justify-between">
-                  <span className="text-sm text-neutral-300">
-                    {kind}:{version}
-                  </span>
-                  <span className="text-sm text-muted-foreground">{count}</span>
-                </div>
-              ))}
+          <div className="flex h-full flex-col justify-end">
+            <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
+              <h4 className="mb-3 text-sm font-medium text-neutral-300">
+                Popular Resource Kinds
+              </h4>
+              <div className="space-y-1">
+                {popularKinds.map(({ version, kind, count }) => (
+                  <div key={kind} className="flex justify-between text-xs">
+                    <span className=" text-neutral-300">
+                      {kind}:{version}
+                    </span>
+                    <span className=" text-muted-foreground">{count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

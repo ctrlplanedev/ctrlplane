@@ -60,6 +60,7 @@ import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
 import { ProviderStatisticsCard } from "./_components/ProviderStatisticsCard";
+import { ResourceDistributionCard } from "./_components/ResourceDistributionCard";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 import { ProviderCard } from "./ProviderCard";
 import { ResourceProvidersGettingStarted } from "./ResourceProvidersGettingStarted";
@@ -776,142 +777,7 @@ export const ProviderPageContent: React.FC<{
             <ProviderStatisticsCard workspaceId={workspace.id} />
 
             {/* Resource Distribution Card */}
-            <Card className="col-span-1 flex flex-col bg-neutral-900/50 shadow-md transition duration-200 hover:shadow-lg">
-              <CardHeader className="pb-2">
-                <div className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-400">
-                  <IconExternalLink className="h-4 w-4 text-purple-400" />
-                  Resource Distribution
-                </div>
-                <CardTitle className="text-lg">Resources</CardTitle>
-                <CardDescription>Distribution by API version</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-grow flex-col space-y-4">
-                <div>
-                  <div className="mb-3 flex justify-between">
-                    <span className="text-sm font-medium text-neutral-300">
-                      API Versions
-                    </span>
-                    <span className="text-xs text-neutral-400">
-                      {Object.keys(resourceVersionGroups).length} versions total
-                    </span>
-                  </div>
-                  <div className="mb-4 h-4 w-full overflow-hidden rounded-full bg-neutral-800">
-                    <div className="flex h-full w-full">
-                      {resourceVersionPercentages.map((item) => (
-                        <div
-                          key={item.version}
-                          className={`h-full ${item.color}`}
-                          style={{ width: `${item.percentage}%` }}
-                        ></div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-neutral-400">
-                    {resourceVersionPercentages.map((item) => (
-                      <div
-                        key={item.version}
-                        className="flex items-center gap-1"
-                      >
-                        <div
-                          className={`h-2 w-2 rounded-full ${item.color}`}
-                        ></div>
-                        <span className="truncate">
-                          {item.version} ({item.percentage}%)
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  <h4 className="text-sm font-medium text-neutral-300">
-                    Top API Versions
-                  </h4>
-                  {resourceVersionPercentages.slice(0, 4).map((item) => (
-                    <div key={item.version}>
-                      <div className="mb-1 flex justify-between">
-                        <span className="max-w-[75%] truncate text-sm text-neutral-300">
-                          {item.version}
-                        </span>
-                        <span className="text-sm text-neutral-400">
-                          {item.count} resources
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
-                        <div
-                          className={`h-full rounded-full ${item.color}`}
-                          style={{ width: `${item.percentage}%` }}
-                        ></div>
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap gap-1">
-                        {commonResourcesByVersion[item.version]?.map((kind) => (
-                          <span
-                            key={`${item.version}-${kind}`}
-                            className="rounded-sm bg-neutral-800/70 px-1.5 py-0.5 text-xs text-neutral-500"
-                          >
-                            {kind}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
-                  <h4 className="mb-3 text-sm font-medium text-neutral-200">
-                    Version Details
-                  </h4>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-neutral-300">Total resources</span>
-                      <span className="text-neutral-400">
-                        {allResources.length}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-neutral-300">
-                        Unique API versions
-                      </span>
-                      <span className="text-neutral-400">
-                        {Object.keys(resourceVersionGroups).length}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-neutral-300">
-                        Resources per version
-                      </span>
-                      <span className="text-neutral-400">
-                        {Object.keys(resourceVersionGroups).length > 0
-                          ? Math.round(
-                              allResources.length /
-                                Object.keys(resourceVersionGroups).length,
-                            )
-                          : 0}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-neutral-300">
-                        Most common version
-                      </span>
-                      <span className="text-neutral-400">
-                        {topResourceVersions.length > 0 &&
-                        topResourceVersions[0]
-                          ? (topResourceVersions[0][0]?.toString() ?? "None")
-                          : "None"}
-                      </span>
-                    </div>
-                    {Object.keys(resourceVersionGroups).length > 5 && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-neutral-300">Other versions</span>
-                        <span className="text-neutral-400">
-                          {Object.keys(resourceVersionGroups).length - 5}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ResourceDistributionCard workspaceId={workspace.id} />
 
             {/* Sync Status Card */}
             <Card className="col-span-1 flex flex-col bg-neutral-900/50 shadow-md transition duration-200 hover:shadow-lg">
