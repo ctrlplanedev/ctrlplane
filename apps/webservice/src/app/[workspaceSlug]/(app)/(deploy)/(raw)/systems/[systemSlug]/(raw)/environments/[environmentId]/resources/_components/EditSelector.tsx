@@ -28,6 +28,7 @@ export const EditSelector: React.FC<{
     <ResourceConditionDialog
       condition={environment.resourceFilter}
       onChange={onChange}
+      showResourceList
     >
       <Button size="sm" variant="outline">
         Edit Selector
