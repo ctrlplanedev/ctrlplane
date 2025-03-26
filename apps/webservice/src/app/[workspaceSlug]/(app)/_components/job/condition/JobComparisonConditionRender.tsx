@@ -33,8 +33,8 @@ import {
 import {
   ColumnOperator,
   ComparisonOperator,
-  DateOperator,
   ConditionType,
+  DateOperator,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {

@@ -119,7 +119,9 @@ const valueRouter = createTRPCRouter({
           with: {
             system: {
               with: {
-                environments: { where: isNotNull(environment.resourceSelector) },
+                environments: {
+                  where: isNotNull(environment.resourceSelector),
+                },
               },
             },
           },
@@ -206,12 +208,16 @@ const valueRouter = createTRPCRouter({
       const oldResourceSelector: ResourceCondition = {
         type: ConditionType.Comparison,
         operator: ComparisonOperator.And,
-        conditions: [systemCondition, getOldResourceSelector()].filter(isPresent),
+        conditions: [systemCondition, getOldResourceSelector()].filter(
+          isPresent,
+        ),
       };
       const newResourceSelector: ResourceCondition = {
         type: ConditionType.Comparison,
         operator: ComparisonOperator.And,
-        conditions: [systemCondition, getNewResourceSelector()].filter(isPresent),
+        conditions: [systemCondition, getNewResourceSelector()].filter(
+          isPresent,
+        ),
       };
 
       const oldResources = await ctx.db.query.resource.findMany({
@@ -329,7 +335,8 @@ export const deploymentVariableRouter = createTRPCRouter({
             .groupBy((r) => r.deployment_variable.id)
             .map((r) => ({
               ...r[0]!.deployment_variable,
-              resourceSelector: r[0]!.deployment_variable_value.resourceSelector,
+              resourceSelector:
+                r[0]!.deployment_variable_value.resourceSelector,
               value: r[0]!.deployment_variable_value,
               deployment: { ...r[0]!.deployment, system: r[0]!.system },
             }))

@@ -19,7 +19,13 @@ export const useFilteredResources = (
   offset?: number,
 ) => {
   const resourcesQ = api.environment.page.resources.list.useQuery(
-    { environmentId, workspaceId, filter: condition ?? undefined, limit, offset },
+    {
+      environmentId,
+      workspaceId,
+      filter: condition ?? undefined,
+      limit,
+      offset,
+    },
     { enabled: environmentId !== "" },
   );
   return { ...resourcesQ, resources: resourcesQ.data ?? [] };

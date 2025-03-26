@@ -15,7 +15,9 @@ export const useResourceFilter = () => {
   const filter = useMemo<ResourceCondition | null>(() => {
     if (selectorHash == null) return null;
     try {
-      return JSON.parse(LZString.decompressFromEncodedURIComponent(selectorHash));
+      return JSON.parse(
+        LZString.decompressFromEncodedURIComponent(selectorHash),
+      );
     } catch {
       return null;
     }

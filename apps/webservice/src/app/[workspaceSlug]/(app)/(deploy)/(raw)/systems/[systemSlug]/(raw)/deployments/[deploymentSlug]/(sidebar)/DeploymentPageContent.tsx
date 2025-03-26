@@ -68,7 +68,9 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({
   const condition: ResourceCondition = {
     type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [envResourceSelector, deploymentResourceSelector].filter(isPresent),
+    conditions: [envResourceSelector, deploymentResourceSelector].filter(
+      isPresent,
+    ),
   };
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(

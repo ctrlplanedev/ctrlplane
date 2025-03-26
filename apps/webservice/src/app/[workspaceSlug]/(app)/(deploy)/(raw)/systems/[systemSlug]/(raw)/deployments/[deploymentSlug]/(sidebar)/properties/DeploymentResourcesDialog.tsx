@@ -49,9 +49,10 @@ export const DeploymentResourcesDialog: React.FC<
   const condition: ResourceCondition = {
     type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [selectedEnvironment?.resourceSelector, resourceSelector].filter(
-      isPresent,
-    ),
+    conditions: [
+      selectedEnvironment?.resourceSelector,
+      resourceSelector,
+    ].filter(isPresent),
   };
   const isFilterValid = isValidResourceCondition(condition);
 
@@ -106,7 +107,10 @@ export const DeploymentResourcesDialog: React.FC<
 
         {selectedEnvironment != null && (
           <>
-            <ResourceConditionRender condition={condition} onChange={() => {}} />
+            <ResourceConditionRender
+              condition={condition}
+              onChange={() => {}}
+            />
             {!isLoading && (
               <ResourceList
                 resources={resources}

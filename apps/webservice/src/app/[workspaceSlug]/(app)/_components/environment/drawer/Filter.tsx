@@ -197,7 +197,7 @@ export const EditFilterForm: React.FC<{
 };
 
 const getFilter = (
-    resourceFilter: ResourceCondition | null,
+  resourceFilter: ResourceCondition | null,
 ): ResourceCondition | undefined => {
   if (resourceFilter == null) return undefined;
   if (!isComparisonCondition(resourceFilter))

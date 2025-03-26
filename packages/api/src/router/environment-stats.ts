@@ -89,7 +89,10 @@ export const environmentStatsRouter = createTRPCRouter({
                 .limit(1),
             ),
             isNull(SCHEMA.resource.deletedAt),
-            SCHEMA.resourceMatchesMetadata(ctx.db, environment.resourceSelector),
+            SCHEMA.resourceMatchesMetadata(
+              ctx.db,
+              environment.resourceSelector,
+            ),
           ),
         );
     }),

@@ -20,8 +20,8 @@ import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 import {
   ColumnOperator,
   ComparisonOperator,
-  DateOperator,
   ConditionType,
+  DateOperator,
 } from "@ctrlplane/validators/conditions";
 import { JobConditionType, JobStatus } from "@ctrlplane/validators/jobs";
 

@@ -215,7 +215,9 @@ export const ResourcesPageContent: React.FC<{
     type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     not: false,
-    conditions: [environment.resourceSelector, resourceFilter].filter(isPresent),
+    conditions: [environment.resourceSelector, resourceFilter].filter(
+      isPresent,
+    ),
   };
 
   const { resources, isLoading } = useFilteredResources(
@@ -383,7 +385,10 @@ export const ResourcesPageContent: React.FC<{
               <Select
                 onValueChange={(value) => {
                   if (value === "all") {
-                    handleFilterDropdownChange(value, ResourceConditionType.Kind);
+                    handleFilterDropdownChange(
+                      value,
+                      ResourceConditionType.Kind,
+                    );
                     return;
                   }
 
@@ -415,7 +420,10 @@ export const ResourcesPageContent: React.FC<{
 
               <Select
                 onValueChange={(value) =>
-                  handleFilterDropdownChange(value, ResourceConditionType.Version)
+                  handleFilterDropdownChange(
+                    value,
+                    ResourceConditionType.Version,
+                  )
                 }
               >
                 <SelectTrigger className="w-40">

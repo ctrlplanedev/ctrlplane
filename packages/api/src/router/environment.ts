@@ -273,8 +273,9 @@ export const environmentRouter = createTRPCRouter({
           });
 
           const otherEnvFilters =
-            sys?.environments.map((e) => e.resourceSelector).filter(isPresent) ??
-            [];
+            sys?.environments
+              .map((e) => e.resourceSelector)
+              .filter(isPresent) ?? [];
 
           const oldQuery = resourceMatchesMetadata(
             ctx.db,
