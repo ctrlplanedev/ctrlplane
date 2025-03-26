@@ -1,7 +1,7 @@
 import type * as schema from "@ctrlplane/db/schema";
 
+import type { Releases } from "./releases.js";
 import type { DeploymentResourceContext } from "./types.js";
-import type { Releases } from "./utils/releases.js";
 import { RuleEngine } from "./rule-engine.js";
 import {
   getRecentDeploymentCount,

@@ -3,7 +3,7 @@ import type {
   DeploymentResourceRule,
   DeploymentResourceRuleResult,
 } from "../types.js";
-import { Releases } from "../utils/releases.js";
+import { Releases } from "../releases.js";
 
 /**
  * Defines a maintenance window period during which deployments are blocked

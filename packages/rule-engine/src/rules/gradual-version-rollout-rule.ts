@@ -8,7 +8,7 @@ import type {
   DeploymentResourceRuleResult,
   Release,
 } from "../types.js";
-import { Releases } from "../utils/releases.js";
+import { Releases } from "../releases.js";
 
 /**
  * Function to get count of recent deployments for a release

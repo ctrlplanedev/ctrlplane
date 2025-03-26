@@ -4,7 +4,7 @@ import type {
   DeploymentResourceRuleResult,
   Release,
 } from "../types.js";
-import { Releases } from "../utils/releases.js";
+import { Releases } from "../releases.js";
 
 /**
  * Options for configuring the SequentialUpgradeRule

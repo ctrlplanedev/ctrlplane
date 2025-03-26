@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DeploymentResourceContext, Release } from "../../types.js";
-import { Releases } from "../../utils/releases.js";
+import { Releases } from "../../releases.js";
 import { SequentialUpgradeRule } from "../sequential-upgrade-rule.js";
 
 describe("SequentialUpgradeRule with multiple sequential releases", () => {

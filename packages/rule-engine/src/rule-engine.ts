@@ -1,10 +1,10 @@
+import type { Releases } from "./releases.js";
 import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceSelectionResult,
   Release,
 } from "./types.js";
-import type { Releases } from "./utils/releases.js";
 
 /**
  * The RuleEngine applies a sequence of deployment rules to filter candidate

@@ -1,4 +1,4 @@
-import type { Releases } from "./utils/releases.js";
+import type { Releases } from "./releases.js";
 
 export type Release = {
   id: string;
