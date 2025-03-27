@@ -103,17 +103,6 @@ export const HealthCard: React.FC<{ workspaceId: string }> = ({
           </h5>
           <div className="max-h-[120px] space-y-2 overflow-y-auto pr-1 text-xs">
             <p className="text-neutral-400">No recent issues</p>
-            {/* {healthStats.recentIssues.map((issue, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`h-2 w-2 rounded-full ${issue.type === "warning" ? "bg-yellow-500" : "bg-red-500"}`}
-                  ></div>
-                  <span className="text-neutral-300">{issue.message}</span>
-                </div>
-                <span className="text-neutral-400">{issue.time}</span>
-              </div>
-            ))} */}
           </div>
         </div>
       </CardContent>
