@@ -48,21 +48,23 @@ import { CreateSystemDialog } from "./CreateSystem";
 
 type SortOrder = "name-asc" | "name-desc" | "envs-asc" | "envs-desc";
 
-const useSystemFilter = () => {
+const CONDITION_PARAM = "condition";
+
+const useSystemCondition = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const filter = searchParams.get("filter");
+  const condition = searchParams.get(CONDITION_PARAM);
   const sort = searchParams.get("sort") as SortOrder | null;
 
-  const setParams = (params: { filter?: string; sort?: SortOrder | "" }) => {
+  const setParams = (params: { condition?: string; sort?: SortOrder | "" }) => {
     const url = new URL(window.location.href);
     const urlParams = new URLSearchParams(url.search);
 
-    if (params.filter !== undefined) {
-      if (params.filter === "") {
-        urlParams.delete("filter");
+    if (params.condition !== undefined) {
+      if (params.condition === "") {
+        urlParams.delete(CONDITION_PARAM);
       } else {
-        urlParams.set("filter", params.filter);
+        urlParams.set(CONDITION_PARAM, params.condition);
       }
     }
 
@@ -76,9 +78,9 @@ const useSystemFilter = () => {
   };
 
   return {
-    filter,
+    condition,
     sort,
-    setFilter: (filter: string) => setParams({ filter }),
+    setCondition: (condition: string) => setParams({ condition: condition }),
     setSort: (sort: SortOrder) => setParams({ sort }),
     setParams,
   };
@@ -87,20 +89,20 @@ const useSystemFilter = () => {
 export const SystemsPageContent: React.FC<{
   workspace: SCHEMA.Workspace;
 }> = ({ workspace }) => {
-  const { filter, sort, setFilter, setSort } = useSystemFilter();
-  const [search, setSearch] = useState(filter ?? "");
+  const { condition, sort, setCondition, setSort } = useSystemCondition();
+  const [search, setSearch] = useState(condition ?? "");
 
   useEffect(() => {
-    if (search !== (filter ?? "")) {
+    if (search !== (condition ?? "")) {
       const debounceTimeout = setTimeout(() => {
-        setFilter(search);
+        setCondition(search);
       }, 300);
       return () => clearTimeout(debounceTimeout);
     }
-  }, [search, filter, setFilter]);
+  }, [search, condition, setCondition]);
 
   const workspaceId = workspace.id;
-  const query = filter ?? undefined;
+  const query = condition ?? undefined;
   const { data, isLoading } = api.system.list.useQuery(
     { workspaceId, query },
     { placeholderData: (prev) => prev },

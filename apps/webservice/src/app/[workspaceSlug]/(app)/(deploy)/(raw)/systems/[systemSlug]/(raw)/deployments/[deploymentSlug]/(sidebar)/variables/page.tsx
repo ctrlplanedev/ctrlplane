@@ -69,14 +69,14 @@ export default async function VariablesPage(props: {
           ...v,
           resourceCount: 0,
           resources: [],
-          filterHash: "",
+          conditionHash: "",
         };
 
-      const filterHash = LZString.compressToEncodedURIComponent(
+      const conditionHash = LZString.compressToEncodedURIComponent(
         JSON.stringify(v.resourceSelector),
       );
 
-      const filter: ComparisonCondition = {
+      const condition: ComparisonCondition = {
         type: ResourceConditionType.Comparison,
         operator: ResourceOperator.And,
         conditions: [systemResourcesCondition, v.resourceSelector],
@@ -84,7 +84,7 @@ export default async function VariablesPage(props: {
 
       const resources = await api.resource.byWorkspaceId.list({
         workspaceId,
-        filter,
+        filter: condition,
         limit: 5,
       });
 
@@ -92,17 +92,19 @@ export default async function VariablesPage(props: {
         ...v,
         resourceCount: resources.total,
         resources: resources.items,
-        filterHash,
+        conditionHash,
       };
     });
 
     const values = await Promise.all(valuesPromises);
 
     if (defaultValue != null) {
-      const restFilters = rest.map((v) => v.resourceSelector).filter(isPresent);
+      const restConditions = rest
+        .map((v) => v.resourceSelector)
+        .filter(isPresent);
 
       const filter: ResourceCondition =
-        restFilters.length === 0
+        restConditions.length === 0
           ? systemResourcesCondition
           : {
               type: ResourceConditionType.Comparison,
@@ -113,7 +115,7 @@ export default async function VariablesPage(props: {
                   type: ResourceConditionType.Comparison,
                   operator: ResourceOperator.Or,
                   not: true,
-                  conditions: restFilters,
+                  conditions: restConditions,
                 },
               ],
             };
@@ -124,7 +126,7 @@ export default async function VariablesPage(props: {
         limit: 5,
       });
 
-      const filterHash = LZString.compressToEncodedURIComponent(
+      const conditionHash = LZString.compressToEncodedURIComponent(
         JSON.stringify(filter),
       );
 
@@ -132,7 +134,7 @@ export default async function VariablesPage(props: {
         ...defaultValue,
         resourceCount: defaultResources.total,
         resources: defaultResources.items,
-        filterHash,
+        conditionHash,
       });
     }
 

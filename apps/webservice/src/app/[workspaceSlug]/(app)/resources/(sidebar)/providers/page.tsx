@@ -126,7 +126,9 @@ export default async function ResourceProvidersPage(props: {
       value: provider.id,
       operator: "equals",
     };
-    const hash = LZString.compressToEncodedURIComponent(JSON.stringify(condition));
+    const hash = LZString.compressToEncodedURIComponent(
+      JSON.stringify(condition),
+    );
     const conditionLink = `/${workspaceSlug}/resources/list?condition=${hash}`;
     return { ...provider, filterLink: conditionLink };
   });
