@@ -14,10 +14,15 @@ import { api } from "~/trpc/react";
 export const HealthCard: React.FC<{ workspaceId: string }> = ({
   workspaceId,
 }) => {
-  const { data, isLoading } =
+  const { data } =
     api.resource.provider.page.health.byWorkspaceId.useQuery(workspaceId);
 
-  const { total, latestSync } = data ?? { total: 0, latestSync: null };
+  const { data: providerCount, isLoading: isProviderCountLoading } =
+    api.resource.provider.page.list.byWorkspaceId.count.useQuery({
+      workspaceId,
+    });
+
+  const { latestSync } = data ?? { total: 0, latestSync: null };
 
   const syncedTimeAgo = latestSync
     ? formatDistanceToNowStrict(latestSync, {
@@ -38,7 +43,7 @@ export const HealthCard: React.FC<{ workspaceId: string }> = ({
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-3 shadow-inner">
             <div className="text-2xl font-semibold text-green-400">
-              {isLoading ? "-" : total}
+              {isProviderCountLoading ? "-" : providerCount}
             </div>
             <div className="flex items-center justify-center gap-1 text-xs text-neutral-400">
               <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -47,7 +52,7 @@ export const HealthCard: React.FC<{ workspaceId: string }> = ({
           </div>
           <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 shadow-inner">
             <div className="text-2xl font-semibold text-yellow-400">
-              {isLoading ? "-" : 0}
+              {isProviderCountLoading ? "-" : 0}
             </div>
             <div className="flex items-center justify-center gap-1 text-xs text-neutral-400">
               <div className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
@@ -56,7 +61,7 @@ export const HealthCard: React.FC<{ workspaceId: string }> = ({
           </div>
           <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 shadow-inner">
             <div className="text-2xl font-semibold text-red-400">
-              {isLoading ? "-" : 0}
+              {isProviderCountLoading ? "-" : 0}
             </div>
             <div className="flex items-center justify-center gap-1 text-xs text-neutral-400">
               <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
