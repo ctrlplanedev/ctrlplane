@@ -39,7 +39,7 @@ export const useDeploymentVersionChannel = (
   };
 
   const versionsQ = api.deployment.version.list.useQuery(
-    { deploymentId, selector, limit: 0 },
+    { deploymentId, filter: selector, limit: 0 },
     { enabled: versionSelector != null && enabled },
   );
 

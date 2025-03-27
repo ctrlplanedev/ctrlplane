@@ -193,7 +193,10 @@ export const updateDeployment = async (
     );
 
   if (
-    !_.isEqual(prevDeployment.resourceSelector, updatedDeployment.resourceSelector)
+    !_.isEqual(
+      prevDeployment.resourceSelector,
+      updatedDeployment.resourceSelector,
+    )
   )
     await handleDeploymentFilterChanged(
       updatedDeployment,

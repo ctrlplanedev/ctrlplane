@@ -78,7 +78,9 @@ export type Environment = InferSelectModel<typeof environment>;
 export const createEnvironment = createInsertSchema(environment, {
   resourceSelector: resourceCondition
     .optional()
-    .refine((selector) => selector == null || isValidResourceCondition(selector)),
+    .refine(
+      (selector) => selector == null || isValidResourceCondition(selector),
+    ),
 })
   .omit({ id: true, policyId: true })
   .extend({

@@ -13,8 +13,8 @@ import type { ReleaseCondition } from "./release-condition.js";
 import type { StatusCondition } from "./status-condition.js";
 import {
   ComparisonOperator,
-  createdAtCondition,
   ConditionType,
+  createdAtCondition,
   MAX_DEPTH_ALLOWED,
   metadataCondition,
   MetadataOperator,
@@ -66,11 +66,13 @@ export enum JobConditionType {
 }
 
 export const isEmptyCondition = (condition: JobCondition): boolean =>
-  condition.type === ConditionType.Comparison && condition.conditions.length === 0;
+  condition.type === ConditionType.Comparison &&
+  condition.conditions.length === 0;
 
 export const isComparisonCondition = (
   condition: JobCondition,
-): condition is ComparisonCondition => condition.type === ConditionType.Comparison;
+): condition is ComparisonCondition =>
+  condition.type === ConditionType.Comparison;
 
 export const isMetadataCondition = (
   condition: JobCondition,
@@ -78,7 +80,8 @@ export const isMetadataCondition = (
 
 export const isCreatedAtCondition = (
   condition: JobCondition,
-): condition is CreatedAtCondition => condition.type === ConditionType.CreatedAt;
+): condition is CreatedAtCondition =>
+  condition.type === ConditionType.CreatedAt;
 
 export const isStatusCondition = (
   condition: JobCondition,

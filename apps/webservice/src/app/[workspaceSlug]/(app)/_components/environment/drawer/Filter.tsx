@@ -74,7 +74,7 @@ const ResourceViewsCombobox: React.FC<{
                 <CommandItem
                   key={resourceView.id}
                   onSelect={() => {
-                    onChange(resourceView.selector);
+                    onChange(resourceView.filter);
                     setOpen(false);
                   }}
                   className="cursor-pointer"
@@ -197,7 +197,7 @@ export const EditFilterForm: React.FC<{
 };
 
 const getFilter = (
-    resourceFilter: ResourceCondition | null,
+  resourceFilter: ResourceCondition | null,
 ): ResourceCondition | undefined => {
   if (resourceFilter == null) return undefined;
   if (!isComparisonCondition(resourceFilter))

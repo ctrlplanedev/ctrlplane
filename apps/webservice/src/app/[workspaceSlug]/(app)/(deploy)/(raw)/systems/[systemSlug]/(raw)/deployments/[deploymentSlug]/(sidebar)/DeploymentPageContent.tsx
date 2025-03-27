@@ -65,14 +65,16 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({
   const { resourceSelector: envResourceSelector } = environment;
   const { resourceSelector: deploymentResourceSelector } = deployment;
 
-  const selector: ResourceCondition = {
+  const condition: ResourceCondition = {
     type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [envResourceSelector, deploymentResourceSelector].filter(isPresent),
+    conditions: [envResourceSelector, deploymentResourceSelector].filter(
+      isPresent,
+    ),
   };
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: workspace.id, selector, limit: 0 },
+    { workspaceId: workspace.id, filter: condition, limit: 0 },
     { enabled: envResourceSelector != null },
   );
 
@@ -108,7 +110,7 @@ const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
   const resourceSelectors = directory.environments
     .map((env) => env.resourceSelector)
     .filter(isPresent);
-  const selector: ResourceCondition | undefined =
+  const condition: ResourceCondition | undefined =
     resourceSelectors.length > 0
       ? {
           type: ConditionType.Comparison,
@@ -118,8 +120,8 @@ const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
       : undefined;
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: workspace.id, selector, limit: 0 },
-    { enabled: selector != null },
+    { workspaceId: workspace.id, filter: condition, limit: 0 },
+    { enabled: condition != null },
   );
 
   const total = data?.total ?? 0;
@@ -164,7 +166,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const { systemSlug } = useParams<{ systemSlug: string }>();
 
   const versions = api.deployment.version.list.useQuery(
-    { deploymentId: deployment.id, selector: selector ?? undefined, limit: 30 },
+    { deploymentId: deployment.id, filter: selector ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );
 

@@ -108,9 +108,10 @@ export const getDeploymentStats = async (
   const resourceSelector: ResourceCondition = {
     type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [environment.resourceSelector, deployment.resourceSelector].filter(
-      isPresent,
-    ),
+    conditions: [
+      environment.resourceSelector,
+      deployment.resourceSelector,
+    ].filter(isPresent),
   };
 
   const row = await db

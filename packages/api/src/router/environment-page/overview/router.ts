@@ -63,7 +63,10 @@ export const overviewRouter = createTRPCRouter({
         .where(
           and(
             isNull(SCHEMA.resource.deletedAt),
-            SCHEMA.resourceMatchesMetadata(ctx.db, environment.resourceSelector),
+            SCHEMA.resourceMatchesMetadata(
+              ctx.db,
+              environment.resourceSelector,
+            ),
             eq(SCHEMA.resource.workspaceId, workspaceId),
           ),
         );

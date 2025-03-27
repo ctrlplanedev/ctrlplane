@@ -93,10 +93,10 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   >({
     properties: false,
     jobConfig: false,
-    resourceSelector: false,
+    resourceFilter: false,
   });
 
-  const envsWithSelector =
+  const envsWithFilter =
     system?.environments
       .filter((e) => e.resourceSelector != null)
       .map((e) => ({ ...e, resourceSelector: e.resourceSelector! })) ?? [];

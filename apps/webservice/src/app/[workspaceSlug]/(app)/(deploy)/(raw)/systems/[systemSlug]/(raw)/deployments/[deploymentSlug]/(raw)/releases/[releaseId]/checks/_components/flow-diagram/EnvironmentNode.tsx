@@ -90,7 +90,7 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   const pendingJobsQ = api.job.config.byWorkspaceId.list.useQuery(
     {
       workspaceId,
-      selector: pendingJobsForCurrentVersionAndEnvSelector,
+      filter: pendingJobsForCurrentVersionAndEnvSelector,
       limit: 1,
     },
     { refetchInterval: 5_000 },
@@ -99,7 +99,7 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   const inProgressJobsQ = api.job.config.byWorkspaceId.list.useQuery(
     {
       workspaceId,
-      selector: inProgressJobsForDifferentVersionAndCurrentEnvSelector,
+      filter: inProgressJobsForDifferentVersionAndCurrentEnvSelector,
       limit: 1,
     },
     { refetchInterval: 5_000 },

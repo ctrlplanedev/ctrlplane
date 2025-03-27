@@ -38,8 +38,8 @@ import { createInsertSchema } from "drizzle-zod";
 import {
   ColumnOperator,
   ComparisonOperator,
-  DateOperator,
   ConditionType,
+  DateOperator,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import { JobConditionType } from "@ctrlplane/validators/jobs";
@@ -254,7 +254,8 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === ConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === ConditionType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === ConditionType.CreatedAt)
+    return buildCreatedAtCondition(cond);
   if (cond.type === JobConditionType.Status) return eq(job.status, cond.value);
   if (cond.type === JobConditionType.Deployment)
     return eq(deploymentVersion.deploymentId, cond.value);
@@ -283,7 +284,8 @@ const buildRunbookCondition = (tx: Tx, cond: JobCondition): SQL | undefined => {
 
   if (cond.type === ConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === ConditionType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === ConditionType.CreatedAt)
+    return buildCreatedAtCondition(cond);
   if (cond.type === JobConditionType.Status) return eq(job.status, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));

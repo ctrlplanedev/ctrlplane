@@ -49,7 +49,7 @@ export default async function VariablesPage(props: {
     deployment.id,
   );
 
-  const systemResourcesFilter: ComparisonCondition = {
+  const systemResourcesCondition: ComparisonCondition = {
     type: ResourceConditionType.Comparison,
     operator: ResourceOperator.Or,
     conditions: await api.environment
@@ -79,7 +79,7 @@ export default async function VariablesPage(props: {
       const filter: ComparisonCondition = {
         type: ResourceConditionType.Comparison,
         operator: ResourceOperator.And,
-        conditions: [systemResourcesFilter, v.resourceSelector],
+        conditions: [systemResourcesCondition, v.resourceSelector],
       };
 
       const resources = await api.resource.byWorkspaceId.list({
@@ -103,12 +103,12 @@ export default async function VariablesPage(props: {
 
       const filter: ResourceCondition =
         restFilters.length === 0
-          ? systemResourcesFilter
+          ? systemResourcesCondition
           : {
               type: ResourceConditionType.Comparison,
               operator: ResourceOperator.And,
               conditions: [
-                systemResourcesFilter,
+                systemResourcesCondition,
                 {
                   type: ResourceConditionType.Comparison,
                   operator: ResourceOperator.Or,

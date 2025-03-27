@@ -139,7 +139,8 @@ class ReleaseJobTriggerBuilder {
     return Promise.all(
       versions.flatMap(async (version) => {
         const { resourceSelector } = version.environment;
-        const { resourceSelector: deploymentResourceFilter } = version.deployment;
+        const { resourceSelector: deploymentResourceFilter } =
+          version.deployment;
         const { workspaceId } = version.system;
         const resources = await this.tx
           .select()

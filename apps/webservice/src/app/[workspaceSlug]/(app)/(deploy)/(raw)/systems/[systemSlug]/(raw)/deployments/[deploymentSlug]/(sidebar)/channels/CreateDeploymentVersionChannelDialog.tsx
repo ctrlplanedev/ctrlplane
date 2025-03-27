@@ -99,7 +99,7 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
     selectorHash != null ? `${baseUrl}?selector=${selectorHash}` : baseUrl;
 
   const versionsQ = api.deployment.version.list.useQuery(
-    { deploymentId, selector, limit: 5 },
+    { deploymentId, filter: selector, limit: 5 },
     { enabled: selector != null, placeholderData: (prev) => prev },
   );
   const versions = versionsQ.data;

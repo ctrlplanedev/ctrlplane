@@ -77,7 +77,7 @@ export const DeploymentResourceDrawer: React.FC = () => {
     api.deployment.version.list.useQuery(
       {
         deploymentId: deploymentId ?? "",
-        selector: versionSelector ?? undefined,
+        filter: versionSelector ?? undefined,
         jobFilter,
         limit: 100,
       },

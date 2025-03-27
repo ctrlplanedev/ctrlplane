@@ -20,7 +20,10 @@ import {
   ConditionType,
   ReservedMetadataKey,
 } from "@ctrlplane/validators/conditions";
-import { JobConditionType, JobStatusReadable } from "@ctrlplane/validators/jobs";
+import {
+  JobConditionType,
+  JobStatusReadable,
+} from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { urls } from "../../../../../urls";

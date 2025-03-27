@@ -32,8 +32,8 @@ import {
 } from "@ctrlplane/ui/select";
 import {
   ColumnOperator,
-  DateOperator,
   ConditionType,
+  DateOperator,
 } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
