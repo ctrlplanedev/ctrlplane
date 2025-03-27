@@ -55,12 +55,12 @@ type DailyCount = {
 
 type DailyJobsChartProps = {
   dailyCounts: DailyCount[];
-  baseFilter?: JobCondition;
+  baseCondition?: JobCondition;
 };
 
 export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
   dailyCounts,
-  baseFilter,
+  baseCondition,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const router = useRouter();
@@ -247,22 +247,22 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
                 ],
               };
 
-              const filter: JobCondition = {
+              const condition: JobCondition = {
                 type: ConditionType.Comparison,
                 operator: ComparisonOperator.And,
                 conditions: [
                   afterStartCondition,
                   beforeEndCondition,
                   statusCondition,
-                  ...(baseFilter ? [baseFilter] : []),
+                  ...(baseCondition ? [baseCondition] : []),
                 ],
               };
 
               const hash = LZString.compressToEncodedURIComponent(
-                JSON.stringify(filter),
+                JSON.stringify(condition),
               );
-              const filterLink = `/${workspaceSlug}/jobs?filter=${hash}`;
-              router.push(filterLink);
+              const conditionLink = `/${workspaceSlug}/jobs?condition=${hash}`;
+              router.push(conditionLink);
             }}
           />
         ))}

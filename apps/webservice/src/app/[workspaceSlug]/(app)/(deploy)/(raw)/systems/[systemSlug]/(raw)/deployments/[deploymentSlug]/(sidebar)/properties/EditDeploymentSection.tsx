@@ -96,7 +96,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
     resourceFilter: false,
   });
 
-  const envsWithFilter =
+  const envsWithSelector =
     system?.environments
       .filter((e) => e.resourceSelector != null)
       .map((e) => ({ ...e, resourceSelector: e.resourceSelector! })) ?? [];
@@ -419,9 +419,9 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                           <IconX className="h-4 w-4" /> Clear Filter
                         </Button>
                       </FormControl>
-                      {envsWithFilter.length > 0 && value != null && (
+                      {envsWithSelector.length > 0 && value != null && (
                         <DeploymentResourcesDialog
-                          environments={envsWithFilter}
+                          environments={envsWithSelector}
                           resourceSelector={value}
                           workspaceId={workspaceId}
                         />

@@ -42,7 +42,7 @@ export const JobHistoryPopover: React.FC<JobHistoryPopoverProps> = ({
           </p>
           <DailyJobsChart
             dailyCounts={dailyCounts.data ?? []}
-            baseFilter={inDeploymentSelector}
+            baseCondition={inDeploymentSelector}
           />
         </div>
       </PopoverContent>

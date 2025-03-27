@@ -121,14 +121,14 @@ export default async function ResourceProvidersPage(props: {
   );
 
   const providers = resourceProviders.map((provider) => {
-    const filter: ResourceCondition = {
+    const condition: ResourceCondition = {
       type: ResourceConditionType.Provider,
       value: provider.id,
       operator: "equals",
     };
-    const hash = LZString.compressToEncodedURIComponent(JSON.stringify(filter));
-    const filterLink = `/${workspaceSlug}/resources/list?filter=${hash}`;
-    return { ...provider, filterLink };
+    const hash = LZString.compressToEncodedURIComponent(JSON.stringify(condition));
+    const conditionLink = `/${workspaceSlug}/resources/list?condition=${hash}`;
+    return { ...provider, filterLink: conditionLink };
   });
 
   const integrationsUrl = urls

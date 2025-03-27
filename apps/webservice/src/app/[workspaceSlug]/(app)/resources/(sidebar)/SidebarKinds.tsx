@@ -37,7 +37,7 @@ export const SidebarGroupKinds: React.FC<{ workspace: Workspace }> = ({
           </div>
         )}
         {kinds.data?.map(({ version, kind, count }) => {
-          const url = `/${workspace.slug}/resources/list?filter=${LZString.compressToEncodedURIComponent(
+          const url = `/${workspace.slug}/resources/list?condition=${LZString.compressToEncodedURIComponent(
             JSON.stringify({
               type: ConditionType.Comparison,
               operator: ComparisonOperator.And,
