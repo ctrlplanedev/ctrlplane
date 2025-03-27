@@ -27,6 +27,7 @@ import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { urls } from "~/app/urls";
+import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 
 interface ProviderCardProps {
   id: string;
@@ -67,9 +68,10 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
   return (
     <Card className="flex h-[236px] flex-col">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-          <CardTitle className="line-clamp-1 text-base font-medium">
+        <div>
+          <CardTitle className="line-clamp-1 flex items-center gap-2 text-base font-medium">
             {name}
+            <ProviderActionsDropdown providerId={id} />
           </CardTitle>
           <p className="line-clamp-1 text-xs text-neutral-400">
             {type} • {kinds.length} resource kind{kinds.length === 1 ? "" : "s"}
