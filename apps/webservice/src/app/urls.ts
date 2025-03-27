@@ -46,6 +46,7 @@ const workspace = (slug: string) => {
     resources: () => resources(slug),
     resource: (resourceId: string) => resource(slug, resourceId),
     settings: () => workspaceSettings(slug),
+    rules: () => buildUrl(slug, "rules"),
   };
 };
 

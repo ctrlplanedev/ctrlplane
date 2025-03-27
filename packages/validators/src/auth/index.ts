@@ -24,6 +24,12 @@ export enum Permission {
   WorkspaceUpdate = "workspace.update",
   WorkspaceListIntegrations = "workspace.listIntegrations",
 
+  RuleCreate = "rule.create",
+  RuleGet = "rule.get",
+  RuleList = "rule.list",
+  RuleUpdate = "rule.update",
+  RuleDelete = "rule.delete",
+
   JobUpdate = "job.update",
   JobGet = "job.get",
   JobList = "job.list",
