@@ -473,7 +473,7 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
 }) => {
   const { condition, setCondition } = useCondition<JobCondition>();
   const releaseJobTriggerQuery = api.job.config.byDeploymentVersionId.useQuery(
-    { versionId: deploymentVersion.id, condition },
+    { versionId: deploymentVersion.id, condition: condition ?? undefined },
     { refetchInterval: 5_000 },
   );
   const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];

@@ -12,7 +12,9 @@ export const useCondition = <T extends object>() => {
   const condition = useMemo<T | null>(() => {
     if (conditionHash == null) return null;
     try {
-      return JSON.parse(LZString.decompressFromEncodedURIComponent(conditionHash));
+      return JSON.parse(
+        LZString.decompressFromEncodedURIComponent(conditionHash),
+      );
     } catch {
       return null;
     }
