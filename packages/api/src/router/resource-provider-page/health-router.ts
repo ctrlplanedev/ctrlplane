@@ -1,14 +1,6 @@
 import { z } from "zod";
 
-import {
-  and,
-  count,
-  eq,
-  isNotNull,
-  isNull,
-  max,
-  takeFirst,
-} from "@ctrlplane/db";
+import { and, eq, isNotNull, isNull, max, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -25,10 +17,7 @@ export const healthRouter = createTRPCRouter({
     })
     .query(async ({ ctx, input }) =>
       ctx.db
-        .select({
-          total: count(),
-          latestSync: max(SCHEMA.resource.updatedAt),
-        })
+        .select({ latestSync: max(SCHEMA.resource.updatedAt) })
         .from(SCHEMA.resource)
         .where(
           and(
