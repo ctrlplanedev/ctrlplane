@@ -43,7 +43,7 @@ export const overviewRouter = createTRPCRouter({
         .from(SCHEMA.deployment)
         .where(eq(SCHEMA.deployment.systemId, environment.systemId));
 
-      if (environment.resourceFilter == null) {
+      if (environment.resourceFilter == null)
         return {
           deployments: {
             total: 0,
@@ -54,11 +54,11 @@ export const overviewRouter = createTRPCRouter({
             notDeployed: 0,
           },
           resources: 0,
+          kindDistro: [],
         };
-      }
 
       const resources = await ctx.db
-        .select({ id: SCHEMA.resource.id })
+        .select({ id: SCHEMA.resource.id, kind: SCHEMA.resource.kind })
         .from(SCHEMA.resource)
         .where(
           and(
@@ -78,6 +78,17 @@ export const overviewRouter = createTRPCRouter({
       );
       const deploymentStats = await Promise.all(deploymentPromises);
 
+      const kindDistro = _.chain(resources)
+        .groupBy((r) => r.kind)
+        .map((groupedResources) => ({
+          kind: groupedResources[0]!.kind,
+          percentage:
+            resources.length > 0
+              ? (groupedResources.length / resources.length) * 100
+              : 0,
+        }))
+        .value();
+
       return {
         deployments: {
           total: _.sumBy(deploymentStats, (s) => s.total),
@@ -88,6 +99,7 @@ export const overviewRouter = createTRPCRouter({
           notDeployed: _.sumBy(deploymentStats, (s) => s.notDeployed),
         },
         resources: resources.length,
+        kindDistro,
       };
     }),
 
