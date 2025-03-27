@@ -37,7 +37,7 @@ import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job/drawer
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
-import { useSelector } from "~/app/[workspaceSlug]/(app)/_hooks/useSelector";
+import { useCondition } from "~/app/[workspaceSlug]/(app)/_hooks/useCondition";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
 import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
@@ -471,9 +471,9 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
   deployment,
   environments,
 }) => {
-  const { selector, setSelector } = useSelector<JobCondition>();
+  const { condition, setCondition } = useCondition<JobCondition>();
   const releaseJobTriggerQuery = api.job.config.byDeploymentVersionId.useQuery(
-    { versionId: deploymentVersion.id, selector: selector ?? undefined },
+    { versionId: deploymentVersion.id, condition },
     { refetchInterval: 5_000 },
   );
   const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];
@@ -499,12 +499,12 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
         <SidebarTrigger name={Sidebars.Release}>
           <IconMenu2 className="h-4 w-4" />
         </SidebarTrigger>
-        <JobConditionDialog condition={selector} onChange={setFilter}>
+        <JobConditionDialog condition={condition} onChange={setCondition}>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <IconFilter className="h-4 w-4" />
             </Button>
-            {filter != null && <JobConditionBadge condition={filter} />}
+            {condition != null && <JobConditionBadge condition={condition} />}
           </div>
         </JobConditionDialog>
       </div>

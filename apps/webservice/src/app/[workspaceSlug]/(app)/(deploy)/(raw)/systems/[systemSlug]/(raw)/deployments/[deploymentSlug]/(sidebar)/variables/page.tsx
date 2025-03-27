@@ -49,7 +49,7 @@ export default async function VariablesPage(props: {
     deployment.id,
   );
 
-  const systemResourcesSelector: ComparisonCondition = {
+  const systemResourcesFilter: ComparisonCondition = {
     type: ResourceConditionType.Comparison,
     operator: ResourceOperator.Or,
     conditions: await api.environment
