@@ -12,7 +12,7 @@ import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
@@ -43,7 +43,7 @@ const EnvIcon: React.FC<{
   systemSlug: string;
   className?: string;
 }> = ({ environment: env, workspace, systemSlug, className }) => {
-  const filter = env.resourceFilter ?? undefined;
+  const filter = env.resourceSelector ?? undefined;
   const { data: resourcesResult, isLoading } =
     api.resource.byWorkspaceId.list.useQuery(
       { workspaceId: workspace.id, filter, limit: 0 },
@@ -81,15 +81,15 @@ const DirectoryHeader: React.FC<{
   };
   workspace: SCHEMA.Workspace;
 }> = ({ directory, workspace }) => {
-  const resourceFilters = directory.environments
-    .map((env) => env.resourceFilter)
+  const resourceSelectors = directory.environments
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
   const filter: ResourceCondition | undefined =
-    resourceFilters.length > 0
+    resourceSelectors.length > 0
       ? {
-          type: FilterType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
-          conditions: resourceFilters,
+          conditions: resourceSelectors,
         }
       : undefined;
 

@@ -502,7 +502,7 @@ export const deploymentRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.system.workspaceId, tg.workspaceId),
-            isNotNull(SCHEMA.environment.resourceFilter),
+            isNotNull(SCHEMA.environment.resourceSelector),
           ),
         );
 
@@ -527,7 +527,7 @@ export const deploymentRouter = createTRPCRouter({
               SCHEMA.resource,
               SCHEMA.resourceMatchesMetadata(
                 ctx.db,
-                env.environment.resourceFilter,
+                env.environment.resourceSelector,
               ),
             )
             .leftJoin(

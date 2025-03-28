@@ -1,0 +1,1 @@
+ALTER TABLE "resource_view" RENAME COLUMN "selector" TO "filter";

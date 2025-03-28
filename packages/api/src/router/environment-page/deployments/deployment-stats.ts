@@ -7,7 +7,7 @@ import { and, desc, eq, inArray, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   analyticsStatuses,
@@ -106,11 +106,12 @@ export const getDeploymentStats = async (
   const versionSelector = await getVersionSelector(db, environment, deployment);
 
   const resourceSelector: ResourceCondition = {
-    type: FilterType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [environment.resourceFilter, deployment.resourceFilter].filter(
-      isPresent,
-    ),
+    conditions: [
+      environment.resourceSelector,
+      deployment.resourceSelector,
+    ].filter(isPresent),
   };
 
   const row = await db

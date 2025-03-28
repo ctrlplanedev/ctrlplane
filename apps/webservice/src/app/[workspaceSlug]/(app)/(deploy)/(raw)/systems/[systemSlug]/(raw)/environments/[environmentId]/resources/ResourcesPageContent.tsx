@@ -37,10 +37,10 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ColumnOperator,
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
-  ResourceFilterType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -53,26 +53,26 @@ import { useFilteredResources } from "./_hooks/useFilteredResources";
 
 const PAGE_SIZE = 16;
 
-const parseResourceFilter = (
-  filter: ResourceCondition | null,
+const parseResourceSelector = (
+  selector: ResourceCondition | null,
 ): ComparisonCondition | null => {
-  if (filter == null) return null;
+  if (selector == null) return null;
 
-  if (filter.type === "comparison")
-    return filter.conditions.length > 0 ? filter : null;
+  if (selector.type === "comparison")
+    return selector.conditions.length > 0 ? selector : null;
 
   return {
     type: "comparison",
     operator: "and",
     not: false,
-    conditions: [filter],
+    conditions: [selector],
   };
 };
 
 const getResourceFilterFromDropdownChange = (
   resourceFilter: ComparisonCondition | null,
   value: string,
-  type: ResourceFilterType.Kind | ResourceFilterType.Version,
+  type: ResourceConditionType.Kind | ResourceConditionType.Version,
 ): ComparisonCondition | null => {
   if (value === "all") {
     if (resourceFilter == null) return null;
@@ -92,7 +92,7 @@ const getResourceFilterFromDropdownChange = (
 
   if (resourceFilter == null) {
     return {
-      type: FilterType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [condition],
@@ -104,13 +104,13 @@ const getResourceFilterFromDropdownChange = (
   );
 
   const newResourceFilter: ResourceCondition = {
-    type: FilterType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     not: false,
     conditions: [...conditionsExcludingType, condition],
   };
 
-  return parseResourceFilter(newResourceFilter);
+  return parseResourceSelector(newResourceFilter);
 };
 
 const getResourceFilterWithSearch = (
@@ -121,24 +121,24 @@ const getResourceFilterWithSearch = (
     if (resourceFilter == null) return null;
 
     const conditionsExcludingSearch = resourceFilter.conditions.filter(
-      (c) => c.type !== ResourceFilterType.Name,
+      (c) => c.type !== ResourceConditionType.Name,
     );
 
-    return parseResourceFilter({
+    return parseResourceSelector({
       ...resourceFilter,
       conditions: conditionsExcludingSearch,
     });
   }
 
   const newNameCondition: ResourceCondition = {
-    type: ResourceFilterType.Name,
+    type: ResourceConditionType.Name,
     operator: ColumnOperator.Contains,
     value: searchTerm,
   };
 
   if (resourceFilter == null) {
-    return parseResourceFilter({
-      type: FilterType.Comparison,
+    return parseResourceSelector({
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [newNameCondition],
@@ -146,10 +146,10 @@ const getResourceFilterWithSearch = (
   }
 
   const conditionsExcludingSearch = resourceFilter.conditions.filter(
-    (c) => c.type !== ResourceFilterType.Name,
+    (c) => c.type !== ResourceConditionType.Name,
   );
 
-  return parseResourceFilter({
+  return parseResourceSelector({
     ...resourceFilter,
     conditions: [...conditionsExcludingSearch, newNameCondition],
   });
@@ -162,7 +162,7 @@ export const ResourcesPageContent: React.FC<{
   const allResourcesQ = useFilteredResources(
     workspaceId,
     environment.id,
-    environment.resourceFilter,
+    environment.resourceSelector,
   );
 
   const totalResources = allResourcesQ.resources.length;
@@ -188,10 +188,12 @@ export const ResourcesPageContent: React.FC<{
     useState<ComparisonCondition | null>(null);
 
   const finalFilter: ResourceCondition = {
-    type: FilterType.Comparison,
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
     not: false,
-    conditions: [environment.resourceFilter, resourceFilter].filter(isPresent),
+    conditions: [environment.resourceSelector, resourceFilter].filter(
+      isPresent,
+    ),
   };
 
   const { resources, isLoading } = useFilteredResources(
@@ -204,14 +206,14 @@ export const ResourcesPageContent: React.FC<{
 
   const handleFilterDropdownChange = (
     value: string,
-    type: ResourceFilterType.Kind | ResourceFilterType.Version,
+    type: ResourceConditionType.Kind | ResourceConditionType.Version,
   ) => {
     const newResourceFilter = getResourceFilterFromDropdownChange(
       resourceFilter,
       value,
       type,
     );
-    setResourceFilter(parseResourceFilter(newResourceFilter));
+    setResourceFilter(parseResourceSelector(newResourceFilter));
   };
 
   const [search, setSearch] = useState("");
@@ -232,7 +234,7 @@ export const ResourcesPageContent: React.FC<{
     .groupBy((t) => t.version + ": " + t.kind)
     .value() as Record<string, typeof resources>;
 
-  if (environment.resourceFilter == null)
+  if (environment.resourceSelector == null)
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -344,7 +346,7 @@ export const ResourcesPageContent: React.FC<{
               <ResourceConditionDialog
                 condition={resourceFilter}
                 onChange={(condition) =>
-                  setResourceFilter(parseResourceFilter(condition))
+                  setResourceFilter(parseResourceSelector(condition))
                 }
               >
                 <Button variant="outline">
@@ -359,7 +361,10 @@ export const ResourcesPageContent: React.FC<{
               <Select
                 onValueChange={(value) => {
                   if (value === "all") {
-                    handleFilterDropdownChange(value, ResourceFilterType.Kind);
+                    handleFilterDropdownChange(
+                      value,
+                      ResourceConditionType.Kind,
+                    );
                     return;
                   }
 
@@ -372,7 +377,7 @@ export const ResourcesPageContent: React.FC<{
 
                   handleFilterDropdownChange(
                     trimmedKind,
-                    ResourceFilterType.Kind,
+                    ResourceConditionType.Kind,
                   );
                 }}
               >
@@ -391,7 +396,10 @@ export const ResourcesPageContent: React.FC<{
 
               <Select
                 onValueChange={(value) =>
-                  handleFilterDropdownChange(value, ResourceFilterType.Version)
+                  handleFilterDropdownChange(
+                    value,
+                    ResourceConditionType.Version,
+                  )
                 }
               >
                 <SelectTrigger className="w-40">

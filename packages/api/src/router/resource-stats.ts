@@ -165,12 +165,12 @@ export const resourceStatsRouter = createTRPCRouter({
 
         if (environment == null) throw new Error("Environment not found");
 
-        if (environment.resourceFilter == null) return [];
+        if (environment.resourceSelector == null) return [];
 
         const countPromises = getDateRangeCounts(
           ctx.db,
           dateRange(startDate, endDate, 1, "days"),
-          SCHEMA.resourceMatchesMetadata(ctx.db, environment.resourceFilter),
+          SCHEMA.resourceMatchesMetadata(ctx.db, environment.resourceSelector),
         );
 
         return Promise.all(countPromises);

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useForm } from "@ctrlplane/ui/form";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   isComparisonCondition,
@@ -17,21 +17,21 @@ import {
 import { api } from "~/trpc/react";
 
 const getSelector = (
-  resourceFilter: ResourceCondition | null,
+  resourceSelector: ResourceCondition | null,
 ): ResourceCondition | undefined => {
-  if (resourceFilter == null) return undefined;
-  if (!isComparisonCondition(resourceFilter))
+  if (resourceSelector == null) return undefined;
+  if (!isComparisonCondition(resourceSelector))
     return {
-      type: FilterType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
-      conditions: [resourceFilter],
+      conditions: [resourceSelector],
     };
-  return resourceFilter;
+  return resourceSelector;
 };
 
 const selectorForm = z.object({
-  resourceFilter: resourceCondition.optional(),
+  resourceSelector: resourceCondition.optional(),
 });
 
 /**
@@ -51,16 +51,16 @@ export const useEnvResourceEditor = (environment: SCHEMA.Environment) => {
   const form = useForm({
     schema: selectorForm,
     defaultValues: {
-      resourceFilter: getSelector(environment.resourceFilter),
+      resourceSelector: getSelector(environment.resourceSelector),
     },
   });
   const utils = api.useUtils();
-  const { resourceFilter } = form.watch();
+  const { resourceSelector: resourceSelector } = form.watch();
   const onSubmit = form.handleSubmit((data) =>
     update
       .mutateAsync({
         id: environment.id,
-        data: { ...data, resourceFilter: resourceFilter ?? null },
+        data: { ...data, resourceSelector: resourceSelector ?? null },
       })
       .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))

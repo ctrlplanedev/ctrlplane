@@ -1710,7 +1710,7 @@ export interface operations {
           deploymentId: string;
           name: string;
           description?: string | null;
-          releaseFilter: {
+          releaseSelector: {
             [key: string]: unknown;
           };
         };
@@ -1730,7 +1730,7 @@ export interface operations {
             description?: string | null;
             /** Format: date-time */
             createdAt: string;
-            releaseFilter?: {
+            releaseSelector?: {
               [key: string]: unknown;
             };
           };

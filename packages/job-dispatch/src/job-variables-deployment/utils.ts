@@ -75,7 +75,7 @@ export const getVariableValues = (tx: Tx, variableId: string) =>
 export const getMatchedResource = (
   tx: Tx,
   resourceId: string,
-  resourceFilter: ResourceCondition | null,
+  resourceSelector: ResourceCondition | null,
 ) =>
   tx
     .select()
@@ -83,7 +83,7 @@ export const getMatchedResource = (
     .where(
       and(
         eq(SCHEMA.resource.id, resourceId),
-        SCHEMA.resourceMatchesMetadata(tx, resourceFilter),
+        SCHEMA.resourceMatchesMetadata(tx, resourceSelector),
         isNull(SCHEMA.resource.deletedAt),
       ),
     )
@@ -96,7 +96,7 @@ export const getFirstMatchedResource = (
 ) =>
   Promise.all(
     values.map((value) =>
-      getMatchedResource(tx, resourceId, value.resourceFilter).then(
+      getMatchedResource(tx, resourceId, value.resourceSelector).then(
         (matchedResource) => (matchedResource != null ? value : null),
       ),
     ),
