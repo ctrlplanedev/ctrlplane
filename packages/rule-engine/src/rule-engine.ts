@@ -95,6 +95,9 @@ export class RuleEngine {
     releases: Releases,
     context: DeploymentResourceContext,
   ): Promise<DeploymentResourceSelectionResult> {
+    // Track rejection reasons for each release across all rules
+    let rejectionReasons = new Map<string, string>();
+
     // Apply each rule in sequence to filter candidate releases
     for (const rule of this.rules) {
       const result = await (
@@ -105,8 +108,16 @@ export class RuleEngine {
       if (result.allowedReleases.isEmpty()) {
         return {
           allowed: false,
-          reason: `${rule.name} disqualified all versions. Additional info: ${result.reason ?? ""}`,
+          rejectionReasons: result.rejectionReasons ?? rejectionReasons,
         };
+      }
+
+      // Merge any new rejection reasons with our tracking map
+      if (result.rejectionReasons) {
+        rejectionReasons = new Map([
+          ...rejectionReasons,
+          ...result.rejectionReasons,
+        ]);
       }
 
       releases = result.allowedReleases;
@@ -117,11 +128,12 @@ export class RuleEngine {
     return chosen == null
       ? {
           allowed: false,
-          reason: `No suitable version chosen after applying all rules.`,
+          rejectionReasons,
         }
       : {
           allowed: true,
           chosenRelease: chosen,
+          rejectionReasons,
         };
   }
 

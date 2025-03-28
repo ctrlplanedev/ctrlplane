@@ -99,17 +99,15 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     const isDenied = this.isDeniedTime(now);
 
     if (isDenied) {
-      // Return an empty set of allowed releases
-      return {
-        allowedReleases: Releases.empty(),
-        reason: this.denyReason,
-      };
+      // Build rejection reasons for each release
+      const rejectionReasons = new Map<string, string>(
+        releases.map((release) => [release.id, this.denyReason]),
+      );
+      return { allowedReleases: Releases.empty(), rejectionReasons };
     }
 
     // Allow all releases if time is not denied
-    return {
-      allowedReleases: releases,
-    };
+    return { allowedReleases: releases };
   }
 
   /**

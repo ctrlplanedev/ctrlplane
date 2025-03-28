@@ -39,13 +39,13 @@ export type DeploymentResourceContext = {
 
 export type DeploymentResourceRuleResult = {
   allowedReleases: Releases;
-  reason?: string;
+  rejectionReasons?: Map<string, string>;
 };
 
 export type DeploymentResourceSelectionResult = {
   allowed: boolean;
   chosenRelease?: Release;
-  reason?: string;
+  rejectionReasons: Map<string, string>;
 };
 
 /**

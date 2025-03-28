@@ -74,7 +74,7 @@ describe("DeploymentDenyRule", () => {
 
     // Expect all releases to be allowed
     expect(result.allowedReleases.length).toBe(2);
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
   });
 
   it("should deny deployments when in a denied period", () => {
@@ -95,8 +95,12 @@ describe("DeploymentDenyRule", () => {
 
     // Expect no releases to be allowed
     expect(result.allowedReleases.length).toBe(0);
-    expect(result.reason).toBe(
-      "Deployment denied due to time-based restrictions",
+    expect(result.rejectionReasons).toBeDefined();
+    expect(result.rejectionReasons?.get("rel-1")).toBe(
+      "Deployment denied due to time-based restrictions"
+    );
+    expect(result.rejectionReasons?.get("rel-2")).toBe(
+      "Deployment denied due to time-based restrictions"
     );
   });
 
@@ -117,7 +121,9 @@ describe("DeploymentDenyRule", () => {
     const result = rule.filter(context, releases);
 
     // Expect the custom reason to be returned
-    expect(result.reason).toBe(customReason);
+    expect(result.rejectionReasons).toBeDefined();
+    expect(result.rejectionReasons?.get("rel-1")).toBe(customReason);
+    expect(result.rejectionReasons?.get("rel-2")).toBe(customReason);
   });
 
   it("should check for specific time intervals when dtend is specified", () => {
@@ -136,7 +142,7 @@ describe("DeploymentDenyRule", () => {
     );
     let result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(0);
-    expect(result.reason).toBeDefined();
+    expect(result.rejectionReasons).toBeDefined();
 
     // Test time outside the denied period (Wednesday at 8:00 AM)
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
@@ -144,7 +150,7 @@ describe("DeploymentDenyRule", () => {
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(2);
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
 
     // Test time outside the denied period (Wednesday at 6:00 PM)
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
@@ -152,7 +158,7 @@ describe("DeploymentDenyRule", () => {
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(2);
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
   });
 
   it("should handle timezone conversions correctly", () => {
@@ -171,7 +177,7 @@ describe("DeploymentDenyRule", () => {
     );
     let result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(0);
-    expect(result.reason).toBeDefined();
+    expect(result.rejectionReasons).toBeDefined();
 
     // Test time outside the denied period in ET (8:00 AM EST)
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
@@ -179,7 +185,7 @@ describe("DeploymentDenyRule", () => {
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(2);
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
   });
 
   it("should handle standard time to daylight time changes correctly (EST -> EDT in March)", () => {
@@ -202,14 +208,14 @@ describe("DeploymentDenyRule", () => {
     );
     let result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(0);
-    expect(result.reason).toBeDefined();
+    expect(result.rejectionReasons).toBeDefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-12T21:30:00Z"),
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(2);
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
 
     /**
      * These test UTC 13:30
@@ -223,14 +229,14 @@ describe("DeploymentDenyRule", () => {
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(2);
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-12T13:30:00Z"),
     );
     const result2 = rule.filter(context, releases);
     expect(result2.allowedReleases.length).toBe(0);
-    expect(result2.reason).toBeDefined();
+    expect(result2.rejectionReasons).toBeDefined();
   });
 
   it("should handle daylight time to standard time changes correctly (EDT -> EST in November)", () => {
@@ -253,14 +259,14 @@ describe("DeploymentDenyRule", () => {
     );
     let result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(0); // Should be DENIED
-    expect(result.reason).toBeDefined();
+    expect(result.rejectionReasons).toBeDefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-11-05T13:30:00Z"),
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(2); // Should be ALLOWED
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
 
     /**
      * These test UTC 21:30
@@ -274,13 +280,13 @@ describe("DeploymentDenyRule", () => {
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(2); // Should be ALLOWED
-    expect(result.reason).toBeUndefined();
+    expect(result.rejectionReasons).toBeUndefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-11-05T21:30:00Z"),
     );
     result = rule.filter(context, releases);
     expect(result.allowedReleases.length).toBe(0); // Should be DENIED
-    expect(result.reason).toBeDefined();
+    expect(result.rejectionReasons).toBeDefined();
   });
 });
