@@ -76,7 +76,6 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
 
     this.rrule = new RRule({
       ...options,
-      tzid: "UTC",
       dtstart: dtStartCasted,
       until: untilCasted,
     });
