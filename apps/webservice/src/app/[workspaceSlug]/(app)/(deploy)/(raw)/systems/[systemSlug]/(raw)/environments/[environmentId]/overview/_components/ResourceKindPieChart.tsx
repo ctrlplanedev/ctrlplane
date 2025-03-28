@@ -10,9 +10,9 @@ import { ChartTooltip } from "@ctrlplane/ui/chart";
 import {
   ColumnOperator,
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { urls } from "~/app/urls";
 
@@ -114,12 +114,12 @@ export const ResourceKindPieChart: React.FC<{
               onClick={() => {
                 if (resourceSelector == null) return;
                 const kindCondition: ResourceCondition = {
-                  type: ResourceFilterType.Kind,
+                  type: ResourceConditionType.Kind,
                   operator: ColumnOperator.Equals,
                   value: kind,
                 };
                 const selector: ResourceCondition = {
-                  type: FilterType.Comparison,
+                  type: ConditionType.Comparison,
                   operator: ComparisonOperator.And,
                   conditions: [resourceSelector, kindCondition],
                 };

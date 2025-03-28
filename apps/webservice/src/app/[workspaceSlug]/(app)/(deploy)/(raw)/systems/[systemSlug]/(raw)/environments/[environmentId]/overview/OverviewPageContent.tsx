@@ -166,7 +166,7 @@ export const OverviewPageContent: React.FC<{
             <div className="flex h-[300px] items-center justify-center">
               <ResourceKindPieChart
                 kindDistro={stats.kindDistro}
-                resourceSelector={environment.resourceFilter}
+                resourceSelector={environment.resourceSelector}
                 resourceCount={stats.resources}
               />
             </div>
