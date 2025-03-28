@@ -1,7 +1,7 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconCheck, IconCopy, IconDots } from "@tabler/icons-react";
@@ -44,7 +44,7 @@ export const EnvironmentCard: React.FC<{
     { enabled: inView },
   );
 
-  const endDate = new Date();
+  const endDate = useMemo(() => new Date(), []);
   const startDate = subWeeks(endDate, 1);
   const failureRateQ = api.environment.stats.failureRate.useQuery(
     { environmentId: environment.id, startDate, endDate },
@@ -185,19 +185,21 @@ export const EnvironmentCard: React.FC<{
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Failure Rate</span>
-            {inView && !failureRateQ.isLoading && failureRateQ.data != null && (
+            {inView && !failureRateQ.isLoading && (
               <span
                 className={cn(
                   "text-sm font-medium",
-                  failureRateQ.data > 5 ? "text-red-400" : "text-green-400",
+                  (failureRateQ.data ?? 0) > 5
+                    ? "text-red-400"
+                    : "text-green-400",
                 )}
               >
-                {Number(failureRateQ.data).toFixed(0)}% failure rate
+                {Number((failureRateQ.data ?? 0).toFixed(0))}% failure rate
               </span>
             )}
-            {(!inView ||
-              failureRateQ.isLoading ||
-              failureRateQ.data == null) && <Skeleton className="h-4 w-28" />}
+            {(!inView || failureRateQ.isLoading) && (
+              <Skeleton className="h-4 w-28" />
+            )}
           </div>
         </CardContent>
       </Card>
