@@ -24,7 +24,7 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { urls } from "~/app/urls";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
@@ -40,7 +40,7 @@ interface ProviderCardProps {
 
 const getFilterHash = (id: string) => {
   const selector: ResourceCondition = {
-    type: ResourceFilterType.Provider,
+    type: ResourceConditionType.Provider,
     value: id,
     operator: ColumnOperator.Equals,
   };
