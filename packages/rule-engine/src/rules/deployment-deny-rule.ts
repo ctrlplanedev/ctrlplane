@@ -65,41 +65,28 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     until = null,
     ...options
   }: DeploymentDenyRuleOptions) {
+    this.timezone = options.tzid ?? "UTC";
     this.denyReason = denyReason;
+
+    const dtStartCasted =
+      dtstart != null ? this.castTimezone(dtstart, this.timezone) : null;
+
+    const untilCasted =
+      until != null ? this.castTimezone(until, this.timezone) : null;
+
     this.rrule = new RRule({
       ...options,
-      dtstart:
-        dtstart == null
-          ? null
-          : datetime(
-              dtstart.getUTCFullYear(),
-              dtstart.getUTCMonth(),
-              dtstart.getUTCDate(),
-              dtstart.getUTCHours(),
-              dtstart.getUTCMinutes(),
-              dtstart.getUTCSeconds(),
-            ),
-
-      until:
-        until == null
-          ? null
-          : datetime(
-              until.getUTCFullYear(),
-              until.getUTCMonth(),
-              until.getUTCDate(),
-              until.getUTCHours(),
-              until.getUTCMinutes(),
-              until.getUTCSeconds(),
-            ),
+      tzid: "UTC",
+      dtstart: dtStartCasted,
+      until: untilCasted,
     });
     this.dtstart = dtstart;
     this.dtend = dtend;
-    this.timezone = options.tzid ?? "UTC";
   }
 
   // For testing: allow injecting a custom "now" timestamp
-  protected getCurrentTime(): TZDate {
-    return new TZDate();
+  protected getCurrentTime() {
+    return new Date();
   }
 
   filter(
@@ -135,44 +122,23 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     // now is in whatever timezone of the server. We need to convert it to match
     // the timezone for the library
     const parts = getDatePartsInTimeZone(now, this.timezone);
-    console.log(
-      "parts",
-      parts,
-      datetime(
-        parts.year,
-        parts.month,
-        parts.day,
-        parts.hour,
-        parts.minute,
-        parts.second,
-      ),
-    );
-    const o = this.rrule.before(
-      datetime(
-        parts.year,
-        parts.month,
-        parts.day,
-        parts.hour,
-        parts.minute,
-        parts.second,
-      ),
-      true,
+    const nowDt = datetime(
+      parts.year,
+      parts.month,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
     );
 
-    // If there's no occurrence on or before the time, it's not in a denied period
-    if (o == null) return false;
+    const occurrence = this.rrule.before(nowDt, true);
 
-    console.log("o", o);
-    const occurrence = this.castTimezone(o, this.timezone);
-    console.log("------");
-    console.log("timezone", this.timezone);
-    console.log("now", this.formatDateInTimezone(now, this.timezone));
-    console.log(
-      "occurrence",
-      this.formatDateInTimezone(occurrence, this.timezone),
-    );
+    // If there's no occurrence on or before the time, it's not in a denied
+    // period
+    if (occurrence == null) return false;
 
-    // If dtend is specified, check if time is between occurrence and occurrence + duration
+    // If dtend is specified, check if time is between occurrence and occurrence
+    // + duration
     if (this.dtend != null && this.dtstart != null) {
       const dtstart = this.castTimezone(this.dtstart, this.timezone);
       const dtend = this.castTimezone(this.dtend, this.timezone);
@@ -181,48 +147,10 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
       const durationMs = differenceInMilliseconds(dtend, dtstart);
       const occurrenceEnd = addMilliseconds(occurrence, durationMs);
 
-      console.log("------");
-      console.log("timezone", this.timezone);
-      console.log("now", this.formatDateInTimezone(now, this.timezone));
-      console.log("dtstart", this.formatDateInTimezone(dtstart, this.timezone));
-      console.log("dtend", this.formatDateInTimezone(dtend, this.timezone));
-      console.log(
-        "occurrenceTimezone",
-        this.formatDateInTimezone(occurrence, this.timezone),
-      );
-      console.log(
-        "occurrence",
-        this.formatDateInTimezone(occurrence, this.timezone),
-      );
-      console.log(
-        "occurrenceEnd",
-        this.formatDateInTimezone(occurrenceEnd, this.timezone),
-      );
-      // console.log("------");
-      // console.log("now", now);
-      // this.formatDateInTimezone(now, this.timezone);
-      // console.log("occurrenceTimezone", occurrenceTimezone);
-      // console.log("occurrenceEnd", occurrenceEnd);
-
-      // this.formatDateInTimezone(now, "UTC");
-      // this.formatDateInTimezone(occurrenceTimezone, "UTC");
-      // this.formatDateInTimezone(occurrenceEnd, "UTC");
-      // Check if current time is between occurrence start and end times
-
-      console.log(
-        "checking",
-        new Date(now),
-        new Date(occurrence),
-        new Date(occurrenceEnd),
-      );
-      return isWithinInterval(
-        now,
-        {
-          start: occurrence,
-          end: occurrenceEnd,
-        },
-        { in: tz(this.timezone) },
-      );
+      return isWithinInterval(nowDt, {
+        start: occurrence,
+        end: occurrenceEnd,
+      });
     }
 
     // If no dtend, check if the occurrence is on the same day using date-fns
@@ -238,37 +166,5 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
    */
   private castTimezone(date: Date, timezone: string): TZDate {
     return new TZDate(date, timezone);
-  }
-
-  /**
-   * Formats a date in a specific timezone
-   *
-   * @param date - The date to format
-   * @param timezone - The timezone to format the date in
-   * @returns The formatted date string in the specified timezone
-   */
-  private formatDateInTimezone(date: Date, timezone: string) {
-    const formattedTime = date.toLocaleString("en-US", {
-      timeZone: timezone,
-      weekday: "long",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      second: "numeric",
-    });
-
-    return formattedTime;
-  }
-
-  /**
-   * Get time of day in seconds (seconds since midnight)
-   *
-   * @param date - The date to extract time from
-   * @returns Seconds since midnight
-   */
-  private getTimeOfDayInSeconds(date: Date): number {
-    return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
   }
 }
