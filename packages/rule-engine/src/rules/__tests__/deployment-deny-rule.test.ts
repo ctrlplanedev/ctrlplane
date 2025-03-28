@@ -97,10 +97,10 @@ describe("DeploymentDenyRule", () => {
     expect(result.allowedReleases.length).toBe(0);
     expect(result.rejectionReasons).toBeDefined();
     expect(result.rejectionReasons?.get("rel-1")).toBe(
-      "Deployment denied due to time-based restrictions"
+      "Deployment denied due to time-based restrictions",
     );
     expect(result.rejectionReasons?.get("rel-2")).toBe(
-      "Deployment denied due to time-based restrictions"
+      "Deployment denied due to time-based restrictions",
     );
   });
 

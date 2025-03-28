@@ -30,6 +30,7 @@ applied sequentially to filter candidate releases.
    - After all rules pass, selects the final release
 
 2. Release selection follows these priorities:
+
    - Sequential upgrade releases get priority (oldest first)
    - Specified desired release if available
    - Otherwise, newest release by creation date
@@ -81,20 +82,20 @@ class MyCustomRule implements DeploymentResourceRule {
   filter(context: DeploymentContext, releases: Releases): RuleResult {
     // Track rejection reasons
     const rejectionReasons = new Map<string, string>();
-    
+
     // Custom logic to filter releases
     const filteredReleases = releases.filter(release => {
       // Determine if release meets criteria
       const meetsCondition = /* your condition logic */;
-      
+
       // Track rejection reasons for releases that don't meet criteria
       if (!meetsCondition) {
         rejectionReasons.set(release.id, "Failed custom condition check");
       }
-      
+
       return meetsCondition;
     });
-    
+
     return {
       allowedReleases: new Releases(filteredReleases),
       rejectionReasons // Map of release IDs to rejection reasons
