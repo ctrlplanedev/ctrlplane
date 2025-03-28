@@ -39,7 +39,7 @@ export const policyTarget = pgTable("policy_target", {
   environmentSelector: jsonb("environment_selector").default(sql`NULL`),
 });
 
-export const ruleDeploymentDenyEvent = pgTable("rule_deployment_deny_event", {
+export const policyRuleDenyWindow = pgTable("policy_rule_deny_window", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   policyId: uuid("policy_id")
@@ -51,6 +51,7 @@ export const ruleDeploymentDenyEvent = pgTable("rule_deployment_deny_event", {
 
   // RRule fields stored as JSONB to match Options interface
   rrule: jsonb("rrule").notNull().default("{}").$type<Options>(),
+  timeZone: text("time_zone").notNull(),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
