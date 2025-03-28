@@ -76,7 +76,6 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
 
     this.rrule = new RRule({
       ...options,
-      tzid: "UTC",
       dtstart: dtStartCasted,
       until: untilCasted,
     });
@@ -134,21 +133,12 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
 
     const occurrence = this.rrule.before(nowDt, true);
 
-    const nowFromParts = new Date(
-      Date.UTC(
-        parts.year, // 2023
-        parts.month - 1, // 3-1=2 (Marhowch, because Date.UTC months are 0-based)
-        parts.day, // 12
-        parts.hour, // 17
-        parts.minute, // 30
-        parts.second, // 0
-      ),
-    );
-
-    // If there's no occurrence on or before the time, it's not in a denied period
+    // If there's no occurrence on or before the time, it's not in a denied
+    // period
     if (occurrence == null) return false;
 
-    // If dtend is specified, check if time is between occurrence and occurrence + duration
+    // If dtend is specified, check if time is between occurrence and occurrence
+    // + duration
     if (this.dtend != null && this.dtstart != null) {
       const dtstart = this.castTimezone(this.dtstart, this.timezone);
       const dtend = this.castTimezone(this.dtend, this.timezone);
@@ -156,7 +146,7 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
       // Calculate duration in local time to handle DST correctly
       const durationMs = differenceInMilliseconds(dtend, dtstart);
       const occurrenceEnd = addMilliseconds(occurrence, durationMs);
-      return isWithinInterval(nowFromParts, {
+      return isWithinInterval(nowDt, {
         start: occurrence,
         end: occurrenceEnd,
       });
@@ -175,37 +165,5 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
    */
   private castTimezone(date: Date, timezone: string): TZDate {
     return new TZDate(date, timezone);
-  }
-
-  /**
-   * Formats a date in a specific timezone
-   *
-   * @param date - The date to format
-   * @param timezone - The timezone to format the date in
-   * @returns The formatted date string in the specified timezone
-   */
-  private formatDateInTimezone(date: Date, timezone: string) {
-    const formattedTime = date.toLocaleString("en-US", {
-      timeZone: timezone,
-      weekday: "long",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      second: "numeric",
-    });
-
-    return formattedTime;
-  }
-
-  /**
-   * Get time of day in seconds (seconds since midnight)
-   *
-   * @param date - The date to extract time from
-   * @returns Seconds since midnight
-   */
-  private getTimeOfDayInSeconds(date: Date): number {
-    return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
   }
 }
