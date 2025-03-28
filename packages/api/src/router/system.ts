@@ -7,7 +7,6 @@ import {
   and,
   asc,
   count,
-  createEnv,
   eq,
   ilike,
   isNotNull,
@@ -15,6 +14,7 @@ import {
   or,
   takeFirst,
   takeFirstOrNull,
+  upsertEnv,
 } from "@ctrlplane/db";
 import {
   createSystem,
@@ -158,9 +158,9 @@ export const systemRouter = createTRPCRouter({
           .then(takeFirst);
 
         await Promise.all([
-          createEnv(db, { systemId: sys.id, name: "Production" }),
-          createEnv(db, { systemId: sys.id, name: "QA" }),
-          createEnv(db, { systemId: sys.id, name: "Staging" }),
+          upsertEnv(db, { systemId: sys.id, name: "Production" }),
+          upsertEnv(db, { systemId: sys.id, name: "QA" }),
+          upsertEnv(db, { systemId: sys.id, name: "Staging" }),
         ]);
         return sys;
       }),

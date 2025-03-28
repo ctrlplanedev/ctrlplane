@@ -5,7 +5,6 @@ import { z } from "zod";
 
 import {
   and,
-  createEnv,
   eq,
   inArray,
   isNotNull,
@@ -13,6 +12,7 @@ import {
   ne,
   not,
   takeFirst,
+  upsertEnv,
 } from "@ctrlplane/db";
 import {
   createEnvironment,
@@ -213,7 +213,7 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(createEnvironment)
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((db) => createEnv(db, input)),
+      ctx.db.transaction((db) => upsertEnv(db, input)),
     ),
 
   update: protectedProcedure
