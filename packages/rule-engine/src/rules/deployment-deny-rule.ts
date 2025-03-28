@@ -65,14 +65,14 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     until = null,
     ...options
   }: DeploymentDenyRuleOptions) {
+    this.timezone = options.tzid ?? "UTC";
     this.denyReason = denyReason;
+
     const dtStartCasted =
-      dtstart != null
-        ? this.castTimezone(dtstart, options.tzid ?? "UTC")
-        : null;
+      dtstart != null ? this.castTimezone(dtstart, this.timezone) : null;
 
     const untilCasted =
-      until != null ? this.castTimezone(until, options.tzid ?? "UTC") : null;
+      until != null ? this.castTimezone(until, this.timezone) : null;
 
     this.rrule = new RRule({
       ...options,
@@ -82,7 +82,6 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     });
     this.dtstart = dtstart;
     this.dtend = dtend;
-    this.timezone = options.tzid ?? "UTC";
   }
 
   // For testing: allow injecting a custom "now" timestamp
