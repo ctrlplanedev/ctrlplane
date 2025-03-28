@@ -50,8 +50,11 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../common.js";
+import { deployment } from "./deployment.js";
+import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { releaseJobTrigger } from "./release-job-trigger.js";
+import { release } from "./release.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -83,6 +86,37 @@ export const resource = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (t) => ({ uniq: uniqueIndex().on(t.identifier, t.workspaceId) }),
+);
+
+export const resourceRelease = pgTable(
+  "resource_release",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
+      .notNull(),
+    environmentId: uuid("environment_id")
+      .references(() => environment.id, { onDelete: "cascade" })
+      .notNull(),
+    deploymentId: uuid("deployment_id")
+      .references(() => deployment.id, { onDelete: "cascade" })
+      .notNull(),
+
+    desiredReleaseId: uuid("desired_release_id")
+      .references(() => release.id, { onDelete: "set null" })
+      .default(sql`NULL`),
+
+    // selfReportedReleaseId: uuid("self_reported_release_id")
+    //   .references(() => release.id, { onDelete: "set null" })
+    //   .default(sql`NULL`),
+    // lastReportedAt: timestamp("last_reported_at", {
+    //   withTimezone: true,
+    // }).default(sql`NULL`),
+  },
+  (t) => ({
+    uniq: uniqueIndex().on(t.resourceId, t.environmentId, t.deploymentId),
+  }),
 );
 
 export const resourceRelations = relations(resource, ({ one, many }) => ({
