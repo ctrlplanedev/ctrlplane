@@ -88,7 +88,7 @@ export const resource = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.identifier, t.workspaceId) }),
 );
 
-export const resourceDesiredRelease = pgTable(
+export const resourceRelease = pgTable(
   "resource_release",
   {
     id: uuid("id").primaryKey().defaultRandom(),
