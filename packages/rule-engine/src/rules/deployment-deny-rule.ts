@@ -76,6 +76,7 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
 
     this.rrule = new RRule({
       ...options,
+      tzid: "UTC",
       dtstart: dtStartCasted,
       until: untilCasted,
     });
@@ -85,8 +86,8 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
   }
 
   // For testing: allow injecting a custom "now" timestamp
-  protected getCurrentTime(): TZDate {
-    return new TZDate();
+  protected getCurrentTime() {
+    return new Date();
   }
 
   filter(
@@ -146,7 +147,18 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
       // Calculate duration in local time to handle DST correctly
       const durationMs = differenceInMilliseconds(dtend, dtstart);
       const occurrenceEnd = addMilliseconds(occurrence, durationMs);
-      return isWithinInterval(nowDt, {
+
+      const nowFromParts = new Date(
+        Date.UTC(
+          parts.year, // 2023
+          parts.month - 1, // 3-1=2 (Marhowch, because Date.UTC months are 0-based)
+          parts.day, // 12
+          parts.hour, // 17
+          parts.minute, // 30
+          parts.second, // 0
+        ),
+      );
+      return isWithinInterval(nowFromParts, {
         start: occurrence,
         end: occurrenceEnd,
       });
