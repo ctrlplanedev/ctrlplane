@@ -75,13 +75,13 @@ const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
 const environmentHasResource = (
   db: Tx,
   resourceId: string,
-  resourceFilter: ResourceCondition,
+  resourceSelector: ResourceCondition,
 ) =>
   db.query.resource
     .findFirst({
       where: and(
         eq(schema.resource.id, resourceId),
-        schema.resourceMatchesMetadata(db, resourceFilter),
+        schema.resourceMatchesMetadata(db, resourceSelector),
         isNotDeleted,
       ),
     })
@@ -172,7 +172,7 @@ const getNodeDataForResource = async (
   resourceId: string,
   jobId?: string,
 ) => {
-  const hasFilter = isNotNull(schema.environment.resourceFilter);
+  const hasFilter = isNotNull(schema.environment.resourceSelector);
   const resource = await db.query.resource.findFirst({
     where: and(eq(schema.resource.id, resourceId), isNotDeleted),
     with: {
@@ -202,9 +202,9 @@ const getNodeDataForResource = async (
   const systemsWithResource = await _.chain(
     systems.map(async (s) =>
       _.chain(s.environments)
-        .filter((e) => isPresent(e.resourceFilter))
+        .filter((e) => isPresent(e.resourceSelector))
         .map((e) =>
-          environmentHasResource(db, resource.id, e.resourceFilter!).then(
+          environmentHasResource(db, resource.id, e.resourceSelector!).then(
             async (t) =>
               t
                 ? {

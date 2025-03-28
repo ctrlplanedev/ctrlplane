@@ -8,7 +8,7 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../../../trpc";
@@ -43,7 +43,7 @@ export const overviewRouter = createTRPCRouter({
         .from(SCHEMA.deployment)
         .where(eq(SCHEMA.deployment.systemId, environment.systemId));
 
-      if (environment.resourceFilter == null)
+      if (environment.resourceSelector == null)
         return {
           deployments: {
             total: 0,
@@ -63,7 +63,10 @@ export const overviewRouter = createTRPCRouter({
         .where(
           and(
             isNull(SCHEMA.resource.deletedAt),
-            SCHEMA.resourceMatchesMetadata(ctx.db, environment.resourceFilter),
+            SCHEMA.resourceMatchesMetadata(
+              ctx.db,
+              environment.resourceSelector,
+            ),
             eq(SCHEMA.resource.workspaceId, workspaceId),
           ),
         );
@@ -137,14 +140,14 @@ export const overviewRouter = createTRPCRouter({
           deploymentPromise,
         ]);
 
-        if (environment.resourceFilter == null) return null;
+        if (environment.resourceSelector == null) return null;
 
         const resourceSelector: ResourceCondition = {
-          type: FilterType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
-            environment.resourceFilter,
-            deployment.resourceFilter,
+            environment.resourceSelector,
+            deployment.resourceSelector,
           ].filter(isPresent),
         };
 

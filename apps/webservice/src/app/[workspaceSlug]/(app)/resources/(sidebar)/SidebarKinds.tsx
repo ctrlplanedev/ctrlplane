@@ -15,9 +15,9 @@ import {
 } from "@ctrlplane/ui/sidebar";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/resources/ResourceIcon";
 import { api } from "~/trpc/react";
@@ -37,13 +37,13 @@ export const SidebarGroupKinds: React.FC<{ workspace: Workspace }> = ({
           </div>
         )}
         {kinds.data?.map(({ version, kind, count }) => {
-          const url = `/${workspace.slug}/resources/list?filter=${LZString.compressToEncodedURIComponent(
+          const url = `/${workspace.slug}/resources/list?condition=${LZString.compressToEncodedURIComponent(
             JSON.stringify({
-              type: FilterType.Comparison,
+              type: ConditionType.Comparison,
               operator: ComparisonOperator.And,
               conditions: [
                 {
-                  type: ResourceFilterType.Kind,
+                  type: ResourceConditionType.Kind,
                   value: kind,
                   operator: "equals",
                 },

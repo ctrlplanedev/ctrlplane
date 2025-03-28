@@ -33,10 +33,10 @@ export const EnvironmentCard: React.FC<{
   const allResourcesQ = api.resource.byWorkspaceId.list.useQuery(
     {
       workspaceId: environment.system.workspaceId,
-      filter: environment.resourceFilter ?? undefined,
+      filter: environment.resourceSelector ?? undefined,
       limit: 0,
     },
-    { enabled: inView && environment.resourceFilter != null },
+    { enabled: inView && environment.resourceSelector != null },
   );
 
   const unhealthyResourcesQ = api.environment.stats.unhealthyResources.useQuery(

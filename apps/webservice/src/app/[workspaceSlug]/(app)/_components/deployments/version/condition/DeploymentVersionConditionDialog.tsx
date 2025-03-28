@@ -70,7 +70,7 @@ export const DeploymentVersionConditionDialog: React.FC<
     localCondition == null || isValidDeploymentVersionCondition(localCondition);
   const selector = localCondition ?? undefined;
   const versionsQ = api.deployment.version.list.useQuery(
-    { deploymentId: deploymentId ?? "", selector, limit: 5 },
+    { deploymentId: deploymentId ?? "", filter: selector, limit: 5 },
     { enabled: deploymentId != null && isLocalConditionValid },
   );
   const versions = versionsQ.data;

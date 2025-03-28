@@ -6,37 +6,41 @@ import { useDebounce } from "react-use";
 
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
-export const useResourceFilter = () => {
+const CONDITION_PARAM = "condition";
+
+export const useResourceCondition = () => {
   const [search, setSearch] = React.useState("");
   const urlParams = useSearchParams();
   const router = useRouter();
 
-  const filterHash = urlParams.get("filter");
-  const filter = useMemo<ResourceCondition | null>(() => {
-    if (filterHash == null) return null;
+  const conditionHash = urlParams.get(CONDITION_PARAM);
+  const condition = useMemo<ResourceCondition | null>(() => {
+    if (conditionHash == null) return null;
     try {
-      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterHash));
+      return JSON.parse(
+        LZString.decompressFromEncodedURIComponent(conditionHash),
+      );
     } catch {
       return null;
     }
-  }, [filterHash]);
+  }, [conditionHash]);
 
   const viewId = urlParams.get("view");
 
-  const setFilter = useCallback(
-    (filter: ResourceCondition | null, viewId?: string | null) => {
+  const setCondition = useCallback(
+    (condition: ResourceCondition | null, viewId?: string | null) => {
       const url = new URL(window.location.href);
-      const filterJsonHash =
-        filter != null
-          ? LZString.compressToEncodedURIComponent(JSON.stringify(filter))
+      const conditionJsonHash =
+        condition != null
+          ? LZString.compressToEncodedURIComponent(JSON.stringify(condition))
           : null;
 
       if (viewId != null) url.searchParams.set("view", viewId);
       if (viewId == null) url.searchParams.delete("view");
 
-      if (filterJsonHash != null)
-        url.searchParams.set("filter", filterJsonHash);
-      if (filterJsonHash == null) url.searchParams.delete("filter");
+      if (conditionJsonHash != null)
+        url.searchParams.set(CONDITION_PARAM, conditionJsonHash);
+      if (conditionJsonHash == null) url.searchParams.delete(CONDITION_PARAM);
 
       router.replace(`${url.pathname}?${url.searchParams.toString()}`);
     },
@@ -46,13 +50,13 @@ export const useResourceFilter = () => {
   useDebounce(
     () => {
       if (search === "") return;
-      setFilter({
+      setCondition({
         type: "comparison",
         operator: "and",
         conditions: [
           // Keep any non-name conditions from existing filter
-          ...(filter && "conditions" in filter
-            ? filter.conditions.filter(
+          ...(condition && "conditions" in condition
+            ? condition.conditions.filter(
                 (c: ResourceCondition) => c.type !== "name",
               )
             : []),
@@ -68,5 +72,5 @@ export const useResourceFilter = () => {
     [search],
   );
 
-  return { filter, setFilter, viewId, search, setSearch };
+  return { condition, setCondition, viewId, search, setSearch };
 };

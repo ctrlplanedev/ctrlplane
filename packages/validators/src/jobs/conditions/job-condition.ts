@@ -13,8 +13,8 @@ import type { ReleaseCondition } from "./release-condition.js";
 import type { StatusCondition } from "./status-condition.js";
 import {
   ComparisonOperator,
+  ConditionType,
   createdAtCondition,
-  FilterType,
   MAX_DEPTH_ALLOWED,
   metadataCondition,
   MetadataOperator,
@@ -51,13 +51,13 @@ export const jobCondition = z.union([
 ]);
 
 export const defaultCondition: JobCondition = {
-  type: FilterType.Comparison,
+  type: ConditionType.Comparison,
   operator: ComparisonOperator.And,
   not: false,
   conditions: [],
 };
 
-export enum JobFilterType {
+export enum JobConditionType {
   Status = "status",
   Deployment = "deployment",
   Environment = "environment",
@@ -66,42 +66,45 @@ export enum JobFilterType {
 }
 
 export const isEmptyCondition = (condition: JobCondition): boolean =>
-  condition.type === FilterType.Comparison && condition.conditions.length === 0;
+  condition.type === ConditionType.Comparison &&
+  condition.conditions.length === 0;
 
 export const isComparisonCondition = (
   condition: JobCondition,
-): condition is ComparisonCondition => condition.type === FilterType.Comparison;
+): condition is ComparisonCondition =>
+  condition.type === ConditionType.Comparison;
 
 export const isMetadataCondition = (
   condition: JobCondition,
-): condition is MetadataCondition => condition.type === FilterType.Metadata;
+): condition is MetadataCondition => condition.type === ConditionType.Metadata;
 
 export const isCreatedAtCondition = (
   condition: JobCondition,
-): condition is CreatedAtCondition => condition.type === FilterType.CreatedAt;
+): condition is CreatedAtCondition =>
+  condition.type === ConditionType.CreatedAt;
 
 export const isStatusCondition = (
   condition: JobCondition,
-): condition is StatusCondition => condition.type === JobFilterType.Status;
+): condition is StatusCondition => condition.type === JobConditionType.Status;
 
 export const isEnvironmentCondition = (
   condition: JobCondition,
 ): condition is EnvironmentCondition =>
-  condition.type === JobFilterType.Environment;
+  condition.type === JobConditionType.Environment;
 
 export const isDeploymentCondition = (
   condition: JobCondition,
 ): condition is DeploymentCondition =>
-  condition.type === JobFilterType.Deployment;
+  condition.type === JobConditionType.Deployment;
 
 export const isVersionCondition = (
   condition: JobCondition,
-): condition is VersionCondition => condition.type === FilterType.Version;
+): condition is VersionCondition => condition.type === ConditionType.Version;
 
 export const isJobResourceCondition = (
   condition: JobCondition,
 ): condition is JobResourceCondition =>
-  condition.type === JobFilterType.JobResource;
+  condition.type === JobConditionType.JobResource;
 
 // Check if converting to a comparison condition will exceed the max depth
 // including any nested conditions

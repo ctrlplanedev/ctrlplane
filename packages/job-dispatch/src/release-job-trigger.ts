@@ -84,7 +84,7 @@ class ReleaseJobTriggerBuilder {
         this.environmentIds &&
           inArray(SCHEMA.environment.id, this.environmentIds),
       ].filter(isPresent),
-      isNotNull(SCHEMA.environment.resourceFilter),
+      isNotNull(SCHEMA.environment.resourceSelector),
     );
   }
 
@@ -138,15 +138,16 @@ class ReleaseJobTriggerBuilder {
     const versions = await releaseJobTriggers.where(this._where());
     return Promise.all(
       versions.flatMap(async (version) => {
-        const { resourceFilter } = version.environment;
-        const { resourceFilter: deploymentResourceFilter } = version.deployment;
+        const { resourceSelector } = version.environment;
+        const { resourceSelector: deploymentResourceFilter } =
+          version.deployment;
         const { workspaceId } = version.system;
         const resources = await this.tx
           .select()
           .from(SCHEMA.resource)
           .where(
             and(
-              SCHEMA.resourceMatchesMetadata(this.tx, resourceFilter),
+              SCHEMA.resourceMatchesMetadata(this.tx, resourceSelector),
               SCHEMA.resourceMatchesMetadata(this.tx, deploymentResourceFilter),
               eq(SCHEMA.resource.workspaceId, workspaceId),
               isNull(SCHEMA.resource.lockedAt),

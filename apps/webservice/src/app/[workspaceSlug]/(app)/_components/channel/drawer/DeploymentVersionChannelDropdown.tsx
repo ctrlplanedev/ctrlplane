@@ -23,6 +23,8 @@ import {
 
 import { api } from "~/trpc/react";
 
+const CONDITION_PARAM = "condition";
+
 type DeleteDeploymentVersionChannelDialogProps = {
   deploymentVersionChannelId: string;
   onClose: () => void;
@@ -39,7 +41,7 @@ const DeleteDeploymentVersionChannelDialog: React.FC<
     const url = new URL(window.location.href);
     url.searchParams.delete("release_channel_id");
     url.searchParams.delete("release_channel_id_filter");
-    url.searchParams.delete("filter");
+    url.searchParams.delete(CONDITION_PARAM);
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 

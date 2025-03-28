@@ -14,8 +14,8 @@ export const createJobsForNewEnvironment = async (
   db: Tx,
   env: SCHEMA.Environment,
 ) => {
-  const { resourceFilter } = env;
-  if (resourceFilter == null) return;
+  const { resourceSelector } = env;
+  if (resourceSelector == null) return;
 
   const versionChannels = await db.query.environment.findFirst({
     where: eq(SCHEMA.environment.id, env.id),
@@ -42,7 +42,7 @@ export const createJobsForNewEnvironment = async (
     .where(
       and(
         eq(SCHEMA.resource.workspaceId, workspaceId),
-        SCHEMA.resourceMatchesMetadata(db, resourceFilter),
+        SCHEMA.resourceMatchesMetadata(db, resourceSelector),
         isNull(SCHEMA.resource.deletedAt),
       ),
     );
