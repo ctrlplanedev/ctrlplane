@@ -126,7 +126,7 @@ export const ResourceKindPieChart: React.FC<{
                 const hash = LZString.compressToEncodedURIComponent(
                   JSON.stringify(selector),
                 );
-                router.push(`${resourcesUrl}?filter=${hash}`);
+                router.push(`${resourcesUrl}?condition=${hash}`);
               }}
             />
           ))}
