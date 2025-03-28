@@ -76,6 +76,7 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
 
     this.rrule = new RRule({
       ...options,
+      tzid: "UTC",
       dtstart: dtStartCasted,
       until: untilCasted,
     });
@@ -147,17 +148,7 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
       const durationMs = differenceInMilliseconds(dtend, dtstart);
       const occurrenceEnd = addMilliseconds(occurrence, durationMs);
 
-      const nowFromParts = new Date(
-        Date.UTC(
-          parts.year, // 2023
-          parts.month - 1, // 3-1=2 (Marhowch, because Date.UTC months are 0-based)
-          parts.day, // 12
-          parts.hour, // 17
-          parts.minute, // 30
-          parts.second, // 0
-        ),
-      );
-      return isWithinInterval(nowFromParts, {
+      return isWithinInterval(nowDt, {
         start: occurrence,
         end: occurrenceEnd,
       });
