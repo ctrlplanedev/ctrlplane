@@ -2,24 +2,36 @@ import type { z } from "zod";
 import { eq } from "drizzle-orm";
 
 import type { Tx } from "./common.js";
-import { takeFirst } from "./common.js";
+import { buildConflictUpdateColumns, takeFirst } from "./common.js";
 import * as SCHEMA from "./schema/index.js";
 import { environment, environmentPolicy } from "./schema/index.js";
 
-const createVersionChannels = (
+const upsertVersionChannels = (
   db: Tx,
   policyId: string,
   deploymentVersionChannels: { channelId: string; deploymentId: string }[],
 ) =>
-  db.insert(SCHEMA.environmentPolicyDeploymentVersionChannel).values(
-    deploymentVersionChannels.map(({ channelId, deploymentId }) => ({
-      policyId,
-      channelId,
-      deploymentId,
-    })),
-  );
+  db
+    .insert(SCHEMA.environmentPolicyDeploymentVersionChannel)
+    .values(
+      deploymentVersionChannels.map(({ channelId, deploymentId }) => ({
+        policyId,
+        channelId,
+        deploymentId,
+      })),
+    )
+    .onConflictDoUpdate({
+      target: [
+        SCHEMA.environmentPolicyDeploymentVersionChannel.policyId,
+        SCHEMA.environmentPolicyDeploymentVersionChannel.deploymentId,
+      ],
+      set: buildConflictUpdateColumns(
+        SCHEMA.environmentPolicyDeploymentVersionChannel,
+        ["channelId"],
+      ),
+    });
 
-export const createEnv = async (
+export const upsertEnv = async (
   db: Tx,
   input: z.infer<typeof SCHEMA.createEnvironment>,
 ) => {
@@ -35,6 +47,15 @@ export const createEnv = async (
   const env = await db
     .insert(environment)
     .values({ ...input, policyId })
+    .onConflictDoUpdate({
+      target: [environment.name, environment.systemId],
+      set: buildConflictUpdateColumns(environment, [
+        "description",
+        "directory",
+        "policyId",
+        "resourceSelector",
+      ]),
+    })
     .returning()
     .then(takeFirst);
 
@@ -48,7 +69,7 @@ export const createEnv = async (
     );
 
   if (versionChannels != null && versionChannels.length > 0)
-    await createVersionChannels(db, policyId, versionChannels);
+    await upsertVersionChannels(db, policyId, versionChannels);
 
   await db
     .update(environmentPolicy)
