@@ -6,7 +6,6 @@ import type {
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
 import React, { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   IconFilter,
   IconGrid3x3,
@@ -46,6 +45,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import { ResourceConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionDialog";
+import { usePagination } from "~/app/[workspaceSlug]/(app)/_hooks/usePagination";
 import { EditSelector } from "./_components/EditSelector";
 import { ResourceCard } from "./_components/ResourceCard";
 import { ResourceTable } from "./_components/ResourceTable";
@@ -53,43 +53,19 @@ import { useFilteredResources } from "./_hooks/useFilteredResources";
 
 const PAGE_SIZE = 16;
 
-const safeParseInt = (value: string, total: number) => {
-  try {
-    const page = parseInt(value);
-    const isValidNumber = !Number.isNaN(page);
-    const isWithinBounds =
-      page >= 0 && (total > 0 ? page * PAGE_SIZE < total : true);
-    return isValidNumber && isWithinBounds ? page : 0;
-  } catch {
-    return 0;
-  }
-};
-
-const usePagination = (total: number) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const page = safeParseInt(searchParams.get("page") ?? "0", total);
-  const setPage = (page: number) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("page", page.toString());
-    router.replace(`${url.pathname}?${url.searchParams.toString()}`);
-  };
-  return { page, setPage };
-};
-
 const parseResourceSelector = (
-  filter: ResourceCondition | null,
+  selector: ResourceCondition | null,
 ): ComparisonCondition | null => {
-  if (filter == null) return null;
+  if (selector == null) return null;
 
-  if (filter.type === "comparison")
-    return filter.conditions.length > 0 ? filter : null;
+  if (selector.type === "comparison")
+    return selector.conditions.length > 0 ? selector : null;
 
   return {
     type: "comparison",
     operator: "and",
     not: false,
-    conditions: [filter],
+    conditions: [selector],
   };
 };
 
@@ -202,7 +178,7 @@ export const ResourcesPageContent: React.FC<{
     (r) => r.status === "deploying",
   ).length;
 
-  const { page, setPage } = usePagination(totalResources);
+  const { page, setPage } = usePagination(totalResources, PAGE_SIZE);
 
   const hasPreviousPage = page > 0;
   const hasNextPage = (page + 1) * PAGE_SIZE < totalResources;

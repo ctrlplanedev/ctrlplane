@@ -1,9 +1,8 @@
 "use client";
 
-import type { RouterOutputs } from "@ctrlplane/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { IconDots } from "@tabler/icons-react";
+import { IconDotsVertical } from "@tabler/icons-react";
 
 import {
   AlertDialog,
@@ -25,27 +24,34 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
-import { UpdateAwsProviderDialog } from "./integrations/aws/UpdateAwsProviderDialog";
-import { UpdateAzureProviderDialog } from "./integrations/azure/UpdateAzureProviderDialog";
-import { UpdateGoogleProviderDialog } from "./integrations/google/UpdateGoogleProviderDialog";
-
-type Provider = RouterOutputs["resource"]["provider"]["byWorkspaceId"][number];
+import { UpdateAwsProviderDialog } from "../integrations/aws/UpdateAwsProviderDialog";
+import { UpdateAzureProviderDialog } from "../integrations/azure/UpdateAzureProviderDialog";
+import { UpdateGoogleProviderDialog } from "../integrations/google/UpdateGoogleProviderDialog";
 
 export const ProviderActionsDropdown: React.FC<{
-  provider: Provider;
-}> = ({ provider }) => {
+  providerId: string;
+}> = ({ providerId }) => {
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
+  const { data: provider } = api.resource.provider.byId.useQuery(providerId);
   const isManagedProvider =
-    provider.googleConfig != null ||
-    provider.awsConfig != null ||
-    provider.azureConfig != null;
+    provider?.googleConfig != null ||
+    provider?.awsConfig != null ||
+    provider?.azureConfig != null;
 
   const deleteProvider = api.resource.provider.delete.useMutation({
     onSuccess: () => utils.resource.provider.byWorkspaceId.invalidate(),
   });
   const sync = api.resource.provider.managed.sync.useMutation();
   const router = useRouter();
+
+  if (provider == null)
+    return (
+      <Button variant="ghost" className="h-5 w-5 p-0" disabled>
+        <span className="sr-only">Open menu</span>
+        <IconDotsVertical className="h-3 w-3" />
+      </Button>
+    );
 
   const handleDelete = async (deleteResources: boolean) => {
     await deleteProvider.mutateAsync({
@@ -58,9 +64,9 @@ export const ProviderActionsDropdown: React.FC<{
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
+        <Button variant="ghost" className="h-5 w-5 p-0">
           <span className="sr-only">Open menu</span>
-          <IconDots className="h-4 w-4" />
+          <IconDotsVertical className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

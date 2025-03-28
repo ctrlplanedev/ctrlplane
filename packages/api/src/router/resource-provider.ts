@@ -27,8 +27,11 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { resourceScanQueue } from "../dispatch";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { resourceProviderPageRouter } from "./resource-provider-page/router";
 
 export const resourceProviderRouter = createTRPCRouter({
+  page: resourceProviderPageRouter,
+
   byWorkspaceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -135,8 +138,30 @@ export const resourceProviderRouter = createTRPCRouter({
       ctx.db
         .select()
         .from(resourceProvider)
+        .leftJoin(
+          resourceProviderGoogle,
+          eq(resourceProviderGoogle.resourceProviderId, resourceProvider.id),
+        )
+        .leftJoin(
+          resourceProviderAws,
+          eq(resourceProviderAws.resourceProviderId, resourceProvider.id),
+        )
+        .leftJoin(
+          resourceProviderAzure,
+          eq(resourceProviderAzure.resourceProviderId, resourceProvider.id),
+        )
+        .leftJoin(resource, eq(resource.providerId, resourceProvider.id))
         .where(eq(resourceProvider.id, input))
-        .then(takeFirstOrNull),
+        .then((rows) => {
+          const row = rows.at(0);
+          if (row == null) return null;
+          return {
+            ...row.resource_provider,
+            googleConfig: row.resource_provider_google,
+            awsConfig: row.resource_provider_aws,
+            azureConfig: row.resource_provider_azure,
+          };
+        }),
     ),
 
   managed: createTRPCRouter({
