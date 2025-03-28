@@ -73,7 +73,7 @@ export default async function EnvironmentLayout(props: {
         </SidebarTrigger>
       </PageHeader>
 
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-6">
         <div className="mb-6 flex flex-col space-y-2">
           <h1 className="text-3xl font-bold text-neutral-100">
             {environment.name} Environment
