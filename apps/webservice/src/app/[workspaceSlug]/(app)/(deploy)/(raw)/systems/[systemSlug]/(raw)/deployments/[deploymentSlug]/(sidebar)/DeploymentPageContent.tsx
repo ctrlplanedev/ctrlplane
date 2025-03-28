@@ -35,7 +35,7 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
@@ -62,18 +62,20 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({
   deployment,
   workspace,
 }) => {
-  const { resourceFilter: envResourceFilter } = environment;
-  const { resourceFilter: deploymentResourceFilter } = deployment;
+  const { resourceSelector: envResourceSelector } = environment;
+  const { resourceSelector: deploymentResourceSelector } = deployment;
 
-  const filter: ResourceCondition = {
-    type: FilterType.Comparison,
+  const condition: ResourceCondition = {
+    type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [envResourceFilter, deploymentResourceFilter].filter(isPresent),
+    conditions: [envResourceSelector, deploymentResourceSelector].filter(
+      isPresent,
+    ),
   };
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: workspace.id, filter, limit: 0 },
-    { enabled: envResourceFilter != null },
+    { workspaceId: workspace.id, filter: condition, limit: 0 },
+    { enabled: envResourceSelector != null },
   );
 
   const total = data?.total ?? 0;
@@ -105,21 +107,21 @@ const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
   directory,
   workspace,
 }) => {
-  const resourceFilters = directory.environments
-    .map((env) => env.resourceFilter)
+  const resourceSelectors = directory.environments
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
-  const filter: ResourceCondition | undefined =
-    resourceFilters.length > 0
+  const condition: ResourceCondition | undefined =
+    resourceSelectors.length > 0
       ? {
-          type: FilterType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
-          conditions: resourceFilters,
+          conditions: resourceSelectors,
         }
       : undefined;
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: workspace.id, filter, limit: 0 },
-    { enabled: filter != null },
+    { workspaceId: workspace.id, filter: condition, limit: 0 },
+    { enabled: condition != null },
   );
 
   const total = data?.total ?? 0;
@@ -164,7 +166,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const { systemSlug } = useParams<{ systemSlug: string }>();
 
   const versions = api.deployment.version.list.useQuery(
-    { deploymentId: deployment.id, selector: selector ?? undefined, limit: 30 },
+    { deploymentId: deployment.id, filter: selector ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );
 

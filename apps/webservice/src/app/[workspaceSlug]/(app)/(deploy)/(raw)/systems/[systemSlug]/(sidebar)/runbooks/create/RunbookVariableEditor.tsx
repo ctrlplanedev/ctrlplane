@@ -53,9 +53,9 @@ export const RunbookVariableEditor = forwardRef<
     // explicitly overwrite the filter instead of merging
     const isResourceType =
       mergedConfig?.type === "resource" && config?.type === "resource";
-    const isResourceFilterChanged =
+    const isResourceSelectorChanged =
       isResourceType && mergedConfig.filter !== config.filter;
-    if (isResourceFilterChanged) mergedConfig.filter = config.filter;
+    if (isResourceSelectorChanged) mergedConfig.filter = config.filter;
 
     update({ config: mergedConfig });
   };

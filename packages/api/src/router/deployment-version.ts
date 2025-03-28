@@ -30,7 +30,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   activeStatus,
@@ -205,7 +205,7 @@ export const versionRouter = createTRPCRouter({
     .input(
       z.object({
         deploymentId: z.string(),
-        selector: deploymentVersionCondition.optional(),
+        filter: deploymentVersionCondition.optional(),
         jobFilter: jobCondition.optional(),
         limit: z.number().nonnegative().default(100),
         offset: z.number().nonnegative().default(0),
@@ -218,7 +218,7 @@ export const versionRouter = createTRPCRouter({
       );
       const versionSelectorCheck = SCHEMA.deploymentVersionMatchesCondition(
         ctx.db,
-        input.selector,
+        input.filter,
       );
       const checks = and(
         ...[deploymentIdCheck, versionSelectorCheck].filter(isPresent),
@@ -792,19 +792,19 @@ export const versionRouter = createTRPCRouter({
           .where(eq(SCHEMA.deployment.id, deploymentId))
           .then(takeFirst);
 
-        if (env.environment.resourceFilter == null)
+        if (env.environment.resourceSelector == null)
           return {
             ...version.deployment_version,
             approval: version.environment_policy_approval,
             resourceCount: 0,
           };
 
-        const resourceFilter: ResourceCondition = {
-          type: FilterType.Comparison,
+        const resourceSelector: ResourceCondition = {
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
-            env.environment.resourceFilter,
-            dep.resourceFilter,
+            env.environment.resourceSelector,
+            dep.resourceSelector,
           ].filter(isPresent),
         };
 
@@ -814,7 +814,7 @@ export const versionRouter = createTRPCRouter({
           .where(
             and(
               eq(SCHEMA.resource.workspaceId, env.system.workspaceId),
-              SCHEMA.resourceMatchesMetadata(ctx.db, resourceFilter),
+              SCHEMA.resourceMatchesMetadata(ctx.db, resourceSelector),
               isNull(SCHEMA.resource.deletedAt),
             ),
           )

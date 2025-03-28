@@ -18,7 +18,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
-  ResourceFilterType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -29,7 +29,7 @@ import { api } from "~/trpc/react";
  */
 const useResourcesFromEnvironment = (
   system?: System,
-  existingFilter?: ResourceCondition,
+  existingSelector?: ResourceCondition,
 ) => {
   const { data: envs = [] } = api.environment.bySystemId.useQuery(
     system?.id ?? "",
@@ -37,15 +37,15 @@ const useResourcesFromEnvironment = (
   );
 
   const filter: ResourceCondition = {
-    type: ResourceFilterType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ResourceOperator.And,
     conditions: [
       {
-        type: ResourceFilterType.Comparison,
+        type: ResourceConditionType.Comparison,
         operator: ResourceOperator.Or,
-        conditions: envs.map((e) => e.resourceFilter).filter(isPresent),
+        conditions: envs.map((e) => e.resourceSelector).filter(isPresent),
       },
-      ...(existingFilter ? [existingFilter] : []),
+      ...(existingSelector ? [existingSelector] : []),
     ],
   };
 
@@ -54,27 +54,27 @@ const useResourcesFromEnvironment = (
     { enabled: system != null, placeholderData: (prev) => prev },
   );
 
-  return { filter, resources: data?.items ?? [], isLoading };
+  return { filter: filter, resources: data?.items ?? [], isLoading };
 };
 
 const useResourcesWithSearch = (
   system?: System,
-  existingFilter?: ResourceCondition,
+  existingSelector?: ResourceCondition,
 ) => {
   const [search, setSearch] = useState("");
   const {
     filter: environmentFilters,
     resources,
     isLoading: allResourcesLoading,
-  } = useResourcesFromEnvironment(system, existingFilter);
+  } = useResourcesFromEnvironment(system, existingSelector);
 
   const filterWithSearch: ResourceCondition = {
-    type: ResourceFilterType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ResourceOperator.And,
     conditions: [
       environmentFilters,
       {
-        type: ResourceFilterType.Name,
+        type: ResourceConditionType.Name,
         operator: ColumnOperator.Contains,
         value: search,
       },

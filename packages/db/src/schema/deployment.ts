@@ -52,10 +52,12 @@ export const deploymentSchema = z.object({
     .refine((val) => val == null || val >= 0, {
       message: "Timeout must be a non-negative number.",
     }),
-  resourceFilter: resourceCondition
+  resourceSelector: resourceCondition
     .nullable()
     .optional()
-    .refine((filter) => filter == null || isValidResourceCondition(filter)),
+    .refine(
+      (selector) => selector == null || isValidResourceCondition(selector),
+    ),
 });
 
 export const deployment = pgTable(
@@ -77,7 +79,7 @@ export const deployment = pgTable(
       .notNull(),
     retryCount: integer("retry_count").notNull().default(0),
     timeout: integer("timeout").default(sql`NULL`),
-    resourceFilter: jsonb("resource_filter")
+    resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
   },

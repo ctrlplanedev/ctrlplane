@@ -192,7 +192,7 @@ export const openapi: Swagger.SwaggerV3 = {
           name: { type: "string" },
           description: { type: "string" },
           policyId: { type: "string", format: "uuid", nullable: true },
-          resourceFilter: {
+          resourceSelector: {
             type: "object",
             nullable: true,
             additionalProperties: true,

@@ -40,13 +40,13 @@ import { z } from "zod";
 import {
   ColumnOperator,
   ComparisonOperator,
+  ConditionType,
   DateOperator,
-  FilterType,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
   resourceCondition,
-  ResourceFilterType,
+  ResourceConditionType,
 } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../common.js";
@@ -288,21 +288,21 @@ const buildLastSyncCondition = (tx: Tx, cond: LastSyncCondition): SQL => {
 };
 
 const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
-  if (cond.type === ResourceFilterType.Metadata)
+  if (cond.type === ResourceConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === ResourceFilterType.Kind)
+  if (cond.type === ResourceConditionType.Kind)
     return eq(resource.kind, cond.value);
-  if (cond.type === ResourceFilterType.Name)
+  if (cond.type === ResourceConditionType.Name)
     return buildNameCondition(tx, cond);
-  if (cond.type === ResourceFilterType.Provider)
+  if (cond.type === ResourceConditionType.Provider)
     return eq(resource.providerId, cond.value);
-  if (cond.type === ResourceFilterType.Identifier)
+  if (cond.type === ResourceConditionType.Identifier)
     return buildIdentifierCondition(tx, cond);
-  if (cond.type === FilterType.CreatedAt)
+  if (cond.type === ConditionType.CreatedAt)
     return buildCreatedAtCondition(tx, cond);
-  if (cond.type === ResourceFilterType.LastSync)
+  if (cond.type === ResourceConditionType.LastSync)
     return buildLastSyncCondition(tx, cond);
-  if (cond.type === ResourceFilterType.Version)
+  if (cond.type === ResourceConditionType.Version)
     return eq(resource.version, cond.value);
 
   if (cond.conditions.length === 0) return sql`FALSE`;

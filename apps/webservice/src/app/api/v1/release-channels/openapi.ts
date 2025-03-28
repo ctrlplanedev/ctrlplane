@@ -17,12 +17,12 @@ export const openapi: Swagger.SwaggerV3 = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["deploymentId", "name", "releaseFilter"],
+                required: ["deploymentId", "name", "releaseSelector"],
                 properties: {
                   deploymentId: { type: "string" },
                   name: { type: "string" },
                   description: { type: "string", nullable: true },
-                  releaseFilter: {
+                  releaseSelector: {
                     type: "object",
                     additionalProperties: true,
                   },
@@ -44,7 +44,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     name: { type: "string" },
                     description: { type: "string", nullable: true },
                     createdAt: { type: "string", format: "date-time" },
-                    releaseFilter: {
+                    releaseSelector: {
                       type: "object",
                       additionalProperties: true,
                     },

@@ -69,7 +69,7 @@ export const VariableTable: React.FC<{
           value={search}
           className="rounded-none rounded-t-lg border-none hover:ring-0 focus-visible:ring-0"
           type="text"
-          placeholder="Filter variables..."
+          placeholder="Search variables..."
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
@@ -266,7 +266,7 @@ export const VariableTable: React.FC<{
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7 text-muted-foreground hover:text-white">
                                         <Link
                                           className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6"
-                                          href={`${workspaceUrls.resources().baseUrl()}?filter=${v.filterHash}`}
+                                          href={`${workspaceUrls.resources().baseUrl()}?condition=${v.conditionHash}`}
                                           target="_blank"
                                         >
                                           <IconDotsVertical className="h-4 w-4" />

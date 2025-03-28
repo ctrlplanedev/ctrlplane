@@ -96,17 +96,17 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
     resourceFilter: false,
   });
 
-  const envsWithFilter =
+  const envsWithSelector =
     system?.environments
-      .filter((e) => e.resourceFilter != null)
-      .map((e) => ({ ...e, resourceFilter: e.resourceFilter! })) ?? [];
+      .filter((e) => e.resourceSelector != null)
+      .map((e) => ({ ...e, resourceSelector: e.resourceSelector! })) ?? [];
 
-  const resourceFilter = deployment.resourceFilter ?? undefined;
+  const resourceSelector = deployment.resourceSelector ?? undefined;
   const timeout =
     deployment.timeout != null
       ? prettyMilliseconds(deployment.timeout)
       : undefined;
-  const defaultValues = { ...deployment, resourceFilter, timeout };
+  const defaultValues = { ...deployment, resourceSelector, timeout };
   const form = useForm({ schema, defaultValues, mode: "onSubmit" });
   const { setError, formState, watch, getValues } = form;
 
@@ -127,16 +127,16 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   const onSubmit = async (section: string) => {
     try {
       const currentValues = getValues();
-      const filter =
-        currentValues.resourceFilter == null ||
-        isEmptyCondition(currentValues.resourceFilter)
+      const selector =
+        currentValues.resourceSelector == null ||
+        isEmptyCondition(currentValues.resourceSelector)
           ? null
-          : currentValues.resourceFilter;
+          : currentValues.resourceSelector;
       const timeout =
         currentValues.timeout != null && currentValues.timeout !== ""
           ? ms(currentValues.timeout) / 1000
           : null;
-      const updates = { ...currentValues, resourceFilter: filter, timeout };
+      const updates = { ...currentValues, resourceSelector: selector, timeout };
 
       const updatedDeployment = await updateDeployment.mutateAsync({
         id: deployment.id,
@@ -168,7 +168,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   const watchSystemId = watch("systemId");
   const watchRetryCount = watch("retryCount");
   const watchTimeout = watch("timeout");
-  const watchResourceFilter = watch("resourceFilter");
+  const watchResourceSelector = watch("resourceSelector");
 
   const propertiesDirty =
     watchName !== defaultValues.name ||
@@ -180,9 +180,9 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
     watchRetryCount !== defaultValues.retryCount ||
     watchTimeout !== defaultValues.timeout;
 
-  const resourceFilterDirty =
-    JSON.stringify(watchResourceFilter) !==
-    JSON.stringify(defaultValues.resourceFilter);
+  const resourceSelectorDirty =
+    JSON.stringify(watchResourceSelector) !==
+    JSON.stringify(defaultValues.resourceSelector);
 
   return (
     <div className="space-y-8">
@@ -396,7 +396,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
             <div className="space-y-4">
               <FormField
                 control={form.control}
-                name="resourceFilter"
+                name="resourceSelector"
                 render={({ field: { value, onChange } }) => (
                   <FormItem className="space-y-2">
                     <FormLabel>Resource Filter</FormLabel>
@@ -419,10 +419,10 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                           <IconX className="h-4 w-4" /> Clear Filter
                         </Button>
                       </FormControl>
-                      {envsWithFilter.length > 0 && value != null && (
+                      {envsWithSelector.length > 0 && value != null && (
                         <DeploymentResourcesDialog
-                          environments={envsWithFilter}
-                          resourceFilter={value}
+                          environments={envsWithSelector}
+                          resourceSelector={value}
                           workspaceId={workspaceId}
                         />
                       )}
@@ -438,10 +438,10 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  onClick={() => onSubmit("resourceFilter")}
-                  disabled={!resourceFilterDirty || formState.isSubmitting}
+                  onClick={() => onSubmit("resourceSelector")}
+                  disabled={!resourceSelectorDirty || formState.isSubmitting}
                 >
-                  {successMessages.resourceFilter ? "Saved" : "Save"}
+                  {successMessages.resourceSelector ? "Saved" : "Save"}
                 </Button>
               </div>
             </div>
