@@ -66,42 +66,19 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     ...options
   }: DeploymentDenyRuleOptions) {
     this.denyReason = denyReason;
-    const dtStartPartsInTz =
+    const dtStartCasted =
       dtstart != null
-        ? getDatePartsInTimeZone(dtstart, options.tzid ?? "UTC")
+        ? this.castTimezone(dtstart, options.tzid ?? "UTC")
         : null;
 
-    const untilPartsInTz =
-      until != null
-        ? getDatePartsInTimeZone(until, options.tzid ?? "UTC")
-        : null;
+    const untilCasted =
+      until != null ? this.castTimezone(until, options.tzid ?? "UTC") : null;
 
     this.rrule = new RRule({
       ...options,
       tzid: "UTC",
-      dtstart:
-        dtStartPartsInTz == null
-          ? null
-          : datetime(
-              dtStartPartsInTz.year,
-              dtStartPartsInTz.month,
-              dtStartPartsInTz.day,
-              dtStartPartsInTz.hour,
-              dtStartPartsInTz.minute,
-              dtStartPartsInTz.second,
-            ),
-
-      until:
-        untilPartsInTz == null
-          ? null
-          : datetime(
-              untilPartsInTz.year,
-              untilPartsInTz.month,
-              untilPartsInTz.day,
-              untilPartsInTz.hour,
-              untilPartsInTz.minute,
-              untilPartsInTz.second,
-            ),
+      dtstart: dtStartCasted,
+      until: untilCasted,
     });
     this.dtstart = dtstart;
     this.dtend = dtend;
@@ -146,22 +123,21 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     // now is in whatever timezone of the server. We need to convert it to match
     // the timezone for the library
     const parts = getDatePartsInTimeZone(now, this.timezone);
-    const occurrence = this.rrule.before(
-      datetime(
-        parts.year,
-        parts.month,
-        parts.day,
-        parts.hour,
-        parts.minute,
-        parts.second,
-      ),
-      true,
+    const nowDt = datetime(
+      parts.year,
+      parts.month,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
     );
+
+    const occurrence = this.rrule.before(nowDt, true);
 
     const nowFromParts = new Date(
       Date.UTC(
         parts.year, // 2023
-        parts.month - 1, // 3-1=2 (March, because Date.UTC months are 0-based)
+        parts.month - 1, // 3-1=2 (Marhowch, because Date.UTC months are 0-based)
         parts.day, // 12
         parts.hour, // 17
         parts.minute, // 30
@@ -180,13 +156,6 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
       // Calculate duration in local time to handle DST correctly
       const durationMs = differenceInMilliseconds(dtend, dtstart);
       const occurrenceEnd = addMilliseconds(occurrence, durationMs);
-      console.log("occurrenceEnd", occurrenceEnd);
-      const nowInTz = this.castTimezone(now, this.timezone);
-      console.log("nowInTz", nowInTz);
-
-      console.log(
-        `Checking if ${nowInTz.toLocaleDateString()} ${nowInTz.toLocaleTimeString()} is within ${occurrence.toLocaleDateString()} ${occurrence.toLocaleTimeString()} and ${occurrenceEnd.toLocaleDateString()} ${occurrenceEnd.toLocaleTimeString()}`,
-      );
       return isWithinInterval(nowFromParts, {
         start: occurrence,
         end: occurrenceEnd,
