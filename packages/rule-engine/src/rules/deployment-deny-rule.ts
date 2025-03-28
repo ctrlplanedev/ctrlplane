@@ -66,30 +66,41 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     ...options
   }: DeploymentDenyRuleOptions) {
     this.denyReason = denyReason;
+    const dtStartPartsInTz =
+      dtstart != null
+        ? getDatePartsInTimeZone(dtstart, options.tzid ?? "UTC")
+        : null;
+
+    const untilPartsInTz =
+      until != null
+        ? getDatePartsInTimeZone(until, options.tzid ?? "UTC")
+        : null;
+
     this.rrule = new RRule({
       ...options,
+      tzid: "UTC",
       dtstart:
-        dtstart == null
+        dtStartPartsInTz == null
           ? null
           : datetime(
-              dtstart.getUTCFullYear(),
-              dtstart.getUTCMonth(),
-              dtstart.getUTCDate(),
-              dtstart.getUTCHours(),
-              dtstart.getUTCMinutes(),
-              dtstart.getUTCSeconds(),
+              dtStartPartsInTz.year,
+              dtStartPartsInTz.month,
+              dtStartPartsInTz.day,
+              dtStartPartsInTz.hour,
+              dtStartPartsInTz.minute,
+              dtStartPartsInTz.second,
             ),
 
       until:
-        until == null
+        untilPartsInTz == null
           ? null
           : datetime(
-              until.getUTCFullYear(),
-              until.getUTCMonth(),
-              until.getUTCDate(),
-              until.getUTCHours(),
-              until.getUTCMinutes(),
-              until.getUTCSeconds(),
+              untilPartsInTz.year,
+              untilPartsInTz.month,
+              untilPartsInTz.day,
+              untilPartsInTz.hour,
+              untilPartsInTz.minute,
+              untilPartsInTz.second,
             ),
     });
     this.dtstart = dtstart;
@@ -135,19 +146,7 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     // now is in whatever timezone of the server. We need to convert it to match
     // the timezone for the library
     const parts = getDatePartsInTimeZone(now, this.timezone);
-    console.log(
-      "parts",
-      parts,
-      datetime(
-        parts.year,
-        parts.month,
-        parts.day,
-        parts.hour,
-        parts.minute,
-        parts.second,
-      ),
-    );
-    const o = this.rrule.before(
+    const occurrence = this.rrule.before(
       datetime(
         parts.year,
         parts.month,
@@ -159,18 +158,19 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
       true,
     );
 
-    // If there's no occurrence on or before the time, it's not in a denied period
-    if (o == null) return false;
-
-    console.log("o", o);
-    const occurrence = this.castTimezone(o, this.timezone);
-    console.log("------");
-    console.log("timezone", this.timezone);
-    console.log("now", this.formatDateInTimezone(now, this.timezone));
-    console.log(
-      "occurrence",
-      this.formatDateInTimezone(occurrence, this.timezone),
+    const nowFromParts = new Date(
+      Date.UTC(
+        parts.year, // 2023
+        parts.month - 1, // 3-1=2 (March, because Date.UTC months are 0-based)
+        parts.day, // 12
+        parts.hour, // 17
+        parts.minute, // 30
+        parts.second, // 0
+      ),
     );
+
+    // If there's no occurrence on or before the time, it's not in a denied period
+    if (occurrence == null) return false;
 
     // If dtend is specified, check if time is between occurrence and occurrence + duration
     if (this.dtend != null && this.dtstart != null) {
@@ -180,49 +180,17 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
       // Calculate duration in local time to handle DST correctly
       const durationMs = differenceInMilliseconds(dtend, dtstart);
       const occurrenceEnd = addMilliseconds(occurrence, durationMs);
-
-      console.log("------");
-      console.log("timezone", this.timezone);
-      console.log("now", this.formatDateInTimezone(now, this.timezone));
-      console.log("dtstart", this.formatDateInTimezone(dtstart, this.timezone));
-      console.log("dtend", this.formatDateInTimezone(dtend, this.timezone));
-      console.log(
-        "occurrenceTimezone",
-        this.formatDateInTimezone(occurrence, this.timezone),
-      );
-      console.log(
-        "occurrence",
-        this.formatDateInTimezone(occurrence, this.timezone),
-      );
-      console.log(
-        "occurrenceEnd",
-        this.formatDateInTimezone(occurrenceEnd, this.timezone),
-      );
-      // console.log("------");
-      // console.log("now", now);
-      // this.formatDateInTimezone(now, this.timezone);
-      // console.log("occurrenceTimezone", occurrenceTimezone);
-      // console.log("occurrenceEnd", occurrenceEnd);
-
-      // this.formatDateInTimezone(now, "UTC");
-      // this.formatDateInTimezone(occurrenceTimezone, "UTC");
-      // this.formatDateInTimezone(occurrenceEnd, "UTC");
-      // Check if current time is between occurrence start and end times
+      console.log("occurrenceEnd", occurrenceEnd);
+      const nowInTz = this.castTimezone(now, this.timezone);
+      console.log("nowInTz", nowInTz);
 
       console.log(
-        "checking",
-        new Date(now),
-        new Date(occurrence),
-        new Date(occurrenceEnd),
+        `Checking if ${nowInTz.toLocaleDateString()} ${nowInTz.toLocaleTimeString()} is within ${occurrence.toLocaleDateString()} ${occurrence.toLocaleTimeString()} and ${occurrenceEnd.toLocaleDateString()} ${occurrenceEnd.toLocaleTimeString()}`,
       );
-      return isWithinInterval(
-        now,
-        {
-          start: occurrence,
-          end: occurrenceEnd,
-        },
-        { in: tz(this.timezone) },
-      );
+      return isWithinInterval(nowFromParts, {
+        start: occurrence,
+        end: occurrenceEnd,
+      });
     }
 
     // If no dtend, check if the occurrence is on the same day using date-fns

@@ -182,6 +182,68 @@ describe("DeploymentDenyRule", () => {
     expect(result.reason).toBeUndefined();
   });
 
+  it("should handle standard time to daylight time changes correctly (EST -> EDT in March)", () => {
+    const rule = new DeploymentDenyRule({
+      freq: Frequency.DAILY,
+      dtstart: new Date("2023-03-10T14:00:00Z"), // 9:00am EST
+      dtend: new Date("2023-03-10T22:00:00Z"), // 5:00pm EST
+      tzid: "America/New_York",
+    });
+
+    /**
+     * These test UTC 21:30
+     * during EST, this is 4:30pm, which is during the denied period
+     * during EDT, this is 5:30pm, which is outside the denied period
+     * hence, before the DST change, the rule should deny access,
+     * and should allow access after the DST change
+     */
+    vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
+      new Date("2023-03-11T21:30:00Z"),
+    );
+    let result = rule.filter(context, releases);
+    expect(result.allowedReleases.length).toBe(0);
+    expect(result.reason).toBeDefined();
+
+    vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
+      new Date("2023-03-12T21:30:00Z"),
+    );
+    result = rule.filter(context, releases);
+    expect(result.allowedReleases.length).toBe(2);
+    expect(result.reason).toBeUndefined();
+  });
+
+  it("should handle daylight time to standard time changes correctly (EDT -> EST in November)", () => {
+    const rule = new DeploymentDenyRule({
+      freq: Frequency.DAILY,
+      dtstart: new Date("2023-11-04T13:00:00Z"), // 9:00am EDT
+      dtend: new Date("2023-11-04T21:00:00Z"), // 5:00pm EDT
+      tzid: "America/New_York",
+    });
+
+    /**
+     * These test UTC 13:30
+     * during EDT, this is 9:30am, which is during the denied period
+     * during EST, this is 8:30am, which is outside the denied period
+     * hence, before the DST change, the rule should deny access,
+     * and should allow access after the DST change
+     */
+    vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
+      new Date("2023-11-04T13:30:00Z"),
+    );
+    let result = rule.filter(context, releases);
+    expect(result.allowedReleases.length).toBe(0); // Should be DENIED
+    expect(result.reason).toBeDefined();
+
+    vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
+      new Date("2023-11-05T13:30:00Z"),
+    );
+    result = rule.filter(context, releases);
+    expect(result.allowedReleases.length).toBe(2); // Should be ALLOWED
+    expect(result.reason).toBeUndefined();
+  });
+
+  /* OLD TESTS BELOW */
+
   // it("should handle DST changes correctly", () => {
   //   // Create a rule that denies deployments at 2:30 AM ET every day
   //   // This test will check behavior around the DST change boundary
