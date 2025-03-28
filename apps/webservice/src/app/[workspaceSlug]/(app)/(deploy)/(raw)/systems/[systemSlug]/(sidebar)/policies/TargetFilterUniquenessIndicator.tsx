@@ -20,7 +20,7 @@ type UniqueFilterResult = {
   overlaps: { nodeId: string; overlappingResourceCount: number }[];
 } | null;
 
-const useResourceFilterUniqueness = (
+const useResourceSelectorUniqueness = (
   nodes: Node[],
   workspaceId: string,
   currentNode: Node,
@@ -32,8 +32,8 @@ const useResourceFilterUniqueness = (
       queryKey: [
         "resource",
         workspaceId,
-        currentNode.data.resourceFilter,
-        node.data.resourceFilter,
+        currentNode.data.resourceSelector,
+        node.data.resourceSelector,
       ],
       queryFn: () =>
         utils.resource.byWorkspaceId.list
@@ -44,15 +44,15 @@ const useResourceFilterUniqueness = (
               type: "comparison",
               operator: "and",
               conditions: [
-                currentNode.data.resourceFilter,
-                node.data.resourceFilter,
+                currentNode.data.resourceSelector,
+                node.data.resourceSelector,
               ],
             },
           })
           .then((res) => res.total),
       enabled:
-        currentNode.data.resourceFilter != null &&
-        node.data.resourceFilter != null,
+        currentNode.data.resourceSelector != null &&
+        node.data.resourceSelector != null,
     })),
   });
 
@@ -90,16 +90,16 @@ const StatusMap = {
   },
 };
 
-export const ResourceFilterUniquenessIndicator: FC<{
+export const ResourceSelectorUniquenessIndicator: FC<{
   nodes: Node[];
   workspaceId: string;
   workspaceSlug: string;
   currentNode: Node;
 }> = ({ nodes, workspaceId, workspaceSlug, currentNode }) => {
-  const result = useResourceFilterUniqueness(nodes, workspaceId, currentNode);
+  const result = useResourceSelectorUniqueness(nodes, workspaceId, currentNode);
   const resourcesUrl = urls.workspace(workspaceSlug).resources().baseUrl();
 
-  if (!currentNode.data.resourceFilter)
+  if (!currentNode.data.resourceSelector)
     return (
       <span className="mt-2 text-sm text-muted-foreground">
         Please add a resource filter to select resources for this environment.
@@ -148,8 +148,8 @@ export const ResourceFilterUniquenessIndicator: FC<{
                 type: "comparison",
                 operator: "and",
                 conditions: [
-                  overlappingNode.data.resourceFilter,
-                  currentNode.data.resourceFilter,
+                  overlappingNode.data.resourceSelector,
+                  currentNode.data.resourceSelector,
                 ],
               }),
             );

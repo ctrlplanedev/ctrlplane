@@ -45,7 +45,7 @@ export const getDeploymentStats = async (
     .where(
       and(
         inArray(SCHEMA.resource.id, resourceIds),
-        SCHEMA.resourceMatchesMetadata(db, deployment.resourceFilter),
+        SCHEMA.resourceMatchesMetadata(db, deployment.resourceSelector),
       ),
     )
     .then((resources) => resources.map((r) => r.id));
@@ -73,7 +73,7 @@ export const getDeploymentStats = async (
         eq(SCHEMA.releaseJobTrigger.environmentId, environment.id),
         eq(SCHEMA.deploymentVersion.deploymentId, deployment.id),
         inArray(SCHEMA.job.status, deployedStatuses),
-        SCHEMA.resourceMatchesMetadata(db, deployment.resourceFilter),
+        SCHEMA.resourceMatchesMetadata(db, deployment.resourceSelector),
       ),
     )
     .orderBy(

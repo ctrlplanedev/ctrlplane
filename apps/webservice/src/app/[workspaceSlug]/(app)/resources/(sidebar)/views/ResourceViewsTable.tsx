@@ -39,7 +39,7 @@ export const ResourceViewsTable: React.FC<{
             key={view.id}
             onClick={() =>
               router.push(
-                `/${workspace.slug}/resources?filter=${view.hash}&view=${view.id}`,
+                `/${workspace.slug}/resources?condition=${view.hash}&view=${view.id}`,
               )
             }
             className="cursor-pointer"

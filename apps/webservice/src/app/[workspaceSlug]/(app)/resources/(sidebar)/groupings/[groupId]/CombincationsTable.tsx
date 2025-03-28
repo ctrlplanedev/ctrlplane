@@ -14,6 +14,8 @@ import {
 
 import { urls } from "~/app/urls";
 
+const CONDITION_PARAM = "condition";
+
 export const CombinationsTable: React.FC<{
   workspaceSlug: string;
   combinations: Array<{
@@ -40,7 +42,7 @@ export const CombinationsTable: React.FC<{
               className="cursor-pointer"
               onClick={() => {
                 const query = new URLSearchParams(window.location.search);
-                const filterHash = LZString.compressToEncodedURIComponent(
+                const conditionHash = LZString.compressToEncodedURIComponent(
                   JSON.stringify({
                     type: "comparison",
                     operator: "and",
@@ -55,7 +57,7 @@ export const CombinationsTable: React.FC<{
                     ),
                   }),
                 );
-                query.set("filter", filterHash);
+                query.set(CONDITION_PARAM, conditionHash);
                 return router.push(`${resourceListUrl}?${query.toString()}`);
               }}
             >

@@ -37,7 +37,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
@@ -121,14 +121,16 @@ export default async function ResourceProvidersPage(props: {
   );
 
   const providers = resourceProviders.map((provider) => {
-    const filter: ResourceCondition = {
-      type: ResourceFilterType.Provider,
+    const condition: ResourceCondition = {
+      type: ResourceConditionType.Provider,
       value: provider.id,
       operator: "equals",
     };
-    const hash = LZString.compressToEncodedURIComponent(JSON.stringify(filter));
-    const filterLink = `/${workspaceSlug}/resources/list?filter=${hash}`;
-    return { ...provider, filterLink };
+    const hash = LZString.compressToEncodedURIComponent(
+      JSON.stringify(condition),
+    );
+    const conditionLink = `/${workspaceSlug}/resources/list?condition=${hash}`;
+    return { ...provider, filterLink: conditionLink };
   });
 
   const integrationsUrl = urls

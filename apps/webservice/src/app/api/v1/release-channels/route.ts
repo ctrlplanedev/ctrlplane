@@ -12,7 +12,7 @@ import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
 const schema = createDeploymentVersionChannel.extend({
-  releaseFilter: deploymentVersionCondition.optional(),
+  releaseSelector: deploymentVersionCondition.optional(),
 });
 
 export const POST = request()
@@ -26,7 +26,7 @@ export const POST = request()
     ),
   )
   .handle<{ body: z.infer<typeof schema> }>(({ db, body }) => {
-    const versionSelector = body.versionSelector ?? body.releaseFilter;
+    const versionSelector = body.versionSelector ?? body.releaseSelector;
 
     return db
       .insert(SCHEMA.deploymentVersionChannel)

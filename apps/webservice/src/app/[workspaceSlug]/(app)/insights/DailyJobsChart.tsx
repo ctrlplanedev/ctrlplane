@@ -20,10 +20,10 @@ import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 import {
   ColumnOperator,
   ComparisonOperator,
+  ConditionType,
   DateOperator,
-  FilterType,
 } from "@ctrlplane/validators/conditions";
-import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
+import { JobConditionType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { dateRange } from "~/utils/date/range";
 
@@ -55,12 +55,12 @@ type DailyCount = {
 
 type DailyJobsChartProps = {
   dailyCounts: DailyCount[];
-  baseFilter?: JobCondition;
+  baseCondition?: JobCondition;
 };
 
 export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
   dailyCounts,
-  baseFilter,
+  baseCondition,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const router = useRouter();
@@ -207,37 +207,37 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
               const end = addDays(start, 1);
 
               const afterStartCondition: JobCondition = {
-                type: FilterType.CreatedAt,
+                type: ConditionType.CreatedAt,
                 operator: DateOperator.AfterOrOn,
                 value: start.toISOString(),
               };
 
               const beforeEndCondition: JobCondition = {
-                type: FilterType.CreatedAt,
+                type: ConditionType.CreatedAt,
                 operator: DateOperator.Before,
                 value: end.toISOString(),
               };
 
               const isCancelledCondition: JobCondition = {
-                type: JobFilterType.Status,
+                type: JobConditionType.Status,
                 operator: ColumnOperator.Equals,
                 value: JobStatus.Cancelled,
               };
 
               const isPendingCondition: JobCondition = {
-                type: JobFilterType.Status,
+                type: JobConditionType.Status,
                 operator: ColumnOperator.Equals,
                 value: JobStatus.Pending,
               };
 
               const isSkippedCondition: JobCondition = {
-                type: JobFilterType.Status,
+                type: JobConditionType.Status,
                 operator: ColumnOperator.Equals,
                 value: JobStatus.Skipped,
               };
 
               const statusCondition: JobCondition = {
-                type: FilterType.Comparison,
+                type: ConditionType.Comparison,
                 not: true,
                 operator: ComparisonOperator.Or,
                 conditions: [
@@ -247,22 +247,22 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
                 ],
               };
 
-              const filter: JobCondition = {
-                type: FilterType.Comparison,
+              const condition: JobCondition = {
+                type: ConditionType.Comparison,
                 operator: ComparisonOperator.And,
                 conditions: [
                   afterStartCondition,
                   beforeEndCondition,
                   statusCondition,
-                  ...(baseFilter ? [baseFilter] : []),
+                  ...(baseCondition ? [baseCondition] : []),
                 ],
               };
 
               const hash = LZString.compressToEncodedURIComponent(
-                JSON.stringify(filter),
+                JSON.stringify(condition),
               );
-              const filterLink = `/${workspaceSlug}/jobs?filter=${hash}`;
-              router.push(filterLink);
+              const conditionLink = `/${workspaceSlug}/jobs?condition=${hash}`;
+              router.push(conditionLink);
             }}
           />
         ))}

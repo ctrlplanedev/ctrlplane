@@ -39,7 +39,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -119,7 +119,9 @@ const valueRouter = createTRPCRouter({
           with: {
             system: {
               with: {
-                environments: { where: isNotNull(environment.resourceFilter) },
+                environments: {
+                  where: isNotNull(environment.resourceSelector),
+                },
               },
             },
           },
@@ -127,9 +129,9 @@ const valueRouter = createTRPCRouter({
         .then((d) => d?.system.environments ?? []);
 
       const systemCondition: ResourceCondition = {
-        type: FilterType.Comparison,
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.Or,
-        conditions: dep.map((e) => e.resourceFilter).filter(isPresent),
+        conditions: dep.map((e) => e.resourceSelector).filter(isPresent),
       };
 
       const updatedValue = await ctx.db.transaction((tx) =>
@@ -176,54 +178,58 @@ const valueRouter = createTRPCRouter({
           ),
         );
 
-      const getOldResourceFilter = (): ResourceCondition | null => {
-        if (value.id !== variable.defaultValueId) return value.resourceFilter;
+      const getOldResourceSelector = (): ResourceCondition | null => {
+        if (value.id !== variable.defaultValueId) return value.resourceSelector;
         const conditions = otherValues
-          .map((v) => v.resourceFilter)
+          .map((v) => v.resourceSelector)
           .filter(isPresent);
         return {
-          type: FilterType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
           not: true,
           conditions,
         };
       };
 
-      const getNewResourceFilter = (): ResourceCondition | null => {
+      const getNewResourceSelector = (): ResourceCondition | null => {
         if (updatedValue.id !== newDefaultValueId)
-          return updatedValue.resourceFilter;
+          return updatedValue.resourceSelector;
         const conditions = otherValues
-          .map((v) => v.resourceFilter)
+          .map((v) => v.resourceSelector)
           .filter(isPresent);
         return {
-          type: FilterType.Comparison,
+          type: ConditionType.Comparison,
           operator: ComparisonOperator.Or,
           not: true,
           conditions,
         };
       };
 
-      const oldResourceFilter: ResourceCondition = {
-        type: FilterType.Comparison,
+      const oldResourceSelector: ResourceCondition = {
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.And,
-        conditions: [systemCondition, getOldResourceFilter()].filter(isPresent),
+        conditions: [systemCondition, getOldResourceSelector()].filter(
+          isPresent,
+        ),
       };
-      const newResourceFilter: ResourceCondition = {
-        type: FilterType.Comparison,
+      const newResourceSelector: ResourceCondition = {
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.And,
-        conditions: [systemCondition, getNewResourceFilter()].filter(isPresent),
+        conditions: [systemCondition, getNewResourceSelector()].filter(
+          isPresent,
+        ),
       };
 
       const oldResources = await ctx.db.query.resource.findMany({
         where: and(
-          resourceMatchesMetadata(ctx.db, oldResourceFilter),
+          resourceMatchesMetadata(ctx.db, oldResourceSelector),
           isNull(resource.deletedAt),
         ),
       });
 
       const newResources = await ctx.db.query.resource.findMany({
         where: and(
-          resourceMatchesMetadata(ctx.db, newResourceFilter),
+          resourceMatchesMetadata(ctx.db, newResourceSelector),
           isNull(resource.deletedAt),
         ),
       });
@@ -287,7 +293,7 @@ const valueRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Note: Due to cascading deletes set up in the schema, this will also delete:
       // - All deploymentVariableValueResource entries for this value
-      // - All deploymentVariableValueResourceFilter entries for those resources
+      // - All deploymentVariableValueResourceSelector entries for those resources
 
       return ctx.db
         .delete(deploymentVariableValue)
@@ -329,7 +335,8 @@ export const deploymentVariableRouter = createTRPCRouter({
             .groupBy((r) => r.deployment_variable.id)
             .map((r) => ({
               ...r[0]!.deployment_variable,
-              resourceFilter: r[0]!.deployment_variable_value.resourceFilter,
+              resourceSelector:
+                r[0]!.deployment_variable_value.resourceSelector,
               value: r[0]!.deployment_variable_value,
               deployment: { ...r[0]!.deployment, system: r[0]!.system },
             }))
@@ -338,7 +345,7 @@ export const deploymentVariableRouter = createTRPCRouter({
 
       return Promise.all(
         deploymentVariables.map(async (deploymentVariable) => {
-          const { resourceFilter } = deploymentVariable;
+          const { resourceSelector } = deploymentVariable;
 
           const tg = await ctx.db
             .select()
@@ -347,7 +354,7 @@ export const deploymentVariableRouter = createTRPCRouter({
               and(
                 eq(resource.id, input),
                 isNull(resource.deletedAt),
-                resourceMatchesMetadata(ctx.db, resourceFilter),
+                resourceMatchesMetadata(ctx.db, resourceSelector),
               ),
             )
             .then(takeFirstOrNull);
@@ -376,7 +383,7 @@ export const deploymentVariableRouter = createTRPCRouter({
           id: deploymentVariableValue.id,
           value: deploymentVariableValue.value,
           variableId: deploymentVariableValue.variableId,
-          resourceFilter: deploymentVariableValue.resourceFilter,
+          resourceSelector: deploymentVariableValue.resourceSelector,
         })
         .from(deploymentVariableValue)
         .orderBy(asc(deploymentVariableValue.value))
@@ -394,7 +401,7 @@ export const deploymentVariableRouter = createTRPCRouter({
                     'id', ${deploymentVariableValueSubquery.id},
                     'value', ${deploymentVariableValueSubquery.value},
                     'variableId', ${deploymentVariableValueSubquery.variableId},
-                    'resourceFilter', ${deploymentVariableValueSubquery.resourceFilter}
+                    'resourceSelector', ${deploymentVariableValueSubquery.resourceSelector}
                   )
                 else null end
               ) filter (where ${deploymentVariableValueSubquery.id} is not null),

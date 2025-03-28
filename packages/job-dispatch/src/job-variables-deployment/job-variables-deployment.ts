@@ -145,7 +145,7 @@ export const determineReleaseVariableValue = async (
   );
 
   const valuesWithFilter = deploymentVariableValues.filter((v) =>
-    isPresent(v.resourceFilter),
+    isPresent(v.resourceSelector),
   );
 
   const firstMatchedValue = await utils.getFirstMatchedResource(

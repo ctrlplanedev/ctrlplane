@@ -61,9 +61,9 @@ export const openapi: Swagger.SwaggerV3 = {
                     description: "The timeout for the deployment",
                     example: 60,
                   },
-                  resourceFilter: {
+                  resourceSelector: {
                     type: "object",
-                    description: "The resource filter for the deployment",
+                    description: "The resource selector for the deployment",
                     example: { key: "value" },
                   },
                 },
