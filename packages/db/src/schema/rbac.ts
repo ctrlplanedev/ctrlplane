@@ -49,6 +49,7 @@ export const scopeType = pgEnum("scope_type", [
   "jobAgent",
   "runbook",
   "resourceView",
+  "rule",
 ]);
 export const scopeTypeSchema = z.enum(scopeType.enumValues);
 export type ScopeType = z.infer<typeof scopeTypeSchema>;

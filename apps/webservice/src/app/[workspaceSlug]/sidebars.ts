@@ -8,6 +8,7 @@ export enum Sidebars {
   Environment = "environment",
   EnvironmentAnalytics = "environment-analytics",
   Release = "release",
+  Rules = "rules",
 }
 
 export const allSidebars = Object.values(Sidebars);

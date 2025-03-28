@@ -26,6 +26,7 @@ import {
   resourceView,
   role,
   rolePermission,
+  rule,
   runbook,
   runbookJobTrigger,
   system,
@@ -320,6 +321,20 @@ const getWorkspaceScopes = async (id: string) => {
   return [{ type: "workspace" as const, id: result.id }];
 };
 
+const getRuleScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(rule, eq(rule.workspaceId, workspace.id))
+    .where(eq(rule.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "rule" as const, id: result.rule.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 const getJobAgentScopes = async (id: string) => {
   const result = await db
     .select()
@@ -404,6 +419,7 @@ export const scopeHandlers: Record<
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
   job: getJobScopes,
+  rule: getRuleScopes,
 };
 
 const fetchScopeHierarchyForResource = async (resource: {
