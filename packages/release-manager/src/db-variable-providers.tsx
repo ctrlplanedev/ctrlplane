@@ -56,14 +56,11 @@ export type DatabaseDeploymentVariableOptions = {
 type DeploymentVariableValue = {
   value: any;
   resourceSelector: any;
-  sensitive: boolean;
 };
 
 type DeploymentVariable = {
   id: string;
   key: string;
-  value: string;
-  sensitive: boolean;
   defaultValue: DeploymentVariableValue | null;
   values: DeploymentVariableValue[];
 };
@@ -111,6 +108,7 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
         return {
           id: variable.id,
           key,
+          sensitive: false,
           ...value,
         };
     }
@@ -119,6 +117,7 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
       return {
         id: variable.id,
         key,
+        sensitive: false,
         ...variable.defaultValue,
       };
 
