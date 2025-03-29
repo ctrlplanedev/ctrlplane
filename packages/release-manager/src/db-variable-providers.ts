@@ -49,7 +49,6 @@ export class DatabaseResourceVariableProvider implements VariableProvider {
 export type DatabaseDeploymentVariableOptions = {
   resourceId: string;
   deploymentId: string;
-  keys: string[];
   db?: Tx;
 };
 
@@ -121,6 +120,23 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
         ...variable.defaultValue,
       };
 
+    return null;
+  }
+}
+
+export type DatabaseSystemVariableSetOptions = {
+  systemId: string;
+  db?: Tx;
+};
+
+export class DatabaseSystemVariableSetProvider implements VariableProvider {
+  private db: Tx;
+
+  constructor(private options: DatabaseSystemVariableSetOptions) {
+    this.db = options.db ?? db;
+  }
+
+  getVariable(_: string): MaybeVariable {
     return null;
   }
 }
