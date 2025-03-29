@@ -27,7 +27,10 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
-      ctx.db.select().from(policy).where(eq(policy.workspaceId, input)),
+      ctx.db.query.policy.findMany({
+        where: eq(policy.workspaceId, input),
+        with: { targets: true, denyWindows: true },
+      }),
     ),
 
   byId: protectedProcedure
@@ -36,29 +39,12 @@ export const policyRouter = createTRPCRouter({
         canUser.perform(Permission.PolicyGet).on({ type: "policy", id: input }),
     })
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const policyData = await ctx.db
-        .select()
-        .from(policy)
-        .where(eq(policy.id, input))
-        .then(takeFirst);
-
-      const targets = await ctx.db
-        .select()
-        .from(policyTarget)
-        .where(eq(policyTarget.policyId, input));
-
-      const denyWindows = await ctx.db
-        .select()
-        .from(policyRuleDenyWindow)
-        .where(eq(policyRuleDenyWindow.policyId, input));
-
-      return {
-        ...policyData,
-        targets,
-        denyWindows,
-      };
-    }),
+    .query(async ({ ctx, input }) =>
+      ctx.db.query.policy.findFirst({
+        where: eq(policy.id, input),
+        with: { targets: true, denyWindows: true },
+      }),
+    ),
 
   create: protectedProcedure
     .meta({
@@ -69,9 +55,7 @@ export const policyRouter = createTRPCRouter({
     })
     .input(createPolicy)
     .mutation(async ({ ctx, input }) =>
-      ctx.db.transaction(async (db) =>
-        db.insert(policy).values(input).returning().then(takeFirst),
-      ),
+      ctx.db.insert(policy).values(input).returning().then(takeFirst),
     ),
 
   update: protectedProcedure
@@ -79,8 +63,7 @@ export const policyRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.PolicyUpdate)
-          .on({ type: "workspace", id: input.id }),
-      // Note: workspace ID should be determined by looking up the policy
+          .on({ type: "policy", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updatePolicy }))
     .mutation(async ({ ctx, input }) => {
@@ -97,19 +80,15 @@ export const policyRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.PolicyDelete)
-          .on({ type: "workspace", id: input }),
-      // Note: workspace ID should be determined by looking up the policy
+          .on({ type: "policy", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction(async (db) => {
-        // Delete all related targets and deny windows (cascade delete should handle this)
-        return db
-          .delete(policy)
-          .where(eq(policy.id, input))
-          .returning()
-          .then(takeFirst);
-      }),
+      ctx.db
+        .delete(policy)
+        .where(eq(policy.id, input))
+        .returning()
+        .then(takeFirst),
     ),
 
   // Target endpoints
@@ -118,7 +97,7 @@ export const policyRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.PolicyCreate)
-          .on({ type: "workspace", id: input.policyId }),
+          .on({ type: "policy", id: input.policyId }),
     })
     .input(createPolicyTarget)
     .mutation(({ ctx, input }) =>
@@ -136,7 +115,7 @@ export const policyRouter = createTRPCRouter({
 
         return canUser
           .perform(Permission.PolicyUpdate)
-          .on({ type: "workspace", id: target.policyId });
+          .on({ type: "policy", id: target.policyId });
       },
     })
     .input(z.object({ id: z.string().uuid(), data: updatePolicyTarget }))
@@ -160,7 +139,7 @@ export const policyRouter = createTRPCRouter({
 
         return canUser
           .perform(Permission.PolicyDelete)
-          .on({ type: "workspace", id: target.policyId });
+          .on({ type: "policy", id: target.policyId });
       },
     })
     .input(z.string().uuid())
@@ -178,7 +157,7 @@ export const policyRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.PolicyCreate)
-          .on({ type: "workspace", id: input.policyId }),
+          .on({ type: "policy", id: input.policyId }),
     })
     .input(createPolicyRuleDenyWindow)
     .mutation(({ ctx, input }) => {
@@ -200,7 +179,7 @@ export const policyRouter = createTRPCRouter({
 
         return canUser
           .perform(Permission.PolicyUpdate)
-          .on({ type: "workspace", id: denyWindow.policyId });
+          .on({ type: "policy", id: denyWindow.policyId });
       },
     })
     .input(
@@ -226,7 +205,7 @@ export const policyRouter = createTRPCRouter({
 
         return canUser
           .perform(Permission.PolicyDelete)
-          .on({ type: "workspace", id: denyWindow.policyId });
+          .on({ type: "policy", id: denyWindow.policyId });
       },
     })
     .input(z.string().uuid())
