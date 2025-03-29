@@ -28,14 +28,6 @@ import {
   getTypeColorClass,
 } from "./rule-themes";
 
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
 interface PolicyTableProps {
   policies: RouterOutputs["policy"]["list"];
 }
@@ -48,13 +40,12 @@ const getRules = (policy: RouterOutputs["policy"]["list"][number]) => {
 
 export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
   // Return early if no rules to display
-  if (policies.length === 0) {
+  if (policies.length === 0)
     return (
       <div className="flex h-32 items-center justify-center rounded-lg border border-dashed">
         <p className="text-sm text-muted-foreground">No rules found</p>
       </div>
     );
-  }
 
   return (
     <>
@@ -63,10 +54,9 @@ export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[300px]">Name</TableHead>
-            <TableHead>Type</TableHead>
+            <TableHead>Rules</TableHead>
             <TableHead>Targets</TableHead>
             <TableHead>Priority</TableHead>
-            <TableHead>Created</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[80px]"></TableHead>
           </TableRow>
@@ -95,12 +85,11 @@ export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
                   )}
                 </TableCell>
 
-                {/* Type column */}
                 <TableCell className="min-w-[200px]">
                   <div className="flex flex-wrap gap-1.5">
                     {rules.length === 0 ? (
                       <div className="text-xs text-muted-foreground">
-                        No configurations
+                        No rules
                       </div>
                     ) : (
                       rules.map((rule, idx) => (
@@ -136,9 +125,6 @@ export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
                 <TableCell>
                   <Badge variant="outline">{policy.priority}</Badge>
                 </TableCell>
-
-                {/* Created date column */}
-                <TableCell>{formatDate(policy.createdAt)}</TableCell>
 
                 {/* Status column */}
                 <TableCell>

@@ -178,13 +178,19 @@ export default async function RulesPage({
             </TabsTrigger>
           </TabsList>
           <TabsContent value="all" className="p-0">
-            <PolicyTable policies={policies} />
+            <Card>
+              <PolicyTable policies={policies} />
+            </Card>
           </TabsContent>
           <TabsContent value="active" className="p-0">
-            <PolicyTable policies={activePolicies} />
+            <Card>
+              <PolicyTable policies={activePolicies} />
+            </Card>
           </TabsContent>
           <TabsContent value="inactive" className="p-0">
-            <PolicyTable policies={inactivePolicies} />
+            <Card>
+              <PolicyTable policies={inactivePolicies} />
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
