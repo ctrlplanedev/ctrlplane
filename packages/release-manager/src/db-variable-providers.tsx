@@ -86,12 +86,12 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     });
   }
 
-  private getVariablesPromise() {
+  private getVariables() {
     return (this.variables ??= this.loadVariables());
   }
 
   async getVariable(key: string): Promise<MaybeVariable> {
-    const variables = await this.getVariablesPromise();
+    const variables = await this.getVariables();
     const variable = variables.find((v) => v.key === key) ?? null;
     if (variable == null) return null;
 
