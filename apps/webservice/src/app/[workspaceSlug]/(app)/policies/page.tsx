@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   IconActivityHeartbeat,
   IconArrowDown,
@@ -29,8 +30,10 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
+import { api } from "~/trpc/server";
 import { PageHeader } from "../_components/PageHeader";
 import { Sidebars } from "../../sidebars";
+import { PolicyTable } from "./_components/PolicyTable";
 
 export default async function RulesPage({
   params,
@@ -38,9 +41,15 @@ export default async function RulesPage({
   params: Promise<{ workspaceSlug: string }>;
 }) {
   const workspaceSlug = (await params).workspaceSlug;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
+  const policies = await api.policy.list(workspace.id);
+
   // Count rule types
   const counts = {
-    timeWindow: 0,
+    denyWindows: policies
+      .map((p) => p.denyWindows.length)
+      .reduce((a, b) => a + b, 0),
     maintenance: 0,
     rollout: 0,
     successRate: 0,
@@ -48,14 +57,14 @@ export default async function RulesPage({
     approvalGates: 1, // Placeholder for the future
   };
 
-  const activeRules = [];
-  const inactiveRules = [];
+  const activePolicies = policies.filter((p) => p.enabled);
+  const inactivePolicies = policies.filter((p) => !p.enabled);
 
   const ruleCategories = [
     {
       title: "Deny Windows",
       icon: <IconClockFilled className="h-5 w-5 text-blue-500" />,
-      count: counts.timeWindow,
+      count: counts.denyWindows,
       href: `/${workspaceSlug}/policies/deny-windows`,
       description: "Control when deployments can occur",
     },
@@ -162,20 +171,20 @@ export default async function RulesPage({
           <TabsList>
             <TabsTrigger value="all">All Rules ({0})</TabsTrigger>
             <TabsTrigger value="active">
-              Active ({activeRules.length})
+              Active ({activePolicies.length})
             </TabsTrigger>
             <TabsTrigger value="inactive">
-              Inactive ({inactiveRules.length})
+              Inactive ({inactivePolicies.length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="all" className="p-0">
-            {/* <RulesTable rules={[]} /> */}
+            <PolicyTable policies={policies} />
           </TabsContent>
           <TabsContent value="active" className="p-0">
-            {/* <RulesTable rules={[]} /> */}
+            <PolicyTable policies={activePolicies} />
           </TabsContent>
           <TabsContent value="inactive" className="p-0">
-            {/* <RulesTable rules={[]} /> */}
+            <PolicyTable policies={inactivePolicies} />
           </TabsContent>
         </Tabs>
       </div>
