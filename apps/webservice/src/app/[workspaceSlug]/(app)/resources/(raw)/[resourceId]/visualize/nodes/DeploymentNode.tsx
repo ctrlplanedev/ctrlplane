@@ -8,6 +8,7 @@ import {
   IconCircleX,
   IconClock,
   IconLoader2,
+  IconPlayerPlay,
 } from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
 
@@ -31,6 +32,13 @@ const StatusIcon: React.FC<{
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
         <IconLoader2 strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Executing)
+    return (
+      <div className="rounded-full bg-blue-500 p-1 dark:text-black">
+        <IconPlayerPlay strokeWidth={2} />
       </div>
     );
 
@@ -99,7 +107,9 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
   );
 
   const isInProgress = latestDeployedVersions.some(
-    (r) => r.releaseJobTrigger.job.status === JobStatus.InProgress,
+    (r) =>
+      r.releaseJobTrigger.job.status === JobStatus.InProgress ||
+      r.releaseJobTrigger.job.status === JobStatus.Executing,
   );
   const isPending = latestDeployedVersions.some(
     (r) => r.releaseJobTrigger.job.status === JobStatus.Pending,

@@ -34,6 +34,7 @@ const statusColors = {
   [JobStatus.InvalidJobAgent]: colors.amber[400],
   [JobStatus.Failure]: colors.red[600],
   [JobStatus.InProgress]: colors.blue[500],
+  [JobStatus.Executing]: colors.blue[600],
   [JobStatus.Successful]: colors.green[500],
 };
 
@@ -44,6 +45,7 @@ const statusLabels = {
   [JobStatus.InvalidJobAgent]: "Invalid Job Agent",
   [JobStatus.Failure]: "Failure",
   [JobStatus.InProgress]: "In Progress",
+  [JobStatus.Executing]: "Executing",
   [JobStatus.Successful]: "Successful",
 };
 

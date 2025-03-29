@@ -256,6 +256,7 @@ export const openapi: Swagger.SwaggerV3 = {
           "cancelled",
           "skipped",
           "in_progress",
+          "executing",
           "action_required",
           "pending",
           "failure",
