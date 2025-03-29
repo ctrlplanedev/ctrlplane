@@ -1,6 +1,13 @@
 import { and, asc, eq, isNotNull, takeFirstOrNull, Tx } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
+/**
+ * Get the variable directly assigned to the resource
+ * @param db
+ * @param resourceId
+ * @param key
+ * @returns the variable assigned to the resource for this key
+ */
 const getResourceVariable = async (db: Tx, resourceId: string, key: string) =>
   db
     .select()
@@ -13,6 +20,14 @@ const getResourceVariable = async (db: Tx, resourceId: string, key: string) =>
     )
     .then(takeFirstOrNull);
 
+/**
+ * Get the variable value assigned to the deployment
+ * To resolve conflicts, we sort the values by jsonb ascending and select the first
+ * @param db
+ * @param resourceId
+ * @param deploymentId
+ * @param key
+ */
 const getDeploymentVariableValue = async (
   db: Tx,
   resourceId: string,
@@ -57,6 +72,13 @@ const getDeploymentVariableValue = async (
   return defaultValue?.value ?? null;
 };
 
+/**
+ * Get the variable value assigned to the environment via variable sets
+ * To resolve conflicts, we sort the values by jsonb ascending and select the first
+ * @param db
+ * @param environmentId
+ * @param key
+ */
 const getVariableSetValue = async (
   db: Tx,
   environmentId: string,
