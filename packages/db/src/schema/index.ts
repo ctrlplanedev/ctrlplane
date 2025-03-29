@@ -22,7 +22,7 @@ export * from "./job-agent.js";
 export * from "./event.js";
 export * from "./release-channel.js";
 export * from "./release-job-trigger.js";
-export * from "./rule.js";
+export * from "./policy.js";
 export * from "./release.js";
 
 // relations

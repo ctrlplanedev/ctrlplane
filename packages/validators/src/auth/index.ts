@@ -105,6 +105,12 @@ export enum Permission {
   HookList = "hook.list",
   HookUpdate = "hook.update",
   HookDelete = "hook.delete",
+
+  PolicyGet = "policy.get",
+  PolicyList = "policy.list",
+  PolicyCreate = "policy.create",
+  PolicyUpdate = "policy.update",
+  PolicyDelete = "policy.delete",
 }
 
 export const permission = z.nativeEnum(Permission);
