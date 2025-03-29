@@ -34,6 +34,20 @@ const workspaceSettingsIntegrations = (slug: string) => {
   };
 };
 
+const workspacePolicies = (slug: string) => {
+  const base = [slug, "policies"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    analytics: () => buildUrl(...base, "analytics"),
+    settings: () => buildUrl(...base, "settings"),
+    denyWindows: () => buildUrl(...base, "deny-windows"),
+    gradualRollouts: () => buildUrl(...base, "gradual-rollouts"),
+    successCriteria: () => buildUrl(...base, "success-criteria"),
+    dependencies: () => buildUrl(...base, "dependencies"),
+    approvalGates: () => buildUrl(...base, "approval-gates"),
+  };
+};
+
 // Workspace URL functions
 const workspace = (slug: string) => {
   return {
@@ -45,6 +59,7 @@ const workspace = (slug: string) => {
     insights: () => buildUrl(slug, "insights"),
     resources: () => resources(slug),
     resource: (resourceId: string) => resource(slug, resourceId),
+    policies: () => workspacePolicies(slug),
     settings: () => workspaceSettings(slug),
   };
 };
