@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 
-import { policy, policyTarget, policyRuleDenyWindow } from "./policy.js";
+import { policy, policyRuleDenyWindow, policyTarget } from "./policy.js";
 import { workspace } from "./workspace.js";
 
 export const policyRelations = relations(policy, ({ many, one }) => ({
