@@ -78,15 +78,15 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   );
 
   const allTriggers = Object.values(triggersByResource).flat();
-  const allJobIds = allTriggers.map((t) => t.job.id);
-  const latestStatusesByResource = Object.entries(triggersByResource).map(
+  const latestJobsByResource = Object.entries(triggersByResource).map(
     ([_, triggers]) => {
       const sortedByCreatedAt = triggers.sort(
         (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
       );
-      return sortedByCreatedAt[sortedByCreatedAt.length - 1]!.job.status;
+      return sortedByCreatedAt[sortedByCreatedAt.length - 1]!.job;
     },
   );
+  const latestStatusesByResource = latestJobsByResource.map((j) => j.status);
 
   const sortedAndGroupedTriggers = Object.entries(triggersByResource)
     .sort(([_, a], [__, b]) =>
@@ -198,7 +198,9 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 />
               ))}
 
-              <EnvironmentRowDropdown jobIds={allJobIds}>
+              <EnvironmentRowDropdown
+                jobIds={latestJobsByResource.map((j) => j.id)}
+              >
                 <Button variant="ghost" size="icon" className="h-7 w-7">
                   <IconDots className="h-4 w-4" />
                 </Button>
