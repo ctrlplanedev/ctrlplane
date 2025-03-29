@@ -81,12 +81,11 @@ export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
   { resourceSelector: resourceCondition },
 )
-  .omit({
-    id: true,
-  })
-  .extend({
-    default: z.boolean().optional(),
-  });
+  .omit({ id: true })
+  .extend({ default: z.boolean().optional() });
+export type CreateDeploymentVariableValue = z.infer<
+  typeof createDeploymentVariableValue
+>;
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
 
