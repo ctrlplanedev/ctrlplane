@@ -90,22 +90,26 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     return (this.variables ??= this.loadVariables());
   }
 
+  private getResource(selector: any) {
+    return this.db
+      .select()
+      .from(resource)
+      .where(
+        and(
+          eq(resource.id, this.options.resourceId),
+          resourceMatchesMetadata(this.db, selector),
+        ),
+      )
+      .then(takeFirstOrNull);
+  }
+
   async getVariable(key: string): Promise<MaybeVariable> {
     const variables = await this.getVariables();
     const variable = variables.find((v) => v.key === key) ?? null;
     if (variable == null) return null;
 
     for (const value of variable.values) {
-      const res = await this.db
-        .select()
-        .from(resource)
-        .where(
-          and(
-            eq(resource.id, this.options.resourceId),
-            resourceMatchesMetadata(this.db, value.resourceSelector),
-          ),
-        )
-        .then(takeFirstOrNull);
+      const res = await this.getResource(value.resourceSelector);
 
       if (res != null)
         return {
@@ -115,6 +119,8 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
           ...value,
         };
     }
+
+    console.log(variable.defaultValue);
 
     if (variable.defaultValue != null)
       return {

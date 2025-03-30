@@ -6,6 +6,6 @@
     "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
-  "include": ["*.ts", "src"],
+  "include": ["*.ts", "src", "test"],
   "exclude": ["node_modules"]
 }
