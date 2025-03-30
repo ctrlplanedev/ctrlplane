@@ -45,6 +45,19 @@ export function enumToPgEnum<T extends Record<string, any>>(
   return Object.values(myEnum).map((value: any) => `${value}`) as any;
 }
 
+export const ColumnOperatorFn: Record<
+  ColumnOperator,
+  <T extends PgTable, Q extends keyof T["_"]["columns"]>(
+    column: T["_"]["columns"][Q],
+    value: string,
+  ) => SQL<unknown>
+> = {
+  [ColumnOperator.Equals]: (column, value) => eq(column, value),
+  [ColumnOperator.StartsWith]: (column, value) => ilike(column, `${value}%`),
+  [ColumnOperator.EndsWith]: (column, value) => ilike(column, `%${value}`),
+  [ColumnOperator.Contains]: (column, value) => ilike(column, `%${value}%`),
+};
+
 export const getConditionOperator = <
   T extends PgTable,
   Q extends keyof T["_"]["columns"],

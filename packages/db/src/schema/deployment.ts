@@ -19,7 +19,7 @@ import {
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
-import { getConditionOperator } from "../common.js";
+import { ColumnOperatorFn } from "../common.js";
 import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
 
@@ -120,9 +120,9 @@ export const deploymentDependency = pgTable(
 
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
   if (cond.type === "name")
-    return getConditionOperator(deployment.name, cond.operator)(cond.value);
+    return ColumnOperatorFn[cond.operator](deployment.name, cond.value);
   if (cond.type === "slug")
-    return getConditionOperator(deployment.slug, cond.operator)(cond.value);
+    return ColumnOperatorFn[cond.operator](deployment.slug, cond.value);
   if (cond.type === "system") return eq(deployment.systemId, cond.value);
   if (cond.type === "id") return eq(deployment.id, cond.value);
 
