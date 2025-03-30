@@ -21,9 +21,15 @@ export const takeFirstOrNull = <T extends any[]>(
 
 export type Tx = Omit<typeof db, "$client">;
 
+type ColumnKey<T extends PgTable> = keyof T["_"]["columns"];
+type ColumnType<
+  T extends PgTable,
+  Q extends ColumnKey<T>,
+> = T["_"]["columns"][Q];
+
 export const buildConflictUpdateColumns = <
   T extends PgTable,
-  Q extends keyof T["_"]["columns"],
+  Q extends ColumnKey<T>,
 >(
   table: T,
   columns: Q[],
@@ -47,8 +53,8 @@ export function enumToPgEnum<T extends Record<string, any>>(
 
 export const ColumnOperatorFn: Record<
   ColumnOperator,
-  <T extends PgTable, Q extends keyof T["_"]["columns"]>(
-    column: T["_"]["columns"][Q],
+  <T extends PgTable, Q extends ColumnKey<T>>(
+    column: ColumnType<T, Q>,
     value: string,
   ) => SQL<unknown>
 > = {
@@ -56,20 +62,4 @@ export const ColumnOperatorFn: Record<
   [ColumnOperator.StartsWith]: (column, value) => ilike(column, `${value}%`),
   [ColumnOperator.EndsWith]: (column, value) => ilike(column, `%${value}`),
   [ColumnOperator.Contains]: (column, value) => ilike(column, `%${value}%`),
-};
-
-export const getConditionOperator = <
-  T extends PgTable,
-  Q extends keyof T["_"]["columns"],
->(
-  column: T["_"]["columns"][Q],
-  operator: ColumnOperator,
-): ((value: string) => SQL<unknown>) => {
-  if (operator === ColumnOperator.Equals)
-    return (value: string) => eq(column, value);
-  if (operator === ColumnOperator.StartsWith)
-    return (value: string) => ilike(column, `${value}%`);
-  if (operator === ColumnOperator.EndsWith)
-    return (value: string) => ilike(column, `%${value}`);
-  return (value: string) => ilike(column, `%${value}%`);
 };
