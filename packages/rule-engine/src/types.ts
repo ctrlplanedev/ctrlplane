@@ -1,3 +1,5 @@
+import type * as schema from "@ctrlplane/db/schema";
+
 import type { Releases } from "./releases.js";
 
 export type Release = {
@@ -58,3 +60,7 @@ export interface DeploymentResourceRule {
     releases: Releases,
   ): DeploymentResourceRuleResult | Promise<DeploymentResourceRuleResult>;
 }
+
+export type Policy = schema.Policy & {
+  denyWindows: schema.PolicyRuleDenyWindow[];
+};

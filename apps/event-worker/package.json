@@ -20,6 +20,7 @@
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
+    "@ctrlplane/rule-engine": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@google-cloud/compute": "^4.9.0",
     "@google-cloud/container": "^5.16.0",
