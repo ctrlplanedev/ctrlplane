@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import _ from "lodash";
 
 import { db } from "@ctrlplane/db/client";
 
@@ -13,9 +14,10 @@ export type ReleaseManagerOptions = ReleaseIdentifier & {
 
 export class ReleaseManager {
   private readonly releaseCreator: BaseReleaseCreator;
+  private readonly db: Tx;
+
   private variableManager: VariableManager | null = null;
   private repository: DatabaseReleaseRepository;
-  private readonly db: Tx;
 
   constructor(private readonly options: ReleaseManagerOptions) {
     this.db = options.db ?? db;
