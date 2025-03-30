@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export * from "./metadata-condition.js";
 export * from "./date-condition.js";
+export * from "./id-condition.js";
+export * from "./system-condition.js";
 
 export enum ColumnOperator {
   Equals = "equals",
