@@ -1,7 +1,7 @@
-import type { DeploymentCondition } from "@ctrlplane/validators/jobs";
+import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { InferSelectModel, SQL } from "drizzle-orm";
-import { relations, sql } from "drizzle-orm";
+import { and, eq, not, or, relations, sql } from "drizzle-orm";
 import {
   integer,
   jsonb,
@@ -13,12 +13,13 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { ComparisonOperator } from "@ctrlplane/validators/conditions";
 import {
   isValidResourceCondition,
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
-import type { Tx } from "../common.js";
+import { ColumnOperatorFn } from "../common.js";
 import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
 
@@ -117,11 +118,25 @@ export const deploymentDependency = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.dependsOnId, t.deploymentId) }),
 );
 
-export function deploymentMatchSelector(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  tx: Tx,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  metadata?: DeploymentCondition | null,
-): SQL<unknown> | undefined {
-  throw new Error("Not implemented");
-}
+const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
+  if (cond.type === "name")
+    return ColumnOperatorFn[cond.operator](deployment.name, cond.value);
+  if (cond.type === "slug")
+    return ColumnOperatorFn[cond.operator](deployment.slug, cond.value);
+  if (cond.type === "system") return eq(deployment.systemId, cond.value);
+  if (cond.type === "id") return eq(deployment.id, cond.value);
+
+  if (cond.conditions.length === 0) return sql`FALSE`;
+
+  const subCon = cond.conditions.map((c) => buildCondition(c));
+  const con =
+    cond.operator === ComparisonOperator.And ? and(...subCon)! : or(...subCon)!;
+  return cond.not ? not(con) : con;
+};
+
+export const deploymentMatchSelector = (
+  condition?: DeploymentCondition | null,
+): SQL<unknown> | undefined =>
+  condition == null || Object.keys(condition).length === 0
+    ? undefined
+    : buildCondition(condition);

@@ -41,7 +41,7 @@ const matchPolicyTargetForResource = async (
           .from(schema.deployment)
           .where(
             and(
-              schema.deploymentMatchSelector(db, deploymentSelector),
+              schema.deploymentMatchSelector(deploymentSelector),
               eq(schema.deployment.id, deploymentId),
             ),
           )

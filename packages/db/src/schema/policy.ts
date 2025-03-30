@@ -1,7 +1,5 @@
-import type {
-  DeploymentCondition,
-  EnvironmentCondition,
-} from "@ctrlplane/validators/jobs";
+import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
+import type { EnvironmentCondition } from "@ctrlplane/validators/jobs";
 import type { InferSelectModel } from "drizzle-orm";
 import type { Options } from "rrule";
 import { sql } from "drizzle-orm";
