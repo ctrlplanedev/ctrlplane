@@ -19,8 +19,8 @@ export type Release = {
 export type Deployment = {
   id: string;
   name: string;
-  resourceSelector?: ResourceCondition;
-  versionSelector?: DeploymentVersionCondition;
+  resourceSelector?: ResourceCondition | null;
+  versionSelector?: DeploymentVersionCondition | null;
 };
 
 export type Resource = {
@@ -31,7 +31,7 @@ export type Resource = {
 export type Environment = {
   id: string;
   name: string;
-  resourceSelector?: ResourceCondition;
+  resourceSelector?: ResourceCondition | null;
 };
 
 export type DeploymentResourceContext = {
