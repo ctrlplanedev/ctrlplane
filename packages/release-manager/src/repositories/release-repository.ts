@@ -1,12 +1,24 @@
 import type { Tx } from "@ctrlplane/db";
-import { and, buildConflictUpdateColumns, desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
+
+import {
+  and,
+  buildConflictUpdateColumns,
+  desc,
+  eq,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
+import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Release, ReleaseIdentifier, ReleaseRepository } from "../types.js";
+import type {
+  Release,
+  ReleaseIdentifier,
+  ReleaseRepository,
+} from "../types.js";
 
 export class DatabaseReleaseRepository implements ReleaseRepository {
-  constructor(private readonly db: Tx = db) {}
+  constructor(private readonly db: Tx = dbClient) {}
 
   async getLatestRelease(options: ReleaseIdentifier) {
     return this.db.query.release
@@ -37,7 +49,9 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
     };
   }
 
-  async setDesiredRelease(options: ReleaseIdentifier & { desiredReleaseId: string }) {
+  async setDesiredRelease(
+    options: ReleaseIdentifier & { desiredReleaseId: string },
+  ) {
     return this.db
       .insert(schema.resourceRelease)
       .values({

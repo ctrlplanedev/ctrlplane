@@ -1,8 +1,31 @@
-import type { MaybeVariable, VariableProvider, VariableProviderOptions } from "./types.js";
-import { 
-  DefaultVariableProviderRegistry, 
-  getDeploymentVariableKeys 
-} from "./providers/variable-provider-factories.js";
+import type { Tx } from "@ctrlplane/db";
+
+import { eq } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
+
+import type {
+  MaybeVariable,
+  VariableProvider,
+  VariableProviderOptions,
+} from "./types.js";
+import {
+  DatabaseDeploymentVariableProvider,
+  DatabaseResourceVariableProvider,
+  DatabaseSystemVariableSetProvider,
+} from "./db-variable-providers.js";
+
+const getDeploymentVariableKeys = async (options: {
+  deploymentId: string;
+  db?: Tx;
+}): Promise<string[]> => {
+  const tx = options.db ?? db;
+  return tx
+    .select({ key: schema.deploymentVariable.key })
+    .from(schema.deploymentVariable)
+    .where(eq(schema.deploymentVariable.deploymentId, options.deploymentId))
+    .then((results) => results.map((r) => r.key));
+};
 
 type VariableManagerOptions = VariableProviderOptions & {
   keys: string[];
@@ -10,14 +33,13 @@ type VariableManagerOptions = VariableProviderOptions & {
 
 export class VariableManager {
   static async database(options: VariableProviderOptions) {
-    const keys = await getDeploymentVariableKeys({ 
-      deploymentId: options.deploymentId,
-      db: options.db 
-    });
+    const providers = [
+      new DatabaseSystemVariableSetProvider(options),
+      new DatabaseResourceVariableProvider(options),
+      new DatabaseDeploymentVariableProvider(options),
+    ];
 
-    const registry = new DefaultVariableProviderRegistry();
-    const providers = registry.getFactories().map(factory => factory.create(options));
-
+    const keys = await getDeploymentVariableKeys(options);
     return new VariableManager({ ...options, keys }, providers);
   }
 
