@@ -1,12 +1,16 @@
 import type { Tx } from "@ctrlplane/db";
+import type { VariableSetValue } from "@ctrlplane/db/schema";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, asc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deploymentVariable,
+  deploymentVariableValue,
   resource,
   resourceMatchesMetadata,
   resourceVariable,
+  variableSetEnvironment,
+  variableSetValue,
 } from "@ctrlplane/db/schema";
 
 import type { MaybeVariable, Variable, VariableProvider } from "./types";
@@ -77,7 +81,7 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
       where: eq(deploymentVariable.deploymentId, this.options.deploymentId),
       with: {
         defaultValue: true,
-        values: true,
+        values: { orderBy: [asc(deploymentVariableValue.value)] },
       },
     });
   }
@@ -125,18 +129,50 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
 }
 
 export type DatabaseSystemVariableSetOptions = {
-  systemId: string;
+  // systemId: string;
+  environmentId: string;
   db?: Tx;
 };
 
 export class DatabaseSystemVariableSetProvider implements VariableProvider {
   private db: Tx;
+  private variables: Promise<VariableSetValue[]> | null = null;
 
   constructor(private options: DatabaseSystemVariableSetOptions) {
     this.db = options.db ?? db;
   }
 
-  getVariable(_: string): MaybeVariable {
-    return null;
+  private loadVariables() {
+    return this.db
+      .select()
+      .from(variableSetValue)
+      .innerJoin(
+        variableSetEnvironment,
+        eq(
+          variableSetValue.variableSetId,
+          variableSetEnvironment.variableSetId,
+        ),
+      )
+      .where(
+        eq(variableSetEnvironment.environmentId, this.options.environmentId),
+      )
+      .orderBy(asc(variableSetValue.value))
+      .then((rows) => rows.map((r) => r.variable_set_value));
+  }
+
+  private getVariables() {
+    return (this.variables ??= this.loadVariables());
+  }
+
+  async getVariable(key: string): Promise<MaybeVariable> {
+    const variables = await this.getVariables();
+    const variable = variables.find((v) => v.key === key) ?? null;
+    if (variable == null) return null;
+    return {
+      id: variable.id,
+      key,
+      value: variable.value,
+      sensitive: false,
+    };
   }
 }
