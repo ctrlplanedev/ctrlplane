@@ -120,8 +120,6 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
         };
     }
 
-    console.log(variable.defaultValue);
-
     if (variable.defaultValue != null)
       return {
         id: variable.id,
