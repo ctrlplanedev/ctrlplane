@@ -136,12 +136,10 @@ export type DatabaseSystemVariableSetOptions = {
 
 export class DatabaseSystemVariableSetProvider implements VariableProvider {
   private db: Tx;
-  private environmentId: string;
   private variables: Promise<VariableSetValue[]> | null = null;
 
   constructor(private options: DatabaseSystemVariableSetOptions) {
     this.db = options.db ?? db;
-    this.environmentId = options.environmentId;
   }
 
   private loadVariables() {
@@ -155,7 +153,9 @@ export class DatabaseSystemVariableSetProvider implements VariableProvider {
           variableSetEnvironment.variableSetId,
         ),
       )
-      .where(eq(variableSetEnvironment.environmentId, this.environmentId))
+      .where(
+        eq(variableSetEnvironment.environmentId, this.options.environmentId),
+      )
       .orderBy(asc(variableSetValue.value))
       .then((rows) => rows.map((r) => r.variable_set_value));
   }
