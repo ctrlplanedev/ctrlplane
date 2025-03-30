@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./db": {
+      "types": "./src/db/index.ts",
+      "default": "./dist/db/index.js"
     }
   },
   "license": "MIT",
@@ -24,6 +28,7 @@
     "@ctrlplane/validators": "workspace:*",
     "@date-fns/tz": "^1.2.0",
     "date-fns": "^4.1.0",
+    "lodash": "catalog:",
     "rrule": "^2.8.1",
     "zod": "catalog:"
   },
