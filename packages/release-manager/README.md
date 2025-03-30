@@ -35,8 +35,12 @@ When resolving a variable value, the framework checks each level in order and re
 ### Creating Context-Specific Releases
 
 ```typescript
-import { ReleaseManager, InMemoryReleaseStorage } from "@ctrlplane/release-manager";
 import { randomUUID } from "crypto";
+
+import {
+  InMemoryReleaseStorage,
+  ReleaseManager,
+} from "@ctrlplane/release-manager";
 
 // Setup storage and release manager
 const storage = new InMemoryReleaseStorage();
@@ -63,7 +67,7 @@ const resourceVariable = {
   name: "API_URL",
   value: "https://api.prod.example.com",
   resourceId: "app-server-1",
-  environmentId: "production", 
+  environmentId: "production",
   updatedAt: new Date(),
 };
 
@@ -74,11 +78,14 @@ storage.setResourceVariables([resourceVariable]);
 const context = {
   resourceId: "app-server-1",
   environmentId: "production",
-  resource: resource
+  resource: resource,
 };
 
 // Create a release for the variable in this specific context
-const release = await releaseManager.createReleaseForVariable("API_URL", context);
+const release = await releaseManager.createReleaseForVariable(
+  "API_URL",
+  context,
+);
 console.log(`Release created: ${release.id}`);
 ```
 
@@ -92,7 +99,7 @@ storage.setVariables([
     type: "variable",
     name: "DEBUG",
     value: false,
-  }
+  },
 ]);
 
 storage.setDeploymentVariables([
@@ -102,8 +109,8 @@ storage.setDeploymentVariables([
     name: "DEBUG",
     value: true,
     deploymentId: "backend-deploy",
-    selectors: [{ key: "type", value: "app" }]
-  }
+    selectors: [{ key: "type", value: "app" }],
+  },
 ]);
 
 // Resolve a variable in a specific context
@@ -129,7 +136,10 @@ const version = {
 storage.setVersions([version]);
 
 // Create a release for the version change in a specific context
-const versionRelease = await releaseManager.createReleaseForVersion(version, context);
+const versionRelease = await releaseManager.createReleaseForVersion(
+  version,
+  context,
+);
 console.log(`Version release created: ${versionRelease.id}`);
 ```
 
@@ -137,18 +147,20 @@ console.log(`Version release created: ${versionRelease.id}`);
 
 ```typescript
 import {
-  RuleEngine,
   ContextSpecificCondition,
-  VersionChangedCondition,
+  RuleEngine,
   SemverCondition,
   TriggerDeploymentAction,
+  VersionChangedCondition,
 } from "@ctrlplane/release-manager";
 
 // Create a deployment service (mock)
 const deploymentService = {
   triggerDeployment: async (props) => {
-    console.log(`Deploying ${props.version} to ${props.resourceId} in ${props.environmentId}`);
-  }
+    console.log(
+      `Deploying ${props.version} to ${props.resourceId} in ${props.environmentId}`,
+    );
+  },
 };
 
 // Create environment-specific rules
@@ -161,15 +173,14 @@ const ruleEngine = new RuleEngine({
       condition: {
         async evaluate(props) {
           const isProd = new ContextSpecificCondition(
-            undefined, "production"
+            undefined,
+            "production",
           ).evaluate(props);
-          
-          const isMajorVersion = new SemverCondition(
-            "^2.0.0"
-          ).evaluate(props);
-          
+
+          const isMajorVersion = new SemverCondition("^2.0.0").evaluate(props);
+
           return (await isProd) && (await isMajorVersion);
-        }
+        },
       },
       action: new TriggerDeploymentAction(deploymentService),
     },
@@ -177,12 +188,7 @@ const ruleEngine = new RuleEngine({
 });
 
 // Process the version release through rules
-await ruleEngine.processRelease(
-  versionRelease, 
-  undefined, 
-  version, 
-  context
-);
+await ruleEngine.processRelease(versionRelease, undefined, version, context);
 ```
 
 ### Database Integration
@@ -191,7 +197,7 @@ await ruleEngine.processRelease(
 import { DatabaseReleaseStorage } from "@ctrlplane/release-manager";
 
 // Assuming you have a database client from @ctrlplane/db
-const dbClient = createDbClient(); 
+const dbClient = createDbClient();
 
 // Create a database-backed storage
 const dbStorage = new DatabaseReleaseStorage(dbClient);

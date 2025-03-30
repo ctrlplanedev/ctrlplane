@@ -32,9 +32,13 @@ export type VariableProviderOptions = ReleaseIdentifier & {
 };
 
 export interface ReleaseRepository {
-  getLatestRelease(options: ReleaseIdentifier): Promise<Release & { id: string } | null>;
+  getLatestRelease(
+    options: ReleaseIdentifier,
+  ): Promise<(Release & { id: string }) | null>;
   createRelease(release: Release): Promise<Release & { id: string }>;
-  setDesiredRelease(options: ReleaseIdentifier & { desiredReleaseId: string }): Promise<any>;
+  setDesiredRelease(
+    options: ReleaseIdentifier & { desiredReleaseId: string },
+  ): Promise<any>;
 }
 
 export type ReleaseQueryOptions = ReleaseIdentifier;

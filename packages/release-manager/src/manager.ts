@@ -1,9 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
+
 import { db } from "@ctrlplane/db/client";
 
+import type { ReleaseIdentifier } from "./types.js";
 import { BaseReleaseCreator } from "./releases.js";
 import { DatabaseReleaseRepository } from "./repositories/release-repository.js";
-import type { ReleaseIdentifier } from "./types.js";
 import { VariableManager } from "./variables.js";
 
 export type ReleaseManagerOptions = ReleaseIdentifier & {
@@ -14,13 +15,14 @@ export class ReleaseManager {
   private readonly releaseCreator: BaseReleaseCreator;
   private variableManager: VariableManager | null = null;
   private repository: DatabaseReleaseRepository;
-  private db: Tx;
+  private readonly db: Tx;
 
   constructor(private readonly options: ReleaseManagerOptions) {
     this.db = options.db ?? db;
     this.repository = new DatabaseReleaseRepository(this.db);
-    this.releaseCreator = new BaseReleaseCreator(options)
-      .setRepository(this.repository);
+    this.releaseCreator = new BaseReleaseCreator(options).setRepository(
+      this.repository,
+    );
   }
 
   async getCurrentVariables() {

@@ -1,6 +1,11 @@
 import * as _ from "lodash";
 
-import type { MaybeVariable, Release, ReleaseIdentifier, ReleaseRepository } from "./types.js";
+import type {
+  MaybeVariable,
+  Release,
+  ReleaseIdentifier,
+  ReleaseRepository,
+} from "./types.js";
 import { DatabaseReleaseRepository } from "./repositories/release-repository.js";
 
 type ReleaseWithId = Release & { id: string };
@@ -31,9 +36,14 @@ export class BaseReleaseCreator implements ReleaseCreator {
     return this.repository.getLatestRelease(this.options);
   }
 
-  async createRelease(versionId: string, variables: MaybeVariable[]): Promise<ReleaseWithId> {
-    const nonNullVariables = variables.filter((v): v is NonNullable<typeof v> => v !== null);
-    
+  async createRelease(
+    versionId: string,
+    variables: MaybeVariable[],
+  ): Promise<ReleaseWithId> {
+    const nonNullVariables = variables.filter(
+      (v): v is NonNullable<typeof v> => v !== null,
+    );
+
     const release: Release = {
       ...this.options,
       versionId,
@@ -48,7 +58,9 @@ export class BaseReleaseCreator implements ReleaseCreator {
     variables: MaybeVariable[],
   ): Promise<ReleaseWithId> {
     const latestRelease = await this.getLatestRelease();
-    const nonNullVariables = variables.filter((v): v is NonNullable<typeof v> => v !== null);
+    const nonNullVariables = variables.filter(
+      (v): v is NonNullable<typeof v> => v !== null,
+    );
 
     const latestR = {
       versionId: latestRelease?.versionId,
@@ -59,7 +71,9 @@ export class BaseReleaseCreator implements ReleaseCreator {
 
     const newR = {
       versionId,
-      variables: Object.fromEntries(nonNullVariables.map((v) => [v.key, v.value])),
+      variables: Object.fromEntries(
+        nonNullVariables.map((v) => [v.key, v.value]),
+      ),
     };
 
     return latestRelease != null && _.isEqual(latestR, newR)
