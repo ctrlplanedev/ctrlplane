@@ -1,15 +1,15 @@
 import { z } from "zod";
 
+import type { IdCondition } from "../../conditions/index.js";
+import type { NameCondition } from "../../conditions/name-condition.js";
+import type { SystemCondition } from "../../conditions/system-condition.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
-import type { IdCondition } from "./id-condition.js";
-import type { NameCondition } from "./name-condition.js";
 import type { SlugCondition } from "./slug-condition.js";
-import type { SystemCondition } from "./system-condition.js";
+import { idCondition } from "../../conditions/index.js";
+import { nameCondition } from "../../conditions/name-condition.js";
+import { systemCondition } from "../../conditions/system-condition.js";
 import { comparisonCondition } from "./comparison-condition.js";
-import { idCondition } from "./id-condition.js";
-import { nameCondition } from "./name-condition.js";
 import { slugCondition } from "./slug-condition.js";
-import { systemCondition } from "./system-condition.js";
 
 export type DeploymentCondition =
   | ComparisonCondition

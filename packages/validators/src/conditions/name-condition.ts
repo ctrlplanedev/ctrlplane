@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { columnOperator } from "../../conditions/index.js";
+import { columnOperator } from "./index.js";
 
 export const nameCondition = z.object({
   type: z.literal("name"),
