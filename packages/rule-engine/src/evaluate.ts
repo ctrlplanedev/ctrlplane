@@ -3,6 +3,7 @@ import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
 import { RuleEngine } from "./rule-engine.js";
 import { DeploymentDenyRule } from "./rules/deployment-deny-rule.js";
+import { mergePolicies } from "./utils/merge-policies.js";
 
 const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -28,11 +29,14 @@ const denyWindows = (policy: Policy | null) =>
  * status and chosen release
  */
 export const evaluate = (
-  policy: Policy | null,
+  policy: Policy | Policy[] | null,
   releases: Release[] | Release,
   context: DeploymentResourceContext,
 ) => {
-  const rules = [...denyWindows(policy)];
+  const policies =
+    policy == null ? [] : Array.isArray(policy) ? policy : [policy];
+  const mergedPolicy = mergePolicies(policies);
+  const rules = [...denyWindows(mergedPolicy)];
   const engine = new RuleEngine(rules);
   const releaseCollection = Releases.from(releases);
   return engine.evaluate(releaseCollection, context);
