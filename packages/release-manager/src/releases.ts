@@ -13,31 +13,33 @@ type ReleaseManagerOptions = {
   resourceId: string;
 };
 
-export type ReleaseManager = {
+type ReleaseWithId = Release & { id: string };
+
+export type ReleaseCreator = {
   getLatestRelease(): Promise<Release | null>;
   createRelease(
     versionId: string,
     variables: MaybeVariable[],
-  ): Promise<Release>;
+  ): Promise<ReleaseWithId>;
   ensureRelease(
     versionId: string,
     variables: MaybeVariable[],
-  ): Promise<Release>;
+  ): Promise<ReleaseWithId>;
 };
 
-export abstract class BaseReleaseManager implements ReleaseManager {
+export abstract class BaseReleaseCreator implements ReleaseCreator {
   constructor(protected options: ReleaseManagerOptions) {}
 
-  abstract getLatestRelease(): Promise<Release | null>;
+  abstract getLatestRelease(): Promise<ReleaseWithId | null>;
   abstract createRelease(
     versionId: string,
     variables: MaybeVariable[],
-  ): Promise<Release>;
+  ): Promise<ReleaseWithId>;
 
   async ensureRelease(
     versionId: string,
     variables: Variable[],
-  ): Promise<Release> {
+  ): Promise<ReleaseWithId> {
     const latestRelease = await this.getLatestRelease();
 
     const latestR = {
@@ -58,14 +60,14 @@ export abstract class BaseReleaseManager implements ReleaseManager {
   }
 }
 
-export class DatabaseReleaseManager extends BaseReleaseManager {
+export class DatabaseReleaseCreator extends BaseReleaseCreator {
   private db: Tx;
   constructor(protected options: ReleaseManagerOptions & { db?: Tx }) {
     super(options);
     this.db = options.db ?? db;
   }
 
-  async getLatestRelease(): Promise<Release | null> {
+  async getLatestRelease(): Promise<ReleaseWithId | null> {
     return this.db.query.release
       .findFirst({
         where: and(
@@ -84,7 +86,7 @@ export class DatabaseReleaseManager extends BaseReleaseManager {
   async createRelease(
     versionId: string,
     variables: Variable[],
-  ): Promise<Release & { id: string }> {
+  ): Promise<ReleaseWithId> {
     const release: Release = {
       resourceId: this.options.resourceId,
       deploymentId: this.options.deploymentId,
