@@ -123,5 +123,5 @@ export const getApplicablePolicies = async (
       );
       if (matches.some((match) => match !== null)) return p;
     }),
-  ).then(isPresent);
+  ).then((policies) => policies.filter(isPresent));
 };

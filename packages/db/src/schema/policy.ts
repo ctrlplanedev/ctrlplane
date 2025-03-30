@@ -1,5 +1,5 @@
 import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
-import type { EnvironmentCondition } from "@ctrlplane/validators/jobs";
+import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
 import type { InferSelectModel } from "drizzle-orm";
 import type { Options } from "rrule";
 import { sql } from "drizzle-orm";
@@ -14,6 +14,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+import { deploymentCondition } from "@ctrlplane/validators/deployments";
+import { environmentCondition } from "@ctrlplane/validators/environments";
 
 import { workspace } from "./workspace.js";
 
@@ -80,6 +83,8 @@ const policyInsertSchema = createInsertSchema(policy, {
 
 const policyTargetInsertSchema = createInsertSchema(policyTarget, {
   policyId: z.string().uuid(),
+  deploymentSelector: deploymentCondition.nullable(),
+  environmentSelector: environmentCondition.nullable(),
 }).omit({ id: true });
 
 // Define the structure of RRule Options for Zod validation
