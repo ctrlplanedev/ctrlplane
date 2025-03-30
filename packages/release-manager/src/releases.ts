@@ -1,22 +1,12 @@
-import type { Tx } from "@ctrlplane/db";
 import * as _ from "lodash";
 
-import { and, desc, eq, takeFirst } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
-
-import type { MaybeVariable, Release, Variable } from "./types";
-
-type ReleaseManagerOptions = {
-  environmentId: string;
-  deploymentId: string;
-  resourceId: string;
-};
+import type { MaybeVariable, Release, ReleaseQueryOptions, ReleaseRepository } from "./types.js";
+import { DatabaseReleaseRepository } from "./repositories/release-repository.js";
 
 type ReleaseWithId = Release & { id: string };
 
 export type ReleaseCreator = {
-  getLatestRelease(): Promise<Release | null>;
+  getLatestRelease(): Promise<ReleaseWithId | null>;
   createRelease(
     versionId: string,
     variables: MaybeVariable[],
@@ -27,20 +17,40 @@ export type ReleaseCreator = {
   ): Promise<ReleaseWithId>;
 };
 
-export abstract class BaseReleaseCreator implements ReleaseCreator {
-  constructor(protected options: ReleaseManagerOptions) {}
+export class BaseReleaseCreator implements ReleaseCreator {
+  constructor(protected options: ReleaseQueryOptions) {}
 
-  abstract getLatestRelease(): Promise<ReleaseWithId | null>;
-  abstract createRelease(
-    versionId: string,
-    variables: MaybeVariable[],
-  ): Promise<ReleaseWithId>;
+  protected repository: ReleaseRepository = new DatabaseReleaseRepository();
+
+  setRepository(repository: ReleaseRepository) {
+    this.repository = repository;
+    return this;
+  }
+
+  async getLatestRelease() {
+    return this.repository.getLatestRelease(this.options);
+  }
+
+  async createRelease(versionId: string, variables: MaybeVariable[]): Promise<ReleaseWithId> {
+    const nonNullVariables = variables.filter((v): v is NonNullable<typeof v> => v !== null);
+    
+    const release: Release = {
+      resourceId: this.options.resourceId,
+      deploymentId: this.options.deploymentId,
+      environmentId: this.options.environmentId,
+      versionId,
+      variables: nonNullVariables,
+    };
+
+    return this.repository.createRelease(release);
+  }
 
   async ensureRelease(
     versionId: string,
-    variables: Variable[],
+    variables: MaybeVariable[],
   ): Promise<ReleaseWithId> {
     const latestRelease = await this.getLatestRelease();
+    const nonNullVariables = variables.filter((v): v is NonNullable<typeof v> => v !== null);
 
     const latestR = {
       versionId: latestRelease?.versionId,
@@ -51,59 +61,11 @@ export abstract class BaseReleaseCreator implements ReleaseCreator {
 
     const newR = {
       versionId,
-      variables: Object.fromEntries(variables.map((v) => [v.key, v.value])),
+      variables: Object.fromEntries(nonNullVariables.map((v) => [v.key, v.value])),
     };
 
     return latestRelease != null && _.isEqual(latestR, newR)
       ? latestRelease
-      : this.createRelease(versionId, variables);
-  }
-}
-
-export class DatabaseReleaseCreator extends BaseReleaseCreator {
-  private db: Tx;
-  constructor(protected options: ReleaseManagerOptions & { db?: Tx }) {
-    super(options);
-    this.db = options.db ?? db;
-  }
-
-  async getLatestRelease(): Promise<ReleaseWithId | null> {
-    return this.db.query.release
-      .findFirst({
-        where: and(
-          eq(schema.release.resourceId, this.options.resourceId),
-          eq(schema.release.deploymentId, this.options.deploymentId),
-          eq(schema.release.environmentId, this.options.environmentId),
-        ),
-        with: {
-          variables: true,
-        },
-        orderBy: desc(schema.release.createdAt),
-      })
-      .then((r) => r ?? null);
-  }
-
-  async createRelease(
-    versionId: string,
-    variables: Variable[],
-  ): Promise<ReleaseWithId> {
-    const release: Release = {
-      resourceId: this.options.resourceId,
-      deploymentId: this.options.deploymentId,
-      environmentId: this.options.environmentId,
-      versionId,
-      variables,
-    };
-
-    const dbRelease = await this.db
-      .insert(schema.release)
-      .values(release)
-      .returning()
-      .then(takeFirst);
-
-    return {
-      ...release,
-      ...dbRelease,
-    };
+      : this.createRelease(versionId, nonNullVariables);
   }
 }

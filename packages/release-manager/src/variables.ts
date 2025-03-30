@@ -1,43 +1,22 @@
-import type { Tx } from "@ctrlplane/db";
+import type { MaybeVariable, VariableProvider, VariableProviderOptions } from "./types.js";
+import { 
+  DefaultVariableProviderRegistry, 
+  getDeploymentVariableKeys 
+} from "./providers/variable-provider-factories.js";
 
-import { eq } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
-
-import type { MaybeVariable, VariableProvider } from "./types";
-import {
-  DatabaseDeploymentVariableProvider,
-  DatabaseResourceVariableProvider,
-  DatabaseSystemVariableSetProvider,
-} from "./db-variable-providers.js";
-
-type VariableManagerOptions = {
-  deploymentId: string;
-  resourceId: string;
-  environmentId: string;
-
+type VariableManagerOptions = VariableProviderOptions & {
   keys: string[];
 };
 
-type DatabaseVariableManagerOptions = Omit<VariableManagerOptions, "keys"> & {
-  db?: Tx;
-};
-
 export class VariableManager {
-  static async database(options: DatabaseVariableManagerOptions) {
-    const { deploymentId } = options;
-    const tx = options.db ?? db;
-    const keys = await tx
-      .select({ key: schema.deploymentVariable.key })
-      .from(schema.deploymentVariable)
-      .where(eq(schema.deploymentVariable.deploymentId, deploymentId))
-      .then((results) => results.map((r) => r.key));
+  static async database(options: VariableProviderOptions) {
+    const keys = await getDeploymentVariableKeys({ 
+      deploymentId: options.deploymentId,
+      db: options.db 
+    });
 
-    const providers = [
-      new DatabaseResourceVariableProvider(options),
-      new DatabaseDeploymentVariableProvider(options),
-      new DatabaseSystemVariableSetProvider(options),
-    ];
+    const registry = new DefaultVariableProviderRegistry();
+    const providers = registry.getFactories().map(factory => factory.create(options));
 
     return new VariableManager({ ...options, keys }, providers);
   }
@@ -46,6 +25,15 @@ export class VariableManager {
     private options: VariableManagerOptions,
     private variableProviders: VariableProvider[],
   ) {}
+
+  getProviders() {
+    return [...this.variableProviders];
+  }
+
+  addProvider(provider: VariableProvider) {
+    this.variableProviders.push(provider);
+    return this;
+  }
 
   async getVariables(): Promise<MaybeVariable[]> {
     return Promise.all(this.options.keys.map((key) => this.getVariable(key)));
