@@ -1,3 +1,7 @@
+import type {
+  DeploymentCondition,
+  EnvironmentCondition,
+} from "@ctrlplane/validators/jobs";
 import type { InferSelectModel } from "drizzle-orm";
 import type { Options } from "rrule";
 import { sql } from "drizzle-orm";
@@ -38,8 +42,12 @@ export const policyTarget = pgTable("policy_target", {
   policyId: uuid("policy_id")
     .notNull()
     .references(() => policy.id, { onDelete: "cascade" }),
-  deploymentSelector: jsonb("deployment_selector").default(sql`NULL`),
-  environmentSelector: jsonb("environment_selector").default(sql`NULL`),
+  deploymentSelector: jsonb("deployment_selector")
+    .default(sql`NULL`)
+    .$type<DeploymentCondition | null>(),
+  environmentSelector: jsonb("environment_selector")
+    .default(sql`NULL`)
+    .$type<EnvironmentCondition | null>(),
 });
 
 export const policyRuleDenyWindow = pgTable("policy_rule_deny_window", {
@@ -74,8 +82,6 @@ const policyInsertSchema = createInsertSchema(policy, {
 
 const policyTargetInsertSchema = createInsertSchema(policyTarget, {
   policyId: z.string().uuid(),
-  deploymentSelector: z.record(z.any()).optional(),
-  environmentSelector: z.record(z.any()).optional(),
 }).omit({ id: true });
 
 // Define the structure of RRule Options for Zod validation
