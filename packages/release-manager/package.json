@@ -22,6 +22,7 @@
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
+    "lodash": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

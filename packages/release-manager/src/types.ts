@@ -8,6 +8,7 @@ export type Variable<T = any> = {
 export type Release = {
   resourceId: string;
   deploymentId: string;
+  environmentId: string;
   versionId: string;
   variables: Variable[];
 };
