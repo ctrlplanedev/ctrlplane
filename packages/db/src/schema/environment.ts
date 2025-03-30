@@ -1,5 +1,6 @@
+import type { EnvironmentCondition } from "@ctrlplane/validators/jobs";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel, SQL } from "drizzle-orm";
 import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import {
@@ -22,6 +23,7 @@ import {
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
+import type { Tx } from "../common.js";
 import { user } from "./auth.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { system } from "./system.js";
@@ -277,3 +279,12 @@ export const environmentPolicyApproval = pgTable(
 export type EnvironmentPolicyApproval = InferSelectModel<
   typeof environmentPolicyApproval
 >;
+
+export function environmentMatchSelector(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  tx: Tx,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  metadata?: EnvironmentCondition | null,
+): SQL<unknown> | undefined {
+  throw new Error("Not implemented");
+}

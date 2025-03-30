@@ -1,5 +1,6 @@
+import type { DeploymentCondition } from "@ctrlplane/validators/jobs";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel, SQL } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
   integer,
@@ -17,6 +18,7 @@ import {
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
+import type { Tx } from "../common.js";
 import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
 
@@ -114,3 +116,12 @@ export const deploymentDependency = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.dependsOnId, t.deploymentId) }),
 );
+
+export function deploymentMatchSelector(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  tx: Tx,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  metadata?: DeploymentCondition | null,
+): SQL<unknown> | undefined {
+  throw new Error("Not implemented");
+}
