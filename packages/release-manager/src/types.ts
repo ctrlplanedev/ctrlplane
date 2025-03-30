@@ -1,3 +1,9 @@
+export type ReleaseIdentifier = {
+  environmentId: string;
+  deploymentId: string;
+  resourceId: string;
+};
+
 export type Variable<T = any> = {
   id: string;
   key: string;
@@ -5,10 +11,7 @@ export type Variable<T = any> = {
   sensitive: boolean;
 };
 
-export type Release = {
-  resourceId: string;
-  deploymentId: string;
-  environmentId: string;
+export type Release = ReleaseIdentifier & {
   versionId: string;
   variables: Variable[];
 };
@@ -24,21 +27,14 @@ export type VariableProviderFactory = {
   create(options: VariableProviderOptions): VariableProvider;
 };
 
-export type VariableProviderOptions = {
-  resourceId: string;
-  deploymentId: string;
-  environmentId: string;
+export type VariableProviderOptions = ReleaseIdentifier & {
   db?: any;
 };
 
 export interface ReleaseRepository {
-  getLatestRelease(options: ReleaseQueryOptions): Promise<Release & { id: string } | null>;
+  getLatestRelease(options: ReleaseIdentifier): Promise<Release & { id: string } | null>;
   createRelease(release: Release): Promise<Release & { id: string }>;
-  setDesiredRelease(options: ReleaseQueryOptions & { desiredReleaseId: string }): Promise<any>;
+  setDesiredRelease(options: ReleaseIdentifier & { desiredReleaseId: string }): Promise<any>;
 }
 
-export type ReleaseQueryOptions = {
-  environmentId: string;
-  deploymentId: string;
-  resourceId: string;
-};
+export type ReleaseQueryOptions = ReleaseIdentifier;

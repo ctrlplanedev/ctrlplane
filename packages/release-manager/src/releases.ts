@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 
-import type { MaybeVariable, Release, ReleaseQueryOptions, ReleaseRepository } from "./types.js";
+import type { MaybeVariable, Release, ReleaseIdentifier, ReleaseRepository } from "./types.js";
 import { DatabaseReleaseRepository } from "./repositories/release-repository.js";
 
 type ReleaseWithId = Release & { id: string };
@@ -18,7 +18,7 @@ export type ReleaseCreator = {
 };
 
 export class BaseReleaseCreator implements ReleaseCreator {
-  constructor(protected options: ReleaseQueryOptions) {}
+  constructor(protected options: ReleaseIdentifier) {}
 
   protected repository: ReleaseRepository = new DatabaseReleaseRepository();
 
@@ -35,9 +35,7 @@ export class BaseReleaseCreator implements ReleaseCreator {
     const nonNullVariables = variables.filter((v): v is NonNullable<typeof v> => v !== null);
     
     const release: Release = {
-      resourceId: this.options.resourceId,
-      deploymentId: this.options.deploymentId,
-      environmentId: this.options.environmentId,
+      ...this.options,
       versionId,
       variables: nonNullVariables,
     };

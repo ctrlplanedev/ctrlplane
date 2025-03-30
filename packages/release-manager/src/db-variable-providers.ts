@@ -13,10 +13,9 @@ import {
   variableSetValue,
 } from "@ctrlplane/db/schema";
 
-import type { MaybeVariable, Variable, VariableProvider } from "./types";
+import type { MaybeVariable, ReleaseIdentifier, Variable, VariableProvider } from "./types";
 
-export type DatabaseResourceVariableOptions = {
-  resourceId: string;
+export type DatabaseResourceVariableOptions = Pick<ReleaseIdentifier, 'resourceId'> & {
   db?: Tx;
 };
 
@@ -50,9 +49,7 @@ export class DatabaseResourceVariableProvider implements VariableProvider {
   }
 }
 
-export type DatabaseDeploymentVariableOptions = {
-  resourceId: string;
-  deploymentId: string;
+export type DatabaseDeploymentVariableOptions = Pick<ReleaseIdentifier, 'resourceId' | 'deploymentId'> & {
   db?: Tx;
 };
 
@@ -128,9 +125,7 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
   }
 }
 
-export type DatabaseSystemVariableSetOptions = {
-  // systemId: string;
-  environmentId: string;
+export type DatabaseSystemVariableSetOptions = Pick<ReleaseIdentifier, 'environmentId'> & {
   db?: Tx;
 };
 

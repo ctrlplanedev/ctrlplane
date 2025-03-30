@@ -3,10 +3,10 @@ import { db } from "@ctrlplane/db/client";
 
 import { BaseReleaseCreator } from "./releases.js";
 import { DatabaseReleaseRepository } from "./repositories/release-repository.js";
-import type { ReleaseQueryOptions } from "./types.js";
+import type { ReleaseIdentifier } from "./types.js";
 import { VariableManager } from "./variables.js";
 
-export type ReleaseManagerOptions = ReleaseQueryOptions & {
+export type ReleaseManagerOptions = ReleaseIdentifier & {
   db?: Tx;
 };
 

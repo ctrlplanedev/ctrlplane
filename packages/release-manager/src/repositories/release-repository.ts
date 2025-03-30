@@ -3,12 +3,12 @@ import { and, buildConflictUpdateColumns, desc, eq, takeFirst, takeFirstOrNull }
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Release, ReleaseQueryOptions, ReleaseRepository } from "../types.js";
+import type { Release, ReleaseIdentifier, ReleaseRepository } from "../types.js";
 
 export class DatabaseReleaseRepository implements ReleaseRepository {
   constructor(private readonly db: Tx = db) {}
 
-  async getLatestRelease(options: ReleaseQueryOptions) {
+  async getLatestRelease(options: ReleaseIdentifier) {
     return this.db.query.release
       .findFirst({
         where: and(
@@ -37,7 +37,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
     };
   }
 
-  async setDesiredRelease(options: ReleaseQueryOptions & { desiredReleaseId: string }) {
+  async setDesiredRelease(options: ReleaseIdentifier & { desiredReleaseId: string }) {
     return this.db
       .insert(schema.resourceRelease)
       .values({

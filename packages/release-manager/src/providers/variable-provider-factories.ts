@@ -8,7 +8,7 @@ import {
   DatabaseResourceVariableProvider, 
   DatabaseSystemVariableSetProvider 
 } from "../db-variable-providers.js";
-import type { VariableProviderFactory, VariableProviderOptions } from "../types.js";
+import type { ReleaseIdentifier, VariableProviderFactory, VariableProviderOptions } from "../types.js";
 
 export class ResourceVariableProviderFactory implements VariableProviderFactory {
   create(options: VariableProviderOptions) {
@@ -44,7 +44,7 @@ export class DefaultVariableProviderRegistry {
   }
 }
 
-export async function getDeploymentVariableKeys(options: { deploymentId: string, db?: Tx }): Promise<string[]> {
+export async function getDeploymentVariableKeys(options: Pick<ReleaseIdentifier, 'deploymentId'> & { db?: Tx }): Promise<string[]> {
   const tx = options.db ?? db;
   return tx
     .select({ key: schema.deploymentVariable.key })
