@@ -6,6 +6,7 @@ export const statusColor: Record<JobStatus | "configured", string> = {
   cancelled: colors.neutral[400],
   skipped: colors.gray[400],
   in_progress: colors.blue[400],
+  executing: colors.blue[500],
   action_required: colors.yellow[400],
   pending: colors.neutral[400],
   failure: colors.red[400],

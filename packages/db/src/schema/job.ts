@@ -55,6 +55,7 @@ export const jobStatus = pgEnum("job_status", [
   "cancelled",
   "skipped",
   "in_progress",
+  "executing",
   "action_required",
   "pending",
   "failure",

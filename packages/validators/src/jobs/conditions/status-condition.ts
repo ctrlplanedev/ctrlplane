@@ -5,6 +5,7 @@ export const jobStatus = z.enum([
   "cancelled",
   "skipped",
   "in_progress",
+  "executing",
   "action_required",
   "pending",
   "failure",

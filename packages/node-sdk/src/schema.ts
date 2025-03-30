@@ -795,6 +795,7 @@ export interface components {
       | "cancelled"
       | "skipped"
       | "in_progress"
+      | "executing"
       | "action_required"
       | "pending"
       | "failure"
