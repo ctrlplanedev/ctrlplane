@@ -39,12 +39,12 @@ export class ReleaseManager {
 
   async ensureRelease(versionId: string, opts?: { setAsDesired?: boolean }) {
     const variables = await this.getCurrentVariables();
-    const release = await this.releaseCreator.ensureRelease(
+    const { created, release } = await this.releaseCreator.ensureRelease(
       versionId,
       variables,
     );
     if (opts?.setAsDesired) await this.setDesiredRelease(release.id);
-    return release;
+    return { created, release };
   }
 
   async setDesiredRelease(desiredReleaseId: string) {

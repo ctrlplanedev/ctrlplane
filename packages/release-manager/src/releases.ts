@@ -19,7 +19,7 @@ export type ReleaseCreator = {
   ensureRelease(
     versionId: string,
     variables: MaybeVariable[],
-  ): Promise<ReleaseWithId>;
+  ): Promise<{ created: boolean; release: ReleaseWithId }>;
 };
 
 export class BaseReleaseCreator implements ReleaseCreator {
@@ -56,7 +56,7 @@ export class BaseReleaseCreator implements ReleaseCreator {
   async ensureRelease(
     versionId: string,
     variables: MaybeVariable[],
-  ): Promise<ReleaseWithId> {
+  ): Promise<{ created: boolean; release: ReleaseWithId }> {
     const latestRelease = await this.getLatestRelease();
     const nonNullVariables = variables.filter(
       (v): v is NonNullable<typeof v> => v !== null,
@@ -77,7 +77,10 @@ export class BaseReleaseCreator implements ReleaseCreator {
     };
 
     return latestRelease != null && _.isEqual(latestR, newR)
-      ? latestRelease
-      : this.createRelease(versionId, nonNullVariables);
+      ? { created: false, release: latestRelease }
+      : {
+          created: true,
+          release: await this.createRelease(versionId, nonNullVariables),
+        };
   }
 }
