@@ -56,20 +56,18 @@ export const getReleases = async (
     orderBy: desc(SCHEMA.release.createdAt),
   });
 
-  const currentVersion = await db.query.deploymentVersion.findFirst({
+  const resourceRelease = await db.query.resourceRelease.findFirst({
     where: and(
-      eq(SCHEMA.deploymentVersion.deploymentId, ctx.deployment.id),
-      SCHEMA.deploymentVersionMatchesCondition(
-        db,
-        policy.deploymentVersionSelector?.deploymentVersionSelector,
-      ),
+      eq(SCHEMA.resourceRelease.resourceId, ctx.resource.id),
+      eq(SCHEMA.resourceRelease.environmentId, ctx.environment.id),
+      eq(SCHEMA.resourceRelease.deploymentId, ctx.deployment.id),
     ),
-    orderBy: desc(SCHEMA.deploymentVersion.createdAt),
+    with: { desiredRelease: true },
   });
 
   validateDateBounds(
     latestDeployedRelease?.createdAt,
-    currentVersion?.createdAt,
+    resourceRelease?.desiredRelease?.createdAt,
   );
 
   return db.query.release
@@ -85,8 +83,11 @@ export const getReleases = async (
         latestDeployedRelease != null
           ? gte(SCHEMA.release.createdAt, latestDeployedRelease.createdAt)
           : undefined,
-        currentVersion != null
-          ? lte(SCHEMA.release.createdAt, currentVersion.createdAt)
+        resourceRelease?.desiredRelease != null
+          ? lte(
+              SCHEMA.release.createdAt,
+              resourceRelease.desiredRelease.createdAt,
+            )
           : undefined,
       ),
       with: {
