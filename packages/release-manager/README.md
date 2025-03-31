@@ -26,7 +26,7 @@ const manager = new ReleaseManager({
 });
 
 // Create a release for a specific version
-const { created, release } = await manager.ensureRelease("v1.0.0");
+const { created, release } = await manager.upsertRelease("v1.0.0");
 
 // Set a release as the desired release
 await manager.setDesiredRelease(release.id);
@@ -65,7 +65,7 @@ const release = await repository.create({
 });
 
 // Ensure a release exists (create only if needed)
-const { created, release } = await repository.ensure(
+const { created, release } = await repository.upsert(
   { deploymentId, environmentId, resourceId },
   versionId,
   variables
@@ -113,7 +113,7 @@ const releaseManager = new ReleaseManager({
 
 // Create or get an existing release for version "2.0.0"
 // All variables will be automatically resolved
-const { created, release } = await releaseManager.ensureRelease("2.0.0", {
+const { created, release } = await releaseManager.upsertRelease("2.0.0", {
   setAsDesired: true, // Mark as the desired release
 });
 
