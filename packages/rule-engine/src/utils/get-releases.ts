@@ -3,6 +3,7 @@ import { isAfter } from "date-fns";
 
 import { and, desc, eq, exists, gte, lte } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { DeploymentResourceContext } from "..";
@@ -12,16 +13,18 @@ type Policy = SCHEMA.Policy & {
   deploymentVersionSelector: SCHEMA.PolicyDeploymentVersionSelector | null;
 };
 
-const validateDateBounds = (
+const log = logger.child({
+  module: "rule-engine",
+  function: "getReleases",
+});
+
+const getIsDateBoundsValid = (
   latestDeployedReleaseDate?: Date,
-  currentVersionCreatedAt?: Date,
+  desiredReleaseCreatedAt?: Date,
 ) => {
-  if (latestDeployedReleaseDate == null) return;
-  if (currentVersionCreatedAt == null) return;
-  if (isAfter(latestDeployedReleaseDate, currentVersionCreatedAt))
-    throw new Error(
-      "Latest deployed release date is after current version createdAt",
-    );
+  if (latestDeployedReleaseDate == null) return true;
+  if (desiredReleaseCreatedAt == null) return true;
+  return !isAfter(latestDeployedReleaseDate, desiredReleaseCreatedAt);
 };
 
 export const getReleases = async (
@@ -29,11 +32,6 @@ export const getReleases = async (
   ctx: DeploymentResourceContext,
   policy: Policy,
 ) => {
-  // return releases from the latest deployed release to the current
-  // version
-
-  // latest deployed release is the latest release for this context that has a
-  // successful release job
   const latestDeployedRelease = await db.query.release.findFirst({
     where: and(
       eq(SCHEMA.release.deploymentId, ctx.deployment.id),
@@ -65,10 +63,17 @@ export const getReleases = async (
     with: { desiredRelease: true },
   });
 
-  validateDateBounds(
+  const isDateBoundsValid = getIsDateBoundsValid(
     latestDeployedRelease?.createdAt,
     resourceRelease?.desiredRelease?.createdAt,
   );
+
+  if (!isDateBoundsValid)
+    log.warn(
+      `Date bounds are invalid, latestDeployedRelease is after desiredRelease: 
+        latestDeployedRelease: ${latestDeployedRelease?.createdAt != null ? latestDeployedRelease.createdAt.toISOString() : "null"}, 
+        resourceRelease: ${resourceRelease?.desiredRelease?.createdAt != null ? resourceRelease.desiredRelease.createdAt.toISOString() : "null"}`,
+    );
 
   return db.query.release
     .findMany({
