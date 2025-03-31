@@ -7,6 +7,8 @@ export enum Channel {
   DispatchJob = "dispatch-job",
   ResourceScan = "resource-scan",
   ReleaseEvaluate = "release-evaluate",
+  ReleaseNewVersion = "release-new-version",
+  ReleaseVariableChange = "release-variable-change",
 }
 
 export const resourceScanEvent = z.object({ resourceProviderId: z.string() });
@@ -26,3 +28,25 @@ export const releaseEvaluateEvent = z.object({
   resourceId: z.string(),
 });
 export type ReleaseEvaluateEvent = z.infer<typeof releaseEvaluateEvent>;
+
+export const releaseNewVersionEvent = z.object({ versionId: z.string() });
+export type ReleaseNewVersionEvent = z.infer<typeof releaseNewVersionEvent>;
+
+export const releaseResourceVariableChangeEvent = z.object({
+  resourceVariableId: z.string().uuid(),
+});
+export const releaseDeploymentVariableChangeEvent = z.object({
+  deploymentVariableId: z.string().uuid(),
+});
+export const releaseSystemVariableChangeEvent = z.object({
+  systemVariableSetId: z.string().uuid(),
+});
+
+export const releaseVariableChangeEvent = z.union([
+  releaseResourceVariableChangeEvent,
+  releaseDeploymentVariableChangeEvent,
+  releaseSystemVariableChangeEvent,
+]);
+export type ReleaseVariableChangeEvent = z.infer<
+  typeof releaseVariableChangeEvent
+>;

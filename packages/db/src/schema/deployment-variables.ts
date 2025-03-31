@@ -2,7 +2,7 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { VariableConfigType } from "@ctrlplane/validators/variables";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   foreignKey,
   jsonb,
@@ -115,4 +115,45 @@ export const deploymentVariableSet = pgTable(
       .references(() => variableSet.id, { onDelete: "cascade" }),
   },
   (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.variableSetId) }),
+);
+
+export const deploymentVariableRelationships = relations(
+  deploymentVariable,
+  ({ one, many }) => ({
+    deployment: one(deployment, {
+      fields: [deploymentVariable.deploymentId],
+      references: [deployment.id],
+    }),
+
+    defaultValue: one(deploymentVariableValue, {
+      fields: [deploymentVariable.defaultValueId],
+      references: [deploymentVariableValue.id],
+    }),
+
+    values: many(deploymentVariableValue),
+  }),
+);
+
+export const deploymentVariableValueRelationships = relations(
+  deploymentVariableValue,
+  ({ one }) => ({
+    variable: one(deploymentVariable, {
+      fields: [deploymentVariableValue.variableId],
+      references: [deploymentVariable.id],
+    }),
+  }),
+);
+
+export const deploymentVariableSetRelationships = relations(
+  deploymentVariableSet,
+  ({ one }) => ({
+    deployment: one(deployment, {
+      fields: [deploymentVariableSet.deploymentId],
+      references: [deployment.id],
+    }),
+    variableSet: one(variableSet, {
+      fields: [deploymentVariableSet.variableSetId],
+      references: [variableSet.id],
+    }),
+  }),
 );
