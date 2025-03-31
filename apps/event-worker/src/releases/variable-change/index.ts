@@ -2,7 +2,7 @@ import type { ReleaseRepository } from "@ctrlplane/rule-engine";
 import type { ReleaseVariableChangeEvent } from "@ctrlplane/validators/events";
 import { Worker } from "bullmq";
 
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -26,6 +26,7 @@ const handleDeploymentVariableChange = async (deploymentVariableId: string) => {
 
   return db.query.resourceRelease.findMany({
     where: eq(schema.resourceRelease.deploymentId, variable.deploymentId),
+    with: { resource: { where: isNull(schema.resource.deletedAt) } },
   });
 };
 
@@ -45,12 +46,14 @@ const handleSystemVariableChange = async (systemVariableSetId: string) => {
 
   return db.query.resourceRelease.findMany({
     where: eq(schema.resourceRelease.deploymentId, deployment.id),
+    with: { resource: { where: isNull(schema.resource.deletedAt) } },
   });
 };
 
 const handleResourceVariableChange = async (resourceVariableId: string) => {
   return db.query.resourceRelease.findMany({
     where: eq(schema.resourceRelease.resourceId, resourceVariableId),
+    with: { resource: { where: isNull(schema.resource.deletedAt) } },
   });
 };
 

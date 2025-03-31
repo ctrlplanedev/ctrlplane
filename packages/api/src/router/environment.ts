@@ -5,7 +5,9 @@ import { z } from "zod";
 
 import {
   and,
+  count,
   eq,
+  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -183,6 +185,58 @@ export const environmentRouter = createTRPCRouter({
             .value(),
         ),
     ),
+
+  bySystemIdWithSearch: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "system", id: input.systemId }),
+    })
+    .input(
+      z.object({
+        systemId: z.string().uuid(),
+        query: z.string().default(""),
+        limit: z.number().default(500),
+        offset: z.number().default(0),
+      }),
+    )
+    .query(({ ctx, input }) => {
+      const itemsPromise = ctx.db
+        .select()
+        .from(environment)
+        .where(
+          and(
+            input.query != ""
+              ? ilike(environment.name, `%${input.query}%`)
+              : undefined,
+            eq(environment.systemId, input.systemId),
+          ),
+        )
+        .orderBy(environment.name)
+        .limit(input.limit)
+        .offset(input.offset);
+
+      const countPromise = ctx.db
+        .select({ count: count() })
+        .from(environment)
+        .where(
+          and(
+            input.query != ""
+              ? ilike(environment.name, `%${input.query}%`)
+              : undefined,
+            eq(environment.systemId, input.systemId),
+          ),
+        )
+        .then(takeFirst);
+
+      return Promise.all([itemsPromise, countPromise]).then(
+        ([items, { count }]) => ({
+          items,
+          count,
+        }),
+      );
+    }),
 
   byWorkspaceId: protectedProcedure
     .meta({
