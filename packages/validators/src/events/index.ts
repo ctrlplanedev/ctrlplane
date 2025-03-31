@@ -7,6 +7,7 @@ export enum Channel {
   DispatchJob = "dispatch-job",
   ResourceScan = "resource-scan",
   ReleaseEvaluate = "release-evaluate",
+  ReleaseNewVersion = "release-new-version",
 }
 
 export const resourceScanEvent = z.object({ resourceProviderId: z.string() });
@@ -26,3 +27,6 @@ export const releaseEvaluateEvent = z.object({
   resourceId: z.string(),
 });
 export type ReleaseEvaluateEvent = z.infer<typeof releaseEvaluateEvent>;
+
+export const releaseNewVersionEvent = z.object({ versionId: z.string() });
+export type ReleaseNewVersionEvent = z.infer<typeof releaseNewVersionEvent>;
