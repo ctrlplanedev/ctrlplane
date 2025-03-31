@@ -9,7 +9,7 @@
       "default": "./dist/index.js"
     }
   },
-  "license": "MIT",
+  "license": "",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
