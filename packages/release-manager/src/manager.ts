@@ -79,6 +79,12 @@ export class ReleaseManager {
     return { created, release };
   }
 
+  async upsertVariableRelease(opts?: { setAsDesired?: boolean }) {
+    const latestRelease = await this.repository.getLatest(this.options);
+    if (latestRelease == null) throw new Error("No release found for resource");
+    return this.upsertVersionRelease(latestRelease.id, opts);
+  }
+
   /**
    * Sets the desired release for this resource
    * @param desiredReleaseId The ID of the release to set as desired
