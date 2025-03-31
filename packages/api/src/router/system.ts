@@ -8,10 +8,12 @@ import {
   asc,
   count,
   eq,
+  exists,
   ilike,
   isNotNull,
   isNull,
   or,
+  sql,
   takeFirst,
   takeFirstOrNull,
   upsertEnv,
@@ -57,15 +59,48 @@ export const systemRouter = createTRPCRouter({
         ? or(
             ilike(system.name, `%${input.query}%`),
             ilike(system.slug, `%${input.query}%`),
-            ilike(deployment.name, `%${input.query}%`),
-            ilike(deployment.slug, `%${input.query}%`),
+            exists(
+              ctx.db
+                .select()
+                .from(deployment)
+                .where(
+                  and(
+                    eq(deployment.systemId, system.id),
+                    or(
+                      ilike(deployment.name, `%${input.query}%`),
+                      ilike(deployment.slug, `%${input.query}%`),
+                    ),
+                  ),
+                ),
+            ),
           )
         : undefined;
       const where = and(isInWorkspace, isMatchingSearch);
 
+      const deploymentsWhere = input.query
+        ? or(
+            ilike(deployment.name, `%${input.query}%`),
+            ilike(deployment.slug, `%${input.query}%`),
+            exists(
+              ctx.db
+                .select()
+                .from(system)
+                .where(
+                  and(
+                    or(
+                      ilike(system.name, `%${input.query}%`),
+                      ilike(system.slug, `%${input.query}%`),
+                    ),
+                    sql`${system.id} = system_deployments.system_id`,
+                  ),
+                ),
+            ),
+          )
+        : undefined;
+
       const items = ctx.db.query.system.findMany({
         where,
-        with: { environments: true, deployments: true },
+        with: { environments: true, deployments: { where: deploymentsWhere } },
         limit: input.limit,
         offset: input.offset,
         orderBy: [asc(system.name)],
