@@ -313,16 +313,36 @@ export const SystemsPageContent: React.FC<{
         {!isLoading &&
           systems.length === 0 &&
           (search ? (
-            <Card className="flex flex-col items-center justify-center p-12 text-center">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/5">
-                <IconTopologyComplex className="h-10 w-10 text-primary/60" />
+            <>
+              <div className="relative w-full md:w-1/2 lg:w-1/3">
+                <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    // If no results, clear the search immediately instead of waiting for debounce
+                    // otherwise it will show the empty state below for a split second before clearing
+                    if (value.length === 0) {
+                      setCondition("");
+                      setSearch("");
+                    }
+                    if (value.length > 0) setSearch(value);
+                  }}
+                  placeholder="Search systems and deployments..."
+                  className="pl-9"
+                />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">No systems found</h3>
-              <p className="mb-8 max-w-md text-muted-foreground">
-                No systems match your search "{search}". Try a different search
-                term.
-              </p>
-            </Card>
+              <Card className="flex flex-col items-center justify-center p-12 text-center">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/5">
+                  <IconTopologyComplex className="h-10 w-10 text-primary/60" />
+                </div>
+                <h3 className="mb-2 text-xl font-semibold">No systems found</h3>
+                <p className="mb-8 max-w-md text-muted-foreground">
+                  No systems match your search "{search}". Try a different
+                  search term.
+                </p>
+              </Card>
+            </>
           ) : (
             <div className="h-full w-full p-20">
               <div className="container m-auto max-w-xl space-y-6 p-20">
