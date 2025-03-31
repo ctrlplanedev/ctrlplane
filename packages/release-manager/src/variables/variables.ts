@@ -43,7 +43,7 @@ export class VariableManager {
     return new VariableManager({ ...options, keys }, providers);
   }
 
-  constructor(
+  private constructor(
     private options: VariableManagerOptions,
     private variableProviders: VariableProvider[],
   ) {}
