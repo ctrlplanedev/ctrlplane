@@ -1,6 +1,8 @@
 import type { SQL } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
-import { getTableColumns, sql } from "drizzle-orm";
+import { eq, getTableColumns, ilike, sql } from "drizzle-orm";
+
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
 import type { db } from "./client";
 
@@ -19,9 +21,15 @@ export const takeFirstOrNull = <T extends any[]>(
 
 export type Tx = Omit<typeof db, "$client">;
 
+type ColumnKey<T extends PgTable> = keyof T["_"]["columns"];
+type ColumnType<
+  T extends PgTable,
+  Q extends ColumnKey<T>,
+> = T["_"]["columns"][Q];
+
 export const buildConflictUpdateColumns = <
   T extends PgTable,
-  Q extends keyof T["_"]["columns"],
+  Q extends ColumnKey<T>,
 >(
   table: T,
   columns: Q[],
@@ -42,3 +50,16 @@ export function enumToPgEnum<T extends Record<string, any>>(
 ): [T[keyof T], ...T[keyof T][]] {
   return Object.values(myEnum).map((value: any) => `${value}`) as any;
 }
+
+export const ColumnOperatorFn: Record<
+  ColumnOperator,
+  <T extends PgTable, Q extends ColumnKey<T>>(
+    column: ColumnType<T, Q>,
+    value: string,
+  ) => SQL<unknown>
+> = {
+  [ColumnOperator.Equals]: (column, value) => eq(column, value),
+  [ColumnOperator.StartsWith]: (column, value) => ilike(column, `${value}%`),
+  [ColumnOperator.EndsWith]: (column, value) => ilike(column, `%${value}`),
+  [ColumnOperator.Contains]: (column, value) => ilike(column, `%${value}%`),
+};

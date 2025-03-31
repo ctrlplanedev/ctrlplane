@@ -30,6 +30,7 @@
     "date-fns": "^4.1.0",
     "lodash": "catalog:",
     "rrule": "^2.8.1",
+    "ts-is-present": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
