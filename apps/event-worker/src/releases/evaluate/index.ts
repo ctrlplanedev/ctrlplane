@@ -1,8 +1,11 @@
+import type { Policy } from "@ctrlplane/rule-engine";
 import type { ReleaseEvaluateEvent } from "@ctrlplane/validators/events";
 import { Worker } from "bullmq";
 import _ from "lodash";
 
+import { and, desc, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { evaluate } from "@ctrlplane/rule-engine";
 import { createCtx, getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Channel } from "@ctrlplane/validators/events";
@@ -35,9 +38,32 @@ export const createReleaseEvaluateWorker = () =>
         // TODO: Get the releases from the database. We will want to apply a
         // prefix if one exists (a deployment version channel selector). For now
         // just return releases from the latest deployed release to the current
-        // version. We need to account for upgrades and downgrades.
+        // version. We need to account for upgrades and downgrades. put this
+        // function in @ctrlplane/rule-engine/utils as we will call it elsewhere
+        const getReleases = async (_: Policy) => {
+          await db.query.release.findMany({
+            where: and(
+              eq(schema.release.deploymentId, ctx.deploymentId),
+              eq(schema.release.resourceId, ctx.resourceId),
+              eq(schema.release.environmentId, ctx.environmentId),
+              // TODO: Apply the conditions, if it exists. Its part of the
+              // policy pass into this function. We might not be able to use
+              // dirzzle query pattern here.
+              // schema.deploymentVersionMatchesCondition( tx,
+              // ctx.deployment.versionSelector,
+              // ),
+            ),
+            with: {
+              version: true,
+              variables: true,
+            },
+            orderBy: desc(schema.release.createdAt),
+          });
 
-        const result = await evaluate(policy, [], ctx);
+          return [];
+        };
+
+        const result = await evaluate(policy, getReleases, ctx);
         console.log(result);
       } finally {
         await mutex.unlock();
