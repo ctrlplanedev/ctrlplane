@@ -1,3 +1,7 @@
+import type * as schema from "@ctrlplane/db/schema";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
+
 import type { Releases } from "./releases.js";
 
 export type Release = {
@@ -15,8 +19,8 @@ export type Release = {
 export type Deployment = {
   id: string;
   name: string;
-  resourceSelector?: object;
-  versionSelector?: object;
+  resourceSelector?: ResourceCondition | null;
+  versionSelector?: DeploymentVersionCondition | null;
 };
 
 export type Resource = {
@@ -27,7 +31,7 @@ export type Resource = {
 export type Environment = {
   id: string;
   name: string;
-  resourceSelector?: object;
+  resourceSelector?: ResourceCondition | null;
 };
 
 export type DeploymentResourceContext = {
@@ -58,3 +62,13 @@ export interface DeploymentResourceRule {
     releases: Releases,
   ): DeploymentResourceRuleResult | Promise<DeploymentResourceRuleResult>;
 }
+
+export type Policy = schema.Policy & {
+  denyWindows: schema.PolicyRuleDenyWindow[];
+};
+
+export type ReleaseRepository = {
+  deploymentId: string;
+  environmentId: string;
+  resourceId: string;
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -16,6 +16,7 @@ import {
   IconSortDescending,
   IconTopologyComplex,
 } from "@tabler/icons-react";
+import { useDebounce } from "react-use";
 
 import {
   Breadcrumb,
@@ -92,14 +93,13 @@ export const SystemsPageContent: React.FC<{
   const { condition, sort, setCondition, setSort } = useSystemCondition();
   const [search, setSearch] = useState(condition ?? "");
 
-  useEffect(() => {
-    if (search !== (condition ?? "")) {
-      const debounceTimeout = setTimeout(() => {
-        setCondition(search);
-      }, 300);
-      return () => clearTimeout(debounceTimeout);
-    }
-  }, [search, condition, setCondition]);
+  useDebounce(
+    () => {
+      if (search !== (condition ?? "")) setCondition(search);
+    },
+    300,
+    [search],
+  );
 
   const workspaceId = workspace.id;
   const query = condition ?? undefined;

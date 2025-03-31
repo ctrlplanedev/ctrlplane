@@ -51,6 +51,10 @@
     "./deployments": {
       "types": "./src/deployments/index.ts",
       "default": "./dist/deployments/index.js"
+    },
+    "./environments": {
+      "types": "./src/environments/index.ts",
+      "default": "./dist/environments/index.js"
     }
   },
   "license": "MIT",
