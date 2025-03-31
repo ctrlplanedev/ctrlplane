@@ -126,6 +126,18 @@ export const resourceReleaseRelations = relations(
       fields: [resourceRelease.desiredReleaseId],
       references: [release.id],
     }),
+    deployment: one(deployment, {
+      fields: [resourceRelease.deploymentId],
+      references: [deployment.id],
+    }),
+    environment: one(environment, {
+      fields: [resourceRelease.environmentId],
+      references: [environment.id],
+    }),
+    resource: one(resource, {
+      fields: [resourceRelease.resourceId],
+      references: [resource.id],
+    }),
   }),
 );
 
