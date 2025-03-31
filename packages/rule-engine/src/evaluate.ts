@@ -1,8 +1,11 @@
-import type { DeploymentResourceContext, Release } from "./types";
+import type { Tx } from "@ctrlplane/db";
+
+import type { DeploymentResourceContext } from "./types";
 import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
 import { RuleEngine } from "./rule-engine.js";
 import { DeploymentDenyRule } from "./rules/deployment-deny-rule.js";
+import { getReleases } from "./utils/get-releases.js";
 import { mergePolicies } from "./utils/merge-policies.js";
 
 const denyWindows = (policy: Policy | null) =>
@@ -22,8 +25,8 @@ const denyWindows = (policy: Policy | null) =>
  * deployment is allowed.
  */
 export const evaluate = async (
+  db: Tx,
   policy: Policy | Policy[] | null,
-  getReleases: (policy: Policy) => Promise<Release[]> | Release[],
   context: DeploymentResourceContext,
 ) => {
   const policies =
@@ -38,7 +41,7 @@ export const evaluate = async (
 
   const rules = [...denyWindows(mergedPolicy)];
   const engine = new RuleEngine(rules);
-  const releases = await getReleases(mergedPolicy);
+  const releases = await getReleases(db, context, mergedPolicy);
   const releaseCollection = Releases.from(releases);
   return engine.evaluate(releaseCollection, context);
 };
