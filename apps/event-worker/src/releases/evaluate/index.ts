@@ -31,6 +31,12 @@ export const createReleaseEvaluateWorker = () =>
 
         const { workspaceId } = ctx.resource;
         const policy = await getApplicablePolicies(db, workspaceId, job.data);
+
+        // TODO: Get the releases from the database. We will want to apply a
+        // prefix if one exists (a deployment version channel selector). For now
+        // just return releases from the latest deployed release to the current
+        // version. We need to account for upgrades and downgrades.
+
         const result = await evaluate(policy, [], ctx);
         console.log(result);
       } finally {

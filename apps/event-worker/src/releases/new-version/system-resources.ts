@@ -20,6 +20,8 @@ export const getSystemResources = async (tx: Tx, systemId: string) => {
   // Simplify the chained operations with standard Promise.all
   const resources = await Promise.all(
     environments.map(async (env) => {
+      if (env.resourceSelector == null) return [];
+
       const res = await tx
         .select()
         .from(schema.resource)
