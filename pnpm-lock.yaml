@@ -148,6 +148,9 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@ctrlplane/release-manager':
+        specifier: workspace:*
+        version: link:../../packages/release-manager
       '@ctrlplane/rule-engine':
         specifier: workspace:*
         version: link:../../packages/rule-engine
