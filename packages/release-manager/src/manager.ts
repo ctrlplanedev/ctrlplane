@@ -62,15 +62,10 @@ export class ReleaseManager {
     return this.options.variableManager;
   }
 
-  /**
-   * Upserts a release for the given version
-   * @param versionId The ID of the version to ensure
-   * @param opts Optional settings for the ensure operation
-   * @param opts.setAsDesired Whether to set this as the desired release
-   * @returns Object containing whether a new release was created and the
-   * release details
-   */
-  async upsertRelease(versionId: string, opts?: { setAsDesired?: boolean }) {
+  async upsertVersionRelease(
+    versionId: string,
+    opts?: { setAsDesired?: boolean },
+  ) {
     const variables = await this.variableManager.getVariables();
 
     // Use the repository directly to ensure the release
