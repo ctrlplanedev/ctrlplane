@@ -7,7 +7,7 @@ import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
 import { CreateEnvironmentDialog } from "./CreateEnvironmentDialog";
-import { EnvironmentCard } from "./EnvironmentRow";
+import { EnvironmentCard } from "./EnvironmentCard";
 
 export const generateMetadata = async (props: {
   params: { workspaceSlug: string; systemSlug: string };
