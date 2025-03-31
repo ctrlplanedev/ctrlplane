@@ -13,12 +13,8 @@ import {
   variableSetValue,
 } from "@ctrlplane/db/schema";
 
-import type {
-  MaybeVariable,
-  ReleaseIdentifier,
-  Variable,
-  VariableProvider,
-} from "./types";
+import type { ReleaseIdentifier } from "../types.js";
+import type { MaybeVariable, Variable, VariableProvider } from "./types.js";
 
 export type DatabaseResourceVariableOptions = Pick<
   ReleaseIdentifier,

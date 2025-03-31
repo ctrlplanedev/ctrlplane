@@ -6,7 +6,7 @@ import { db } from "@ctrlplane/db/client";
 import type { ReleaseIdentifier } from "./types.js";
 import { BaseReleaseCreator } from "./releases.js";
 import { DatabaseReleaseRepository } from "./repositories/release-repository.js";
-import { VariableManager } from "./variables.js";
+import { VariableManager } from "./variables/variables.js";
 
 export type ReleaseManagerOptions = ReleaseIdentifier & {
   db?: Tx;

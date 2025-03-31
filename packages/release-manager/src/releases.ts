@@ -1,11 +1,8 @@
 import * as _ from "lodash";
 
-import type {
-  MaybeVariable,
-  Release,
-  ReleaseIdentifier,
-  ReleaseRepository,
-} from "./types.js";
+import type { ReleaseRepository } from "./repositories/types.js";
+import type { Release, ReleaseIdentifier } from "./types.js";
+import type { MaybeVariable } from "./variables/types.js";
 import { DatabaseReleaseRepository } from "./repositories/release-repository.js";
 
 type ReleaseWithId = Release & { id: string };
