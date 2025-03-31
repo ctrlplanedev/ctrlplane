@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, eq } from "@ctrlplane/db";
+import { and, eq, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 /**
@@ -29,6 +29,7 @@ export const getSystemResources = async (tx: Tx, systemId: string) => {
           and(
             eq(schema.resource.workspaceId, system.workspaceId),
             schema.resourceMatchesMetadata(tx, env.resourceSelector),
+            isNull(schema.resource.deletedAt),
           ),
         );
       return res.map((r) => ({ ...r, environment: env }));
