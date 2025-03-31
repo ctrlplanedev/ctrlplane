@@ -100,7 +100,13 @@ export const systemRouter = createTRPCRouter({
 
       const items = ctx.db.query.system.findMany({
         where,
-        with: { environments: true, deployments: { where: deploymentsWhere } },
+        with: {
+          environments: true,
+          deployments: {
+            where: deploymentsWhere,
+            orderBy: [asc(deployment.name)],
+          },
+        },
         limit: input.limit,
         offset: input.offset,
         orderBy: [asc(system.name)],
