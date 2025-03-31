@@ -1,8 +1,9 @@
+import type { SQL } from "@ctrlplane/db";
 import type { ReleaseRepository } from "@ctrlplane/rule-engine";
 import type { ReleaseVariableChangeEvent } from "@ctrlplane/validators/events";
 import { Worker } from "bullmq";
 
-import { eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -15,6 +16,19 @@ import {
 import { redis } from "../../redis.js";
 import { createAndEvaluateRelease } from "../create-release.js";
 
+const getResourceReleases = async (where: SQL) =>
+  db
+    .select()
+    .from(schema.resourceRelease)
+    .innerJoin(
+      schema.resource,
+      eq(schema.resourceRelease.resourceId, schema.resource.id),
+    )
+    .where(and(where, isNull(schema.resource.deletedAt)))
+    .then((rows) =>
+      rows.map((r) => ({ ...r.resource_release, resource: r.resource })),
+    );
+
 const handleDeploymentVariableChange = async (deploymentVariableId: string) => {
   const variable = await db
     .select()
@@ -24,10 +38,9 @@ const handleDeploymentVariableChange = async (deploymentVariableId: string) => {
 
   if (variable == null) throw new Error("Deployment variable not found");
 
-  return db.query.resourceRelease.findMany({
-    where: eq(schema.resourceRelease.deploymentId, variable.deploymentId),
-    with: { resource: { where: isNull(schema.resource.deletedAt) } },
-  });
+  return getResourceReleases(
+    eq(schema.resourceRelease.deploymentId, variable.deploymentId),
+  );
 };
 
 const handleSystemVariableChange = async (systemVariableSetId: string) => {
@@ -44,18 +57,15 @@ const handleSystemVariableChange = async (systemVariableSetId: string) => {
 
   if (deployment == null) throw new Error("System variable set not found");
 
-  return db.query.resourceRelease.findMany({
-    where: eq(schema.resourceRelease.deploymentId, deployment.id),
-    with: { resource: { where: isNull(schema.resource.deletedAt) } },
-  });
+  return getResourceReleases(
+    eq(schema.resourceRelease.deploymentId, deployment.id),
+  );
 };
 
-const handleResourceVariableChange = async (resourceVariableId: string) => {
-  return db.query.resourceRelease.findMany({
-    where: eq(schema.resourceRelease.resourceId, resourceVariableId),
-    with: { resource: { where: isNull(schema.resource.deletedAt) } },
-  });
-};
+const handleResourceVariableChange = async (resourceVariableId: string) =>
+  getResourceReleases(
+    eq(schema.resourceRelease.resourceId, resourceVariableId),
+  );
 
 export const createReleaseVariableChangeWorker = () =>
   new Worker<ReleaseVariableChangeEvent>(
