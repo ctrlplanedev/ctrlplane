@@ -17,6 +17,7 @@ import {
   not,
   notExists,
   or,
+  relations,
   sql,
 } from "drizzle-orm";
 import {
@@ -286,3 +287,50 @@ export function deploymentVersionMatchesCondition(
     ? undefined
     : buildCondition(tx, condition);
 }
+
+export const deploymentVersionRelations = relations(
+  deploymentVersion,
+  ({ one, many }) => ({
+    deployment: one(deployment, {
+      fields: [deploymentVersion.deploymentId],
+      references: [deployment.id],
+    }),
+    metadata: many(deploymentVersionMetadata),
+    dependencies: many(versionDependency),
+    channels: many(deploymentVersionChannel),
+  }),
+);
+
+export const deploymentVersionChannelRelations = relations(
+  deploymentVersionChannel,
+  ({ one }) => ({
+    deployment: one(deployment, {
+      fields: [deploymentVersionChannel.deploymentId],
+      references: [deployment.id],
+    }),
+  }),
+);
+
+export const versionDependencyRelations = relations(
+  versionDependency,
+  ({ one }) => ({
+    version: one(deploymentVersion, {
+      fields: [versionDependency.versionId],
+      references: [deploymentVersion.id],
+    }),
+    deployment: one(deployment, {
+      fields: [versionDependency.deploymentId],
+      references: [deployment.id],
+    }),
+  }),
+);
+
+export const deploymentVersionMetadataRelations = relations(
+  deploymentVersionMetadata,
+  ({ one }) => ({
+    version: one(deploymentVersion, {
+      fields: [deploymentVersionMetadata.versionId],
+      references: [deploymentVersion.id],
+    }),
+  }),
+);
