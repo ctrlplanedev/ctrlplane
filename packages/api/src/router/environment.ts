@@ -230,7 +230,12 @@ export const environmentRouter = createTRPCRouter({
         )
         .then(takeFirst);
 
-      // const [items, count] = await Promise.all([itemsPromise, countPromise]);
+      return Promise.all([itemsPromise, countPromise]).then(
+        ([items, { count }]) => ({
+          items,
+          count,
+        }),
+      );
     }),
 
   byWorkspaceId: protectedProcedure

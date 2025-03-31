@@ -43,6 +43,7 @@ export const CreateEnvironmentDialog: React.FC<{
   }>();
   const create = api.environment.create.useMutation();
   const router = useRouter();
+  const utils = api.useUtils();
 
   const [open, setOpen] = useState(false);
 
@@ -57,6 +58,7 @@ export const CreateEnvironmentDialog: React.FC<{
     create
       .mutateAsync({ ...data, systemId })
       .then(({ id }) => router.push(envUrl(id).resources()))
+      .then(() => utils.environment.bySystemIdWithSearch.invalidate())
       .then(() => router.refresh())
       .then(() => setOpen(false)),
   );
