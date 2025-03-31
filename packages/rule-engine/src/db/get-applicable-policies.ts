@@ -112,7 +112,7 @@ export const getApplicablePolicies = async (
 ) => {
   const policy = await tx.query.policy.findMany({
     where: eq(schema.policy.workspaceId, workspaceId),
-    with: { targets: true, denyWindows: true },
+    with: { targets: true, denyWindows: true, deploymentVersionSelector: true },
     orderBy: [desc(schema.policy.priority)],
   });
 

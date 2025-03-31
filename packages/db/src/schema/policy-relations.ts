@@ -1,6 +1,11 @@
 import { relations } from "drizzle-orm";
 
-import { policy, policyRuleDenyWindow, policyTarget } from "./policy.js";
+import {
+  policy,
+  policyDeploymentVersionSelector,
+  policyRuleDenyWindow,
+  policyTarget,
+} from "./policy.js";
 import { workspace } from "./workspace.js";
 
 export const policyRelations = relations(policy, ({ many, one }) => ({
@@ -10,6 +15,10 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   }),
   targets: many(policyTarget),
   denyWindows: many(policyRuleDenyWindow),
+  deploymentVersionSelector: one(policyDeploymentVersionSelector, {
+    fields: [policy.id],
+    references: [policyDeploymentVersionSelector.policyId],
+  }),
 }));
 
 export const policyTargetRelations = relations(policyTarget, ({ one }) => ({
