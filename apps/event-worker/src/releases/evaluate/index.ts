@@ -40,12 +40,16 @@ export const createReleaseEvaluateWorker = () =>
         // just return releases from the latest deployed release to the current
         // version. We need to account for upgrades and downgrades. put this
         // function in @ctrlplane/rule-engine/utils as we will call it elsewhere
-        const getReleases = async (_: Policy) => {
+        const getReleases = async (policy: Policy) => {
           await db.query.release.findMany({
             where: and(
               eq(schema.release.deploymentId, ctx.deploymentId),
               eq(schema.release.resourceId, ctx.resourceId),
               eq(schema.release.environmentId, ctx.environmentId),
+              schema.deploymentVersionMatchesCondition(
+                db,
+                policy.deploymentVersionSelector?.deploymentVersionSelector,
+              ),
               // TODO: Apply the conditions, if it exists. Its part of the
               // policy pass into this function. We might not be able to use
               // dirzzle query pattern here.
