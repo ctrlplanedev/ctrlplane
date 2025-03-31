@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@date-fns/tz": "^1.2.0",
     "date-fns": "^4.1.0",
@@ -37,6 +38,7 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/lodash": "catalog:",
     "@types/node": "catalog:node22",
     "eslint": "catalog:",
     "prettier": "catalog:",

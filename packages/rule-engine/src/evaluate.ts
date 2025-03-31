@@ -20,6 +20,14 @@ const denyWindows = (policy: Policy | null) =>
 /**
  * Evaluates a deployment context against policy rules to determine if the
  * deployment is allowed.
+ *
+ * @param policy - The policy containing deployment rules and deny windows
+ * @param getReleases - A function that returns a list of releases for a given
+ * policy
+ * @param context - The deployment context containing information needed for
+ * rule evaluation
+ * @returns A promise resolving to the evaluation result, including allowed
+ * status and chosen release
  */
 export const evaluate = async (
   policy: Policy | Policy[] | null,
