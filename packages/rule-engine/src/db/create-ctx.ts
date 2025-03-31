@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
-import { and, eq } from "drizzle-orm";
 
+import { and, eq } from "@ctrlplane/db";
 import { resourceRelease } from "@ctrlplane/db/schema";
 
 import type { ReleaseRepository } from "../types.js";
