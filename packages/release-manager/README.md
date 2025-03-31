@@ -18,7 +18,8 @@ The main entry point for the package. It coordinates variable retrieval and
 release creation.
 
 ```typescript
-const manager = new ReleaseManager({
+// Use the static factory method for creating a manager
+const manager = await ReleaseManager.usingDatabase({
   deploymentId: "deployment-123",
   environmentId: "production",
   resourceId: "resource-456",
@@ -105,7 +106,7 @@ import { db } from "@ctrlplane/db/client";
 import { ReleaseManager } from "@ctrlplane/release-manager";
 
 // Create a release manager for a specific context
-const releaseManager = new ReleaseManager({
+const releaseManager = await ReleaseManager.usingDatabase({
   deploymentId: "my-app",
   environmentId: "production",
   resourceId: "web-server-1",
