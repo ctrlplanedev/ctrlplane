@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@ctrlplane/api";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -18,11 +18,10 @@ import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { EnvironmentDropdown } from "./EnvironmentDropdown";
 
-type Environment = RouterOutputs["environment"]["bySystemId"][number];
-
 export const EnvironmentCard: React.FC<{
-  environment: Environment;
-}> = ({ environment }) => {
+  workspaceId: string;
+  environment: SCHEMA.Environment;
+}> = ({ workspaceId, environment }) => {
   const { ref, inView } = useInView();
 
   const { workspaceSlug, systemSlug } = useParams<{
@@ -32,7 +31,7 @@ export const EnvironmentCard: React.FC<{
 
   const allResourcesQ = api.resource.byWorkspaceId.list.useQuery(
     {
-      workspaceId: environment.system.workspaceId,
+      workspaceId,
       filter: environment.resourceSelector ?? undefined,
       limit: 0,
     },
@@ -75,7 +74,7 @@ export const EnvironmentCard: React.FC<{
 
   return (
     <Link href={environmentUrl} className="block" ref={ref}>
-      <Card className="transition-shadow duration-300 hover:shadow-md">
+      <Card className="h-56">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center space-x-2">
             {!isLoading && (
