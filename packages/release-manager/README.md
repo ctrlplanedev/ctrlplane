@@ -133,4 +133,4 @@ await releaseNewVersion(db, "version-123");
 
 ## License
 
-MIT
+Parent Repository: [ctrlplanedev/ctrlplane](https://github.com/ctrlplane/ctrlplane)
