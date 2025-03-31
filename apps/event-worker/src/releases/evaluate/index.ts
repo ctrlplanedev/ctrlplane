@@ -1,9 +1,9 @@
+import type { Policy } from "@ctrlplane/rule-engine";
 import type { ReleaseEvaluateEvent } from "@ctrlplane/validators/events";
 import { Worker } from "bullmq";
-import _ from "lodash";
 
 import { db } from "@ctrlplane/db/client";
-import { evaluate } from "@ctrlplane/rule-engine";
+import { evaluate, getReleases } from "@ctrlplane/rule-engine";
 import { createCtx, getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Channel } from "@ctrlplane/validators/events";
 
@@ -31,14 +31,15 @@ export const createReleaseEvaluateWorker = () =>
 
         const { workspaceId } = ctx.resource;
         const policy = await getApplicablePolicies(db, workspaceId, job.data);
+        const getReleasesWithContext = (policy: Policy) =>
+          getReleases(db, ctx, policy);
 
-        // TODO: Get the releases from the database. We will want to apply a
-        // prefix if one exists (a deployment version channel selector). For now
-        // just return releases from the latest deployed release to the current
-        // version. We need to account for upgrades and downgrades.
-
-        const result = await evaluate(policy, [], ctx);
+        const result = await evaluate(policy, getReleasesWithContext, ctx);
         console.log(result);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        job.log(`Error evaluating release: ${message}`);
       } finally {
         await mutex.unlock();
       }

@@ -119,6 +119,28 @@ export const resourceRelease = pgTable(
   }),
 );
 
+export const resourceReleaseRelations = relations(
+  resourceRelease,
+  ({ one }) => ({
+    desiredRelease: one(release, {
+      fields: [resourceRelease.desiredReleaseId],
+      references: [release.id],
+    }),
+    deployment: one(deployment, {
+      fields: [resourceRelease.deploymentId],
+      references: [deployment.id],
+    }),
+    environment: one(environment, {
+      fields: [resourceRelease.environmentId],
+      references: [environment.id],
+    }),
+    resource: one(resource, {
+      fields: [resourceRelease.resourceId],
+      references: [resource.id],
+    }),
+  }),
+);
+
 export const resourceRelations = relations(resource, ({ one, many }) => ({
   metadata: many(resourceMetadata),
   variables: many(resourceVariable),

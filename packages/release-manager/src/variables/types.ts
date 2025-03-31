@@ -1,4 +1,4 @@
-import type { ReleaseIdentifier } from "src/types";
+import type { ReleaseIdentifier } from "../types.js";
 
 export type Variable<T = any> = {
   id: string;
