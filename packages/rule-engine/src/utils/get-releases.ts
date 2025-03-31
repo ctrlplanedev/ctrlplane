@@ -1,7 +1,9 @@
 import type { Tx } from "@ctrlplane/db";
+import { isAfter } from "date-fns";
 
-import { and, desc, eq } from "@ctrlplane/db";
+import { and, desc, eq, exists, gte, lte } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { DeploymentResourceContext } from "..";
 
@@ -10,12 +12,67 @@ type Policy = SCHEMA.Policy & {
   deploymentVersionSelector: SCHEMA.PolicyDeploymentVersionSelector | null;
 };
 
+const validateDateBounds = (
+  latestDeployedReleaseDate?: Date,
+  currentVersionCreatedAt?: Date,
+) => {
+  if (latestDeployedReleaseDate == null) return;
+  if (currentVersionCreatedAt == null) return;
+  if (isAfter(latestDeployedReleaseDate, currentVersionCreatedAt))
+    throw new Error(
+      "Latest deployed release date is after current version createdAt",
+    );
+};
+
 export const getReleases = async (
   db: Tx,
   ctx: DeploymentResourceContext,
   policy: Policy,
-) =>
-  db.query.release
+) => {
+  // return releases from the latest deployed release to the current
+  // version
+
+  // latest deployed release is the latest release for this context that has a
+  // successful release job
+  const latestDeployedRelease = await db.query.release.findFirst({
+    where: and(
+      eq(SCHEMA.release.deploymentId, ctx.deployment.id),
+      eq(SCHEMA.release.resourceId, ctx.resource.id),
+      eq(SCHEMA.release.environmentId, ctx.environment.id),
+      exists(
+        db
+          .select()
+          .from(SCHEMA.releaseJob)
+          .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
+          .where(
+            and(
+              eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+              eq(SCHEMA.job.status, JobStatus.Successful),
+            ),
+          )
+          .limit(1),
+      ),
+    ),
+    orderBy: desc(SCHEMA.release.createdAt),
+  });
+
+  const currentVersion = await db.query.deploymentVersion.findFirst({
+    where: and(
+      eq(SCHEMA.deploymentVersion.deploymentId, ctx.deployment.id),
+      SCHEMA.deploymentVersionMatchesCondition(
+        db,
+        policy.deploymentVersionSelector?.deploymentVersionSelector,
+      ),
+    ),
+    orderBy: desc(SCHEMA.deploymentVersion.createdAt),
+  });
+
+  validateDateBounds(
+    latestDeployedRelease?.createdAt,
+    currentVersion?.createdAt,
+  );
+
+  return db.query.release
     .findMany({
       where: and(
         eq(SCHEMA.release.deploymentId, ctx.deployment.id),
@@ -25,6 +82,12 @@ export const getReleases = async (
           db,
           policy.deploymentVersionSelector?.deploymentVersionSelector,
         ),
+        latestDeployedRelease != null
+          ? gte(SCHEMA.release.createdAt, latestDeployedRelease.createdAt)
+          : undefined,
+        currentVersion != null
+          ? lte(SCHEMA.release.createdAt, currentVersion.createdAt)
+          : undefined,
       ),
       with: {
         version: { with: { metadata: true } },
@@ -46,3 +109,4 @@ export const getReleases = async (
         },
       })),
     );
+};
