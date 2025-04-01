@@ -25,7 +25,7 @@ import {
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { resourceScanQueue } from "../dispatch";
+import { resourceScanQueue } from "../queues/resoure-scan";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { resourceProviderPageRouter } from "./resource-provider-page/router";
 
