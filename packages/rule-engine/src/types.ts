@@ -73,3 +73,8 @@ export type ReleaseRepository = {
   environmentId: string;
   resourceId: string;
 };
+
+export type GetReleasesFunc = (
+  ctx: DeploymentResourceContext,
+  policy: Policy,
+) => Promise<Release[]> | Release[];

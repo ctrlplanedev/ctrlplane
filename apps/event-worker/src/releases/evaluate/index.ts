@@ -1,9 +1,8 @@
-import type { Policy } from "@ctrlplane/rule-engine";
 import type { ReleaseEvaluateEvent } from "@ctrlplane/validators/events";
 import { Worker } from "bullmq";
 
 import { db } from "@ctrlplane/db/client";
-import { evaluate, getReleases } from "@ctrlplane/rule-engine";
+import { evaluate, getReleasesFromDb } from "@ctrlplane/rule-engine";
 import { createCtx, getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Channel } from "@ctrlplane/validators/events";
 
@@ -31,10 +30,8 @@ export const createReleaseEvaluateWorker = () =>
 
         const { workspaceId } = ctx.resource;
         const policy = await getApplicablePolicies(db, workspaceId, job.data);
-        const getReleasesWithContext = (policy: Policy) =>
-          getReleases(db, ctx, policy);
 
-        const result = await evaluate(policy, getReleasesWithContext, ctx);
+        const result = await evaluate(policy, ctx, getReleasesFromDb(db));
         console.log(result);
       } catch (error) {
         const message =

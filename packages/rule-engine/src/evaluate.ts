@@ -1,4 +1,4 @@
-import type { DeploymentResourceContext, Release } from "./types";
+import type { DeploymentResourceContext, GetReleasesFunc } from "./types";
 import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
 import { RuleEngine } from "./rule-engine.js";
@@ -31,8 +31,8 @@ const denyWindows = (policy: Policy | null) =>
  */
 export const evaluate = async (
   policy: Policy | Policy[] | null,
-  getReleases: (policy: Policy) => Promise<Release[]> | Release[],
   context: DeploymentResourceContext,
+  getReleases: GetReleasesFunc,
 ) => {
   const policies =
     policy == null ? [] : Array.isArray(policy) ? policy : [policy];
@@ -46,7 +46,7 @@ export const evaluate = async (
 
   const rules = [...denyWindows(mergedPolicy)];
   const engine = new RuleEngine(rules);
-  const releases = await getReleases(mergedPolicy);
+  const releases = await getReleases(context, mergedPolicy);
   const releaseCollection = Releases.from(releases);
   return engine.evaluate(releaseCollection, context);
 };
