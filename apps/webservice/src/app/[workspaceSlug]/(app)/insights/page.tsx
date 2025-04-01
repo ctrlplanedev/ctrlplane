@@ -22,9 +22,9 @@ import { SystemHealthOverview } from "./SystemHealthOverview";
 export const generateMetadata = async ({
   params,
 }: {
-  params: { workspaceSlug: string };
+  params: Promise<{ workspaceSlug: string }>;
 }): Promise<Metadata> => {
-  const { workspaceSlug } = params;
+  const { workspaceSlug } = await params;
 
   return api.workspace
     .bySlug(workspaceSlug)
