@@ -1,18 +1,16 @@
 import { randomUUID } from "crypto";
 import type { Tx } from "@ctrlplane/db";
-import type { ResourceScanEvent } from "@ctrlplane/validators/events";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { Queue } from "bullmq";
 import { FORBIDDEN, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
-import IORedis from "ioredis";
 import ms from "ms";
 
+import { redis } from "@ctrlplane/api";
+import { resourceScanQueue } from "@ctrlplane/api/queues";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
-import { Channel } from "@ctrlplane/validators/events";
 
 import { urls } from "~/app/urls";
 import { env } from "~/env";
@@ -26,11 +24,6 @@ type Params = {
 
 const baseUrl = env.BASE_URL;
 const clientId = env.AZURE_APP_CLIENT_ID;
-
-const redis = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
-const resourceScanQueue = new Queue<ResourceScanEvent>(Channel.ResourceScan, {
-  connection: redis,
-});
 
 const createResourceProvider = async (
   db: Tx,

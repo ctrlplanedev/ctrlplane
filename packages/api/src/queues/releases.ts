@@ -6,14 +6,14 @@ import { Queue } from "bullmq";
 
 import { Channel } from "@ctrlplane/validators/events";
 
-import { connection } from "./redis";
+import { redis } from "../redis";
 
 export const releaseNewVersion = new Queue<ReleaseNewVersionEvent>(
   Channel.ReleaseNewVersion,
-  { connection },
+  { connection: redis },
 );
 
 export const releaseVariableChange = new Queue<ReleaseVariableChangeEvent>(
   Channel.ReleaseVariableChange,
-  { connection },
+  { connection: redis },
 );

@@ -3,9 +3,9 @@ import { Queue } from "bullmq";
 
 import { Channel } from "@ctrlplane/validators/events";
 
-import { connection } from "./redis";
+import { redis } from "../redis";
 
 export const resourceScanQueue = new Queue<ResourceScanEvent>(
   Channel.ResourceScan,
-  { connection },
+  { connection: redis },
 );

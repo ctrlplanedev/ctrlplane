@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./src/index.ts"
+    },
+    "./queues": {
+      "types": "./dist/queues.d.ts",
+      "default": "./src/queues/index.ts"
     }
   },
   "license": "",
