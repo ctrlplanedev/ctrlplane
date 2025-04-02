@@ -115,21 +115,26 @@ export const releaseJobRelations = relations(releaseJob, ({ one }) => ({
   }),
 }));
 
-export const releaseTargetRelations = relations(releaseTarget, ({ one }) => ({
-  desiredRelease: one(release, {
-    fields: [releaseTarget.desiredReleaseId],
-    references: [release.id],
+export const releaseTargetRelations = relations(
+  releaseTarget,
+  ({ one, many }) => ({
+    desiredRelease: one(release, {
+      fields: [releaseTarget.desiredReleaseId],
+      references: [release.id],
+    }),
+    deployment: one(deployment, {
+      fields: [releaseTarget.deploymentId],
+      references: [deployment.id],
+    }),
+    environment: one(environment, {
+      fields: [releaseTarget.environmentId],
+      references: [environment.id],
+    }),
+    resource: one(resource, {
+      fields: [releaseTarget.resourceId],
+      references: [resource.id],
+    }),
+
+    releases: many(release),
   }),
-  deployment: one(deployment, {
-    fields: [releaseTarget.deploymentId],
-    references: [deployment.id],
-  }),
-  environment: one(environment, {
-    fields: [releaseTarget.environmentId],
-    references: [environment.id],
-  }),
-  resource: one(resource, {
-    fields: [releaseTarget.resourceId],
-    references: [resource.id],
-  }),
-}));
+);

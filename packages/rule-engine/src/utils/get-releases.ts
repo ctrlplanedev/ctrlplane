@@ -51,25 +51,25 @@ export const getReleasesFromDb =
       orderBy: desc(SCHEMA.release.createdAt),
     });
 
-    const resourceRelease = await db.query.resourceRelease.findFirst({
+    const releaseTarget = await db.query.releaseTarget.findFirst({
       where: and(
-        eq(SCHEMA.resourceRelease.resourceId, ctx.resource.id),
-        eq(SCHEMA.resourceRelease.environmentId, ctx.environment.id),
-        eq(SCHEMA.resourceRelease.deploymentId, ctx.deployment.id),
+        eq(SCHEMA.releaseTarget.resourceId, ctx.resource.id),
+        eq(SCHEMA.releaseTarget.environmentId, ctx.environment.id),
+        eq(SCHEMA.releaseTarget.deploymentId, ctx.deployment.id),
       ),
       with: { desiredRelease: true },
     });
 
     const isDateBoundsValid = getIsDateBoundsValid(
       latestDeployedRelease?.createdAt,
-      resourceRelease?.desiredRelease?.createdAt,
+      releaseTarget?.desiredRelease?.createdAt,
     );
 
     if (!isDateBoundsValid)
       log.warn(
         `Date bounds are invalid, latestDeployedRelease is after desiredRelease: 
         latestDeployedRelease: ${latestDeployedRelease?.createdAt != null ? latestDeployedRelease.createdAt.toISOString() : "null"}, 
-        resourceRelease: ${resourceRelease?.desiredRelease?.createdAt != null ? resourceRelease.desiredRelease.createdAt.toISOString() : "null"}`,
+        releaseTarget: ${releaseTarget?.desiredRelease?.createdAt != null ? releaseTarget.desiredRelease.createdAt.toISOString() : "null"}`,
       );
 
     return db.query.release
@@ -85,10 +85,10 @@ export const getReleasesFromDb =
           latestDeployedRelease != null
             ? gte(SCHEMA.release.createdAt, latestDeployedRelease.createdAt)
             : undefined,
-          resourceRelease?.desiredRelease != null
+          releaseTarget?.desiredRelease != null
             ? lte(
                 SCHEMA.release.createdAt,
-                resourceRelease.desiredRelease.createdAt,
+                releaseTarget.desiredRelease.createdAt,
               )
             : undefined,
         ),

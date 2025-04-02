@@ -27,19 +27,31 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * Get the latest release for a specific resource, deployment, and environment
    */
   async getLatest(options: ReleaseIdentifier) {
-    return this.db.query.release
+    const result = await this.db.query.releaseTarget
       .findFirst({
         where: and(
-          eq(schema.release.resourceId, options.resourceId),
-          eq(schema.release.deploymentId, options.deploymentId),
-          eq(schema.release.environmentId, options.environmentId),
+          eq(schema.releaseTarget.resourceId, options.resourceId),
+          eq(schema.releaseTarget.deploymentId, options.deploymentId),
+          eq(schema.releaseTarget.environmentId, options.environmentId),
         ),
         with: {
-          variables: true,
+          releases: {
+            with: {
+              version: true,
+              variables: true,
+            },
+          },
         },
         orderBy: desc(schema.release.createdAt),
       })
-      .then((r) => r ?? null);
+      .then((r) => r?.releases.at(0));
+
+    if (result == null) return null;
+
+    return {
+      ...options,
+      ...result,
+    };
   }
 
   /**
@@ -59,6 +71,19 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
   }
 
   /**
+   * Get the release target for a specific resource, deployment, and environment
+   */
+  async getReleaseTarget(options: ReleaseIdentifier) {
+    return this.db.query.releaseTarget.findFirst({
+      where: and(
+        eq(schema.releaseTarget.resourceId, options.resourceId),
+        eq(schema.releaseTarget.deploymentId, options.deploymentId),
+        eq(schema.releaseTarget.environmentId, options.environmentId),
+      ),
+    });
+  }
+
+  /**
    * Create a new release with variables for a specific version
    */
   async createForVersion(
@@ -66,7 +91,11 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
     versionId: string,
     variables: MaybeVariable[],
   ): Promise<ReleaseWithId> {
+    const releaseTarget = await this.getReleaseTarget(options);
+    if (releaseTarget == null) throw new Error("Release target not found");
+
     const release: Release = {
+      releaseTargetId: releaseTarget.id,
       ...options,
       versionId,
       variables: _.compact(variables),
@@ -111,7 +140,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
 
   async setDesired(options: ReleaseIdentifier & { desiredReleaseId: string }) {
     await this.db
-      .insert(schema.resourceRelease)
+      .insert(schema.releaseTarget)
       .values({
         environmentId: options.environmentId,
         deploymentId: options.deploymentId,
@@ -120,11 +149,11 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
       })
       .onConflictDoUpdate({
         target: [
-          schema.resourceRelease.environmentId,
-          schema.resourceRelease.deploymentId,
-          schema.resourceRelease.resourceId,
+          schema.releaseTarget.environmentId,
+          schema.releaseTarget.deploymentId,
+          schema.releaseTarget.resourceId,
         ],
-        set: buildConflictUpdateColumns(schema.resourceRelease, [
+        set: buildConflictUpdateColumns(schema.releaseTarget, [
           "desiredReleaseId",
         ]),
       })

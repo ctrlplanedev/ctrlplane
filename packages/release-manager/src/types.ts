@@ -9,6 +9,7 @@ export type ReleaseIdentifier = {
 export type Release = ReleaseIdentifier & {
   versionId: string;
   variables: Variable[];
+  releaseTargetId: string;
 };
 
 export type ReleaseWithId = Release & { id: string };
