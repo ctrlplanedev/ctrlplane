@@ -47,22 +47,21 @@ const getDeploymentResources = async (
   return resources;
 };
 
+const evaluatedQueue = getQueue(Channel.ReleaseEvaluate);
+
 export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,
   async (job) => {
     const resources = await getDeploymentResources(db, job.data);
-    getQueue(Channel.NewRelease).addBulk(
-      resources.map((r) => ({
-        name: Channel.NewRelease,
-        data: {
-          id: crypto.randomUUID(),
-          createdAt: new Date(),
-          resourceId: r.id,
-          environmentId: r.environment.id,
-          deploymentId: job.data.id,
-          versionId: job.data.versionId,
-        },
-      })),
-    );
+    const jobData = resources.map((r) => {
+      const resourceId = r.id;
+      const environmentId = r.environment.id;
+      const deploymentId = job.data.id;
+      return {
+        name: `${resourceId}-${environmentId}-${deploymentId}`,
+        data: { resourceId, environmentId, deploymentId },
+      };
+    });
+    await evaluatedQueue.addBulk(jobData);
   },
 );
