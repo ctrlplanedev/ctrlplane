@@ -5,19 +5,19 @@ import { redis } from "./redis.js";
 import { createReleaseNewVersionWorker } from "./releases/new-version/index.js";
 import { createReleaseVariableChangeWorker } from "./releases/variable-change/index.js";
 import { createResourceScanWorker } from "./resource-scan/index.js";
+import { workers } from "./workers/index.js";
 
-const workers = [
+const allWorkers = [
   createResourceScanWorker(),
   createDispatchExecutionJobWorker(),
   createReleaseNewVersionWorker(),
   createReleaseVariableChangeWorker(),
+  ...Object.values(workers),
 ];
-
-const w = Object.values(workers);
 
 const shutdown = () => {
   logger.warn("Exiting...");
-  Promise.all([...workers, ...w].map((w) => w.close())).then(async () => {
+  Promise.all(allWorkers.map((w) => w?.close())).then(async () => {
     await redis.quit();
     process.exit(0);
   });
