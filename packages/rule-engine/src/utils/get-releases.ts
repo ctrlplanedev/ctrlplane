@@ -29,55 +29,54 @@ const getIsDateBoundsValid = (
 
 export const getReleasesFromDb =
   (db: Tx) => async (ctx: DeploymentResourceContext, policy: Policy) => {
-    const latestDeployedRelease = await db.query.release.findFirst({
-      where: and(
-        eq(SCHEMA.release.deploymentId, ctx.deployment.id),
-        eq(SCHEMA.release.resourceId, ctx.resource.id),
-        eq(SCHEMA.release.environmentId, ctx.environment.id),
-        exists(
-          db
-            .select()
-            .from(SCHEMA.releaseJob)
-            .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
-            .where(
-              and(
-                eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
-                eq(SCHEMA.job.status, JobStatus.Successful),
-              ),
-            )
-            .limit(1),
-        ),
-      ),
-      orderBy: desc(SCHEMA.release.createdAt),
-    });
-
     const releaseTarget = await db.query.releaseTarget.findFirst({
       where: and(
         eq(SCHEMA.releaseTarget.resourceId, ctx.resource.id),
         eq(SCHEMA.releaseTarget.environmentId, ctx.environment.id),
         eq(SCHEMA.releaseTarget.deploymentId, ctx.deployment.id),
       ),
-      with: { desiredRelease: true },
+      with: {
+        desiredRelease: true,
+        releases: {
+          limit: 1,
+          where: exists(
+            db
+              .select()
+              .from(SCHEMA.releaseJob)
+              .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
+              .where(
+                and(
+                  eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+                  eq(SCHEMA.job.status, JobStatus.Successful),
+                ),
+              )
+              .limit(1),
+          ),
+          orderBy: desc(SCHEMA.release.createdAt),
+        },
+      },
     });
+
+    if (releaseTarget == null) return [];
+
+    const latestDeployedRelease = releaseTarget.releases.at(0);
 
     const isDateBoundsValid = getIsDateBoundsValid(
       latestDeployedRelease?.createdAt,
-      releaseTarget?.desiredRelease?.createdAt,
+      releaseTarget.desiredRelease?.createdAt,
     );
 
     if (!isDateBoundsValid)
       log.warn(
         `Date bounds are invalid, latestDeployedRelease is after desiredRelease: 
         latestDeployedRelease: ${latestDeployedRelease?.createdAt != null ? latestDeployedRelease.createdAt.toISOString() : "null"}, 
-        releaseTarget: ${releaseTarget?.desiredRelease?.createdAt != null ? releaseTarget.desiredRelease.createdAt.toISOString() : "null"}`,
+        releaseTarget: ${releaseTarget.desiredRelease?.createdAt != null ? releaseTarget.desiredRelease.createdAt.toISOString() : "null"}`,
       );
 
     return db.query.release
       .findMany({
         where: and(
-          eq(SCHEMA.release.deploymentId, ctx.deployment.id),
-          eq(SCHEMA.release.resourceId, ctx.resource.id),
-          eq(SCHEMA.release.environmentId, ctx.environment.id),
+          eq(SCHEMA.release.releaseTargetId, releaseTarget.id),
           SCHEMA.deploymentVersionMatchesCondition(
             db,
             policy.deploymentVersionSelector?.deploymentVersionSelector,
@@ -85,7 +84,7 @@ export const getReleasesFromDb =
           latestDeployedRelease != null
             ? gte(SCHEMA.release.createdAt, latestDeployedRelease.createdAt)
             : undefined,
-          releaseTarget?.desiredRelease != null
+          releaseTarget.desiredRelease != null
             ? lte(
                 SCHEMA.release.createdAt,
                 releaseTarget.desiredRelease.createdAt,
