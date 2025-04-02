@@ -28,6 +28,8 @@
     "@kubernetes/client-node": "^0.22.0",
     "@octokit/auth-app": "catalog:",
     "@octokit/rest": "catalog:",
+    "@opentelemetry/auto-instrumentations-node": "^0.52.1",
+    "@opentelemetry/sdk-node": "^0.54.2",
     "@smithy/types": "^3.7.1",
     "@t3-oss/env-core": "catalog:",
     "bullmq": "catalog:",
