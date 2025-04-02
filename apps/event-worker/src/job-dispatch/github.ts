@@ -183,7 +183,7 @@ export const dispatchGithubJob = async (je: Job) => {
       headers,
     });
   } catch (e) {
-    const error = e instanceof Error ? e.message : e;
+    const error = e instanceof Error ? e.message : String(e);
     log.error(`Failed to create workflow dispatch for job ${je.id}`, {
       error,
     });
