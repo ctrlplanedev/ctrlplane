@@ -8,6 +8,7 @@ export enum Channel {
   ResourceScan = "resource-scan",
   ReleaseEvaluate = "release-evaluate",
   ReleaseNewVersion = "release-new-version",
+  ReleaseNewRepository = "release-new-repository",
   ReleaseVariableChange = "release-variable-change",
 }
 
@@ -50,3 +51,19 @@ export const releaseVariableChangeEvent = z.union([
 export type ReleaseVariableChangeEvent = z.infer<
   typeof releaseVariableChangeEvent
 >;
+
+export const releaseNewRepositoryEvent = z.object({
+  resourceId: z.string(),
+  environmentId: z.string(),
+  repositoryId: z.string(),
+});
+export type ReleaseNewRepositoryEvent = z.infer<
+  typeof releaseNewRepositoryEvent
+>;
+
+export type ChannelMap = {
+  [Channel.JobSync]: JobSyncEvent;
+  [Channel.DispatchJob]: DispatchJobEvent;
+  [Channel.ResourceScan]: ResourceScanEvent;
+  [Channel.ReleaseEvaluate]: ReleaseEvaluateEvent;
+};

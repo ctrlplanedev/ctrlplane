@@ -18,6 +18,7 @@
     "@azure/arm-containerservice": "^21.3.0",
     "@azure/identity": "^4.5.0",
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/events": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/release-manager": "workspace:*",
