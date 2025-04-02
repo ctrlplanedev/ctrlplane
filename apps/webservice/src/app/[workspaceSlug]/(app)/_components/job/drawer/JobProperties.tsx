@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { format } from "date-fns";
+import { useCopyToClipboard } from "react-use";
 
+import { Button } from "@ctrlplane/ui/button";
+import { toast } from "@ctrlplane/ui/toast";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 
@@ -13,6 +17,15 @@ type JobPropertiesTableProps = { job: Job };
 export const JobPropertiesTable: React.FC<JobPropertiesTableProps> = ({
   job,
 }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const [, copy] = useCopyToClipboard();
+  const handleCopy = () => {
+    copy(job.job.id);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1000);
+    toast.success("Job ID copied to clipboard");
+  };
+
   const linksMetadata = job.job.metadata[ReservedMetadataKey.Links];
 
   const links =
@@ -36,6 +49,26 @@ export const JobPropertiesTable: React.FC<JobPropertiesTableProps> = ({
                   className="h-3 w-3"
                 />
                 {JobStatusReadable[job.job.status]}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td className="w-[110px] p-1 pr-2 text-muted-foreground">ID</td>
+            <td>
+              <div className="flex items-center gap-1 ">
+                {job.job.id.slice(0, 8)}...
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCopy}
+                  className="h-4 w-4 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
+                >
+                  {isCopied ? (
+                    <IconCheck className="h-3 w-3 bg-neutral-950 text-green-500" />
+                  ) : (
+                    <IconCopy className="h-3 w-3" />
+                  )}
+                </Button>
               </div>
             </td>
           </tr>
