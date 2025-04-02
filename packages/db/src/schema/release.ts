@@ -30,7 +30,7 @@ export const releaseTarget = pgTable(
       .references(() => deployment.id, { onDelete: "cascade" })
       .notNull(),
 
-    desiredReleaseId: uuid("release_id")
+    desiredReleaseId: uuid("desired_release_id")
       .references((): any => release.id, { onDelete: "set null" })
       .default(sql`NULL`),
   },
