@@ -60,10 +60,3 @@ export const releaseNewRepositoryEvent = z.object({
 export type ReleaseNewRepositoryEvent = z.infer<
   typeof releaseNewRepositoryEvent
 >;
-
-export type ChannelMap = {
-  [Channel.JobSync]: JobSyncEvent;
-  [Channel.DispatchJob]: DispatchJobEvent;
-  [Channel.ResourceScan]: ResourceScanEvent;
-  [Channel.ReleaseEvaluate]: ReleaseEvaluateEvent;
-};
