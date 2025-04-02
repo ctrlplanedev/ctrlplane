@@ -1,4 +1,7 @@
-import baseConfig, { requireJsSuffix } from "@ctrlplane/eslint-config/base";
+import baseConfig, {
+  requireJsSuffix,
+  vitestEslintConfig,
+} from "@ctrlplane/eslint-config/base";
 
 /** @type {import('typescript-eslint').Config} */
 export default [
@@ -8,6 +11,7 @@ export default [
       "@typescript-eslint/require-await": "off",
     },
   },
+  ...vitestEslintConfig,
   ...requireJsSuffix,
   ...baseConfig,
 ];
