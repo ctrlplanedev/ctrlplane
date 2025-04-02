@@ -108,16 +108,6 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
   }),
 }));
 
-export const deploymentDependency = pgTable(
-  "deployment_meta_dependency",
-  {
-    id: uuid("id"),
-    deploymentId: uuid("deployment_id").references(() => deployment.id),
-    dependsOnId: uuid("depends_on_id").references(() => deployment.id),
-  },
-  (t) => ({ uniq: uniqueIndex().on(t.dependsOnId, t.deploymentId) }),
-);
-
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
   if (cond.type === "name")
     return ColumnOperatorFn[cond.operator](deployment.name, cond.value);
