@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { IconSearch } from "@tabler/icons-react";
 import { formatDistanceToNow } from "date-fns";
+import LZString from "lz-string";
 import prettyMilliseconds from "pretty-ms";
 import { useDebounce } from "react-use";
 
@@ -23,7 +25,10 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
+import { JobCondition, JobConditionType } from "@ctrlplane/validators/jobs";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { StatusBadge } from "./_components/StatusBadge";
 import { AverageDuration } from "./_components/summary-card/AverageDuration";
@@ -41,8 +46,13 @@ const SkeletonRow: React.FC = () => (
   </TableRow>
 );
 
+type Version = {
+  id: string;
+  tag: string;
+};
+
 type DeploymentStat = {
-  deployment: { id: string; name: string; tag: string };
+  deployment: { id: string; name: string; slug: string; version: Version };
   status: "pending" | "failed" | "deploying" | "success";
   resourceCount: number;
   duration: number;
@@ -53,60 +63,85 @@ type DeploymentStat = {
 
 const DeploymentRow: React.FC<{
   deploymentStat: DeploymentStat;
-}> = ({ deploymentStat }) => (
-  <TableRow
-    key={deploymentStat.deployment.id}
-    className="h-12 cursor-pointer border-b border-neutral-800/50 hover:bg-neutral-800/20"
-  >
-    <TableCell className="truncate py-3 font-medium text-neutral-200">
-      {deploymentStat.deployment.name}
-    </TableCell>
-    <TableCell className="truncate py-3 text-neutral-300">
-      {deploymentStat.deployment.tag}
-    </TableCell>
-    <TableCell className="py-3">
-      <StatusBadge status={deploymentStat.status} />
-    </TableCell>
-    <TableCell className="py-3 text-neutral-300">
-      {deploymentStat.resourceCount}
-    </TableCell>
+}> = ({ deploymentStat }) => {
+  const { workspaceSlug, systemSlug, environmentId } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+    environmentId: string;
+  }>();
+  const router = useRouter();
 
-    <TableCell className="truncate py-3 text-neutral-300">
-      {prettyMilliseconds(deploymentStat.duration, {
-        compact: true,
-      })}
-    </TableCell>
-    <TableCell className="truncate py-3">
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 w-16 rounded-full bg-neutral-800">
-          <div
-            className={`h-full rounded-full ${
-              deploymentStat.successRate * 100 > 90
-                ? "bg-green-500"
-                : deploymentStat.successRate * 100 > 70
-                  ? "bg-amber-500"
-                  : "bg-red-500"
-            }`}
-            style={{
-              width: `${Number(deploymentStat.successRate * 100)}%`,
-            }}
-          />
+  const environmentCondition: JobCondition = {
+    type: JobConditionType.Environment,
+    value: environmentId,
+    operator: ColumnOperator.Equals,
+  };
+
+  const conditionHash = LZString.compressToEncodedURIComponent(
+    JSON.stringify(environmentCondition),
+  );
+
+  const deploymentVersionJobsUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentStat.deployment.slug)
+    .release(deploymentStat.deployment.version.id)
+    .jobs();
+
+  const urlWithSelector = `${deploymentVersionJobsUrl}?selector=${conditionHash}`;
+
+  return (
+    <TableRow
+      key={deploymentStat.deployment.id}
+      className="h-12 cursor-pointer border-b border-neutral-800/50 hover:bg-neutral-800/20"
+      onClick={() => router.push(urlWithSelector)}
+    >
+      <TableCell className="truncate py-3 font-medium text-neutral-200">
+        {deploymentStat.deployment.name}
+      </TableCell>
+      <TableCell className="truncate py-3 text-neutral-300">
+        {deploymentStat.deployment.version.tag}
+      </TableCell>
+      <TableCell className="py-3">
+        <StatusBadge status={deploymentStat.status} />
+      </TableCell>
+      <TableCell className="py-3 text-neutral-300">
+        {deploymentStat.resourceCount}
+      </TableCell>
+
+      <TableCell className="truncate py-3 text-neutral-300">
+        {prettyMilliseconds(deploymentStat.duration, { compact: true })}
+      </TableCell>
+      <TableCell className="truncate py-3">
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-16 rounded-full bg-neutral-800">
+            <div
+              className={`h-full rounded-full ${
+                deploymentStat.successRate * 100 > 90
+                  ? "bg-green-500"
+                  : deploymentStat.successRate * 100 > 70
+                    ? "bg-amber-500"
+                    : "bg-red-500"
+              }`}
+              style={{ width: `${Number(deploymentStat.successRate * 100)}%` }}
+            />
+          </div>
+          <span className="text-sm">
+            {Number(deploymentStat.successRate * 100).toFixed(1)}%
+          </span>
         </div>
-        <span className="text-sm">
-          {Number(deploymentStat.successRate * 100).toFixed(1)}%
-        </span>
-      </div>
-    </TableCell>
-    <TableCell className="truncate py-3 text-neutral-300">
-      {deploymentStat.deployedBy}
-    </TableCell>
-    <TableCell className="truncate py-3 text-sm text-neutral-400">
-      {formatDistanceToNow(deploymentStat.deployedAt, {
-        addSuffix: true,
-      })}
-    </TableCell>
-  </TableRow>
-);
+      </TableCell>
+      <TableCell className="truncate py-3 text-neutral-300">
+        {deploymentStat.deployedBy}
+      </TableCell>
+      <TableCell className="truncate py-3 text-sm text-neutral-400">
+        {formatDistanceToNow(deploymentStat.deployedAt, {
+          addSuffix: true,
+        })}
+      </TableCell>
+    </TableRow>
+  );
+};
 
 type StatusFilter = "pending" | "failed" | "deploying" | "success" | "all";
 
