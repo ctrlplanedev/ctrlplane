@@ -16,6 +16,7 @@ import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
   releaseChannels: z.array(z.string()),
+  deploymentVersionChannels: z.array(z.string()),
 });
 
 export const POST = request()
@@ -36,7 +37,10 @@ export const POST = request()
             .select()
             .from(schema.deploymentVersionChannel)
             .where(
-              inArray(schema.deploymentVersionChannel.id, body.releaseChannels),
+              inArray(schema.deploymentVersionChannel.id, [
+                ...body.releaseChannels,
+                ...body.deploymentVersionChannels,
+              ]),
             )
             .then((rows) =>
               _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
