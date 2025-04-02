@@ -51,12 +51,3 @@ export const releaseVariableChangeEvent = z.union([
 export type ReleaseVariableChangeEvent = z.infer<
   typeof releaseVariableChangeEvent
 >;
-
-export const releaseNewRepositoryEvent = z.object({
-  resourceId: z.string(),
-  environmentId: z.string(),
-  repositoryId: z.string(),
-});
-export type ReleaseNewRepositoryEvent = z.infer<
-  typeof releaseNewRepositoryEvent
->;
