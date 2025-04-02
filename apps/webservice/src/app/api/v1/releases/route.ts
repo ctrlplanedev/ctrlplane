@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import httpStatus from "http-status";
 import { z } from "zod";
 
+import { releaseNewVersion } from "@ctrlplane/api/queues";
 import {
   and,
   buildConflictUpdateColumns,
@@ -134,7 +135,11 @@ export const POST = request()
           (prevVersion.status !== DeploymentVersionStatus.Ready &&
             depVersion.status === DeploymentVersionStatus.Ready);
 
-        if (shouldTrigger)
+        if (shouldTrigger) {
+          releaseNewVersion.add(depVersion.id, {
+            versionId: depVersion.id,
+          });
+
           await createReleaseJobTriggers(db, "new_version")
             .causedById(ctx.user.id)
             .filter(isPassingChannelSelectorPolicy)
@@ -154,6 +159,7 @@ export const POST = request()
                 req,
               ),
             );
+        }
 
         return NextResponse.json(
           { ...depVersion, metadata },

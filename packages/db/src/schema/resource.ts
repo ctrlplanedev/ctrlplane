@@ -154,6 +154,7 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
   }),
   releaseTrigger: many(releaseJobTrigger),
   jobRelationships: many(jobResourceRelationship),
+  resourceReleases: many(resourceRelease),
 }));
 
 export type Resource = InferSelectModel<typeof resource>;

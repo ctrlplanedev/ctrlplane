@@ -10,7 +10,7 @@ import { Channel } from "@ctrlplane/validators/events";
 
 import { redis } from "../../redis.js";
 import { createAndEvaluateRelease } from "../create-release.js";
-import { getSystemResources } from "../system-resources.js";
+import { getDeploymentResources } from "../deployment-resources.js";
 
 export const createReleaseNewVersionWorker = () =>
   new Worker<ReleaseNewVersionEvent>(
@@ -24,9 +24,8 @@ export const createReleaseNewVersionWorker = () =>
       if (version == null) throw new Error("Version not found");
 
       const { deployment } = version;
-      const { systemId } = deployment;
 
-      const impactedResources = await getSystemResources(db, systemId);
+      const impactedResources = await getDeploymentResources(db, deployment);
       const releaseRepos: ReleaseRepository[] = impactedResources.map((r) => ({
         deploymentId: deployment.id,
         resourceId: r.id,

@@ -43,29 +43,22 @@ const handleDeploymentVariableChange = async (deploymentVariableId: string) => {
   );
 };
 
-const handleSystemVariableChange = async (systemVariableSetId: string) => {
-  const { deployment } =
-    (await db
-      .select()
-      .from(schema.variableSet)
-      .innerJoin(
-        schema.deployment,
-        eq(schema.variableSet.systemId, schema.deployment.systemId),
-      )
-      .where(eq(schema.variableSet.id, systemVariableSetId))
-      .then(takeFirstOrNull)) ?? {};
+// const handleSystemVariableChange = (_: string) => {
+//   const variableSet = await db.query.variableSet.findFirst({
+//     where: eq(schema.variableSet.id, systemVariableSetId),
+//     with: { system: true },
+//   });
+//   if (variableSet == null) throw new Error("System variable set not found");
 
-  if (deployment == null) throw new Error("System variable set not found");
+//   const { deployment } = variableSet;
+//   return getDeploymentResources(db, deployment);
+// };
 
+const handleResourceVariableChange = async (resourceVariableId: string) => {
   return getResourceReleases(
-    eq(schema.resourceRelease.deploymentId, deployment.id),
-  );
-};
-
-const handleResourceVariableChange = async (resourceVariableId: string) =>
-  getResourceReleases(
     eq(schema.resourceRelease.resourceId, resourceVariableId),
   );
+};
 
 export const createReleaseVariableChangeWorker = () =>
   new Worker<ReleaseVariableChangeEvent>(
@@ -84,12 +77,7 @@ export const createReleaseVariableChangeWorker = () =>
         );
 
       const systemResult = releaseSystemVariableChangeEvent.safeParse(job.data);
-      if (systemResult.success)
-        repos.push(
-          ...(await handleSystemVariableChange(
-            systemResult.data.systemVariableSetId,
-          )),
-        );
+      if (systemResult.success) throw new Error("Not supported yet");
 
       const resourceResult = releaseResourceVariableChangeEvent.safeParse(
         job.data,
