@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   json,
@@ -15,13 +15,6 @@ import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
 
-// Circular reference
-function releaseTargetRef() {
-  return uuid("deployment_id")
-    .references(() => deployment.id, { onDelete: "cascade" })
-    .notNull();
-}
-
 export const releaseTarget = pgTable(
   "release_target",
   {
@@ -37,7 +30,9 @@ export const releaseTarget = pgTable(
       .references(() => deployment.id, { onDelete: "cascade" })
       .notNull(),
 
-    desiredReleaseId: releaseTargetRef(),
+    desiredReleaseId: uuid("release_id")
+      .references((): any => release.id, { onDelete: "set null" })
+      .default(sql`NULL`),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.resourceId, t.environmentId, t.deploymentId),
