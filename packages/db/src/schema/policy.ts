@@ -206,7 +206,7 @@ const rruleSchema = z
 // Using a separate variable to make TypeScript happy
 const typedRruleSchema = rruleSchema as unknown as z.ZodType<Options>;
 
-const policyRuleDenyWindowInsertSchema = createInsertSchema(
+export const policyRuleDenyWindowInsertSchema = createInsertSchema(
   policyRuleDenyWindow,
   {
     policyId: z.string().uuid(),
