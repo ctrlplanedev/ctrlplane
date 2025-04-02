@@ -19,14 +19,14 @@ import { createAndEvaluateRelease } from "../create-release.js";
 const getResourceReleases = async (where: SQL) =>
   db
     .select()
-    .from(schema.resourceRelease)
+    .from(schema.releaseTarget)
     .innerJoin(
       schema.resource,
-      eq(schema.resourceRelease.resourceId, schema.resource.id),
+      eq(schema.releaseTarget.resourceId, schema.resource.id),
     )
     .where(and(where, isNull(schema.resource.deletedAt)))
     .then((rows) =>
-      rows.map((r) => ({ ...r.resource_release, resource: r.resource })),
+      rows.map((r) => ({ ...r.release_target, resource: r.resource })),
     );
 
 const handleDeploymentVariableChange = async (deploymentVariableId: string) => {
@@ -39,7 +39,7 @@ const handleDeploymentVariableChange = async (deploymentVariableId: string) => {
   if (variable == null) throw new Error("Deployment variable not found");
 
   return getResourceReleases(
-    eq(schema.resourceRelease.deploymentId, variable.deploymentId),
+    eq(schema.releaseTarget.deploymentId, variable.deploymentId),
   );
 };
 
@@ -56,7 +56,7 @@ const handleDeploymentVariableChange = async (deploymentVariableId: string) => {
 
 const handleResourceVariableChange = async (resourceVariableId: string) => {
   return getResourceReleases(
-    eq(schema.resourceRelease.resourceId, resourceVariableId),
+    eq(schema.releaseTarget.resourceId, resourceVariableId),
   );
 };
 

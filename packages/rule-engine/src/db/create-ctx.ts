@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 
 import { and, eq } from "@ctrlplane/db";
-import { resourceRelease } from "@ctrlplane/db/schema";
+import { releaseTarget } from "@ctrlplane/db/schema";
 
 import type { ReleaseRepository } from "../types.js";
 
@@ -15,11 +15,11 @@ import type { ReleaseRepository } from "../types.js";
  * null if not found
  */
 export const createCtx = async (tx: Tx, repo: ReleaseRepository) => {
-  return tx.query.resourceRelease.findFirst({
+  return tx.query.releaseTarget.findFirst({
     where: and(
-      eq(resourceRelease.id, repo.resourceId),
-      eq(resourceRelease.environmentId, repo.environmentId),
-      eq(resourceRelease.deploymentId, repo.deploymentId),
+      eq(releaseTarget.id, repo.resourceId),
+      eq(releaseTarget.environmentId, repo.environmentId),
+      eq(releaseTarget.deploymentId, repo.deploymentId),
     ),
     with: {
       resource: true,
