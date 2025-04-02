@@ -6,22 +6,21 @@ import { redis } from "./redis.js";
 import { createReleaseNewVersionWorker } from "./releases/new-version/index.js";
 import { createReleaseVariableChangeWorker } from "./releases/variable-change/index.js";
 import { createResourceScanWorker } from "./resource-scan/index.js";
+import { workers } from "./workers/index.js";
 
 await register();
 
-const resourceScanWorker = createResourceScanWorker();
-const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();
-const releaseNewVersionWorker = createReleaseNewVersionWorker();
-const releaseVariableChangeWorker = createReleaseVariableChangeWorker();
+const allWorkers = [
+  createResourceScanWorker(),
+  createDispatchExecutionJobWorker(),
+  createReleaseNewVersionWorker(),
+  createReleaseVariableChangeWorker(),
+  ...Object.values(workers),
+];
 
 const shutdown = () => {
   logger.warn("Exiting...");
-  Promise.all([
-    resourceScanWorker.close(),
-    dispatchExecutionJobWorker.close(),
-    releaseNewVersionWorker.close(),
-    releaseVariableChangeWorker.close(),
-  ]).then(async () => {
+  Promise.all(allWorkers.map((w) => w?.close())).then(async () => {
     await redis.quit();
     process.exit(0);
   });
