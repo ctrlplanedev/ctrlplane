@@ -8,6 +8,7 @@ import { createReleaseVariableChangeWorker } from "./releases/variable-change/in
 import { createResourceScanWorker } from "./resource-scan/index.js";
 import { workers } from "./workers/index.js";
 
+console.log("Registering instrumentation...");
 await register();
 
 const allWorkers = [
