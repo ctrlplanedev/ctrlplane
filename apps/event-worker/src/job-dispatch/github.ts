@@ -11,6 +11,8 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getInstallationOctokit } from "../github-utils.js";
 
+const log = logger.child({ module: "github-job-dispatch" });
+
 const getGithubEntity = async (
   jobId: string,
   installationId: number,
@@ -92,12 +94,12 @@ const getReleaseJobAgentConfig = (jobId: string) =>
     .then((r) => r?.jobAgentConfig);
 
 export const dispatchGithubJob = async (je: Job) => {
-  logger.info(`Dispatching github job ${je.id}...`);
+  log.info(`Dispatching github job ${je.id}...`);
 
   const config = je.jobAgentConfig;
   const parsed = configSchema.safeParse(config);
   if (!parsed.success) {
-    logger.error(
+    log.error(
       `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
     );
     await updateJob(db, je.id, {
@@ -116,18 +118,22 @@ export const dispatchGithubJob = async (je: Job) => {
     mergedConfig.installationId,
     mergedConfig.owner,
   );
-  if (ghEntity == null)
+  if (ghEntity == null) {
+    log.error(`GitHub entity not found for job ${je.id}`);
     return updateJob(db, je.id, {
       status: JobStatus.InvalidIntegration,
       message: `GitHub entity not found for job ${je.id}`,
     });
+  }
 
   const octokit = getInstallationOctokit(ghEntity.installationId);
-  if (octokit == null)
+  if (octokit == null) {
+    log.error(`GitHub bot not configured for job ${je.id}`);
     return updateJob(db, je.id, {
       status: JobStatus.InvalidJobAgent,
       message: "GitHub bot not configured",
     });
+  }
 
   const installationToken = (await octokit.auth({
     type: "installation",
@@ -151,13 +157,15 @@ export const dispatchGithubJob = async (je: Job) => {
         return null;
       }));
 
-  if (ref == null)
+  if (ref == null) {
+    log.error(`Failed to get ref for github action job ${je.id}`);
     return updateJob(db, je.id, {
       status: JobStatus.InvalidJobAgent,
       message: "Failed to get ref for github action job",
     });
+  }
 
-  logger.info(`Creating workflow dispatch for job ${je.id}...`, {
+  log.info(`Creating workflow dispatch for job ${je.id}...`, {
     owner: mergedConfig.owner,
     repo: mergedConfig.repo,
     workflow_id: mergedConfig.workflowId,
@@ -165,12 +173,23 @@ export const dispatchGithubJob = async (je: Job) => {
     inputs: { job_id: je.id },
   });
 
-  await octokit.actions.createWorkflowDispatch({
-    owner: mergedConfig.owner,
-    repo: mergedConfig.repo,
-    workflow_id: mergedConfig.workflowId,
-    ref,
-    inputs: { job_id: je.id },
-    headers,
-  });
+  try {
+    await octokit.actions.createWorkflowDispatch({
+      owner: mergedConfig.owner,
+      repo: mergedConfig.repo,
+      workflow_id: mergedConfig.workflowId,
+      ref,
+      inputs: { job_id: je.id },
+      headers,
+    });
+  } catch (e) {
+    const error = e instanceof Error ? e.message : e;
+    log.error(`Failed to create workflow dispatch for job ${je.id}`, {
+      error,
+    });
+    return updateJob(db, je.id, {
+      status: JobStatus.InvalidJobAgent,
+      message: `Failed to dispatch github action job ${je.id}: ${error} to agent (installation: ${ghEntity.installationId}, owner: ${ghEntity.slug}, repo: ${mergedConfig.repo}, workflow: ${mergedConfig.workflowId}, ref: ${ref})`,
+    });
+  }
 };
