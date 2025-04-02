@@ -1103,9 +1103,15 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.4.1
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
+      zod:
+        specifier: 'catalog:'
+        version: 3.24.2
     devDependencies:
       '@ctrlplane/eslint-config':
         specifier: workspace:*

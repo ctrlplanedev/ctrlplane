@@ -24,7 +24,9 @@
     "@t3-oss/env-core": "catalog:",
     "bullmq": "catalog:",
     "date-fns": "^4.1.0",
-    "lodash": "catalog:"
+    "ioredis": "^5.4.1",
+    "lodash": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",
