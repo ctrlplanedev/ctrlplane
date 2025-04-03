@@ -36,13 +36,18 @@ const getLastDeployedRelease = async (releaseTargetId: string) => {
 };
 
 /**
- * Worker that evaluates policies for a release target. When triggered:
+ * Worker that evaluates policies for a release target and creates a job if a
+ * release passes the policies.
  *
+ * When triggered:
  * 1. Finds the release target and associated resource, environment, and
  *    deployment
  * 2. Acquires a mutex lock to prevent concurrent modifications
  * 3. Gets applicable policies for the workspace and release target
  * 4. Evaluates the policies against the release target
+ * 5. If a release passes policies and hasn't been deployed yet:
+ *    - Creates a new job for the release
+ *    - Dispatches the job for execution
  */
 export const policyEvaluateWorker = createWorker(
   Channel.PolicyEvaluate,
