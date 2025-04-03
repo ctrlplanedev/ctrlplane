@@ -76,16 +76,10 @@ async function run() {
       setOutputAndLog("environment_id", environment?.id);
       setOutputAndLog("environment_name", environment?.name);
 
-      setOutputAndLog("deployment_version_id", deploymentVersion?.id);
-      setOutputAndLog("deployment_version_tag", deploymentVersion?.tag);
-      setOutputsRecursively(
-        "deployment_version_config",
-        deploymentVersion?.config,
-      );
-      setOutputsRecursively(
-        "deployment_version_metadata",
-        deploymentVersion?.metadata,
-      );
+      setOutputAndLog("version_id", deploymentVersion?.id);
+      setOutputAndLog("version_tag", deploymentVersion?.tag);
+      setOutputsRecursively("version_config", deploymentVersion?.config);
+      setOutputsRecursively("version_metadata", deploymentVersion?.metadata);
 
       setOutputAndLog("release_id", release?.id);
       setOutputAndLog("release_version", release?.version);
