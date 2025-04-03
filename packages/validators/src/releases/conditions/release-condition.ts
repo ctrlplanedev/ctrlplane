@@ -6,21 +6,25 @@ import type {
   VersionCondition,
 } from "../../conditions/index.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
+import type { TagCondition } from "./tag-condition.js";
 import { createdAtCondition } from "../../conditions/date-condition.js";
 import { metadataCondition, versionCondition } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
+import { tagCondition } from "./tag-condition.js";
 
 export type DeploymentVersionCondition =
   | ComparisonCondition
   | MetadataCondition
   | VersionCondition
-  | CreatedAtCondition;
+  | CreatedAtCondition
+  | TagCondition;
 
 export const deploymentVersionCondition = z.union([
   comparisonCondition,
   metadataCondition,
   versionCondition,
   createdAtCondition,
+  tagCondition,
 ]);
 
 export enum DeploymentVersionOperator {
@@ -38,6 +42,7 @@ export enum DeploymentVersionOperator {
 export enum DeploymentVersionConditionType {
   Metadata = "metadata",
   Version = "version",
+  Tag = "tag",
   Comparison = "comparison",
   CreatedAt = "created-at",
 }
@@ -93,6 +98,11 @@ export const isCreatedAtCondition = (
 ): condition is CreatedAtCondition =>
   condition.type === DeploymentVersionConditionType.CreatedAt;
 
+export const isTagCondition = (
+  condition: DeploymentVersionCondition,
+): condition is TagCondition =>
+  condition.type === DeploymentVersionConditionType.Tag;
+
 export const isValidDeploymentVersionCondition = (
   condition: DeploymentVersionCondition,
 ): boolean => {
@@ -101,6 +111,7 @@ export const isValidDeploymentVersionCondition = (
       isValidDeploymentVersionCondition(c),
     );
   if (isVersionCondition(condition)) return condition.value.length > 0;
+  if (isTagCondition(condition)) return condition.value.length > 0;
   if (isCreatedAtCondition(condition)) return true;
   if (isMetadataCondition(condition)) {
     if (condition.operator === DeploymentVersionOperator.Null)

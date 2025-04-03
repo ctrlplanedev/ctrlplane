@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
 import { createDeploymentVersionChannel } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -42,5 +43,11 @@ export const POST = request()
       .then((deploymentVersionChannel) =>
         NextResponse.json(deploymentVersionChannel),
       )
-      .catch((error) => NextResponse.json({ error }, { status: 500 }));
+      .catch((error) => {
+        logger.error(error);
+        return NextResponse.json(
+          { error: "Failed to create deployment version channel" },
+          { status: 500 },
+        );
+      });
   });
