@@ -71,6 +71,12 @@ export const policyEvaluateWorker = createWorker(
         );
         return;
       }
+
+      if (releaseTarget.resource.deletedAt != null) {
+        job.log(`Resource ${releaseTarget.resource.id} has been deleted`);
+        return;
+      }
+
       const policies = await getApplicablePolicies(
         db,
         releaseTarget.resource.workspaceId,
