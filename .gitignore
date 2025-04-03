@@ -58,3 +58,6 @@ dist/
 
 # IDE files
 .idea/
+
+# VSCode related
+*.session.sql
