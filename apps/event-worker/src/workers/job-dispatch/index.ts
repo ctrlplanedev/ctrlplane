@@ -1,9 +1,8 @@
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { createWorker } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { updateJob } from "@ctrlplane/job-dispatch";
-import { Channel } from "@ctrlplane/validators/events";
 import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { redis } from "../../redis.js";

@@ -3,6 +3,8 @@ import type { Worker } from "bullmq";
 
 import { Channel } from "@ctrlplane/events";
 
+import { changeDeploymentVariableWorker } from "./change-deployment-variable.js";
+import { changeResourceVariableWorker } from "./change-resource-variable.js";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
 import { newDeploymentVersionWorker } from "./new-deployment-version.js";
 import { newDeploymentWorker } from "./new-deployment.js";
@@ -14,9 +16,14 @@ type Workers<T extends keyof ChannelMap> = {
 };
 
 export const workers: Workers<keyof ChannelMap> = {
-  [Channel.NewDeployment]: newDeploymentWorker,
-  [Channel.NewDeploymentVersion]: newDeploymentVersionWorker,
-  [Channel.PolicyEvaluate]: policyEvaluateWorker,
   [Channel.ResourceScan]: resourceScanWorker,
   [Channel.DispatchJob]: dispatchJobWorker,
+
+  [Channel.NewDeployment]: newDeploymentWorker,
+  [Channel.NewDeploymentVersion]: newDeploymentVersionWorker,
+
+  [Channel.UpdateDeploymentVariable]: changeDeploymentVariableWorker,
+  [Channel.UpdateResourceVariable]: changeResourceVariableWorker,
+
+  [Channel.PolicyEvaluate]: policyEvaluateWorker,
 };

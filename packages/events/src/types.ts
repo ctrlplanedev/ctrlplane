@@ -1,21 +1,16 @@
 import type * as schema from "@ctrlplane/db/schema";
 
 export enum Channel {
-  JobSync = "job-sync",
   DispatchJob = "dispatch-job",
   ResourceScan = "resource-scan",
 
-  ReleaseNewVersion = "release-new-version",
-  ReleaseNewRepository = "release-new-repository",
-  ReleaseVariableChange = "release-variable-change",
-
   NewDeployment = "new-deployment",
   NewEnvironment = "new-environment",
-  NewRelease = "new-release",
-  ReleaseEvaluate = "release-evaluate",
+  NewDeploymentVersion = "new-deployment-version",
 
   PolicyEvaluate = "policy-evaluate",
-  NewDeploymentVersion = "new-deployment-version",
+  UpdateDeploymentVariable = "update-deployment-variable",
+  UpdateResourceVariable = "update-resource-variable",
 }
 
 export type PolicyEvaluateJobData = {
@@ -30,4 +25,6 @@ export type ChannelMap = {
   [Channel.NewDeployment]: typeof schema.deployment.$inferSelect;
   [Channel.PolicyEvaluate]: PolicyEvaluateJobData;
   [Channel.DispatchJob]: { jobId: string };
+  [Channel.UpdateDeploymentVariable]: typeof schema.deploymentVariable.$inferSelect;
+  [Channel.UpdateResourceVariable]: typeof schema.resourceVariable.$inferSelect;
 };
