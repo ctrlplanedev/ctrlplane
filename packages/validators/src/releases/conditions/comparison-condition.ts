@@ -5,8 +5,10 @@ import type {
   MetadataCondition,
   VersionCondition,
 } from "../../conditions/index.js";
+import type { TagCondition } from "./tag-condition.js";
 import { createdAtCondition } from "../../conditions/date-condition.js";
 import { metadataCondition, versionCondition } from "../../conditions/index.js";
+import { tagCondition } from "./tag-condition.js";
 
 export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
   z.object({
@@ -19,6 +21,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         comparisonCondition,
         versionCondition,
         createdAtCondition,
+        tagCondition,
       ]),
     ),
   }),
@@ -33,5 +36,6 @@ export type ComparisonCondition = {
     | MetadataCondition
     | VersionCondition
     | CreatedAtCondition
+    | TagCondition
   >;
 };

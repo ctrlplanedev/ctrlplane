@@ -1,5 +1,6 @@
 "use client";
 
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { IconSearch } from "@tabler/icons-react";
@@ -26,7 +27,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
-import { JobCondition, JobConditionType } from "@ctrlplane/validators/jobs";
+import { JobConditionType } from "@ctrlplane/validators/jobs";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";

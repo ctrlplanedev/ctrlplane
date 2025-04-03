@@ -119,6 +119,28 @@ export const openapi: Swagger.SwaggerV3 = {
           "jobAgentConfig",
         ],
       },
+      DeploymentVersion: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          name: { type: "string" },
+          tag: { type: "string" },
+          config: { type: "object", additionalProperties: true },
+          jobAgentConfig: { type: "object", additionalProperties: true },
+          deploymentId: { type: "string", format: "uuid" },
+          createdAt: { type: "string", format: "date-time" },
+          metadata: { type: "object", additionalProperties: true },
+        },
+        required: [
+          "id",
+          "name",
+          "tag",
+          "config",
+          "deploymentId",
+          "createdAt",
+          "jobAgentConfig",
+        ],
+      },
       Policy: {
         type: "object",
         properties: {

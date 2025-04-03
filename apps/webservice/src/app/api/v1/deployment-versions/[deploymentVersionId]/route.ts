@@ -20,10 +20,7 @@ import { parseBody } from "../../body-parser";
 import { request } from "../../middleware";
 
 const patchSchema = SCHEMA.updateDeploymentVersion.and(
-  z.object({
-    metadata: z.record(z.string()).optional(),
-    version: z.string().optional(),
-  }),
+  z.object({ metadata: z.record(z.string()).optional() }),
 );
 
 export const PATCH = request()
@@ -33,22 +30,21 @@ export const PATCH = request()
     authz(({ can, extra: { params } }) =>
       can
         .perform(Permission.DeploymentVersionUpdate)
-        .on({ type: "deploymentVersion", id: params.releaseId }),
+        .on({ type: "deploymentVersion", id: params.deploymentVersionId }),
     ),
   )
   .handle<
     { body: z.infer<typeof patchSchema>; user: SCHEMA.User },
-    { params: { releaseId: string } }
+    { params: { deploymentVersionId: string } }
   >(async (ctx, { params }) => {
-    const { releaseId: versionId } = params;
+    const { deploymentVersionId } = params;
     const { body, user, req } = ctx;
 
     try {
-      const tag = body.tag ?? body.version;
-      const release = await ctx.db
+      const deploymentVersion = await ctx.db
         .update(SCHEMA.deploymentVersion)
-        .set({ ...body, tag })
-        .where(eq(SCHEMA.deploymentVersion.id, versionId))
+        .set(body)
+        .where(eq(SCHEMA.deploymentVersion.id, deploymentVersionId))
         .returning()
         .then(takeFirst);
 
@@ -57,7 +53,7 @@ export const PATCH = request()
           .insert(SCHEMA.deploymentVersionMetadata)
           .values(
             Object.entries(body.metadata ?? {}).map(([key, value]) => ({
-              versionId,
+              versionId: deploymentVersionId,
               key,
               value,
             })),
@@ -75,7 +71,7 @@ export const PATCH = request()
       await createReleaseJobTriggers(ctx.db, "version_updated")
         .causedById(user.id)
         .filter(isPassingChannelSelectorPolicy)
-        .versions([versionId])
+        .versions([deploymentVersionId])
         .then(createJobApprovals)
         .insert()
         .then((releaseJobTriggers) => {
@@ -87,12 +83,12 @@ export const PATCH = request()
         })
         .then(() =>
           logger.info(
-            `Version for ${versionId} job triggers created and dispatched.`,
+            `Version for ${deploymentVersionId} job triggers created and dispatched.`,
             req,
           ),
         );
 
-      return NextResponse.json(release);
+      return NextResponse.json(deploymentVersion);
     } catch (error) {
       logger.error(error);
       return NextResponse.json(
