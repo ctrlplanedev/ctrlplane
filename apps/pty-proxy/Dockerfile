@@ -29,6 +29,7 @@ COPY packages/secrets/package.json ./packages/secrets/package.json
 COPY packages/auth/package.json ./packages/auth/package.json
 COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
+COPY packages/events/package.json ./packages/events/package.json
 
 COPY apps/pty-proxy/package.json ./apps/pty-proxy/package.json
 
