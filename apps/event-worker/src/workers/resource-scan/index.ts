@@ -13,7 +13,6 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
-import { redis } from "../../redis.js";
 import { getEksResources } from "./aws/eks.js";
 import { getVpcResources as getAwsVpcResources } from "./aws/vpc.js";
 import { getAksResources } from "./azure/aks.js";
@@ -106,11 +105,5 @@ export const resourceScanWorker = createWorker(
         { error },
       );
     }
-  },
-  {
-    connection: redis,
-    removeOnComplete: { age: 1 * 60 * 60, count: 5000 },
-    removeOnFail: { age: 12 * 60 * 60, count: 5000 },
-    concurrency: 10,
   },
 );

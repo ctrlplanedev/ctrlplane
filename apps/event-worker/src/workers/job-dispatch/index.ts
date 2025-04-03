@@ -5,7 +5,6 @@ import { Channel, createWorker } from "@ctrlplane/events";
 import { updateJob } from "@ctrlplane/job-dispatch";
 import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
-import { redis } from "../../redis.js";
 import { dispatchGithubJob } from "./github.js";
 
 export const dispatchJobWorker = createWorker(
@@ -38,11 +37,5 @@ export const dispatchJobWorker = createWorker(
         message: (error as Error).message,
       });
     }
-  },
-  {
-    connection: redis,
-    removeOnComplete: { age: 1 * 60 * 60, count: 100 },
-    removeOnFail: { age: 12 * 60 * 60, count: 100 },
-    concurrency: 10,
   },
 );
