@@ -10,6 +10,7 @@ export enum Channel {
   ReleaseNewVersion = "release-new-version",
   ReleaseNewRepository = "release-new-repository",
   ReleaseVariableChange = "release-variable-change",
+  ReleaseNewEnvResource = "release-new-env-resource",
 }
 
 export const resourceScanEvent = z.object({ resourceProviderId: z.string() });
@@ -51,3 +52,10 @@ export const releaseVariableChangeEvent = z.union([
 export type ReleaseVariableChangeEvent = z.infer<
   typeof releaseVariableChangeEvent
 >;
+
+
+export const releaseNewEnvResourceEvent = z.object({
+  environmentId: z.string(),
+  resourceId: z.string(),
+});
+export type ReleaseNewEnvResourceEvent = z.infer<typeof releaseNewEnvResourceEvent>;

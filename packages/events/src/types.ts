@@ -12,6 +12,7 @@ export enum Channel {
   NewDeployment = "new-deployment",
   NewEnvironment = "new-environment",
   NewRelease = "new-release",
+  NewResource = "new-resource",
   ReleaseEvaluate = "release-evaluate",
 }
 
@@ -25,5 +26,6 @@ export type ChannelMap = {
   // [Channel.UpsertRelease]: typeof schema.release.$inferInsert;
   [Channel.NewDeployment]: typeof schema.deployment.$inferSelect;
   [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
+  [Channel.NewResource]: typeof schema.resource.$inferSelect;
   [Channel.ReleaseEvaluate]: ReleaseEvaluateJobData;
 };
