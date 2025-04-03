@@ -6,7 +6,7 @@ import { Channel } from "@ctrlplane/events";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
 import { newDeploymentVersionWorker } from "./new-deployment-version.js";
 import { newDeploymentWorker } from "./new-deployment.js";
-import { policyEvaluateWorker } from "./policy-evaluate/policy-evaluate.js";
+import { policyEvaluateWorker } from "./policy-evaluate.js";
 import { resourceScanWorker } from "./resource-scan/index.js";
 
 type Workers<T extends keyof ChannelMap> = {

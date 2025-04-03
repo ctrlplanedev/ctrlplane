@@ -1,11 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
+import { createReleases } from "src/releases/create-release";
 
 import { and, desc, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { ReleaseManager } from "@ctrlplane/release-manager";
+import { Channel, createWorker } from "@ctrlplane/events";
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -41,51 +41,25 @@ const getDeploymentResources = async (
   return resources;
 };
 
-const evaluatedQueue = getQueue(Channel.PolicyEvaluate);
-
 export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,
-  async (job) => {
-    const resources = await getDeploymentResources(db, job.data);
-
+  async ({ data: deployment }) => {
     const latestVersion = await db.query.deploymentVersion.findFirst({
-      where: eq(schema.deploymentVersion.deploymentId, job.data.id),
+      where: eq(schema.deploymentVersion.deploymentId, deployment.id),
       orderBy: desc(schema.deploymentVersion.createdAt),
     });
 
     if (latestVersion == null) throw new Error("No deployment version found");
 
-    const releaseTargets = await db
-      .insert(schema.releaseTarget)
-      .values(
-        resources.map((r) => ({
-          resourceId: r.id,
-          environmentId: r.environment.id,
-          deploymentId: job.data.id,
-        })),
-      )
-      .onConflictDoNothing()
-      .returning();
+    const resources = await getDeploymentResources(db, deployment);
 
-    await Promise.all(
-      releaseTargets.map(async (rt) => {
-        const releaseManager = await ReleaseManager.usingDatabase(rt);
-        await releaseManager.upsertVersionRelease(latestVersion.id, {
-          setAsDesired: true,
-        });
-      }),
-    );
+    const releaseTargets = resources.map((r) => ({
+      resourceId: r.id,
+      environmentId: r.environment.id,
+      deploymentId: deployment.id,
+      versionId: latestVersion.id,
+    }));
 
-    const jobData = resources.map((r) => {
-      const resourceId = r.id;
-      const environmentId = r.environment.id;
-      const deploymentId = job.data.id;
-      return {
-        name: `${resourceId}-${environmentId}-${deploymentId}`,
-        data: { resourceId, environmentId, deploymentId },
-      };
-    });
-
-    await evaluatedQueue.addBulk(jobData);
+    await createReleases(releaseTargets);
   },
 );

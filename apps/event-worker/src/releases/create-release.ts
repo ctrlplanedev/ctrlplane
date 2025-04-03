@@ -1,17 +1,15 @@
 import type { ReleaseRepository } from "@ctrlplane/rule-engine";
-import { Queue } from "bullmq";
 
+import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { ReleaseManager } from "@ctrlplane/release-manager";
-import { Channel } from "@ctrlplane/validators/events";
 
-import { redis } from "../redis.js";
 import { ReleaseRepositoryMutex } from "./mutex.js";
 
-const evaluate = new Queue(Channel.ReleaseEvaluate, {
-  connection: redis,
-});
+const policyEvaluateQueue = getQueue(Channel.PolicyEvaluate);
 
-export const createAndEvaluateRelease = async (
+const createReleaseWithLock = async (
   repo: ReleaseRepository,
   versionId?: string,
 ) => {
@@ -31,9 +29,34 @@ export const createAndEvaluateRelease = async (
     // it causes issues.
     await releaseManager.setDesiredRelease(release.id);
 
-    await evaluate.add(release.id, repo);
+    await policyEvaluateQueue.add(release.id, repo);
   } finally {
     // Always release the mutex lock
     await mutex.unlock();
   }
+};
+
+export const createReleases = async (
+  releaseTargets: (typeof schema.releaseTarget.$inferInsert & {
+    versionId?: string;
+  })[],
+) => {
+  // First upsert all release targets
+  await db
+    .insert(schema.releaseTarget)
+    .values(releaseTargets)
+    .onConflictDoNothing();
+
+  // Create releases and evaluate for each target
+  await Promise.all(
+    releaseTargets.map(async (target) => {
+      const repo = {
+        deploymentId: target.deploymentId,
+        environmentId: target.environmentId,
+        resourceId: target.resourceId,
+      };
+
+      await createReleaseWithLock(repo, target.versionId);
+    }),
+  );
 };

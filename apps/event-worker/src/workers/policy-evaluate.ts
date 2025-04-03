@@ -6,11 +6,17 @@ import { ReleaseManager } from "@ctrlplane/release-manager";
 import { evaluate, getReleasesFromDb } from "@ctrlplane/rule-engine";
 import { getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 
-import { ReleaseRepositoryMutex } from "./mutex.js";
+import { ReleaseRepositoryMutex } from "../releases/mutex.js";
 
 /**
- * We assume that the resource has already been validated to have a release
- * target.
+ * Worker that evaluates policies for a release target. When triggered:
+ *
+ * 1. Finds the release target and associated resource, environment, and
+ *    deployment
+ * 2. Acquires a mutex lock to prevent concurrent modifications
+ * 3. Creates/updates a variable release and sets it as desired
+ * 4. Gets applicable policies for the workspace and release target
+ * 5. Evaluates the policies against the release target
  */
 export const policyEvaluateWorker = createWorker(
   Channel.PolicyEvaluate,
