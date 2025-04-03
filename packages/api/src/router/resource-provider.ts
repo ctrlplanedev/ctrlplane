@@ -23,9 +23,9 @@ import {
   updateResourceProviderAws,
   updateResourceProviderGoogle,
 } from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { resourceScanQueue } from "../queues";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { resourceProviderPageRouter } from "./resource-provider-page/router";
 
@@ -174,7 +174,9 @@ export const resourceProviderRouter = createTRPCRouter({
       })
       .input(z.string().uuid())
       .mutation(({ input }) =>
-        resourceScanQueue.add(input, { resourceProviderId: input }),
+        getQueue(Channel.ResourceScan).add(input, {
+          resourceProviderId: input,
+        }),
       ),
 
     google: createTRPCRouter({
@@ -210,7 +212,7 @@ export const resourceProviderRouter = createTRPCRouter({
               .returning()
               .then(takeFirst);
 
-            await resourceScanQueue.add(
+            await getQueue(Channel.ResourceScan).add(
               tg.id,
               { resourceProviderId: tg.id },
               { repeat: { every: ms("10m"), immediately: true } },
@@ -254,8 +256,10 @@ export const resourceProviderRouter = createTRPCRouter({
               .then(takeFirst);
 
             if (input.repeatSeconds != null) {
-              await resourceScanQueue.remove(input.resourceProviderId);
-              await resourceScanQueue.add(
+              await getQueue(Channel.ResourceScan).remove(
+                input.resourceProviderId,
+              );
+              await getQueue(Channel.ResourceScan).add(
                 input.resourceProviderId,
                 { resourceProviderId: input.resourceProviderId },
                 {
@@ -268,7 +272,7 @@ export const resourceProviderRouter = createTRPCRouter({
               return;
             }
 
-            await resourceScanQueue.add(input.resourceProviderId, {
+            await getQueue(Channel.ResourceScan).add(input.resourceProviderId, {
               resourceProviderId: input.resourceProviderId,
             });
           });
@@ -308,7 +312,7 @@ export const resourceProviderRouter = createTRPCRouter({
               .returning()
               .then(takeFirst);
 
-            await resourceScanQueue.add(
+            await getQueue(Channel.ResourceScan).add(
               provider.id,
               { resourceProviderId: provider.id },
               { repeat: { every: ms("10m"), immediately: true } },
@@ -358,8 +362,10 @@ export const resourceProviderRouter = createTRPCRouter({
               .then(takeFirst);
 
             if (input.repeatSeconds != null) {
-              await resourceScanQueue.remove(input.resourceProviderId);
-              await resourceScanQueue.add(
+              await getQueue(Channel.ResourceScan).remove(
+                input.resourceProviderId,
+              );
+              await getQueue(Channel.ResourceScan).add(
                 input.resourceProviderId,
                 { resourceProviderId: input.resourceProviderId },
                 {
@@ -371,7 +377,7 @@ export const resourceProviderRouter = createTRPCRouter({
               );
               return;
             }
-            await resourceScanQueue.add(input.resourceProviderId, {
+            await getQueue(Channel.ResourceScan).add(input.resourceProviderId, {
               resourceProviderId: input.resourceProviderId,
             });
           });
@@ -450,7 +456,7 @@ export const resourceProviderRouter = createTRPCRouter({
 
         // We should think about the edge case here, if a scan is in progress,
         // what do we do?
-        await resourceScanQueue.remove(input.providerId);
+        await getQueue(Channel.ResourceScan).remove(input.providerId);
 
         return deletedProvider;
       }),

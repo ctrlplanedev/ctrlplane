@@ -448,6 +448,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../../packages/job-dispatch
@@ -832,6 +835,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../events
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../job-dispatch
@@ -1185,6 +1191,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../events
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../logger
