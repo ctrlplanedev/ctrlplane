@@ -174,14 +174,20 @@ export const dispatchGithubJob = async (je: Job) => {
   });
 
   try {
-    await octokit.actions.createWorkflowDispatch({
-      owner: mergedConfig.owner,
-      repo: mergedConfig.repo,
-      workflow_id: mergedConfig.workflowId,
-      ref,
-      inputs: { job_id: je.id },
-      headers,
-    });
+    await octokit.actions
+      .createWorkflowDispatch({
+        owner: mergedConfig.owner,
+        repo: mergedConfig.repo,
+        workflow_id: mergedConfig.workflowId,
+        ref,
+        inputs: { job_id: je.id },
+        headers,
+      })
+      .then(() =>
+        updateJob(db, je.id, {
+          status: JobStatus.InProgress,
+        }),
+      );
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);
     log.error(`Failed to create workflow dispatch for job ${je.id}`, {
