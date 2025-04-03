@@ -1,11 +1,13 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, desc, eq, isNull } from "@ctrlplane/db";
+import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { ReleaseManager } from "@ctrlplane/release-manager";
+
+const evaluatedQueue = getQueue(Channel.PolicyEvaluate);
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -41,19 +43,15 @@ const getDeploymentResources = async (
   return resources;
 };
 
-const evaluatedQueue = getQueue(Channel.PolicyEvaluate);
-
-export const newDeploymentWorker = createWorker(
-  Channel.NewDeployment,
+export const newDeploymentVersionWorker = createWorker(
+  Channel.NewDeploymentVersion,
   async (job) => {
-    const resources = await getDeploymentResources(db, job.data);
-
-    const latestVersion = await db.query.deploymentVersion.findFirst({
-      where: eq(schema.deploymentVersion.deploymentId, job.data.id),
-      orderBy: desc(schema.deploymentVersion.createdAt),
+    const deployment = await db.query.deployment.findFirst({
+      where: eq(schema.deployment.id, job.data.deploymentId),
     });
+    if (deployment == null) throw new Error("Deployment not found");
 
-    if (latestVersion == null) throw new Error("No deployment version found");
+    const resources = await getDeploymentResources(db, deployment);
 
     const releaseTargets = await db
       .insert(schema.releaseTarget)
@@ -70,21 +68,20 @@ export const newDeploymentWorker = createWorker(
     await Promise.all(
       releaseTargets.map(async (rt) => {
         const releaseManager = await ReleaseManager.usingDatabase(rt);
-        await releaseManager.upsertVersionRelease(latestVersion.id, {
+        await releaseManager.upsertVersionRelease(job.data.id, {
           setAsDesired: true,
         });
       }),
     );
 
-    const jobData = resources.map((r) => {
-      const resourceId = r.id;
-      const environmentId = r.environment.id;
-      const deploymentId = job.data.id;
-      return {
-        name: `${resourceId}-${environmentId}-${deploymentId}`,
-        data: { resourceId, environmentId, deploymentId },
-      };
-    });
+    const jobData = releaseTargets.map(
+      ({ resourceId, environmentId, deploymentId }) => {
+        return {
+          name: `${resourceId}-${environmentId}-${deploymentId}`,
+          data: { resourceId, environmentId, deploymentId },
+        };
+      },
+    );
 
     await evaluatedQueue.addBulk(jobData);
   },

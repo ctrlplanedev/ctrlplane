@@ -11,7 +11,7 @@ import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
-import { omitNullUndefined } from "../../utils.js";
+import { omitNullUndefined } from "../../../utils.js";
 
 const log = logger.child({ module: "resource-scan/azure" });
 

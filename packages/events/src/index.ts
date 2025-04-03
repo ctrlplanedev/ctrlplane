@@ -14,14 +14,14 @@ export const createWorker = <T extends keyof ChannelMap>(
     removeOnComplete: { age: 1 * 60 * 60, count: 5000 },
     removeOnFail: { age: 12 * 60 * 60, count: 5000 },
     concurrency: 100,
+    autorun: true,
     ...opts,
   });
 
 const _queues = new Map<keyof ChannelMap, Queue>();
 export const getQueue = <T extends keyof ChannelMap>(name: T) => {
-  if (!_queues.has(name)) {
+  if (!_queues.has(name))
     _queues.set(name, new Queue(String(name), { connection: bullmqRedis }));
-  }
 
   return _queues.get(name) as Queue<ChannelMap[T]>;
 };

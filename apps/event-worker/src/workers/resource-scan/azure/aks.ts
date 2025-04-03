@@ -7,7 +7,7 @@ import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
-import { env } from "../../config.js";
+import { env } from "../../../config.js";
 import { convertManagedClusterToResource } from "./cluster-to-resource.js";
 
 const AZURE_CLIENT_ID = env.AZURE_APP_CLIENT_ID;

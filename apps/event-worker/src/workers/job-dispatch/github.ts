@@ -9,7 +9,7 @@ import { logger } from "@ctrlplane/logger";
 import { configSchema } from "@ctrlplane/validators/github";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import { getInstallationOctokit } from "../github-utils.js";
+import { getInstallationOctokit } from "../../github-utils.js";
 
 const log = logger.child({ module: "github-job-dispatch" });
 

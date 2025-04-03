@@ -3,12 +3,20 @@ import type { Worker } from "bullmq";
 
 import { Channel } from "@ctrlplane/events";
 
+import { dispatchJobWorker } from "./job-dispatch/index.js";
+import { newDeploymentVersionWorker } from "./new-deployment-version.js";
+import { newDeploymentWorker } from "./new-deployment.js";
+import { policyEvaluateWorker } from "./policy-evaluate/policy-evaluate.js";
+import { resourceScanWorker } from "./resource-scan/index.js";
+
 type Workers<T extends keyof ChannelMap> = {
   [K in T]: Worker<ChannelMap[K]> | null;
 };
 
 export const workers: Workers<keyof ChannelMap> = {
-  [Channel.NewDeployment]: null,
-  [Channel.NewEnvironment]: null,
-  [Channel.ReleaseEvaluate]: null,
+  [Channel.NewDeployment]: newDeploymentWorker,
+  [Channel.NewDeploymentVersion]: newDeploymentVersionWorker,
+  [Channel.PolicyEvaluate]: policyEvaluateWorker,
+  [Channel.ResourceScan]: resourceScanWorker,
+  [Channel.DispatchJob]: dispatchJobWorker,
 };

@@ -13,17 +13,21 @@ export enum Channel {
   NewEnvironment = "new-environment",
   NewRelease = "new-release",
   ReleaseEvaluate = "release-evaluate",
+
+  PolicyEvaluate = "policy-evaluate",
+  NewDeploymentVersion = "new-deployment-version",
 }
 
-export type ReleaseEvaluateJobData = {
+export type PolicyEvaluateJobData = {
   environmentId: string;
   resourceId: string;
   deploymentId: string;
 };
 
 export type ChannelMap = {
-  // [Channel.UpsertRelease]: typeof schema.release.$inferInsert;
+  [Channel.ResourceScan]: { resourceProviderId: string };
+  [Channel.NewDeploymentVersion]: typeof schema.deploymentVersion.$inferSelect;
   [Channel.NewDeployment]: typeof schema.deployment.$inferSelect;
-  [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
-  [Channel.ReleaseEvaluate]: ReleaseEvaluateJobData;
+  [Channel.PolicyEvaluate]: PolicyEvaluateJobData;
+  [Channel.DispatchJob]: { jobId: string };
 };
