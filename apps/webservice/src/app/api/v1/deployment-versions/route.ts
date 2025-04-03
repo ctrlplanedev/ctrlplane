@@ -51,11 +51,6 @@ export const POST = request()
       const { name, tag, metadata = {} } = body;
 
       const versionName = name ?? tag;
-      if (versionName == null)
-        return NextResponse.json(
-          { error: "Invalid version name" },
-          { status: httpStatus.BAD_REQUEST },
-        );
 
       try {
         const prevVersion = await db
