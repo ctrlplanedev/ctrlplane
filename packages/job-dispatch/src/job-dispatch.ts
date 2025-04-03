@@ -3,6 +3,7 @@ import _ from "lodash";
 
 import { eq, inArray, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTriggeredRunbookJob } from "./job-creation.js";
@@ -133,6 +134,6 @@ export const dispatchRunbook = async (
     .where(eq(schema.runbook.id, runbookId))
     .then(takeFirst);
   const job = await createTriggeredRunbookJob(db, runbook, values);
-  await dispatchJobsQueue.add(job.id, { jobId: job.id });
+  await getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
   return job;
 };

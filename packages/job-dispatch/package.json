@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
