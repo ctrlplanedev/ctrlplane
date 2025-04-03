@@ -99,12 +99,6 @@ class DispatchBuilder {
           data: { jobId: wf.id },
         })),
       );
-
-      // await Promise.all(
-      //   validJobsWithResolvedVariables.map((j) =>
-      //     updateJob(this.db, j.id, { status: JobStatus.InProgress }),
-      //   ),
-      // );
     }
 
     await Promise.all(
