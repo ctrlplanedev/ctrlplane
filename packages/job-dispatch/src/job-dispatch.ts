@@ -9,7 +9,6 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { createTriggeredRunbookJob } from "./job-creation.js";
 import { updateJob } from "./job-update.js";
 import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
-import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
@@ -94,7 +93,7 @@ class DispatchBuilder {
     );
 
     if (validJobsWithResolvedVariables.length > 0) {
-      await dispatchJobsQueue.addBulk(
+      await getQueue(Channel.DispatchJob).addBulk(
         validJobsWithResolvedVariables.map((wf) => ({
           name: wf.id,
           data: { jobId: wf.id },

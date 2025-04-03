@@ -31,13 +31,10 @@
     "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
-    "bullmq": "catalog:",
     "date-fns": "catalog:",
-    "ioredis": "^5.4.1",
     "lodash": "catalog:",
     "ms": "^2.1.3",
     "murmurhash": "^2.0.1",
-    "redis": "^4.6.15",
     "semver": "catalog:",
     "ts-is-present": "catalog:",
     "zod": "catalog:"
