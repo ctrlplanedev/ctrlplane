@@ -48,7 +48,7 @@ export type DeploymentResourceRuleResult = {
 
 export type DeploymentResourceSelectionResult = {
   allowed: boolean;
-  chosenRelease?: Release;
+  chosenRelease: Release | null;
   rejectionReasons: Map<string, string>;
 };
 

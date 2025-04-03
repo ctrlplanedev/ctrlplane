@@ -108,6 +108,7 @@ export class RuleEngine {
       if (result.allowedReleases.isEmpty()) {
         return {
           allowed: false,
+          chosenRelease: null,
           rejectionReasons: result.rejectionReasons ?? rejectionReasons,
         };
       }
@@ -128,6 +129,7 @@ export class RuleEngine {
     return chosen == null
       ? {
           allowed: false,
+          chosenRelease: null,
           rejectionReasons,
         }
       : {

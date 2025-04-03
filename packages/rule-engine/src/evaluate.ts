@@ -1,4 +1,8 @@
-import type { DeploymentResourceContext, GetReleasesFunc } from "./types";
+import type {
+  DeploymentResourceContext,
+  DeploymentResourceSelectionResult,
+  GetReleasesFunc,
+} from "./types";
 import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
 import { RuleEngine } from "./rule-engine.js";
@@ -33,7 +37,7 @@ export const evaluate = async (
   policy: Policy | Policy[] | null,
   context: DeploymentResourceContext,
   getReleases: GetReleasesFunc,
-) => {
+): Promise<DeploymentResourceSelectionResult> => {
   const policies =
     policy == null ? [] : Array.isArray(policy) ? policy : [policy];
 
@@ -41,7 +45,8 @@ export const evaluate = async (
   if (mergedPolicy == null)
     return {
       allowed: false,
-      release: undefined,
+      chosenRelease: null,
+      rejectionReasons: new Map(),
     };
 
   const rules = [...denyWindows(mergedPolicy)];
