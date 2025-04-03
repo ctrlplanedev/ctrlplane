@@ -2,6 +2,7 @@ import type * as schema from "@ctrlplane/db/schema";
 
 export enum Channel {
   DispatchJob = "dispatch-job",
+
   ResourceScan = "resource-scan",
 
   NewDeployment = "new-deployment",
