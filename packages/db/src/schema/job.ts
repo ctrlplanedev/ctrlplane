@@ -105,7 +105,11 @@ export const job = pgTable(
   }),
 );
 
-export const jobRelations = relations(job, ({ many }) => ({
+export const jobRelations = relations(job, ({ many, one }) => ({
+  agent: one(jobAgent, {
+    fields: [job.jobAgentId],
+    references: [jobAgent.id],
+  }),
   releaseTrigger: many(releaseJobTrigger),
   jobRelationships: many(jobResourceRelationship),
   metadata: many(jobMetadata),
