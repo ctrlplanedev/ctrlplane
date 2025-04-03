@@ -1,3 +1,5 @@
+import { env } from "process";
+
 import { and, desc, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
@@ -116,7 +118,8 @@ export const policyEvaluateWorker = createWorker(
         return;
       }
 
-      getQueue(Channel.DispatchJob).add(dbJob.id, { jobId: dbJob.id });
+      if (env.NODE_ENV === "development")
+        getQueue(Channel.DispatchJob).add(dbJob.id, { jobId: dbJob.id });
     } finally {
       await mutex.unlock();
     }
