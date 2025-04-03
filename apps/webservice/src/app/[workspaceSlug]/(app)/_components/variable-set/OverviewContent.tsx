@@ -5,14 +5,7 @@ import { IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { cn } from "@ctrlplane/ui";
-import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  Command,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@ctrlplane/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,8 +23,6 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
-import { Label } from "@ctrlplane/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   Select,
   SelectContent,
@@ -63,21 +54,14 @@ const schema = z.object({
 export const OverviewContent: React.FC<{
   variableSet: SCHEMA.VariableSet & {
     values: SCHEMA.VariableSetValue[];
-    environments: (SCHEMA.VariableSetEnvironment & {
-      environment: SCHEMA.Environment;
-    })[];
   };
-  environments: SCHEMA.Environment[];
-}> = ({ variableSet, environments }) => {
+}> = ({ variableSet }) => {
   const update = api.variableSet.update.useMutation();
 
   const description = variableSet.description ?? undefined;
-  const environmentIds = variableSet.environments.map((env) => ({
-    id: env.environmentId,
-  }));
   const form = useForm({
     schema,
-    defaultValues: { ...variableSet, description, environmentIds },
+    defaultValues: { ...variableSet, description },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -85,30 +69,15 @@ export const OverviewContent: React.FC<{
     control: form.control,
   });
 
-  const {
-    fields: envs,
-    append: appendEnv,
-    remove: removeEnv,
-  } = useFieldArray({
-    name: "environmentIds",
-    control: form.control,
-  });
-
   const router = useRouter();
   const utils = api.useUtils();
 
-  const onSubmit = form.handleSubmit((data) => {
-    const environmentIds = data.environmentIds.map((env) => env.id);
+  const onSubmit = form.handleSubmit((data) =>
     update
-      .mutateAsync({ data: { ...data, environmentIds }, id: variableSet.id })
+      .mutateAsync({ data, id: variableSet.id })
       .then(() => form.reset(data))
       .then(() => utils.variableSet.byId.invalidate(variableSet.id))
-      .then(() => router.refresh());
-  });
-
-  const selectedEnvsIds = form.watch("environmentIds").map((env) => env.id);
-  const newEnvironments = environments.filter(
-    (env) => !selectedEnvsIds.includes(env.id),
+      .then(() => router.refresh()),
   );
 
   return (
@@ -240,66 +209,6 @@ export const OverviewContent: React.FC<{
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Environments</Label>
-          <div className="flex flex-wrap gap-2">
-            {envs.map((field, index) => (
-              <FormField
-                control={form.control}
-                key={field.id}
-                name={`environmentIds.${index}`}
-                render={({ field: { value } }) => {
-                  const env = environments.find((e) => e.id === value.id)!;
-                  return (
-                    <Badge
-                      key={value.id}
-                      variant="outline"
-                      className="flex w-fit items-center gap-2 px-2 py-1"
-                    >
-                      <span>{env.name}</span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5"
-                        onClick={() => removeEnv(index)}
-                      >
-                        <IconX className="h-4 w-4" />
-                      </Button>
-                    </Badge>
-                  );
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <Popover>
-            <PopoverTrigger>
-              <Button variant="outline" role="combobox" type="button">
-                Add environment
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Search environment" />
-                <CommandList>
-                  {newEnvironments.map((env) => (
-                    <CommandItem
-                      key={env.id}
-                      value={env.name}
-                      onSelect={() => appendEnv({ id: env.id })}
-                      className="cursor-pointer"
-                    >
-                      {env.name}
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
         </div>
 
         <Button

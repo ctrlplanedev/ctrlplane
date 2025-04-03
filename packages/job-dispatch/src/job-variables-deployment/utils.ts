@@ -41,14 +41,6 @@ export const getResource = (tx: Tx, resourceId: string) =>
     )
     .then(takeFirstOrNull);
 
-export const getEnvironment = (tx: Tx, environmentId: string) =>
-  tx.query.environment.findFirst({
-    where: eq(SCHEMA.environment.id, environmentId),
-    with: {
-      environments: { with: { variableSet: { with: { values: true } } } },
-    },
-  });
-
 export const getResourceVariableValue = (
   tx: Tx,
   resourceId: string,

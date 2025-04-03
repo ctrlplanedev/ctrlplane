@@ -111,6 +111,12 @@ export enum Permission {
   PolicyCreate = "policy.create",
   PolicyUpdate = "policy.update",
   PolicyDelete = "policy.delete",
+
+  VariableSetGet = "variableSet.get",
+  VariableSetList = "variableSet.list",
+  VariableSetCreate = "variableSet.create",
+  VariableSetUpdate = "variableSet.update",
+  VariableSetDelete = "variableSet.delete",
 }
 
 export const permission = z.nativeEnum(Permission);

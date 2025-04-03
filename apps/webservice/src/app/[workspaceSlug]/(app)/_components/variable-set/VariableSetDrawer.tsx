@@ -16,13 +16,7 @@ export const VariableSetDrawer: React.FC = () => {
   const variableSetQ = api.variableSet.byId.useQuery(variableSetId ?? "", {
     enabled: isOpen,
   });
-  const variableSet = variableSetQ.data;
-
-  const systemQ = api.system.byId.useQuery(variableSet?.systemId ?? "", {
-    enabled: variableSet?.systemId != null,
-  });
-  const system = systemQ.data;
-  const environments = system?.environments;
+  const { data: variableSet } = variableSetQ;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -38,12 +32,7 @@ export const VariableSetDrawer: React.FC = () => {
         </div>
 
         <div className="w-full">
-          {variableSet != null && environments != null && (
-            <OverviewContent
-              variableSet={variableSet}
-              environments={environments}
-            />
-          )}
+          {variableSet != null && <OverviewContent variableSet={variableSet} />}
         </div>
       </DrawerContent>
     </Drawer>

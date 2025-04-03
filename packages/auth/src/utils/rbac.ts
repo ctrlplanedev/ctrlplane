@@ -170,14 +170,12 @@ const getVariableSetScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(variableSet, eq(variableSet.systemId, system.id))
+    .innerJoin(variableSet, eq(variableSet.workspaceId, workspace.id))
     .where(eq(variableSet.id, id))
     .then(takeFirst);
 
   return [
     { type: "variableSet" as const, id: result.variable_set.id },
-    { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
 };

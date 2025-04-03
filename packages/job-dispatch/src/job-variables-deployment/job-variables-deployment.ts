@@ -69,43 +69,6 @@ export const determineVariablesForReleaseJob = async (
     ),
   );
 
-  const env = await utils.getEnvironment(
-    tx,
-    job.releaseJobTrigger.environmentId,
-  );
-
-  if (!env) return jobVariables;
-  const environments = env.environments.sort((a, b) =>
-    a.variableSet.name.localeCompare(b.variableSet.name),
-  );
-
-  for (const environment of environments) {
-    const { variableSet } = environment;
-    for (const val of variableSet.values) {
-      const existingKeys = jobVariables.map((v) => v.key);
-      if (!existingKeys.includes(val.key)) {
-        jobVariables.push({
-          jobId: job.id,
-          key: val.key,
-          value: val.value,
-        });
-        directMatches.push(val.key);
-        continue;
-      }
-
-      if (directMatches.includes(val.key)) continue;
-
-      const existingVariableIdx = jobVariables.findIndex(
-        (v) => v.key === val.key,
-      );
-
-      if (existingVariableIdx === -1) continue;
-
-      jobVariables[existingVariableIdx]!.value = val.value;
-      directMatches.push(val.key);
-    }
-  }
-
   return jobVariables;
 };
 

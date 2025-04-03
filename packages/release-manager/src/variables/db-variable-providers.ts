@@ -1,16 +1,17 @@
 import type { Tx } from "@ctrlplane/db";
 import type { VariableSetValue } from "@ctrlplane/db/schema";
 
-import { and, asc, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, asc, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deploymentVariable,
   deploymentVariableValue,
+  environment,
+  environmentMatchSelector,
   resource,
   resourceMatchesMetadata,
   resourceVariable,
-  variableSetEnvironment,
-  variableSetValue,
+  variableSet,
 } from "@ctrlplane/db/schema";
 
 import type { ReleaseIdentifier } from "../types.js";
@@ -148,21 +149,47 @@ export class DatabaseSystemVariableSetProvider implements VariableProvider {
   }
 
   private loadVariables() {
-    return this.db
-      .select()
-      .from(variableSetValue)
-      .innerJoin(
-        variableSetEnvironment,
-        eq(
-          variableSetValue.variableSetId,
-          variableSetEnvironment.variableSetId,
-        ),
-      )
-      .where(
-        eq(variableSetEnvironment.environmentId, this.options.environmentId),
-      )
-      .orderBy(asc(variableSetValue.value))
-      .then((rows) => rows.map((r) => r.variable_set_value));
+    return this.db.query.environment
+      .findFirst({
+        where: eq(environment.id, this.options.environmentId),
+        with: {
+          system: {
+            with: {
+              workspace: {
+                with: {
+                  variableSets: {
+                    with: { values: true },
+                    orderBy: [
+                      desc(variableSet.priority),
+                      asc(variableSet.name),
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+      .then((env) => {
+        if (env == null) return [];
+
+        const { system } = env;
+        const { workspace } = system;
+        const { variableSets } = workspace;
+
+        const valuesPromises = variableSets.map(async (vs) => {
+          const env = await this.db.query.environment.findFirst({
+            where: and(
+              eq(environment.id, this.options.environmentId),
+              environmentMatchSelector(this.db, vs.environmentSelector),
+            ),
+          });
+
+          return env != null ? vs.values : [];
+        });
+
+        return Promise.all(valuesPromises).then((values) => values.flat());
+      });
   }
 
   private getVariables() {
