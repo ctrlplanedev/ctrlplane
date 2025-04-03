@@ -1,57 +1,37 @@
-import type { DispatchJobEvent } from "@ctrlplane/validators/events";
-import { Worker } from "bullmq";
-
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { updateJob } from "@ctrlplane/job-dispatch";
+import { createWorker } from "@ctrlplane/events";
 import { Channel } from "@ctrlplane/validators/events";
-import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
+import { JobAgentType } from "@ctrlplane/validators/jobs";
 
-import { redis } from "../redis.js";
 import { dispatchGithubJob } from "./github.js";
 
-export const createDispatchExecutionJobWorker = () =>
-  new Worker<DispatchJobEvent>(
-    Channel.DispatchJob,
-    async (job) => {
-      const { jobId } = job.data;
-      const je = await db
-        .select()
-        .from(schema.job)
-        .innerJoin(
-          schema.jobAgent,
-          eq(schema.job.jobAgentId, schema.jobAgent.id),
-        )
-        .where(eq(schema.job.id, jobId))
-        .then(takeFirstOrNull);
+export const dispatchJobWorker = createWorker(
+  Channel.DispatchJob,
+  async (queueJob) => {
+    const { data } = queueJob;
+    const { jobId } = data;
 
-      if (je == null) {
-        job.log(`Job ${jobId} not found`);
-        return null;
-      }
+    const job = await db.query.job.findFirst({
+      where: eq(schema.job.id, jobId),
+      with: { agent: true },
+    });
 
-      try {
-        job.log(
-          `Dispatching job ${je.job.id} --- ${je.job_agent.type}/${je.job_agent.name}`,
-        );
-        if (je.job_agent.type === String(JobAgentType.GithubApp)) {
-          job.log(`Dispatching to GitHub app`);
-          await dispatchGithubJob(je.job);
-        }
-      } catch (error: unknown) {
-        await updateJob(db, je.job.id, {
-          status: JobStatus.Failure,
-          message: (error as Error).message,
-        });
-      }
+    if (job == null) {
+      queueJob.log(`Job ${jobId} not found`);
+      return;
+    }
 
-      return je;
-    },
-    {
-      connection: redis,
-      removeOnComplete: { age: 1 * 60 * 60, count: 100 },
-      removeOnFail: { age: 12 * 60 * 60, count: 100 },
-      concurrency: 10,
-    },
-  );
+    const { agent } = job;
+    if (agent == null) {
+      queueJob.log(`Job ${jobId} has no agent`);
+      return;
+    }
+
+    if (agent.type === String(JobAgentType.GithubApp)) {
+      queueJob.log(`Dispatching job ${jobId} to GitHub app`);
+      await dispatchGithubJob(job);
+    }
+  },
+);

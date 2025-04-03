@@ -10,4 +10,5 @@ export const configSchema = z.object({
 
 export enum GithubEvent {
   WorkflowRun = "workflow_run",
+  WorkflowJob = "workflow_job",
 }
