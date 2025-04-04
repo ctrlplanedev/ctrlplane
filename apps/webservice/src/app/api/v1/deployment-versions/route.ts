@@ -12,6 +12,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
@@ -134,6 +135,11 @@ export const POST = request()
               ),
             );
         }
+
+        await getQueue(Channel.NewDeploymentVersion).add(
+          depVersion.id,
+          depVersion,
+        );
 
         return NextResponse.json(
           { ...depVersion, metadata },
