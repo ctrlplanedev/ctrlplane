@@ -29,7 +29,7 @@ export const createReleaseEvaluateWorker = () =>
         }
 
         const { workspaceId } = ctx.resource;
-        const policy = await getApplicablePolicies(db, workspaceId, job.data);
+        const policy = await getApplicablePolicies(db, job.data, workspaceId);
 
         const result = await evaluate(policy, ctx, getReleasesFromDb(db));
         console.log(result);

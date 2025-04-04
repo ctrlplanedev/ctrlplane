@@ -10,6 +10,7 @@ export enum Channel {
   ReleaseVariableChange = "release-variable-change",
 
   NewDeployment = "new-deployment",
+  NewDeploymentVersion = "new-deployment-version",
   NewEnvironment = "new-environment",
   NewRelease = "new-release",
   ReleaseEvaluate = "release-evaluate",
@@ -23,6 +24,7 @@ export type ReleaseEvaluateJobData = {
 
 export type ChannelMap = {
   [Channel.NewDeployment]: schema.Deployment;
+  [Channel.NewDeploymentVersion]: schema.DeploymentVersion;
   [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
   [Channel.ReleaseEvaluate]: ReleaseEvaluateJobData;
   [Channel.DispatchJob]: { jobId: string };
