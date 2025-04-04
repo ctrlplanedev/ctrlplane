@@ -9,10 +9,9 @@ import {
   resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
-import { createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
-import { Channel } from "@ctrlplane/validators/events";
 
 import { getEksResources } from "./aws/eks.js";
 import { getVpcResources as getAwsVpcResources } from "./aws/vpc.js";

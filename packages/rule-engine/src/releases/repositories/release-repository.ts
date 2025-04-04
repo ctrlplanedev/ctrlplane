@@ -1,7 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
-import { getApplicablePolicies } from "src/db/get-applicable-policies.js";
-import { mergePolicies } from "src/utils/merge-policies.js";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
@@ -15,6 +13,8 @@ import type {
   ReleaseWithId,
   ReleaseWithVersionAndVariables,
 } from "./types.js";
+import { getApplicablePolicies } from "../../db/get-applicable-policies.js";
+import { mergePolicies } from "../../utils/merge-policies.js";
 import { VariableManager } from "../variables/variables.js";
 import {
   findLatestPolicyMatchingRelease,
