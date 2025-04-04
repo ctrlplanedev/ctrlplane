@@ -9,14 +9,23 @@ import * as schema from "@ctrlplane/db/schema";
 
 import type { Policy, ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable } from "../variables/types.js";
-import type { Release, ReleaseRepository, ReleaseWithId } from "./types.js";
+import type {
+  Release,
+  ReleaseRepository,
+  ReleaseWithId,
+  ReleaseWithVersionAndVariables,
+} from "./types.js";
 import { VariableManager } from "../variables/variables.js";
 import {
   findLatestPolicyMatchingRelease,
   findPolicyMatchingReleasesBetweenDeployments,
 } from "./get-releases.js";
 
-type ReleaseTarget = typeof schema.releaseTarget.$inferSelect & {
+type ReleaseTarget = {
+  id: string;
+  deploymentId: string;
+  environmentId: string;
+  resourceId: string;
   workspaceId: string;
 };
 
@@ -71,8 +80,9 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * Gets all releases that match the current policy constraints
    * @returns Array of matching releases
    */
-  async getApplicableReleases(): Promise<ReleaseWithId[]> {
-    const policy = await this.getPolicy();
+  async getApplicableReleases(
+    policy: Policy | null,
+  ): Promise<ReleaseWithVersionAndVariables[]> {
     return findPolicyMatchingReleasesBetweenDeployments(
       this.db,
       this.releaseTarget.id,
@@ -84,7 +94,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * Gets the most recent release that matches policy constraints
    * @returns The newest matching release, or null if none exist
    */
-  async getNewestRelease(): Promise<ReleaseWithId | null> {
+  async getNewestRelease(): Promise<ReleaseWithVersionAndVariables | null> {
     const policy = await this.getPolicy();
     return (
       (await findLatestPolicyMatchingRelease(
@@ -101,7 +111,10 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @param tx - The transaction to use
    * @returns The created release with ID
    */
-  private async createReleaseInTransaction(release: Release, tx: Tx) {
+  private async createReleaseInTransaction(
+    release: Omit<Release, "id" | "createdAt">,
+    tx: Tx,
+  ) {
     const dbRelease = await tx
       .insert(schema.release)
       .values({ ...release, releaseTargetId: this.releaseTarget.id })
@@ -125,7 +138,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @param release - The release to create
    * @returns The created release with ID
    */
-  async create(release: Release) {
+  async create(release: Omit<Release, "id" | "createdAt">) {
     return this.db.transaction((tx) =>
       this.createReleaseInTransaction(release, tx),
     );
@@ -180,12 +193,10 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * Sets the desired release for this release target
    * @param options - The release target identifier and desired release ID
    */
-  async setDesired(
-    options: ReleaseTargetIdentifier & { desiredReleaseId: string },
-  ) {
+  async setDesired(desiredReleaseId: string) {
     await this.db
       .update(schema.releaseTarget)
-      .set({ desiredReleaseId: options.desiredReleaseId })
+      .set({ desiredReleaseId })
       .where(eq(schema.releaseTarget.id, this.releaseTarget.id));
   }
 }

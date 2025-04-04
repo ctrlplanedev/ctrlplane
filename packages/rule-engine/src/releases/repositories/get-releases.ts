@@ -7,6 +7,7 @@ import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { Policy } from "../../types.js";
+import type { ReleaseWithVersionAndVariables } from "./types.js";
 
 const log = logger.child({
   module: "rule-engine",
@@ -35,7 +36,7 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
   db: Tx,
   releaseTargetId: string,
   policy?: Policy | null,
-) => {
+): Promise<ReleaseWithVersionAndVariables[]> => {
   const releaseTarget = await db.query.releaseTarget.findFirst({
     where: eq(SCHEMA.releaseTarget.id, releaseTargetId),
     with: {
@@ -111,8 +112,8 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
 export const findLatestPolicyMatchingRelease = async (
   tx: Tx,
   policy: Policy | null,
-  releaseTarget: typeof SCHEMA.releaseTarget.$inferSelect,
-) => {
+  releaseTarget: { id: string },
+): Promise<ReleaseWithVersionAndVariables | undefined> => {
   if (policy?.deploymentVersionSelector == null)
     return tx.query.release.findFirst({
       where: eq(SCHEMA.release.releaseTargetId, releaseTarget.id),
