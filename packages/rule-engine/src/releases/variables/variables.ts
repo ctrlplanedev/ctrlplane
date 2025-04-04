@@ -4,7 +4,7 @@ import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { ReleaseTargetIdentifer } from "../../types.js";
+import type { ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, VariableProvider } from "./types.js";
 import {
   DatabaseDeploymentVariableProvider,
@@ -29,7 +29,7 @@ type VariableManagerOptions = {
 };
 
 export class VariableManager {
-  static async database(options: ReleaseTargetIdentifer) {
+  static async database(options: ReleaseTargetIdentifier) {
     const providers = [
       new DatabaseSystemVariableSetProvider(options),
       new DatabaseResourceVariableProvider(options),

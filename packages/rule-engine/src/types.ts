@@ -68,7 +68,7 @@ export type Policy = schema.Policy & {
   deploymentVersionSelector: schema.PolicyDeploymentVersionSelector | null;
 };
 
-export type ReleaseTargetIdentifer = {
+export type ReleaseTargetIdentifier = {
   deploymentId: string;
   environmentId: string;
   resourceId: string;

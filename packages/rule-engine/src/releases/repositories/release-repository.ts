@@ -7,7 +7,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Policy, ReleaseTargetIdentifer } from "../../types.js";
+import type { Policy, ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable } from "../variables/types.js";
 import type { Release, ReleaseRepository, ReleaseWithId } from "./types.js";
 import { VariableManager } from "../variables/variables.js";
@@ -139,7 +139,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @returns Object indicating if a new release was created and the final release
    */
   async upsert(
-    options: ReleaseTargetIdentifer,
+    options: ReleaseTargetIdentifier,
     versionId: string,
     variables: MaybeVariable[],
   ): Promise<{ created: boolean; release: ReleaseWithId }> {
@@ -181,7 +181,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @param options - The release target identifier and desired release ID
    */
   async setDesired(
-    options: ReleaseTargetIdentifer & { desiredReleaseId: string },
+    options: ReleaseTargetIdentifier & { desiredReleaseId: string },
   ) {
     await this.db
       .update(schema.releaseTarget)

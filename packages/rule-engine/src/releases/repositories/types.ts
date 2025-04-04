@@ -1,6 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 
-import type { Policy, ReleaseTargetIdentifer } from "../../types.js";
+import type { Policy, ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, Variable } from "../variables/types.js";
 
 export type Release = typeof schema.release.$inferInsert & {
@@ -18,7 +18,7 @@ export interface ReleaseRepository {
    * Creates a new release only if necessary
    */
   upsert(
-    options: ReleaseTargetIdentifer,
+    options: ReleaseTargetIdentifier,
     versionId: string,
     variables: MaybeVariable[],
   ): Promise<{ created: boolean; release: ReleaseWithId }>;
@@ -27,6 +27,6 @@ export interface ReleaseRepository {
    * Set a specific release as the desired release
    */
   setDesired(
-    options: ReleaseTargetIdentifer & { desiredReleaseId: string },
+    options: ReleaseTargetIdentifier & { desiredReleaseId: string },
   ): Promise<void>;
 }

@@ -13,11 +13,11 @@ import {
   variableSetValue,
 } from "@ctrlplane/db/schema";
 
-import type { ReleaseTargetIdentifer } from "../../types.js";
+import type { ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, Variable, VariableProvider } from "./types.js";
 
 export type DatabaseResourceVariableOptions = Pick<
-  ReleaseTargetIdentifer,
+  ReleaseTargetIdentifier,
   "resourceId"
 > & {
   db?: Tx;
@@ -54,7 +54,7 @@ export class DatabaseResourceVariableProvider implements VariableProvider {
 }
 
 export type DatabaseDeploymentVariableOptions = Pick<
-  ReleaseTargetIdentifer,
+  ReleaseTargetIdentifier,
   "resourceId" | "deploymentId"
 > & {
   db?: Tx;
@@ -133,7 +133,7 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
 }
 
 export type DatabaseSystemVariableSetOptions = Pick<
-  ReleaseTargetIdentifer,
+  ReleaseTargetIdentifier,
   "environmentId"
 > & {
   db?: Tx;
