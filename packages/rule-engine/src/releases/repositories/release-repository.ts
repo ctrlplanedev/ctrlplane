@@ -180,12 +180,10 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * Sets the desired release for this release target
    * @param options - The release target identifier and desired release ID
    */
-  async setDesired(
-    options: ReleaseTargetIdentifier & { desiredReleaseId: string },
-  ) {
+  async setDesired(desiredReleaseId: string) {
     await this.db
       .update(schema.releaseTarget)
-      .set({ desiredReleaseId: options.desiredReleaseId })
+      .set({ desiredReleaseId })
       .where(eq(schema.releaseTarget.id, this.releaseTarget.id));
   }
 }

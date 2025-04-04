@@ -26,7 +26,5 @@ export interface ReleaseRepository {
   /**
    * Set a specific release as the desired release
    */
-  setDesired(
-    options: ReleaseTargetIdentifier & { desiredReleaseId: string },
-  ): Promise<void>;
+  setDesired(desiredReleaseId: string): Promise<void>;
 }
