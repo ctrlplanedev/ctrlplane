@@ -4,7 +4,7 @@ import { Queue } from "bullmq";
 import { ReleaseManager } from "@ctrlplane/release-manager";
 import { Channel } from "@ctrlplane/validators/events";
 
-import { redis } from "../redis.js";
+import { redis } from "../../redis.js";
 import { ReleaseRepositoryMutex } from "./mutex.js";
 
 const evaluate = new Queue(Channel.ReleaseEvaluate, {

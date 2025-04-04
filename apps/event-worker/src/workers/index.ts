@@ -3,8 +3,8 @@ import type { Worker } from "bullmq";
 
 import { Channel } from "@ctrlplane/events";
 
-import { dispatchJobWorker } from "../job-dispatch/index.js";
-import { resourceScanWorker } from "../resource-scan/index.js";
+import { dispatchJobWorker } from "./job-dispatch/index.js";
+import { resourceScanWorker } from "./resource-scan/index.js";
 
 type Workers<T extends keyof ChannelMap> = {
   [K in T]: Worker<ChannelMap[K]> | null;

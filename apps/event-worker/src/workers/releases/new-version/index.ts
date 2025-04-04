@@ -8,7 +8,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
 
-import { redis } from "../../redis.js";
+import { redis } from "../../../redis.js";
 import { createAndEvaluateRelease } from "../create-release.js";
 import { getDeploymentResources } from "../deployment-resources.js";
 
