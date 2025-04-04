@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import httpStatus from "http-status";
 import { z } from "zod";
 
-import { releaseNewVersion } from "@ctrlplane/api/queues";
 import {
   and,
   buildConflictUpdateColumns,
@@ -111,9 +110,10 @@ export const POST = request()
             depVersion.status === DeploymentVersionStatus.Ready);
 
         if (shouldTrigger) {
-          releaseNewVersion.add(depVersion.id, {
-            versionId: depVersion.id,
-          });
+          await getQueue(Channel.NewDeploymentVersion).add(
+            depVersion.id,
+            depVersion,
+          );
 
           await createReleaseJobTriggers(db, "new_version")
             .causedById(ctx.user.id)
@@ -135,11 +135,6 @@ export const POST = request()
               ),
             );
         }
-
-        await getQueue(Channel.NewDeploymentVersion).add(
-          depVersion.id,
-          depVersion,
-        );
 
         return NextResponse.json(
           { ...depVersion, metadata },

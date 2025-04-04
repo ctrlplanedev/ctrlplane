@@ -862,9 +862,6 @@ importers:
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
-      bullmq:
-        specifier: 'catalog:'
-        version: 5.15.0
       date-fns:
         specifier: 'catalog:'
         version: 3.6.0
@@ -874,9 +871,6 @@ importers:
       googleapis:
         specifier: ^144.0.0
         version: 144.0.0
-      ioredis:
-        specifier: ^5.4.1
-        version: 5.4.1
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
