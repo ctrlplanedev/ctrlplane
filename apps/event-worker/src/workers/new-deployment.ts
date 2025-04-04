@@ -5,7 +5,7 @@ import _ from "lodash";
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -47,21 +47,16 @@ const getDeploymentResources = async (
   return resources;
 };
 
-const evaluatedQueue = getQueue(Channel.ReleaseEvaluate);
-
 export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,
   async (job) => {
     const resources = await getDeploymentResources(db, job.data);
-    const jobData = resources.map((r) => {
-      const resourceId = r.id;
-      const environmentId = r.environment.id;
-      const deploymentId = job.data.id;
-      return {
-        name: `${resourceId}-${environmentId}-${deploymentId}`,
-        data: { resourceId, environmentId, deploymentId },
-      };
-    });
-    await evaluatedQueue.addBulk(jobData);
+    const releaseTargets = resources.map((r) => ({
+      resourceId: r.id,
+      environmentId: r.environment.id,
+      deploymentId: job.data.id,
+    }));
+
+    await db.insert(schema.releaseTarget).values(releaseTargets);
   },
 );

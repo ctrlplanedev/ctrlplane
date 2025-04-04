@@ -122,8 +122,6 @@ const hookRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        await getQueue(Channel.NewDeployment).add(dep.id, dep);
-
         return { ...h, runhook: rh };
       }),
     ),
@@ -300,7 +298,11 @@ export const deploymentRouter = createTRPCRouter({
         .insert(SCHEMA.deployment)
         .values({ ...input, description: input.description ?? "" })
         .returning()
-        .then(takeFirst),
+        .then(takeFirst)
+        .then(async (dep) => {
+          await getQueue(Channel.NewDeployment).add(dep.id, dep);
+          return dep;
+        }),
     ),
 
   update: protectedProcedure
