@@ -19,6 +19,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
@@ -355,6 +356,8 @@ export const versionRouter = createTRPCRouter({
         .filter(isPassingAllPolicies)
         .then(cancelOldReleaseJobTriggersOnJobDispatch)
         .dispatch();
+
+      getQueue(Channel.NewDeploymentVersion).add(rel.id, rel);
 
       return { ...rel, releaseJobTriggers };
     }),
