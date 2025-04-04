@@ -1,7 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 
-import type { Policy } from "../../types.js";
-import type { ReleaseTargetIdentifer } from "../types.js";
+import type { Policy, ReleaseTargetIdentifer } from "../../types.js";
 import type { MaybeVariable, Variable } from "../variables/types.js";
 
 export type Release = typeof schema.release.$inferInsert & {

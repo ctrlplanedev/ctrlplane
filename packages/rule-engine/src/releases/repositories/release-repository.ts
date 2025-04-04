@@ -7,8 +7,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Policy } from "../../types.js";
-import type { ReleaseTargetIdentifer } from "../types.js";
+import type { Policy, ReleaseTargetIdentifer } from "../../types.js";
 import type { MaybeVariable } from "../variables/types.js";
 import type { Release, ReleaseRepository, ReleaseWithId } from "./types.js";
 import { VariableManager } from "../variables/variables.js";

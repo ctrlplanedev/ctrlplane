@@ -4,7 +4,7 @@ import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { ReleaseTargetIdentifer } from "../types.js";
+import type { ReleaseTargetIdentifer } from "../../types.js";
 import type { MaybeVariable, VariableProvider } from "./types.js";
 import {
   DatabaseDeploymentVariableProvider,

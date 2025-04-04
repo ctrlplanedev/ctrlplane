@@ -13,7 +13,7 @@ import {
   variableSetValue,
 } from "@ctrlplane/db/schema";
 
-import type { ReleaseTargetIdentifer } from "../types.js";
+import type { ReleaseTargetIdentifer } from "../../types.js";
 import type { MaybeVariable, Variable, VariableProvider } from "./types.js";
 
 export type DatabaseResourceVariableOptions = Pick<
