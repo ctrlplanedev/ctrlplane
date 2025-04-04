@@ -151,9 +151,6 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
-      '@ctrlplane/release-manager':
-        specifier: workspace:*
-        version: link:../../packages/release-manager
       '@ctrlplane/rule-engine':
         specifier: workspace:*
         version: link:../../packages/rule-engine
@@ -1320,49 +1317,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.8.2
-
-  packages/release-manager:
-    dependencies:
-      '@ctrlplane/db':
-        specifier: workspace:*
-        version: link:../db
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../validators
-      lodash:
-        specifier: 'catalog:'
-        version: 4.17.21
-      zod:
-        specifier: 'catalog:'
-        version: 3.24.2
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/lodash':
-        specifier: 'catalog:'
-        version: 4.17.12
-      '@types/node':
-        specifier: catalog:node22
-        version: 22.13.10
-      eslint:
-        specifier: 'catalog:'
-        version: 9.11.1(jiti@2.3.3)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.5.3
-      typescript:
-        specifier: 'catalog:'
-        version: 5.8.2
-      vitest:
-        specifier: ^2.1.9
-        version: 2.1.9(@types/node@22.13.10)(jsdom@25.0.1)(terser@5.36.0)
 
   packages/rule-engine:
     dependencies:
