@@ -5,8 +5,7 @@
     "baseUrl": ".",
     "incremental": true,
     "lib": ["es2017"],
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
-    "rootDir": "src"
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
