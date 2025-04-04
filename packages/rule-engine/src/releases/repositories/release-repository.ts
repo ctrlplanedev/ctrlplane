@@ -33,10 +33,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @returns A configured DatabaseReleaseRepository instance
    */
   static async create(releaseTarget: ReleaseTarget) {
-    const variableManager = await VariableManager.database({
-      ...releaseTarget,
-      variableProvider: "database",
-    });
+    const variableManager = await VariableManager.database(releaseTarget);
     return new DatabaseReleaseRepository(
       dbClient,
       releaseTarget,
