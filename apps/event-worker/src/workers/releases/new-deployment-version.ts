@@ -6,8 +6,6 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
 
-import { createReleases } from "../releases/create-release.js";
-
 const getDeploymentResources = async (
   tx: Tx,
   deployment: schema.Deployment,
@@ -68,9 +66,11 @@ export const newDeploymentVersionWorker = createWorker(
       resourceId: resource.id,
       environmentId: resource.environment.id,
       deploymentId: version.deploymentId,
-      versionId: version.id,
     }));
 
-    await createReleases(releaseTargets);
+    await db
+      .insert(schema.releaseTarget)
+      .values(releaseTargets)
+      .onConflictDoNothing();
   },
 );
