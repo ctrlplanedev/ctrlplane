@@ -21,7 +21,6 @@
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
-    "@ctrlplane/release-manager": "workspace:*",
     "@ctrlplane/rule-engine": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@google-cloud/compute": "^4.9.0",
