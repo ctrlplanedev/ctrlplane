@@ -4,14 +4,12 @@ import { register } from "./instrumentation.js";
 import { redis } from "./redis.js";
 import { createReleaseNewVersionWorker } from "./releases/new-version/index.js";
 import { createReleaseVariableChangeWorker } from "./releases/variable-change/index.js";
-import { createResourceScanWorker } from "./resource-scan/index.js";
 import { workers } from "./workers/index.js";
 
 console.log("Registering instrumentation...");
 await register();
 
 const allWorkers = [
-  createResourceScanWorker(),
   createReleaseNewVersionWorker(),
   createReleaseVariableChangeWorker(),
   ...Object.values(workers),

@@ -1,6 +1,4 @@
-import type { ResourceScanEvent } from "@ctrlplane/validators/events";
 import type { Job } from "bullmq";
-import { Queue, Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -11,11 +9,11 @@ import {
   resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
+import { createWorker, getQueue } from "@ctrlplane/events";
 import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 
-import { redis } from "../redis.js";
 import { getEksResources } from "./aws/eks.js";
 import { getVpcResources as getAwsVpcResources } from "./aws/vpc.js";
 import { getAksResources } from "./azure/aks.js";
@@ -25,13 +23,9 @@ import { getVpcResources as getGoogleVpcResources } from "./google/vpc.js";
 
 const log = logger.child({ label: "resource-scan" });
 
-const resourceScanQueue = new Queue(Channel.ResourceScan, {
-  connection: redis,
-});
-
 const removeResourceJob = (job: Job) =>
   job.repeatJobKey != null
-    ? resourceScanQueue.removeRepeatableByKey(job.repeatJobKey)
+    ? getQueue(Channel.ResourceScan).removeRepeatableByKey(job.repeatJobKey)
     : null;
 
 const getResources = async (rp: any) => {
@@ -57,65 +51,58 @@ const getResources = async (rp: any) => {
   throw new Error("Invalid resource provider");
 };
 
-export const createResourceScanWorker = () =>
-  new Worker<ResourceScanEvent>(
-    Channel.ResourceScan,
-    async (job) => {
-      const { resourceProviderId } = job.data;
+export const resourceScanWorker = createWorker(
+  Channel.ResourceScan,
+  async (job) => {
+    const { resourceProviderId } = job.data;
 
-      const rp = await db
-        .select()
-        .from(resourceProvider)
-        .where(eq(resourceProvider.id, resourceProviderId))
-        .innerJoin(workspace, eq(resourceProvider.workspaceId, workspace.id))
-        .leftJoin(
-          resourceProviderGoogle,
-          eq(resourceProvider.id, resourceProviderGoogle.resourceProviderId),
-        )
-        .leftJoin(
-          resourceProviderAws,
-          eq(resourceProvider.id, resourceProviderAws.resourceProviderId),
-        )
-        .leftJoin(
-          resourceProviderAzure,
-          eq(resourceProvider.id, resourceProviderAzure.resourceProviderId),
-        )
-        .then(takeFirstOrNull);
+    const rp = await db
+      .select()
+      .from(resourceProvider)
+      .where(eq(resourceProvider.id, resourceProviderId))
+      .innerJoin(workspace, eq(resourceProvider.workspaceId, workspace.id))
+      .leftJoin(
+        resourceProviderGoogle,
+        eq(resourceProvider.id, resourceProviderGoogle.resourceProviderId),
+      )
+      .leftJoin(
+        resourceProviderAws,
+        eq(resourceProvider.id, resourceProviderAws.resourceProviderId),
+      )
+      .leftJoin(
+        resourceProviderAzure,
+        eq(resourceProvider.id, resourceProviderAzure.resourceProviderId),
+      )
+      .then(takeFirstOrNull);
 
-      if (rp == null) {
-        log.error(`Resource provider with ID ${resourceProviderId} not found.`);
-        await removeResourceJob(job);
+    if (rp == null) {
+      log.error(`Resource provider with ID ${resourceProviderId} not found.`);
+      await removeResourceJob(job);
+      return;
+    }
+
+    log.info(
+      `Received scanning request for "${rp.resource_provider.name}" (${resourceProviderId}).`,
+    );
+
+    try {
+      const resources = await getResources(rp);
+      if (resources.length === 0) {
+        log.info(
+          `No resources found for provider ${rp.resource_provider.id}, skipping upsert.`,
+        );
         return;
       }
 
       log.info(
-        `Received scanning request for "${rp.resource_provider.name}" (${resourceProviderId}).`,
+        `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
       );
-
-      try {
-        const resources = await getResources(rp);
-        if (resources.length === 0) {
-          log.info(
-            `No resources found for provider ${rp.resource_provider.id}, skipping upsert.`,
-          );
-          return;
-        }
-
-        log.info(
-          `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
-        );
-        await upsertResources(db, resources);
-      } catch (error: any) {
-        log.error(
-          `Error scanning/upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,
-          { error },
-        );
-      }
-    },
-    {
-      connection: redis,
-      removeOnComplete: { age: 1 * 60 * 60, count: 5000 },
-      removeOnFail: { age: 12 * 60 * 60, count: 5000 },
-      concurrency: 10,
-    },
-  );
+      await upsertResources(db, resources);
+    } catch (error: any) {
+      log.error(
+        `Error scanning/upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,
+        { error },
+      );
+    }
+  },
+);

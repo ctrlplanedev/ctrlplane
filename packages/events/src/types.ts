@@ -27,4 +27,5 @@ export type ChannelMap = {
   [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
   [Channel.ReleaseEvaluate]: ReleaseEvaluateJobData;
   [Channel.DispatchJob]: { jobId: string };
+  [Channel.ResourceScan]: { resourceProviderId: string };
 };

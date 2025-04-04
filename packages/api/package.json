@@ -26,6 +26,7 @@
     "@aws-sdk/client-iam": "^3.696.0",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/events": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/secrets": "workspace:*",
