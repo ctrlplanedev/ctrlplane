@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import { isPresent } from "ts-is-present";
 
-import { and, desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -107,22 +107,12 @@ const matchPolicyTargetForResource = async (
  */
 export const getApplicablePolicies = async (
   tx: Tx,
+  workspaceId: string,
   repo: ReleaseRepository,
-  workspaceId?: string,
 ) => {
-  const wsId =
-    workspaceId ??
-    (
-      await tx
-        .select({ workspaceId: schema.resource.workspaceId })
-        .from(schema.resource)
-        .where(eq(schema.resource.id, repo.resourceId))
-        .then(takeFirst)
-    ).workspaceId;
-
   const policy = await tx.query.policy.findMany({
     where: and(
-      eq(schema.policy.workspaceId, wsId),
+      eq(schema.policy.workspaceId, workspaceId),
       eq(schema.policy.enabled, true),
     ),
     with: { targets: true, denyWindows: true, deploymentVersionSelector: true },

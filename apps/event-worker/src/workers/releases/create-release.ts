@@ -1,6 +1,6 @@
 import type { ReleaseRepository } from "@ctrlplane/rule-engine";
 
-import { and, eq } from "@ctrlplane/db";
+import { and, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 // import { Channel, getQueue } from "@ctrlplane/events";
@@ -31,7 +31,13 @@ const createReleaseWithLock = async (
       return;
     }
 
-    const policies = await getApplicablePolicies(db, repo);
+    const { workspaceId } = await db
+      .select({ workspaceId: schema.resource.workspaceId })
+      .from(schema.resource)
+      .where(eq(schema.resource.id, repo.resourceId))
+      .then(takeFirst);
+
+    const policies = await getApplicablePolicies(db, workspaceId, repo);
     const mergedPolicy = mergePolicies(policies);
     if (mergedPolicy?.deploymentVersionSelector == null) {
       await releaseManager.setDesiredRelease(release.id);
