@@ -13,6 +13,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   getEventsForDeploymentRemoved,
   handleEvent,
@@ -120,6 +121,9 @@ const hookRouter = createTRPCRouter({
           .values({ hookId: h.id, runbookId: rb.id })
           .returning()
           .then(takeFirst);
+
+        await getQueue(Channel.NewDeployment).add(dep.id, dep);
+
         return { ...h, runhook: rh };
       }),
     ),
