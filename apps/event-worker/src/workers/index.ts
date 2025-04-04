@@ -4,6 +4,7 @@ import type { Worker } from "bullmq";
 import { Channel } from "@ctrlplane/events";
 
 import { dispatchJobWorker } from "./job-dispatch/index.js";
+import { newDeploymentWorker } from "./new-deployment.js";
 import { resourceScanWorker } from "./resource-scan/index.js";
 
 type Workers<T extends keyof ChannelMap> = {
@@ -11,7 +12,7 @@ type Workers<T extends keyof ChannelMap> = {
 };
 
 export const workers: Workers<keyof ChannelMap> = {
-  [Channel.NewDeployment]: null,
+  [Channel.NewDeployment]: newDeploymentWorker,
   [Channel.NewEnvironment]: null,
   [Channel.ReleaseEvaluate]: null,
   [Channel.DispatchJob]: dispatchJobWorker,

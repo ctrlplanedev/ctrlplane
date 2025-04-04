@@ -22,8 +22,7 @@ export type ReleaseEvaluateJobData = {
 };
 
 export type ChannelMap = {
-  // [Channel.UpsertRelease]: typeof schema.release.$inferInsert;
-  [Channel.NewDeployment]: typeof schema.deployment.$inferSelect;
+  [Channel.NewDeployment]: schema.Deployment;
   [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
   [Channel.ReleaseEvaluate]: ReleaseEvaluateJobData;
   [Channel.DispatchJob]: { jobId: string };
