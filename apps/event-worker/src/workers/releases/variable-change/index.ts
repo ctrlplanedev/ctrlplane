@@ -13,7 +13,7 @@ import {
   releaseSystemVariableChangeEvent,
 } from "@ctrlplane/validators/events";
 
-import { redis } from "../../redis.js";
+import { redis } from "../../../redis.js";
 import { createAndEvaluateRelease } from "../create-release.js";
 
 const getResourceReleases = async (where: SQL) =>

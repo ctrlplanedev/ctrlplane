@@ -15,7 +15,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import { omitNullUndefined } from "../../utils.js";
+import { omitNullUndefined } from "../../../utils.js";
 import { getGoogleClient } from "./client.js";
 
 const log = logger.child({ label: "resource-scan/google/vpc" });

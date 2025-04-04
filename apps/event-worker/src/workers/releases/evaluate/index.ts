@@ -6,7 +6,7 @@ import { evaluate, getReleasesFromDb } from "@ctrlplane/rule-engine";
 import { createCtx, getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Channel } from "@ctrlplane/validators/events";
 
-import { redis } from "../../redis.js";
+import { redis } from "../../../redis.js";
 import { ReleaseRepositoryMutex } from "../mutex.js";
 
 export const createReleaseEvaluateWorker = () =>
