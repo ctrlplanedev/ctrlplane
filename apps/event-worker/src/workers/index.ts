@@ -4,8 +4,8 @@ import type { Worker } from "bullmq";
 import { Channel } from "@ctrlplane/events";
 
 import { dispatchJobWorker } from "./job-dispatch/index.js";
+import { newDeploymentVersionWorker } from "./new-deployment-version.js";
 import { newDeploymentWorker } from "./new-deployment.js";
-import { newDeploymentVersionWorker } from "./releases/new-deployment-version.js";
 import { resourceScanWorker } from "./resource-scan/index.js";
 
 type Workers<T extends keyof ChannelMap> = {
