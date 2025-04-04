@@ -1,4 +1,4 @@
-import type { DeploymentResourceContext, Release } from "./types.js";
+import type { DeploymentResourceContext, ResolvedRelease } from "./types.js";
 
 /**
  * A class that encapsulates candidate releases with utility methods for common
@@ -19,14 +19,14 @@ export class Releases {
   /**
    * The internal array of release candidates
    */
-  private releases: Release[];
+  private releases: ResolvedRelease[];
 
   /**
    * Creates a new CandidateReleases instance.
    *
    * @param releases - The array of releases to manage
    */
-  constructor(releases: Release[]) {
+  constructor(releases: ResolvedRelease[]) {
     this.releases = [...releases];
   }
 
@@ -45,7 +45,7 @@ export class Releases {
    * @param releases - The array of releases to manage
    * @returns A new CandidateReleases instance
    */
-  static from(releases: Release | Release[]): Releases {
+  static from(releases: ResolvedRelease | ResolvedRelease[]): Releases {
     const releasesToInclude = Array.isArray(releases) ? releases : [releases];
     return new Releases(releasesToInclude);
   }
@@ -55,7 +55,7 @@ export class Releases {
    *
    * @returns The array of all releases
    */
-  getAll(): Release[] {
+  getAll(): ResolvedRelease[] {
     return [...this.releases];
   }
 
@@ -64,7 +64,7 @@ export class Releases {
    *
    * @returns The oldest release, or undefined if the collection is empty
    */
-  getOldest(): Release | undefined {
+  getOldest(): ResolvedRelease | undefined {
     if (this.releases.length === 0) return undefined;
 
     return this.releases.reduce(
@@ -81,7 +81,7 @@ export class Releases {
    *
    * @returns The newest release, or undefined if the collection is empty
    */
-  getNewest(): Release | undefined {
+  getNewest(): ResolvedRelease | undefined {
     if (this.releases.length === 0) return undefined;
 
     return this.releases.reduce(
@@ -100,7 +100,7 @@ export class Releases {
    * @returns The desired release if found, or undefined if not found or no ID
    * specified
    */
-  getDesired(context: DeploymentResourceContext): Release | undefined {
+  getDesired(context: DeploymentResourceContext): ResolvedRelease | undefined {
     if (!context.desiredReleaseId) return undefined;
 
     return this.releases.find(
@@ -117,7 +117,9 @@ export class Releases {
    * @returns The effective target release, or undefined if no candidates are
    * available
    */
-  getEffectiveTarget(context: DeploymentResourceContext): Release | undefined {
+  getEffectiveTarget(
+    context: DeploymentResourceContext,
+  ): ResolvedRelease | undefined {
     if (this.releases.length === 0) return undefined;
     return this.getDesired(context) ?? this.getNewest();
   }
@@ -168,7 +170,7 @@ export class Releases {
    * @param referenceRelease - The reference release to compare against
    * @returns A new CandidateReleases instance with filtered releases
    */
-  getCreatedBefore(referenceRelease: Release): Releases {
+  getCreatedBefore(referenceRelease: ResolvedRelease): Releases {
     const filtered = this.releases.filter(
       (release) => release.createdAt < referenceRelease.createdAt,
     );
@@ -182,7 +184,7 @@ export class Releases {
    * @param referenceRelease - The reference release to compare against
    * @returns A new CandidateReleases instance with filtered releases
    */
-  getCreatedAfter(referenceRelease: Release): Releases {
+  getCreatedAfter(referenceRelease: ResolvedRelease): Releases {
     const filtered = this.releases.filter(
       (release) => release.createdAt > referenceRelease.createdAt,
     );
@@ -195,7 +197,7 @@ export class Releases {
    * @param id - The release ID to search for
    * @returns The matching release or undefined if not found
    */
-  findById(id: string): Release | undefined {
+  findById(id: string): ResolvedRelease | undefined {
     return this.releases.find((release) => release.id === id);
   }
 
@@ -223,7 +225,7 @@ export class Releases {
    * @param releases - Releases to add to the collection
    * @returns A new CandidateReleases instance
    */
-  add(releases: Release | Release[]): Releases {
+  add(releases: ResolvedRelease | ResolvedRelease[]): Releases {
     const releasesToAdd = Array.isArray(releases) ? releases : [releases];
     return new Releases([...this.releases, ...releasesToAdd]);
   }
@@ -234,7 +236,7 @@ export class Releases {
    * @param mapper - Function to transform each release
    * @returns A new array with the mapped values
    */
-  map<T>(mapper: (release: Release) => T): T[] {
+  map<T>(mapper: (release: ResolvedRelease) => T): T[] {
     return this.releases.map(mapper);
   }
 
@@ -243,7 +245,7 @@ export class Releases {
    *
    * @param callback - Function to call for each release
    */
-  forEach(callback: (release: Release) => void): void {
+  forEach(callback: (release: ResolvedRelease) => void): void {
     this.releases.forEach(callback);
   }
 
@@ -253,7 +255,7 @@ export class Releases {
    * @param predicate - Function that determines whether to include a release
    * @returns A new CandidateReleases instance with filtered releases
    */
-  filter(predicate: (release: Release) => boolean): Releases {
+  filter(predicate: (release: ResolvedRelease) => boolean): Releases {
     const filtered = this.releases.filter(predicate);
     return new Releases(filtered);
   }
@@ -265,7 +267,9 @@ export class Releases {
    * @returns The first release that satisfies the predicate, or undefined if
    * none is found
    */
-  find(predicate: (release: Release) => boolean): Release | undefined {
+  find(
+    predicate: (release: ResolvedRelease) => boolean,
+  ): ResolvedRelease | undefined {
     return this.releases.find(predicate);
   }
 
@@ -276,7 +280,7 @@ export class Releases {
    * @returns True if at least one release satisfies the predicate, false
    * otherwise
    */
-  some(predicate: (release: Release) => boolean): boolean {
+  some(predicate: (release: ResolvedRelease) => boolean): boolean {
     return this.releases.some(predicate);
   }
 
@@ -286,7 +290,7 @@ export class Releases {
    * @param predicate - Function to test each release
    * @returns True if all releases satisfy the predicate, false otherwise
    */
-  every(predicate: (release: Release) => boolean): boolean {
+  every(predicate: (release: ResolvedRelease) => boolean): boolean {
     return this.releases.every(predicate);
   }
 
@@ -296,7 +300,7 @@ export class Releases {
    * @param index - The index of the release to return
    * @returns The release at the specified index, or undefined if the index is out of bounds
    */
-  at(index: number): Release | undefined {
+  at(index: number): ResolvedRelease | undefined {
     return this.releases[index];
   }
 }

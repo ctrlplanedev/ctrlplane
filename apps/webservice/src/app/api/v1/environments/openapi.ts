@@ -47,6 +47,12 @@ export const openapi: Swagger.SwaggerV3 = {
                       type: "string",
                     },
                   },
+                  deploymentVersionChannels: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                  },
                   metadata: {
                     type: "object",
                     additionalProperties: { type: "string" },

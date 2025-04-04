@@ -4,7 +4,7 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 import type { Releases } from "./releases.js";
 
-export type Release = {
+export type ResolvedRelease = {
   id: string;
   createdAt: Date;
   version: {
@@ -48,7 +48,7 @@ export type DeploymentResourceRuleResult = {
 
 export type DeploymentResourceSelectionResult = {
   allowed: boolean;
-  chosenRelease?: Release;
+  chosenRelease?: ResolvedRelease;
   rejectionReasons: Map<string, string>;
 };
 
@@ -68,7 +68,7 @@ export type Policy = schema.Policy & {
   deploymentVersionSelector: schema.PolicyDeploymentVersionSelector | null;
 };
 
-export type ReleaseRepository = {
+export type ReleaseTargetIdentifer = {
   deploymentId: string;
   environmentId: string;
   resourceId: string;
@@ -77,4 +77,4 @@ export type ReleaseRepository = {
 export type GetReleasesFunc = (
   ctx: DeploymentResourceContext,
   policy: Policy,
-) => Promise<Release[]> | Release[];
+) => Promise<ResolvedRelease[]> | ResolvedRelease[];

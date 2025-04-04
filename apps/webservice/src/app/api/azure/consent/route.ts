@@ -5,10 +5,10 @@ import ms from "ms";
 import { z } from "zod";
 
 import { redis } from "@ctrlplane/api";
-import { resourceScanQueue } from "@ctrlplane/api/queues";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 
 import { env } from "~/env";
 
@@ -18,6 +18,8 @@ const configSchema = z.object({
   subscriptionId: z.string(),
   name: z.string(),
 });
+
+const resourceScanQueue = getQueue(Channel.ResourceScan);
 
 export const GET = async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);

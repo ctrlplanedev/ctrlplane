@@ -6,10 +6,10 @@ import { FORBIDDEN, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import ms from "ms";
 
 import { redis } from "@ctrlplane/api";
-import { resourceScanQueue } from "@ctrlplane/api/queues";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 import { urls } from "~/app/urls";
@@ -24,6 +24,8 @@ type Params = {
 
 const baseUrl = env.BASE_URL;
 const clientId = env.AZURE_APP_CLIENT_ID;
+
+const resourceScanQueue = getQueue(Channel.ResourceScan);
 
 const createResourceProvider = async (
   db: Tx,

@@ -19,6 +19,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
@@ -42,7 +43,6 @@ import {
   DeploymentVersionStatus,
 } from "@ctrlplane/validators/releases";
 
-import { releaseNewVersion } from "../queues";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { versionDeployRouter } from "./version-deploy";
 import { deploymentVersionMetadataKeysRouter } from "./version-metadata-keys";
@@ -338,8 +338,6 @@ export const versionRouter = createTRPCRouter({
       if (versionDeps.length > 0)
         await db.insert(SCHEMA.versionDependency).values(versionDeps);
 
-      await releaseNewVersion.add(rel.id, { versionId: rel.id });
-
       const releaseJobTriggers = await createReleaseJobTriggers(
         db,
         "new_version",
@@ -355,6 +353,8 @@ export const versionRouter = createTRPCRouter({
         .filter(isPassingAllPolicies)
         .then(cancelOldReleaseJobTriggersOnJobDispatch)
         .dispatch();
+
+      getQueue(Channel.NewDeploymentVersion).add(rel.id, rel);
 
       return { ...rel, releaseJobTriggers };
     }),

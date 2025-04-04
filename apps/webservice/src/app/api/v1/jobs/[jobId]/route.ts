@@ -101,7 +101,7 @@ export const GET = request()
         { status: 404 },
       );
 
-    const version =
+    const deploymentVersion =
       row.deployment_version != null
         ? { ...row.deployment_version, metadata: {} }
         : null;
@@ -112,14 +112,14 @@ export const GET = request()
       environment: row.environment,
       resource: row.resource,
       deployment: row.deployment,
-      version,
+      deploymentVersion,
     };
 
     const policyId = je.environment?.policyId;
 
     const approval =
-      je.version?.id && policyId
-        ? await getApprovalDetails(je.version.id, policyId)
+      je.deploymentVersion?.id && policyId
+        ? await getApprovalDetails(je.deploymentVersion.id, policyId)
         : undefined;
 
     const jobVariableRows = await db
@@ -139,8 +139,8 @@ export const GET = request()
       ...je,
       variables,
       release:
-        je.version != null
-          ? { ...je.version, version: je.version.tag }
+        je.deploymentVersion != null
+          ? { ...je.deploymentVersion, version: je.deploymentVersion.tag }
           : { version: undefined },
     };
     if (je.resource == null) return NextResponse.json(jobWithVariables);

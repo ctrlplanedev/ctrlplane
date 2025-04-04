@@ -3,7 +3,7 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceSelectionResult,
-  Release,
+  ResolvedRelease,
 } from "./types.js";
 
 /**
@@ -161,7 +161,7 @@ export class RuleEngine {
   private selectFinalRelease(
     context: DeploymentResourceContext,
     candidates: Releases,
-  ): Release | undefined {
+  ): ResolvedRelease | undefined {
     if (candidates.isEmpty()) {
       return undefined;
     }

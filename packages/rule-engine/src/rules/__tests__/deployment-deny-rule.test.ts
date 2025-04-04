@@ -2,7 +2,10 @@ import { TZDate } from "@date-fns/tz";
 import { Frequency, RRule } from "rrule";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { DeploymentResourceContext, Release } from "../../types.js";
+import type {
+  DeploymentResourceContext,
+  ResolvedRelease,
+} from "../../types.js";
 import { Releases } from "../../releases.js";
 import { DeploymentDenyRule } from "../deployment-deny-rule.js";
 
@@ -12,7 +15,7 @@ describe("DeploymentDenyRule", () => {
 
   beforeEach(() => {
     // Create a sample set of releases
-    const sampleReleases: Release[] = [
+    const sampleReleases: ResolvedRelease[] = [
       {
         id: "rel-1",
         createdAt: new Date("2023-01-01T12:00:00Z"),

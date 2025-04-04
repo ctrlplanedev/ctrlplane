@@ -10,6 +10,7 @@ export enum Channel {
   ReleaseVariableChange = "release-variable-change",
 
   NewDeployment = "new-deployment",
+  NewDeploymentVersion = "new-deployment-version",
   NewEnvironment = "new-environment",
   NewRelease = "new-release",
   NewResource = "new-resource",
@@ -23,9 +24,11 @@ export type ReleaseEvaluateJobData = {
 };
 
 export type ChannelMap = {
-  // [Channel.UpsertRelease]: typeof schema.release.$inferInsert;
-  [Channel.NewDeployment]: typeof schema.deployment.$inferSelect;
+  [Channel.NewDeployment]: schema.Deployment;
+  [Channel.NewDeploymentVersion]: schema.DeploymentVersion;
   [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
   [Channel.NewResource]: typeof schema.resource.$inferSelect;
   [Channel.ReleaseEvaluate]: ReleaseEvaluateJobData;
+  [Channel.DispatchJob]: { jobId: string };
+  [Channel.ResourceScan]: { resourceProviderId: string };
 };
