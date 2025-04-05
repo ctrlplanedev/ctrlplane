@@ -1,5 +1,4 @@
 import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -8,9 +7,7 @@ import {
   and,
   asc,
   eq,
-  isNotNull,
   isNull,
-  ne,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -21,28 +18,20 @@ import {
   deployment,
   deploymentVariable,
   deploymentVariableValue,
-  environment,
   resource,
   resourceMatchesMetadata,
   system,
   updateDeploymentVariable,
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
-import {
-  cancelOldReleaseJobTriggersOnJobDispatch,
-  createReleaseJobTriggers,
-  dispatchReleaseJobTriggers,
-  isPassingAllPolicies,
-  isPassingChannelSelectorPolicy,
-  isPassingNoPendingJobsPolicy,
-} from "@ctrlplane/job-dispatch";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
-import {
-  ComparisonOperator,
-  ConditionType,
-} from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+
+const updateDeploymentVariableQueue = getQueue(
+  Channel.UpdateDeploymentVariable,
+);
 
 const valueRouter = createTRPCRouter({
   create: protectedProcedure
@@ -59,7 +48,7 @@ const valueRouter = createTRPCRouter({
       },
     })
     .input(createDeploymentVariableValue)
-    .mutation(async ({ ctx, input }) =>
+    .mutation(({ ctx, input }) =>
       ctx.db.transaction((tx) =>
         tx
           .insert(deploymentVariableValue)
@@ -72,7 +61,12 @@ const valueRouter = createTRPCRouter({
                 .update(deploymentVariable)
                 .set({ defaultValueId: value.id })
                 .where(eq(deploymentVariable.id, input.variableId));
-
+            const variable = await tx
+              .select()
+              .from(deploymentVariable)
+              .where(eq(deploymentVariable.id, input.variableId))
+              .then(takeFirst);
+            await updateDeploymentVariableQueue.add(variable.id, variable);
             return value;
           }),
       ),
@@ -99,7 +93,7 @@ const valueRouter = createTRPCRouter({
       z.object({ id: z.string().uuid(), data: updateDeploymentVariableValue }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { variable, value } = await ctx.db
+      const { deployment_variable: variable } = await ctx.db
         .select()
         .from(deploymentVariableValue)
         .innerJoin(
@@ -107,32 +101,7 @@ const valueRouter = createTRPCRouter({
           eq(deploymentVariableValue.variableId, deploymentVariable.id),
         )
         .where(eq(deploymentVariableValue.id, input.id))
-        .then(takeFirst)
-        .then((v) => ({
-          variable: v.deployment_variable,
-          value: v.deployment_variable_value,
-        }));
-      const { deploymentId } = variable;
-      const dep = await ctx.db.query.deployment
-        .findFirst({
-          where: eq(deployment.id, deploymentId),
-          with: {
-            system: {
-              with: {
-                environments: {
-                  where: isNotNull(environment.resourceSelector),
-                },
-              },
-            },
-          },
-        })
-        .then((d) => d?.system.environments ?? []);
-
-      const systemCondition: ResourceCondition = {
-        type: ConditionType.Comparison,
-        operator: ComparisonOperator.Or,
-        conditions: dep.map((e) => e.resourceSelector).filter(isPresent),
-      };
+        .then(takeFirst);
 
       const updatedValue = await ctx.db.transaction((tx) =>
         tx
@@ -164,110 +133,7 @@ const valueRouter = createTRPCRouter({
           }),
       );
 
-      const newDefaultValueId = input.data.default
-        ? updatedValue.id
-        : variable.defaultValueId;
-
-      const otherValues = await ctx.db
-        .select()
-        .from(deploymentVariableValue)
-        .where(
-          and(
-            eq(deploymentVariableValue.variableId, updatedValue.variableId),
-            ne(deploymentVariableValue.id, updatedValue.id),
-          ),
-        );
-
-      const getOldResourceSelector = (): ResourceCondition | null => {
-        if (value.id !== variable.defaultValueId) return value.resourceSelector;
-        const conditions = otherValues
-          .map((v) => v.resourceSelector)
-          .filter(isPresent);
-        return {
-          type: ConditionType.Comparison,
-          operator: ComparisonOperator.Or,
-          not: true,
-          conditions,
-        };
-      };
-
-      const getNewResourceSelector = (): ResourceCondition | null => {
-        if (updatedValue.id !== newDefaultValueId)
-          return updatedValue.resourceSelector;
-        const conditions = otherValues
-          .map((v) => v.resourceSelector)
-          .filter(isPresent);
-        return {
-          type: ConditionType.Comparison,
-          operator: ComparisonOperator.Or,
-          not: true,
-          conditions,
-        };
-      };
-
-      const oldResourceSelector: ResourceCondition = {
-        type: ConditionType.Comparison,
-        operator: ComparisonOperator.And,
-        conditions: [systemCondition, getOldResourceSelector()].filter(
-          isPresent,
-        ),
-      };
-      const newResourceSelector: ResourceCondition = {
-        type: ConditionType.Comparison,
-        operator: ComparisonOperator.And,
-        conditions: [systemCondition, getNewResourceSelector()].filter(
-          isPresent,
-        ),
-      };
-
-      const oldResources = await ctx.db.query.resource.findMany({
-        where: and(
-          resourceMatchesMetadata(ctx.db, oldResourceSelector),
-          isNull(resource.deletedAt),
-        ),
-      });
-
-      const newResources = await ctx.db.query.resource.findMany({
-        where: and(
-          resourceMatchesMetadata(ctx.db, newResourceSelector),
-          isNull(resource.deletedAt),
-        ),
-      });
-
-      const oldResourceIds = new Set(oldResources.map((t) => t.id));
-      const newResourceIds = new Set(newResources.map((t) => t.id));
-
-      const addedResources = newResources.filter(
-        (t) => !oldResourceIds.has(t.id),
-      );
-      const removedResources = oldResources.filter(
-        (t) => !newResourceIds.has(t.id),
-      );
-      const stagnantResources = newResources.filter((t) =>
-        oldResourceIds.has(t.id),
-      );
-
-      const resourcesToTrigger = [
-        ...addedResources,
-        ...removedResources,
-        ...(input.data.value !== null ? stagnantResources : []),
-      ];
-
-      if (resourcesToTrigger.length > 0)
-        await createReleaseJobTriggers(ctx.db, "variable_changed")
-          .causedById(ctx.session.user.id)
-          .resources(resourcesToTrigger.map((t) => t.id))
-          .deployments([deploymentId])
-          .filter(isPassingNoPendingJobsPolicy)
-          .filter(isPassingChannelSelectorPolicy)
-          .insert()
-          .then((triggers) =>
-            dispatchReleaseJobTriggers(ctx.db)
-              .releaseTriggers(triggers)
-              .filter(isPassingAllPolicies)
-              .then(cancelOldReleaseJobTriggersOnJobDispatch)
-              .dispatch(),
-          );
+      await updateDeploymentVariableQueue.add(variable.id, variable);
       return updatedValue;
     }),
 
@@ -291,15 +157,20 @@ const valueRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .mutation(async ({ ctx, input }) => {
-      // Note: Due to cascading deletes set up in the schema, this will also delete:
-      // - All deploymentVariableValueResource entries for this value
-      // - All deploymentVariableValueResourceSelector entries for those resources
-
-      return ctx.db
+      const value = await ctx.db
         .delete(deploymentVariableValue)
         .where(eq(deploymentVariableValue.id, input))
         .returning()
-        .then(takeFirstOrNull);
+        .then(takeFirst);
+
+      const variable = await ctx.db
+        .select()
+        .from(deploymentVariable)
+        .where(eq(deploymentVariable.id, value.variableId))
+        .then(takeFirst);
+
+      await updateDeploymentVariableQueue.add(variable.id, variable);
+      return value;
     }),
 });
 
@@ -450,6 +321,7 @@ export const deploymentVariableRouter = createTRPCRouter({
           .where(eq(deploymentVariable.id, variable.id));
       }
 
+      await updateDeploymentVariableQueue.add(variable.id, variable);
       return variable;
     }),
 
@@ -461,11 +333,17 @@ export const deploymentVariableRouter = createTRPCRouter({
           .on({ type: "deploymentVariable", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateDeploymentVariable }))
-    .mutation(async ({ ctx, input }) =>
+    .mutation(({ ctx, input }) =>
       ctx.db
         .update(deploymentVariable)
         .set(input.data)
-        .where(eq(deploymentVariable.id, input.id)),
+        .where(eq(deploymentVariable.id, input.id))
+        .returning()
+        .then(takeFirst)
+        .then(async (variable) => {
+          await updateDeploymentVariableQueue.add(variable.id, variable);
+          return variable;
+        }),
     ),
 
   delete: protectedProcedure
@@ -477,11 +355,15 @@ export const deploymentVariableRouter = createTRPCRouter({
         }),
     })
     .input(z.string().uuid())
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db
+    .mutation(({ ctx, input }) =>
+      ctx.db
         .delete(deploymentVariable)
         .where(eq(deploymentVariable.id, input))
         .returning()
-        .then(takeFirstOrNull);
-    }),
+        .then(takeFirst)
+        .then(async (variable) => {
+          await updateDeploymentVariableQueue.add(variable.id, variable);
+          return variable;
+        }),
+    ),
 });
