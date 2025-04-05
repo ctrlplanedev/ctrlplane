@@ -5,7 +5,7 @@ import { isPresent } from "ts-is-present";
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
+import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import {
@@ -65,15 +65,27 @@ const createReleaseTargets = (
   environmentId: string,
   deployments: schema.Deployment[],
 ) =>
-  db.insert(schema.releaseTarget).values(
-    newlyMatchedResources.flatMap((resource) =>
-      deployments.map((deployment) => ({
-        resourceId: resource.id,
-        deploymentId: deployment.id,
-        environmentId: environmentId,
-      })),
-    ),
-  );
+  db
+    .insert(schema.releaseTarget)
+    .values(
+      newlyMatchedResources.flatMap((resource) =>
+        deployments.map((deployment) => ({
+          resourceId: resource.id,
+          deploymentId: deployment.id,
+          environmentId: environmentId,
+        })),
+      ),
+    )
+    .onConflictDoNothing()
+    .returning()
+    .then((releaseTargets) =>
+      getQueue(Channel.EvaluateReleaseTarget).addBulk(
+        releaseTargets.map((rt) => ({
+          name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+          data: rt,
+        })),
+      ),
+    );
 
 const removeReleaseTargets = (
   db: Tx,
