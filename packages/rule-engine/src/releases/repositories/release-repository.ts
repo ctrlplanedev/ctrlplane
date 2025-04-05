@@ -7,6 +7,7 @@ import * as schema from "@ctrlplane/db/schema";
 
 import type { Policy, ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable } from "../variables/types.js";
+import type { Release, ReleaseRepository, ReleaseWithId } from "./types.js";
 import type {
   Release,
   ReleaseRepository,
