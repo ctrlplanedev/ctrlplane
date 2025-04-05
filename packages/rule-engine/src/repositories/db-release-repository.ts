@@ -153,14 +153,15 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
       .returning()
       .then(takeFirst);
 
-    await tx.insert(schema.releaseVariable).values(
-      release.variables.map((v) => ({
-        releaseId: dbRelease.id,
-        key: v.key,
-        value: v.value,
-        sensitive: v.sensitive,
-      })),
-    );
+    if (release.variables.length > 0)
+      await tx.insert(schema.releaseVariable).values(
+        release.variables.map((v) => ({
+          releaseId: dbRelease.id,
+          key: v.key,
+          value: v.value,
+          sensitive: v.sensitive,
+        })),
+      );
 
     return { ...release, ...dbRelease };
   }

@@ -78,7 +78,7 @@ export const newDeploymentVersionWorker = createWorker(
       const resource = resources.find((r) => r.id === rt.resourceId);
       if (resource == null) throw new Error("Resource not found");
 
-      await createRelease(db, rt, resource.workspaceId);
+      await createRelease(db, rt, resource.workspaceId, version.id);
     });
     await Promise.all(createReleasePromises);
 

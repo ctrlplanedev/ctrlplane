@@ -48,9 +48,13 @@ export const createRelease = async (
   if (desiredVersionId == null)
     throw new Error("Could not find desired version");
   const variables = await repo.getLatestVariables();
-
+  const identifier = {
+    resourceId: releaseTarget.resourceId,
+    environmentId: releaseTarget.environmentId,
+    deploymentId: releaseTarget.deploymentId,
+  };
   const { release, created } = await repo.upsert(
-    releaseTarget,
+    identifier,
     desiredVersionId,
     variables,
   );

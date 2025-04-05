@@ -8,6 +8,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
+import { createRelease } from "@ctrlplane/rule-engine";
 import {
   ComparisonOperator,
   ConditionType,
@@ -61,6 +62,7 @@ const getAffectedResources = async (
 
 const createReleaseTargets = (
   db: Tx,
+  workspaceId: string,
   newlyMatchedResources: schema.Resource[],
   environmentId: string,
   deployments: schema.Deployment[],
@@ -78,14 +80,19 @@ const createReleaseTargets = (
     )
     .onConflictDoNothing()
     .returning()
-    .then((releaseTargets) =>
-      getQueue(Channel.EvaluateReleaseTarget).addBulk(
+    .then(async (releaseTargets) => {
+      const createReleasePromises = releaseTargets.map((rt) =>
+        createRelease(db, rt, workspaceId),
+      );
+      await Promise.all(createReleasePromises);
+
+      await getQueue(Channel.EvaluateReleaseTarget).addBulk(
         releaseTargets.map((rt) => ({
           name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
           data: rt,
         })),
-      ),
-    );
+      );
+    });
 
 const removeReleaseTargets = (
   db: Tx,
@@ -204,6 +211,7 @@ export const envSelectorUpdateWorker = createWorker(
 
     const createReleaseTargetsPromise = createReleaseTargets(
       db,
+      workspaceId,
       newlyMatchedResources,
       environment.id,
       deployments,
