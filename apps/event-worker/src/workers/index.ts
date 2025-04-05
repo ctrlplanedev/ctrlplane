@@ -18,7 +18,7 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.NewDeploymentVersion]: newDeploymentVersionWorker,
   [Channel.NewEnvironment]: null,
   [Channel.EnvironmentSelectorUpdate]: envSelectorUpdateWorker,
-  [Channel.ReleaseEvaluate]: null,
+  [Channel.EvaluateReleaseTarget]: null,
   [Channel.DispatchJob]: dispatchJobWorker,
   [Channel.ResourceScan]: resourceScanWorker,
 };

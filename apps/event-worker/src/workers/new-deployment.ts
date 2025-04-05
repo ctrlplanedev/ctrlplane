@@ -47,7 +47,7 @@ const getDeploymentResources = async (
   return resources;
 };
 
-const evaluatedQueue = getQueue(Channel.ReleaseEvaluate);
+const evaluatedQueue = getQueue(Channel.EvaluateReleaseTarget);
 
 export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,

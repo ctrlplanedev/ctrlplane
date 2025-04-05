@@ -15,10 +15,11 @@ export enum Channel {
   NewEnvironment = "new-environment",
   EnvironmentSelectorUpdate = "environment-selector-update",
   NewRelease = "new-release",
-  ReleaseEvaluate = "release-evaluate",
+
+  EvaluateReleaseTarget = "evaluate-release-target",
 }
 
-export type ReleaseEvaluateJobData = {
+export type EvaluateReleaseTargetJob = {
   environmentId: string;
   resourceId: string;
   deploymentId: string;
@@ -31,7 +32,7 @@ export type ChannelMap = {
   [Channel.EnvironmentSelectorUpdate]: schema.Environment & {
     oldSelector: ResourceCondition | null;
   };
-  [Channel.ReleaseEvaluate]: ReleaseEvaluateJobData;
+  [Channel.EvaluateReleaseTarget]: EvaluateReleaseTargetJob;
   [Channel.DispatchJob]: { jobId: string };
   [Channel.ResourceScan]: { resourceProviderId: string };
 };

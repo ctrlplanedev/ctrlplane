@@ -1,8 +1,7 @@
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { createWorker } from "@ctrlplane/events";
-import { Channel } from "@ctrlplane/validators/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { JobAgentType } from "@ctrlplane/validators/jobs";
 
 import { dispatchGithubJob } from "./github.js";
