@@ -12,9 +12,13 @@ export enum Channel {
 
   NewDeployment = "new-deployment",
   NewDeploymentVersion = "new-deployment-version",
+
   NewEnvironment = "new-environment",
   EnvironmentSelectorUpdate = "environment-selector-update",
   NewRelease = "new-release",
+
+  UpdateDeploymentVariable = "update-deployment-variable",
+  UpdateResourceVariable = "update-resource-variable",
 
   EvaluateReleaseTarget = "evaluate-release-target",
 }
@@ -28,10 +32,13 @@ export type EvaluateReleaseTargetJob = {
 export type ChannelMap = {
   [Channel.NewDeployment]: schema.Deployment;
   [Channel.NewDeploymentVersion]: schema.DeploymentVersion;
+  [Channel.UpdateDeploymentVariable]: schema.DeploymentVariable;
+  [Channel.UpdateResourceVariable]: schema.ResourceVariable;
   [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
   [Channel.EnvironmentSelectorUpdate]: schema.Environment & {
     oldSelector: ResourceCondition | null;
   };
+
   [Channel.EvaluateReleaseTarget]: EvaluateReleaseTargetJob;
   [Channel.DispatchJob]: { jobId: string };
   [Channel.ResourceScan]: { resourceProviderId: string };
