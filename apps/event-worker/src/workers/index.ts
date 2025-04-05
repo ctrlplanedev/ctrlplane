@@ -7,6 +7,7 @@ import { envSelectorUpdateWorker } from "./env-selector-update.js";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
 import { newDeploymentVersionWorker } from "./new-deployment-version.js";
 import { newDeploymentWorker } from "./new-deployment.js";
+import { policyEvaluate } from "./policy-evaluate.js";
 import { resourceScanWorker } from "./resource-scan/index.js";
 import { updateDeploymentVariableWorker } from "./update-deployment-variable.js";
 import { updateResourceVariableWorker } from "./update-resource-variable.js";
@@ -22,7 +23,7 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.EnvironmentSelectorUpdate]: envSelectorUpdateWorker,
   [Channel.UpdateDeploymentVariable]: updateDeploymentVariableWorker,
   [Channel.UpdateResourceVariable]: updateResourceVariableWorker,
-  [Channel.EvaluateReleaseTarget]: null,
+  [Channel.EvaluateReleaseTarget]: policyEvaluate,
   [Channel.DispatchJob]: dispatchJobWorker,
   [Channel.ResourceScan]: resourceScanWorker,
 };
