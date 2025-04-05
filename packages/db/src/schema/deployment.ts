@@ -106,6 +106,10 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
     fields: [deployment.systemId],
     references: [system.id],
   }),
+  jobAgent: one(jobAgent, {
+    fields: [deployment.jobAgentId],
+    references: [jobAgent.id],
+  }),
 }));
 
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
