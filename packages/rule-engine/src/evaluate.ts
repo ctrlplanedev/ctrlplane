@@ -1,3 +1,6 @@
+import _ from "lodash";
+
+import type { ReleaseRepository } from "./repositories/types.js";
 import type { DeploymentResourceContext, GetReleasesFunc } from "./types";
 import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
@@ -49,4 +52,32 @@ export const evaluate = async (
   const releases = await getReleases(context, mergedPolicy);
   const releaseCollection = Releases.from(releases);
   return engine.evaluate(releaseCollection, context);
+};
+
+export const evaluateRepository = async (repository: ReleaseRepository) => {
+  const ctx = await repository.getCtx();
+  if (ctx == null) return { allowed: false, release: undefined };
+
+  const releases = await repository.findMatchingReleases();
+  const resolvedReleases = releases.map((r) => ({
+    ...r,
+    version: {
+      ...r.version,
+      metadata: _(r.version.metadata)
+        .map((v) => [v.key, v.value])
+        .fromPairs()
+        .value(),
+    },
+    variables: _(r.variables)
+      .map((v) => [v.key, v.value])
+      .fromPairs()
+      .value(),
+  }));
+  const releaseCollection = Releases.from(resolvedReleases);
+
+  const policy = await repository.getPolicy();
+  const rules = [...denyWindows(policy)];
+  const engine = new RuleEngine(rules);
+
+  return engine.evaluate(releaseCollection, ctx);
 };

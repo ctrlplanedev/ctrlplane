@@ -2,22 +2,28 @@ import type { Tx } from "@ctrlplane/db";
 import { isAfter } from "date-fns";
 
 import { and, desc, eq, exists, gte, lte } from "@ctrlplane/db";
-import * as SCHEMA from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import type { Policy } from "../../types.js";
-import type { ReleaseWithVersionAndVariables } from "./types.js";
+import type { Policy } from "../types.js";
+import type { CompleteRelease } from "./types.js";
 
 const log = logger.child({
   module: "rule-engine",
   function: "getReleases",
 });
 
-const getIsDateBoundsValid = (
+/**
+ * Checks if the date bounds between the latest deployed release and desired release are valid
+ * @param latestDeployedReleaseDate - Creation date of the latest deployed release
+ * @param desiredReleaseCreatedAt - Creation date of the desired release
+ * @returns True if dates are valid (deployed not after desired)
+ */
+const isDateBoundsValid = (
   latestDeployedReleaseDate?: Date,
   desiredReleaseCreatedAt?: Date,
-) => {
+): boolean => {
   if (latestDeployedReleaseDate == null) return true;
   if (desiredReleaseCreatedAt == null) return true;
   return !isAfter(latestDeployedReleaseDate, desiredReleaseCreatedAt);
@@ -36,9 +42,9 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
   db: Tx,
   releaseTargetId: string,
   policy?: Policy | null,
-): Promise<ReleaseWithVersionAndVariables[]> => {
+): Promise<CompleteRelease[]> => {
   const releaseTarget = await db.query.releaseTarget.findFirst({
-    where: eq(SCHEMA.releaseTarget.id, releaseTargetId),
+    where: eq(schema.releaseTarget.id, releaseTargetId),
     with: {
       desiredRelease: true,
       releases: {
@@ -46,17 +52,17 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
         where: exists(
           db
             .select()
-            .from(SCHEMA.releaseJob)
-            .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
+            .from(schema.releaseJob)
+            .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
             .where(
               and(
-                eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
-                eq(SCHEMA.job.status, JobStatus.Successful),
+                eq(schema.releaseJob.releaseId, schema.release.id),
+                eq(schema.job.status, JobStatus.Successful),
               ),
             )
             .limit(1),
         ),
-        orderBy: desc(SCHEMA.release.createdAt),
+        orderBy: desc(schema.release.createdAt),
       },
     },
   });
@@ -65,37 +71,38 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
 
   const latestDeployedRelease = releaseTarget.releases.at(0);
 
-  const isDateBoundsValid = getIsDateBoundsValid(
+  const dateCheckResult = isDateBoundsValid(
     latestDeployedRelease?.createdAt,
     releaseTarget.desiredRelease?.createdAt,
   );
 
-  if (!isDateBoundsValid)
+  if (!dateCheckResult) {
     log.warn(
       `Date bounds are invalid, latestDeployedRelease is after desiredRelease: 
         latestDeployedRelease: ${latestDeployedRelease?.createdAt != null ? latestDeployedRelease.createdAt.toISOString() : "null"}, 
         releaseTarget: ${releaseTarget.desiredRelease?.createdAt != null ? releaseTarget.desiredRelease.createdAt.toISOString() : "null"}`,
     );
+  }
 
   return db.query.release.findMany({
     where: and(
-      eq(SCHEMA.release.releaseTargetId, releaseTarget.id),
-      SCHEMA.deploymentVersionMatchesCondition(
+      eq(schema.release.releaseTargetId, releaseTarget.id),
+      schema.deploymentVersionMatchesCondition(
         db,
         policy?.deploymentVersionSelector?.deploymentVersionSelector,
       ),
       latestDeployedRelease != null
-        ? gte(SCHEMA.release.createdAt, latestDeployedRelease.createdAt)
+        ? gte(schema.release.createdAt, latestDeployedRelease.createdAt)
         : undefined,
       releaseTarget.desiredRelease != null
-        ? lte(SCHEMA.release.createdAt, releaseTarget.desiredRelease.createdAt)
+        ? lte(schema.release.createdAt, releaseTarget.desiredRelease.createdAt)
         : undefined,
     ),
     with: {
       version: { with: { metadata: true } },
       variables: true,
     },
-    orderBy: desc(SCHEMA.release.createdAt),
+    orderBy: desc(schema.release.createdAt),
   });
 };
 
@@ -104,32 +111,34 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
  * release target
  *
  * @param tx - Database transaction object for querying
+ * @param policy - The policy to filter releases by
  * @param releaseTarget - The release target to find matching releases for
- * @param workspaceId - ID of the workspace to get policies from
- * @returns Promise resolving to the latest matching release, or null if none
- * found
+ * @returns Promise resolving to the latest matching release, or undefined if none found
  */
 export const findLatestPolicyMatchingRelease = async (
   tx: Tx,
   policy: Policy | null,
   releaseTarget: { id: string },
-): Promise<ReleaseWithVersionAndVariables | undefined> => {
-  if (policy?.deploymentVersionSelector == null)
+): Promise<CompleteRelease | undefined> => {
+  // If no deployment version selector in policy, return latest release for target
+  if (policy?.deploymentVersionSelector == null) {
     return tx.query.release.findFirst({
-      where: eq(SCHEMA.release.releaseTargetId, releaseTarget.id),
-      orderBy: desc(SCHEMA.release.createdAt),
+      where: eq(schema.release.releaseTargetId, releaseTarget.id),
+      orderBy: desc(schema.release.createdAt),
       with: { variables: true, version: { with: { metadata: true } } },
     });
+  }
 
+  // Otherwise filter by policy deployment version selector
   return tx.query.release.findFirst({
     where: and(
-      eq(SCHEMA.release.releaseTargetId, releaseTarget.id),
-      SCHEMA.deploymentVersionMatchesCondition(
+      eq(schema.release.releaseTargetId, releaseTarget.id),
+      schema.deploymentVersionMatchesCondition(
         tx,
         policy.deploymentVersionSelector.deploymentVersionSelector,
       ),
     ),
     with: { variables: true, version: { with: { metadata: true } } },
-    orderBy: desc(SCHEMA.release.createdAt),
+    orderBy: desc(schema.release.createdAt),
   });
 };

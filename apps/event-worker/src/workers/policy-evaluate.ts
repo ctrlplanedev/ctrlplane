@@ -1,43 +1,44 @@
 import _ from "lodash";
 
+import { and, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
-import { DatabaseReleaseRepository, evaluate } from "@ctrlplane/rule-engine";
-import { createCtx } from "@ctrlplane/rule-engine/db";
+import {
+  DatabaseReleaseRepository,
+  evaluateRepository,
+} from "@ctrlplane/rule-engine";
+
+import { ReleaseTargetMutex } from "../releases/mutex.js";
 
 export const policyEvaluate = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
-    const ctx = await createCtx(db, job.data);
-    if (!ctx) {
-      throw new Error("Failed to create context");
-    }
-    const releaseRepository = await DatabaseReleaseRepository.create({
-      ...ctx,
-      workspaceId: ctx.resource.workspaceId,
-    });
-    const release = await releaseRepository.getNewestRelease();
-    const policy = await releaseRepository.getPolicy();
-    const releases = await releaseRepository
-      .getApplicableReleases(policy)
-      .then((r) =>
-        r.map((r) => ({
-          ...r,
-          version: {
-            ...r.version,
-            metadata: _(r.version.metadata)
-              .map((v) => [v.key, v.value])
-              .fromPairs()
-              .value(),
-          },
-          variables: _(r.variables)
-            .map((v) => [v.key, v.value])
-            .fromPairs()
-            .value(),
-        })),
-      );
+    const mutex = await ReleaseTargetMutex.lock(job.data);
+    try {
+      const releaseTarget = await db.query.releaseTarget.findFirst({
+        where: and(
+          eq(schema.releaseTarget.resourceId, job.data.resourceId),
+          eq(schema.releaseTarget.environmentId, job.data.environmentId),
+          eq(schema.releaseTarget.deploymentId, job.data.deploymentId),
+        ),
+        with: {
+          resource: true,
+          environment: true,
+          deployment: true,
+        },
+      });
+      if (releaseTarget == null)
+        throw new Error("Failed to get release target");
 
-    if (release != null) await releaseRepository.setDesired(release.versionId);
-    await evaluate(policy, ctx, () => releases);
+      const releaseRepository = await DatabaseReleaseRepository.create({
+        ...releaseTarget,
+        workspaceId: releaseTarget.resource.workspaceId,
+      });
+
+      await evaluateRepository(releaseRepository);
+    } finally {
+      await mutex.unlock();
+    }
   },
 );

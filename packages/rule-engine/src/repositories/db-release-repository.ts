@@ -5,30 +5,36 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Policy, ReleaseTargetIdentifier } from "../../types.js";
-import type { MaybeVariable } from "../variables/types.js";
-import type { Release, ReleaseRepository, ReleaseWithId } from "./types.js";
 import type {
+  DeploymentResourceContext,
+  Policy,
+  ReleaseTargetIdentifier,
+} from "../types.js";
+import type {
+  CompleteRelease,
   Release,
   ReleaseRepository,
   ReleaseWithId,
-  ReleaseWithVersionAndVariables,
 } from "./types.js";
-import { getApplicablePolicies } from "../../db/get-applicable-policies.js";
-import { mergePolicies } from "../../utils/merge-policies.js";
-import { VariableManager } from "../variables/variables.js";
+import type { MaybeVariable } from "./variables/types.js";
+import { getApplicablePolicies } from "../db/get-applicable-policies.js";
+import { mergePolicies } from "../utils/merge-policies.js";
 import {
   findLatestPolicyMatchingRelease,
   findPolicyMatchingReleasesBetweenDeployments,
 } from "./get-releases.js";
+import { VariableManager } from "./variables/variables.js";
 
-type ReleaseTarget = {
+/**
+ * Release target with associated identifiers
+ */
+interface ReleaseTarget {
   id: string;
   deploymentId: string;
   environmentId: string;
   resourceId: string;
   workspaceId: string;
-};
+}
 
 /**
  * Repository implementation that combines database operations with business logic
@@ -50,6 +56,9 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
     );
   }
 
+  // Cache for the calculated policy
+  private cachedPolicy: Policy | null = null;
+
   private constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
@@ -66,24 +75,33 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
 
   /**
    * Gets the merged policy that applies to this release target
+   * Uses a cached value if available
+   * @param forceRefresh - Whether to force a refresh of the policy from DB
    * @returns The applicable policy, or null if none exist
    */
-  async getPolicy(): Promise<Policy | null> {
+  async getPolicy(forceRefresh = false): Promise<Policy | null> {
+    // Return cached policy if available and refresh not forced
+    if (!forceRefresh && this.cachedPolicy !== null) {
+      return this.cachedPolicy;
+    }
+
     const policies = await getApplicablePolicies(
       this.db,
       this.releaseTarget.workspaceId,
       this.releaseTarget,
     );
-    return mergePolicies(policies);
+
+    this.cachedPolicy = mergePolicies(policies);
+    return this.cachedPolicy;
   }
 
   /**
-   * Gets all releases that match the current policy constraints
-   * @returns Array of matching releases
+   * Retrieves all releases that match the given policy
+   * @param policy - Optional policy to use; if not provided, will use cached or fetched policy
+   * @returns Promise resolving to array of matching releases
    */
-  async getApplicableReleases(
-    policy: Policy | null,
-  ): Promise<ReleaseWithVersionAndVariables[]> {
+  async findMatchingReleases(): Promise<CompleteRelease[]> {
+    const policy = await this.getPolicy();
     return findPolicyMatchingReleasesBetweenDeployments(
       this.db,
       this.releaseTarget.id,
@@ -92,11 +110,13 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
   }
 
   /**
-   * Gets the most recent release that matches policy constraints
-   * @returns The newest matching release, or null if none exist
+   * Gets the most recent release matching policy constraints
+   * @param policy - Optional policy to use; if not provided, will use cached or fetched policy
+   * @returns Promise resolving to the latest matching release or null
    */
-  async getNewestRelease(): Promise<ReleaseWithVersionAndVariables | null> {
+  async findLatestRelease(): Promise<CompleteRelease | null> {
     const policy = await this.getPolicy();
+
     return (
       (await findLatestPolicyMatchingRelease(
         this.db,
@@ -115,7 +135,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
   private async createReleaseInTransaction(
     release: Omit<Release, "id" | "createdAt">,
     tx: Tx,
-  ) {
+  ): Promise<ReleaseWithId> {
     const dbRelease = await tx
       .insert(schema.release)
       .values({ ...release, releaseTargetId: this.releaseTarget.id })
@@ -139,7 +159,9 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @param release - The release to create
    * @returns The created release with ID
    */
-  async create(release: Omit<Release, "id" | "createdAt">) {
+  async create(
+    release: Omit<Release, "id" | "createdAt">,
+  ): Promise<ReleaseWithId> {
     return this.db.transaction((tx) =>
       this.createReleaseInTransaction(release, tx),
     );
@@ -157,9 +179,9 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
     versionId: string,
     variables: MaybeVariable[],
   ): Promise<{ created: boolean; release: ReleaseWithId }> {
-    const latestRelease = await this.getNewestRelease();
+    const latestRelease = await this.findLatestRelease();
 
-    const latestR = {
+    const latestReleaseInfo = {
       versionId: latestRelease?.versionId,
       variables: _(latestRelease?.variables ?? [])
         .map((v) => [v.key, v.value])
@@ -167,7 +189,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
         .value(),
     };
 
-    const newR = {
+    const newReleaseInfo = {
       versionId,
       variables: _(variables)
         .compact()
@@ -176,7 +198,8 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
         .value(),
     };
 
-    const isSame = latestRelease != null && _.isEqual(latestR, newR);
+    const isSame =
+      latestRelease != null && _.isEqual(latestReleaseInfo, newReleaseInfo);
     return isSame
       ? { created: false, release: latestRelease }
       : {
@@ -191,13 +214,24 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
   }
 
   /**
-   * Sets the desired release for this release target
-   * @param options - The release target identifier and desired release ID
+   * Sets the desired release for the target
+   * @param desiredReleaseId - ID of the release to set as desired
    */
-  async setDesired(desiredReleaseId: string) {
+  async setDesiredRelease(desiredReleaseId: string | null): Promise<void> {
     await this.db
       .update(schema.releaseTarget)
       .set({ desiredReleaseId })
       .where(eq(schema.releaseTarget.id, this.releaseTarget.id));
+  }
+
+  async getCtx(): Promise<DeploymentResourceContext | undefined> {
+    return this.db.query.releaseTarget.findFirst({
+      where: eq(schema.releaseTarget.id, this.releaseTarget.id),
+      with: {
+        resource: true,
+        environment: true,
+        deployment: true,
+      },
+    });
   }
 }
