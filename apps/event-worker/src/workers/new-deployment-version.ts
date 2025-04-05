@@ -5,6 +5,7 @@ import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { createRelease } from "@ctrlplane/rule-engine";
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -72,6 +73,16 @@ export const newDeploymentVersionWorker = createWorker(
       .insert(schema.releaseTarget)
       .values(releaseTargets)
       .onConflictDoNothing();
+
+    const createReleasePromises = releaseTargets.map(async (rt) => {
+      const resource = await db.query.resource.findFirst({
+        where: eq(schema.resource.id, rt.resourceId),
+      });
+      if (resource == null) throw new Error("Resource not found");
+
+      await createRelease(db, rt, resource.workspaceId);
+    });
+    await Promise.all(createReleasePromises);
 
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(
       releaseTargets.map((rt) => ({

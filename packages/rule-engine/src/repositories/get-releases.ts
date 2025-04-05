@@ -142,3 +142,19 @@ export const findLatestPolicyMatchingRelease = async (
     orderBy: desc(schema.release.createdAt),
   });
 };
+
+export const findAllPolicyMatchingReleases = async (
+  tx: Tx,
+  policy: Policy | null,
+  releaseTarget: { id: string },
+): Promise<CompleteRelease[]> =>
+  tx.query.release.findMany({
+    where: and(
+      eq(schema.release.releaseTargetId, releaseTarget.id),
+      schema.deploymentVersionMatchesCondition(
+        tx,
+        policy?.deploymentVersionSelector?.deploymentVersionSelector,
+      ),
+    ),
+    with: { variables: true, version: { with: { metadata: true } } },
+  });

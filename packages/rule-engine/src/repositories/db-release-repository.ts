@@ -20,6 +20,7 @@ import type { MaybeVariable } from "./variables/types.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import {
+  findAllPolicyMatchingReleases,
   findLatestPolicyMatchingRelease,
   findPolicyMatchingReleasesBetweenDeployments,
 } from "./get-releases.js";
@@ -96,7 +97,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
   }
 
   /**
-   * Retrieves all releases that match the given policy
+   * Retrieves all releases that match the given policy between latest deployed and desired release
    * @param policy - Optional policy to use; if not provided, will use cached or fetched policy
    * @returns Promise resolving to array of matching releases
    */
@@ -107,6 +108,16 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
       this.releaseTarget.id,
       policy,
     );
+  }
+
+  /**
+   * Retrieves all releases that match the given policy
+   * @param policy - Optional policy to use; if not provided, will use cached or fetched policy
+   * @returns Promise resolving to array of matching releases
+   */
+  async findAllPolicyMatchingReleases(): Promise<CompleteRelease[]> {
+    const policy = await this.getPolicy();
+    return findAllPolicyMatchingReleases(this.db, policy, this.releaseTarget);
   }
 
   /**
