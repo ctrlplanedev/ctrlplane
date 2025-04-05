@@ -75,9 +75,7 @@ export const newDeploymentVersionWorker = createWorker(
       .onConflictDoNothing();
 
     const createReleasePromises = releaseTargets.map(async (rt) => {
-      const resource = await db.query.resource.findFirst({
-        where: eq(schema.resource.id, rt.resourceId),
-      });
+      const resource = resources.find((r) => r.id === rt.resourceId);
       if (resource == null) throw new Error("Resource not found");
 
       await createRelease(db, rt, resource.workspaceId);
