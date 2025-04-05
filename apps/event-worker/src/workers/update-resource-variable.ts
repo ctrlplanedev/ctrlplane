@@ -13,7 +13,7 @@ export const updateResourceVariableWorker = createWorker(
       .from(schema.resource)
       .innerJoin(
         schema.system,
-        eq(schema.workspace.id, schema.system.workspaceId),
+        eq(schema.resource.workspaceId, schema.system.workspaceId),
       )
       .innerJoin(
         schema.deployment,
