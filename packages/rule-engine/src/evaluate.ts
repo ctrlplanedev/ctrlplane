@@ -1,9 +1,11 @@
-import type { DeploymentResourceContext, GetReleasesFunc } from "./types";
+import _ from "lodash";
+
+import type { ReleaseRepository } from "./repositories/types.js";
+import type { DeploymentResourceSelectionResult } from "./types";
 import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
 import { RuleEngine } from "./rule-engine.js";
 import { DeploymentDenyRule } from "./rules/deployment-deny-rule.js";
-import { mergePolicies } from "./utils/merge-policies.js";
 
 const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -29,24 +31,60 @@ const denyWindows = (policy: Policy | null) =>
  * @returns A promise resolving to the evaluation result, including allowed
  * status and chosen release
  */
-export const evaluate = async (
-  policy: Policy | Policy[] | null,
-  context: DeploymentResourceContext,
-  getReleases: GetReleasesFunc,
-) => {
-  const policies =
-    policy == null ? [] : Array.isArray(policy) ? policy : [policy];
+// export const evaluate = async (
+//   policy: Policy | Policy[] | null,
+//   context: DeploymentResourceContext,
+//   getReleases: GetReleasesFunc,
+// ): Promise<DeploymentResourceSelectionResult> => {
+//   const policies =
+//     policy == null ? [] : Array.isArray(policy) ? policy : [policy];
 
-  const mergedPolicy = mergePolicies(policies);
-  if (mergedPolicy == null)
+//   const mergedPolicy = mergePolicies(policies);
+//   if (mergedPolicy == null)
+//     return {
+//       allowed: false,
+//       chosenRelease: undefined,
+//       rejectionReasons: new Map(),
+//     };
+
+//   const rules = [...denyWindows(mergedPolicy)];
+//   const engine = new RuleEngine(rules);
+//   const releases = await getReleases(context, mergedPolicy);
+//   const releaseCollection = Releases.from(releases);
+//   return engine.evaluate(releaseCollection, context);
+// };
+
+export const evaluateRepository = async (
+  repository: ReleaseRepository,
+): Promise<DeploymentResourceSelectionResult> => {
+  const ctx = await repository.getCtx();
+  if (ctx == null)
     return {
       allowed: false,
-      release: undefined,
+      chosenRelease: undefined,
+      rejectionReasons: new Map(),
     };
 
-  const rules = [...denyWindows(mergedPolicy)];
+  const releases = await repository.findMatchingReleases();
+  const resolvedReleases = releases.map((r) => ({
+    ...r,
+    version: {
+      ...r.version,
+      metadata: _(r.version.metadata)
+        .map((v) => [v.key, v.value])
+        .fromPairs()
+        .value(),
+    },
+    variables: _(r.variables)
+      .map((v) => [v.key, v.value])
+      .fromPairs()
+      .value(),
+  }));
+  const releaseCollection = Releases.from(resolvedReleases);
+
+  const policy = await repository.getPolicy();
+  const rules = [...denyWindows(policy)];
   const engine = new RuleEngine(rules);
-  const releases = await getReleases(context, mergedPolicy);
-  const releaseCollection = Releases.from(releases);
-  return engine.evaluate(releaseCollection, context);
+
+  return engine.evaluate(releaseCollection, ctx);
 };
