@@ -190,7 +190,8 @@ export const getDeploymentStats = async (
     deployment: {
       id: deployment.id,
       name: deployment.name,
-      tag: version.tag,
+      slug: deployment.slug,
+      version,
     },
     status,
     resourceCount,

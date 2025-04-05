@@ -4,6 +4,7 @@ import httpStatus from "http-status";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -45,6 +46,8 @@ export const POST = request()
         .values({ ...ctx.body, description: ctx.body.description ?? "" })
         .returning()
         .then(takeFirst);
+
+      await getQueue(Channel.NewDeployment).add(deployment.id, deployment);
 
       return NextResponse.json(deployment, { status: httpStatus.CREATED });
     } catch (error) {

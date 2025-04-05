@@ -2,7 +2,10 @@ import { and, eq, isNotNull, lt, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
+
+const log = logger.child({ module: "timeout-checker" });
 
 export const run = async () =>
   db
@@ -27,8 +30,14 @@ export const run = async () =>
         ),
       ),
     )
-    .then(async (jobs) => {
-      await Promise.all(
-        jobs.map((job) => updateJob(db, job.id, { status: JobStatus.Failure })),
+    .then((jobs) => {
+      Promise.all(
+        jobs.map(async (job) => {
+          log.error(`Job ${job.id} timed out`, { job });
+          await updateJob(db, job.id, {
+            status: JobStatus.Failure,
+            message: `Job timed out`,
+          });
+        }),
       );
     });

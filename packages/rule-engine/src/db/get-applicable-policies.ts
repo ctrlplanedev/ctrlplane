@@ -5,7 +5,7 @@ import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { ReleaseRepository } from "../types.js";
+import type { ReleaseTargetIdentifier } from "../types.js";
 
 /**
  * Checks if a policy target matches a given release repository by evaluating
@@ -28,11 +28,11 @@ import type { ReleaseRepository } from "../types.js";
  */
 const matchPolicyTargetForResource = async (
   tx: Tx,
-  repo: ReleaseRepository,
+  releaseTargetIdentifier: ReleaseTargetIdentifier,
   target: schema.PolicyTarget,
 ) => {
   const { deploymentSelector, environmentSelector } = target;
-  const { deploymentId, environmentId } = repo;
+  const { deploymentId, environmentId } = releaseTargetIdentifier;
   const deploymentsQuery =
     deploymentSelector == null
       ? null
@@ -108,10 +108,13 @@ const matchPolicyTargetForResource = async (
 export const getApplicablePolicies = async (
   tx: Tx,
   workspaceId: string,
-  repo: ReleaseRepository,
+  releaseTargetIdentifier: ReleaseTargetIdentifier,
 ) => {
   const policy = await tx.query.policy.findMany({
-    where: eq(schema.policy.workspaceId, workspaceId),
+    where: and(
+      eq(schema.policy.workspaceId, workspaceId),
+      eq(schema.policy.enabled, true),
+    ),
     with: { targets: true, denyWindows: true, deploymentVersionSelector: true },
     orderBy: [desc(schema.policy.priority)],
   });
@@ -119,7 +122,9 @@ export const getApplicablePolicies = async (
   return Promise.all(
     policy.map(async (p) => {
       const matches = await Promise.all(
-        p.targets.map((t) => matchPolicyTargetForResource(tx, repo, t)),
+        p.targets.map((t) =>
+          matchPolicyTargetForResource(tx, releaseTargetIdentifier, t),
+        ),
       );
       if (matches.some((match) => match !== null)) return p;
     }),

@@ -3,7 +3,10 @@ import type {
   MetadataCondition,
   VersionCondition,
 } from "@ctrlplane/validators/conditions";
-import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+import type {
+  DeploymentVersionCondition,
+  TagCondition,
+} from "@ctrlplane/validators/releases";
 import type { InferSelectModel, SQL } from "drizzle-orm";
 import {
   and,
@@ -261,6 +264,16 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
   return ilike(deploymentVersion.tag, `%${cond.value}%`);
 };
 
+const buildTagCondition = (cond: TagCondition): SQL => {
+  if (cond.operator === ColumnOperator.Equals)
+    return eq(deploymentVersion.tag, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return ilike(deploymentVersion.tag, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return ilike(deploymentVersion.tag, `%${cond.value}`);
+  return ilike(deploymentVersion.tag, `%${cond.value}%`);
+};
+
 const buildCondition = (tx: Tx, cond: DeploymentVersionCondition): SQL => {
   if (cond.type === DeploymentVersionConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
@@ -268,6 +281,8 @@ const buildCondition = (tx: Tx, cond: DeploymentVersionCondition): SQL => {
     return buildCreatedAtCondition(cond);
   if (cond.type === DeploymentVersionConditionType.Version)
     return buildVersionCondition(cond);
+  if (cond.type === DeploymentVersionConditionType.Tag)
+    return buildTagCondition(cond);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 

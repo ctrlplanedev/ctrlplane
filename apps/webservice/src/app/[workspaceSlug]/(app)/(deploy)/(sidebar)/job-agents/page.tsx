@@ -20,9 +20,9 @@ import { AgentCard } from "./AgentCard";
 export const generateMetadata = async ({
   params,
 }: {
-  params: { workspaceSlug: string };
+  params: Promise<{ workspaceSlug: string }>;
 }): Promise<Metadata> => {
-  const { workspaceSlug } = params;
+  const { workspaceSlug } = await params;
 
   return api.workspace
     .bySlug(workspaceSlug)

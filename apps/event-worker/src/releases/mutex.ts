@@ -1,21 +1,20 @@
-import type { ReleaseRepository } from "@ctrlplane/rule-engine";
-import type { Mutex as RedisMutex } from "redis-semaphore";
-import { Mutex as RedisSemaphoreMutex } from "redis-semaphore";
+import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
+import { Mutex as RedisMutex } from "redis-semaphore";
 
 import { redis } from "../redis.js";
 
-export class ReleaseRepositoryMutex {
-  static async lock(repo: ReleaseRepository) {
-    const mutex = new ReleaseRepositoryMutex(repo);
+export class ReleaseTargetMutex {
+  static async lock(releaseTargetIdentifier: ReleaseTargetIdentifier) {
+    const mutex = new ReleaseTargetMutex(releaseTargetIdentifier);
     await mutex.lock();
     return mutex;
   }
 
   private mutex: RedisMutex;
 
-  constructor(repo: ReleaseRepository) {
-    const key = `release-repository-mutex-${repo.deploymentId}-${repo.resourceId}-${repo.environmentId}`;
-    this.mutex = new RedisSemaphoreMutex(redis, key, {});
+  constructor(releaseTargetIdentifier: ReleaseTargetIdentifier) {
+    const key = `release-target-mutex-${releaseTargetIdentifier.deploymentId}-${releaseTargetIdentifier.resourceId}-${releaseTargetIdentifier.environmentId}`;
+    this.mutex = new RedisMutex(redis, key, {});
   }
 
   async lock(): Promise<void> {

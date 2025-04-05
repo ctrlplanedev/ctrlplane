@@ -46,9 +46,14 @@ export default async function DeploymentLayout(props: {
   }>;
 }) {
   const params = await props.params;
-  const system = await api.system.bySlug(params).catch(() => null);
-  const deployment = await api.deployment.bySlug(params).catch(() => null);
-  if (system == null || deployment == null) notFound();
+  const [workspace, system, deployment] = await Promise.all([
+    api.workspace.bySlug(params.workspaceSlug),
+    api.system.bySlug(params).catch(notFound),
+    api.deployment.bySlug(params),
+  ]);
+  if (workspace == null || deployment == null) notFound();
+
+  const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
 
   const systemUrls = urls
     .workspace(params.workspaceSlug)
@@ -84,7 +89,12 @@ export default async function DeploymentLayout(props: {
           </Breadcrumb>
         </div>
 
-        <DeploymentCTA deploymentId={deployment.id} systemId={system.id} />
+        <DeploymentCTA
+          deploymentId={deployment.id}
+          systemId={system.id}
+          jobAgents={jobAgents}
+          workspace={workspace}
+        />
       </PageHeader>
       <SidebarProvider
         className="relative h-full"

@@ -11,6 +11,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
@@ -134,7 +135,12 @@ export const POST = request()
           (prevVersion.status !== DeploymentVersionStatus.Ready &&
             depVersion.status === DeploymentVersionStatus.Ready);
 
-        if (shouldTrigger)
+        if (shouldTrigger) {
+          await getQueue(Channel.NewDeploymentVersion).add(
+            depVersion.id,
+            depVersion,
+          );
+
           await createReleaseJobTriggers(db, "new_version")
             .causedById(ctx.user.id)
             .filter(isPassingChannelSelectorPolicy)
@@ -154,6 +160,7 @@ export const POST = request()
                 req,
               ),
             );
+        }
 
         return NextResponse.json(
           { ...depVersion, metadata },

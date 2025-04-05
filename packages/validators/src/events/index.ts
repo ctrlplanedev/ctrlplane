@@ -8,6 +8,7 @@ export enum Channel {
   ResourceScan = "resource-scan",
   ReleaseEvaluate = "release-evaluate",
   ReleaseNewVersion = "release-new-version",
+  ReleaseNewRepository = "release-new-repository",
   ReleaseVariableChange = "release-variable-change",
 }
 

@@ -206,6 +206,7 @@ const release = (params: ReleaseParams) => {
 
   return {
     baseUrl: () => buildUrl(...base),
+    jobs: () => buildUrl(...base, "jobs"),
   };
 };
 

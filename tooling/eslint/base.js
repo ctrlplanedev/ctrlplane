@@ -61,7 +61,7 @@ export const vitestEslintConfig = tseslint.config({
 export default tseslint.config(
   {
     // Globally ignored files
-    ignores: ["**/*.config.*"],
+    ignores: ["**/*.config.*", "dist/**", "node_modules/**"],
   },
   {
     files: ["**/*.js", "**/*.ts", "**/*.tsx"],

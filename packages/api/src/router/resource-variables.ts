@@ -2,10 +2,13 @@ import { z } from "zod";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+
+const updateResourceVariableQueue = getQueue(Channel.UpdateResourceVariable);
 
 export const resourceVariables = createTRPCRouter({
   create: protectedProcedure
@@ -22,7 +25,14 @@ export const resourceVariables = createTRPCRouter({
         ? variablesAES256().encrypt(String(input.value))
         : input.value;
       const data = { ...input, value };
-      return ctx.db.insert(schema.resourceVariable).values(data).returning();
+      const variable = await ctx.db
+        .insert(schema.resourceVariable)
+        .values(data)
+        .returning()
+        .then(takeFirst);
+
+      await updateResourceVariableQueue.add(variable.id, variable);
+      return variable;
     }),
 
   update: protectedProcedure
@@ -54,7 +64,11 @@ export const resourceVariables = createTRPCRouter({
         .set(data)
         .where(eq(schema.resourceVariable.id, input.id))
         .returning()
-        .then(takeFirst);
+        .then(takeFirst)
+        .then(async (variable) => {
+          await updateResourceVariableQueue.add(variable.id, variable);
+          return variable;
+        });
     }),
 
   delete: protectedProcedure
@@ -76,6 +90,12 @@ export const resourceVariables = createTRPCRouter({
     .mutation(async ({ ctx, input }) =>
       ctx.db
         .delete(schema.resourceVariable)
-        .where(eq(schema.resourceVariable.id, input)),
+        .where(eq(schema.resourceVariable.id, input))
+        .returning()
+        .then(takeFirst)
+        .then(async (variable) => {
+          await updateResourceVariableQueue.add(variable.id, variable);
+          return variable;
+        }),
     ),
 });

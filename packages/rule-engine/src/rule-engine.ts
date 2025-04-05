@@ -3,7 +3,7 @@ import type {
   DeploymentResourceContext,
   DeploymentResourceRule,
   DeploymentResourceSelectionResult,
-  Release,
+  ResolvedRelease,
 } from "./types.js";
 
 /**
@@ -15,39 +15,6 @@ import type {
  * each rule can filter out releases that don't meet specific criteria. After
  * all rules have been applied, a final selection strategy is used to choose the
  * best remaining release.
- *
- * @example
- * ```typescript
- * // Import necessary rules
- * import { DeploymentDenyRule } from '@ctrlplane/rule-engine';
- *
- * // Create rules with appropriate options
- * const rules = [
- *   new DeploymentDenyRule({
- *     ...
- *   })
- * ];
- *
- * // Create the rule engine
- * const ruleEngine = new RuleEngine(rules);
- *
- * // Evaluate a deployment context
- * const result = await ruleEngine.evaluate({
- *   desiredReleaseId: 'release-123',
- *   deployment: { id: 'deploy-456', name: 'prod-api' },
- *   resource: { id: 'resource-789', name: 'api-service' },
- *   availableReleases: [
- *     // Array of available releases to choose from
- *   ]
- * });
- *
- * // Handle the result
- * if (result.allowed) {
- *   console.log(`Deployment allowed with release: ${result.chosenRelease.id}`);
- * } else {
- *   console.log(`Deployment denied: ${result.reason}`);
- * }
- * ```
  */
 export class RuleEngine {
   /**
@@ -161,7 +128,7 @@ export class RuleEngine {
   private selectFinalRelease(
     context: DeploymentResourceContext,
     candidates: Releases,
-  ): Release | undefined {
+  ): ResolvedRelease | undefined {
     if (candidates.isEmpty()) {
       return undefined;
     }

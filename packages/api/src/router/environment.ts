@@ -29,6 +29,7 @@ import {
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   dispatchJobsForAddedResources,
   getEventsForEnvironmentDeleted,
@@ -311,6 +312,11 @@ export const environmentRouter = createTRPCRouter({
       const isUpdatingResourceSelector =
         resourceSelector != null || oldEnv.environment.resourceSelector != null;
       if (isUpdatingResourceSelector) {
+        getQueue(Channel.EnvironmentSelectorUpdate).add(input.id, {
+          ...updatedEnv,
+          oldSelector: oldEnv.environment.resourceSelector,
+        });
+
         const hasResourceSelectorsChanged = !_.isEqual(
           oldEnv.environment.resourceSelector,
           resourceSelector,

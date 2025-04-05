@@ -19,6 +19,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
@@ -216,51 +217,48 @@ export const versionRouter = createTRPCRouter({
         SCHEMA.deploymentVersion.deploymentId,
         input.deploymentId,
       );
-      const versionSelectorCheck = SCHEMA.deploymentVersionMatchesCondition(
+
+      const filterCheck = SCHEMA.deploymentVersionMatchesCondition(
         ctx.db,
         input.filter,
       );
-      const checks = and(
-        ...[deploymentIdCheck, versionSelectorCheck].filter(isPresent),
-      )!;
 
-      const getItems = async () =>
-        ctx.db
-          .select()
-          .from(SCHEMA.deploymentVersion)
-          .leftJoin(
-            SCHEMA.versionDependency,
-            eq(SCHEMA.versionDependency.versionId, SCHEMA.deploymentVersion.id),
-          )
-          .where(checks)
-          .orderBy(
-            desc(SCHEMA.deploymentVersion.createdAt),
-            desc(SCHEMA.deploymentVersion.tag),
-          )
-          .limit(input.limit)
-          .offset(input.offset)
-          .then((data) =>
-            _.chain(data)
-              .groupBy((r) => r.deployment_version.id)
-              .map((r) => ({
-                ...r[0]!.deployment_version,
-                versionDependencies: r
-                  .map((rd) => rd.deployment_version_dependency)
-                  .filter(isPresent),
-              }))
-              .value(),
-          );
+      const checks = and(deploymentIdCheck, filterCheck);
+
+      const items = ctx.db
+        .select()
+        .from(SCHEMA.deploymentVersion)
+        .leftJoin(
+          SCHEMA.versionDependency,
+          eq(SCHEMA.versionDependency.versionId, SCHEMA.deploymentVersion.id),
+        )
+        .where(checks)
+        .orderBy(
+          desc(SCHEMA.deploymentVersion.createdAt),
+          desc(SCHEMA.deploymentVersion.tag),
+        )
+        .limit(input.limit)
+        .offset(input.offset)
+        .then((data) =>
+          _.chain(data)
+            .groupBy((r) => r.deployment_version.id)
+            .map((r) => ({
+              ...r[0]!.deployment_version,
+              versionDependencies: r
+                .map((rd) => rd.deployment_version_dependency)
+                .filter(isPresent),
+            }))
+            .value(),
+        );
 
       const total = ctx.db
-        .select({
-          count: count().mapWith(Number),
-        })
+        .select({ count: count().mapWith(Number) })
         .from(SCHEMA.deploymentVersion)
         .where(checks)
         .then(takeFirst)
         .then((t) => t.count);
 
-      return Promise.all([getItems(), total]).then(([items, total]) => ({
+      return Promise.all([items, total]).then(([items, total]) => ({
         items,
         total,
       }));
@@ -355,6 +353,8 @@ export const versionRouter = createTRPCRouter({
         .filter(isPassingAllPolicies)
         .then(cancelOldReleaseJobTriggersOnJobDispatch)
         .dispatch();
+
+      getQueue(Channel.NewDeploymentVersion).add(rel.id, rel);
 
       return { ...rel, releaseJobTriggers };
     }),

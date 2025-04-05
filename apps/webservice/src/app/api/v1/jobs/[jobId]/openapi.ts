@@ -15,6 +15,9 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "object",
             properties: {
               release: { $ref: "#/components/schemas/Release" },
+              deploymentVersion: {
+                $ref: "#/components/schemas/DeploymentVersion",
+              },
               deployment: { $ref: "#/components/schemas/Deployment" },
               runbook: { $ref: "#/components/schemas/Runbook" },
               resource: { $ref: "#/components/schemas/Resource" },

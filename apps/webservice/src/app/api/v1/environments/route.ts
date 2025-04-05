@@ -4,8 +4,9 @@ import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { inArray, upsertEnv } from "@ctrlplane/db";
+import { eq, inArray, takeFirstOrNull, upsertEnv } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { createJobsForNewEnvironment } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -16,6 +17,7 @@ import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
   releaseChannels: z.array(z.string()),
+  deploymentVersionChannels: z.array(z.string()),
 });
 
 export const POST = request()
@@ -36,7 +38,10 @@ export const POST = request()
             .select()
             .from(schema.deploymentVersionChannel)
             .where(
-              inArray(schema.deploymentVersionChannel.id, body.releaseChannels),
+              inArray(schema.deploymentVersionChannel.id, [
+                ...body.releaseChannels,
+                ...body.deploymentVersionChannels,
+              ]),
             )
             .then((rows) =>
               _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
@@ -45,10 +50,25 @@ export const POST = request()
               })),
             );
 
+          const existingEnv = await db
+            .select()
+            .from(schema.environment)
+            .where(eq(schema.environment.name, body.name))
+            .then(takeFirstOrNull);
+
           const environment = await upsertEnv(tx, {
             ...body,
             versionChannels: channels,
           });
+
+          if (
+            existingEnv != null &&
+            !_.isEqual(existingEnv.resourceSelector, body.resourceSelector)
+          )
+            getQueue(Channel.EnvironmentSelectorUpdate).add(environment.id, {
+              ...environment,
+              oldSelector: existingEnv.resourceSelector,
+            });
 
           await createJobsForNewEnvironment(tx, environment);
           const { metadata } = body;
