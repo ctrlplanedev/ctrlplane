@@ -65,7 +65,7 @@ export const POST = request()
             existingEnv != null &&
             !_.isEqual(existingEnv.resourceSelector, body.resourceSelector)
           )
-            getQueue(Channel.EnvironmentSelectorUpdate).add(environment.id, {
+            getQueue(Channel.EnvironmentUpdate).add(environment.id, {
               ...environment,
               oldSelector: existingEnv.resourceSelector,
             });

@@ -22,16 +22,6 @@ export const userApprovalRelations = relations(user, ({ many }) => ({
   anyApprovalRecords: many(policyRuleAnyApprovalRecord),
 }));
 
-// Deployment version relations to approval records
-export const deploymentVersionApprovalRelations = relations(
-  deploymentVersion,
-  ({ many }) => ({
-    userApprovalRecords: many(policyRuleUserApprovalRecord),
-    roleApprovalRecords: many(policyRuleRoleApprovalRecord),
-    anyApprovalRecords: many(policyRuleAnyApprovalRecord),
-  }),
-);
-
 // Approval user relations
 export const policyRuleUserApprovalRelations = relations(
   policyRuleUserApproval,
