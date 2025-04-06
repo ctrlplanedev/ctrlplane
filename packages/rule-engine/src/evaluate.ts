@@ -6,6 +6,10 @@ import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
 import { RuleEngine } from "./rule-engine.js";
 import { DeploymentDenyRule } from "./rules/deployment-deny-rule.js";
+import {
+  DeploymentVersionSelectorRule,
+  getApplicableVersionIds,
+} from "./rules/deployment-version-selector-rule.js";
 
 const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -18,6 +22,15 @@ const denyWindows = (policy: Policy | null) =>
             dtend: denyWindow.dtend,
           }),
       );
+
+const versionSelector = (policy: Policy | null) =>
+  policy == null
+    ? []
+    : [
+        new DeploymentVersionSelectorRule(
+          getApplicableVersionIds(policy.deploymentVersionSelector),
+        ),
+      ];
 
 /**
  * Evaluates a deployment context against policy rules to determine if the
@@ -83,7 +96,7 @@ export const evaluateRepository = async (
   const releaseCollection = Releases.from(resolvedReleases);
 
   const policy = await repository.getPolicy();
-  const rules = [...denyWindows(policy)];
+  const rules = [...denyWindows(policy), ...versionSelector(policy)];
   const engine = new RuleEngine(rules);
 
   return engine.evaluate(releaseCollection, ctx);
