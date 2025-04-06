@@ -29,7 +29,11 @@ export const policyRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db.query.policy.findMany({
         where: eq(policy.workspaceId, input),
-        with: { targets: true, denyWindows: true },
+        with: {
+          targets: true,
+          denyWindows: true,
+          deploymentVersionSelector: true,
+        },
       }),
     ),
 
@@ -42,7 +46,11 @@ export const policyRouter = createTRPCRouter({
     .query(async ({ ctx, input }) =>
       ctx.db.query.policy.findFirst({
         where: eq(policy.id, input),
-        with: { targets: true, denyWindows: true },
+        with: {
+          targets: true,
+          denyWindows: true,
+          deploymentVersionSelector: true,
+        },
       }),
     ),
 

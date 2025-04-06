@@ -45,6 +45,7 @@ const workspacePolicies = (slug: string) => {
     successCriteria: () => buildUrl(...base, "success-criteria"),
     dependencies: () => buildUrl(...base, "dependencies"),
     approvalGates: () => buildUrl(...base, "approval-gates"),
+    path: (subpath: string) => buildUrl(...base, subpath),
   };
 };
 

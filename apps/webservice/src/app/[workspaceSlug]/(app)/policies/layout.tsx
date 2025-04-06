@@ -8,6 +8,7 @@ import {
   IconList,
   IconSettings,
   IconSitemap,
+  IconTag,
 } from "@tabler/icons-react";
 
 import {
@@ -71,6 +72,21 @@ export default async function Layout(props: {
                   href={urls.workspace(workspace.slug).policies().denyWindows()}
                 >
                   Deny Windows
+                </SidebarLink>
+              </SidebarMenu>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Deployment Rules</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarLink
+                  icon={<IconTag />}
+                  href={urls
+                    .workspace(workspace.slug)
+                    .policies()
+                    .path("version-selectors")}
+                >
+                  Version Selectors
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>

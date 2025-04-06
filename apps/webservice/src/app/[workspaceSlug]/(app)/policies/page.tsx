@@ -9,6 +9,7 @@ import {
   IconMenu2,
   IconPlus,
   IconSitemap,
+  IconTag,
 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
@@ -50,6 +51,9 @@ export default async function RulesPage({
     denyWindows: policies
       .map((p) => p.denyWindows.length)
       .reduce((a, b) => a + b, 0),
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    versionSelectors: policies.filter((p) => p.deploymentVersionSelector)
+      .length,
     maintenance: 0,
     rollout: 0,
     successRate: 0,
@@ -67,6 +71,13 @@ export default async function RulesPage({
       count: counts.denyWindows,
       href: `/${workspaceSlug}/policies/deny-windows`,
       description: "Control when deployments can occur",
+    },
+    {
+      title: "Version Selectors",
+      icon: <IconTag className="h-5 w-5 text-indigo-500" />,
+      count: counts.versionSelectors,
+      href: `/${workspaceSlug}/policies/version-selectors`,
+      description: "Control which versions can be deployed",
     },
     {
       title: "Maintenance Windows",

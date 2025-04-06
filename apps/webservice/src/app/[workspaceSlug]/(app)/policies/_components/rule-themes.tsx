@@ -6,9 +6,10 @@ import {
   LayersIcon,
   LockClosedIcon,
 } from "@radix-ui/react-icons";
+import { IconTag } from "@tabler/icons-react";
 
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-export type RuleType = "deny-window" | string;
+export type RuleType = "deny-window" | "version-selector" | string;
 
 export const getRuleTypeIcon = (type: RuleType) => {
   switch (type) {
@@ -26,6 +27,8 @@ export const getRuleTypeIcon = (type: RuleType) => {
       return <CalendarIcon className="size-3 text-rose-400" />;
     case "approval-gate":
       return <LockClosedIcon className="size-3 text-purple-400" />;
+    case "version-selector":
+      return <IconTag className="size-3 text-indigo-400" />;
     default:
       return null;
   }
@@ -47,6 +50,8 @@ export const getRuleTypeLabel = (type: RuleType) => {
       return "Release Dependency";
     case "approval-gate":
       return "Approval Gate";
+    case "version-selector":
+      return "Version Selector";
     default:
       return type;
   }
@@ -69,6 +74,8 @@ export const getTypeColorClass = (type: RuleType): string => {
       return "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border-rose-500/50";
     case "approval-gate":
       return "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border-purple-500/50";
+    case "version-selector":
+      return "bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border-indigo-500/50";
     default:
       return "";
   }
