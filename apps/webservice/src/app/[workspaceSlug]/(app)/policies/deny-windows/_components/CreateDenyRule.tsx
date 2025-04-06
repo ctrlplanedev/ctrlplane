@@ -43,12 +43,19 @@ type Event = {
 const EventComponent: React.FC<{
   event: any;
   creatingDenyWindow: boolean;
-}> = ({ event, creatingDenyWindow }) => {
+  onClose: () => void;
+}> = ({ event, creatingDenyWindow, onClose }) => {
   const [open, setOpen] = useState<boolean>(false);
   const start = format(event.start, "h:mm a");
   const end = format(event.end, "h:mm a");
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+        setOpen(open);
+      }}
+    >
       <PopoverTrigger asChild>
         <div
           className="h-full w-full space-y-0 bg-primary/20 p-1 text-xs text-neutral-900"
@@ -182,60 +189,55 @@ export const CreateDenyRuleDialog: React.FC<{ workspaceId: string }> = ({
   const handleEventCreate = (event: EventCreate) => {
     console.log("creating deny window", event);
     const { start, end } = event;
-    // console.log("creating deny window", start, end);
-    // createDenyWindow.mutate({
-    //   policyId: "123",
-    //   start,
+    // // console.log("creating deny window", start, end);
+    // // createDenyWindow.mutate({
+    // //   policyId: "123",
+    // //   start,
     //   end,
     //   timeZone,
     // });
-    // setEvents((prev) => [...prev, { id: "temp", start, end, title: "" }]);
+    setEvents((prev) => [...prev, { id: "new", start, end, title: "" }]);
   };
 
   return (
-    <div onClick={() => setCreatingDenyWindow(false)}>
-      <DnDCalendar
-        onRangeChange={(range) => {
-          if (Array.isArray(range)) {
-            const rangeStart = range.at(0);
-            const rangeEnd = range.at(-1);
+    <DnDCalendar
+      onRangeChange={(range) => {
+        if (Array.isArray(range)) {
+          const rangeStart = range.at(0);
+          const rangeEnd = range.at(-1);
 
-            if (rangeStart && rangeEnd)
-              setCurrentRange({
-                start: startOfDay(new Date(rangeStart)),
-                end: endOfDay(new Date(rangeEnd)),
-              });
+          if (rangeStart && rangeEnd)
+            setCurrentRange({
+              start: startOfDay(new Date(rangeStart)),
+              end: endOfDay(new Date(rangeEnd)),
+            });
 
-            return;
-          }
-          const { start, end } = range;
+          return;
+        }
+        const { start, end } = range;
 
-          setCurrentRange({
-            start: new Date(start),
-            end: endOfDay(new Date(end)),
-          });
-        }}
-        defaultView={Views.WEEK}
-        localizer={localizer}
-        events={events}
-        resizableAccessor={() => true}
-        draggableAccessor={() => true}
-        selectable={true}
-        onSelectSlot={(event) => handleEventCreate(event as EventCreate)}
-        onEventDrop={(event) => handleEventDrag(event as EventChange)}
-        onEventResize={(event) => handleEventResize(event as EventChange)}
-        style={{ height: 500 }}
-        step={30}
-        resizable={true}
-        components={{
-          event: (props) => (
-            <EventComponent
-              {...props}
-              creatingDenyWindow={creatingDenyWindow}
-            />
-          ),
-        }}
-      />
-    </div>
+        setCurrentRange({
+          start: new Date(start),
+          end: endOfDay(new Date(end)),
+        });
+      }}
+      defaultView={Views.WEEK}
+      localizer={localizer}
+      events={events}
+      resizableAccessor={() => true}
+      draggableAccessor={() => true}
+      selectable={true}
+      onSelectSlot={(event) => handleEventCreate(event as EventCreate)}
+      onEventDrop={(event) => handleEventDrag(event as EventChange)}
+      onEventResize={(event) => handleEventResize(event as EventChange)}
+      style={{ height: 500 }}
+      step={30}
+      resizable={true}
+      components={{
+        event: (props) => (
+          <EventComponent {...props} creatingDenyWindow={creatingDenyWindow} />
+        ),
+      }}
+    />
   );
 };
