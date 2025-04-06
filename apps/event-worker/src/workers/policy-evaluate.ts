@@ -65,6 +65,7 @@ export const policyEvaluate = createWorker(
   async (job) => {
     const mutex = await ReleaseTargetMutex.lock(job.data);
     try {
+      console.log("Evaluating release target", job.data);
       const releaseTarget = await db.query.releaseTarget.findFirst({
         where: and(
           eq(schema.releaseTarget.resourceId, job.data.resourceId),
@@ -85,7 +86,9 @@ export const policyEvaluate = createWorker(
         workspaceId: releaseTarget.resource.workspaceId,
       });
 
-      const { chosenRelease } = await evaluateRepository(releaseRepository);
+      const { chosenRelease, rejectionReasons } =
+        await evaluateRepository(releaseRepository);
+      console.log({ chosenRelease, rejectionReasons });
       if (chosenRelease == null)
         throw new Error("Failed to get chosen release");
 

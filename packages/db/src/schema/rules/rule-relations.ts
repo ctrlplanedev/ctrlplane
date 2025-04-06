@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 
 import { user } from "../auth.js";
 import { deploymentVersion } from "../deployment-version.js";
+import { policy } from "../policy.js";
 import {
   policyRuleAnyApproval,
   policyRuleAnyApprovalRecord,
@@ -14,6 +15,7 @@ import {
   policyRuleUserApproval,
   policyRuleUserApprovalRecord,
 } from "./approval-user.js";
+import { policyRuleDenyWindow } from "./deny-window.js";
 
 // User relations to approval records
 export const userApprovalRelations = relations(user, ({ many }) => ({
@@ -92,6 +94,16 @@ export const policyRuleAnyApprovalRecordRelations = relations(
     deploymentVersion: one(deploymentVersion, {
       fields: [policyRuleAnyApprovalRecord.deploymentVersionId],
       references: [deploymentVersion.id],
+    }),
+  }),
+);
+
+export const policyRuleDenyWindowRelations = relations(
+  policyRuleDenyWindow,
+  ({ one }) => ({
+    policy: one(policy, {
+      fields: [policyRuleDenyWindow.policyId],
+      references: [policy.id],
     }),
   }),
 );
