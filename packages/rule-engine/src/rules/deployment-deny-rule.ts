@@ -1,4 +1,3 @@
-import type { Options as RRuleOptions } from "rrule";
 import { tz, TZDate } from "@date-fns/tz";
 import {
   addMilliseconds,
@@ -6,7 +5,7 @@ import {
   isSameDay,
   isWithinInterval,
 } from "date-fns";
-import { datetime, RRule } from "rrule";
+import rrule from "rrule";
 
 import type {
   DeploymentResourceContext,
@@ -14,6 +13,10 @@ import type {
   DeploymentResourceRuleResult,
 } from "../types.js";
 import { Releases } from "../releases.js";
+
+// https://github.com/jkbrzt/rrule/issues/478
+// common js bs
+const { datetime, RRule } = rrule;
 
 function getDatePartsInTimeZone(date: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -40,7 +43,7 @@ function getDatePartsInTimeZone(date: Date, timeZone: string) {
   };
 }
 
-export interface DeploymentDenyRuleOptions extends Partial<RRuleOptions> {
+export interface DeploymentDenyRuleOptions extends Partial<rrule.Options> {
   dtend?: Date | null;
 
   /**
@@ -52,7 +55,7 @@ export interface DeploymentDenyRuleOptions extends Partial<RRuleOptions> {
 
 export class DeploymentDenyRule implements DeploymentResourceRule {
   public readonly name = "DeploymentDenyRule";
-  private rrule: RRule;
+  private rrule: rrule.RRule;
   private denyReason: string;
   private dtend: Date | null;
   private timezone: string;
