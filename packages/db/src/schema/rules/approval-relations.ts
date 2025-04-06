@@ -1,10 +1,26 @@
 import { relations } from "drizzle-orm";
+
 import { policy } from "../policy.js";
-import { policyRuleAnyApproval, policyRuleAnyApprovalRecord } from "./approval-any.js";
-import { policyRuleApprovalOnBehalfOfRole, policyRuleApprovalOnBehalfOfTeam } from "./approval-on-behalf-of.js";
-import { policyRuleRoleApproval, policyRuleRoleApprovalRecord } from "./approval-role.js";
-import { policyRuleTeamApproval, policyRuleTeamApprovalRecord } from "./approval-team.js";
-import { policyRuleUserApproval, policyRuleUserApprovalRecord } from "./approval-user.js";
+import {
+  policyRuleAnyApproval,
+  policyRuleAnyApprovalRecord,
+} from "./approval-any.js";
+import {
+  policyRuleApprovalOnBehalfOfRole,
+  policyRuleApprovalOnBehalfOfTeam,
+} from "./approval-on-behalf-of.js";
+import {
+  policyRuleRoleApproval,
+  policyRuleRoleApprovalRecord,
+} from "./approval-role.js";
+import {
+  policyRuleTeamApproval,
+  policyRuleTeamApprovalRecord,
+} from "./approval-team.js";
+import {
+  policyRuleUserApproval,
+  policyRuleUserApprovalRecord,
+} from "./approval-user.js";
 
 // User approval rule relations
 export const policyRuleUserApprovalRelations = relations(
@@ -26,8 +42,12 @@ export const policyRuleUserApprovalRecordRelations = relations(
       fields: [policyRuleUserApprovalRecord.ruleId],
       references: [policyRuleUserApproval.id],
     }),
-    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, { relationName: "userTeamApprovals" }),
-    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, { relationName: "userRoleApprovals" }),
+    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, {
+      relationName: "userTeamApprovals",
+    }),
+    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, {
+      relationName: "userRoleApprovals",
+    }),
   }),
 );
 
@@ -51,8 +71,12 @@ export const policyRuleTeamApprovalRecordRelations = relations(
       fields: [policyRuleTeamApprovalRecord.ruleId],
       references: [policyRuleTeamApproval.id],
     }),
-    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, { relationName: "teamTeamApprovals" }),
-    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, { relationName: "teamRoleApprovals" }),
+    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, {
+      relationName: "teamTeamApprovals",
+    }),
+    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, {
+      relationName: "teamRoleApprovals",
+    }),
   }),
 );
 
@@ -76,8 +100,12 @@ export const policyRuleRoleApprovalRecordRelations = relations(
       fields: [policyRuleRoleApprovalRecord.ruleId],
       references: [policyRuleRoleApproval.id],
     }),
-    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, { relationName: "roleTeamApprovals" }),
-    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, { relationName: "roleRoleApprovals" }),
+    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, {
+      relationName: "roleTeamApprovals",
+    }),
+    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, {
+      relationName: "roleRoleApprovals",
+    }),
   }),
 );
 
@@ -101,8 +129,12 @@ export const policyRuleAnyApprovalRecordRelations = relations(
       fields: [policyRuleAnyApprovalRecord.ruleId],
       references: [policyRuleAnyApproval.id],
     }),
-    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, { relationName: "anyTeamApprovals" }),
-    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, { relationName: "anyRoleApprovals" }),
+    teamApprovals: many(policyRuleApprovalOnBehalfOfTeam, {
+      relationName: "anyTeamApprovals",
+    }),
+    roleApprovals: many(policyRuleApprovalOnBehalfOfRole, {
+      relationName: "anyRoleApprovals",
+    }),
   }),
 );
 

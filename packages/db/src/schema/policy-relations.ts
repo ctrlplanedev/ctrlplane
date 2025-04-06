@@ -8,9 +8,9 @@ import {
 import {
   policyRuleAnyApproval,
   policyRuleDenyWindow,
-  policyRuleUserApproval,
   policyRuleRoleApproval,
   policyRuleTeamApproval,
+  policyRuleUserApproval,
 } from "./rules/index.js";
 import { workspace } from "./workspace.js";
 
