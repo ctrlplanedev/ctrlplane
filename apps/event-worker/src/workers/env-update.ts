@@ -161,9 +161,9 @@ const dispatchExitHooks = async (
 };
 
 /**
- * Worker that handles environment selector updates.
+ * Worker that handles environment updates.
  *
- * When an environment's resource selector is updated:
+ * When an environment is updated:
  * 1. Finds newly matched resources and resources that no longer match the selector
  * 2. For each newly matched resource,
  *    - creates release targets for all deployments in the system associated with the environment
@@ -172,12 +172,12 @@ const dispatchExitHooks = async (
  *    - removes the release targets (and consequently the releases) for the resource + environment
  *    - dispatches exit hooks for the resource per deployment if the resource is no longer in the system
  *
- * @param {Job<ChannelMap[Channel.EnvironmentSelectorUpdate]>} job - The job containing environment data with old and new selectors
+ * @param {Job<ChannelMap[Channel.EnvironmentUpdate]>} job - The job containing environment data with old and new selectors
  * @returns {Promise<void>} - Resolves when processing is complete
  * @throws {Error} - If there's an issue with database operations
  */
-export const envSelectorUpdateWorker = createWorker(
-  Channel.EnvironmentSelectorUpdate,
+export const envUpdateWorker = createWorker(
+  Channel.EnvironmentUpdate,
   async (job) => {
     const { oldSelector, ...environment } = job.data;
     const system = await db.query.environment
