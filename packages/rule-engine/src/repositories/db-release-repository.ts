@@ -5,11 +5,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type {
-  DeploymentResourceContext,
-  Policy,
-  ReleaseTargetIdentifier,
-} from "../types.js";
+import type { DeploymentResourceContext, Policy } from "../types.js";
 import type {
   CompleteRelease,
   Release,
@@ -159,7 +155,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @param release - The release to create
    * @returns The created release with ID
    */
-  async create(
+  async createRelease(
     release: Omit<Release, "id" | "createdAt">,
   ): Promise<ReleaseWithId> {
     return this.db.transaction((tx) =>
@@ -169,13 +165,12 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
 
   /**
    * Creates a new release only if one doesn't already exist with the same version and variables
-   * @param options - The release target identifier
+
    * @param versionId - The version ID for the release
    * @param variables - The variables for the release
    * @returns Object indicating if a new release was created and the final release
    */
-  async upsert(
-    options: ReleaseTargetIdentifier,
+  async upsertRelease(
     versionId: string,
     variables: MaybeVariable[],
   ): Promise<{ created: boolean; release: ReleaseWithId }> {
@@ -204,13 +199,27 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
       ? { created: false, release: latestRelease }
       : {
           created: true,
-          release: await this.create({
-            ...options,
+          release: await this.createRelease({
             versionId,
             releaseTargetId: this.releaseTarget.id,
             variables: _.compact(variables),
           }),
         };
+  }
+
+  async upsertReleaseWithVariables(
+    variables: MaybeVariable[],
+  ): Promise<{ created: boolean; release: ReleaseWithId } | null> {
+    const latestRelease = await this.findLatestRelease();
+    const versionId = latestRelease?.versionId ?? null;
+    return versionId == null ? null : this.upsertRelease(versionId, variables);
+  }
+
+  async upsertReleaseWithVersionId(
+    versionId: string,
+  ): Promise<{ created: boolean; release: ReleaseWithId }> {
+    const latestRelease = await this.findLatestRelease();
+    return this.upsertRelease(versionId, latestRelease?.variables ?? []);
   }
 
   /**
