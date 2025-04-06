@@ -312,7 +312,7 @@ export const environmentRouter = createTRPCRouter({
       const isUpdatingResourceSelector =
         resourceSelector != null || oldEnv.environment.resourceSelector != null;
       if (isUpdatingResourceSelector) {
-        getQueue(Channel.EnvironmentSelectorUpdate).add(input.id, {
+        getQueue(Channel.EnvironmentUpdate).add(input.id, {
           ...updatedEnv,
           oldSelector: oldEnv.environment.resourceSelector,
         });
