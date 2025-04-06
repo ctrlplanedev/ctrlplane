@@ -43,19 +43,14 @@ type Event = {
 const EventComponent: React.FC<{
   event: any;
   creatingDenyWindow: boolean;
-  onClose: () => void;
-}> = ({ event, creatingDenyWindow, onClose }) => {
-  const [open, setOpen] = useState<boolean>(false);
+}> = ({ event, creatingDenyWindow }) => {
+  const [open, setOpen] = useState<boolean>(
+    creatingDenyWindow && event.id === "new",
+  );
   const start = format(event.start, "h:mm a");
   const end = format(event.end, "h:mm a");
   return (
-    <Popover
-      open={open}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-        setOpen(open);
-      }}
-    >
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div
           className="h-full w-full space-y-0 bg-primary/20 p-1 text-xs text-neutral-900"
@@ -71,7 +66,7 @@ const EventComponent: React.FC<{
           <div>{event.title}</div>
         </div>
       </PopoverTrigger>
-      <PopoverContent side="right" align="center" className="bg-neutral-800">
+      <PopoverContent side="right" align="center" className="p-2">
         <div>TEST TEXT</div>
       </PopoverContent>
     </Popover>
@@ -196,6 +191,7 @@ export const CreateDenyRuleDialog: React.FC<{ workspaceId: string }> = ({
     //   end,
     //   timeZone,
     // });
+    setCreatingDenyWindow(true);
     setEvents((prev) => [...prev, { id: "new", start, end, title: "" }]);
   };
 
@@ -227,7 +223,14 @@ export const CreateDenyRuleDialog: React.FC<{ workspaceId: string }> = ({
       resizableAccessor={() => true}
       draggableAccessor={() => true}
       selectable={true}
-      onSelectSlot={(event) => handleEventCreate(event as EventCreate)}
+      onSelectSlot={(event) => {
+        if (!creatingDenyWindow) {
+          handleEventCreate(event as EventCreate);
+          return;
+        }
+        setCreatingDenyWindow(false);
+        setEvents((prev) => prev.filter((event) => event.id !== "new"));
+      }}
       onEventDrop={(event) => handleEventDrag(event as EventChange)}
       onEventResize={(event) => handleEventResize(event as EventChange)}
       style={{ height: 500 }}
