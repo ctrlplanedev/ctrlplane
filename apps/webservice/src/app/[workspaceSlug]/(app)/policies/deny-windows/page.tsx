@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { IconMenu2 } from "@tabler/icons-react";
 
 import {
@@ -20,14 +21,19 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
+import { api } from "~/trpc/server";
 import { PageHeader } from "../../_components/PageHeader";
+import { CreateDenyRuleDialog } from "./_components/CreateDenyRule";
 
 export default async function DenyWindowsPage({
   params,
 }: {
   params: Promise<{ workspaceSlug: string }>;
 }) {
-  const workspaceSlug = (await params).workspaceSlug;
+  const { workspaceSlug } = await params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) notFound();
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader className="z-10">
@@ -54,7 +60,7 @@ export default async function DenyWindowsPage({
         </div>
       </PageHeader>
       <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex-1 overflow-y-auto p-6">
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle>Available Deny Windows</CardTitle>
             <CardDescription>
@@ -75,6 +81,8 @@ export default async function DenyWindowsPage({
             </ul>
           </CardContent>
         </Card>
+
+        <CreateDenyRuleDialog workspaceId={workspace.id} />
       </div>
     </div>
   );

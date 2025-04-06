@@ -4,8 +4,9 @@ import {
   differenceInMilliseconds,
   isSameDay,
   isWithinInterval,
+  subHours,
 } from "date-fns";
-import rrule from "rrule";
+import * as rrule from "rrule";
 
 import type {
   DeploymentResourceContext,
@@ -156,6 +157,87 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
 
     // If no dtend, check if the occurrence is on the same day using date-fns
     return isSameDay(occurrence, now, { in: tz(this.timezone) });
+  }
+
+  /**
+   * Returns all denied windows within a given date range
+   *
+   * @param start - Start of the date range to check (inclusive)
+   * @param end - End of the date range to check (inclusive)
+   * @returns Array of denied windows, where each window has a start and end time
+   */
+  getWindowsInRange(start: Date, end: Date): Array<{ start: Date; end: Date }> {
+    // since the rrule just treats its internal timezone as UTC, we need to convert
+    // the requested times to the rule's timezone
+    const startParts = getDatePartsInTimeZone(start, this.timezone);
+    const endParts = getDatePartsInTimeZone(end, this.timezone);
+    const startDt = datetime(
+      startParts.year,
+      startParts.month,
+      startParts.day,
+      startParts.hour,
+      startParts.minute,
+      startParts.second,
+    );
+    const endDt = datetime(
+      endParts.year,
+      endParts.month,
+      endParts.day,
+      endParts.hour,
+      endParts.minute,
+      endParts.second,
+    );
+
+    const occurrences = this.rrule.between(startDt, endDt, true);
+
+    if (occurrences.length === 0) return [];
+
+    // Calculate duration if dtend is specified
+    const durationMs =
+      this.dtend != null && this.dtstart != null
+        ? differenceInMilliseconds(this.dtend, this.dtstart)
+        : 0;
+
+    // Create windows for each occurrence
+    return occurrences.map((occurrence) => {
+      const windowStart = occurrence;
+      const windowEnd =
+        this.dtend != null
+          ? addMilliseconds(occurrence, durationMs)
+          : this.castTimezone(
+              new Date(
+                occurrence.getFullYear(),
+                occurrence.getMonth(),
+                occurrence.getDate(),
+                23,
+                59,
+                59,
+              ),
+              this.timezone,
+            );
+
+      /**
+       * Window start and end are in the rrule's internal pretend UTC timezone
+       * Since we know the rule's timezone, we first figure out the offset of this timezone
+       * to the actual UTC time. Then we convert the window start and end to the actual UTC time
+       * by subtracting the offset. We end up not needing to know the requester's timezone at all
+       * because timezone in parts will
+       */
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: this.timezone,
+        timeZoneName: "longOffset",
+      });
+
+      const offsetStr = formatter.format(windowStart).split("GMT")[1];
+      const offsetHours = parseInt(offsetStr?.split(":")[0] ?? "0", 10);
+
+      const realStartUTC = subHours(windowStart, offsetHours);
+      const realEndUTC = subHours(windowEnd, offsetHours);
+
+      // Create UTC dates using Date.UTC to get the correct UTC time
+
+      return { start: realStartUTC, end: realEndUTC };
+    });
   }
 
   /**
