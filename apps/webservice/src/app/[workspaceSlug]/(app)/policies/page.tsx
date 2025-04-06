@@ -52,8 +52,7 @@ export default async function RulesPage({
       .map((p) => p.denyWindows.length)
       .reduce((a, b) => a + b, 0),
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    versionSelectors: policies.filter((p) => p.deploymentVersionSelector)
-      .length,
+    versionChannels: policies.filter((p) => p.deploymentVersionSelector).length,
     maintenance: 0,
     rollout: 0,
     successRate: 0,
@@ -73,10 +72,10 @@ export default async function RulesPage({
       description: "Control when deployments can occur",
     },
     {
-      title: "Version Selectors",
+      title: "Version Channels",
       icon: <IconTag className="h-5 w-5 text-indigo-500" />,
-      count: counts.versionSelectors,
-      href: `/${workspaceSlug}/policies/version-selectors`,
+      count: counts.versionChannels,
+      href: `/${workspaceSlug}/policies/version-channels`,
       description: "Control which versions can be deployed",
     },
     {
@@ -180,7 +179,7 @@ export default async function RulesPage({
 
         <Tabs defaultValue="all" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="all">All Rules ({0})</TabsTrigger>
+            <TabsTrigger value="all">All Rules ({policies.length})</TabsTrigger>
             <TabsTrigger value="active">
               Active ({activePolicies.length})
             </TabsTrigger>

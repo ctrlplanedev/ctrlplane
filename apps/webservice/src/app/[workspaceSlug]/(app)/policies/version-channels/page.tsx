@@ -1,3 +1,4 @@
+import type { RouterOutputs } from "@ctrlplane/api";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconMenu2, IconPlus, IconTag } from "@tabler/icons-react";
@@ -18,9 +19,25 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { api } from "~/trpc/server";
 import { PageHeader } from "../../_components/PageHeader";
 import { Sidebars } from "../../../sidebars";
-import { VersionSelectorTable } from "./_components/VersionSelectorTable";
+import { VersionChannelTable } from "./_components/VersionChannelTable";
 
-export default async function VersionSelectorsPage({
+// Use the correct type from RouterOutputs
+type BasePolicy = RouterOutputs["policy"]["list"][number];
+
+// Define a type for policies confirmed to have the selector/channel rule
+interface PolicyWithChannel extends BasePolicy {
+  deploymentVersionSelector: NonNullable<
+    BasePolicy["deploymentVersionSelector"]
+  >;
+}
+
+// Type guard function
+function hasVersionChannel(policy: BasePolicy): policy is PolicyWithChannel {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return policy.deploymentVersionSelector != null;
+}
+
+export default async function VersionChannelsPage({
   params,
 }: {
   params: Promise<{ workspaceSlug: string }>;
@@ -30,10 +47,7 @@ export default async function VersionSelectorsPage({
   if (workspace == null) return notFound();
 
   const policies = await api.policy.list(workspace.id);
-  const policiesWithVersionSelectors = policies.filter(
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    (p) => p.deploymentVersionSelector,
-  );
+  const policiesWithVersionChannels = policies.filter(hasVersionChannel);
 
   return (
     <div className="flex h-full flex-col">
@@ -52,24 +66,26 @@ export default async function VersionSelectorsPage({
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Version Selectors</BreadcrumbPage>
+                <BreadcrumbPage>Version Channels</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
         <div className="ml-auto flex gap-2">
+          {/* Removed Back Button for now, might add later */}
           <Button variant="outline" size="sm">
             <IconPlus className="mr-2 h-4 w-4" />
-            Create Version Selector
+            Create Version Channel Rule
           </Button>
         </div>
       </PageHeader>
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex-1 overflow-y-auto p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold">Version Selectors</h1>
+          <h1 className="text-2xl font-semibold">Version Channels</h1>
           <p className="text-sm text-muted-foreground">
-            Control which version of deployments can be released to environments
+            Define rules to control which deployment versions are eligible for
+            release.
           </p>
         </div>
 
@@ -78,23 +94,22 @@ export default async function VersionSelectorsPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <IconTag className="h-5 w-5 text-indigo-400" />
-                <span>What are Version Selectors?</span>
+                <span>What are Version Channels?</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Version selectors allow you to define rules for which versions
-                of a deployment can be released. For example, you can create a
-                selector that only allows versions with specific tags or
-                metadata to be deployed to production environments. This helps
-                maintain consistent deployment practices and prevents unintended
-                releases.
+                Version Channels allow you to group deployment versions based on
+                criteria like tags or metadata. You can then create policies
+                that restrict deployments to specific channels (e.g., only
+                allowing "stable" channel releases into production). This helps
+                maintain consistency and prevent unintended deployments.
               </p>
             </CardContent>
           </Card>
         </div>
 
-        <VersionSelectorTable policies={policiesWithVersionSelectors} />
+        <VersionChannelTable policies={policiesWithVersionChannels} />
       </div>
     </div>
   );

@@ -84,9 +84,9 @@ export default async function Layout(props: {
                   href={urls
                     .workspace(workspace.slug)
                     .policies()
-                    .path("version-selectors")}
+                    .path("version-channels")}
                 >
-                  Version Selectors
+                  Version Channels
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>

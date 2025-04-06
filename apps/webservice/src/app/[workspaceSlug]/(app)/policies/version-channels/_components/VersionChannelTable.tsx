@@ -1,5 +1,6 @@
 "use client";
 
+import type { RouterOutputs } from "@ctrlplane/api";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Edit, MoreHorizontalIcon, Trash2 } from "lucide-react";
@@ -25,25 +26,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@ctrlplane/ui/tooltip";
 
 import { getTypeColorClass } from "../../_components/rule-themes";
 
-// Define type for the version selector structure
-type DeploymentVersionSelector = {
-  id: string;
-  name: string;
-  description: string | null;
-  deploymentVersionSelector: any;
-};
+// Use the correct type from RouterOutputs
+type BasePolicy = RouterOutputs["policy"]["list"][number];
 
-// Type for the policy with version selector
-type PolicyWithVersionSelector = {
-  id: string;
-  name: string;
-  description: string | null;
-  enabled: boolean;
-  deploymentVersionSelector: DeploymentVersionSelector | null;
-};
+// Define a type for policies confirmed to have the selector
+interface PolicyWithChannel extends BasePolicy {
+  deploymentVersionSelector: NonNullable<
+    BasePolicy["deploymentVersionSelector"]
+  >;
+}
 
-interface VersionSelectorTableProps {
-  policies: PolicyWithVersionSelector[];
+interface VersionChannelTableProps {
+  policies: PolicyWithChannel[];
 }
 
 function renderConditionSummary(condition: any): string {
@@ -90,18 +84,18 @@ function renderConditionSummary(condition: any): string {
   return "Complex condition";
 }
 
-export const VersionSelectorTable: React.FC<VersionSelectorTableProps> = ({
+export const VersionChannelTable: React.FC<VersionChannelTableProps> = ({
   policies,
 }) => {
   const params = useParams();
   const workspaceSlug = params.workspaceSlug as string;
 
-  // Return early if no policies with version selectors
+  // Return early if no policies with version channels
   if (policies.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center rounded-lg border border-dashed">
         <p className="text-sm text-muted-foreground">
-          No version selectors found
+          No version channels found
         </p>
       </div>
     );
@@ -121,7 +115,7 @@ export const VersionSelectorTable: React.FC<VersionSelectorTableProps> = ({
       <TableBody>
         {policies.map((policy) => {
           const condition =
-            policy.deploymentVersionSelector?.deploymentVersionSelector;
+            policy.deploymentVersionSelector.deploymentVersionSelector;
 
           return (
             <TableRow key={policy.id} className="group hover:bg-muted/50">
@@ -156,7 +150,7 @@ export const VersionSelectorTable: React.FC<VersionSelectorTableProps> = ({
                 <Switch
                   checked={policy.enabled}
                   className="data-[state=checked]:bg-green-500"
-                  disabled
+                  disabled // Policy enabled status shouldn't be editable here
                 />
               </TableCell>
 
@@ -169,16 +163,18 @@ export const VersionSelectorTable: React.FC<VersionSelectorTableProps> = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
+                      {/* Link to the main policy edit page */}
                       <Link
                         href={`/${workspaceSlug}/policies/${policy.id}/edit`}
                       >
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit
+                        Edit Policy
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive focus:text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
+                      Remove Channel Rule
+                      {/* TODO: Implement removal of just the channel rule */}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
