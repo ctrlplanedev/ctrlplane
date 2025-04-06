@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { pgEnum, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -24,6 +25,11 @@ export const baseApprovalRecordFields = {
   // Status of this approval
   status: approvalStatus("status").notNull(),
 
+  // Timestamp of when the approval was performed
+  approvedAt: timestamp("approved_at", { withTimezone: true }).default(
+    sql`NULL`,
+  ),
+
   // Reason provided by approver
   reason: text("reason"),
 
@@ -31,9 +37,9 @@ export const baseApprovalRecordFields = {
     .notNull()
     .defaultNow(),
 
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
 };
 
 // Base validation fields for approval records

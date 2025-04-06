@@ -9,7 +9,6 @@ import {
   policyRuleAnyApproval,
   policyRuleDenyWindow,
   policyRuleRoleApproval,
-  policyRuleTeamApproval,
   policyRuleUserApproval,
 } from "./rules/index.js";
 import { workspace } from "./workspace.js";
@@ -24,14 +23,14 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   }),
   targets: many(policyTarget),
   denyWindows: many(policyRuleDenyWindow),
-  userApprovals: many(policyRuleUserApproval),
-  teamApprovals: many(policyRuleTeamApproval),
-  roleApprovals: many(policyRuleRoleApproval),
-  anyApprovals: many(policyRuleAnyApproval),
   deploymentVersionSelector: one(policyDeploymentVersionSelector, {
     fields: [policy.id],
     references: [policyDeploymentVersionSelector.policyId],
   }),
+
+  versionUserApprovals: many(policyRuleUserApproval),
+  versionRoleApprovals: many(policyRuleRoleApproval),
+  versionAnyApprovals: many(policyRuleAnyApproval),
 }));
 
 export const policyTargetRelations = relations(policyTarget, ({ one }) => ({
