@@ -47,10 +47,10 @@ export const denyWindowRouter = createTRPCRouter({
           .select()
           .from(policyRuleDenyWindow)
           .innerJoin(policy, eq(policyRuleDenyWindow.policyId, policy.id))
-          .where(eq(policy.workspaceId, input.workspaceId))
-          .then((rows) => rows.map((row) => row.policy_rule_deny_window));
+          .where(eq(policy.workspaceId, input.workspaceId));
 
-        return denyWindows.flatMap((denyWindow) => {
+        return denyWindows.flatMap((dw) => {
+          const { policy_rule_deny_window: denyWindow, policy } = dw;
           const rrule = { ...denyWindow.rrule, tzid: denyWindow.timeZone };
           const dtstart =
             denyWindow.rrule.dtstart == null
@@ -63,12 +63,12 @@ export const denyWindowRouter = createTRPCRouter({
           });
           const windows = rule.getWindowsInRange(input.start, input.end);
           const events = windows.map((window, idx) => ({
-            id: `${denyWindow.id}-${idx}`,
+            id: `${denyWindow.id}|${idx}`,
             start: window.start,
             end: window.end,
             title: denyWindow.name === "" ? "Deny Window" : denyWindow.name,
           }));
-          return { ...denyWindow, events };
+          return { ...denyWindow, events, policy };
         });
       }),
   }),
@@ -78,13 +78,28 @@ export const denyWindowRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.PolicyCreate)
-          .on({ type: "policy", id: input.policyId }),
+          .on({ type: "workspace", id: input.worspaceId }),
     })
-    .input(createPolicyRuleDenyWindow)
-    .mutation(({ ctx, input }) => {
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        data: createPolicyRuleDenyWindow,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { workspaceId, data } = input;
+      const policyId: string =
+        data.policyId ??
+        (await ctx.db
+          .insert(policy)
+          .values({ workspaceId, name: data.name })
+          .returning()
+          .then(takeFirst)
+          .then((policy) => policy.id));
+
       return ctx.db
         .insert(policyRuleDenyWindow)
-        .values(input)
+        .values({ ...data, policyId })
         .returning()
         .then(takeFirst);
     }),

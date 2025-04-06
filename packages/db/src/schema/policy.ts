@@ -230,7 +230,10 @@ export type CreatePolicyTarget = z.infer<typeof createPolicyTarget>;
 export const updatePolicyTarget = policyTargetInsertSchema.partial();
 export type UpdatePolicyTarget = z.infer<typeof updatePolicyTarget>;
 
-export const createPolicyRuleDenyWindow = policyRuleDenyWindowInsertSchema;
+export const createPolicyRuleDenyWindow =
+  policyRuleDenyWindowInsertSchema.extend({
+    policyId: z.string().uuid().optional(),
+  });
 export type CreatePolicyRuleDenyWindow = z.infer<
   typeof createPolicyRuleDenyWindow
 >;
