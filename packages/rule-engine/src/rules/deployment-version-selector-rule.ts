@@ -36,7 +36,7 @@ export class DeploymentVersionSelectorRule implements DeploymentResourceRule {
       allowedReleases: releases.filter((r) => {
         const versionId = r.version.id;
         if (!applicableVersionIds.includes(versionId)) {
-          rejectionReasons.set(versionId, REJECTION_REASON);
+          rejectionReasons.set(r.id, REJECTION_REASON);
           return false;
         }
         return true;
