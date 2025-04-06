@@ -1,29 +1,10 @@
 import { relations } from "drizzle-orm";
 import { policy } from "../policy.js";
-import { 
-  policyRuleUserApproval,
-  policyRuleTeamApproval,
-  policyRuleRoleApproval,
-  policyRuleAnyApproval,
-  policyRuleUserApprovalRecord,
-  policyRuleTeamApprovalRecord,
-  policyRuleRoleApprovalRecord,
-  policyRuleAnyApprovalRecord,
-  policyRuleApprovalOnBehalfOfTeam,
-  policyRuleApprovalOnBehalfOfRole,
-  policyRuleDenyWindow 
-} from "./index.js";
-
-// Deny window rule relations
-export const policyRuleDenyWindowRelations = relations(
-  policyRuleDenyWindow,
-  ({ one }) => ({
-    policy: one(policy, {
-      fields: [policyRuleDenyWindow.policyId],
-      references: [policy.id],
-    }),
-  }),
-);
+import { policyRuleAnyApproval, policyRuleAnyApprovalRecord } from "./approval-any.js";
+import { policyRuleApprovalOnBehalfOfRole, policyRuleApprovalOnBehalfOfTeam } from "./approval-on-behalf-of.js";
+import { policyRuleRoleApproval, policyRuleRoleApprovalRecord } from "./approval-role.js";
+import { policyRuleTeamApproval, policyRuleTeamApprovalRecord } from "./approval-team.js";
+import { policyRuleUserApproval, policyRuleUserApprovalRecord } from "./approval-user.js";
 
 // User approval rule relations
 export const policyRuleUserApprovalRelations = relations(
