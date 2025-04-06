@@ -207,7 +207,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
         };
   }
 
-  async upsertReleaseWithVariables(
+  async updateReleaseVariables(
     variables: MaybeVariable[],
   ): Promise<{ created: boolean; release: ReleaseWithId } | null> {
     const latestRelease = await this.findLatestRelease();
@@ -215,7 +215,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
     return versionId == null ? null : this.upsertRelease(versionId, variables);
   }
 
-  async upsertReleaseWithVersionId(
+  async updateReleaseVersion(
     versionId: string,
   ): Promise<{ created: boolean; release: ReleaseWithId }> {
     const latestRelease = await this.findLatestRelease();
