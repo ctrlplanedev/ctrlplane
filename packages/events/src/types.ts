@@ -21,6 +21,8 @@ export enum Channel {
   UpdateResourceVariable = "update-resource-variable",
 
   EvaluateReleaseTarget = "evaluate-release-target",
+
+  UpsertResource = "upsert-resource",
 }
 
 export type EvaluateReleaseTargetJob = {
@@ -42,4 +44,10 @@ export type ChannelMap = {
   [Channel.EvaluateReleaseTarget]: EvaluateReleaseTargetJob;
   [Channel.DispatchJob]: { jobId: string };
   [Channel.ResourceScan]: { resourceProviderId: string };
+  [Channel.UpsertResource]: {
+    resource: schema.InsertResource & {
+      metadata?: Record<string, string>;
+      variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+    };
+  };
 };

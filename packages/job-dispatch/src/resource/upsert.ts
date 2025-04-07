@@ -16,7 +16,7 @@ import { getEnvironmentsByResourceWithIdentifiers } from "./utils.js";
 
 const log = logger.child({ label: "upsert-resources" });
 
-export type ResourceToInsert = InsertResource & {
+type ResourceToInsert = InsertResource & {
   metadata?: Record<string, string>;
   variables?: Array<{ key: string; value: any; sensitive: boolean }>;
 };
