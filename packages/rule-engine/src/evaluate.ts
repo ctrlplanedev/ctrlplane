@@ -23,7 +23,7 @@ const denyWindows = (policy: Policy | null) =>
     : policy.denyWindows.map(
         (denyWindow) =>
           new DeploymentDenyRule({
-            ...denyWindow,
+            ...denyWindow.rrule,
             tzid: denyWindow.timeZone,
             dtend: denyWindow.dtend,
           }),
