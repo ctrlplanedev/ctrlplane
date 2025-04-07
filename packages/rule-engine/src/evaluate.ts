@@ -125,6 +125,7 @@ export const evaluateRepository = async (
       .fromPairs()
       .value(),
   }));
+  console.log({ resolvedReleases });
   const releaseCollection = Releases.from(resolvedReleases);
 
   const policy = await repository.getPolicy();

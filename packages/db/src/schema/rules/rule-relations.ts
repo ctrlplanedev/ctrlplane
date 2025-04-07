@@ -27,8 +27,12 @@ export const userApprovalRelations = relations(user, ({ many }) => ({
 // Approval user relations
 export const policyRuleUserApprovalRelations = relations(
   policyRuleUserApproval,
-  ({ many }) => ({
+  ({ many, one }) => ({
     approvalRecords: many(policyRuleUserApprovalRecord),
+    policy: one(policy, {
+      fields: [policyRuleUserApproval.policyId],
+      references: [policy.id],
+    }),
   }),
 );
 
@@ -53,8 +57,12 @@ export const policyRuleUserApprovalRecordRelations = relations(
 // Approval role relations
 export const policyRuleRoleApprovalRelations = relations(
   policyRuleRoleApproval,
-  ({ many }) => ({
+  ({ many, one }) => ({
     approvalRecords: many(policyRuleRoleApprovalRecord),
+    policy: one(policy, {
+      fields: [policyRuleRoleApproval.policyId],
+      references: [policy.id],
+    }),
   }),
 );
 
@@ -79,8 +87,12 @@ export const policyRuleRoleApprovalRecordRelations = relations(
 // Approval any relations
 export const policyRuleAnyApprovalRelations = relations(
   policyRuleAnyApproval,
-  ({ many }) => ({
+  ({ many, one }) => ({
     approvalRecords: many(policyRuleAnyApprovalRecord),
+    policy: one(policy, {
+      fields: [policyRuleAnyApproval.policyId],
+      references: [policy.id],
+    }),
   }),
 );
 
