@@ -5,6 +5,7 @@ import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { DatabaseReleaseRepository } from "@ctrlplane/rule-engine";
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -56,13 +57,14 @@ export const newDeploymentVersionWorker = createWorker(
   async ({ data: version }) => {
     const deployment = await db.query.deployment.findFirst({
       where: eq(schema.deployment.id, version.deploymentId),
+      with: { system: true },
     });
 
     if (!deployment) throw new Error("Deployment not found");
 
     const resources = await getDeploymentResources(db, deployment);
 
-    const releaseTargets = resources.map((resource) => ({
+    const releaseTargetInserts = resources.map((resource) => ({
       resourceId: resource.id,
       environmentId: resource.environment.id,
       deploymentId: version.deploymentId,
@@ -70,8 +72,24 @@ export const newDeploymentVersionWorker = createWorker(
 
     await db
       .insert(schema.releaseTarget)
-      .values(releaseTargets)
+      .values(releaseTargetInserts)
       .onConflictDoNothing();
+
+    const releaseTargets = await db.query.releaseTarget.findMany({
+      where: eq(schema.releaseTarget.deploymentId, version.deploymentId),
+    });
+
+    const { system } = deployment;
+    const { workspaceId } = system;
+
+    const updateReleaseVersionPromises = releaseTargets.map(async (rt) => {
+      const releaseRepository = await DatabaseReleaseRepository.create({
+        ...rt,
+        workspaceId,
+      });
+      await releaseRepository.updateReleaseVersion(version.id);
+    });
+    await Promise.all(updateReleaseVersionPromises);
 
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(
       releaseTargets.map((rt) => ({

@@ -115,7 +115,14 @@ export const getApplicablePolicies = async (
       eq(schema.policy.workspaceId, workspaceId),
       eq(schema.policy.enabled, true),
     ),
-    with: { targets: true, denyWindows: true, deploymentVersionSelector: true },
+    with: {
+      targets: true,
+      denyWindows: true,
+      deploymentVersionSelector: true,
+      versionAnyApprovals: true,
+      versionRoleApprovals: true,
+      versionUserApprovals: true,
+    },
     orderBy: [desc(schema.policy.priority)],
   });
 

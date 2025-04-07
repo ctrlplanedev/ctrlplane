@@ -10,6 +10,12 @@ import {
   DeploymentVersionSelectorRule,
   getApplicableVersionIds,
 } from "./rules/deployment-version-selector-rule.js";
+import {
+  getAnyApprovalRecords,
+  getRoleApprovalRecords,
+  getUserApprovalRecords,
+  VersionApprovalRule,
+} from "./rules/version-approval-rule.js";
 
 const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -31,6 +37,45 @@ const versionSelector = (policy: Policy | null) =>
           getApplicableVersionIds(policy.deploymentVersionSelector),
         ),
       ];
+
+const versionAnyApprovalRule = (
+  approvalRules?: Policy["versionAnyApprovals"] | null,
+) => {
+  if (approvalRules == null) return [];
+  return approvalRules.map(
+    (approval) =>
+      new VersionApprovalRule({
+        minApprovals: approval.requiredApprovalsCount,
+        getApprovalRecords: getAnyApprovalRecords,
+      }),
+  );
+};
+
+const versionRoleApprovalRule = (
+  approvalRules?: Policy["versionRoleApprovals"] | null,
+) => {
+  if (approvalRules == null) return [];
+  return approvalRules.map(
+    (approval) =>
+      new VersionApprovalRule({
+        minApprovals: approval.requiredApprovalsCount,
+        getApprovalRecords: getRoleApprovalRecords,
+      }),
+  );
+};
+
+const versionUserApprovalRule = (
+  approvalRules?: Policy["versionUserApprovals"] | null,
+) => {
+  if (approvalRules == null) return [];
+  return approvalRules.map(
+    () =>
+      new VersionApprovalRule({
+        minApprovals: 1,
+        getApprovalRecords: getUserApprovalRecords,
+      }),
+  );
+};
 
 /**
  * Evaluates a deployment context against policy rules to determine if the
@@ -96,7 +141,13 @@ export const evaluateRepository = async (
   const releaseCollection = Releases.from(resolvedReleases);
 
   const policy = await repository.getPolicy();
-  const rules = [...denyWindows(policy), ...versionSelector(policy)];
+  const rules = [
+    ...denyWindows(policy),
+    ...versionSelector(policy),
+    ...versionUserApprovalRule(policy?.versionUserApprovals),
+    ...versionAnyApprovalRule(policy?.versionAnyApprovals),
+    ...versionRoleApprovalRule(policy?.versionRoleApprovals),
+  ];
   const engine = new RuleEngine(rules);
 
   return engine.evaluate(releaseCollection, ctx);

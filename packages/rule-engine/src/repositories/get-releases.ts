@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import { isAfter } from "date-fns";
 
-import { and, desc, eq, exists, gte, lte } from "@ctrlplane/db";
+import { and, desc, eq, exists, gte, lte, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
@@ -56,7 +56,7 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
             .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
             .where(
               and(
-                eq(schema.releaseJob.releaseId, schema.release.id),
+                sql`${schema.releaseJob.releaseId} = "releaseTarget_releases"."id"`,
                 eq(schema.job.status, JobStatus.Successful),
               ),
             )

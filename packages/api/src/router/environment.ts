@@ -311,12 +311,13 @@ export const environmentRouter = createTRPCRouter({
       const { resourceSelector } = input.data;
       const isUpdatingResourceSelector =
         resourceSelector != null || oldEnv.environment.resourceSelector != null;
-      if (isUpdatingResourceSelector) {
-        getQueue(Channel.EnvironmentSelectorUpdate).add(input.id, {
-          ...updatedEnv,
-          oldSelector: oldEnv.environment.resourceSelector,
-        });
 
+      getQueue(Channel.UpdateEnvironment).add(input.id, {
+        ...updatedEnv,
+        oldSelector: oldEnv.environment.resourceSelector,
+      });
+
+      if (isUpdatingResourceSelector) {
         const hasResourceSelectorsChanged = !_.isEqual(
           oldEnv.environment.resourceSelector,
           resourceSelector,
@@ -329,7 +330,10 @@ export const environmentRouter = createTRPCRouter({
           );
           const sys = await ctx.db.query.system.findFirst({
             where: eq(system.id, oldEnv.system.id),
-            with: { environments: { where: isOtherEnv }, deployments: true },
+            with: {
+              environments: { where: isOtherEnv },
+              deployments: true,
+            },
           });
 
           const otherEnvFilters =
