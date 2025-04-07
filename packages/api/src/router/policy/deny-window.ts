@@ -66,7 +66,7 @@ export const denyWindowRouter = createTRPCRouter({
             id: `${denyWindow.id}|${idx}`,
             start: window.start,
             end: window.end,
-            title: denyWindow.name === "" ? "Deny Window" : denyWindow.name,
+            title: "Deny Window",
           }));
           return { ...denyWindow, events, policy };
         });
@@ -83,7 +83,9 @@ export const denyWindowRouter = createTRPCRouter({
     .input(
       z.object({
         workspaceId: z.string().uuid(),
-        data: createPolicyRuleDenyWindow,
+        data: createPolicyRuleDenyWindow.extend({
+          policyId: z.string().uuid().optional(),
+        }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -92,7 +94,7 @@ export const denyWindowRouter = createTRPCRouter({
         data.policyId ??
         (await ctx.db
           .insert(policy)
-          .values({ workspaceId, name: data.name })
+          .values({ workspaceId, name: "" })
           .returning()
           .then(takeFirst)
           .then((policy) => policy.id));

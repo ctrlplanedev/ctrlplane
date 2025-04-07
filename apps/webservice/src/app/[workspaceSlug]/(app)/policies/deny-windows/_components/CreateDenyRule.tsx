@@ -92,7 +92,11 @@ const DenyWindowInfo: React.FC<{
   <div className="space-y-4">
     <div className="space-y-1">
       <div className="flex items-center justify-between font-bold">
-        <div>{denyWindow.name}</div>
+        <div>
+          {denyWindow.policy.name === ""
+            ? "Deny Window"
+            : denyWindow.policy.name}
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -113,11 +117,6 @@ const DenyWindowInfo: React.FC<{
         </div>
       </div>
     </div>
-    {(denyWindow.description?.length ?? 0) > 0 && (
-      <div className="text-sm text-muted-foreground">
-        {denyWindow.description}
-      </div>
-    )}
   </div>
 );
 
