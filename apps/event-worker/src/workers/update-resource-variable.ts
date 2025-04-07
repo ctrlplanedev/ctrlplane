@@ -2,13 +2,14 @@ import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { DatabaseReleaseRepository } from "@ctrlplane/rule-engine";
 
 export const updateResourceVariableWorker = createWorker(
   Channel.UpdateResourceVariable,
   async (job) => {
     const { data } = job;
     const { key, resourceId } = data;
-    const deploymentIds = await db
+    const rows = await db
       .select()
       .from(schema.resource)
       .innerJoin(
@@ -28,8 +29,13 @@ export const updateResourceVariableWorker = createWorker(
           eq(schema.resource.id, resourceId),
           eq(schema.deploymentVariable.key, key),
         ),
-      )
-      .then((results) => results.map((result) => result.deployment.id));
+      );
+
+    const resource = rows[0]?.resource;
+    if (!resource) throw new Error("Resource not found");
+
+    const { workspaceId } = resource;
+    const deploymentIds = rows.map((row) => row.deployment.id);
 
     const releaseTargets = await db.query.releaseTarget.findMany({
       where: and(
@@ -37,6 +43,16 @@ export const updateResourceVariableWorker = createWorker(
         inArray(schema.releaseTarget.deploymentId, deploymentIds),
       ),
     });
+
+    const updateReleaseVariablePromises = releaseTargets.map(async (rt) => {
+      const releaseRepository = await DatabaseReleaseRepository.create({
+        ...rt,
+        workspaceId,
+      });
+      const variables = await releaseRepository.getLatestVariables();
+      await releaseRepository.updateReleaseVariables(variables);
+    });
+    await Promise.all(updateReleaseVariablePromises);
 
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(
       releaseTargets.map((rt) => ({

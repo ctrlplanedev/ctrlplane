@@ -100,6 +100,7 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     if (variable == null) return null;
 
     for (const value of variable.values) {
+      if (value.resourceSelector == null) continue;
       const res = await this.db
         .select()
         .from(resource)

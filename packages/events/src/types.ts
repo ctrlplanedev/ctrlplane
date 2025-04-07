@@ -14,7 +14,7 @@ export enum Channel {
   NewDeploymentVersion = "new-deployment-version",
 
   NewEnvironment = "new-environment",
-  EnvironmentSelectorUpdate = "environment-selector-update",
+  UpdateEnvironment = "update-environment",
   NewRelease = "new-release",
 
   UpdateDeploymentVariable = "update-deployment-variable",
@@ -35,7 +35,7 @@ export type ChannelMap = {
   [Channel.UpdateDeploymentVariable]: schema.DeploymentVariable;
   [Channel.UpdateResourceVariable]: schema.ResourceVariable;
   [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
-  [Channel.EnvironmentSelectorUpdate]: schema.Environment & {
+  [Channel.UpdateEnvironment]: schema.Environment & {
     oldSelector: ResourceCondition | null;
   };
 

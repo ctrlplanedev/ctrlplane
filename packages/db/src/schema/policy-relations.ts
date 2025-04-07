@@ -3,10 +3,18 @@ import { relations } from "drizzle-orm";
 import {
   policy,
   policyDeploymentVersionSelector,
-  policyRuleDenyWindow,
   policyTarget,
 } from "./policy.js";
+import {
+  policyRuleAnyApproval,
+  policyRuleDenyWindow,
+  policyRuleRoleApproval,
+  policyRuleUserApproval,
+} from "./rules/index.js";
 import { workspace } from "./workspace.js";
+
+// Re-export the rule relations
+export * from "./rules/index.js";
 
 export const policyRelations = relations(policy, ({ many, one }) => ({
   workspace: one(workspace, {
@@ -19,6 +27,10 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
     fields: [policy.id],
     references: [policyDeploymentVersionSelector.policyId],
   }),
+
+  versionUserApprovals: many(policyRuleUserApproval),
+  versionRoleApprovals: many(policyRuleRoleApproval),
+  versionAnyApprovals: many(policyRuleAnyApproval),
 }));
 
 export const policyTargetRelations = relations(policyTarget, ({ one }) => ({
@@ -27,13 +39,3 @@ export const policyTargetRelations = relations(policyTarget, ({ one }) => ({
     references: [policy.id],
   }),
 }));
-
-export const policyRuleDenyWindowRelations = relations(
-  policyRuleDenyWindow,
-  ({ one }) => ({
-    policy: one(policy, {
-      fields: [policyRuleDenyWindow.policyId],
-      references: [policy.id],
-    }),
-  }),
-);

@@ -1,10 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 
-import type {
-  DeploymentResourceContext,
-  Policy,
-  ReleaseTargetIdentifier,
-} from "../types.js";
+import type { DeploymentResourceContext, Policy } from "../types.js";
 import type { MaybeVariable, Variable } from "./variables/types.js";
 
 /**
@@ -63,8 +59,7 @@ export interface ReleaseRepository {
    * @param variables - Variables for the release
    * @returns Object with created flag and the release
    */
-  upsert(
-    options: ReleaseTargetIdentifier,
+  upsertRelease(
     versionId: string,
     variables: MaybeVariable[],
   ): Promise<{ created: boolean; release: ReleaseWithId }>;
