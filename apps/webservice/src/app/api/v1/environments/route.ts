@@ -61,14 +61,10 @@ export const POST = request()
             versionChannels: channels,
           });
 
-          if (
-            existingEnv != null &&
-            !_.isEqual(existingEnv.resourceSelector, body.resourceSelector)
-          )
-            getQueue(Channel.EnvironmentUpdate).add(environment.id, {
-              ...environment,
-              oldSelector: existingEnv.resourceSelector,
-            });
+          getQueue(Channel.UpdateEnvironment).add(environment.id, {
+            ...environment,
+            oldSelector: existingEnv?.resourceSelector ?? null,
+          });
 
           await createJobsForNewEnvironment(tx, environment);
           const { metadata } = body;
