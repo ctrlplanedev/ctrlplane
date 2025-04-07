@@ -53,11 +53,6 @@ export const AverageDuration: React.FC<{
   const { averageDuration: averageDurationInPreviousPeriod } =
     statsInPreviousPeriod;
 
-  console.log({
-    averageDurationInCurrentPeriod,
-    averageDurationInPreviousPeriod,
-  });
-
   const averageDurationInCurrentPeriodMs =
     averageDurationInCurrentPeriod * 1000;
 

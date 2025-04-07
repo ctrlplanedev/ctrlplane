@@ -76,7 +76,6 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @returns The applicable policy, or null if none exist
    */
   async getPolicy(forceRefresh = false): Promise<Policy | null> {
-    console.log("getting policy");
     // Return cached policy if available and refresh not forced
     if (!forceRefresh && this.cachedPolicy !== null) {
       return this.cachedPolicy;
@@ -98,9 +97,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @returns Promise resolving to array of matching releases
    */
   async findMatchingReleases(): Promise<CompleteRelease[]> {
-    console.log("Finding matching releases");
     const policy = await this.getPolicy();
-    console.log("Policy", policy);
     return findPolicyMatchingReleasesBetweenDeployments(
       this.db,
       this.releaseTarget.id,
