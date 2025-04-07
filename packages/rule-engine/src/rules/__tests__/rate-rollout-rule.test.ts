@@ -1,3 +1,4 @@
+import { addMinutes, addSeconds } from "date-fns";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ResolvedRelease } from "../../types.js";
@@ -24,154 +25,77 @@ describe("RateRolloutRule", () => {
   // Set a fixed base date for testing
   const baseDate = new Date("2025-01-01T00:00:00Z");
 
-  // Create a spy on Date constructor
-  const dateSpy = vi.spyOn(global, "Date");
-
-  beforeEach(() => {
-    // Reset the mock before each test
-    vi.resetAllMocks();
-    // Mock the Date constructor to return a fixed date
-    dateSpy.mockImplementation(() => baseDate);
-  });
+  beforeEach(() => vi.resetAllMocks());
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  const createMockReleases = (releaseTimes: number[]): Releases => {
-    const releases = releaseTimes.map((minutesAgo, index) => {
-      const createdAt = new Date(baseDate.getTime() - minutesAgo * 60 * 1000);
-      return {
-        id: `release-${index}`,
-        createdAt,
-        version: {
-          id: `version-${index}`,
-          tag: `v0.${index}.0`,
-          config: {},
-          metadata: {},
-          createdAt,
-        },
-        variables: {},
-      } as ResolvedRelease;
-    });
-
-    return new Releases(releases);
+  const mockRelease: ResolvedRelease = {
+    id: "1",
+    createdAt: baseDate,
+    version: {
+      id: "1",
+      tag: "1",
+      config: {},
+      metadata: {},
+      createdAt: baseDate,
+    },
+    variables: {},
   };
 
-  it("should allow all releases if their rollout period is complete", () => {
-    // Create releases that were created a long time ago
-    const mockReleases = createMockReleases([1000, 5000, 7000]);
-
-    // Create rule with a short 10-minute rollout period
+  it("should allow a release if their rollout period is complete", () => {
     const rule = new RateRolloutRule({ rolloutDurationSeconds: 600 });
+    const now = addMinutes(baseDate, 10);
+    vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(now);
 
-    // Override getHashValue to return values that will be included
-    vi.spyOn(rule as any, "getHashValue").mockImplementation(function (
-      this: unknown,
-      ...args: unknown[]
-    ) {
-      const id = args[0] as string;
-      const idNum = parseInt(id.split("-")[1] ?? "0");
-      // Return values that will be <= 100% rollout percentage
-      return idNum * 25; // 0, 25, 50
-    });
-
-    const result = rule.filter(mockDeploymentContext, mockReleases);
-
-    // All releases should be allowed since they were created long ago
-    expect(result.allowedReleases.getAll().length).toBe(mockReleases.length);
-    expect(result.rejectionReasons).toBeUndefined();
-  });
-
-  it("should partially roll out releases based on elapsed time", () => {
-    // Mock the Date constructor to return a fixed "now" time
-    const now = new Date("2025-01-01T01:00:00Z"); // 1 hour from base
-    dateSpy.mockImplementation(() => now);
-
-    // Create a rule with a 2-hour rollout period
-    const rule = new RateRolloutRule({
-      rolloutDurationSeconds: 7200, // 2 hours
-    });
-
-    // Create test release instance with getCurrentTime spy
-    const getCurrentTimeSpy = vi.spyOn(rule as any, "getCurrentTime");
-
-    // Create releases at different times
-    const releases = createMockReleases([
-      30, // 30 minutes ago - 25% through rollout
-      60, // 60 minutes ago - 50% through rollout
-      90, // 90 minutes ago - 75% through rollout
-      120, // 120 minutes ago - 100% through rollout
-    ]);
-
-    // Mock hash values to make testing deterministic
-    vi.spyOn(rule as any, "getHashValue").mockImplementation(function (
-      this: unknown,
-      ...args: unknown[]
-    ) {
-      const id = args[0] as string;
-      const idNum = parseInt(id.split("-")[1] ?? "0");
-      // release-0: 30, release-1: 40, release-2: 70, release-3: 90
-      return (idNum + 1) * 30 - 10;
-    });
-
-    const result = rule.filter(mockDeploymentContext, releases);
-
-    // Verify getCurrentTime was called
-    expect(getCurrentTimeSpy).toHaveBeenCalled();
-
-    // release-3 (120 mins ago) should be allowed (100% rollout with hash 90)
-    expect(
-      result.allowedReleases.find((r) => r.id === "release-3"),
-    ).toBeDefined();
-
-    // release-2 (90 mins ago) should be allowed (75% rollout with hash 70)
-    expect(
-      result.allowedReleases.find((r) => r.id === "release-2"),
-    ).toBeDefined();
-
-    // release-1 (60 mins ago) should be allowed (50% rollout with hash 40)
-    expect(
-      result.allowedReleases.find((r) => r.id === "release-1"),
-    ).toBeDefined();
-
-    // release-0 (30 mins ago) should be rejected (25% rollout with hash 30)
-    expect(
-      result.allowedReleases.find((r) => r.id === "release-0"),
-    ).toBeUndefined();
-
-    // Verify rejection reasons exist for denied releases
-    expect(result.rejectionReasons).toBeDefined();
-    expect(result.rejectionReasons?.get("release-0")).toBeDefined();
-  });
-
-  it("should include remaining time in rejection reason", () => {
-    // Mock the Date constructor to return a fixed "now" time
-    const now = new Date("2025-01-01T00:30:00Z"); // 30 minutes from base
-    dateSpy.mockImplementation(() => now);
-
-    // Create a rule with a 2-hour rollout period
-    const rule = new RateRolloutRule({
-      rolloutDurationSeconds: 7200, // 2 hours
-    });
-
-    // Create a very recent release (10 minutes ago - only ~8% through rollout)
-    const releases = createMockReleases([10]);
-
-    // Force the release to be denied by making getHashValue return 100
     vi.spyOn(rule as any, "getHashValue").mockReturnValue(100);
 
-    const result = rule.filter(mockDeploymentContext, releases);
+    const result = rule.filter(
+      mockDeploymentContext,
+      new Releases([mockRelease]),
+    );
 
-    // The release should be denied
-    expect(result.allowedReleases.length).toBe(0);
+    expect(result.allowedReleases.getAll().length).toBe(1);
+    expect(result.rejectionReasons).toEqual(new Map());
+  });
 
-    // Check that the rejection reason includes the remaining time
-    const rejectionReason = result.rejectionReasons?.get("release-0");
-    expect(rejectionReason).toBeDefined();
+  it("should allow a release if the hash is less than or equal to the rollout percentage", () => {
+    const rule = new RateRolloutRule({ rolloutDurationSeconds: 600 });
+    const now = addSeconds(baseDate, 300);
+    vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(now);
 
-    // Should mention the percentage and remaining time
-    expect(rejectionReason).toContain("8% complete");
-    expect(rejectionReason).toMatch(/eligible in ~1h \d+m/);
+    vi.spyOn(rule as any, "getHashValue").mockReturnValue(50);
+
+    const result = rule.filter(
+      mockDeploymentContext,
+      new Releases([mockRelease]),
+    );
+
+    expect(result.allowedReleases.getAll().length).toBe(1);
+    expect(result.rejectionReasons).toEqual(new Map());
+  });
+
+  it("should reject a release if the hash is greater than the rollout percentage", () => {
+    const rolloutDurationSeconds = 600;
+    const nowSecondsAfterBase = 300;
+    const rule = new RateRolloutRule({ rolloutDurationSeconds });
+    const now = addSeconds(baseDate, nowSecondsAfterBase);
+    vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(now);
+
+    vi.spyOn(rule as any, "getHashValue").mockReturnValue(51);
+
+    const result = rule.filter(
+      mockDeploymentContext,
+      new Releases([mockRelease]),
+    );
+
+    expect(result.allowedReleases.getAll().length).toBe(0);
+    const expectedRejectionReason = `Release denied due to rate-based rollout restrictions (${Math.round(
+      (nowSecondsAfterBase / rolloutDurationSeconds) * 100,
+    )}% complete, eligible in ~5m)`;
+    expect(result.rejectionReasons).toEqual(
+      new Map([[mockRelease.id, expectedRejectionReason]]),
+    );
   });
 });

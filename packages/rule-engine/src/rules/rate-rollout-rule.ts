@@ -47,19 +47,18 @@ export class RateRolloutRule implements DeploymentResourceRule {
     const rejectionReasons = new Map<string, string>();
     const allowedReleases = releases.filter((release) => {
       // Calculate how much time has passed since the release was created
-      const releaseCreatedAt = this.getVersionCreatedAt(release);
-      const releaseAge = differenceInSeconds(now, releaseCreatedAt);
+      const versionCreatedAt = this.getVersionCreatedAt(release);
+      const versionAge = differenceInSeconds(now, versionCreatedAt);
 
       // Calculate what percentage of the rollout period has elapsed
       const rolloutPercentage = Math.min(
-        (releaseAge / this.rolloutDurationSeconds) * 100,
+        (versionAge / this.rolloutDurationSeconds) * 100,
         100,
       );
 
       // Generate a deterministic value based on the release ID
       // Using a simple hash function to get a value between 0-100
       const releaseValue = this.getHashValue(release.version.id);
-
       // If the release's hash value is less than the rollout percentage,
       // it's allowed to be deployed
       if (releaseValue <= rolloutPercentage) {
@@ -68,7 +67,7 @@ export class RateRolloutRule implements DeploymentResourceRule {
       // Otherwise, it's rejected with a reason
       const remainingTimeSeconds = Math.max(
         0,
-        this.rolloutDurationSeconds - releaseAge,
+        this.rolloutDurationSeconds - versionAge,
       );
       const remainingTimeHours = Math.floor(remainingTimeSeconds / 3600);
       const remainingTimeMinutes = Math.floor(
