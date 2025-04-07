@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
+import { isEqual } from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
@@ -189,6 +190,13 @@ export const updateEnvironmentWorker = createWorker(
 
     if (system == null) {
       log.error("System not found", { environmentId: environment.id });
+      return;
+    }
+
+    if (isEqual(oldSelector, environment.resourceSelector)) {
+      log.info("No change in environment selector", {
+        environmentId: environment.id,
+      });
       return;
     }
 
