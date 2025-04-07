@@ -24,8 +24,8 @@ export * from "./release-channel.js";
 export * from "./release-job-trigger.js";
 export * from "./policy.js";
 export * from "./release.js";
+export * from "./rules/index.js";
 
-// relations
 export * from "./environment-relations.js";
 export * from "./environment-policy-relations.js";
 export * from "./release-channel-relations.js";
