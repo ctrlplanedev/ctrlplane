@@ -71,13 +71,45 @@ const getGithubEntity = async (
     )
     .then(takeFirstOrNull);
 
-  const [releaseGhEntityResult, runbookGhEntityResult] = await Promise.all([
-    releaseGhEntityPromise,
-    runbookGhEntityPromise,
-  ]);
+  const releaseJobEntityPromise = db
+    .select()
+    .from(SCHEMA.releaseJob)
+    .innerJoin(
+      SCHEMA.release,
+      eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+    )
+    .innerJoin(
+      SCHEMA.releaseTarget,
+      eq(SCHEMA.release.releaseTargetId, SCHEMA.releaseTarget.id),
+    )
+    .innerJoin(
+      SCHEMA.resource,
+      eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
+    )
+    .innerJoin(
+      SCHEMA.githubEntity,
+      eq(SCHEMA.resource.workspaceId, SCHEMA.githubEntity.workspaceId),
+    )
+    .where(
+      and(
+        eq(SCHEMA.githubEntity.installationId, installationId),
+        eq(SCHEMA.githubEntity.slug, owner),
+        eq(SCHEMA.releaseJob.jobId, jobId),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  const [releaseGhEntityResult, runbookGhEntityResult, releaseJobEntityResult] =
+    await Promise.all([
+      releaseGhEntityPromise,
+      runbookGhEntityPromise,
+      releaseJobEntityPromise,
+    ]);
 
   return (
-    releaseGhEntityResult?.github_entity ?? runbookGhEntityResult?.github_entity
+    releaseGhEntityResult?.github_entity ??
+    runbookGhEntityResult?.github_entity ??
+    releaseJobEntityResult?.github_entity
   );
 };
 

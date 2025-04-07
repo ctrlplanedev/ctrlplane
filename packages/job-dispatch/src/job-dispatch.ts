@@ -93,17 +93,17 @@ class DispatchBuilder {
     );
 
     if (validJobsWithResolvedVariables.length > 0) {
-      // await getQueue(Channel.DispatchJob).addBulk(
-      //   validJobsWithResolvedVariables.map((wf) => ({
-      //     name: wf.id,
-      //     data: { jobId: wf.id },
-      //   })),
-      // );
-      // await Promise.all(
-      //   validJobsWithResolvedVariables.map((j) =>
-      //     updateJob(this.db, j.id, { status: JobStatus.InProgress }),
-      //   ),
-      // );
+      await getQueue(Channel.DispatchJob).addBulk(
+        validJobsWithResolvedVariables.map((wf) => ({
+          name: wf.id,
+          data: { jobId: wf.id },
+        })),
+      );
+      await Promise.all(
+        validJobsWithResolvedVariables.map((j) =>
+          updateJob(this.db, j.id, { status: JobStatus.InProgress }),
+        ),
+      );
     }
 
     await Promise.all(

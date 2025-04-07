@@ -6,6 +6,12 @@ import type { Policy } from "./types.js";
 import { Releases } from "./releases.js";
 import { RuleEngine } from "./rule-engine.js";
 import { DeploymentDenyRule } from "./rules/deployment-deny-rule.js";
+import {
+  getAnyApprovalRecords,
+  getRoleApprovalRecords,
+  getUserApprovalRecords,
+  VersionApprovalRule,
+} from "./rules/version-approval-rule.js";
 
 const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -13,11 +19,50 @@ const denyWindows = (policy: Policy | null) =>
     : policy.denyWindows.map(
         (denyWindow) =>
           new DeploymentDenyRule({
-            ...denyWindow,
+            ...denyWindow.rrule,
             tzid: denyWindow.timeZone,
             dtend: denyWindow.dtend,
           }),
       );
+
+const versionAnyApprovalRule = (
+  approvalRules?: Policy["versionAnyApprovals"] | null,
+) => {
+  if (approvalRules == null) return [];
+  return approvalRules.map(
+    (approval) =>
+      new VersionApprovalRule({
+        minApprovals: approval.requiredApprovalsCount,
+        getApprovalRecords: getAnyApprovalRecords,
+      }),
+  );
+};
+
+const versionRoleApprovalRule = (
+  approvalRules?: Policy["versionRoleApprovals"] | null,
+) => {
+  if (approvalRules == null) return [];
+  return approvalRules.map(
+    (approval) =>
+      new VersionApprovalRule({
+        minApprovals: approval.requiredApprovalsCount,
+        getApprovalRecords: getRoleApprovalRecords,
+      }),
+  );
+};
+
+const versionUserApprovalRule = (
+  approvalRules?: Policy["versionUserApprovals"] | null,
+) => {
+  if (approvalRules == null) return [];
+  return approvalRules.map(
+    () =>
+      new VersionApprovalRule({
+        minApprovals: 1,
+        getApprovalRecords: getUserApprovalRecords,
+      }),
+  );
+};
 
 /**
  * Evaluates a deployment context against policy rules to determine if the
@@ -83,7 +128,12 @@ export const evaluateRepository = async (
   const releaseCollection = Releases.from(resolvedReleases);
 
   const policy = await repository.getPolicy();
-  const rules = [...denyWindows(policy)];
+  const rules = [
+    ...denyWindows(policy),
+    ...versionUserApprovalRule(policy?.versionUserApprovals),
+    ...versionAnyApprovalRule(policy?.versionAnyApprovals),
+    ...versionRoleApprovalRule(policy?.versionRoleApprovals),
+  ];
   const engine = new RuleEngine(rules);
 
   return engine.evaluate(releaseCollection, ctx);

@@ -5,6 +5,7 @@ import { and, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
 import {
   DatabaseReleaseRepository,
   evaluateRepository,
@@ -12,6 +13,10 @@ import {
 
 import { env } from "../config.js";
 import { ReleaseTargetMutex } from "../releases/mutex.js";
+
+const log = logger.child({
+  worker: "policy-evaluate",
+});
 
 const createJobForRelease = async (tx: Tx, chosenReleaseId: string) => {
   const release = await tx.query.release.findFirst({
@@ -43,14 +48,15 @@ const createJobForRelease = async (tx: Tx, chosenReleaseId: string) => {
     .returning()
     .then(takeFirst);
 
-  await tx.insert(schema.jobVariable).values(
-    release.variables.map((v) => ({
-      jobId: job.id,
-      key: v.key,
-      sensitive: v.sensitive,
-      value: v.value,
-    })),
-  );
+  if (release.variables.length > 0)
+    await tx.insert(schema.jobVariable).values(
+      release.variables.map((v) => ({
+        jobId: job.id,
+        key: v.key,
+        sensitive: v.sensitive,
+        value: v.value,
+      })),
+    );
 
   await tx.insert(schema.releaseJob).values({
     jobId: job.id,
@@ -96,6 +102,11 @@ export const policyEvaluate = createWorker(
         );
         getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
       }
+    } catch (e) {
+      log.error("Failed to evaluate release target", {
+        error: e,
+        jobId: job.id,
+      });
     } finally {
       await mutex.unlock();
     }

@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
@@ -172,12 +173,12 @@ const dispatchExitHooks = async (
  *    - removes the release targets (and consequently the releases) for the resource + environment
  *    - dispatches exit hooks for the resource per deployment if the resource is no longer in the system
  *
- * @param {Job<ChannelMap[Channel.EnvironmentUpdate]>} job - The job containing environment data with old and new selectors
+ * @param {Job<ChannelMap[Channel.UpdateEnvironment]>} job - The job containing environment data with old and new selectors
  * @returns {Promise<void>} - Resolves when processing is complete
  * @throws {Error} - If there's an issue with database operations
  */
-export const envUpdateWorker = createWorker(
-  Channel.EnvironmentUpdate,
+export const updateEnvironmentWorker = createWorker(
+  Channel.UpdateEnvironment,
   async (job) => {
     const { oldSelector, ...environment } = job.data;
     const system = await db.query.environment
@@ -189,6 +190,13 @@ export const envUpdateWorker = createWorker(
 
     if (system == null) {
       log.error("System not found", { environmentId: environment.id });
+      return;
+    }
+
+    if (_.isEqual(oldSelector, environment.resourceSelector)) {
+      log.info("No change in environment selector", {
+        environmentId: environment.id,
+      });
       return;
     }
 

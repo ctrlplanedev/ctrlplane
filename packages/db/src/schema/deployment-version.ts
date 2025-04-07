@@ -312,7 +312,6 @@ export const deploymentVersionRelations = relations(
     }),
     metadata: many(deploymentVersionMetadata),
     dependencies: many(versionDependency),
-    channels: many(deploymentVersionChannel),
   }),
 );
 
