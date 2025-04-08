@@ -18,7 +18,7 @@ type Record = {
   reason: string | null;
 };
 
-type GetApprovalRecordsFunc = (
+export type GetApprovalRecordsFunc = (
   context: DeploymentResourceContext,
   versionIds: string[],
 ) => Promise<Record[]>;
