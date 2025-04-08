@@ -22,7 +22,7 @@ export class VariableReleaseManager implements ReleaseManager {
     const latestRelease = await this.findLatestRelease();
 
     const oldVars = _(latestRelease?.values ?? [])
-      .map((v) => [v.key, v.value])
+      .map((v) => [v.variableValueSnapshot.key, v.variableValueSnapshot.value])
       .fromPairs()
       .value();
 
@@ -37,19 +37,31 @@ export class VariableReleaseManager implements ReleaseManager {
       return { created: false, release: latestRelease };
 
     return this.db.transaction(async (tx) => {
+      const vars = _.compact(variables);
+      const variableValueSnapshot = await tx
+        .insert(schema.variableValueSnapshot)
+        .values(
+          vars.map((v) => ({
+            workspaceId: this.releaseTarget.workspaceId,
+            key: v.key,
+            value: v.value,
+            sensitive: v.sensitive,
+          })),
+        )
+        .onConflictDoNothing()
+        .returning();
+
       const release = await tx
         .insert(schema.variableSetRelease)
         .values({ releaseTargetId: this.releaseTarget.id })
         .returning()
         .then(takeFirst);
 
-      const vars = _.compact(variables);
       if (vars.length > 0)
         await tx.insert(schema.variableSetReleaseValue).values(
-          vars.map((v) => ({
-            variableReleaseId: release.id,
-            key: v.key,
-            value: v.value,
+          variableValueSnapshot.map((v) => ({
+            variableSetReleaseId: release.id,
+            variableValueSnapshotId: v.id,
           })),
         );
 
@@ -64,7 +76,7 @@ export class VariableReleaseManager implements ReleaseManager {
         this.releaseTarget.id,
       ),
       orderBy: desc(schema.variableSetRelease.createdAt),
-      with: { values: true },
+      with: { values: { with: { variableValueSnapshot: true } } },
     });
   }
 

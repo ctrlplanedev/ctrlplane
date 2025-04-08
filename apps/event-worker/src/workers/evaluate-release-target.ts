@@ -118,11 +118,7 @@ export const evaluateReleaseTarget = createWorker(
           eq(schema.releaseTarget.environmentId, job.data.environmentId),
           eq(schema.releaseTarget.deploymentId, job.data.deploymentId),
         ),
-        with: {
-          resource: true,
-          environment: true,
-          deployment: true,
-        },
+        with: { resource: true, environment: true, deployment: true },
       });
       if (!releaseTarget) throw new Error("Failed to get release target");
 

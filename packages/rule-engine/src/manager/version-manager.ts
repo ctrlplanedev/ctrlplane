@@ -73,7 +73,11 @@ export class VersionReleaseManager implements ReleaseManager {
         schema.release,
         eq(schema.release.versionReleaseId, schema.versionRelease.id),
       )
-      .innerJoin(schema.job, eq(schema.release.jobId, schema.job.id))
+      .innerJoin(
+        schema.releaseJob,
+        eq(schema.releaseJob.releaseId, schema.release.id),
+      )
+      .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
       .where(
         and(
           eq(schema.job.status, JobStatus.Successful),
