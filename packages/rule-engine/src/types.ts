@@ -2,18 +2,6 @@ import type * as schema from "@ctrlplane/db/schema";
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
-export type ResolvedRelease = {
-  id: string;
-  createdAt: Date;
-  version: {
-    id: string;
-    tag: string;
-    config: Record<string, any>;
-    metadata: Record<string, string>;
-  };
-  variables: Record<string, unknown>;
-};
-
 export type Deployment = {
   id: string;
   name: string;
@@ -73,11 +61,6 @@ export type ReleaseTargetIdentifier = {
   environmentId: string;
   resourceId: string;
 };
-
-export type GetReleasesFunc = (
-  ctx: RuleEngineContext,
-  policy: Policy,
-) => Promise<ResolvedRelease[]> | ResolvedRelease[];
 
 export type RuleEngine<T> = {
   evaluate: (
