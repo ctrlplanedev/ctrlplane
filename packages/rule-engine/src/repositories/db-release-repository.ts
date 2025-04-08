@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { desc, eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -221,6 +221,20 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
   ): Promise<{ created: boolean; release: ReleaseWithId }> {
     const latestRelease = await this.findLatestRelease();
     return this.upsertRelease(versionId, latestRelease?.variables ?? []);
+  }
+
+  async upsertReleaseForAllVersions(limit = 100) {
+    const versions = await this.db.query.deploymentVersion.findMany({
+      where: eq(
+        schema.deploymentVersion.deploymentId,
+        this.releaseTarget.deploymentId,
+      ),
+      limit,
+      orderBy: desc(schema.deploymentVersion.createdAt),
+    });
+    const variables = await this.getLatestVariables();
+    for (const version of versions.reverse())
+      await this.upsertRelease(version.id, variables);
   }
 
   /**

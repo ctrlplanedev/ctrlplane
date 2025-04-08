@@ -39,6 +39,8 @@ export const releaseTarget = pgTable(
   }),
 );
 
+export type ReleaseTarget = typeof releaseTarget.$inferSelect;
+
 export const release = pgTable("release", {
   id: uuid("id").primaryKey().defaultRandom(),
 
