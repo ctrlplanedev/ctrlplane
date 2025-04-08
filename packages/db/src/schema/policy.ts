@@ -17,6 +17,7 @@ import { z } from "zod";
 
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
+import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
 
 import { workspace } from "./workspace.js";
 
@@ -87,6 +88,16 @@ const policyTargetInsertSchema = createInsertSchema(policyTarget, {
   environmentSelector: environmentCondition.nullable(),
 }).omit({ id: true });
 
+const policyRuleDeploymentVersionSelectorInsertSchema = createInsertSchema(
+  policyRuleDeploymentVersionSelector,
+  {
+    policyId: z.string().uuid(),
+    name: z.string().min(1, "Rule name is required"),
+    description: z.string().optional(),
+    deploymentVersionSelector: deploymentVersionCondition,
+  },
+).omit({ id: true });
+
 // Export schemas and types
 export const createPolicy = policyInsertSchema;
 export type CreatePolicy = z.infer<typeof createPolicy>;
@@ -99,6 +110,18 @@ export type CreatePolicyTarget = z.infer<typeof createPolicyTarget>;
 
 export const updatePolicyTarget = policyTargetInsertSchema.partial();
 export type UpdatePolicyTarget = z.infer<typeof updatePolicyTarget>;
+
+export const createPolicyRuleDeploymentVersionSelector =
+  policyRuleDeploymentVersionSelectorInsertSchema;
+export type CreatePolicyRuleDeploymentVersionSelector = z.infer<
+  typeof createPolicyRuleDeploymentVersionSelector
+>;
+
+export const updatePolicyRuleDeploymentVersionSelector =
+  policyRuleDeploymentVersionSelectorInsertSchema.partial();
+export type UpdatePolicyRuleDeploymentVersionSelector = z.infer<
+  typeof updatePolicyRuleDeploymentVersionSelector
+>;
 
 // Export policy types
 export type Policy = InferSelectModel<typeof policy>;
