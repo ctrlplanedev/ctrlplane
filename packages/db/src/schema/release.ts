@@ -1,7 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
-  json,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -50,6 +50,7 @@ export const versionRelease = pgTable("version_release", {
   versionId: uuid("version_id")
     .notNull()
     .references(() => deploymentVersion.id, { onDelete: "cascade" }),
+
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -72,9 +73,14 @@ export const variableSetReleaseValue = pgTable(
     variableSetReleaseId: uuid("variable_set_release_id")
       .notNull()
       .references(() => variableSetRelease.id, { onDelete: "cascade" }),
+
     variableValueSnapshotId: uuid("variable_value_snapshot_id")
       .notNull()
       .references(() => variableValueSnapshot.id, { onDelete: "cascade" }),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.variableSetReleaseId, t.variableValueSnapshotId),
@@ -90,9 +96,13 @@ export const variableValueSnapshot = pgTable(
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
 
-    value: json("value").notNull(),
+    value: jsonb("value").$type<any>().notNull(),
     key: text("key").notNull(),
     sensitive: boolean("sensitive").notNull().default(false),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.key, t.value) }),
 );
