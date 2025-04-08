@@ -603,6 +603,13 @@
       "when": 1744146886268,
       "tag": "0085_sloppy_mister_fear",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1744151212079,
+      "tag": "0086_marvelous_katie_power",
+      "breakpoints": true
     }
   ]
 }
