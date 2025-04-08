@@ -51,8 +51,8 @@ export const policyTarget = pgTable("policy_target", {
     .$type<EnvironmentCondition | null>(),
 });
 
-export const policyDeploymentVersionSelector = pgTable(
-  "policy_deployment_version_selector",
+export const policyRuleDeploymentVersionSelector = pgTable(
+  "policy_rule_deployment_version_selector",
   {
     id: uuid("id").primaryKey().defaultRandom(),
 
@@ -103,6 +103,6 @@ export type UpdatePolicyTarget = z.infer<typeof updatePolicyTarget>;
 // Export policy types
 export type Policy = InferSelectModel<typeof policy>;
 export type PolicyTarget = InferSelectModel<typeof policyTarget>;
-export type PolicyDeploymentVersionSelector = InferSelectModel<
-  typeof policyDeploymentVersionSelector
+export type PolicyRuleDeploymentVersionSelector = InferSelectModel<
+  typeof policyRuleDeploymentVersionSelector
 >;

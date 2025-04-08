@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 
 import {
   policy,
-  policyDeploymentVersionSelector,
+  policyRuleDeploymentVersionSelector,
   policyTarget,
 } from "./policy.js";
 import {
@@ -23,10 +23,7 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   }),
   targets: many(policyTarget),
   denyWindows: many(policyRuleDenyWindow),
-  deploymentVersionSelector: one(policyDeploymentVersionSelector, {
-    fields: [policy.id],
-    references: [policyDeploymentVersionSelector.policyId],
-  }),
+  deploymentVersionSelector: one(policyRuleDeploymentVersionSelector),
 
   versionUserApprovals: many(policyRuleUserApproval),
   versionRoleApprovals: many(policyRuleRoleApproval),
@@ -39,3 +36,13 @@ export const policyTargetRelations = relations(policyTarget, ({ one }) => ({
     references: [policy.id],
   }),
 }));
+
+export const policyRuleDeploymentVersionSelectorRelations = relations(
+  policyRuleDeploymentVersionSelector,
+  ({ one }) => ({
+    policy: one(policy, {
+      fields: [policyRuleDeploymentVersionSelector.policyId],
+      references: [policy.id],
+    }),
+  }),
+);
