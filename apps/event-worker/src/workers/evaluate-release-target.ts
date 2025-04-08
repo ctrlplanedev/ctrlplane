@@ -91,14 +91,14 @@ export const evaluateReleaseTarget = createWorker(
         workspaceId: releaseTarget.resource.workspaceId,
       });
 
-      const { chosenRelease } = await evaluateRepository(releaseRepository);
-      if (chosenRelease == null)
+      const { chosenCandidate } = await evaluateRepository(releaseRepository);
+      if (chosenCandidate == null)
         throw new Error("Failed to get chosen release");
 
       if (env.NODE_ENV === "development") {
         // In development dispatch the job immediately
         const job = await db.transaction((tx) =>
-          createJobForRelease(tx, chosenRelease.id),
+          createJobForRelease(tx, chosenCandidate.id),
         );
         getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
       }
