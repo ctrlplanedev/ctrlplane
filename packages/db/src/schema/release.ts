@@ -59,7 +59,9 @@ export const variableRelease = pgTable("variable_release", {
   releaseTargetId: uuid("release_target_id")
     .notNull()
     .references(() => releaseTarget.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const variableReleaseValue = pgTable(
