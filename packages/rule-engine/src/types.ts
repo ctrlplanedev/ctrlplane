@@ -65,7 +65,7 @@ export interface DeploymentResourceRule {
 
 export type Policy = schema.Policy & {
   denyWindows: schema.PolicyRuleDenyWindow[];
-  deploymentVersionSelector: schema.PolicyDeploymentVersionSelector | null;
+  deploymentVersionSelector: schema.PolicyRuleDeploymentVersionSelector | null;
   versionAnyApprovals: schema.PolicyRuleAnyApproval[];
   versionUserApprovals: schema.PolicyRuleUserApproval[];
   versionRoleApprovals: schema.PolicyRuleRoleApproval[];
