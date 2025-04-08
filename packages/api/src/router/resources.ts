@@ -22,7 +22,7 @@ import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
   createReleaseJobTriggers,
-  deleteResources,
+  deleteResource,
   dispatchReleaseJobTriggers,
   isPassingAllPoliciesExceptNewerThanLastActive,
   isPassingChannelSelectorPolicy,
@@ -695,12 +695,14 @@ export const resourceRouter = createTRPCRouter({
         ),
     })
     .input(z.array(z.string().uuid()))
-    .mutation(async ({ ctx, input }) =>
+    .mutation(({ ctx, input }) =>
       ctx.db.query.resource
         .findMany({
           where: and(inArray(schema.resource.id, input), isNotDeleted),
         })
-        .then((resources) => deleteResources(ctx.db, resources)),
+        .then((resources) =>
+          Promise.all(resources.map((r) => deleteResource(ctx.db, r.id))),
+        ),
     ),
 
   metadataKeys: protectedProcedure

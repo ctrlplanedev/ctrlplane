@@ -23,4 +23,5 @@ export * from "./policies/release-window.js";
 export * from "./environment-creation.js";
 export * from "./pending-job-checker.js";
 export * from "./events/index.js";
-export * from "./resource/index.js";
+export * from "./resource/delete-resource.js";
+export * from "./resource/upsert.js";

@@ -171,6 +171,8 @@ export const resourceMetadataRelations = relations(
   }),
 );
 
+export type ResourceMetadata = InferSelectModel<typeof resourceMetadata>;
+
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
     return notExists(

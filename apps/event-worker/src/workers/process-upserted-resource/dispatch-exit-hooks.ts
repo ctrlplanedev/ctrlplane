@@ -3,17 +3,8 @@ import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
 
 import { and, eq, inArray, isNotNull, notInArray, or } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { HookAction } from "@ctrlplane/validators/events";
-
-import { dbUpsertResource } from "./resource-db-upsert.js";
-import { upsertReleaseTargets } from "./upsert-release-targets.js";
-
-type ResourceToInsert = SCHEMA.InsertResource & {
-  metadata?: Record<string, string>;
-  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
-};
 
 const getSystemsForUnmatchedEnvs = async (
   db: Tx,
@@ -81,52 +72,19 @@ const dispatchExitHooksIfExitedSystem = async (
   await Promise.allSettled(handleEventPromises);
 };
 
-export const handleExistingResource = async (
+export const dispatchExitHooks = async (
   db: Tx,
-  existingResource: SCHEMA.Resource,
-  updates: ResourceToInsert,
+  resource: SCHEMA.Resource,
+  currentReleaseTargets: ReleaseTargetIdentifier[],
+  newReleaseTargets: ReleaseTargetIdentifier[],
 ) => {
-  const currentReleaseTargets = await db.query.releaseTarget.findMany({
-    where: eq(SCHEMA.releaseTarget.resourceId, existingResource.id),
-  });
-
-  const updatedResource = await dbUpsertResource(db, updates);
-  const newReleaseTargets = await upsertReleaseTargets(db, updatedResource);
-  const releaseTargetsToDelete = currentReleaseTargets.filter(
-    (rt) => !newReleaseTargets.includes(rt),
-  );
-
-  await db
-    .delete(SCHEMA.releaseTarget)
-    .where(
-      inArray(
-        SCHEMA.releaseTarget.id,
-        releaseTargetsToDelete.map((rt) => rt.id),
-      ),
-    )
-    .returning();
-
   const systems = await getSystemsForUnmatchedEnvs(
     db,
     currentReleaseTargets,
     newReleaseTargets,
   );
-
   const dispatchExitHooksPromises = systems.map((system) =>
-    dispatchExitHooksIfExitedSystem(db, updatedResource, system),
+    dispatchExitHooksIfExitedSystem(db, resource, system),
   );
-
-  const addToEvaluateQueuePromise = getQueue(
-    Channel.EvaluateReleaseTarget,
-  ).addBulk(
-    releaseTargetsToDelete.map((rt) => ({
-      name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-      data: rt,
-    })),
-  );
-
-  await Promise.allSettled([
-    ...dispatchExitHooksPromises,
-    addToEvaluateQueuePromise,
-  ]);
+  await Promise.allSettled(dispatchExitHooksPromises);
 };
