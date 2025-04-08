@@ -1,0 +1,1 @@
+ALTER TABLE "deployment_version" ALTER COLUMN "created_at" SET DATA TYPE timestamp (3) with time zone;

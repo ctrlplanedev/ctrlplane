@@ -125,7 +125,9 @@ export const deploymentVersion = pgTable(
       .references(() => deployment.id, { onDelete: "cascade" }),
     status: versionStatus("status").notNull().default("ready"),
     message: text("message"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true, precision: 3 })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
     unq: uniqueIndex().on(t.deploymentId, t.tag),

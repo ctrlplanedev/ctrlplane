@@ -37,7 +37,15 @@ export class VariableReleaseManager implements ReleaseManager {
       return { created: false, release: latestRelease };
 
     return this.db.transaction(async (tx) => {
+      const release = await tx
+        .insert(schema.variableSetRelease)
+        .values({ releaseTargetId: this.releaseTarget.id })
+        .returning()
+        .then(takeFirst);
+
       const vars = _.compact(variables);
+      if (vars.length === 0) return { created: true, release };
+
       const variableValueSnapshot = await tx
         .insert(schema.variableValueSnapshot)
         .values(
@@ -51,19 +59,12 @@ export class VariableReleaseManager implements ReleaseManager {
         .onConflictDoNothing()
         .returning();
 
-      const release = await tx
-        .insert(schema.variableSetRelease)
-        .values({ releaseTargetId: this.releaseTarget.id })
-        .returning()
-        .then(takeFirst);
-
-      if (vars.length > 0)
-        await tx.insert(schema.variableSetReleaseValue).values(
-          variableValueSnapshot.map((v) => ({
-            variableSetReleaseId: release.id,
-            variableValueSnapshotId: v.id,
-          })),
-        );
+      await tx.insert(schema.variableSetReleaseValue).values(
+        variableValueSnapshot.map((v) => ({
+          variableSetReleaseId: release.id,
+          variableValueSnapshotId: v.id,
+        })),
+      );
 
       return { created: true, release };
     });
