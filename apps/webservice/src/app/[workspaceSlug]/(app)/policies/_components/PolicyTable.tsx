@@ -35,7 +35,6 @@ interface PolicyTableProps {
 const getRules = (policy: RouterOutputs["policy"]["list"][number]) => {
   const rules: RuleType[] = [];
   if (policy.denyWindows.length > 0) rules.push("deny-window");
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (policy.deploymentVersionSelector) rules.push("version-selector");
   return rules;
 };

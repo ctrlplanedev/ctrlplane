@@ -51,7 +51,6 @@ export default async function RulesPage({
     denyWindows: policies
       .map((p) => p.denyWindows.length)
       .reduce((a, b) => a + b, 0),
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     versionChannels: policies.filter((p) => p.deploymentVersionSelector).length,
     maintenance: 0,
     rollout: 0,
