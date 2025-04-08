@@ -18,12 +18,11 @@ const log = logger.child({ worker: "policy-evaluate" });
 
 const createRelease = async (
   tx: Tx,
-  versionReleaseId: string,
-  variableReleaseId: string,
+  release: { id: string; versionReleaseId: string; variableReleaseId: string },
 ) => {
   // Get version release and related data
   const versionRelease = await tx.query.versionRelease.findFirst({
-    where: eq(schema.versionRelease.id, versionReleaseId),
+    where: eq(schema.versionRelease.id, release.versionReleaseId),
     with: {
       version: { with: { deployment: { with: { jobAgent: true } } } },
     },
@@ -39,7 +38,7 @@ const createRelease = async (
 
   // Get variable release data
   const variableRelease = await tx.query.variableSetRelease.findFirst({
-    where: eq(schema.variableSetRelease.id, variableReleaseId),
+    where: eq(schema.variableSetRelease.id, release.variableReleaseId),
     with: { values: { with: { variableValueSnapshot: true } } },
   });
   if (!variableRelease) throw new Error("Failed to get variable release");
@@ -70,7 +69,7 @@ const createRelease = async (
 
   // Create release record
   await tx.insert(schema.releaseJob).values({
-    releaseId: versionReleaseId,
+    releaseId: release.id,
     jobId: job.id,
   });
 
@@ -130,18 +129,18 @@ export const evaluateReleaseTarget = createWorker(
       const versionRelease = await handleVersionRelease(releaseTarget);
       const variableRelease = await handleVariableRelease(releaseTarget);
 
-      await db
+      const release = await db
         .insert(schema.release)
         .values({
           versionReleaseId: versionRelease.id,
           variableReleaseId: variableRelease.id,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning()
+        .then(takeFirst);
 
       if (env.NODE_ENV === "development") {
-        const job = await db.transaction((tx) =>
-          createRelease(tx, versionRelease.id, variableRelease.id),
-        );
+        const job = await db.transaction((tx) => createRelease(tx, release));
         getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
       }
     } catch (e) {
