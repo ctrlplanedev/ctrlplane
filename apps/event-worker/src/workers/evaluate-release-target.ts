@@ -19,8 +19,8 @@ const log = logger.child({
 });
 
 const createJobForRelease = async (tx: Tx, chosenReleaseId: string) => {
-  const release = await tx.query.release.findFirst({
-    where: eq(schema.release.id, chosenReleaseId),
+  const release = await tx.query.versionRelease.findFirst({
+    where: eq(schema.versionRelease.id, chosenReleaseId),
     with: {
       variables: true,
       version: { with: { deployment: { with: { jobAgent: true } } } },

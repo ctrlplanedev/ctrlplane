@@ -6,7 +6,7 @@ import type { MaybeVariable, Variable } from "./variables/types.js";
 /**
  * Base release type with essential properties from schema
  */
-export type Release = typeof schema.release.$inferSelect & {
+export type Release = typeof schema.versionRelease.$inferSelect & {
   variables: Variable[];
 };
 
