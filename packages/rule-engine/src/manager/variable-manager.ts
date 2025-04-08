@@ -38,14 +38,14 @@ export class VariableReleaseManager implements ReleaseManager {
 
     return this.db.transaction(async (tx) => {
       const release = await tx
-        .insert(schema.variableRelease)
+        .insert(schema.variableSetRelease)
         .values({ releaseTargetId: this.releaseTarget.id })
         .returning()
         .then(takeFirst);
 
       const vars = _.compact(variables);
       if (vars.length > 0)
-        await tx.insert(schema.variableReleaseValue).values(
+        await tx.insert(schema.variableSetReleaseValue).values(
           vars.map((v) => ({
             variableReleaseId: release.id,
             key: v.key,
@@ -58,9 +58,12 @@ export class VariableReleaseManager implements ReleaseManager {
   }
 
   async findLatestRelease() {
-    return this.db.query.variableRelease.findFirst({
-      where: eq(schema.variableRelease.releaseTargetId, this.releaseTarget.id),
-      orderBy: desc(schema.variableRelease.createdAt),
+    return this.db.query.variableSetRelease.findFirst({
+      where: eq(
+        schema.variableSetRelease.releaseTargetId,
+        this.releaseTarget.id,
+      ),
+      orderBy: desc(schema.variableSetRelease.createdAt),
       with: { values: true },
     });
   }

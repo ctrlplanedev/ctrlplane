@@ -14,6 +14,7 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
+import { workspace } from "./workspace.js";
 
 export const releaseTarget = pgTable(
   "release_target",
@@ -54,7 +55,7 @@ export const versionRelease = pgTable("version_release", {
     .defaultNow(),
 });
 
-export const variableRelease = pgTable("variable_release", {
+export const variableSetRelease = pgTable("variable_set_release", {
   id: uuid("id").primaryKey().defaultRandom(),
   releaseTargetId: uuid("release_target_id")
     .notNull()
@@ -64,18 +65,36 @@ export const variableRelease = pgTable("variable_release", {
     .defaultNow(),
 });
 
-export const variableReleaseValue = pgTable(
-  "variable_release_value",
+export const variableSetReleaseValue = pgTable(
+  "variable_set_release_value",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    variableReleaseId: uuid("variable_release_id")
+    variableSetReleaseId: uuid("variable_set_release_id")
       .notNull()
-      .references(() => variableRelease.id, { onDelete: "cascade" }),
-    key: text("key").notNull(),
+      .references(() => variableSetRelease.id, { onDelete: "cascade" }),
+    variableValueSnapshotId: uuid("variable_value_snapshot_id")
+      .notNull()
+      .references(() => variableValueSnapshot.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    uniq: uniqueIndex().on(t.variableSetReleaseId, t.variableValueSnapshotId),
+  }),
+);
+
+export const variableValueSnapshot = pgTable(
+  "variable_value_snapshot",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+
     value: json("value").notNull(),
+    key: text("key").notNull(),
     sensitive: boolean("sensitive").notNull().default(false),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.variableReleaseId, t.key) }),
+  (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.key, t.value) }),
 );
 
 export const release = pgTable("release", {
@@ -85,13 +104,20 @@ export const release = pgTable("release", {
     .references(() => versionRelease.id, { onDelete: "cascade" }),
   variableReleaseId: uuid("variable_release_id")
     .notNull()
-    .references(() => variableRelease.id, { onDelete: "cascade" }),
-  jobId: uuid("job_id")
-    .notNull()
-    .references(() => job.id, { onDelete: "cascade" }),
+    .references(() => variableSetRelease.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+});
+
+export const releaseJob = pgTable("release_job", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  releaseId: uuid("release_id")
+    .notNull()
+    .references(() => release.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id")
+    .notNull()
+    .references(() => job.id, { onDelete: "cascade" }),
 });
 
 /* Relations */
@@ -99,10 +125,6 @@ export const release = pgTable("release", {
 export const releaseTargetRelations = relations(
   releaseTarget,
   ({ one, many }) => ({
-    desiredRelease: one(release, {
-      fields: [releaseTarget.desiredReleaseId],
-      references: [release.id],
-    }),
     deployment: one(deployment, {
       fields: [releaseTarget.deploymentId],
       references: [deployment.id],
@@ -117,7 +139,7 @@ export const releaseTargetRelations = relations(
     }),
 
     versionReleases: many(versionRelease),
-    variableReleases: many(variableRelease),
+    variableReleases: many(variableSetRelease),
   }),
 );
 
@@ -137,38 +159,50 @@ export const versionReleaseRelations = relations(
 );
 
 export const variableReleaseRelations = relations(
-  variableRelease,
+  variableSetRelease,
   ({ one, many }) => ({
     releaseTarget: one(releaseTarget, {
-      fields: [variableRelease.releaseTargetId],
+      fields: [variableSetRelease.releaseTargetId],
       references: [releaseTarget.id],
     }),
     release: many(release),
-    values: many(variableReleaseValue),
+    values: many(variableSetReleaseValue),
   }),
 );
 
 export const variableReleaseValueRelations = relations(
-  variableReleaseValue,
+  variableSetReleaseValue,
   ({ one }) => ({
-    variableRelease: one(variableRelease, {
-      fields: [variableReleaseValue.variableReleaseId],
-      references: [variableRelease.id],
+    variableSetRelease: one(variableSetRelease, {
+      fields: [variableSetReleaseValue.variableSetReleaseId],
+      references: [variableSetRelease.id],
+    }),
+    variableValueSnapshot: one(variableValueSnapshot, {
+      fields: [variableSetReleaseValue.variableValueSnapshotId],
+      references: [variableValueSnapshot.id],
     }),
   }),
 );
 
-export const releaseRelations = relations(release, ({ one }) => ({
+export const releaseRelations = relations(release, ({ many, one }) => ({
   versionRelease: one(versionRelease, {
     fields: [release.versionReleaseId],
     references: [versionRelease.id],
   }),
-  variableRelease: one(variableRelease, {
+  variableSetRelease: one(variableSetRelease, {
     fields: [release.variableReleaseId],
-    references: [variableRelease.id],
+    references: [variableSetRelease.id],
+  }),
+  releaseJobs: many(releaseJob),
+}));
+
+export const releaseJobRelations = relations(releaseJob, ({ one }) => ({
+  release: one(release, {
+    fields: [releaseJob.releaseId],
+    references: [release.id],
   }),
   job: one(job, {
-    fields: [release.jobId],
+    fields: [releaseJob.jobId],
     references: [job.id],
   }),
 }));
