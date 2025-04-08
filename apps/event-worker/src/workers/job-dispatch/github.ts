@@ -75,12 +75,12 @@ const getGithubEntity = async (
     .select()
     .from(SCHEMA.releaseJob)
     .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+      SCHEMA.versionRelease,
+      eq(SCHEMA.releaseJob.releaseId, SCHEMA.versionRelease.id),
     )
     .innerJoin(
       SCHEMA.releaseTarget,
-      eq(SCHEMA.release.releaseTargetId, SCHEMA.releaseTarget.id),
+      eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
     )
     .innerJoin(
       SCHEMA.resource,

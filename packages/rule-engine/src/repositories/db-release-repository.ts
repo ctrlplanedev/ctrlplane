@@ -133,13 +133,13 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
     tx: Tx,
   ): Promise<ReleaseWithId> {
     const dbRelease = await tx
-      .insert(schema.release)
+      .insert(schema.versionRelease)
       .values({ ...release, releaseTargetId: this.releaseTarget.id })
       .returning()
       .then(takeFirst);
 
     if (release.variables.length > 0)
-      await tx.insert(schema.releaseVariable).values(
+      await tx.insert(schema.variableReleaseValue).values(
         release.variables.map((v) => ({
           releaseId: dbRelease.id,
           key: v.key,

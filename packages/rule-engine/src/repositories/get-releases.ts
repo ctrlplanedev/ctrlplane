@@ -52,17 +52,17 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
         where: exists(
           db
             .select()
-            .from(schema.releaseJob)
-            .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
+            .from(schema.release)
+            .innerJoin(schema.job, eq(schema.release.jobId, schema.job.id))
             .where(
               and(
-                sql`${schema.releaseJob.releaseId} = "releaseTarget_releases"."id"`,
+                sql`${schema.release.releaseId} = "releaseTarget_releases"."id"`,
                 eq(schema.job.status, JobStatus.Successful),
               ),
             )
             .limit(1),
         ),
-        orderBy: desc(schema.release.createdAt),
+        orderBy: desc(schema.versionRelease.createdAt),
       },
     },
   });
@@ -84,25 +84,28 @@ export const findPolicyMatchingReleasesBetweenDeployments = async (
     );
   }
 
-  return db.query.release.findMany({
+  return db.query.versionRelease.findMany({
     where: and(
-      eq(schema.release.releaseTargetId, releaseTarget.id),
+      eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
       schema.deploymentVersionMatchesCondition(
         db,
         policy?.deploymentVersionSelector?.deploymentVersionSelector,
       ),
       latestDeployedRelease != null
-        ? gte(schema.release.createdAt, latestDeployedRelease.createdAt)
+        ? gte(schema.versionRelease.createdAt, latestDeployedRelease.createdAt)
         : undefined,
       releaseTarget.desiredRelease != null
-        ? lte(schema.release.createdAt, releaseTarget.desiredRelease.createdAt)
+        ? lte(
+            schema.versionRelease.createdAt,
+            releaseTarget.desiredRelease.createdAt,
+          )
         : undefined,
     ),
     with: {
       version: { with: { metadata: true } },
       variables: true,
     },
-    orderBy: desc(schema.release.createdAt),
+    orderBy: desc(schema.versionRelease.createdAt),
   });
 };
 
@@ -122,23 +125,23 @@ export const findLatestPolicyMatchingRelease = async (
 ): Promise<CompleteRelease | undefined> => {
   // If no deployment version selector in policy, return latest release for target
   if (policy?.deploymentVersionSelector == null) {
-    return tx.query.release.findFirst({
-      where: eq(schema.release.releaseTargetId, releaseTarget.id),
-      orderBy: desc(schema.release.createdAt),
+    return tx.query.versionRelease.findFirst({
+      where: eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
+      orderBy: desc(schema.versionRelease.createdAt),
       with: { variables: true, version: { with: { metadata: true } } },
     });
   }
 
   // Otherwise filter by policy deployment version selector
-  return tx.query.release.findFirst({
+  return tx.query.versionRelease.findFirst({
     where: and(
-      eq(schema.release.releaseTargetId, releaseTarget.id),
+      eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
       schema.deploymentVersionMatchesCondition(
         tx,
         policy.deploymentVersionSelector.deploymentVersionSelector,
       ),
     ),
     with: { variables: true, version: { with: { metadata: true } } },
-    orderBy: desc(schema.release.createdAt),
+    orderBy: desc(schema.versionRelease.createdAt),
   });
 };
