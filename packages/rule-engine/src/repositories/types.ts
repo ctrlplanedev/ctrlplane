@@ -1,7 +1,7 @@
 import type * as schema from "@ctrlplane/db/schema";
 
+import type { MaybeVariable, Variable } from "../manager/variables/types.js";
 import type { Policy, RuleEngineContext } from "../types.js";
-import type { MaybeVariable, Variable } from "./variables/types.js";
 
 /**
  * Base release type with essential properties from schema

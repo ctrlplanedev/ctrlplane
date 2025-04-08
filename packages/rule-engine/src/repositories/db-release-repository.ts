@@ -5,6 +5,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
+import type { MaybeVariable } from "../manager/variables/types.js";
 import type { Policy, RuleEngineContext } from "../types.js";
 import type {
   CompleteRelease,
@@ -12,14 +13,13 @@ import type {
   ReleaseRepository,
   ReleaseWithId,
 } from "./types.js";
-import type { MaybeVariable } from "./variables/types.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
+import { VariableManager } from "../manager/variables/variables.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import {
   findLatestPolicyMatchingRelease,
   findPolicyMatchingReleasesBetweenDeployments,
 } from "./get-releases.js";
-import { VariableManager } from "./variables/variables.js";
 
 /**
  * Release target with associated identifiers
