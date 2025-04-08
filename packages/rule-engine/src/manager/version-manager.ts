@@ -5,22 +5,26 @@ import { desc, eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { ReleaseTarget } from "./types.js";
+import type { ReleaseManager, ReleaseTarget } from "./types.js";
 
-export class VersionReleaseManager {
+export class VersionReleaseManager implements ReleaseManager {
   private constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
   ) {}
 
   async upsertRelease(versionId: string) {
-    const release = await this.findLatestRelease();
-    if (release?.versionId === versionId) return release;
-    return this.db
+    const latestRelease = await this.findLatestRelease();
+    if (latestRelease?.versionId === versionId)
+      return { created: false, release: latestRelease };
+
+    const release = await this.db
       .insert(schema.versionRelease)
       .values({ releaseTargetId: this.releaseTarget.id, versionId })
       .returning()
       .then(takeFirst);
+
+    return { created: true, release };
   }
 
   async findLatestRelease() {

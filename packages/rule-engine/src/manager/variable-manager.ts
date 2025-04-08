@@ -6,9 +6,9 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { MaybeVariable } from "../repositories/index.js";
-import type { ReleaseTarget } from "./types.js";
+import type { ReleaseManager, ReleaseTarget } from "./types.js";
 
-export class VariableReleaseManager {
+export class VariableReleaseManager implements ReleaseManager {
   private constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
@@ -29,7 +29,8 @@ export class VariableReleaseManager {
       .value();
 
     const isSame = _.isEqual(oldVars, newVars);
-    if (isSame) return { created: false, latestRelease };
+    if (latestRelease != null && isSame)
+      return { created: false, release: latestRelease };
 
     return this.db.transaction(async (tx) => {
       const release = await tx
