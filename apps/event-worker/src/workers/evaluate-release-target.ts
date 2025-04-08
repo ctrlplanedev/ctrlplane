@@ -78,6 +78,35 @@ const createRelease = async (
   return job;
 };
 
+const handleVersionRelease = async (releaseTarget: any) => {
+  const vrm = new VersionReleaseManager(db, {
+    ...releaseTarget,
+    workspaceId: releaseTarget.resource.workspaceId,
+  });
+
+  const { chosenCandidate } = await vrm.evaluate();
+  if (!chosenCandidate) throw new Error("Failed to get chosen release");
+
+  const { release: versionRelease } = await vrm.upsertRelease(
+    chosenCandidate.id,
+  );
+
+  return versionRelease;
+};
+
+const handleVariableRelease = async (releaseTarget: any) => {
+  const varrm = new VariableReleaseManager(db, {
+    ...releaseTarget,
+    workspaceId: releaseTarget.resource.workspaceId,
+  });
+
+  const { chosenCandidate: variableValues } = await varrm.evaluate();
+  const { release: variableRelease } =
+    await varrm.upsertRelease(variableValues);
+
+  return variableRelease;
+};
+
 export const evaluateReleaseTarget = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
@@ -99,36 +128,13 @@ export const evaluateReleaseTarget = createWorker(
       });
       if (!releaseTarget) throw new Error("Failed to get release target");
 
-      // Handle version release
-      const vrm = new VersionReleaseManager(db, {
-        ...releaseTarget,
-        workspaceId: releaseTarget.resource.workspaceId,
-      });
-
-      const { chosenCandidate } = await vrm.evaluate();
-      if (!chosenCandidate) throw new Error("Failed to get chosen release");
-
-      const { release: versionRelease } = await vrm.upsertRelease(
-        chosenCandidate.id,
-      );
-
-      // Handle variable release
-      const varrm = new VariableReleaseManager(db, {
-        ...releaseTarget,
-        workspaceId: releaseTarget.resource.workspaceId,
-      });
-
-      const existingVariableRelease = await varrm.findLatestRelease();
-      const variableReleaseId =
-        existingVariableRelease?.id ??
-        (await varrm.upsertRelease([]).then((r) => r.release.id));
-
-      if (!variableReleaseId) throw new Error("Failed to get variable release");
+      const versionRelease = await handleVersionRelease(releaseTarget);
+      const variableRelease = await handleVariableRelease(releaseTarget);
 
       // Create and dispatch job in development
       if (env.NODE_ENV === "development") {
         const job = await db.transaction((tx) =>
-          createRelease(tx, versionRelease.id, variableReleaseId),
+          createRelease(tx, versionRelease.id, variableRelease.id),
         );
         getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
       }

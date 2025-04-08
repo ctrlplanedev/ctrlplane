@@ -8,6 +8,7 @@ import * as schema from "@ctrlplane/db/schema";
 import type { MaybeVariable } from "../repositories/index.js";
 import type { Policy } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
+import { VariableManager } from "../repositories/index.js";
 
 export class VariableReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
@@ -62,5 +63,11 @@ export class VariableReleaseManager implements ReleaseManager {
       orderBy: desc(schema.variableRelease.createdAt),
       with: { values: true },
     });
+  }
+
+  async evaluate() {
+    const variableManager = await VariableManager.database(this.releaseTarget);
+    const variables = await variableManager.getVariables();
+    return { chosenCandidate: variables };
   }
 }
