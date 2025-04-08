@@ -2,7 +2,6 @@ import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { DatabaseReleaseRepository } from "@ctrlplane/rule-engine";
 
 /**
  * Worker that handles deployment variable changes by triggering evaluations for
@@ -25,20 +24,6 @@ export const updateDeploymentVariableWorker = createWorker(
     const releaseTargets = await db.query.releaseTarget.findMany({
       where: eq(schema.releaseTarget.deploymentId, variable.deploymentId),
     });
-
-    const { deployment } = variable;
-    const { system } = deployment;
-    const { workspaceId } = system;
-
-    const updateReleaseVariablePromises = releaseTargets.map(async (rt) => {
-      const releaseRepository = await DatabaseReleaseRepository.create({
-        ...rt,
-        workspaceId,
-      });
-      const variables = await releaseRepository.getLatestVariables();
-      await releaseRepository.updateReleaseVariables(variables);
-    });
-    await Promise.all(updateReleaseVariablePromises);
 
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(
       releaseTargets.map((rt) => ({

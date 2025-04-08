@@ -73,10 +73,10 @@ const getGithubEntity = async (
 
   const releaseJobEntityPromise = db
     .select()
-    .from(SCHEMA.releaseJob)
+    .from(SCHEMA.release)
     .innerJoin(
       SCHEMA.versionRelease,
-      eq(SCHEMA.releaseJob.releaseId, SCHEMA.versionRelease.id),
+      eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
     )
     .innerJoin(
       SCHEMA.releaseTarget,
@@ -94,7 +94,7 @@ const getGithubEntity = async (
       and(
         eq(SCHEMA.githubEntity.installationId, installationId),
         eq(SCHEMA.githubEntity.slug, owner),
-        eq(SCHEMA.releaseJob.jobId, jobId),
+        eq(SCHEMA.release.jobId, jobId),
       ),
     )
     .then(takeFirstOrNull);

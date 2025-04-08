@@ -5,14 +5,15 @@ import { desc, eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { MaybeVariable } from "../repositories/index.js";
 import type { Policy } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
+import type { MaybeVariable } from "./variables/types.js";
+import { VariableManager } from "./variables/variables.js";
 
 export class VariableReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
 
-  private constructor(
+  constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
   ) {}
@@ -62,5 +63,11 @@ export class VariableReleaseManager implements ReleaseManager {
       orderBy: desc(schema.variableRelease.createdAt),
       with: { values: true },
     });
+  }
+
+  async evaluate() {
+    const variableManager = await VariableManager.database(this.releaseTarget);
+    const variables = await variableManager.getVariables();
+    return { chosenCandidate: variables };
   }
 }

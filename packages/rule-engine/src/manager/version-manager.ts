@@ -23,7 +23,7 @@ import { getRules } from "./version-manager-rules.js";
 
 export class VersionReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
-  private constructor(
+  constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
   ) {}
@@ -140,10 +140,7 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async getPolicy(forceRefresh = false): Promise<Policy | null> {
-    // Return cached policy if available and refresh not forced
-    if (!forceRefresh && this.cachedPolicy !== null) {
-      return this.cachedPolicy;
-    }
+    if (!forceRefresh && this.cachedPolicy !== null) return this.cachedPolicy;
 
     const policies = await getApplicablePolicies(
       this.db,
