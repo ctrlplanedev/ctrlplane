@@ -86,7 +86,7 @@ export const insertResources = async (
   resourcesToInsert: InsertResource[],
 ) => {
   const existingResources = await findExistingResources(tx, resourcesToInsert);
-  const deleted = existingResources.filter(
+  const toDelete = existingResources.filter(
     (existing) =>
       !resourcesToInsert.some(
         (inserted) =>
@@ -113,5 +113,5 @@ export const insertResources = async (
     })
     .returning();
 
-  return { all: insertedResources, deleted };
+  return { all: insertedResources, toDelete };
 };
