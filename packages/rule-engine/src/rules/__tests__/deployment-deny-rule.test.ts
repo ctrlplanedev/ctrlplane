@@ -1,8 +1,20 @@
 import { Frequency, RRule } from "rrule";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ResolvedRelease, RuleEngineContext } from "../../types.js";
+import type { RuleEngineContext } from "../../types.js";
 import { DeploymentDenyRule } from "../deployment-deny-rule.js";
+
+export type ResolvedRelease = {
+  id: string;
+  createdAt: Date;
+  version: {
+    id: string;
+    tag: string;
+    config: Record<string, any>;
+    metadata: Record<string, string>;
+  };
+  variables: Record<string, unknown>;
+};
 
 describe("DeploymentDenyRule", () => {
   let releases: ResolvedRelease[];
