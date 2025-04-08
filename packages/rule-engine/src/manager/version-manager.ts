@@ -41,10 +41,7 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async getPolicy(forceRefresh = false): Promise<Policy | null> {
-    // Return cached policy if available and refresh not forced
-    if (!forceRefresh && this.cachedPolicy !== null) {
-      return this.cachedPolicy;
-    }
+    if (!forceRefresh && this.cachedPolicy !== null) return this.cachedPolicy;
 
     const policies = await getApplicablePolicies(
       this.db,
@@ -75,6 +72,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const engine = new VersionRuleEngine(rules);
     const result = await engine.evaluate(ctx, []);
+
     return result;
   }
 }

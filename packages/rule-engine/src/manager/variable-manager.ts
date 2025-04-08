@@ -1,7 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
-import { getApplicablePolicies } from "src/db/get-applicable-policies.js";
-import { mergePolicies } from "src/utils/merge-policies.js";
 
 import { desc, eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
