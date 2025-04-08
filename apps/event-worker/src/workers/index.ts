@@ -3,10 +3,10 @@ import type { Worker } from "bullmq";
 
 import { Channel } from "@ctrlplane/events";
 
+import { evaluateReleaseTarget } from "./evaluate-release-target.js";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
 import { newDeploymentVersionWorker } from "./new-deployment-version.js";
 import { newDeploymentWorker } from "./new-deployment.js";
-import { policyEvaluate } from "./policy-evaluate.js";
 import { resourceScanWorker } from "./resource-scan/index.js";
 import { updateDeploymentVariableWorker } from "./update-deployment-variable.js";
 import { updateEnvironmentWorker } from "./update-environment.js";
@@ -23,7 +23,7 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.UpdateEnvironment]: updateEnvironmentWorker,
   [Channel.UpdateDeploymentVariable]: updateDeploymentVariableWorker,
   [Channel.UpdateResourceVariable]: updateResourceVariableWorker,
-  [Channel.EvaluateReleaseTarget]: policyEvaluate,
+  [Channel.EvaluateReleaseTarget]: evaluateReleaseTarget,
   [Channel.DispatchJob]: dispatchJobWorker,
   [Channel.ResourceScan]: resourceScanWorker,
 };

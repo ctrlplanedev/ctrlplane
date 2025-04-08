@@ -66,7 +66,7 @@ const createJobForRelease = async (tx: Tx, chosenReleaseId: string) => {
   return job;
 };
 
-export const policyEvaluate = createWorker(
+export const evaluateReleaseTarget = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
     const mutex = await ReleaseTargetMutex.lock(job.data);
