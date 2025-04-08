@@ -1,16 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type {
-  DeploymentResourceContext,
-  ResolvedRelease,
-} from "../../types.js";
+import type { ResolvedRelease, RuleEngineContext } from "../../types.js";
 import type { GetApprovalRecordsFunc } from "../version-approval-rule.js";
 import { Releases } from "../../releases.js";
 import { VersionApprovalRule } from "../version-approval-rule.js";
 
 describe("VersionApprovalRule", () => {
   let releases: Releases;
-  let context: DeploymentResourceContext;
+  let context: RuleEngineContext;
   let mockGetApprovalRecords: ReturnType<typeof vi.fn<GetApprovalRecordsFunc>>;
 
   beforeEach(() => {

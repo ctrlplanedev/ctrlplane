@@ -5,7 +5,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { DeploymentResourceContext, Policy } from "../types.js";
+import type { Policy, RuleEngineContext } from "../types.js";
 import type {
   CompleteRelease,
   Release,
@@ -24,7 +24,7 @@ import { VariableManager } from "./variables/variables.js";
 /**
  * Release target with associated identifiers
  */
-interface ReleaseTarget {
+interface DatabaseReleaseTarget {
   id: string;
   deploymentId: string;
   environmentId: string;
@@ -43,7 +43,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
    * @param releaseTarget - The release target to manage releases for
    * @returns A configured DatabaseReleaseRepository instance
    */
-  static async create(releaseTarget: ReleaseTarget) {
+  static async create(releaseTarget: DatabaseReleaseTarget) {
     const variableManager = await VariableManager.database(releaseTarget);
     return new DatabaseReleaseRepository(
       dbClient,
@@ -57,7 +57,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
 
   private constructor(
     private readonly db: Tx = dbClient,
-    private readonly releaseTarget: ReleaseTarget,
+    private readonly releaseTarget: DatabaseReleaseTarget,
     private readonly variableManager: VariableManager,
   ) {}
 
@@ -234,7 +234,7 @@ export class DatabaseReleaseRepository implements ReleaseRepository {
       .where(eq(schema.releaseTarget.id, this.releaseTarget.id));
   }
 
-  async getCtx(): Promise<DeploymentResourceContext | undefined> {
+  async getCtx(): Promise<RuleEngineContext | undefined> {
     return this.db.query.releaseTarget.findFirst({
       where: eq(schema.releaseTarget.id, this.releaseTarget.id),
       with: {

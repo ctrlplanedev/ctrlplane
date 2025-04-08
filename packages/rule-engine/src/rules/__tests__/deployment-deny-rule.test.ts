@@ -2,16 +2,13 @@ import { TZDate } from "@date-fns/tz";
 import { Frequency, RRule } from "rrule";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type {
-  DeploymentResourceContext,
-  ResolvedRelease,
-} from "../../types.js";
+import type { ResolvedRelease, RuleEngineContext } from "../../types.js";
 import { Releases } from "../../releases.js";
 import { DeploymentDenyRule } from "../deployment-deny-rule.js";
 
 describe("DeploymentDenyRule", () => {
   let releases: Releases;
-  let context: DeploymentResourceContext;
+  let context: RuleEngineContext;
 
   beforeEach(() => {
     // Create a sample set of releases

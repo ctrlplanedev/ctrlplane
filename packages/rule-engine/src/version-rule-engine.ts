@@ -1,10 +1,19 @@
-import type { Releases } from "./releases.js";
+import _ from "lodash";
+
 import type {
-  DeploymentResourceContext,
-  DeploymentResourceRule,
-  DeploymentResourceSelectionResult,
-  ResolvedRelease,
+  RuleEngine,
+  RuleEngineContext,
+  RuleEngineFilter,
+  RuleEngineSelectionResult,
 } from "./types.js";
+
+export type Version = {
+  id: string;
+  tag: string;
+  config: Record<string, any>;
+  metadata: Record<string, string>;
+  createdAt: Date;
+};
 
 /**
  * The RuleEngine applies a sequence of deployment rules to filter candidate
@@ -16,7 +25,7 @@ import type {
  * all rules have been applied, a final selection strategy is used to choose the
  * best remaining release.
  */
-export class RuleEngine {
+export class VersionRuleEngine implements RuleEngine<Version> {
   /**
    * Creates a new RuleEngine with the specified rules.
    *
@@ -26,8 +35,8 @@ export class RuleEngine {
    */
   constructor(
     private rules: Array<
-      | (() => Promise<DeploymentResourceRule> | DeploymentResourceRule)
-      | DeploymentResourceRule
+      | (() => Promise<RuleEngineFilter<Version>> | RuleEngineFilter<Version>)
+      | RuleEngineFilter<Version>
     >,
   ) {}
 
@@ -59,9 +68,9 @@ export class RuleEngine {
    * status and chosen release
    */
   async evaluate(
-    releases: Releases,
-    context: DeploymentResourceContext,
-  ): Promise<DeploymentResourceSelectionResult> {
+    context: RuleEngineContext,
+    candidates: Version[],
+  ): Promise<RuleEngineSelectionResult<Version>> {
     // Track rejection reasons for each release across all rules
     let rejectionReasons = new Map<string, string>();
 
@@ -69,12 +78,12 @@ export class RuleEngine {
     for (const rule of this.rules) {
       const result = await (
         typeof rule === "function" ? await rule() : rule
-      ).filter(context, releases);
+      ).filter(context, candidates);
 
       // If the rule yields no candidates, we must stop.
-      if (result.allowedReleases.isEmpty()) {
+      if (result.allowedCandidates.length === 0) {
         return {
-          allowed: false,
+          chosenCandidate: null,
           rejectionReasons: result.rejectionReasons ?? rejectionReasons,
         };
       }
@@ -87,19 +96,18 @@ export class RuleEngine {
         ]);
       }
 
-      releases = result.allowedReleases;
+      candidates = result.allowedCandidates;
     }
 
     // Once all rules pass, select the final release
-    const chosen = this.selectFinalRelease(context, releases);
+    const chosen = this.selectFinalRelease(context, candidates);
     return chosen == null
       ? {
-          allowed: false,
+          chosenCandidate: null,
           rejectionReasons,
         }
       : {
-          allowed: true,
-          chosenRelease: chosen,
+          chosenCandidate: chosen,
           rejectionReasons,
         };
   }
@@ -126,20 +134,19 @@ export class RuleEngine {
    * chosen
    */
   private selectFinalRelease(
-    context: DeploymentResourceContext,
-    candidates: Releases,
-  ): ResolvedRelease | undefined {
-    if (candidates.isEmpty()) {
+    context: RuleEngineContext,
+    candidates: Version[],
+  ): Version | undefined {
+    if (candidates.length === 0) {
       return undefined;
     }
 
     // First, check for sequential upgrades - if present, we must select the
     // oldest
     const sequentialReleases = this.findSequentialUpgradeReleases(candidates);
-    if (!sequentialReleases.isEmpty()) return sequentialReleases.getOldest();
-
-    // No sequential releases, use standard selection logic
-    return candidates.getEffectiveTarget(context);
+    return sequentialReleases.length > 0
+      ? _.minBy(sequentialReleases, (v) => v.createdAt)
+      : _.maxBy(candidates, (v) => v.createdAt);
   }
 
   /**
@@ -151,8 +158,10 @@ export class RuleEngine {
    * @param releases - The releases to check
    * @returns A Releases collection with only sequential upgrade releases
    */
-  private findSequentialUpgradeReleases(releases: Releases): Releases {
+  private findSequentialUpgradeReleases(versions: Version[]): Version[] {
     // Look for the standard metadata key used by SequentialUpgradeRule
-    return releases.filterByMetadata("requiresSequentialUpgrade", "true");
+    return versions.filter(
+      (v) => v.metadata.requiresSequentialUpgrade === "true",
+    );
   }
 }

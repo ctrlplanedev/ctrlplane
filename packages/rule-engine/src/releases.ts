@@ -1,4 +1,4 @@
-import type { DeploymentResourceContext, ResolvedRelease } from "./types.js";
+import type { ResolvedRelease, RuleEngineContext } from "./types.js";
 
 /**
  * A class that encapsulates candidate releases with utility methods for common
@@ -100,7 +100,7 @@ export class Releases {
    * @returns The desired release if found, or undefined if not found or no ID
    * specified
    */
-  getDesired(context: DeploymentResourceContext): ResolvedRelease | undefined {
+  getDesired(context: RuleEngineContext): ResolvedRelease | undefined {
     if (!context.desiredReleaseId) return undefined;
 
     return this.releases.find(
@@ -117,9 +117,7 @@ export class Releases {
    * @returns The effective target release, or undefined if no candidates are
    * available
    */
-  getEffectiveTarget(
-    context: DeploymentResourceContext,
-  ): ResolvedRelease | undefined {
+  getEffectiveTarget(context: RuleEngineContext): ResolvedRelease | undefined {
     if (this.releases.length === 0) return undefined;
     return this.getDesired(context) ?? this.getNewest();
   }

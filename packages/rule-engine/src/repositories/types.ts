@@ -1,6 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 
-import type { DeploymentResourceContext, Policy } from "../types.js";
+import type { Policy, RuleEngineContext } from "../types.js";
 import type { MaybeVariable, Variable } from "./variables/types.js";
 
 /**
@@ -70,7 +70,7 @@ export interface ReleaseRepository {
    */
   setDesiredRelease(desiredReleaseId: string | null): Promise<void>;
 
-  getCtx(): Promise<DeploymentResourceContext | undefined>;
+  getCtx(): Promise<RuleEngineContext | undefined>;
 
   getPolicy(): Promise<Policy | null>;
 }

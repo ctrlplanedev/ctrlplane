@@ -1,10 +1,9 @@
 import _ from "lodash";
 
 import type { ReleaseRepository } from "./repositories/types.js";
-import type { DeploymentResourceSelectionResult } from "./types";
+import type { RuleEngineFilter, RuleEngineSelectionResult } from "./types";
 import type { Policy } from "./types.js";
-import { Releases } from "./releases.js";
-import { RuleEngine } from "./rule-engine.js";
+import type { Version } from "./version-rule-engine.js";
 import { DeploymentDenyRule } from "./rules/deployment-deny-rule.js";
 import {
   getAnyApprovalRecords,
@@ -12,16 +11,18 @@ import {
   getUserApprovalRecords,
   VersionApprovalRule,
 } from "./rules/version-approval-rule.js";
+import { VersionRuleEngine } from "./version-rule-engine.js";
 
 const denyWindows = (policy: Policy | null) =>
   policy == null
     ? []
     : policy.denyWindows.map(
         (denyWindow) =>
-          new DeploymentDenyRule({
+          new DeploymentDenyRule<Version>({
             ...denyWindow.rrule,
             tzid: denyWindow.timeZone,
             dtend: denyWindow.dtend,
+            getCandidateId: (candidate) => candidate.id,
           }),
       );
 
@@ -101,12 +102,11 @@ const versionUserApprovalRule = (
 
 export const evaluateRepository = async (
   repository: ReleaseRepository,
-): Promise<DeploymentResourceSelectionResult> => {
+): Promise<RuleEngineSelectionResult<Version>> => {
   const ctx = await repository.getCtx();
   if (ctx == null)
     return {
-      allowed: false,
-      chosenRelease: undefined,
+      chosenCandidate: null,
       rejectionReasons: new Map(),
     };
 
@@ -125,16 +125,18 @@ export const evaluateRepository = async (
       .fromPairs()
       .value(),
   }));
-  const releaseCollection = Releases.from(resolvedReleases);
 
   const policy = await repository.getPolicy();
-  const rules = [
+  const rules: RuleEngineFilter<Version>[] = [
     ...denyWindows(policy),
     ...versionUserApprovalRule(policy?.versionUserApprovals),
     ...versionAnyApprovalRule(policy?.versionAnyApprovals),
     ...versionRoleApprovalRule(policy?.versionRoleApprovals),
   ];
-  const engine = new RuleEngine(rules);
+  const engine = new VersionRuleEngine(rules);
 
-  return engine.evaluate(releaseCollection, ctx);
+  return engine.evaluate(
+    ctx,
+    resolvedReleases.map((v) => v.version),
+  );
 };
