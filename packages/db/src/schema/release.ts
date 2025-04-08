@@ -95,6 +95,7 @@ export const release = pgTable("release", {
 });
 
 /* Relations */
+
 export const releaseTargetRelations = relations(
   releaseTarget,
   ({ one, many }) => ({

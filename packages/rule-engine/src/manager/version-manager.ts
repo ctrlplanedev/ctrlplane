@@ -14,7 +14,7 @@ import { getRules } from "./version-manager-rules.js";
 
 export class VersionReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
-  private constructor(
+  constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
   ) {}

@@ -12,7 +12,7 @@ import type { ReleaseManager, ReleaseTarget } from "./types.js";
 export class VariableReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
 
-  private constructor(
+  constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
   ) {}
