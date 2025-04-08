@@ -108,10 +108,10 @@ describe("DeploymentDenyRule", () => {
     // Expect no releases to be allowed
     expect(result.allowedCandidates.length).toBe(0);
     expect(result.rejectionReasons).toBeDefined();
-    expect(result.rejectionReasons?.get("ver-1")).toBe(
+    expect(result.rejectionReasons?.get("rel-1")).toBe(
       "Deployment denied due to time-based restrictions",
     );
-    expect(result.rejectionReasons?.get("ver-2")).toBe(
+    expect(result.rejectionReasons?.get("rel-2")).toBe(
       "Deployment denied due to time-based restrictions",
     );
   });
@@ -135,8 +135,8 @@ describe("DeploymentDenyRule", () => {
 
     // Expect the custom reason to be returned
     expect(result.rejectionReasons).toBeDefined();
-    expect(result.rejectionReasons?.get("ver-1")).toBe(customReason);
-    expect(result.rejectionReasons?.get("ver-2")).toBe(customReason);
+    expect(result.rejectionReasons?.get("rel-1")).toBe(customReason);
+    expect(result.rejectionReasons?.get("rel-2")).toBe(customReason);
   });
 
   it("should check for specific time intervals when dtend is specified", () => {
