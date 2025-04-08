@@ -5,12 +5,15 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import {
   createPolicy,
   createPolicyRuleDenyWindow,
+  createPolicyRuleDeploymentVersionSelector,
   createPolicyTarget,
   policy,
   policyRuleDenyWindow,
+  policyRuleDeploymentVersionSelector,
   policyTarget,
   updatePolicy,
   updatePolicyRuleDenyWindow,
+  updatePolicyRuleDeploymentVersionSelector,
   updatePolicyTarget,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -221,6 +224,65 @@ export const policyRouter = createTRPCRouter({
       ctx.db
         .delete(policyRuleDenyWindow)
         .where(eq(policyRuleDenyWindow.id, input))
+        .returning()
+        .then(takeFirst),
+    ),
+
+  // Deployment Version Selector endpoints
+  createDeploymentVersionSelector: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.PolicyCreate)
+          .on({ type: "policy", id: input.policyId }),
+    })
+    .input(createPolicyRuleDeploymentVersionSelector)
+    .mutation(({ ctx, input }) => {
+      return ctx.db
+        .insert(policyRuleDeploymentVersionSelector)
+        .values(input)
+        .returning()
+        .then(takeFirst);
+    }),
+
+  updateDeploymentVersionSelector: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, input }) => {
+        return canUser
+          .perform(Permission.PolicyUpdate)
+          .on({ type: "policy", id: input.policyId });
+      },
+    })
+    .input(
+      z.object({
+        policyId: z.string().uuid(),
+        data: updatePolicyRuleDeploymentVersionSelector.omit({
+          policyId: true,
+        }),
+      }),
+    )
+    .mutation(({ ctx, input }) => {
+      return ctx.db
+        .update(policyRuleDeploymentVersionSelector)
+        .set(input.data)
+        .where(eq(policyRuleDeploymentVersionSelector.policyId, input.policyId))
+        .returning()
+        .then(takeFirst);
+    }),
+
+  deleteDeploymentVersionSelector: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, input }) => {
+        return canUser
+          .perform(Permission.PolicyDelete)
+          .on({ type: "policy", id: input.policyId });
+      },
+    })
+    .input(z.object({ policyId: z.string().uuid() }))
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .delete(policyRuleDeploymentVersionSelector)
+        .where(eq(policyRuleDeploymentVersionSelector.policyId, input.policyId))
         .returning()
         .then(takeFirst),
     ),
