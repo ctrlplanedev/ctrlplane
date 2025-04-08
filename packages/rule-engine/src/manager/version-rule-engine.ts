@@ -5,7 +5,7 @@ import type {
   RuleEngineContext,
   RuleEngineFilter,
   RuleEngineSelectionResult,
-} from "./types.js";
+} from "../types.js";
 
 export type Version = {
   id: string;
@@ -33,12 +33,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
    *                evaluation. Rules can be provided directly or as functions that
    *                return a rule or promise of a rule.
    */
-  constructor(
-    private rules: Array<
-      | (() => Promise<RuleEngineFilter<Version>> | RuleEngineFilter<Version>)
-      | RuleEngineFilter<Version>
-    >,
-  ) {}
+  constructor(private rules: Array<RuleEngineFilter<Version>>) {}
 
   /**
    * Evaluates a context against all configured rules to determine which version
@@ -73,9 +68,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
 
     // Apply each rule in sequence to filter candidate versions
     for (const rule of this.rules) {
-      const result = await (
-        typeof rule === "function" ? await rule() : rule
-      ).filter(context, candidates);
+      const result = await rule.filter(context, candidates);
 
       // If the rule yields no candidates, we must stop.
       if (result.allowedCandidates.length === 0) {

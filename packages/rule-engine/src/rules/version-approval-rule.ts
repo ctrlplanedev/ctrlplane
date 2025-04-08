@@ -4,12 +4,12 @@ import { inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
+import type { Version } from "../manager/version-rule-engine.js";
 import type {
   RuleEngineContext,
   RuleEngineFilter,
   RuleEngineRuleResult,
 } from "../types.js";
-import type { Version } from "../version-rule-engine.js";
 
 type Record = {
   versionId: string;

@@ -1,14 +1,19 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
+import { getApplicablePolicies } from "src/db/get-applicable-policies.js";
+import { mergePolicies } from "src/utils/merge-policies.js";
 
 import { desc, eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { MaybeVariable } from "../repositories/index.js";
+import type { Policy } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
 
 export class VariableReleaseManager implements ReleaseManager {
+  private cachedPolicy: Policy | null = null;
+
   private constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
@@ -40,13 +45,14 @@ export class VariableReleaseManager implements ReleaseManager {
         .then(takeFirst);
 
       const vars = _.compact(variables);
-      await tx.insert(schema.variableReleaseValue).values(
-        vars.map((v) => ({
-          variableReleaseId: release.id,
-          key: v.key,
-          value: v.value,
-        })),
-      );
+      if (vars.length > 0)
+        await tx.insert(schema.variableReleaseValue).values(
+          vars.map((v) => ({
+            variableReleaseId: release.id,
+            key: v.key,
+            value: v.value,
+          })),
+        );
 
       return { created: true, release };
     });
