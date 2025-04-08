@@ -1,5 +1,6 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   differenceInMilliseconds,
@@ -15,17 +16,29 @@ import { enUS } from "date-fns/locale";
 import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 
-import * as SCHEMA from "@ctrlplane/db/schema";
-
 import "./CreateDenyRule.css";
 
-import { IconEdit } from "@tabler/icons-react";
-import { Form } from "react-hook-form";
+import { IconDeviceFloppy, IconEdit, IconX } from "@tabler/icons-react";
+import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
-import { FormField, useForm } from "@ctrlplane/ui/form";
-import { Input } from "@ctrlplane/ui/input";
+import { TimePicker } from "@ctrlplane/ui/datetime-picker";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  useForm,
+} from "@ctrlplane/ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
 
 import { api } from "~/trpc/react";
 import { DenyWindowProvider, useDenyWindow } from "./DenyWindowContext";
@@ -50,12 +63,26 @@ type Event = {
 };
 
 const EditDenyWindow: React.FC<{
-  denyWindow: SCHEMA.PolicyRuleDenyWindow;
+  denyWindow: SCHEMA.PolicyRuleDenyWindow & { policy: SCHEMA.Policy };
+  event: Event;
   setEditing: () => void;
-}> = ({ denyWindow, setEditing }) => {
+}> = ({ denyWindow, event, setEditing }) => {
   const form = useForm({
-    schema: SCHEMA.updatePolicyRuleDenyWindow,
-    defaultValues: denyWindow,
+    schema: z.object({
+      start: z.date(),
+      end: z.date(),
+      recurrence: z.enum(["daily", "weekly", "monthly"]),
+    }),
+    defaultValues: {
+      start: event.start,
+      end: event.end,
+      recurrence:
+        Number(denyWindow.rrule.freq) === 1
+          ? "monthly"
+          : Number(denyWindow.rrule.freq) === 2
+            ? "weekly"
+            : "daily",
+    },
   });
 
   const updateDenyWindow = api.policy.denyWindow.update.useMutation();
@@ -70,12 +97,91 @@ const EditDenyWindow: React.FC<{
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} className="space-y-1">
+        <div className="flex items-center justify-between font-bold">
+          <div>
+            {denyWindow.policy.name === ""
+              ? "Deny Window"
+              : denyWindow.policy.name}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSubmit}
+              type="submit"
+              className="h-4 w-4"
+            >
+              <IconDeviceFloppy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-4 w-4"
+              onClick={setEditing}
+            >
+              <IconX className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         <FormField
           control={form.control}
-          name="name"
-          render={({ field }) => (
-            <Input {...field} className="border-neutral-600" />
+          name="start"
+          render={({ field: { value, onChange } }) => (
+            <FormItem className="flex flex-row items-center justify-between space-y-0">
+              <FormLabel>Start</FormLabel>
+              <FormControl>
+                <TimePicker
+                  granularity="minute"
+                  showIcon={false}
+                  inputClassName="h-6 w-8 text-sm p-1 border-neutral-600/30"
+                  className="w-fit gap-1"
+                  onChange={onChange}
+                  date={new Date(value)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="end"
+          render={({ field: { value, onChange } }) => (
+            <FormItem className="flex flex-row items-center justify-between space-y-0">
+              <FormLabel className="mr-2">End</FormLabel>
+              <FormControl>
+                <TimePicker
+                  granularity="minute"
+                  showIcon={false}
+                  inputClassName="h-6 w-8 text-sm p-1 border-neutral-600/30"
+                  timePeriodPickerClassName="h-6 text-sm"
+                  className="w-fit gap-1"
+                  onChange={onChange}
+                  date={new Date(value)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="recurrence"
+          render={({ field: { value, onChange } }) => (
+            <FormItem className="flex flex-row items-center justify-between space-y-0">
+              <FormLabel>Recurrence</FormLabel>
+              <FormControl>
+                <Select value={value} onValueChange={onChange}>
+                  <SelectTrigger className="h-8 w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+            </FormItem>
           )}
         />
       </form>
@@ -148,7 +254,7 @@ const EventComponent: React.FC<{
       <PopoverContent
         side="right"
         align="center"
-        className="bg-neutral-800 p-2"
+        className="bg-neutral-800 p-3"
       >
         {!editing && (
           <DenyWindowInfo
@@ -161,6 +267,7 @@ const EventComponent: React.FC<{
         {editing && (
           <EditDenyWindow
             denyWindow={denyWindow}
+            event={event as Event}
             setEditing={() => setEditing(false)}
           />
         )}
