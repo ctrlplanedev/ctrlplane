@@ -1,9 +1,18 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { desc, eq, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  lte,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { Policy, RuleEngineContext } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
@@ -31,6 +40,96 @@ export class VersionReleaseManager implements ReleaseManager {
       .then(takeFirst);
 
     return { created: true, release };
+  }
+
+  async findLatestVersionMatchingPolicy() {
+    const policy = await this.getPolicy();
+    const deploymentVersion = await this.db.query.deploymentVersion.findFirst({
+      where: and(
+        eq(
+          schema.deploymentVersion.deploymentId,
+          this.releaseTarget.deploymentId,
+        ),
+        schema.deploymentVersionMatchesCondition(
+          this.db,
+          policy?.deploymentVersionSelector?.deploymentVersionSelector,
+        ),
+      ),
+      orderBy: desc(schema.deploymentVersion.createdAt),
+    });
+
+    return deploymentVersion;
+  }
+
+  async findLastestDeployedVersion() {
+    return this.db
+      .select()
+      .from(schema.deploymentVersion)
+      .innerJoin(
+        schema.versionRelease,
+        eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
+      )
+      .innerJoin(
+        schema.release,
+        eq(schema.release.versionReleaseId, schema.versionRelease.id),
+      )
+      .innerJoin(schema.job, eq(schema.release.jobId, schema.job.id))
+      .where(
+        and(
+          eq(schema.job.status, JobStatus.Successful),
+          eq(schema.versionRelease.releaseTargetId, this.releaseTarget.id),
+        ),
+      )
+      .orderBy(desc(schema.job.createdAt))
+      .limit(1)
+      .then(takeFirstOrNull)
+      .then((result) => result?.deployment_version);
+  }
+
+  async findVersionsForEvaluate() {
+    const [latestDeployedVersion, latestVersionMatchingPolicy] =
+      await Promise.all([
+        this.findLastestDeployedVersion(),
+        this.findLatestVersionMatchingPolicy(),
+      ]);
+
+    const policy = await this.getPolicy();
+
+    return this.db.query.deploymentVersion
+      .findMany({
+        where: and(
+          eq(
+            schema.deploymentVersion.deploymentId,
+            this.releaseTarget.deploymentId,
+          ),
+          schema.deploymentVersionMatchesCondition(
+            this.db,
+            policy?.deploymentVersionSelector?.deploymentVersionSelector,
+          ),
+          latestDeployedVersion != null
+            ? gte(
+                schema.deploymentVersion.createdAt,
+                latestDeployedVersion.createdAt,
+              )
+            : undefined,
+          latestVersionMatchingPolicy != null
+            ? lte(
+                schema.deploymentVersion.createdAt,
+                latestVersionMatchingPolicy.createdAt,
+              )
+            : undefined,
+        ),
+        with: { metadata: true },
+        orderBy: desc(schema.deploymentVersion.createdAt),
+      })
+      .then((versions) =>
+        versions.map((version) => ({
+          ...version,
+          metadata: Object.fromEntries(
+            version.metadata.map((m) => [m.key, m.value]),
+          ),
+        })),
+      );
   }
 
   async findLatestRelease() {
@@ -71,8 +170,8 @@ export class VersionReleaseManager implements ReleaseManager {
     const rules = getRules(policy);
 
     const engine = new VersionRuleEngine(rules);
-    const result = await engine.evaluate(ctx, []);
-
+    const versions = await this.findVersionsForEvaluate();
+    const result = await engine.evaluate(ctx, versions);
     return result;
   }
 }
