@@ -12,6 +12,7 @@ export type ResolvedRelease = {
     tag: string;
     config: Record<string, any>;
     metadata: Record<string, string>;
+    createdAt: Date;
   };
   variables: Record<string, unknown>;
 };
