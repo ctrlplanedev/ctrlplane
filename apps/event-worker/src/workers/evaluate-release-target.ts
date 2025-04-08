@@ -38,9 +38,9 @@ const createRelease = async (
   const jobAgentConfig = _.merge(jobAgent.config, deploymentJobAgentConfig);
 
   // Get variable release data
-  const variableRelease = await tx.query.variableRelease.findFirst({
-    where: eq(schema.variableRelease.id, variableReleaseId),
-    with: { values: true },
+  const variableRelease = await tx.query.variableSetRelease.findFirst({
+    where: eq(schema.variableSetRelease.id, variableReleaseId),
+    with: { values: { with: { variableValueSnapshot: true } } },
   });
   if (!variableRelease) throw new Error("Failed to get variable release");
 
@@ -61,18 +61,17 @@ const createRelease = async (
     await tx.insert(schema.jobVariable).values(
       variableRelease.values.map((v) => ({
         jobId: job.id,
-        key: v.key,
-        sensitive: v.sensitive,
-        value: v.value,
+        key: v.variableValueSnapshot.key,
+        sensitive: v.variableValueSnapshot.sensitive,
+        value: v.variableValueSnapshot.value,
       })),
     );
   }
 
   // Create release record
-  await tx.insert(schema.release).values({
+  await tx.insert(schema.releaseJob).values({
+    releaseId: versionReleaseId,
     jobId: job.id,
-    versionReleaseId,
-    variableReleaseId,
   });
 
   return job;
@@ -131,7 +130,14 @@ export const evaluateReleaseTarget = createWorker(
       const versionRelease = await handleVersionRelease(releaseTarget);
       const variableRelease = await handleVariableRelease(releaseTarget);
 
-      // Create and dispatch job in development
+      await db
+        .insert(schema.release)
+        .values({
+          versionReleaseId: versionRelease.id,
+          variableReleaseId: variableRelease.id,
+        })
+        .onConflictDoNothing();
+
       if (env.NODE_ENV === "development") {
         const job = await db.transaction((tx) =>
           createRelease(tx, versionRelease.id, variableRelease.id),
