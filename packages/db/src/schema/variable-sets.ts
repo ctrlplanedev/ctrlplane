@@ -1,6 +1,13 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
-import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  text,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -55,6 +62,7 @@ export const variableSetValue = pgTable(
 
     key: text("key").notNull(),
     value: jsonb("value").$type<any>().notNull(),
+    sensitive: boolean("sensitive").notNull().default(false),
   },
   (t) => ({ uniq: uniqueIndex().on(t.variableSetId, t.key) }),
 );
