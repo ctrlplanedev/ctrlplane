@@ -44,7 +44,8 @@ const getGithubEntity = async (
         eq(SCHEMA.releaseJobTrigger.jobId, jobId),
       ),
     )
-    .then(takeFirstOrNull);
+    .then(takeFirstOrNull)
+    .then((r) => r?.github_entity);
 
   const runbookGhEntityPromise = db
     .select()
@@ -69,7 +70,8 @@ const getGithubEntity = async (
         eq(SCHEMA.runbookJobTrigger.jobId, jobId),
       ),
     )
-    .then(takeFirstOrNull);
+    .then(takeFirstOrNull)
+    .then((r) => r?.github_entity);
 
   const releaseJobEntityPromise = db
     .select()
@@ -101,19 +103,13 @@ const getGithubEntity = async (
         eq(SCHEMA.releaseJob.jobId, jobId),
       ),
     )
-    .then(takeFirstOrNull);
-
-  const [releaseGhEntityResult, runbookGhEntityResult, releaseJobEntityResult] =
-    await Promise.all([
-      releaseGhEntityPromise,
-      runbookGhEntityPromise,
-      releaseJobEntityPromise,
-    ]);
+    .then(takeFirstOrNull)
+    .then((r) => r?.github_entity);
 
   return (
-    releaseGhEntityResult?.github_entity ??
-    runbookGhEntityResult?.github_entity ??
-    releaseJobEntityResult?.github_entity
+    (await releaseGhEntityPromise) ??
+    (await runbookGhEntityPromise) ??
+    (await releaseJobEntityPromise)
   );
 };
 
