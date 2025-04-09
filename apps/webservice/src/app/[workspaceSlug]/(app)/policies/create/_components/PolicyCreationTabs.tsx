@@ -1,22 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { IconCircleFilled } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 
+import type { PolicyTab } from "./PolicyContext";
 import {
   BasicConfiguration,
   DeploymentFlow,
   QualitySecurity,
   TimeWindows,
 } from ".";
-
-type PolicyTab =
-  | "config"
-  | "time-windows"
-  | "deployment-flow"
-  | "quality-security";
+import { usePolicyContext } from "./PolicyContext";
 
 interface TabConfig {
   id: PolicyTab;
@@ -48,7 +43,7 @@ const POLICY_TABS: TabConfig[] = [
 ];
 
 export function PolicyCreationTabs() {
-  const [activeTab, setActiveTab] = useState<PolicyTab>("config");
+  const { activeTab, setActiveTab } = usePolicyContext();
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -73,8 +68,10 @@ export function PolicyCreationTabs() {
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "flex w-full cursor-pointer justify-start gap-3 p-3 text-muted-foreground hover:bg-purple-500/5",
-                "hover:text-purple-300",
-                activeTab === tab.id && "bg-purple-500/10 text-purple-300",
+
+                activeTab === tab.id
+                  ? "bg-purple-500/10 text-purple-300"
+                  : "hover:text-purple-300",
               )}
             >
               <IconCircleFilled className="ml-4 mt-2 size-2" />

@@ -454,6 +454,9 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@ctrlplane/rule-engine':
+        specifier: workspace:*
+        version: link:../../packages/rule-engine
       '@ctrlplane/secrets':
         specifier: workspace:*
         version: link:../../packages/secrets
