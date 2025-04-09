@@ -30,7 +30,7 @@ export default async function ReleasePage(props: PageProps) {
   const params = await props.params;
   const deploymentVersion = await api.deployment.version.byId(params.releaseId);
   const deployment = await api.deployment.bySlug(params);
-  if (deploymentVersion == null || deployment == null) notFound();
+  if (deploymentVersion == null || deployment == null) return notFound();
 
   return (
     <DeploymentVersionJobsTable

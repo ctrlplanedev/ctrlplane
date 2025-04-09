@@ -1,4 +1,5 @@
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
+import { TRPCError } from "@trpc/server";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -222,7 +223,11 @@ const jobRouter = createTRPCRouter({
       const version = await ctx.db.query.deploymentVersion.findFirst({
         where: eq(SCHEMA.deploymentVersion.id, versionId),
       });
-      if (version == null) throw new Error(`Version not found: ${versionId}`);
+      if (version == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Version not found: ${versionId}`,
+        });
 
       const rows = await ctx.db
         .select()
