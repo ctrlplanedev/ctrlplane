@@ -138,7 +138,7 @@ export class AgentSocket {
     ]);
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
-    await getQueue(Channel.UpsertedResource).add(res.id, res);
+    await getQueue(Channel.UpdatedResource).add(res.id, res);
     this.resource = res;
     agents.set(res.id, { lastSync: new Date(), agent: this });
   }

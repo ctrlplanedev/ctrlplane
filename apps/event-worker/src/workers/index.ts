@@ -12,7 +12,7 @@ import { resourceScanWorker } from "./resource-scan/index.js";
 import { updateDeploymentVariableWorker } from "./update-deployment-variable.js";
 import { updateEnvironmentWorker } from "./update-environment.js";
 import { updateResourceVariableWorker } from "./update-resource-variable.js";
-import { upsertedResourceWorker } from "./upserted-resources/index.js";
+import { updatedResourceWorker } from "./updated-resources/index.js";
 
 type Workers<T extends keyof ChannelMap> = {
   [K in T]: Worker<ChannelMap[K]> | null;
@@ -28,6 +28,6 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.EvaluateReleaseTarget]: evaluateReleaseTarget,
   [Channel.DispatchJob]: dispatchJobWorker,
   [Channel.ResourceScan]: resourceScanWorker,
-  [Channel.UpsertedResource]: upsertedResourceWorker,
+  [Channel.UpdatedResource]: updatedResourceWorker,
   [Channel.NewResource]: newResourceWorker,
 };

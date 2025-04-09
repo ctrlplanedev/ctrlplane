@@ -6,6 +6,7 @@ import { upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
+import { groupResourcesByHook } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -56,7 +57,9 @@ export const POST = request()
           { status: 400 },
         );
 
-      const resources = await upsertResources(
+      // since this endpoint is not scoped to a provider, we will ignore deleted resources
+      // as someone may be calling this endpoint to do a pure upsert
+      const { toInsert, toUpdate } = await groupResourcesByHook(
         db,
         ctx.body.resources.map((t) => ({
           ...t,
@@ -64,7 +67,20 @@ export const POST = request()
         })),
       );
 
-      await getQueue(Channel.UpsertedResource).addBulk(
+      const [insertedResources, updatedResources] = await Promise.all([
+        upsertResources(db, toInsert),
+        upsertResources(db, toUpdate),
+      ]);
+
+      // const resources = await upsertResources(
+      //   db,
+      //   ctx.body.resources.map((t) => ({
+      //     ...t,
+      //     workspaceId: ctx.body.workspaceId,
+      //   })),
+      // );
+
+      await getQueue(Channel.UpdatedResource).addBulk(
         resources.map((r) => ({
           name: r.id,
           data: r,

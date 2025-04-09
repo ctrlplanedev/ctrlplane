@@ -94,19 +94,19 @@ export const groupResourcesByHook = async (
           inserted.workspaceId === existing.workspaceId,
       ),
   );
-  const newResources = resourcesToInsert.filter(
+  const toInsert = resourcesToInsert.filter(
     (r) =>
       !existingResources.some(
         (er) =>
           er.identifier === r.identifier && er.workspaceId === r.workspaceId,
       ),
   );
-  const toUpsert = resourcesToInsert.filter((r) =>
+  const toUpdate = resourcesToInsert.filter((r) =>
     existingResources.some(
       (er) =>
         er.identifier === r.identifier && er.workspaceId === r.workspaceId,
     ),
   );
 
-  return { newResources, toUpsert, toDelete };
+  return { toInsert, toUpdate, toDelete };
 };

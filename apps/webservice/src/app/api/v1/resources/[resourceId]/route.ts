@@ -97,7 +97,7 @@ export const PATCH = request()
     const all = await upsertResources(db, [_.merge(resource, body)]);
     const res = all.at(0);
     if (res == null) throw new Error("Failed to update resource");
-    await getQueue(Channel.UpsertedResource).add(res.id, res);
+    await getQueue(Channel.UpdatedResource).add(res.id, res);
     return NextResponse.json(res);
   });
 

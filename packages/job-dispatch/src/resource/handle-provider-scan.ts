@@ -28,29 +28,25 @@ export const handleResourceProviderScan = async (
     if (!resourcesToInsert.every((r) => r.workspaceId === workspaceId))
       throw new Error("All resources must belong to the same workspace");
 
-    const { newResources, toUpsert, toDelete } = await groupResourcesByHook(
+    const { toInsert, toUpdate, toDelete } = await groupResourcesByHook(
       tx,
       resourcesToInsert,
     );
-    const insertedResources = await upsertResources(tx, newResources);
-    const upsertedResources = await upsertResources(tx, toUpsert);
+    const [insertedResources, updatedResources] = await Promise.all([
+      upsertResources(tx, toInsert),
+      upsertResources(tx, toUpdate),
+    ]);
 
-    await getQueue(Channel.UpsertedResource).addBulk(
-      insertedResources.map((r) => ({
-        name: r.id,
-        data: r,
-      })),
-    );
+    const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
+    const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
 
-    await getQueue(Channel.UpsertedResource).addBulk(
-      upsertedResources.map((r) => ({
-        name: r.id,
-        data: r,
-      })),
-    );
+    await Promise.all([
+      getQueue(Channel.NewResource).addBulk(insertJobs),
+      getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+    ]);
 
     const deleted = await deleteResources(tx, toDelete);
-    return { all: [...insertedResources, ...upsertedResources], deleted };
+    return { all: [...insertedResources, ...updatedResources], deleted };
   } catch (error) {
     log.error("Error upserting resources", { error });
     throw error;
