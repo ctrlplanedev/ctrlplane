@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { Textarea } from "@ctrlplane/ui/textarea";
 
 const DAYS_OF_WEEK = [
   "monday",
@@ -105,47 +104,15 @@ export const TimeWindows: React.FC = () => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="max-w-lg space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rule Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Weekend Deployment Block"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    A name to identify this deny window rule
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="e.g., Block deployments during weekends and off-hours"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Optional description to explain when and why deployments are
-                    blocked
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="max-w-xl space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-md font-medium">Deny Windows</h3>
+                <p className="text-sm text-muted-foreground">
+                  Define the time periods when deployments should be blocked
+                </p>
+              </div>
+            </div>
 
             <FormField
               control={form.control}
@@ -172,17 +139,6 @@ export const TimeWindows: React.FC = () => {
                 </FormItem>
               )}
             />
-          </div>
-
-          <div className="max-w-xl space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="text-md font-medium">Deny Windows</h3>
-                <p className="text-sm text-muted-foreground">
-                  Define the time periods when deployments should be blocked
-                </p>
-              </div>
-            </div>
 
             <div className="space-y-4">
               {fields.map((field, index) => (
