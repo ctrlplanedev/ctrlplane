@@ -6,8 +6,8 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { dispatchExitHooks } from "./dispatch-exit-hooks.js";
 import { upsertReleaseTargets } from "./upsert-release-targets.js";
 
-export const processUpsertedResourceWorker = createWorker(
-  Channel.ProcessUpsertedResource,
+export const upsertedResourceWorker = createWorker(
+  Channel.UpsertedResource,
   async ({ data: resource }) => {
     const currentReleaseTargets = await db.query.releaseTarget.findMany({
       where: eq(SCHEMA.releaseTarget.resourceId, resource.id),

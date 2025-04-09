@@ -44,7 +44,7 @@ export const upsertResources = async (
       insertResourceMetadata(tx, resourcesWithId),
     ]);
 
-    await getQueue(Channel.ProcessUpsertedResource).addBulk(
+    await getQueue(Channel.UpsertedResource).addBulk(
       all.map((r) => ({
         name: r.id,
         data: r,

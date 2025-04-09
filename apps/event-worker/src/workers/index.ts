@@ -7,7 +7,7 @@ import { evaluateReleaseTarget } from "./evaluate-release-target.js";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
 import { newDeploymentVersionWorker } from "./new-deployment-version.js";
 import { newDeploymentWorker } from "./new-deployment.js";
-import { processUpsertedResourceWorker } from "./process-upserted-resources/index.js";
+import { upsertedResourceWorker } from "./process-upserted-resources/index.js";
 import { resourceScanWorker } from "./resource-scan/index.js";
 import { updateDeploymentVariableWorker } from "./update-deployment-variable.js";
 import { updateEnvironmentWorker } from "./update-environment.js";
@@ -27,5 +27,5 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.EvaluateReleaseTarget]: evaluateReleaseTarget,
   [Channel.DispatchJob]: dispatchJobWorker,
   [Channel.ResourceScan]: resourceScanWorker,
-  [Channel.ProcessUpsertedResource]: processUpsertedResourceWorker,
+  [Channel.UpsertedResource]: upsertedResourceWorker,
 };
