@@ -1,6 +1,7 @@
 "use client";
 
-import type { Policy } from "@ctrlplane/rule-engine";
+import type { CreatePolicy } from "@ctrlplane/db/schema";
+import type { Dispatch, SetStateAction } from "react";
 import { createContext, useContext, useState } from "react";
 
 export type PolicyTab =
@@ -9,24 +10,25 @@ export type PolicyTab =
   | "deployment-flow"
   | "quality-security";
 
-type InsertPolicy = Omit<Policy, "createdAt" | "updatedAt" | "id">;
-
 type PolicyContextType = {
   activeTab: PolicyTab;
-  setActiveTab: (tab: PolicyTab) => void;
-  policy: InsertPolicy;
-  setPolicy: (policy: InsertPolicy) => void;
+  setActiveTab: Dispatch<SetStateAction<PolicyTab>>;
+  policy: CreatePolicy;
+  setPolicy: Dispatch<SetStateAction<CreatePolicy>>;
 };
 
-const defaultPolicy: InsertPolicy = {
+const defaultPolicy: CreatePolicy = {
   name: "",
   description: "",
   priority: 0,
   workspaceId: "",
   enabled: false,
+
+  targets: [],
+
   denyWindows: [],
   deploymentVersionSelector: null,
-  versionAnyApprovals: [],
+  versionAnyApprovals: null,
   versionUserApprovals: [],
   versionRoleApprovals: [],
 };
@@ -46,7 +48,7 @@ export const PolicyContextProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<PolicyTab>("config");
-  const [policy, setPolicy] = useState<InsertPolicy>(defaultPolicy);
+  const [policy, setPolicy] = useState<CreatePolicy>(defaultPolicy);
 
   return (
     <PolicyContext.Provider

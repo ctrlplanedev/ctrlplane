@@ -13,9 +13,6 @@ import {
 } from "./rules/index.js";
 import { workspace } from "./workspace.js";
 
-// Re-export the rule relations
-export * from "./rules/index.js";
-
 export const policyRelations = relations(policy, ({ many, one }) => ({
   workspace: one(workspace, {
     fields: [policy.workspaceId],

@@ -1,3 +1,4 @@
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import _ from "lodash";
 import { z } from "zod";
 
@@ -13,6 +14,7 @@ import {
   updatePolicyRuleDenyWindow,
   updatePolicyTarget,
 } from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -55,7 +57,78 @@ export const policyRouter = createTRPCRouter({
     })
     .input(createPolicy)
     .mutation(async ({ ctx, input }) =>
-      ctx.db.insert(policy).values(input).returning().then(takeFirst),
+      ctx.db.transaction(async (tx) => {
+        const {
+          targets,
+          denyWindows,
+          deploymentVersionSelector,
+          versionAnyApprovals,
+          versionUserApprovals,
+          versionRoleApprovals,
+          ...rest
+        } = input;
+
+        const policy = await tx
+          .insert(schema.policy)
+          .values(rest)
+          .returning()
+          .then(takeFirst);
+
+        const { id: policyId } = policy;
+
+        if (targets.length > 0) {
+          await tx.insert(schema.policyTarget).values(
+            targets.map((target) => ({
+              ...target,
+              policyId,
+            })),
+          );
+        }
+
+        if (denyWindows.length > 0) {
+          await tx.insert(schema.policyRuleDenyWindow).values(
+            denyWindows.map((denyWindow) => ({
+              ...denyWindow,
+              policyId,
+            })),
+          );
+        }
+
+        if (deploymentVersionSelector != null) {
+          await tx.insert(schema.policyDeploymentVersionSelector).values({
+            ...deploymentVersionSelector,
+            policyId: policy.id,
+            deploymentVersionSelector:
+              deploymentVersionSelector.deploymentVersionSelector as DeploymentVersionCondition,
+          });
+        }
+
+        if (versionAnyApprovals != null) {
+          await tx
+            .insert(schema.policyRuleAnyApproval)
+            .values({ ...versionAnyApprovals, policyId });
+        }
+
+        if (versionUserApprovals.length > 0) {
+          await tx.insert(schema.policyRuleUserApproval).values(
+            versionUserApprovals.map((approval) => ({
+              ...approval,
+              policyId,
+            })),
+          );
+        }
+
+        if (versionRoleApprovals.length > 0) {
+          await tx.insert(schema.policyRuleRoleApproval).values(
+            versionRoleApprovals.map((approval) => ({
+              ...approval,
+              policyId,
+            })),
+          );
+        }
+
+        return policy;
+      }),
     ),
 
   update: protectedProcedure

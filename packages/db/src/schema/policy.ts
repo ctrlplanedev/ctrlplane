@@ -18,6 +18,10 @@ import { z } from "zod";
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
 
+import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
+import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
+import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
+import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable("policy", {
@@ -87,8 +91,37 @@ const policyTargetInsertSchema = createInsertSchema(policyTarget, {
   environmentSelector: environmentCondition.nullable(),
 }).omit({ id: true });
 
+const createPolicyDeploymentVersionSelector = createInsertSchema(
+  policyDeploymentVersionSelector,
+  {
+    policyId: z.string().uuid(),
+  },
+).omit({ id: true });
+
 // Export schemas and types
-export const createPolicy = policyInsertSchema;
+export const createPolicy = z.intersection(
+  policyInsertSchema,
+  z.object({
+    targets: z.array(policyTargetInsertSchema.omit({ policyId: true })),
+
+    denyWindows: z.array(createPolicyRuleDenyWindow.omit({ policyId: true })),
+    deploymentVersionSelector: createPolicyDeploymentVersionSelector
+      .omit({ policyId: true })
+      .optional()
+      .nullable(),
+
+    versionAnyApprovals: createPolicyRuleAnyApproval
+      .omit({ policyId: true })
+      .optional()
+      .nullable(),
+    versionUserApprovals: z.array(
+      createPolicyRuleUserApproval.omit({ policyId: true }),
+    ),
+    versionRoleApprovals: z.array(
+      createPolicyRuleRoleApproval.omit({ policyId: true }),
+    ),
+  }),
+);
 export type CreatePolicy = z.infer<typeof createPolicy>;
 
 export const updatePolicy = policyInsertSchema.partial();
