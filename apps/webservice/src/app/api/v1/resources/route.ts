@@ -59,34 +59,28 @@ export const POST = request()
 
       // since this endpoint is not scoped to a provider, we will ignore deleted resources
       // as someone may be calling this endpoint to do a pure upsert
+      const { workspaceId } = ctx.body;
       const { toInsert, toUpdate } = await groupResourcesByHook(
         db,
-        ctx.body.resources.map((t) => ({
-          ...t,
-          workspaceId: ctx.body.workspaceId,
-        })),
+        ctx.body.resources.map((r) => ({ ...r, workspaceId })),
       );
 
       const [insertedResources, updatedResources] = await Promise.all([
         upsertResources(db, toInsert),
         upsertResources(db, toUpdate),
       ]);
+      const insertJobs = insertedResources.map((r) => ({
+        name: r.id,
+        data: r,
+      }));
+      const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
 
-      // const resources = await upsertResources(
-      //   db,
-      //   ctx.body.resources.map((t) => ({
-      //     ...t,
-      //     workspaceId: ctx.body.workspaceId,
-      //   })),
-      // );
+      await Promise.all([
+        getQueue(Channel.NewResource).addBulk(insertJobs),
+        getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+      ]);
 
-      await getQueue(Channel.UpdatedResource).addBulk(
-        resources.map((r) => ({
-          name: r.id,
-          data: r,
-        })),
-      );
-
-      return NextResponse.json({ count: resources.length });
+      const count = insertedResources.length + updatedResources.length;
+      return NextResponse.json({ count });
     },
   );
