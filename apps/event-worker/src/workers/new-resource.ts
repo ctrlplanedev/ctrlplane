@@ -7,7 +7,8 @@ const queue = getQueue(Channel.EvaluateReleaseTarget);
 export const newResourceWorker = createWorker(
   Channel.NewResource,
   ({ data: resource }) =>
-    upsertReleaseTargets(db, resource).then(async (rts) => {
+    db.transaction(async (tx) => {
+      const rts = await upsertReleaseTargets(tx, resource);
       await queue.addBulk(
         rts.map((rt) => ({
           name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
