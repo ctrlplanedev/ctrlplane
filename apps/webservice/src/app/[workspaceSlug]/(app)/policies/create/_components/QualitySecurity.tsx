@@ -248,7 +248,7 @@ export const QualitySecurity: React.FC<{ workspaceId: string }> = ({
 
   const {
     fields: roleFields,
-    append: appendRole,
+    // append: appendRole,
     remove: removeRole,
   } = useFieldArray({
     control: form.control,
