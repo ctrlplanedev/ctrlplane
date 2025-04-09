@@ -16,6 +16,12 @@ import { PolicyContextProvider } from "./_components/PolicyContext";
 import { PolicyCreationTabs } from "./_components/PolicyCreationTabs";
 import { PolicySubmit } from "./_components/PolicySubmit";
 
+export const metadata = {
+  title: "Create Deployment Policy | CtrlPlane",
+  description:
+    "Create a new deployment policy to control how changes are deployed",
+};
+
 export default async function CreatePolicyPage({
   params,
 }: {
@@ -52,7 +58,10 @@ export default async function CreatePolicyPage({
         </div>
 
         <div className="flex items-center justify-between border-t px-6 py-4">
-          <PolicySubmit />
+          <PolicySubmit
+            workspaceSlug={workspaceSlug}
+            workspaceId={workspace.id}
+          />
         </div>
       </div>
     </PolicyContextProvider>

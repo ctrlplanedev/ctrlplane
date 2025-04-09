@@ -1,4 +1,6 @@
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 import _ from "lodash";
 import { z } from "zod";
 
@@ -20,6 +22,86 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const policyRouter = createTRPCRouter({
+  ai: createTRPCRouter({
+    generateName: protectedProcedure
+      .input(z.record(z.string(), z.any()))
+      .mutation(async ({ input }) => {
+        const { text } = await generateText({
+          model: openai("gpt-4-turbo"),
+          messages: [
+            {
+              role: "system",
+              content: `
+                You are a devops engineer assistant that generates names for policies.
+                Based on the provided object for a Policy short title that describes 
+                what the policy is about.  It should be no more than 20 characters.
+                `,
+            },
+            {
+              role: "user",
+              content: JSON.stringify(
+                _.omit(input, [
+                  "workspaceId",
+                  "id",
+                  "createdAt",
+                  "updatedAt",
+                  "name",
+                  "enabled",
+                ]),
+              ),
+            },
+          ],
+        });
+
+        return text
+          .trim()
+          .replaceAll("`", "")
+          .replaceAll("'", "")
+          .replaceAll('"', "");
+      }),
+
+    generateDescription: protectedProcedure
+      .input(z.record(z.string(), z.any()))
+      .mutation(async ({ input }) => {
+        const { text } = await generateText({
+          model: openai("gpt-4-turbo"),
+          messages: [
+            {
+              role: "system",
+              content: `
+                You are a devops engineer assistant that generates descriptions for policies.
+                Based on the provided object for a Policy, generate a description that 
+                describes what the policy is about.  It should be no more than 60 words.
+                It should be written in the style of a policy description for technical 
+                users. The description will be shown below the policy name in a UI.
+
+                - High priority mean higher importance. It can be any integer value positive or negative.
+                - The policy is for a software release deployment tool.
+                `,
+            },
+            {
+              role: "user",
+              content: JSON.stringify(
+                _.omit(input, [
+                  "workspaceId",
+                  "id",
+                  "createdAt",
+                  "updatedAt",
+                  "enabled",
+                ]),
+              ),
+            },
+          ],
+        });
+
+        return text
+          .trim()
+          .replaceAll("`", "")
+          .replaceAll("'", "")
+          .replaceAll('"', "");
+      }),
+  }),
+
   list: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

@@ -28,7 +28,7 @@ const defaultPolicy: CreatePolicy = {
   description: "",
   priority: 0,
   workspaceId: "",
-  enabled: false,
+  enabled: true,
 
   targets: [],
 
@@ -62,7 +62,7 @@ export const PolicyContextProvider: React.FC<{
       name: "",
       description: "",
       priority: 0,
-      enabled: false,
+      enabled: true,
 
       targets: [],
 
