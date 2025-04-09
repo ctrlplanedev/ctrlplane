@@ -1,7 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
-  json,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -14,6 +14,7 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
+import { workspace } from "./workspace.js";
 
 export const releaseTarget = pgTable(
   "release_target",
@@ -39,9 +40,7 @@ export const releaseTarget = pgTable(
   }),
 );
 
-export type ReleaseTarget = typeof releaseTarget.$inferSelect;
-
-export const release = pgTable("release", {
+export const versionRelease = pgTable("version_release", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   releaseTargetId: uuid("release_target_id")
@@ -51,24 +50,75 @@ export const release = pgTable("release", {
   versionId: uuid("version_id")
     .notNull()
     .references(() => deploymentVersion.id, { onDelete: "cascade" }),
+
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
 
-export const releaseVariable = pgTable(
-  "release_variable",
+export const variableSetRelease = pgTable("variable_set_release", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  releaseTargetId: uuid("release_target_id")
+    .notNull()
+    .references(() => releaseTarget.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const variableSetReleaseValue = pgTable(
+  "variable_set_release_value",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    releaseId: uuid("release_id")
+    variableSetReleaseId: uuid("variable_set_release_id")
       .notNull()
-      .references(() => release.id, { onDelete: "cascade" }),
-    key: text("key").notNull(),
-    value: json("value").notNull(),
-    sensitive: boolean("sensitive").notNull().default(false),
+      .references(() => variableSetRelease.id, { onDelete: "cascade" }),
+
+    variableValueSnapshotId: uuid("variable_value_snapshot_id")
+      .notNull()
+      .references(() => variableValueSnapshot.id, { onDelete: "cascade" }),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.releaseId, t.key) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.variableSetReleaseId, t.variableValueSnapshotId),
+  }),
 );
+
+export const variableValueSnapshot = pgTable(
+  "variable_value_snapshot",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+
+    value: jsonb("value").$type<any>().notNull(),
+    key: text("key").notNull(),
+    sensitive: boolean("sensitive").notNull().default(false),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.key, t.value) }),
+);
+
+export const release = pgTable("release", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  versionReleaseId: uuid("version_release_id")
+    .notNull()
+    .references(() => versionRelease.id, { onDelete: "cascade" }),
+  variableReleaseId: uuid("variable_release_id")
+    .notNull()
+    .references(() => variableSetRelease.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const releaseJob = pgTable("release_job", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -78,52 +128,13 @@ export const releaseJob = pgTable("release_job", {
   jobId: uuid("job_id")
     .notNull()
     .references(() => job.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
 });
 
-export const releaseRelations = relations(release, ({ one, many }) => ({
-  version: one(deploymentVersion, {
-    fields: [release.versionId],
-    references: [deploymentVersion.id],
-  }),
-  releaseTarget: one(releaseTarget, {
-    fields: [release.releaseTargetId],
-    references: [releaseTarget.id],
-  }),
-  variables: many(releaseVariable),
-  jobs: many(releaseJob),
-}));
-
-export const releaseVariableRelations = relations(
-  releaseVariable,
-  ({ one }) => ({
-    release: one(release, {
-      fields: [releaseVariable.releaseId],
-      references: [release.id],
-    }),
-  }),
-);
-
-export const releaseJobRelations = relations(releaseJob, ({ one }) => ({
-  release: one(release, {
-    fields: [releaseJob.releaseId],
-    references: [release.id],
-  }),
-  job: one(job, {
-    fields: [releaseJob.jobId],
-    references: [job.id],
-  }),
-}));
+/* Relations */
 
 export const releaseTargetRelations = relations(
   releaseTarget,
   ({ one, many }) => ({
-    desiredRelease: one(release, {
-      fields: [releaseTarget.desiredReleaseId],
-      references: [release.id],
-    }),
     deployment: one(deployment, {
       fields: [releaseTarget.deploymentId],
       references: [deployment.id],
@@ -137,6 +148,71 @@ export const releaseTargetRelations = relations(
       references: [resource.id],
     }),
 
-    releases: many(release),
+    versionReleases: many(versionRelease),
+    variableReleases: many(variableSetRelease),
   }),
 );
+
+export const versionReleaseRelations = relations(
+  versionRelease,
+  ({ one, many }) => ({
+    version: one(deploymentVersion, {
+      fields: [versionRelease.versionId],
+      references: [deploymentVersion.id],
+    }),
+    releaseTarget: one(releaseTarget, {
+      fields: [versionRelease.releaseTargetId],
+      references: [releaseTarget.id],
+    }),
+    release: many(release),
+  }),
+);
+
+export const variableReleaseRelations = relations(
+  variableSetRelease,
+  ({ one, many }) => ({
+    releaseTarget: one(releaseTarget, {
+      fields: [variableSetRelease.releaseTargetId],
+      references: [releaseTarget.id],
+    }),
+    release: many(release),
+    values: many(variableSetReleaseValue),
+  }),
+);
+
+export const variableReleaseValueRelations = relations(
+  variableSetReleaseValue,
+  ({ one }) => ({
+    variableSetRelease: one(variableSetRelease, {
+      fields: [variableSetReleaseValue.variableSetReleaseId],
+      references: [variableSetRelease.id],
+    }),
+    variableValueSnapshot: one(variableValueSnapshot, {
+      fields: [variableSetReleaseValue.variableValueSnapshotId],
+      references: [variableValueSnapshot.id],
+    }),
+  }),
+);
+
+export const releaseRelations = relations(release, ({ many, one }) => ({
+  versionRelease: one(versionRelease, {
+    fields: [release.versionReleaseId],
+    references: [versionRelease.id],
+  }),
+  variableSetRelease: one(variableSetRelease, {
+    fields: [release.variableReleaseId],
+    references: [variableSetRelease.id],
+  }),
+  releaseJobs: many(releaseJob),
+}));
+
+export const releaseJobRelations = relations(releaseJob, ({ one }) => ({
+  release: one(release, {
+    fields: [releaseJob.releaseId],
+    references: [release.id],
+  }),
+  job: one(job, {
+    fields: [releaseJob.jobId],
+    references: [job.id],
+  }),
+}));

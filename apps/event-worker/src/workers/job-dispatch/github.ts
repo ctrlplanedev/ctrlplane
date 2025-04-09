@@ -44,7 +44,8 @@ const getGithubEntity = async (
         eq(SCHEMA.releaseJobTrigger.jobId, jobId),
       ),
     )
-    .then(takeFirstOrNull);
+    .then(takeFirstOrNull)
+    .then((r) => r?.github_entity);
 
   const runbookGhEntityPromise = db
     .select()
@@ -69,18 +70,23 @@ const getGithubEntity = async (
         eq(SCHEMA.runbookJobTrigger.jobId, jobId),
       ),
     )
-    .then(takeFirstOrNull);
+    .then(takeFirstOrNull)
+    .then((r) => r?.github_entity);
 
   const releaseJobEntityPromise = db
     .select()
-    .from(SCHEMA.releaseJob)
+    .from(SCHEMA.release)
     .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+      SCHEMA.releaseJob,
+      eq(SCHEMA.release.id, SCHEMA.releaseJob.releaseId),
+    )
+    .innerJoin(
+      SCHEMA.versionRelease,
+      eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
     )
     .innerJoin(
       SCHEMA.releaseTarget,
-      eq(SCHEMA.release.releaseTargetId, SCHEMA.releaseTarget.id),
+      eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
     )
     .innerJoin(
       SCHEMA.resource,
@@ -97,19 +103,13 @@ const getGithubEntity = async (
         eq(SCHEMA.releaseJob.jobId, jobId),
       ),
     )
-    .then(takeFirstOrNull);
-
-  const [releaseGhEntityResult, runbookGhEntityResult, releaseJobEntityResult] =
-    await Promise.all([
-      releaseGhEntityPromise,
-      runbookGhEntityPromise,
-      releaseJobEntityPromise,
-    ]);
+    .then(takeFirstOrNull)
+    .then((r) => r?.github_entity);
 
   return (
-    releaseGhEntityResult?.github_entity ??
-    runbookGhEntityResult?.github_entity ??
-    releaseJobEntityResult?.github_entity
+    (await releaseGhEntityPromise) ??
+    (await runbookGhEntityPromise) ??
+    (await releaseJobEntityPromise)
   );
 };
 

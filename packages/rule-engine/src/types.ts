@@ -2,20 +2,6 @@ import type * as schema from "@ctrlplane/db/schema";
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
-import type { Releases } from "./releases.js";
-
-export type ResolvedRelease = {
-  id: string;
-  createdAt: Date;
-  version: {
-    id: string;
-    tag: string;
-    config: Record<string, any>;
-    metadata: Record<string, string>;
-  };
-  variables: Record<string, unknown>;
-};
-
 export type Deployment = {
   id: string;
   name: string;
@@ -34,33 +20,32 @@ export type Environment = {
   resourceSelector?: ResourceCondition | null;
 };
 
-export type DeploymentResourceContext = {
+export type RuleEngineContext = {
   desiredReleaseId: string | null;
   deployment: Deployment;
   environment: Environment;
   resource: Resource;
 };
 
-export type DeploymentResourceRuleResult = {
-  allowedReleases: Releases;
+export type RuleEngineRuleResult<T> = {
+  allowedCandidates: T[];
   rejectionReasons?: Map<string, string>;
 };
 
-export type DeploymentResourceSelectionResult = {
-  allowed: boolean;
-  chosenRelease?: ResolvedRelease;
+export type RuleEngineSelectionResult<T> = {
+  chosenCandidate: T | null;
   rejectionReasons: Map<string, string>;
 };
 
 /**
  * A rule to filter/reorder the candidate versions.
  */
-export interface DeploymentResourceRule {
+export interface RuleEngineFilter<T> {
   name: string;
   filter(
-    context: DeploymentResourceContext,
-    releases: Releases,
-  ): DeploymentResourceRuleResult | Promise<DeploymentResourceRuleResult>;
+    context: RuleEngineContext,
+    candidates: T[],
+  ): RuleEngineRuleResult<T> | Promise<RuleEngineRuleResult<T>>;
 }
 
 export type Policy = schema.Policy & {
@@ -77,7 +62,9 @@ export type ReleaseTargetIdentifier = {
   resourceId: string;
 };
 
-export type GetReleasesFunc = (
-  ctx: DeploymentResourceContext,
-  policy: Policy,
-) => Promise<ResolvedRelease[]> | ResolvedRelease[];
+export type RuleEngine<T> = {
+  evaluate: (
+    context: RuleEngineContext,
+    candidates: T[],
+  ) => Promise<RuleEngineSelectionResult<T>>;
+};
