@@ -36,6 +36,13 @@ export const handleResourceProviderScan = async (
     const upsertedResources = await upsertResources(tx, toUpsert);
 
     await getQueue(Channel.UpsertedResource).addBulk(
+      insertedResources.map((r) => ({
+        name: r.id,
+        data: r,
+      })),
+    );
+
+    await getQueue(Channel.UpsertedResource).addBulk(
       upsertedResources.map((r) => ({
         name: r.id,
         data: r,
