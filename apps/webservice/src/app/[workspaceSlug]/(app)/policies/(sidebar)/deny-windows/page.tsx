@@ -22,7 +22,7 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
-import { PageHeader } from "../../_components/PageHeader";
+import { PageHeader } from "../../../_components/PageHeader";
 import { CreateDenyRuleDialog } from "./_components/CreateDenyRule";
 
 export default async function DenyWindowsPage({
