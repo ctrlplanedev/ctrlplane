@@ -1,3 +1,5 @@
+"use client";
+
 import type { Policy } from "@ctrlplane/rule-engine";
 import { createContext, useContext, useState } from "react";
 
