@@ -847,6 +847,9 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../logger
+      '@ctrlplane/rule-engine':
+        specifier: workspace:*
+        version: link:../rule-engine
       '@ctrlplane/secrets':
         specifier: workspace:*
         version: link:../secrets

@@ -46,6 +46,7 @@ import {
 } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { deploymentVersionChecksRouter } from "./deployment-version-checks";
 import { versionDeployRouter } from "./version-deploy";
 import { deploymentVersionMetadataKeysRouter } from "./version-metadata-keys";
 
@@ -1004,4 +1005,5 @@ export const versionRouter = createTRPCRouter({
   }),
 
   metadataKeys: deploymentVersionMetadataKeysRouter,
+  checks: deploymentVersionChecksRouter,
 });

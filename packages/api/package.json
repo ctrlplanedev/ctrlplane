@@ -29,6 +29,7 @@
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
+    "@ctrlplane/rule-engine": "workspace:*",
     "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@octokit/auth-app": "catalog:",

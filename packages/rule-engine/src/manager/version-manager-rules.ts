@@ -60,6 +60,14 @@ const versionUserApprovalRule = (
   );
 };
 
+export const getVersionApprovalRules = (
+  policy: Policy | null,
+): RuleEngineFilter<Version>[] => [
+  ...versionUserApprovalRule(policy?.versionUserApprovals),
+  ...versionAnyApprovalRule(policy?.versionAnyApprovals),
+  ...versionRoleApprovalRule(policy?.versionRoleApprovals),
+];
+
 export const getRules = (
   policy: Policy | null,
 ): RuleEngineFilter<Version>[] => {
