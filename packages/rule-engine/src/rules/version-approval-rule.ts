@@ -4,11 +4,11 @@ import { inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Releases } from "../releases.js";
+import type { Version } from "../manager/version-rule-engine.js";
 import type {
-  DeploymentResourceContext,
-  DeploymentResourceRule,
-  DeploymentResourceRuleResult,
+  RuleEngineContext,
+  RuleEngineFilter,
+  RuleEngineRuleResult,
 } from "../types.js";
 
 type Record = {
@@ -19,7 +19,7 @@ type Record = {
 };
 
 export type GetApprovalRecordsFunc = (
-  context: DeploymentResourceContext,
+  context: RuleEngineContext,
   versionIds: string[],
 ) => Promise<Record[]>;
 
@@ -29,18 +29,18 @@ type VersionApprovalRuleOptions = {
   getApprovalRecords: GetApprovalRecordsFunc;
 };
 
-export class VersionApprovalRule implements DeploymentResourceRule {
+export class VersionApprovalRule implements RuleEngineFilter<Version> {
   public readonly name = "VersionApprovalRule";
 
   constructor(private readonly options: VersionApprovalRuleOptions) {}
 
   async filter(
-    context: DeploymentResourceContext,
-    releases: Releases,
-  ): Promise<DeploymentResourceRuleResult> {
+    context: RuleEngineContext,
+    candidates: Version[],
+  ): Promise<RuleEngineRuleResult<Version>> {
     const rejectionReasons = new Map<string, string>();
-    const versionIds = _(releases.getAll())
-      .map((r) => r.version.id)
+    const versionIds = _(candidates)
+      .map((r) => r.id)
       .uniq()
       .value();
     const approvalRecords = await this.options.getApprovalRecords(
@@ -48,10 +48,8 @@ export class VersionApprovalRule implements DeploymentResourceRule {
       versionIds,
     );
 
-    const allowedReleases = releases.filter((release) => {
-      const records = approvalRecords.filter(
-        (r) => r.versionId === release.version.id,
-      );
+    const allowedCandidates = candidates.filter((release) => {
+      const records = approvalRecords.filter((r) => r.versionId === release.id);
 
       const approvals = records.filter((r) => r.status === "approved");
       const rejections = records.filter((r) => r.status === "rejected");
@@ -67,12 +65,12 @@ export class VersionApprovalRule implements DeploymentResourceRule {
       return approvals.length >= this.options.minApprovals;
     });
 
-    return { allowedReleases, rejectionReasons };
+    return { allowedCandidates, rejectionReasons };
   }
 }
 
 export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
-  _: DeploymentResourceContext,
+  _: RuleEngineContext,
   versionIds: string[],
 ) => {
   const records = await db.query.policyRuleAnyApprovalRecord.findMany({
@@ -88,7 +86,7 @@ export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
 };
 
 export const getRoleApprovalRecords: GetApprovalRecordsFunc = async (
-  _: DeploymentResourceContext,
+  _: RuleEngineContext,
   versionIds: string[],
 ) => {
   const records = await db.query.policyRuleRoleApprovalRecord.findMany({
@@ -104,7 +102,7 @@ export const getRoleApprovalRecords: GetApprovalRecordsFunc = async (
 };
 
 export const getUserApprovalRecords: GetApprovalRecordsFunc = async (
-  _: DeploymentResourceContext,
+  _: RuleEngineContext,
   versionIds: string[],
 ) => {
   const records = await db.query.policyRuleUserApprovalRecord.findMany({
