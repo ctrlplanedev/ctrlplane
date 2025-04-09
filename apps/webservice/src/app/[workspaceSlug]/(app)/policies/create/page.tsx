@@ -29,7 +29,7 @@ export default async function CreatePolicyPage({
   // const deployments = await api.deployment.byWorkspaceId(workspace.id);
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full w-full flex-col overflow-hidden">
       <div className="flex items-center border-b px-6 py-4">
         <Breadcrumb>
           <BreadcrumbList>
@@ -47,7 +47,7 @@ export default async function CreatePolicyPage({
         </Breadcrumb>
       </div>
 
-      <div className="flex flex-grow">
+      <div className="flex flex-grow overflow-hidden">
         <PolicyCreationTabs />
       </div>
 

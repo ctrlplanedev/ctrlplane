@@ -10,14 +10,11 @@ import { Button } from "@ctrlplane/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@ctrlplane/ui/form";
-import { Input } from "@ctrlplane/ui/input";
-import { Textarea } from "@ctrlplane/ui/textarea";
 import { defaultCondition } from "@ctrlplane/validators/releases";
 
 import { DeploymentVersionConditionBadge } from "../../../_components/deployments/version/condition/DeploymentVersionConditionBadge";
@@ -118,46 +115,6 @@ export const DeploymentFlow: React.FC = () => {
                       </Link>
                     </div>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rule Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Production Version Requirements"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    A name to identify this version selection rule
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe the version selection criteria..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Explain the purpose of these version requirements
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
