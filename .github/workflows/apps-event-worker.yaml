@@ -9,6 +9,8 @@ on:
       - packages/job-dispatch/**
       - packages/validators/**
       - packages/secrets/**
+      - packages/rule-engine/**
+      - packages/events/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
   push:
@@ -19,6 +21,8 @@ on:
       - packages/job-dispatch/**
       - packages/validators/**
       - packages/secrets/**
+      - packages/rule-engine/**
+      - packages/events/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
 
