@@ -7,7 +7,7 @@ import _ from "lodash";
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import { omitNullUndefined } from "../../../utils.js";
+import { omitNullUndefined } from "../../../utils/omit-null-undefined.js";
 import { getGoogleClient } from "./client.js";
 
 const log = logger.child({ module: "resource-scan/gke/vm" });

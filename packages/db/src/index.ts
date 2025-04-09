@@ -7,3 +7,4 @@ export {
   systemSchema,
 } from "./schema/index.js";
 export * from "./upsert-env.js";
+export * from "./upsert-resources.js";

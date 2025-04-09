@@ -2,9 +2,11 @@ import type * as schema from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
-import { upsertResources } from "@ctrlplane/job-dispatch";
+import { Channel, getQueue } from "@ctrlplane/events";
+import { groupResourcesByHook } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -55,14 +57,30 @@ export const POST = request()
           { status: 400 },
         );
 
-      const resources = await upsertResources(
+      // since this endpoint is not scoped to a provider, we will ignore deleted resources
+      // as someone may be calling this endpoint to do a pure upsert
+      const { workspaceId } = ctx.body;
+      const { toInsert, toUpdate } = await groupResourcesByHook(
         db,
-        ctx.body.resources.map((t) => ({
-          ...t,
-          workspaceId: ctx.body.workspaceId,
-        })),
+        ctx.body.resources.map((r) => ({ ...r, workspaceId })),
       );
 
-      return NextResponse.json({ count: resources.all.length });
+      const [insertedResources, updatedResources] = await Promise.all([
+        upsertResources(db, toInsert),
+        upsertResources(db, toUpdate),
+      ]);
+      const insertJobs = insertedResources.map((r) => ({
+        name: r.id,
+        data: r,
+      }));
+      const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
+
+      await Promise.all([
+        getQueue(Channel.NewResource).addBulk(insertJobs),
+        getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+      ]);
+
+      const count = insertedResources.length + updatedResources.length;
+      return NextResponse.json({ count });
     },
   );
