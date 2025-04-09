@@ -3,8 +3,8 @@ import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
+import { upsertReleaseTargets } from "../../utils/upsert-release-targets.js";
 import { dispatchExitHooks } from "./dispatch-exit-hooks.js";
-import { upsertReleaseTargets } from "./upsert-release-targets.js";
 
 export const upsertedResourceWorker = createWorker(
   Channel.UpsertedResource,

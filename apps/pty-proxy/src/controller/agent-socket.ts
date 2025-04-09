@@ -9,10 +9,10 @@ import type WebSocket from "ws";
 import type { MessageEvent } from "ws";
 
 import { can, getUser } from "@ctrlplane/auth/utils";
-import { eq } from "@ctrlplane/db";
+import { eq, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { upsertResources } from "@ctrlplane/job-dispatch";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
@@ -125,7 +125,7 @@ export class AgentSocket {
       "name" | "version" | "kind" | "identifier" | "workspaceId"
     >,
   ) {
-    const { all } = await upsertResources(db, [
+    const all = await upsertResources(db, [
       {
         ...resource,
         name: this.name,
@@ -138,6 +138,7 @@ export class AgentSocket {
     ]);
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
+    await getQueue(Channel.UpsertedResource).add(res.id, res);
     this.resource = res;
     agents.set(res.id, { lastSync: new Date(), agent: this });
   }

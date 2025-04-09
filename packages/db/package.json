@@ -39,6 +39,7 @@
     "rest": "pnpm with-env psql $POSTGRES_URL -c \"DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;\""
   },
   "dependencies": {
+    "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "drizzle-orm": "^0.33.0",

@@ -2,9 +2,10 @@ import type * as schema from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
-import { upsertResources } from "@ctrlplane/job-dispatch";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -63,6 +64,13 @@ export const POST = request()
         })),
       );
 
-      return NextResponse.json({ count: resources.all.length });
+      await getQueue(Channel.UpsertedResource).addBulk(
+        resources.map((r) => ({
+          name: r.id,
+          data: r,
+        })),
+      );
+
+      return NextResponse.json({ count: resources.length });
     },
   );

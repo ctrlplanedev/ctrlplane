@@ -342,6 +342,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../../packages/job-dispatch
@@ -1017,6 +1020,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@ctrlplane/secrets':
+        specifier: workspace:*
+        version: link:../secrets
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../validators
@@ -1194,9 +1200,6 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../logger
-      '@ctrlplane/secrets':
-        specifier: workspace:*
-        version: link:../secrets
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../validators

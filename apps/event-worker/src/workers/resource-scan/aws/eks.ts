@@ -16,7 +16,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
 import type { AwsCredentials } from "./aws.js";
-import { omitNullUndefined } from "../../../utils.js";
+import { omitNullUndefined } from "../../../utils/omit-null-undefined.js";
 import { assumeRole, assumeWorkspaceRole } from "./aws.js";
 
 const log = logger.child({ label: "resource-scan/eks" });

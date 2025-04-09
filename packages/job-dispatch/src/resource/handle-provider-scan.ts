@@ -1,13 +1,12 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 
+import { upsertResources } from "@ctrlplane/db";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 import { deleteResources } from "./delete.js";
-import { insertResourceMetadata } from "./insert-resource-metadata.js";
-import { insertResourceVariables } from "./insert-resource-variables.js";
-import { insertResources } from "./insert-resources.js";
+import { groupResourcesByHook } from "./group-resources-by-hook.js";
 
 const log = logger.child({ label: "upsert-resources" });
 
@@ -15,7 +14,7 @@ export type ResourceToInsert = InsertResource & {
   metadata?: Record<string, string>;
   variables?: Array<{ key: string; value: any; sensitive: boolean }>;
 };
-export const upsertResources = async (
+export const handleResourceProviderScan = async (
   tx: Tx,
   resourcesToInsert: ResourceToInsert[],
 ) => {
@@ -29,30 +28,22 @@ export const upsertResources = async (
     if (!resourcesToInsert.every((r) => r.workspaceId === workspaceId))
       throw new Error("All resources must belong to the same workspace");
 
-    const { all, toDelete } = await insertResources(tx, resourcesToInsert);
-
-    const resourcesWithId = all.map((r) => ({
-      ...r,
-      ...resourcesToInsert.find(
-        (ri) =>
-          ri.identifier === r.identifier && ri.workspaceId === r.workspaceId,
-      ),
-    }));
-
-    await Promise.all([
-      insertResourceVariables(tx, resourcesWithId),
-      insertResourceMetadata(tx, resourcesWithId),
-    ]);
+    const { newResources, toUpsert, toDelete } = await groupResourcesByHook(
+      tx,
+      resourcesToInsert,
+    );
+    const insertedResources = await upsertResources(tx, newResources);
+    const upsertedResources = await upsertResources(tx, toUpsert);
 
     await getQueue(Channel.UpsertedResource).addBulk(
-      all.map((r) => ({
+      upsertedResources.map((r) => ({
         name: r.id,
         data: r,
       })),
     );
 
     const deleted = await deleteResources(tx, toDelete);
-    return { all, deleted };
+    return { all: [...insertedResources, ...upsertedResources], deleted };
   } catch (error) {
     log.error("Error upserting resources", { error });
     throw error;

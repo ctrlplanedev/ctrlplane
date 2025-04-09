@@ -22,7 +22,8 @@ export enum Channel {
 
   EvaluateReleaseTarget = "evaluate-release-target",
 
-  UpsertedResource = "process-upserted-resource",
+  UpsertedResource = "upserted-resource",
+  NewResource = "new-resource",
 }
 
 export type EvaluateReleaseTargetJob = {
@@ -45,4 +46,5 @@ export type ChannelMap = {
   [Channel.DispatchJob]: { jobId: string };
   [Channel.ResourceScan]: { resourceProviderId: string };
   [Channel.UpsertedResource]: schema.Resource;
+  [Channel.NewResource]: schema.Resource;
 };

@@ -5,7 +5,7 @@ import { SemVer } from "semver";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
-import { omitNullUndefined } from "../../../utils.js";
+import { omitNullUndefined } from "../../../utils/omit-null-undefined.js";
 
 export const clusterToResource = (
   workspaceId: string,
