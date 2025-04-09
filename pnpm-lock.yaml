@@ -1057,6 +1057,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/lodash':
+        specifier: 'catalog:'
+        version: 4.17.12
       '@types/node':
         specifier: catalog:node22
         version: 22.13.10

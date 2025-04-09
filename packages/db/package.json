@@ -53,6 +53,7 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/lodash": "catalog:",
     "@types/node": "catalog:node22",
     "@types/pg": "^8.11.6",
     "dotenv-cli": "catalog:",
