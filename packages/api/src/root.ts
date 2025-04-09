@@ -3,7 +3,7 @@ import { deploymentRouter } from "./router/deployment";
 import { environmentRouter } from "./router/environment";
 import { githubRouter } from "./router/github";
 import { jobRouter } from "./router/job";
-import { policyRouter } from "./router/policy";
+import { policyRouter } from "./router/policy/router";
 import { resourceRouter } from "./router/resources";
 import { runbookRouter } from "./router/runbook";
 import { runtimeRouter } from "./router/runtime";

@@ -376,6 +376,7 @@ interface PeriodSelectorProps {
   onDateChange?: (date: Date | undefined) => void;
   onRightFocus?: () => void;
   onLeftFocus?: () => void;
+  className?: string;
 }
 
 const TimePeriodSelect = React.forwardRef<
@@ -383,7 +384,15 @@ const TimePeriodSelect = React.forwardRef<
   PeriodSelectorProps
 >(
   (
-    { period, setPeriod, date, onDateChange, onLeftFocus, onRightFocus },
+    {
+      period,
+      setPeriod,
+      date,
+      onDateChange,
+      onLeftFocus,
+      onRightFocus,
+      className,
+    },
     ref,
   ) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -413,14 +422,17 @@ const TimePeriodSelect = React.forwardRef<
     };
 
     return (
-      <div className="flex h-10 items-center">
+      <div className={cn("flex h-10 items-center", className)}>
         <Select
           defaultValue={period}
           onValueChange={(value: Period) => handleValueChange(value)}
         >
           <SelectTrigger
             ref={ref}
-            className="w-[65px] focus:bg-accent focus:text-accent-foreground"
+            className={cn(
+              "w-[65px] focus:bg-accent focus:text-accent-foreground",
+              className,
+            )}
             onKeyDown={handleKeyDown}
           >
             <SelectValue />
@@ -564,6 +576,10 @@ interface TimePickerProps {
    * Default is 'second'.
    * */
   granularity?: Granularity;
+  showIcon?: boolean;
+  className?: string;
+  inputClassName?: string;
+  timePeriodPickerClassName?: string;
 }
 
 interface TimePickerRef {
@@ -573,7 +589,19 @@ interface TimePickerRef {
 }
 
 const TimePicker = React.forwardRef<TimePickerRef, TimePickerProps>(
-  ({ date, onChange, hourCycle = 24, granularity = "second" }, ref) => {
+  (
+    {
+      date,
+      onChange,
+      hourCycle = getHourCycle(),
+      granularity = "second",
+      showIcon = true,
+      className,
+      inputClassName,
+      timePeriodPickerClassName,
+    },
+    ref,
+  ) => {
     const minuteRef = React.useRef<HTMLInputElement>(null);
     const hourRef = React.useRef<HTMLInputElement>(null);
     const secondRef = React.useRef<HTMLInputElement>(null);
@@ -594,10 +622,15 @@ const TimePicker = React.forwardRef<TimePickerRef, TimePickerProps>(
     );
 
     return (
-      <div className="flex items-center justify-center gap-2">
-        <label htmlFor="datetime-picker-hour-input" className="cursor-pointer">
-          <Clock className="mr-2 h-4 w-4" />
-        </label>
+      <div className={cn("flex items-center justify-center gap-2", className)}>
+        {showIcon && (
+          <label
+            htmlFor="datetime-picker-hour-input"
+            className="cursor-pointer"
+          >
+            <Clock className="mr-2 h-4 w-4" />
+          </label>
+        )}
         <TimePickerInput
           picker={hourCycle === 24 ? "hours" : "12hours"}
           date={date}
@@ -606,6 +639,7 @@ const TimePicker = React.forwardRef<TimePickerRef, TimePickerProps>(
           ref={hourRef}
           period={period}
           onRightFocus={() => minuteRef.current?.focus()}
+          className={inputClassName}
         />
         {(granularity === "minute" || granularity === "second") && (
           <>
@@ -617,6 +651,7 @@ const TimePicker = React.forwardRef<TimePickerRef, TimePickerProps>(
               ref={minuteRef}
               onLeftFocus={() => hourRef.current?.focus()}
               onRightFocus={() => secondRef.current?.focus()}
+              className={inputClassName}
             />
           </>
         )}
@@ -630,6 +665,7 @@ const TimePicker = React.forwardRef<TimePickerRef, TimePickerProps>(
               ref={secondRef}
               onLeftFocus={() => minuteRef.current?.focus()}
               onRightFocus={() => periodRef.current?.focus()}
+              className={inputClassName}
             />
           </>
         )}
@@ -649,6 +685,7 @@ const TimePicker = React.forwardRef<TimePickerRef, TimePickerProps>(
               }}
               ref={periodRef}
               onLeftFocus={() => secondRef.current?.focus()}
+              className={timePeriodPickerClassName}
             />
           </div>
         )}
