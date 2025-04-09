@@ -1,9 +1,9 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import type { CreatePolicy } from "@ctrlplane/db/schema";
+import type { Control } from "react-hook-form";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
-import { useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
+import { useFieldArray } from "react-hook-form";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -15,58 +15,161 @@ import {
   FormMessage,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
+import { Switch } from "@ctrlplane/ui/switch";
 
-const approvalSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  enabled: z.boolean().default(true),
-  approvals: z
-    .array(
-      z.object({
-        type: z.enum(["anyone", "user", "role"]),
-        minApprovals: z.number().min(1, "At least one approval required"),
-        specificUser: z.string().optional(),
-        specificRule: z.string().optional(),
-      }),
-    )
-    .min(1, "At least one approval rule is required"),
-});
+import { usePolicyContext } from "./PolicyContext";
 
-type ApprovalValues = z.infer<typeof approvalSchema>;
+interface UserSectionProps {
+  control: Control<CreatePolicy>;
+  fields: Record<"id", string>[];
+  onRemove: (index: number) => void;
+}
 
-const defaultValues: ApprovalValues = {
-  name: "",
-  enabled: true,
-  approvals: [
-    {
-      type: "anyone",
-      minApprovals: 1,
-    },
-  ],
+const UserSection: React.FC<UserSectionProps> = ({
+  control,
+  fields,
+  onRemove,
+}) => {
+  if (fields.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h4 className="font-medium">Specific User Approvals</h4>
+        <p className="text-sm text-muted-foreground">
+          Approvals required from specific team members
+        </p>
+      </div>
+      {fields.map((field, index) => (
+        <div
+          key={field.id}
+          className="flex items-start gap-4 rounded-lg border p-4"
+        >
+          <div className="flex-1 space-y-4">
+            <FormField
+              control={control}
+              name={`versionUserApprovals.${index}.userId`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>User Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="user@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="mt-8"
+            onClick={() => onRemove(index)}
+          >
+            <IconTrash className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+interface RoleSectionProps {
+  control: Control<CreatePolicy>;
+  fields: Record<"id", string>[];
+  onRemove: (index: number) => void;
+}
+
+const RoleSection: React.FC<RoleSectionProps> = ({
+  control,
+  fields,
+  onRemove,
+}) => {
+  if (fields.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h4 className="font-medium">Role-based Approvals</h4>
+        <p className="text-sm text-muted-foreground">
+          Approvals required from specific roles or groups
+        </p>
+      </div>
+      {fields.map((field, index) => (
+        <div
+          key={field.id}
+          className="flex items-start gap-4 rounded-lg border p-4"
+        >
+          <div className="flex-1 space-y-4">
+            <FormField
+              control={control}
+              name={`versionRoleApprovals.${index}.roleId`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., security-team" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name={`versionRoleApprovals.${index}.requiredApprovalsCount`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Required Approvals</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="1"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="mt-8"
+            onClick={() => onRemove(index)}
+          >
+            <IconTrash className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export const QualitySecurity: React.FC = () => {
-  const form = useForm<ApprovalValues>({
-    resolver: zodResolver(approvalSchema),
-    defaultValues,
-  });
+  const { form } = usePolicyContext();
 
-  const { fields, append, remove } = useFieldArray({
+  const {
+    fields: userFields,
+    append: appendUser,
+    remove: removeUser,
+  } = useFieldArray({
     control: form.control,
-    name: "approvals",
+    name: "versionUserApprovals",
   });
 
-  function onSubmit(data: ApprovalValues) {
-    // This will be handled by the parent component
-    console.log(data);
-  }
+  const {
+    fields: roleFields,
+    append: appendRole,
+    remove: removeRole,
+  } = useFieldArray({
+    control: form.control,
+    name: "versionRoleApprovals",
+  });
 
   return (
     <div className="space-y-8">
@@ -78,10 +181,7 @@ export const QualitySecurity: React.FC = () => {
       </div>
 
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="max-w-xl space-y-8"
-        >
+        <form className="max-w-xl space-y-8">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
@@ -92,124 +192,112 @@ export const QualitySecurity: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex items-start gap-4 rounded-lg border p-4"
-                >
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h4 className="font-medium">General Approval</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Enable if any team member can approve
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 rounded-lg border p-4">
                   <div className="flex-1 space-y-4">
                     <FormField
                       control={form.control}
-                      name={`approvals.${index}.type`}
+                      name="versionAnyApprovals"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Approval Type</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="anyone">Anyone</SelectItem>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="role">Role</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name={`approvals.${index}.minApprovals`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Minimum Approvals Required</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min={1}
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(parseInt(e.target.value))
-                              }
+                        <FormItem className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <FormLabel>Require General Approval</FormLabel>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value !== null}
+                                onCheckedChange={(checked) =>
+                                  field.onChange(
+                                    checked
+                                      ? { requiredApprovalsCount: 1 }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </FormControl>
+                          </div>
+                          {field.value !== null && (
+                            <FormField
+                              control={form.control}
+                              name="versionAnyApprovals.requiredApprovalsCount"
+                              render={({ field: countField }) => (
+                                <FormItem>
+                                  <FormLabel>Required Approvals</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      placeholder="1"
+                                      {...countField}
+                                      onChange={(e) =>
+                                        countField.onChange(
+                                          parseInt(e.target.value),
+                                        )
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             />
-                          </FormControl>
-                          <FormMessage />
+                          )}
                         </FormItem>
                       )}
                     />
-
-                    {form.watch(`approvals.${index}.type`) === "user" && (
-                      <FormField
-                        control={form.control}
-                        name={`approvals.${index}.specificUser`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>User Email</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="user@example.com"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-
-                    {form.watch(`approvals.${index}.type`) === "role" && (
-                      <FormField
-                        control={form.control}
-                        name={`approvals.${index}.specificRule`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Rule Name</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="e.g., security-team"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
                   </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="mt-8"
-                    onClick={() => remove(index)}
-                  >
-                    <IconTrash className="h-4 w-4" />
-                  </Button>
                 </div>
-              ))}
+              </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() =>
-                  append({
-                    type: "anyone",
-                    minApprovals: 1,
-                  })
-                }
-              >
-                <IconPlus className="mr-2 h-4 w-4" />
-                Add Approval Requirement
-              </Button>
+              <UserSection
+                control={form.control}
+                fields={userFields}
+                onRemove={removeUser}
+              />
+              <RoleSection
+                control={form.control}
+                fields={roleFields}
+                onRemove={removeRole}
+              />
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() =>
+                    appendUser({
+                      userId: "",
+                    })
+                  }
+                >
+                  <IconPlus className="mr-2 h-4 w-4" />
+                  Add User Approval
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() =>
+                    appendRole({
+                      roleId: "",
+                      requiredApprovalsCount: 1,
+                    })
+                  }
+                >
+                  <IconPlus className="mr-2 h-4 w-4" />
+                  Add Role Approval
+                </Button>
+              </div>
             </div>
           </div>
         </form>

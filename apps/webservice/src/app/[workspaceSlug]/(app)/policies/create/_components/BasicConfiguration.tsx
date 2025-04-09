@@ -1,9 +1,7 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
-import { useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
+import { useFieldArray } from "react-hook-form";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -25,8 +23,6 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
-import { deploymentCondition } from "@ctrlplane/validators/deployments";
-import { environmentCondition } from "@ctrlplane/validators/environments";
 
 import { usePolicyContext } from "./PolicyContext";
 
@@ -59,57 +55,12 @@ const TARGET_SCOPE_OPTIONS = [
   },
 ];
 
-// Policy form schema based on the database schema
-const policyFormSchema = z.object({
-  name: z.string().min(1, "Policy name is required"),
-  description: z.string().optional(),
-  priority: z.number().default(0),
-  enabled: z.boolean().default(true),
-  targets: z
-    .array(
-      z.object({
-        deploymentSelector: deploymentCondition.nullable(),
-        environmentSelector: environmentCondition.nullable(),
-      }),
-    )
-    .min(1, "At least one target is required"),
-});
-
-type PolicyFormValues = z.infer<typeof policyFormSchema>;
-
-const defaultValues: Partial<PolicyFormValues> = {
-  name: "",
-  description: "",
-  enabled: true,
-  priority: 0,
-  targets: [],
-};
-
-export const BasicConfiguration: React.FC<{ workspaceId: string }> = ({
-  workspaceId,
-}) => {
-  const form = useForm<PolicyFormValues>({
-    resolver: zodResolver(policyFormSchema),
-    defaultValues,
-  });
+export const BasicConfiguration: React.FC = () => {
+  const { form } = usePolicyContext();
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "targets",
-  });
-
-  // const targets = useWatch({
-  //   control: form.control,
-  //   name: "targets",
-  // });
-
-  const { setPolicy } = usePolicyContext();
-  const onSubmit = form.handleSubmit((formData) => {
-    setPolicy((prevPolicy) => ({
-      ...prevPolicy,
-      workspaceId,
-      targets: formData.targets,
-    }));
   });
 
   return (
@@ -122,7 +73,7 @@ export const BasicConfiguration: React.FC<{ workspaceId: string }> = ({
       </div>
 
       <Form {...form}>
-        <form onSubmit={onSubmit} className="space-y-8">
+        <form className="space-y-8">
           <div className="space-y-6">
             <div className="space-y-1">
               <h3 className="text-md font-medium">General Settings</h3>
@@ -159,6 +110,7 @@ export const BasicConfiguration: React.FC<{ workspaceId: string }> = ({
                       <Textarea
                         placeholder="Describe the purpose of this policy..."
                         {...field}
+                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormDescription>
