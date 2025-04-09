@@ -41,14 +41,14 @@ export default async function CreatePolicyPage({
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbItem>
-                <BreadcrumbPage>Create NewPolicy</BreadcrumbPage>
+                <BreadcrumbPage>Create New Policy</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
 
         <div className="flex flex-grow overflow-hidden">
-          <PolicyCreationTabs />
+          <PolicyCreationTabs workspaceId={workspace.id} />
         </div>
 
         <div className="flex items-center justify-between border-t px-6 py-4">
