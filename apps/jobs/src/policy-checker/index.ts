@@ -1,6 +1,7 @@
 import { and, eq, isNull, or } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   dispatchReleaseJobTriggers,
@@ -9,7 +10,36 @@ import {
 import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
+const triggerPolicyEvaluation = async () => {
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const releaseTargets = await db.query.releaseTarget.findMany({
+      limit: PAGE_SIZE,
+      offset,
+    });
+
+    if (releaseTargets.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    getQueue(Channel.EvaluateReleaseTarget).addBulk(
+      releaseTargets.map((rt) => ({
+        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+        data: rt,
+      })),
+    );
+
+    offset += PAGE_SIZE;
+  }
+};
+
 export const run = async () => {
+  await triggerPolicyEvaluation();
+
   const isPassingApprovalGate = or(
     eq(schema.environmentPolicy.approvalRequirement, "automatic"),
     eq(schema.environmentPolicyApproval.status, "approved"),
