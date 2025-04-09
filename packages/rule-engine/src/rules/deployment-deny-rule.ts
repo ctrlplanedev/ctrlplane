@@ -9,11 +9,10 @@ import {
 import * as rrule from "rrule";
 
 import type {
-  DeploymentResourceContext,
-  DeploymentResourceRule,
-  DeploymentResourceRuleResult,
+  RuleEngineContext,
+  RuleEngineFilter,
+  RuleEngineRuleResult,
 } from "../types.js";
-import { Releases } from "../releases.js";
 
 // https://github.com/jkbrzt/rrule/issues/478
 // common js bs
@@ -44,7 +43,7 @@ function getDatePartsInTimeZone(date: Date, timeZone: string) {
   };
 }
 
-export interface DeploymentDenyRuleOptions extends Partial<rrule.Options> {
+export interface DeploymentDenyRuleOptions<T> extends Partial<rrule.Options> {
   dtend?: Date | null;
 
   /**
@@ -52,25 +51,31 @@ export interface DeploymentDenyRuleOptions extends Partial<rrule.Options> {
    * denied due to time-based restrictions"
    */
   denyReason?: string;
+
+  getCandidateId(this: void, candidate: T): string;
 }
 
-export class DeploymentDenyRule implements DeploymentResourceRule {
+export class DeploymentDenyRule<T> implements RuleEngineFilter<T> {
   public readonly name = "DeploymentDenyRule";
   private rrule: rrule.RRule;
   private denyReason: string;
   private dtend: Date | null;
   private timezone: string;
   private dtstart: Date | null;
+  private getCandidateId: (candidate: T) => string;
 
   constructor({
     denyReason = "Deployment denied due to time-based restrictions",
     dtend = null,
     dtstart = null,
     until = null,
+    getCandidateId,
     ...options
-  }: DeploymentDenyRuleOptions) {
+  }: DeploymentDenyRuleOptions<T>) {
     this.timezone = options.tzid ?? "UTC";
     this.denyReason = denyReason;
+
+    this.getCandidateId = getCandidateId;
 
     const dtStartCasted =
       dtstart != null ? this.castTimezone(dtstart, this.timezone) : null;
@@ -93,10 +98,7 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     return new Date();
   }
 
-  filter(
-    _: DeploymentResourceContext,
-    releases: Releases,
-  ): DeploymentResourceRuleResult {
+  filter(_: RuleEngineContext, candidates: T[]): RuleEngineRuleResult<T> {
     const now = this.getCurrentTime();
 
     // Check if current time matches one of the rrules
@@ -105,13 +107,16 @@ export class DeploymentDenyRule implements DeploymentResourceRule {
     if (isDenied) {
       // Build rejection reasons for each release
       const rejectionReasons = new Map<string, string>(
-        releases.map((release) => [release.id, this.denyReason]),
+        candidates.map((candidate) => [
+          this.getCandidateId(candidate),
+          this.denyReason,
+        ]),
       );
-      return { allowedReleases: Releases.empty(), rejectionReasons };
+      return { allowedCandidates: [], rejectionReasons };
     }
 
     // Allow all releases if time is not denied
-    return { allowedReleases: releases };
+    return { allowedCandidates: candidates };
   }
 
   /**

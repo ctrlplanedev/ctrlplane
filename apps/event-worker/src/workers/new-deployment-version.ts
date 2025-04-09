@@ -5,7 +5,6 @@ import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { DatabaseReleaseRepository } from "@ctrlplane/rule-engine";
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -78,18 +77,6 @@ export const newDeploymentVersionWorker = createWorker(
     const releaseTargets = await db.query.releaseTarget.findMany({
       where: eq(schema.releaseTarget.deploymentId, version.deploymentId),
     });
-
-    const { system } = deployment;
-    const { workspaceId } = system;
-
-    const updateReleaseVersionPromises = releaseTargets.map(async (rt) => {
-      const releaseRepository = await DatabaseReleaseRepository.create({
-        ...rt,
-        workspaceId,
-      });
-      await releaseRepository.updateReleaseVersion(version.id);
-    });
-    await Promise.all(updateReleaseVersionPromises);
 
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(
       releaseTargets.map((rt) => ({

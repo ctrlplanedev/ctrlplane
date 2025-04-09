@@ -17,6 +17,9 @@ on:
       - packages/job-dispatch/**
       - packages/db/**
       - packages/secrets/**
+      - packages/rule-engine/**
+      - packages/validators/**
+      - packages/events/**
       - .github/workflows/apps-jobs.yaml
       - pnpm-lock.yaml
 

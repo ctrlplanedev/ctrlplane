@@ -4,6 +4,7 @@ import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   foreignKey,
   jsonb,
   pgTable,
@@ -60,6 +61,7 @@ export const deploymentVariableValue = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
     value: jsonb("value").$type<any>().notNull(),
+    sensitive: boolean("sensitive").notNull().default(false),
     resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),

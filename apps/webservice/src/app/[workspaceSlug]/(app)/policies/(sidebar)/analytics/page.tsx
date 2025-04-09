@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
-import { PageHeader } from "../../_components/PageHeader";
+import { PageHeader } from "../../../_components/PageHeader";
 
 export default async function RuleAnalyticsPage({
   params,
