@@ -8,21 +8,15 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@ctrlplane/ui/card";
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
+import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
-import { PageHeader } from "../../_components/PageHeader";
+import { PageHeader } from "../../../_components/PageHeader";
 
-export default async function DenyWindowsPage({
+export default async function RuleAnalyticsPage({
   params,
 }: {
   params: Promise<{ workspaceSlug: string }>;
@@ -47,34 +41,31 @@ export default async function DenyWindowsPage({
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbPage>Deny Windows</BreadcrumbPage>
+                <BreadcrumbPage>Analytics</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
       </PageHeader>
+
       <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex-1 overflow-y-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Deny Windows</CardTitle>
-            <CardDescription>
-              Deny windows define scheduled periods for system updates and
-              deployments
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm">
-              Deny window rules let you schedule regular deployment windows
-              with:
-            </p>
-            <ul className="list-disc space-y-1 pl-5 text-sm">
-              <li>Weekly, monthly or custom recurrence patterns</li>
-              <li>Configurable duration and timing</li>
-              <li>Advance notifications to stakeholders</li>
-              <li>Override capabilities for emergency deployments</li>
-            </ul>
-          </CardContent>
-        </Card>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">Performance Analytics</h1>
+          <p className="text-sm text-muted-foreground">
+            Insights and metrics about rule effectiveness and impact
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          <Tabs defaultValue="overview">
+            <TabsList className="mb-6">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="enforcements">Enforcements</TabsTrigger>
+              <TabsTrigger value="impact">Deployment Impact</TabsTrigger>
+              <TabsTrigger value="trends">Trends</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

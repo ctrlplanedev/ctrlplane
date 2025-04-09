@@ -31,8 +31,8 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { api } from "~/trpc/server";
-import { PageHeader } from "../_components/PageHeader";
-import { Sidebars } from "../../sidebars";
+import { PageHeader } from "../../_components/PageHeader";
+import { Sidebars } from "../../../sidebars";
 import { PolicyTable } from "./_components/PolicyTable";
 
 export default async function RulesPage({
@@ -122,10 +122,12 @@ export default async function RulesPage({
           </Breadcrumb>
         </div>
         <div className="ml-auto">
-          <Button variant="outline" size="sm">
-            <IconPlus className="mr-2 h-4 w-4" />
-            Create Rule
-          </Button>
+          <Link href={`/${workspaceSlug}/policies/create`}>
+            <Button variant="outline" size="sm">
+              <IconPlus className="mr-2 h-4 w-4" />
+              Create Policy
+            </Button>
+          </Link>
         </div>
       </PageHeader>
 
