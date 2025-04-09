@@ -38,7 +38,6 @@ const UserInput: React.FC<{
 }> = ({ workspaceId, id, setId }) => {
   const members = api.workspace.members.list.useQuery(workspaceId);
   const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState("");
 
   const selectedUser = members.data?.find((user) => user.user.id === id);
 
@@ -51,7 +50,7 @@ const UserInput: React.FC<{
           aria-expanded={open}
           className="w-[350px] justify-between"
         >
-          {value ? selectedUser?.user.name : "Select user..."}
+          {selectedUser?.user.name ?? "Select user..."}
           <IconPlus className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -65,9 +64,8 @@ const UserInput: React.FC<{
                 <CommandItem
                   key={member.user.id}
                   value={member.user.id}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue);
-                    setId(currentValue);
+                  onSelect={() => {
+                    setId(member.user.id);
                     setOpen(false);
                   }}
                 >
@@ -129,7 +127,7 @@ const UserSection: React.FC<UserSectionProps> = ({
               name={`versionUserApprovals.${index}.userId`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>User Email</FormLabel>
+                  <FormLabel>User</FormLabel>
                   <FormControl>
                     <div className="w-full">
                       <UserInput
@@ -369,7 +367,7 @@ export const QualitySecurity: React.FC<{ workspaceId: string }> = ({
                   <IconPlus className="mr-2 h-4 w-4" />
                   Add User Approval
                 </Button>
-                <Button
+                {/* <Button
                   type="button"
                   variant="outline"
                   size="sm"
@@ -383,7 +381,7 @@ export const QualitySecurity: React.FC<{ workspaceId: string }> = ({
                 >
                   <IconPlus className="mr-2 h-4 w-4" />
                   Add Role Approval
-                </Button>
+                </Button> */}
               </div>
             </div>
           </div>
