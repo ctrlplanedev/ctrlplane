@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconPlus, IconX } from "@tabler/icons-react";
 import { startOfDay } from "date-fns";
 import { useFieldArray } from "react-hook-form";
 import * as rrule from "rrule";
@@ -188,10 +188,10 @@ export const TimeWindows: React.FC = () => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="mt-8"
+                  className="h-6 w-6"
                   onClick={() => remove(index)}
                 >
-                  <IconTrash className="h-4 w-4" />
+                  <IconX className="h-4 w-4" />
                 </Button>
               </div>
             ))}
