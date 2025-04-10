@@ -116,6 +116,7 @@ export const policyRouter = createTRPCRouter({
                 - If there are no targets, that means it won't be applied to any deployments
                 - All approval rules are and operations. All conditions must be met before the 
                   policy allows a deployment
+                - Focus on stating active policy configurations. Only describe features with enabled restrictions.
 
                 Keep the description under 60 words and write it in a technical style suitable
                 for DevOps engineers and platform users. Focus on being clear and precise about
