@@ -1,15 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  IconActivityHeartbeat,
-  IconArrowDown,
-  IconBarrierBlock,
-  IconCalendarMonth,
-  IconClockFilled,
-  IconMenu2,
-  IconPlus,
-  IconSitemap,
-} from "@tabler/icons-react";
+import { IconMenu2, IconPlus } from "@tabler/icons-react";
+import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -30,10 +22,12 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 import { PageHeader } from "../../_components/PageHeader";
 import { Sidebars } from "../../../sidebars";
 import { PolicyTable } from "./_components/PolicyTable";
+import { getRuleTypeIcon } from "./_components/rule-themes";
 
 export default async function RulesPage({
   params,
@@ -50,11 +44,16 @@ export default async function RulesPage({
     denyWindows: policies
       .map((p) => p.denyWindows.length)
       .reduce((a, b) => a + b, 0),
-    maintenance: 0,
-    rollout: 0,
-    successRate: 0,
-    dependencies: 0,
-    approvalGates: 1, // Placeholder for the future
+    deploymentVersionSelector: _.sumBy(policies, (p) =>
+      p.deploymentVersionSelector ? 1 : 0,
+    ),
+    approvalGates: _.sumBy(
+      policies,
+      (p) =>
+        (p.versionAnyApprovals ? 1 : 0) +
+        p.versionUserApprovals.length +
+        p.versionRoleApprovals.length,
+    ),
   };
 
   const activePolicies = policies.filter((p) => p.enabled);
@@ -63,44 +62,25 @@ export default async function RulesPage({
   const ruleCategories = [
     {
       title: "Deny Windows",
-      icon: <IconClockFilled className="h-5 w-5 text-blue-500" />,
+      icon: getRuleTypeIcon("deny-window"),
       count: counts.denyWindows,
-      href: `/${workspaceSlug}/policies/deny-windows`,
+      href: urls.workspace(workspaceSlug).policies().denyWindows(),
       description: "Control when deployments can occur",
     },
+
     {
-      title: "Maintenance Windows",
-      icon: <IconCalendarMonth className="h-5 w-5 text-amber-500" />,
-      count: counts.maintenance,
-      href: `/${workspaceSlug}/policies/maintenance-windows`,
-      description: "Schedule maintenance periods",
+      title: "Version Conditions",
+      icon: getRuleTypeIcon("deployment-version-selector"),
+      count: counts.deploymentVersionSelector,
+      href: urls.workspace(workspaceSlug).policies().versionConditions(),
+      description: "Control which versions can be deployed to environments",
     },
-    {
-      title: "Gradual Rollouts",
-      icon: <IconArrowDown className="h-5 w-5 text-green-500" />,
-      count: counts.rollout,
-      href: `/${workspaceSlug}/policies/gradual-rollouts`,
-      description: "Controlled, phased deployment",
-    },
-    {
-      title: "Success Criteria",
-      icon: <IconActivityHeartbeat className="h-5 w-5 text-emerald-500" />,
-      count: counts.successRate,
-      href: `/${workspaceSlug}/policies/success-criteria`,
-      description: "Verify deployment health",
-    },
-    {
-      title: "Dependencies",
-      icon: <IconSitemap className="h-5 w-5 text-rose-500" />,
-      count: counts.dependencies,
-      href: `/${workspaceSlug}/policies/dependencies`,
-      description: "Ensure proper deployment order",
-    },
+
     {
       title: "Approval Gates",
-      icon: <IconBarrierBlock className="h-5 w-5 text-purple-500" />,
+      icon: getRuleTypeIcon("approval-gate"),
       count: counts.approvalGates,
-      href: `/${workspaceSlug}/policies/approval-gates`,
+      href: urls.workspace(workspaceSlug).policies().approvalGates(),
       description: "Manual approval requirements",
     },
   ];
@@ -138,19 +118,23 @@ export default async function RulesPage({
             Manage policies that control when, how, and where deployments happen
           </p>
         </div>
-
         <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {ruleCategories.map((category) => (
-            <Card key={category.title} className="overflow-hidden">
+            <Card
+              key={category.title}
+              className="group relative overflow-hidden transition-all hover:shadow-lg"
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {category.title}
                 </CardTitle>
-                {category.icon}
+                <category.icon className="size-5 transition-transform group-hover:scale-110" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{category.count}</div>
-                <p className="text-xs text-muted-foreground">
+              <CardContent className="pb-2">
+                <div className="text-3xl font-bold tracking-tight">
+                  {category.count}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
                   {category.description}
                 </p>
               </CardContent>
@@ -158,11 +142,12 @@ export default async function RulesPage({
                 <Link
                   className={cn(
                     buttonVariants({ variant: "ghost", size: "sm" }),
-                    "w-full justify-start text-xs",
+                    "w-full justify-start font-medium transition-colors hover:bg-muted/80",
                   )}
                   href={category.href}
                 >
                   View Rules
+                  <span className="ml-auto text-muted-foreground">→</span>
                 </Link>
               </CardFooter>
             </Card>

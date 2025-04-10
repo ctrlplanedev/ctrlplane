@@ -41,10 +41,8 @@ const workspacePolicies = (slug: string) => {
     analytics: () => buildUrl(...base, "analytics"),
     settings: () => buildUrl(...base, "settings"),
     denyWindows: () => buildUrl(...base, "deny-windows"),
-    gradualRollouts: () => buildUrl(...base, "gradual-rollouts"),
-    successCriteria: () => buildUrl(...base, "success-criteria"),
-    dependencies: () => buildUrl(...base, "dependencies"),
     approvalGates: () => buildUrl(...base, "approval-gates"),
+    versionConditions: () => buildUrl(...base, "version-conditions"),
   };
 };
 

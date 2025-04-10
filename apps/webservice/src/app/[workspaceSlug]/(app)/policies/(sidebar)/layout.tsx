@@ -1,14 +1,5 @@
 import { notFound } from "next/navigation";
-import {
-  IconActivity,
-  IconArrowDown,
-  IconBarrierBlock,
-  IconCalendarTime,
-  IconChartBar,
-  IconList,
-  IconSettings,
-  IconSitemap,
-} from "@tabler/icons-react";
+import { IconList } from "@tabler/icons-react";
 
 import {
   Sidebar,
@@ -23,6 +14,7 @@ import {
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
+import { getRuleTypeIcon } from "./_components/rule-themes";
 import { SidebarLink } from "./_components/SidebarLink";
 
 export default async function Layout(props: {
@@ -32,6 +24,10 @@ export default async function Layout(props: {
   const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) notFound();
+
+  const DenyWindowIcon = getRuleTypeIcon("deny-window");
+  const VersionConditionsIcon = getRuleTypeIcon("deployment-version-selector");
+  const ApprovalGatesIcon = getRuleTypeIcon("approval-gate");
 
   return (
     <div className="relative">
@@ -48,18 +44,6 @@ export default async function Layout(props: {
                 >
                   Dashboard
                 </SidebarLink>
-                <SidebarLink
-                  icon={<IconChartBar />}
-                  href={urls.workspace(workspace.slug).policies().analytics()}
-                >
-                  Analytics
-                </SidebarLink>
-                <SidebarLink
-                  icon={<IconSettings />}
-                  href={urls.workspace(workspace.slug).policies().settings()}
-                >
-                  Settings
-                </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
 
@@ -67,7 +51,7 @@ export default async function Layout(props: {
               <SidebarGroupLabel>Time-Based Rules</SidebarGroupLabel>
               <SidebarMenu>
                 <SidebarLink
-                  icon={<IconCalendarTime />}
+                  icon={<DenyWindowIcon className="text-current" />}
                   href={urls.workspace(workspace.slug).policies().denyWindows()}
                 >
                   Deny Windows
@@ -76,43 +60,25 @@ export default async function Layout(props: {
             </SidebarGroup>
 
             <SidebarGroup>
-              <SidebarGroupLabel>Rollout Control</SidebarGroupLabel>
+              <SidebarGroupLabel>Deployment Flow Rules</SidebarGroupLabel>
               <SidebarMenu>
                 <SidebarLink
-                  icon={<IconArrowDown />}
+                  icon={<VersionConditionsIcon className="text-current" />}
                   href={urls
                     .workspace(workspace.slug)
                     .policies()
-                    .gradualRollouts()}
+                    .versionConditions()}
                 >
-                  Gradual Rollouts
-                </SidebarLink>
-                <SidebarLink
-                  icon={<IconActivity />}
-                  href={urls
-                    .workspace(workspace.slug)
-                    .policies()
-                    .successCriteria()}
-                >
-                  Success Criteria
-                </SidebarLink>
-                <SidebarLink
-                  icon={<IconSitemap />}
-                  href={urls
-                    .workspace(workspace.slug)
-                    .policies()
-                    .dependencies()}
-                >
-                  Dependencies
+                  Version Conditions
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
 
             <SidebarGroup>
-              <SidebarGroupLabel>Advanced Rules</SidebarGroupLabel>
+              <SidebarGroupLabel>Quality & Security Rules</SidebarGroupLabel>
               <SidebarMenu>
                 <SidebarLink
-                  icon={<IconBarrierBlock />}
+                  icon={<ApprovalGatesIcon className="text-current" />}
                   href={urls
                     .workspace(workspace.slug)
                     .policies()

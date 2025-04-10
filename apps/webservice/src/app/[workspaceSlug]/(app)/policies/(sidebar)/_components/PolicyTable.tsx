@@ -35,6 +35,15 @@ interface PolicyTableProps {
 const getRules = (policy: RouterOutputs["policy"]["list"][number]) => {
   const rules: RuleType[] = [];
   if (policy.denyWindows.length > 0) rules.push("deny-window");
+  if (
+    policy.versionAnyApprovals != null ||
+    policy.versionUserApprovals.length > 0 ||
+    policy.versionRoleApprovals.length > 0
+  )
+    rules.push("approval-gate");
+  if (policy.deploymentVersionSelector != null)
+    rules.push("deployment-version-selector");
+
   return rules;
 };
 
@@ -43,7 +52,7 @@ export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
   if (policies.length === 0)
     return (
       <div className="flex h-32 items-center justify-center rounded-lg border border-dashed">
-        <p className="text-sm text-muted-foreground">No rules found</p>
+        <p className="text-sm text-muted-foreground">No policies found</p>
       </div>
     );
 
@@ -92,16 +101,21 @@ export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
                         No rules
                       </div>
                     ) : (
-                      rules.map((rule, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="outline"
-                          className={`pl-1.5 pr-2 text-xs ${getTypeColorClass(rule)}`}
-                        >
-                          {getRuleTypeIcon(rule)}
-                          <span className="ml-1">{getRuleTypeLabel(rule)}</span>
-                        </Badge>
-                      ))
+                      rules.map((rule, idx) => {
+                        const Icon = getRuleTypeIcon(rule);
+                        return (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className={`pl-1.5 pr-2 text-xs ${getTypeColorClass(rule)}`}
+                          >
+                            <Icon className="size-3" />
+                            <span className="ml-1">
+                              {getRuleTypeLabel(rule)}
+                            </span>
+                          </Badge>
+                        );
+                      })
                     )}
                   </div>
                 </TableCell>

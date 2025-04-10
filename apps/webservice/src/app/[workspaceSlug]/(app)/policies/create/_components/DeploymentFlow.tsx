@@ -228,6 +228,7 @@ export const DeploymentFlow: React.FC = () => {
                       condition={(value as any) ?? defaultCondition}
                       onChange={(newValue) => {
                         onChange(newValue);
+                        form.setValue("deploymentVersionSelector.name", "");
                         if (
                           "conditions" in newValue &&
                           !newValue.conditions.length

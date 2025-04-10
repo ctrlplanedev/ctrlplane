@@ -56,7 +56,13 @@ export const PolicySubmit: React.FC<{
           Cancel
         </Button>
       </Link>
-      <Button onClick={onSubmit} disabled={createPolicy.isPending}>
+      <Button
+        onClick={() => {
+          console.log(form.getValues());
+          onSubmit();
+        }}
+        disabled={createPolicy.isPending}
+      >
         {createPolicy.isPending ? "Creating..." : "Create Policy"}
       </Button>
 
