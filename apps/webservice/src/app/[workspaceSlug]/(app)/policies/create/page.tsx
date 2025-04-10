@@ -33,36 +33,29 @@ export default async function CreatePolicyPage({
 
   return (
     <PolicyContextProvider workspaceId={workspace.id}>
-      <div className="flex h-full w-full flex-col overflow-hidden">
-        <div className="flex items-center border-b px-6 py-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link
-                    href={urls.workspace(workspaceSlug).policies().baseUrl()}
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                  </Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbItem>
-                <BreadcrumbPage>Create New Policy</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
+      <div className="flex items-center border-b px-6 py-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={urls.workspace(workspaceSlug).policies().baseUrl()}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Create New Policy</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
-        <div className="flex flex-grow overflow-hidden">
-          <PolicyCreationTabs workspaceId={workspace.id} />
-        </div>
+      <div className="flex flex-grow overflow-hidden">
+        <PolicyCreationTabs workspaceId={workspace.id} />
+      </div>
 
-        <div className="flex items-center justify-between border-t px-6 py-4">
-          <PolicySubmit
-            workspaceSlug={workspaceSlug}
-            workspaceId={workspace.id}
-          />
-        </div>
+      <div className="flex items-center justify-between border-t px-6 py-4">
+        <PolicySubmit workspaceSlug={workspaceSlug} />
       </div>
     </PolicyContextProvider>
   );

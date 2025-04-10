@@ -1,3 +1,7 @@
+import type {
+  ComparisonCondition,
+  EnvironmentCondition,
+} from "@ctrlplane/validators/environments";
 import {
   IconChevronDown,
   IconCopy,
@@ -30,9 +34,6 @@ import {
   ColumnOperator,
   ComparisonOperator,
 } from "@ctrlplane/validators/conditions";
-import type {
-  ComparisonCondition,
-  EnvironmentCondition} from "@ctrlplane/validators/environments";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   EnvironmentConditionType,

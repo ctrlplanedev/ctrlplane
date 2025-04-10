@@ -1,97 +1,51 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useMemo } from "react";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
-import { useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
+import { startOfDay } from "date-fns";
+import { useFieldArray } from "react-hook-form";
+import * as rrule from "rrule";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
-  Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
 
-const DAYS_OF_WEEK = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-] as const;
+import { usePolicyContext } from "./PolicyContext";
 
-const TIMEZONES = [
-  "UTC",
-  "America/New_York",
-  "America/Los_Angeles",
-  "Europe/London",
-  "Asia/Tokyo",
-] as const;
+const getButtonVariant = (
+  value: rrule.ByWeekday | rrule.ByWeekday[] | null,
+  day: rrule.WeekdayStr,
+) => {
+  if (value == null) return "default";
+  if (Array.isArray(value)) return value.includes(day) ? "default" : "outline";
+  return value === day ? "default" : "outline";
+};
 
-const denyWindowSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  enabled: z.boolean().default(true),
-  timezone: z.string(),
-  windows: z
-    .array(
-      z.object({
-        days: z.array(z.enum(DAYS_OF_WEEK)).min(1, "Select at least one day"),
-        startTime: z
-          .string()
-          .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-        endTime: z
-          .string()
-          .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-      }),
-    )
-    .min(1, "At least one time window is required"),
-});
-
-type DenyWindowValues = z.infer<typeof denyWindowSchema>;
-
-const defaultValues: DenyWindowValues = {
-  name: "",
-  enabled: true,
-  timezone: "UTC",
-  windows: [
-    {
-      days: [],
-      startTime: "00:00",
-      endTime: "00:00",
-    },
-  ],
+const normalizeValue = (
+  value: rrule.ByWeekday | rrule.ByWeekday[] | null,
+): rrule.ByWeekday[] => {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value;
+  return [value];
 };
 
 export const TimeWindows: React.FC = () => {
-  const form = useForm<DenyWindowValues>({
-    resolver: zodResolver(denyWindowSchema),
-    defaultValues,
-  });
+  const now = useMemo(() => new Date(), []);
+
+  const { timeZone } = Intl.DateTimeFormat().resolvedOptions();
+
+  const { form } = usePolicyContext();
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "windows",
+    name: "denyWindows",
   });
-
-  function onSubmit(data: DenyWindowValues) {
-    // This will be handled by the parent component
-    console.log(data);
-  }
 
   return (
     <div className="space-y-8">
@@ -102,148 +56,169 @@ export const TimeWindows: React.FC = () => {
         </p>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="max-w-xl space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="text-md font-medium">Deny Windows</h3>
-                <p className="text-sm text-muted-foreground">
-                  Define the time periods when deployments should be blocked
-                </p>
-              </div>
+      <div className="space-y-8">
+        <div className="max-w-xl space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-md font-medium">Deny Windows</h3>
+              <p className="text-sm text-muted-foreground">
+                Define the time periods when deployments should be blocked
+              </p>
             </div>
+          </div>
 
-            <FormField
-              control={form.control}
-              name="timezone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Timezone</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select timezone..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIMEZONES.map((tz) => (
-                        <SelectItem key={tz} value={tz}>
-                          {tz}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    All times will be interpreted in this timezone
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="space-y-4">
+            {fields.map((field, index) => (
+              <div
+                key={field.id}
+                className="flex items-start gap-4 rounded-lg border p-4"
+              >
+                <div className="flex-1 space-y-4">
+                  <FormField
+                    control={form.control}
+                    name={`denyWindows.${index}.rrule.byweekday`}
+                    render={({ field: { value, onChange } }) => (
+                      <FormItem>
+                        <FormLabel>Days of Week</FormLabel>
+                        <div className="flex flex-wrap gap-2">
+                          {rrule.ALL_WEEKDAYS.map((day) => (
+                            <Button
+                              key={day}
+                              type="button"
+                              size="sm"
+                              variant={getButtonVariant(value, day)}
+                              className="capitalize"
+                              onClick={() => {
+                                const currentValue = normalizeValue(value);
+                                const newValue = currentValue.includes(day)
+                                  ? currentValue.filter((d) => d !== day)
+                                  : [...currentValue, day];
+                                onChange(newValue);
+                              }}
+                            >
+                              {day}
+                            </Button>
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex items-start gap-4 rounded-lg border p-4"
-                >
-                  <div className="flex-1 space-y-4">
+                  <div className="flex gap-4">
                     <FormField
                       control={form.control}
-                      name={`windows.${index}.days`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Days of Week</FormLabel>
-                          <div className="flex flex-wrap gap-2">
-                            {DAYS_OF_WEEK.map((day) => (
-                              <Button
-                                key={day}
-                                type="button"
-                                size="sm"
-                                variant={
-                                  field.value.includes(day)
-                                    ? "default"
-                                    : "outline"
-                                }
-                                className="capitalize"
-                                onClick={() => {
-                                  const newValue = field.value.includes(day)
-                                    ? field.value.filter((d) => d !== day)
-                                    : [...field.value, day];
-                                  field.onChange(newValue);
-                                }}
-                              >
-                                {day.slice(0, 3)}
-                              </Button>
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      name={`denyWindows.${index}.rrule.dtstart`}
+                      render={({ field: { value, onChange } }) => {
+                        const date = value != null ? new Date(value) : now;
+                        const hour = date
+                          .getHours()
+                          .toString()
+                          .padStart(2, "0");
+                        const minute = date
+                          .getMinutes()
+                          .toString()
+                          .padStart(2, "0");
 
-                    <div className="flex gap-4">
-                      <FormField
-                        control={form.control}
-                        name={`windows.${index}.startTime`}
-                        render={({ field }) => (
+                        return (
                           <FormItem className="flex-1">
                             <FormLabel>Start Time</FormLabel>
                             <FormControl>
-                              <Input type="time" {...field} />
+                              <Input
+                                type="time"
+                                value={`${hour}:${minute}`}
+                                onChange={(e) => {
+                                  const [hour, minute] =
+                                    e.target.value.split(":");
+                                  if (hour == null || minute == null) return;
+                                  const newDate = new Date(date);
+                                  newDate.setHours(parseInt(hour));
+                                  newDate.setMinutes(parseInt(minute));
+                                  onChange(newDate);
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
-                        )}
-                      />
+                        );
+                      }}
+                    />
 
-                      <FormField
-                        control={form.control}
-                        name={`windows.${index}.endTime`}
-                        render={({ field }) => (
+                    <FormField
+                      control={form.control}
+                      name={`denyWindows.${index}.dtend`}
+                      render={({ field: { value, onChange } }) => {
+                        const date = value != null ? new Date(value) : now;
+                        const hour = date
+                          .getHours()
+                          .toString()
+                          .padStart(2, "0");
+                        const minute = date
+                          .getMinutes()
+                          .toString()
+                          .padStart(2, "0");
+
+                        return (
                           <FormItem className="flex-1">
                             <FormLabel>End Time</FormLabel>
                             <FormControl>
-                              <Input type="time" {...field} />
+                              <Input
+                                type="time"
+                                value={`${hour}:${minute}`}
+                                onChange={(e) => {
+                                  const [hour, minute] =
+                                    e.target.value.split(":");
+                                  if (hour == null || minute == null) return;
+                                  const newDate = new Date(date);
+                                  newDate.setHours(parseInt(hour));
+                                  newDate.setMinutes(parseInt(minute));
+                                  onChange(newDate);
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
-                        )}
-                      />
-                    </div>
+                        );
+                      }}
+                    />
                   </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="mt-8"
-                    onClick={() => remove(index)}
-                  >
-                    <IconTrash className="h-4 w-4" />
-                  </Button>
                 </div>
-              ))}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() =>
-                  append({
-                    days: [],
-                    startTime: "00:00",
-                    endTime: "00:00",
-                  })
-                }
-              >
-                <IconPlus className="mr-2 h-4 w-4" />
-                Add Time Window
-              </Button>
-            </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mt-8"
+                  onClick={() => remove(index)}
+                >
+                  <IconTrash className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() =>
+                append({
+                  rrule: {
+                    byweekday: [] as rrule.ByWeekday[],
+                    freq: rrule.Frequency.WEEKLY,
+                    dtstart: startOfDay(now),
+                  } as rrule.Options,
+                  timeZone: timeZone,
+                  dtend: startOfDay(now),
+                })
+              }
+            >
+              <IconPlus className="mr-2 h-4 w-4" />
+              Add Time Window
+            </Button>
           </div>
-        </form>
-      </Form>
+        </div>
+      </div>
     </div>
   );
 };

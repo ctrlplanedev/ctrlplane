@@ -1,6 +1,5 @@
-import type { SlugCondition } from "@ctrlplane/validators/deployments";
-
 import type { ColumnOperatorType } from "@ctrlplane/validators/conditions";
+import type { SlugCondition } from "@ctrlplane/validators/deployments";
 
 import type { DeploymentConditionRenderProps } from "./deployment-condition-props";
 import { ColumnConditionRender } from "../../filter/ColumnConditionRender";

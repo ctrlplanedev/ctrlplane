@@ -15,7 +15,6 @@ import {
   CommandList,
 } from "@ctrlplane/ui/command";
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -215,45 +214,43 @@ export const DeploymentFlow: React.FC = () => {
           description="Control which versions can be deployed to environments"
         />
 
-        <Form {...form}>
-          <form className="space-y-6">
-            <FormField
-              control={form.control}
-              name="deploymentVersionSelector.deploymentVersionSelector"
-              render={({ field: { value, onChange } }) => (
-                <FormItem className="max-w-5xl space-y-2">
-                  <FormLabel>Version Selector</FormLabel>
-                  <FormControl>
-                    <DeploymentVersionConditionRender
-                      condition={(value as any) ?? defaultCondition}
-                      onChange={(newValue) => {
-                        onChange(newValue);
-                        form.setValue("deploymentVersionSelector.name", "");
-                        if (
-                          "conditions" in newValue &&
-                          !newValue.conditions.length
-                        ) {
-                          form.setValue("deploymentVersionSelector", null);
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {hasConditions && (
-              <VersionPreview
-                deployments={deployments}
-                selectedDeploymentId={selectedDeploymentId}
-                onDeploymentSelect={setSelectedDeploymentId}
-                versions={versions}
-                totalVersions={versionsQ.data?.total}
-              />
+        <div className="space-y-6">
+          <FormField
+            control={form.control}
+            name="deploymentVersionSelector.deploymentVersionSelector"
+            render={({ field: { value, onChange } }) => (
+              <FormItem className="max-w-5xl space-y-2">
+                <FormLabel>Version Selector</FormLabel>
+                <FormControl>
+                  <DeploymentVersionConditionRender
+                    condition={(value as any) ?? defaultCondition}
+                    onChange={(newValue) => {
+                      onChange(newValue);
+                      form.setValue("deploymentVersionSelector.name", "");
+                      if (
+                        "conditions" in newValue &&
+                        !newValue.conditions.length
+                      ) {
+                        form.setValue("deploymentVersionSelector", null);
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </form>
-        </Form>
+          />
+
+          {hasConditions && (
+            <VersionPreview
+              deployments={deployments}
+              selectedDeploymentId={selectedDeploymentId}
+              onDeploymentSelect={setSelectedDeploymentId}
+              versions={versions}
+              totalVersions={versionsQ.data?.total}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

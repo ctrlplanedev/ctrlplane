@@ -4,10 +4,14 @@ import type { CreatePolicy } from "@ctrlplane/db/schema";
 import type { Dispatch, SetStateAction } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { createContext, useContext, useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useParams, useRouter } from "next/navigation";
 
-import { createPolicy } from "@ctrlplane/db/schema";
+import { createPolicy as policySchema } from "@ctrlplane/db/schema";
+import { Form, useForm } from "@ctrlplane/ui/form";
+import { toast } from "@ctrlplane/ui/toast";
+
+import { urls } from "~/app/urls";
+import { api } from "~/trpc/react";
 
 export type PolicyTab =
   | "config"
@@ -55,8 +59,10 @@ export const PolicyContextProvider: React.FC<{
   children: React.ReactNode;
   workspaceId: string;
 }> = ({ children, workspaceId }) => {
-  const form = useForm<CreatePolicy>({
-    resolver: zodResolver(createPolicy),
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+
+  const form = useForm({
+    schema: policySchema,
     defaultValues: {
       workspaceId,
       name: "",
@@ -76,11 +82,38 @@ export const PolicyContextProvider: React.FC<{
   const [activeTab, setActiveTab] = useState<PolicyTab>("config");
   const [policy, setPolicy] = useState<CreatePolicy>(defaultPolicy);
 
+  const router = useRouter();
+
+  const utils = api.useUtils();
+  const createPolicy = api.policy.create.useMutation();
+
+  const onSubmit = form.handleSubmit((data) =>
+    createPolicy
+      .mutateAsync({ ...data, workspaceId })
+      .then(() => {
+        toast.success("Policy created successfully");
+        router.push(urls.workspace(workspaceSlug).policies().baseUrl());
+        utils.policy.list.invalidate();
+      })
+      .catch((error) => {
+        toast.error("Failed to create policy", {
+          description: error.message,
+        });
+      }),
+  );
+
   return (
     <PolicyContext.Provider
       value={{ form, activeTab, setActiveTab, policy, setPolicy }}
     >
-      {children}
+      <Form {...form}>
+        <form
+          onSubmit={onSubmit}
+          className="flex h-full w-full flex-col overflow-hidden"
+        >
+          {children}
+        </form>
+      </Form>
     </PolicyContext.Provider>
   );
 };
