@@ -5,7 +5,7 @@ import {
   isSameDay,
   isWithinInterval,
 } from "date-fns";
-import rrule from "rrule";
+import * as rrule from "rrule";
 
 import type {
   RuleEngineContext,
