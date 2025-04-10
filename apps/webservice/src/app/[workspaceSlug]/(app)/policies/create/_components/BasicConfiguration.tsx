@@ -24,6 +24,8 @@ import { Label } from "@ctrlplane/ui/label";
 import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
+import { DeploymentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/condition/DeploymentConditionRender";
+import { EnvironmentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/environment/condition/EnvironmentConditionRender";
 import { usePolicyContext } from "./PolicyContext";
 
 // Available options for environments and deployments
@@ -171,7 +173,7 @@ export const BasicConfiguration: React.FC = () => {
             </div>
           </div>
 
-          <div className="max-w-xl space-y-6">
+          <div className="space-y-6">
             <div className="space-y-1">
               <h3 className="text-md font-medium">Policy Targets</h3>
               <p className="text-sm text-muted-foreground">
@@ -179,7 +181,7 @@ export const BasicConfiguration: React.FC = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="max-w-[1200px] space-y-4">
               {fields.map((field, index) => (
                 <div
                   key={field.id}
@@ -252,12 +254,17 @@ export const BasicConfiguration: React.FC = () => {
                     <FormField
                       control={form.control}
                       name={`targets.${index}.environmentSelector`}
-                      render={({ field }) =>
-                        field.value != null ? (
+                      render={({ field: { value, onChange } }) =>
+                        value != null ? (
                           <FormItem>
                             <FormLabel>Environment</FormLabel>
-                            <div className="text-sm text-red-500">
-                              Add selector here
+                            <div className="min-w-[1000px] text-sm">
+                              <EnvironmentConditionRender
+                                condition={value}
+                                onChange={onChange}
+                                depth={0}
+                                className="w-full"
+                              />
                             </div>
                             <FormMessage />
                           </FormItem>
@@ -276,12 +283,17 @@ export const BasicConfiguration: React.FC = () => {
                     <FormField
                       control={form.control}
                       name={`targets.${index}.deploymentSelector`}
-                      render={({ field }) =>
-                        field.value != null ? (
+                      render={({ field: { value, onChange } }) =>
+                        value != null ? (
                           <FormItem>
                             <FormLabel>Deployment</FormLabel>
-                            <div className="text-sm text-red-500">
-                              Add selector here
+                            <div className="min-w-[1000px] text-sm">
+                              <DeploymentConditionRender
+                                condition={value}
+                                onChange={onChange}
+                                depth={0}
+                                className="w-full"
+                              />
                             </div>
                             <FormMessage />
                           </FormItem>
@@ -308,7 +320,7 @@ export const BasicConfiguration: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="w-fit"
                 onClick={() =>
                   append({
                     environmentSelector: {
@@ -326,7 +338,7 @@ export const BasicConfiguration: React.FC = () => {
               </Button>
             </div>
 
-            <div className="rounded-lg border p-4">
+            <div className="max-w-xl rounded-lg border p-4">
               <h4 className="mb-4 font-medium">Target Coverage Preview</h4>
               <div className="relative overflow-hidden">
                 <table className="w-full border-collapse text-sm">

@@ -4,6 +4,7 @@ export * from "./metadata-condition.js";
 export * from "./date-condition.js";
 export * from "./id-condition.js";
 export * from "./system-condition.js";
+export * from "./name-condition.js";
 
 export enum ColumnOperator {
   Equals = "equals",
