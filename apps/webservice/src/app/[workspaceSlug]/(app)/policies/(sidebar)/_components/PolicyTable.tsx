@@ -1,7 +1,7 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
-import { MoreHorizontalIcon, Pencil, Trash2 } from "lucide-react";
+import { IconDots, IconPencil, IconTrash } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -156,16 +156,16 @@ export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontalIcon className="h-4 w-4" />
+                        <IconDots className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem className="cursor-pointer">
-                        <Pencil className="mr-2 h-4 w-4" />
+                        <IconPencil className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
+                        <IconTrash className="mr-2 h-4 w-4" />
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { IconArrowLeft } from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -33,7 +33,7 @@ export default async function CreatePolicyPage({
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
                 <Link href={urls.workspace(workspaceSlug).policies().baseUrl()}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <IconArrowLeft className="mr-2 h-4 w-4" />
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>

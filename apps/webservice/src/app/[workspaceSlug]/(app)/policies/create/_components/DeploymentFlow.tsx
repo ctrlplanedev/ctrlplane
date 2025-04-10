@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { IconCheck, IconSelector } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -66,7 +66,7 @@ const DeploymentCombobox: React.FC<DeploymentComboboxProps> = ({
               } / ${deployments.find((d) => d.id === selectedId)?.name}`
             : "Select deployment..."
           : "Select deployment..."}
-        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        <IconSelector className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
     <PopoverContent className="w-[350px] p-0">
@@ -83,7 +83,7 @@ const DeploymentCombobox: React.FC<DeploymentComboboxProps> = ({
                   onSelect(selectedId === deployment.id ? null : deployment.id);
                 }}
               >
-                <Check
+                <IconCheck
                   className={cn(
                     "mr-2 h-4 w-4",
                     selectedId === deployment.id ? "opacity-100" : "opacity-0",
