@@ -24,7 +24,19 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 export const policyRouter = createTRPCRouter({
   ai: createTRPCRouter({
     generateName: protectedProcedure
-      .input(z.record(z.string(), z.any()))
+      .input(
+        z.record(z.string(), z.any()).and(
+          z.object({
+            workspaceId: z.string().uuid(),
+          }),
+        ),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.PolicyCreate)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
       .mutation(async ({ input }) => {
         const { text } = await generateText({
           model: openai("gpt-4-turbo"),
@@ -41,9 +53,11 @@ export const policyRouter = createTRPCRouter({
                 - Deny Windows: Time windows when deployments are not allowed
                 - Version Selector: Rules about which versions can be deployed
                 - Approval Requirements: Any approvals needed from users or roles before deployment
+                - If there are no targets, that means it won't be applied to any deployments
+                - All approval rules are and operations. All conditions must be met before the policy allows a deployment
                 
                 Generate a concise name that captures the key purpose of the policy based on its configuration.
-                The name should be no more than 20 characters.
+                The name should be no more than 50 characters.
                 `,
             },
             {
@@ -63,8 +77,6 @@ export const policyRouter = createTRPCRouter({
           ],
         });
 
-        console.log(input);
-
         return text
           .trim()
           .replaceAll("`", "")
@@ -73,7 +85,19 @@ export const policyRouter = createTRPCRouter({
       }),
 
     generateDescription: protectedProcedure
-      .input(z.record(z.string(), z.any()))
+      .input(
+        z.record(z.string(), z.any()).and(
+          z.object({
+            workspaceId: z.string().uuid(),
+          }),
+        ),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.PolicyCreate)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
       .mutation(async ({ input }) => {
         const { text } = await generateText({
           model: openai("gpt-4-turbo"),
@@ -89,13 +113,16 @@ export const policyRouter = createTRPCRouter({
                 - Time-based restrictions (deny windows)
                 - Version deployment rules and requirements 
                 - Required approvals from users or roles
+                - If there are no targets, that means it won't be applied to any deployments
+                - All approval rules are and operations. All conditions must be met before the 
+                  policy allows a deployment
 
                 Keep the description under 60 words and write it in a technical style suitable
                 for DevOps engineers and platform users. Focus on being clear and precise about
                 the controls and enforcement mechanisms. It is already clear that you are talking
                 about the policy in question.
 
-                Do not include phrases like "The policy...".
+                Do not include phrases like "The policy...", "This policy...".
                 `,
             },
             {
