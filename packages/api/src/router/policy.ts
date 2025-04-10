@@ -4,7 +4,7 @@ import { generateText } from "ai";
 import _ from "lodash";
 import { z } from "zod";
 
-import { desc, eq, takeFirst } from "@ctrlplane/db";
+import { asc, desc, eq, takeFirst } from "@ctrlplane/db";
 import {
   createPolicy,
   createPolicyRuleDenyWindow,
@@ -169,7 +169,7 @@ export const policyRouter = createTRPCRouter({
           versionUserApprovals: true,
           versionRoleApprovals: true,
         },
-        orderBy: [desc(policy.priority), desc(policy.name)],
+        orderBy: [desc(policy.priority), asc(policy.name)],
       }),
     ),
 
