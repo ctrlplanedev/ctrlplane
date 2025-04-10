@@ -25,13 +25,12 @@ const versionAnyApprovalRule = (
   approvalRules?: Policy["versionAnyApprovals"] | null,
 ) => {
   if (approvalRules == null) return [];
-  return approvalRules.map(
-    (approval) =>
-      new VersionApprovalRule({
-        minApprovals: approval.requiredApprovalsCount,
-        getApprovalRecords: getAnyApprovalRecords,
-      }),
-  );
+  return [
+    new VersionApprovalRule({
+      minApprovals: approvalRules.requiredApprovalsCount,
+      getApprovalRecords: getAnyApprovalRecords,
+    }),
+  ];
 };
 
 const versionRoleApprovalRule = (

@@ -51,7 +51,7 @@ export interface RuleEngineFilter<T> {
 export type Policy = schema.Policy & {
   denyWindows: schema.PolicyRuleDenyWindow[];
   deploymentVersionSelector: schema.PolicyDeploymentVersionSelector | null;
-  versionAnyApprovals: schema.PolicyRuleAnyApproval[];
+  versionAnyApprovals: schema.PolicyRuleAnyApproval | null;
   versionUserApprovals: schema.PolicyRuleUserApproval[];
   versionRoleApprovals: schema.PolicyRuleRoleApproval[];
 };
