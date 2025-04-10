@@ -17,7 +17,7 @@ import type {
 // common js bs
 const { datetime, RRule } = rrule;
 
-function getDatePartsInTimeZone(date: Date, timeZone: string) {
+export function getDatePartsInTimeZone(date: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "2-digit",

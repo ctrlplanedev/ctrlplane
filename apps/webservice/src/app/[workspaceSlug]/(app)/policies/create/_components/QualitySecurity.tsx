@@ -17,7 +17,6 @@ import {
   CommandList,
 } from "@ctrlplane/ui/command";
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -264,110 +263,109 @@ export const QualitySecurity: React.FC<{ workspaceId: string }> = ({
         </p>
       </div>
 
-      <Form {...form}>
-        <form className="max-w-xl space-y-8">
+      <div className="max-w-xl space-y-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-md font-medium">Approval Requirements</h3>
+              <p className="text-sm text-muted-foreground">
+                Define who needs to approve and how many approvals are needed
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="space-y-4">
               <div className="space-y-1">
-                <h3 className="text-md font-medium">Approval Requirements</h3>
+                <h4 className="font-medium">General Approval</h4>
                 <p className="text-sm text-muted-foreground">
-                  Define who needs to approve and how many approvals are needed
+                  Enable if any team member can approve
                 </p>
+              </div>
+              <div className="flex items-center gap-4 rounded-lg border p-4">
+                <div className="flex-1 space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="versionAnyApprovals"
+                    render={({ field }) => (
+                      <FormItem className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <FormLabel>Require General Approval</FormLabel>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value !== null}
+                              onCheckedChange={(checked) =>
+                                field.onChange(
+                                  checked
+                                    ? { requiredApprovalsCount: 1 }
+                                    : null,
+                                )
+                              }
+                            />
+                          </FormControl>
+                        </div>
+                        {field.value !== null && (
+                          <FormField
+                            control={form.control}
+                            name="versionAnyApprovals.requiredApprovalsCount"
+                            render={({ field: countField }) => (
+                              <FormItem>
+                                <FormLabel>Required Approvals</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    placeholder="1"
+                                    {...countField}
+                                    onChange={(e) =>
+                                      countField.onChange(
+                                        parseInt(e.target.value),
+                                      )
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <h4 className="font-medium">General Approval</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Enable if any team member can approve
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 rounded-lg border p-4">
-                  <div className="flex-1 space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="versionAnyApprovals"
-                      render={({ field }) => (
-                        <FormItem className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <FormLabel>Require General Approval</FormLabel>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value !== null}
-                                onCheckedChange={(checked) =>
-                                  field.onChange(
-                                    checked
-                                      ? { requiredApprovalsCount: 1 }
-                                      : null,
-                                  )
-                                }
-                              />
-                            </FormControl>
-                          </div>
-                          {field.value !== null && (
-                            <FormField
-                              control={form.control}
-                              name="versionAnyApprovals.requiredApprovalsCount"
-                              render={({ field: countField }) => (
-                                <FormItem>
-                                  <FormLabel>Required Approvals</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      placeholder="1"
-                                      {...countField}
-                                      onChange={(e) =>
-                                        countField.onChange(
-                                          parseInt(e.target.value),
-                                        )
-                                      }
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          )}
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
+            <UserSection
+              workspaceId={workspaceId}
+              control={form.control}
+              fields={userFields}
+              onRemove={removeUser}
+            />
+            <RoleSection
+              control={form.control}
+              fields={roleFields}
+              onRemove={removeRole}
+            />
 
-              <UserSection
-                workspaceId={workspaceId}
-                control={form.control}
-                fields={userFields}
-                onRemove={removeUser}
-              />
-              <RoleSection
-                control={form.control}
-                fields={roleFields}
-                onRemove={removeRole}
-              />
-
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() =>
-                    appendUser({
-                      userId: "",
-                    })
-                  }
-                >
-                  <IconPlus className="mr-2 h-4 w-4" />
-                  Add User Approval
-                </Button>
-                {/* <Button
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() =>
+                  appendUser({
+                    userId: "",
+                  })
+                }
+              >
+                <IconPlus className="mr-2 h-4 w-4" />
+                Add User Approval
+              </Button>
+              {/* <Button
                   type="button"
                   variant="outline"
                   size="sm"
@@ -382,11 +380,10 @@ export const QualitySecurity: React.FC<{ workspaceId: string }> = ({
                   <IconPlus className="mr-2 h-4 w-4" />
                   Add Role Approval
                 </Button> */}
-              </div>
             </div>
           </div>
-        </form>
-      </Form>
+        </div>
+      </div>
     </div>
   );
 };

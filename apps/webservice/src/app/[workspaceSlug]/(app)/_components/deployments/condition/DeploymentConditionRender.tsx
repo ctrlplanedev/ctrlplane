@@ -1,5 +1,5 @@
-import type {
-  DeploymentCondition} from "@ctrlplane/validators/deployments";
+import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
+
 import {
   isComparisonCondition,
   isIdCondition,
@@ -8,8 +8,8 @@ import {
   isSystemCondition,
 } from "@ctrlplane/validators/deployments";
 
-import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import type { DeploymentConditionRenderProps } from "./deployment-condition-props";
+import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { IdConditionRender } from "./IdConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
 import { SlugConditionRender } from "./SlugConditionRender";

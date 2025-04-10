@@ -1,41 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { IconSparkles } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
-import { toast } from "@ctrlplane/ui/toast";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { usePolicyContext } from "./PolicyContext";
 
 export const PolicySubmit: React.FC<{
-  workspaceId: string;
   workspaceSlug: string;
-}> = ({ workspaceId, workspaceSlug }) => {
+}> = ({ workspaceSlug }) => {
   const { form } = usePolicyContext();
-  const router = useRouter();
-
-  const utils = api.useUtils();
-  const createPolicy = api.policy.create.useMutation({
-    onSuccess: () => {
-      toast.success("Policy created successfully");
-      router.push(urls.workspace(workspaceSlug).policies().baseUrl());
-      utils.policy.list.invalidate();
-    },
-    onError: (error) => {
-      toast.error("Failed to create policy", {
-        description: error.message,
-      });
-    },
-  });
-
-  const onSubmit = form.handleSubmit((data) => {
-    console.log(data);
-    createPolicy.mutate({ ...data, workspaceId });
-  });
 
   const generateName = api.policy.ai.generateName.useMutation({
     onSuccess: (data) => {
@@ -56,14 +33,8 @@ export const PolicySubmit: React.FC<{
           Cancel
         </Button>
       </Link>
-      <Button
-        onClick={() => {
-          console.log(form.getValues());
-          onSubmit();
-        }}
-        disabled={createPolicy.isPending}
-      >
-        {createPolicy.isPending ? "Creating..." : "Create Policy"}
+      <Button disabled={form.formState.isSubmitting} type="submit">
+        {form.formState.isSubmitting ? "Creating..." : "Create Policy"}
       </Button>
 
       <Button

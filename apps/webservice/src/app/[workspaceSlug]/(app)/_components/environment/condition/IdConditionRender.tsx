@@ -1,11 +1,10 @@
+import type { IdCondition } from "@ctrlplane/validators/conditions";
 import React from "react";
 import { useParams } from "next/navigation";
 
-import type { IdCondition } from "@ctrlplane/validators/conditions";
-
+import type { EnvironmentConditionRenderProps } from "./environment-condition-props";
 import { api } from "~/trpc/react";
 import { ChoiceConditionRender } from "../../filter/ChoiceConditionRender";
-import type { EnvironmentConditionRenderProps } from "./environment-condition-props";
 
 export const IdConditionRender: React.FC<
   EnvironmentConditionRenderProps<IdCondition>
