@@ -3,7 +3,10 @@ import { z } from "zod";
 
 import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { VersionReleaseManager } from "@ctrlplane/rule-engine";
+import {
+  getVersionApprovalRules,
+  VersionReleaseManager,
+} from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -60,12 +63,15 @@ const approvalRouter = createTRPCRouter({
         }
 
         const releaseTarget = { ...rt, workspaceId };
-        const manager = new VersionReleaseManager(ctx.db, releaseTarget, [
-          version,
-        ]);
-
-        const { chosenCandidate } = await manager.evaluateApprovalRules();
-        return chosenCandidate != null;
+        const manager = new VersionReleaseManager(ctx.db, releaseTarget);
+        const { chosenCandidate, rejectionReasons } = await manager.evaluate({
+          versions: [version],
+          rules: getVersionApprovalRules,
+        });
+        return {
+          approved: chosenCandidate != null,
+          rejectionReasons,
+        };
       },
     ),
 });

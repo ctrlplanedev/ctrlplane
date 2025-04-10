@@ -15,19 +15,23 @@ import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { Version } from "../manager/version-rule-engine.js";
-import type { Policy, RuleEngineContext } from "../types.js";
+import type { Policy, RuleEngineContext, RuleEngineFilter } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
 import { mergePolicies } from "../utils/merge-policies.js";
-import { getRules, getVersionApprovalRules } from "./version-manager-rules.js";
+import { getRules } from "./version-manager-rules.js";
+
+type VersionEvaluateOptions = {
+  rules?: (p: Policy | null) => RuleEngineFilter<Version>[];
+  versions?: Version[];
+};
 
 export class VersionReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
   constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
-    private readonly versions?: Version[],
   ) {}
 
   async upsertRelease(versionId: string) {
@@ -158,7 +162,7 @@ export class VersionReleaseManager implements ReleaseManager {
     return this.cachedPolicy;
   }
 
-  async evaluate() {
+  async evaluate(options?: VersionEvaluateOptions) {
     const ctx: RuleEngineContext | undefined =
       await this.db.query.releaseTarget.findFirst({
         where: eq(schema.releaseTarget.id, this.releaseTarget.id),
@@ -173,32 +177,11 @@ export class VersionReleaseManager implements ReleaseManager {
       throw new Error(`Release target ${this.releaseTarget.id} not found`);
 
     const policy = await this.getPolicy();
-    const rules = getRules(policy);
+    const rules = (options?.rules ?? getRules)(policy);
 
     const engine = new VersionRuleEngine(rules);
-    const versions = this.versions ?? (await this.findVersionsForEvaluate());
-    const result = await engine.evaluate(ctx, versions);
-    return result;
-  }
-
-  async evaluateApprovalRules() {
-    const ctx: RuleEngineContext | undefined =
-      await this.db.query.releaseTarget.findFirst({
-        where: eq(schema.releaseTarget.id, this.releaseTarget.id),
-        with: {
-          resource: true,
-          environment: true,
-          deployment: true,
-        },
-      });
-
-    if (ctx == null)
-      throw new Error(`Release target ${this.releaseTarget.id} not found`);
-
-    const policy = await this.getPolicy();
-    const rules = getVersionApprovalRules(policy);
-    const engine = new VersionRuleEngine(rules);
-    const versions = this.versions ?? (await this.findVersionsForEvaluate());
+    const versions =
+      options?.versions ?? (await this.findVersionsForEvaluate());
     const result = await engine.evaluate(ctx, versions);
     return result;
   }
