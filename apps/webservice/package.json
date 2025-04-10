@@ -36,6 +36,7 @@
     "@octokit/webhooks-types": "^7.5.1",
     "@openreplay/tracker": "^14.0.14",
     "@opentelemetry/auto-instrumentations-node": "^0.52.1",
+    "@opentelemetry/exporter-jaeger": "^2.0.0",
     "@opentelemetry/exporter-logs-otlp-http": "^0.54.2",
     "@opentelemetry/exporter-trace-otlp-http": "^0.54.2",
     "@opentelemetry/resources": "^1.27.0",

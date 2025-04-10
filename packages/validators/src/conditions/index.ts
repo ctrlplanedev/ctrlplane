@@ -1,21 +1,13 @@
 import { z } from "zod";
 
+import { columnOperator } from "./column-operator.js";
+
 export * from "./metadata-condition.js";
 export * from "./date-condition.js";
 export * from "./id-condition.js";
 export * from "./system-condition.js";
 export * from "./name-condition.js";
-
-export enum ColumnOperator {
-  Equals = "equals",
-  StartsWith = "starts-with",
-  EndsWith = "ends-with",
-  Contains = "contains",
-}
-
-export const columnOperator = z.nativeEnum(ColumnOperator);
-
-export type ColumnOperatorType = z.infer<typeof columnOperator>;
+export * from "./column-operator.js";
 
 export enum ComparisonOperator {
   And = "and",
