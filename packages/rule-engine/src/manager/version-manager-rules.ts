@@ -8,7 +8,7 @@ import {
   VersionApprovalRule,
 } from "../rules/version-approval-rule.js";
 
-const denyWindows = (policy: Policy | null) =>
+export const denyWindows = (policy: Policy | null) =>
   policy == null
     ? []
     : policy.denyWindows.map(

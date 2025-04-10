@@ -8,6 +8,7 @@ import { cn } from "@ctrlplane/ui";
 import { Separator } from "@ctrlplane/ui/separator";
 
 import { ApprovalCheck } from "../checks/Approval";
+import { DenyWindowCheck } from "../checks/DenyWindow";
 
 type EnvironmentNodeProps = NodeProps<{
   workspaceId: string;
@@ -32,11 +33,8 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
       </div>
       <Separator className="!m-0 bg-neutral-800" />
       <div className="space-y-1 px-2 pb-2">
-        <ApprovalCheck
-          workspaceId={data.workspaceId}
-          environmentId={data.environmentId}
-          versionId={data.versionId}
-        />
+        <ApprovalCheck {...data} />
+        <DenyWindowCheck {...data} />
       </div>
     </div>
     <Handle
