@@ -43,6 +43,7 @@ const workspacePolicies = (slug: string) => {
     denyWindows: () => buildUrl(...base, "deny-windows"),
     approvalGates: () => buildUrl(...base, "approval-gates"),
     versionConditions: () => buildUrl(...base, "version-conditions"),
+    edit: (policyId: string) => buildUrl(...base, policyId, "edit"),
   };
 };
 

@@ -1,5 +1,6 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type { User } from "@ctrlplane/db/schema";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   IconAlertTriangle,
@@ -54,10 +55,12 @@ import { PageHeader } from "../../../_components/PageHeader";
 type ApprovalPolicyCardProps = {
   policy: RouterOutputs["policy"]["list"][number];
   userMap: Map<string, User>;
+  workspaceSlug: string;
 };
 
 type PolicyActionMenuProps = {
   policy: RouterOutputs["policy"]["list"][number];
+  workspaceSlug: string;
 };
 
 type ApprovalBadgeProps = {
@@ -106,15 +109,23 @@ const PageOverview: React.FC = () => (
 );
 
 // Policy Action Menu Component
-const PolicyActionMenu: React.FC<PolicyActionMenuProps> = () => (
+const PolicyActionMenu: React.FC<PolicyActionMenuProps> = ({
+  policy,
+  workspaceSlug,
+}) => (
   <DropdownMenu>
     <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-muted-foreground hover:bg-neutral-800/50 hover:text-foreground">
       <IconDotsVertical className="h-4 w-4" />
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <DropdownMenuItem className="flex cursor-pointer items-center gap-2">
-        <IconEdit className="h-4 w-4" />
-        <span>Edit Policy</span>
+      <DropdownMenuItem asChild>
+        <Link
+          href={urls.workspace(workspaceSlug).policies().edit(policy.id)}
+          className="flex cursor-pointer items-center gap-2"
+        >
+          <IconEdit className="h-4 w-4" />
+          <span>Edit Policy</span>
+        </Link>
       </DropdownMenuItem>
       <DropdownMenuItem className="flex cursor-pointer items-center gap-2 text-amber-500">
         <IconTrash className="h-4 w-4" />
@@ -305,6 +316,7 @@ const NoApprovals: React.FC = () => (
 const ApprovalPolicyCard: React.FC<ApprovalPolicyCardProps> = ({
   policy,
   userMap,
+  workspaceSlug,
 }) => (
   <div className="rounded-lg border p-4 shadow-sm">
     <div className="mb-3 flex items-center justify-between">
@@ -323,7 +335,7 @@ const ApprovalPolicyCard: React.FC<ApprovalPolicyCardProps> = ({
         </Badge>
       </div>
 
-      <PolicyActionMenu policy={policy} />
+      <PolicyActionMenu policy={policy} workspaceSlug={workspaceSlug} />
     </div>
 
     <div className="mb-3">
@@ -465,6 +477,7 @@ export default async function ApprovalGatesPage({
                     key={policy.id}
                     policy={policy}
                     userMap={userMap}
+                    workspaceSlug={workspaceSlug}
                   />
                 ))}
 
