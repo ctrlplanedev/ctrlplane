@@ -30,15 +30,16 @@ import {
   ColumnOperator,
   ComparisonOperator,
 } from "@ctrlplane/validators/conditions";
-import {
+import type {
   ComparisonCondition,
+  EnvironmentCondition} from "@ctrlplane/validators/environments";
+import {
   doesConvertingToComparisonRespectMaxDepth,
-  EnvironmentCondition,
   EnvironmentConditionType,
   isComparisonCondition,
 } from "@ctrlplane/validators/environments";
 
-import { EnvironmentConditionRenderProps } from "./environment-condition-props";
+import type { EnvironmentConditionRenderProps } from "./environment-condition-props";
 import { EnvironmentConditionRender } from "./EnvironmentConditionRender";
 
 export const ComparisonConditionRender: React.FC<

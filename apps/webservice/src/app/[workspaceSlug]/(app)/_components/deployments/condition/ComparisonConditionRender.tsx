@@ -29,18 +29,17 @@ import {
 import {
   ColumnOperator,
   ComparisonOperator,
-  ConditionType,
-  DateOperator,
 } from "@ctrlplane/validators/conditions";
-import {
+import type {
   ComparisonCondition,
-  DeploymentCondition,
+  DeploymentCondition} from "@ctrlplane/validators/deployments";
+import {
   DeploymentConditionType,
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
 } from "@ctrlplane/validators/deployments";
 
-import { DeploymentConditionRenderProps } from "./deployment-condition-props";
+import type { DeploymentConditionRenderProps } from "./deployment-condition-props";
 import { DeploymentConditionRender } from "./DeploymentConditionRender";
 
 export const ComparisonConditionRender: React.FC<

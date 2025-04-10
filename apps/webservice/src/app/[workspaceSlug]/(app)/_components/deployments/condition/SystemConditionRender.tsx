@@ -1,11 +1,11 @@
 import React from "react";
 import { useParams } from "next/navigation";
 
-import { SystemCondition } from "@ctrlplane/validators/conditions";
+import type { SystemCondition } from "@ctrlplane/validators/conditions";
 
 import { api } from "~/trpc/react";
 import { ChoiceConditionRender } from "../../filter/ChoiceConditionRender";
-import { DeploymentConditionRenderProps } from "./deployment-condition-props";
+import type { DeploymentConditionRenderProps } from "./deployment-condition-props";
 
 export const SystemConditionRender: React.FC<
   DeploymentConditionRenderProps<SystemCondition>

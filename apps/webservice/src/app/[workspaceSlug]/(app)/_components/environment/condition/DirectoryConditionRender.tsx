@@ -1,8 +1,8 @@
-import { ColumnOperatorType } from "@ctrlplane/validators/conditions";
-import { DirectoryCondition } from "@ctrlplane/validators/environments";
+import type { ColumnOperatorType } from "@ctrlplane/validators/conditions";
+import type { DirectoryCondition } from "@ctrlplane/validators/environments";
 
 import { ColumnConditionRender } from "../../filter/ColumnConditionRender";
-import { EnvironmentConditionRenderProps } from "./environment-condition-props";
+import type { EnvironmentConditionRenderProps } from "./environment-condition-props";
 
 export const DirectoryConditionRender: React.FC<
   EnvironmentConditionRenderProps<DirectoryCondition>

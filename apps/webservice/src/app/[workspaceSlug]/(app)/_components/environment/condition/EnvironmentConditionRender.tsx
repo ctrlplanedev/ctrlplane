@@ -1,5 +1,6 @@
+import type {
+  EnvironmentCondition} from "@ctrlplane/validators/environments";
 import {
-  EnvironmentCondition,
   isComparisonCondition,
   isDirectoryCondition,
   isIdCondition,
@@ -9,7 +10,7 @@ import {
 
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { DirectoryConditionRender } from "./DirectoryConditionRender";
-import { EnvironmentConditionRenderProps } from "./environment-condition-props";
+import type { EnvironmentConditionRenderProps } from "./environment-condition-props";
 import { IdConditionRender } from "./IdConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
 import { SystemConditionRender } from "./SystemConditionRender";
