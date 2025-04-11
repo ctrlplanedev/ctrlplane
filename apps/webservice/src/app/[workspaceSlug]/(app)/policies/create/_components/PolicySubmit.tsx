@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { IconSparkles } from "@tabler/icons-react";
+import { isPresent } from "ts-is-present";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -25,6 +26,14 @@ export const PolicySubmit: React.FC<{
       form.setValue("description", data);
     },
   });
+
+  const errors = form.formState.errors;
+  const rootError = errors.root?.message;
+  const allErrors = Object.values(
+    errors as Record<string, { message?: string }>,
+  )
+    .map((error) => error.message ?? null)
+    .filter(isPresent);
 
   return (
     <div className="ml-64 flex items-center gap-2">
@@ -62,6 +71,10 @@ export const PolicySubmit: React.FC<{
           ? "Generating..."
           : "Generate Description"}
       </Button>
+
+      <span className="text-xs text-red-500">
+        {rootError ?? allErrors.join(", ")}
+      </span>
     </div>
   );
 };
