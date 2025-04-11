@@ -2,6 +2,7 @@ import { eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
 
 import { upsertReleaseTargets } from "../../utils/upsert-release-targets.js";
 import { dispatchExitHooks } from "./dispatch-exit-hooks.js";
@@ -10,6 +11,17 @@ export const updatedResourceWorker = createWorker(
   Channel.UpdatedResource,
   async ({ data: resource }) => {
     console.log("updated resource", resource);
+
+    await db.transaction(async (tx) => {
+      const currentReleaseTargets = await tx.query.releaseTarget.findMany({
+        where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
+      });
+
+      await upsertReleaseTargets(tx, resource);
+
+      logger.info(`found ${currentReleaseTargets.length} release targets`);
+    });
+
     return;
 
     // db.transaction(async (tx) => {

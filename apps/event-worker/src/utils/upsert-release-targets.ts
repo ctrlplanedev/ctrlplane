@@ -14,29 +14,36 @@ const getReleaseTargetInsertsForSystem = async (
     deployments: SCHEMA.Deployment[];
   },
 ): Promise<ReleaseTargetIdentifier[]> => {
+  logger.info(`processing system ${system.id} - ${system.name}`);
+
   const envs = system.environments.filter((e) => isPresent(e.resourceSelector));
   const { deployments } = system;
 
   const maybeTargetsPromises = envs.flatMap((env) =>
     deployments.map(async (dep) => {
-      const resource = await db.query.resource.findFirst({
-        where: and(
-          eq(SCHEMA.resource.id, resourceId),
-          SCHEMA.resourceMatchesMetadata(db, env.resourceSelector),
-          SCHEMA.resourceMatchesMetadata(db, dep.resourceSelector),
-        ),
-      });
+      logger.info(
+        `processing pair deployment ${dep.id} - ${dep.name} with env ${env.id} - ${env.name}`,
+      );
+      // const resource = await db.query.resource.findFirst({
+      //   where: and(
+      //     eq(SCHEMA.resource.id, resourceId),
+      //     SCHEMA.resourceMatchesMetadata(db, env.resourceSelector),
+      //     SCHEMA.resourceMatchesMetadata(db, dep.resourceSelector),
+      //   ),
+      // });
 
-      if (resource == null) return null;
-      return { environmentId: env.id, deploymentId: dep.id };
+      // if (resource == null) return null;
+      // return { environmentId: env.id, deploymentId: dep.id };
     }),
   );
 
-  const targets = await Promise.all(maybeTargetsPromises).then((results) =>
-    results.filter(isPresent),
-  );
+  return [];
 
-  return targets.map((t) => ({ ...t, resourceId }));
+  // const targets = await Promise.all(maybeTargetsPromises).then((results) =>
+  //   results.filter(isPresent),
+  // );
+
+  // return targets.map((t) => ({ ...t, resourceId }));
 };
 
 export const upsertReleaseTargets = async (
@@ -55,12 +62,14 @@ export const upsertReleaseTargets = async (
     workspace.systems.map((system) =>
       getReleaseTargetInsertsForSystem(db, resource.id, system),
     ),
-  ).then((results) => results.flat());
+  );
 
-  if (releaseTargetInserts.length === 0) return [];
-  return db
-    .insert(SCHEMA.releaseTarget)
-    .values(releaseTargetInserts)
-    .onConflictDoNothing()
-    .returning();
+  // .then((results) => results.flat());
+
+  // if (releaseTargetInserts.length === 0) return [];
+  // return db
+  //   .insert(SCHEMA.releaseTarget)
+  //   .values(releaseTargetInserts)
+  //   .onConflictDoNothing()
+  //   .returning();``
 };

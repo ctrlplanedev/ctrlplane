@@ -108,6 +108,7 @@ const handleVariableRelease = async (releaseTarget: any) => {
 export const evaluateReleaseTarget = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
+    if (env.NODE_ENV === "production") return;
     const mutex = await ReleaseTargetMutex.lock(job.data);
 
     try {
