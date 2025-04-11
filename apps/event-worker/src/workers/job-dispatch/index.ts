@@ -22,6 +22,8 @@ export const dispatchJobWorker = createWorker(
       with: { agent: true },
     });
 
+    log.info(`Returned job from the db: ${job}`);
+
     if (job == null) {
       log.error(`Job ${jobId} not found`);
       queueJob.log(`Job ${jobId} not found`);
