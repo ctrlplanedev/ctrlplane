@@ -6,14 +6,17 @@ import { upsertReleaseTargets } from "../utils/upsert-release-targets.js";
 const queue = getQueue(Channel.EvaluateReleaseTarget);
 export const newResourceWorker = createWorker(
   Channel.NewResource,
-  ({ data: resource }) =>
-    db.transaction(async (tx) => {
-      const rts = await upsertReleaseTargets(tx, resource);
-      await queue.addBulk(
-        rts.map((rt) => ({
-          name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-          data: rt,
-        })),
-      );
-    }),
+  async ({ data: resource }) => {
+    console.log("new resource", resource);
+    return;
+    // db.transaction(async (tx) => {
+    //   const rts = await upsertReleaseTargets(tx, resource);
+    //   await queue.addBulk(
+    //     rts.map((rt) => ({
+    //       name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+    //       data: rt,
+    //     })),
+    //   );
+    // }),
+  },
 );

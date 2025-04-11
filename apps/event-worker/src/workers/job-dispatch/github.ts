@@ -73,40 +73,44 @@ const getGithubEntity = async (
     .then(takeFirstOrNull)
     .then((r) => r?.github_entity);
 
-  // const releaseJobEntityPromise = db
-  //   .select()
-  //   .from(SCHEMA.release)
-  //   .innerJoin(
-  //     SCHEMA.releaseJob,
-  //     eq(SCHEMA.release.id, SCHEMA.releaseJob.releaseId),
-  //   )
-  //   .innerJoin(
-  //     SCHEMA.versionRelease,
-  //     eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
-  //   )
-  //   .innerJoin(
-  //     SCHEMA.releaseTarget,
-  //     eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
-  //   )
-  //   .innerJoin(
-  //     SCHEMA.resource,
-  //     eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
-  //   )
-  //   .innerJoin(
-  //     SCHEMA.githubEntity,
-  //     eq(SCHEMA.resource.workspaceId, SCHEMA.githubEntity.workspaceId),
-  //   )
-  //   .where(
-  //     and(
-  //       eq(SCHEMA.githubEntity.installationId, installationId),
-  //       eq(SCHEMA.githubEntity.slug, owner),
-  //       eq(SCHEMA.releaseJob.jobId, jobId),
-  //     ),
-  //   )
-  //   .then(takeFirstOrNull)
-  //   .then((r) => r?.github_entity);
+  const releaseJobEntityPromise = db
+    .select()
+    .from(SCHEMA.release)
+    .innerJoin(
+      SCHEMA.releaseJob,
+      eq(SCHEMA.release.id, SCHEMA.releaseJob.releaseId),
+    )
+    .innerJoin(
+      SCHEMA.versionRelease,
+      eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+    )
+    .innerJoin(
+      SCHEMA.releaseTarget,
+      eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
+    )
+    .innerJoin(
+      SCHEMA.resource,
+      eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
+    )
+    .innerJoin(
+      SCHEMA.githubEntity,
+      eq(SCHEMA.resource.workspaceId, SCHEMA.githubEntity.workspaceId),
+    )
+    .where(
+      and(
+        eq(SCHEMA.githubEntity.installationId, installationId),
+        eq(SCHEMA.githubEntity.slug, owner),
+        eq(SCHEMA.releaseJob.jobId, jobId),
+      ),
+    )
+    .then(takeFirstOrNull)
+    .then((r) => r?.github_entity);
 
-  return (await releaseGhEntityPromise) ?? (await runbookGhEntityPromise);
+  return (
+    (await releaseGhEntityPromise) ??
+    (await runbookGhEntityPromise) ??
+    (await releaseJobEntityPromise)
+  );
 };
 
 const getReleaseJobAgentConfig = (jobId: string) =>

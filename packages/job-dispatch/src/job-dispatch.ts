@@ -4,14 +4,11 @@ import _ from "lodash";
 import { eq, inArray, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTriggeredRunbookJob } from "./job-creation.js";
 import { updateJob } from "./job-update.js";
 import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
-
-const log = logger.child({ module: "job-dispatch" });
 
 export type DispatchFilterFunc = (
   db: Tx,
@@ -96,9 +93,6 @@ class DispatchBuilder {
     );
 
     if (validJobsWithResolvedVariables.length > 0) {
-      log.info(
-        `Dispatching ${validJobsWithResolvedVariables.length} jobs to the dispatch queue`,
-      );
       await getQueue(Channel.DispatchJob).addBulk(
         validJobsWithResolvedVariables.map((wf) => ({
           name: wf.id,
