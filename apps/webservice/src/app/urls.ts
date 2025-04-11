@@ -43,7 +43,18 @@ const workspacePolicies = (slug: string) => {
     denyWindows: () => buildUrl(...base, "deny-windows"),
     approvalGates: () => buildUrl(...base, "approval-gates"),
     versionConditions: () => buildUrl(...base, "version-conditions"),
-    edit: (policyId: string) => buildUrl(...base, policyId, "edit"),
+    edit: (policyId: string) => workspacePolicyEdit(slug, policyId),
+  };
+};
+
+const workspacePolicyEdit = (slug: string, policyId: string) => {
+  const base = [slug, "policies", policyId, "edit"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    configuration: () => buildUrl(...base, "configuration"),
+    timeWindows: () => buildUrl(...base, "time-windows"),
+    deploymentFlow: () => buildUrl(...base, "deployment-flow"),
+    qualitySecurity: () => buildUrl(...base, "quality-security"),
   };
 };
 

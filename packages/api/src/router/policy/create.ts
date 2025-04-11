@@ -4,23 +4,10 @@ import type { z } from "zod";
 
 import { takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { getDatePartsInTimeZone } from "@ctrlplane/rule-engine";
+
+import { getLocalDateAsUTC } from "./time-util";
 
 type CreatePolicyInput = z.infer<typeof SCHEMA.createPolicy>;
-
-const getLocalDateAsUTC = (date: Date, timeZone: string) => {
-  const parts = getDatePartsInTimeZone(date, timeZone);
-  return new Date(
-    Date.UTC(
-      parts.year,
-      parts.month,
-      parts.day,
-      parts.hour,
-      parts.minute,
-      parts.second,
-    ),
-  );
-};
 
 const insertDenyWindows = async (
   tx: Tx,
@@ -42,12 +29,7 @@ const insertDenyWindows = async (
           : null;
 
       const rrule =
-        denyWindow.rrule != null
-          ? {
-              ...denyWindow.rrule,
-              dtstart,
-            }
-          : undefined;
+        denyWindow.rrule != null ? { ...denyWindow.rrule, dtstart } : undefined;
 
       return { ...denyWindow, rrule, dtend, policyId };
     }),
@@ -74,12 +56,9 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
   const { id: policyId } = policy;
 
   if (targets.length > 0)
-    await tx.insert(SCHEMA.policyTarget).values(
-      targets.map((target) => ({
-        ...target,
-        policyId,
-      })),
-    );
+    await tx
+      .insert(SCHEMA.policyTarget)
+      .values(targets.map((target) => ({ ...target, policyId })));
 
   await insertDenyWindows(tx, policyId, denyWindows);
 
@@ -97,20 +76,18 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .values({ ...versionAnyApprovals, policyId });
 
   if (versionUserApprovals.length > 0)
-    await tx.insert(SCHEMA.policyRuleUserApproval).values(
-      versionUserApprovals.map((approval) => ({
-        ...approval,
-        policyId,
-      })),
-    );
+    await tx
+      .insert(SCHEMA.policyRuleUserApproval)
+      .values(
+        versionUserApprovals.map((approval) => ({ ...approval, policyId })),
+      );
 
   if (versionRoleApprovals.length > 0)
-    await tx.insert(SCHEMA.policyRuleRoleApproval).values(
-      versionRoleApprovals.map((approval) => ({
-        ...approval,
-        policyId,
-      })),
-    );
+    await tx
+      .insert(SCHEMA.policyRuleRoleApproval)
+      .values(
+        versionRoleApprovals.map((approval) => ({ ...approval, policyId })),
+      );
 
   return policy;
 };

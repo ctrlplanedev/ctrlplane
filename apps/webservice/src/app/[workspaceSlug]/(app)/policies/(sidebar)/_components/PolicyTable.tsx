@@ -2,7 +2,8 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { IconDots, IconPencil, IconTrash } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -25,6 +26,7 @@ import {
 import { toast } from "@ctrlplane/ui/toast";
 
 import type { RuleType } from "./rule-themes";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import {
   getRuleTypeIcon,
@@ -56,12 +58,19 @@ interface PolicyTableRowProps {
 }
 
 const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const updatePolicy = api.policy.update.useMutation();
   const router = useRouter();
   const [isEnabled, setIsEnabled] = useState(policy.enabled);
   const rules = getRules(policy);
   const environmentCount = 0;
   const deploymentCount = 0;
+
+  const editUrl = urls
+    .workspace(workspaceSlug)
+    .policies()
+    .edit(policy.id)
+    .baseUrl();
 
   return (
     <TableRow className="group cursor-pointer hover:bg-muted/50">
@@ -143,10 +152,12 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem className="cursor-pointer">
-              <IconPencil className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
+            <Link href={editUrl}>
+              <DropdownMenuItem className="cursor-pointer">
+                <IconPencil className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
               <IconTrash className="mr-2 h-4 w-4" />
               Delete
