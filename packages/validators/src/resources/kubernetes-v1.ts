@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Identifiable } from "./util";
+import { isResourceAPI } from "./util.js";
 
 const clusterConfig = z.object({
   name: z.string(),
@@ -54,9 +56,12 @@ const clusterConfig = z.object({
   ]),
 });
 
+const version = "kubernetes/v1";
+const kind = "ClusterAPI";
+
 export const kubernetesClusterApiV1 = z.object({
-  version: z.literal("kubernetes/v1"),
-  kind: z.literal("ClusterAPI"),
+  version: z.literal(version),
+  kind: z.literal(kind),
   identifier: z.string(),
   name: z.string(),
   config: clusterConfig,
@@ -92,3 +97,13 @@ export const kubernetesNamespaceV1 = z.object({
 });
 
 export type KubernetesNamespaceV1 = z.infer<typeof kubernetesNamespaceV1>;
+
+export const isKubernetesClusterAPIV1 = (
+  obj: object,
+): obj is KubernetesClusterAPIV1 =>
+  isResourceAPI(
+    obj,
+    (identifiable: Identifiable) =>
+      identifiable.kind === kind && identifiable.version === version,
+    kubernetesClusterApiV1,
+  );

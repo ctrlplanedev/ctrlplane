@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Identifiable } from "./util";
+import { isResourceAPI } from "./util.js";
 
 const subnet = z.object({
   name: z.string(),
@@ -19,9 +21,12 @@ const subnet = z.object({
     .optional(),
 });
 
+const kind = "VPC";
+const version = "cloud/v1";
+
 export const cloudVpcV1 = z.object({
-  version: z.literal("cloud/v1"),
-  kind: z.literal("VPC"),
+  version: z.literal(version),
+  kind: z.literal(kind),
   identifier: z.string(),
   name: z.string(),
   config: z.object({
@@ -43,3 +48,13 @@ export const cloudVpcV1 = z.object({
 
 export type CloudVPCV1 = z.infer<typeof cloudVpcV1>;
 export type CloudSubnetV1 = z.infer<typeof subnet>;
+
+export const isCloudVpcAPIV1 = (
+  obj: object,
+): obj is CloudVPCV1 =>
+  isResourceAPI(
+    obj,
+    (identifiable: Identifiable) =>
+      identifiable.kind === kind && identifiable.version === version,
+    cloudVpcV1,
+  );

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Identifiable } from "./util";
+import { isResourceAPI } from "./util.js";
 
 const diskV1 = z.object({
   name: z.string(),
@@ -7,11 +9,14 @@ const diskV1 = z.object({
   encrypted: z.boolean(),
 });
 
+const version = "vm/v1";
+const kind = "VM";
+
 export const vmV1 = z.object({
   workspaceId: z.string(),
   providerId: z.string(),
-  version: z.literal("vm/v1"),
-  kind: z.literal("VM"),
+  version: z.literal(version),
+  kind: z.literal(kind),
   identifier: z.string(),
   name: z.string(),
   config: z
@@ -34,3 +39,13 @@ export const vmV1 = z.object({
 });
 
 export type VmV1 = z.infer<typeof vmV1>;
+
+export const isVmV1 = (
+  obj: object,
+): obj is VmV1 =>
+  isResourceAPI(
+    obj,
+    (identifiable: Identifiable) =>
+      identifiable.kind === kind && identifiable.version === version,
+    vmV1,
+  );
