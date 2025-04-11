@@ -18,10 +18,7 @@ export const handleResourceProviderScan = async (
   tx: Tx,
   resourcesToInsert: ResourceToInsert[],
 ) => {
-  log.info("Starting resource upsert", {
-    count: resourcesToInsert.length,
-    identifiers: resourcesToInsert.map((r) => r.identifier),
-  });
+  log.info(`Starting resource upsert: ${resourcesToInsert.length} resources`);
   try {
     const workspaceId = resourcesToInsert[0]?.workspaceId;
     if (workspaceId == null) throw new Error("Workspace ID is required");

@@ -4,6 +4,7 @@ import _ from "lodash";
 
 import { and, eq, isNull, or } from "@ctrlplane/db";
 import { resource } from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 /**
  * Gets resources for a specific provider
@@ -53,6 +54,8 @@ const findExistingResources = async (
   tx: Tx,
   resourcesToInsert: InsertResource[],
 ): Promise<Resource[]> => {
+  logger.info(`Finding existing resources: ${resourcesToInsert.length}`);
+
   const resourcesByProvider = _.groupBy(
     resourcesToInsert,
     (r) => r.providerId ?? "null",
@@ -86,6 +89,7 @@ export const groupResourcesByHook = async (
   resourcesToInsert: InsertResource[],
 ) => {
   const existingResources = await findExistingResources(tx, resourcesToInsert);
+  logger.info(`Found ${existingResources.length} existing resources`);
   const toDelete = existingResources.filter(
     (existing) =>
       !resourcesToInsert.some(
@@ -107,6 +111,9 @@ export const groupResourcesByHook = async (
         er.identifier === r.identifier && er.workspaceId === r.workspaceId,
     ),
   );
+  logger.info(`Found ${toInsert.length} resources to insert`);
+  logger.info(`Found ${toUpdate.length} resources to update`);
+  logger.info(`Found ${toDelete.length} resources to delete`);
 
   return { toInsert, toUpdate, toDelete };
 };
