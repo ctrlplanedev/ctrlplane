@@ -1,5 +1,6 @@
 import type { ZodError } from "zod";
 import { z } from "zod";
+
 import type { Identifiable } from "./util";
 import { getSchemaParseError } from "./util.js";
 
@@ -41,9 +42,7 @@ export const vmV1 = z.object({
 
 export type VmV1 = z.infer<typeof vmV1>;
 
-export const getVmV1SchemaParseError = (
-  obj: object,
-): ZodError | undefined =>
+export const getVmV1SchemaParseError = (obj: object): ZodError | undefined =>
   getSchemaParseError(
     obj,
     (identifiable: Identifiable) =>

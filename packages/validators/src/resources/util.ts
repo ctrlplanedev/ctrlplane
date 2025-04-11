@@ -1,22 +1,20 @@
 import { z } from "zod";
 
 export const identifiable = z.object({
-    version: z.string(),
-    kind: z.string(),
+  version: z.string(),
+  kind: z.string(),
 });
 
 export type Identifiable = z.infer<typeof identifiable>;
 
-export const isIdentifiable = (
-    obj: object,
-): obj is Identifiable => {
-    return identifiable.safeParse(obj).success;
+export const isIdentifiable = (obj: object): obj is Identifiable => {
+  return identifiable.safeParse(obj).success;
 };
 
 export const getIdentifiableSchemaParseError = (
-    obj: object,
+  obj: object,
 ): z.ZodError | undefined => {
-    return identifiable.safeParse(obj).error;
+  return identifiable.safeParse(obj).error;
 };
 
 /**
@@ -27,14 +25,14 @@ export const getIdentifiableSchemaParseError = (
  * @returns ZodError if the object is has expected kind and version
  */
 export const getSchemaParseError = <S extends z.ZodSchema>(
-    obj: object,
-    matcher: (identifiable: Identifiable) => boolean,
-    schema: S,
+  obj: object,
+  matcher: (identifiable: Identifiable) => boolean,
+  schema: S,
 ): z.ZodError | undefined => {
-    if (isIdentifiable(obj) && matcher(obj)) {
-        // If the object is identifiable and matches the kind and version, validate it against the schema
-        const parseResult = schema.safeParse(obj);
-        return parseResult.error;
-    }
-    return undefined;
+  if (isIdentifiable(obj) && matcher(obj)) {
+    // If the object is identifiable and matches the kind and version, validate it against the schema
+    const parseResult = schema.safeParse(obj);
+    return parseResult.error;
+  }
+  return undefined;
 };
