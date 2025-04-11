@@ -32,10 +32,17 @@ export const handleResourceProviderScan = async (
       tx,
       resourcesToInsert,
     );
+    log.info(
+      `found ${toInsert.length} resources to insert and ${toUpdate.length} resources to update `,
+    );
     const [insertedResources, updatedResources] = await Promise.all([
       upsertResources(tx, toInsert),
       upsertResources(tx, toUpdate),
     ]);
+
+    log.info(
+      `inserted ${insertedResources.length} resources and updated ${updatedResources.length} resources`,
+    );
 
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
@@ -46,6 +53,7 @@ export const handleResourceProviderScan = async (
     ]);
 
     const deleted = await deleteResources(tx, toDelete);
+    log.info("completed handling resource provider scan");
     return { all: [...insertedResources, ...updatedResources], deleted };
   } catch (error) {
     log.error("Error upserting resources", { error });
