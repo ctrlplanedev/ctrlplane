@@ -1,6 +1,8 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { IconDots, IconPencil, IconTrash } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -22,6 +24,7 @@ import {
 } from "@ctrlplane/ui/table";
 
 import type { RuleType } from "./rule-themes";
+import { urls } from "../../../../../urls";
 import {
   getRuleTypeIcon,
   getRuleTypeLabel,
@@ -48,6 +51,11 @@ const getRules = (policy: RouterOutputs["policy"]["list"][number]) => {
 };
 
 export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+
+  const editUrl = (policyId: string) =>
+    urls.workspace(workspaceSlug).policies().edit(policyId).baseUrl();
+
   // Return early if no rules to display
   if (policies.length === 0)
     return (
@@ -160,9 +168,14 @@ export const PolicyTable: React.FC<PolicyTableProps> = ({ policies }) => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <IconPencil className="mr-2 h-4 w-4" />
-                        Edit
+                      <DropdownMenuItem>
+                        <Link
+                          href={editUrl(policy.id)}
+                          className="flex cursor-pointer items-center"
+                        >
+                          <IconPencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
                         <IconTrash className="mr-2 h-4 w-4" />

@@ -120,7 +120,11 @@ const PolicyActionMenu: React.FC<PolicyActionMenuProps> = ({
     <DropdownMenuContent align="end">
       <DropdownMenuItem asChild>
         <Link
-          href={urls.workspace(workspaceSlug).policies().edit(policy.id)}
+          href={urls
+            .workspace(workspaceSlug)
+            .policies()
+            .edit(policy.id)
+            .baseUrl()}
           className="flex cursor-pointer items-center gap-2"
         >
           <IconEdit className="h-4 w-4" />

@@ -19,6 +19,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { createPolicyInTx } from "./create";
+import { updatePolicyInTx } from "./update";
 
 export const policyRouter = createTRPCRouter({
   ai: createTRPCRouter({
@@ -175,13 +176,27 @@ export const policyRouter = createTRPCRouter({
   byId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.PolicyGet).on({ type: "policy", id: input }),
+        canUser
+          .perform(Permission.PolicyGet)
+          .on({ type: "policy", id: input.policyId }),
     })
-    .input(z.string().uuid())
-    .query(async ({ ctx, input }) =>
+    .input(
+      z.object({
+        policyId: z.string().uuid(),
+        timeZone: z.string().default("UTC"),
+      }),
+    )
+    .query(({ ctx, input }) =>
       ctx.db.query.policy.findFirst({
-        where: eq(policy.id, input),
-        with: { targets: true, denyWindows: true },
+        where: eq(policy.id, input.policyId),
+        with: {
+          targets: true,
+          denyWindows: true,
+          deploymentVersionSelector: true,
+          versionAnyApprovals: true,
+          versionUserApprovals: true,
+          versionRoleApprovals: true,
+        },
       }),
     ),
 
@@ -205,14 +220,9 @@ export const policyRouter = createTRPCRouter({
           .on({ type: "policy", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updatePolicy }))
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db
-        .update(policy)
-        .set(input.data)
-        .where(eq(policy.id, input.id))
-        .returning()
-        .then(takeFirst);
-    }),
+    .mutation(({ ctx, input }) =>
+      ctx.db.transaction((tx) => updatePolicyInTx(tx, input.id, input.data)),
+    ),
 
   delete: protectedProcedure
     .meta({
