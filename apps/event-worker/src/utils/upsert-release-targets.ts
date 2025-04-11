@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
+import { logger } from "@azure/identity";
 import { isPresent } from "ts-is-present";
 
 import { and, eq } from "@ctrlplane/db";
@@ -42,6 +43,8 @@ export const upsertReleaseTargets = async (
   db: Tx,
   resource: SCHEMA.Resource,
 ) => {
+  logger.info(`Upserting release targets for resource ${resource.id}`);
+
   const workspace = await db.query.workspace.findFirst({
     where: eq(SCHEMA.workspace.id, resource.workspaceId),
     with: { systems: { with: { environments: true, deployments: true } } },
