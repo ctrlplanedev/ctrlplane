@@ -1,6 +1,7 @@
+import type { ZodError } from "zod";
 import { z } from "zod";
 import type { Identifiable } from "./util";
-import { isResourceAPI } from "./util.js";
+import { getSchemaParseError } from "./util.js";
 
 const subnet = z.object({
   name: z.string(),
@@ -49,10 +50,10 @@ export const cloudVpcV1 = z.object({
 export type CloudVPCV1 = z.infer<typeof cloudVpcV1>;
 export type CloudSubnetV1 = z.infer<typeof subnet>;
 
-export const isCloudVpcAPIV1 = (
+export const getCloudVpcV1SchemaParserError = (
   obj: object,
-): obj is CloudVPCV1 =>
-  isResourceAPI(
+): ZodError | undefined =>
+  getSchemaParseError(
     obj,
     (identifiable: Identifiable) =>
       identifiable.kind === kind && identifiable.version === version,

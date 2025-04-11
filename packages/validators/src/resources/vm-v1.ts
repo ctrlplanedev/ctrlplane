@@ -1,6 +1,7 @@
+import type { ZodError } from "zod";
 import { z } from "zod";
 import type { Identifiable } from "./util";
-import { isResourceAPI } from "./util.js";
+import { getSchemaParseError } from "./util.js";
 
 const diskV1 = z.object({
   name: z.string(),
@@ -40,10 +41,10 @@ export const vmV1 = z.object({
 
 export type VmV1 = z.infer<typeof vmV1>;
 
-export const isVmV1 = (
+export const getVmV1SchemaParseError = (
   obj: object,
-): obj is VmV1 =>
-  isResourceAPI(
+): ZodError | undefined =>
+  getSchemaParseError(
     obj,
     (identifiable: Identifiable) =>
       identifiable.kind === kind && identifiable.version === version,

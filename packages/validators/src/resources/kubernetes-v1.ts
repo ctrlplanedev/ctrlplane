@@ -1,6 +1,7 @@
+import type { ZodError } from "zod";
 import { z } from "zod";
 import type { Identifiable } from "./util";
-import { isResourceAPI } from "./util.js";
+import { getSchemaParseError } from "./util.js";
 
 const clusterConfig = z.object({
   name: z.string(),
@@ -98,10 +99,10 @@ export const kubernetesNamespaceV1 = z.object({
 
 export type KubernetesNamespaceV1 = z.infer<typeof kubernetesNamespaceV1>;
 
-export const isKubernetesClusterAPIV1 = (
+export const getKubernetesClusterAPIV1SchemaParseError = (
   obj: object,
-): obj is KubernetesClusterAPIV1 =>
-  isResourceAPI(
+): ZodError | undefined =>
+  getSchemaParseError(
     obj,
     (identifiable: Identifiable) =>
       identifiable.kind === kind && identifiable.version === version,

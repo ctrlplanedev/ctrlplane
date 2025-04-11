@@ -13,20 +13,28 @@ export const isIdentifiable = (
     return identifiable.safeParse(obj).success;
 };
 
-export const isResourceAPI = <S extends z.ZodSchema>(
+export const getIdentifiableSchemaParseError = (
+    obj: object,
+): z.ZodError | undefined => {
+    return identifiable.safeParse(obj).error;
+};
+
+/**
+ * getSchemaParseError will return a ZodError if the object has expected kind and version
+ * @param obj incoming object to have it's schema validated, if identifiable based on its kind and version
+ * @param matcher impl to check the object's kind and version
+ * @param schema schema to validate the object against
+ * @returns ZodError if the object is has expected kind and version
+ */
+export const getSchemaParseError = <S extends z.ZodSchema>(
     obj: object,
     matcher: (identifiable: Identifiable) => boolean,
     schema: S,
-): obj is z.infer<S> => {
+): z.ZodError | undefined => {
     if (isIdentifiable(obj) && matcher(obj)) {
         // If the object is identifiable and matches the kind and version, validate it against the schema
         const parseResult = schema.safeParse(obj);
-        if (parseResult.success) {
-            return true;
-        }
-        // If validation fails, log and throw the error
-        console.error("Validation failed:", parseResult.error);
-        throw parseResult.error;
+        return parseResult.error;
     }
-    return false;
+    return undefined;
 };
