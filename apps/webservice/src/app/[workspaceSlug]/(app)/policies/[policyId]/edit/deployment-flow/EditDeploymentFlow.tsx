@@ -6,7 +6,7 @@ import { IconCheck, IconSelector } from "@tabler/icons-react";
 import { Label } from "recharts";
 import { z } from "zod";
 
-import * as SCHEMA from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import {

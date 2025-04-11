@@ -1,12 +1,13 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { Control } from "react-hook-form";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
-import { Control, useFieldArray } from "react-hook-form";
+import { useFieldArray } from "react-hook-form";
 import { z } from "zod";
 
-import * as SCHEMA from "@ctrlplane/db/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -299,11 +300,7 @@ export const EditQualitySecurity: React.FC<{
     name: "versionUserApprovals",
   });
 
-  const {
-    fields: roleFields,
-    append: appendRole,
-    remove: removeRole,
-  } = useFieldArray({
+  const { fields: roleFields, remove: removeRole } = useFieldArray({
     control: form.control,
     name: "versionRoleApprovals",
   });

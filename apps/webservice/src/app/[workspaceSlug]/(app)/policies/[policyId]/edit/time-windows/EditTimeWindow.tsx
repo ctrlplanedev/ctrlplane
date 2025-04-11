@@ -7,7 +7,6 @@ import { startOfDay } from "date-fns";
 import * as rrule from "rrule";
 import { z } from "zod";
 
-import * as SCHEMA from "@ctrlplane/db/schema";
 import { createPolicyRuleDenyWindow } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -62,7 +61,7 @@ export const EditTimeWindow: React.FC<{
   useEffect(() => {
     if (policy == null) return;
     form.reset({ denyWindows: policy.denyWindows });
-  }, [policy]);
+  }, [policy, form]);
 
   const updatePolicy = api.policy.update.useMutation();
 

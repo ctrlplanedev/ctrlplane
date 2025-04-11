@@ -1,6 +1,8 @@
-import { buildConflictUpdateColumns, eq, takeFirst, Tx } from "@ctrlplane/db";
+import type { Tx } from "@ctrlplane/db";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+
+import { buildConflictUpdateColumns, eq, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 
 import { getLocalDateAsUTC } from "./time-util";
 
@@ -155,16 +157,13 @@ export const updatePolicyInTx = async (
     ...rest
   } = input;
 
-  console.log(deploymentVersionSelector);
-
   const policy = await tx
     .select()
     .from(SCHEMA.policy)
     .where(eq(SCHEMA.policy.id, id))
     .then(takeFirst);
 
-  // // Only update policy if at least one attribute is defined
-  if (Object.values(rest).some((value) => value !== undefined))
+  if (Object.values(rest).length > 0)
     await tx
       .update(SCHEMA.policy)
       .set(rest)
