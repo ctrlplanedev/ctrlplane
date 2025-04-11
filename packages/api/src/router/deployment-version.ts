@@ -686,9 +686,9 @@ export const versionRouter = createTRPCRouter({
       )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
-          canUser.perform(Permission.DeploymentVersionGet).on({
-            type: "deploymentVersion",
-            id: input.versionId,
+          canUser.perform(Permission.EnvironmentGet).on({
+            type: "environment",
+            id: input.environmentId,
           }),
       })
       .query(({ input: { versionId, environmentId } }) =>
