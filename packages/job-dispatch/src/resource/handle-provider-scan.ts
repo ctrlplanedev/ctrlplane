@@ -25,33 +25,35 @@ export const handleResourceProviderScan = async (
     if (!resourcesToInsert.every((r) => r.workspaceId === workspaceId))
       throw new Error("All resources must belong to the same workspace");
 
-    const { toInsert, toUpdate, toDelete } = await groupResourcesByHook(
-      tx,
-      resourcesToInsert,
-    );
-    log.info(
-      `found ${toInsert.length} resources to insert and ${toUpdate.length} resources to update `,
-    );
-    const [insertedResources, updatedResources] = await Promise.all([
-      upsertResources(tx, toInsert),
-      upsertResources(tx, toUpdate),
-    ]);
+    return;
 
-    log.info(
-      `inserted ${insertedResources.length} resources and updated ${updatedResources.length} resources`,
-    );
+    // const { toInsert, toUpdate, toDelete } = await groupResourcesByHook(
+    //   tx,
+    //   resourcesToInsert,
+    // );
+    // log.info(
+    //   `found ${toInsert.length} resources to insert and ${toUpdate.length} resources to update `,
+    // );
+    // const [insertedResources, updatedResources] = await Promise.all([
+    //   upsertResources(tx, toInsert),
+    //   upsertResources(tx, toUpdate),
+    // ]);
 
-    const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
-    const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
+    // log.info(
+    //   `inserted ${insertedResources.length} resources and updated ${updatedResources.length} resources`,
+    // );
 
-    await Promise.all([
-      getQueue(Channel.NewResource).addBulk(insertJobs),
-      getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-    ]);
+    // const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
+    // const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
 
-    const deleted = await deleteResources(tx, toDelete);
-    log.info("completed handling resource provider scan");
-    return { all: [...insertedResources, ...updatedResources], deleted };
+    // await Promise.all([
+    //   getQueue(Channel.NewResource).addBulk(insertJobs),
+    //   getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+    // ]);
+
+    // const deleted = await deleteResources(tx, toDelete);
+    // log.info("completed handling resource provider scan");
+    // return { all: [...insertedResources, ...updatedResources], deleted };
   } catch (error) {
     log.error("Error upserting resources", { error });
     throw error;
