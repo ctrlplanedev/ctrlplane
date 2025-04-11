@@ -1,10 +1,12 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
+import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
 import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { z } from "zod";
 
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
@@ -27,16 +29,8 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
-import type {
-  DeploymentCondition} from "@ctrlplane/validators/deployments";
-import {
-  deploymentCondition
-} from "@ctrlplane/validators/deployments";
-import type {
-  EnvironmentCondition} from "@ctrlplane/validators/environments";
-import {
-  environmentCondition
-} from "@ctrlplane/validators/environments";
+import { deploymentCondition } from "@ctrlplane/validators/deployments";
+import { environmentCondition } from "@ctrlplane/validators/environments";
 
 import { DeploymentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/condition/DeploymentConditionRender";
 import { EnvironmentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/environment/condition/EnvironmentConditionRender";

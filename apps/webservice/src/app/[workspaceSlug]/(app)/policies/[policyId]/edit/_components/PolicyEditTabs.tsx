@@ -6,8 +6,8 @@ import { IconCircleFilled } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 
-import { urls } from "~/app/urls";
 import type { PolicyTab } from "../../../create/_components/PolicyContext";
+import { urls } from "~/app/urls";
 
 type TabConfig = {
   id: PolicyTab;
