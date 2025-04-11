@@ -156,7 +156,7 @@ export default async function RulesPage({
 
         <Tabs defaultValue="all" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="all">All Rules ({0})</TabsTrigger>
+            <TabsTrigger value="all">All Rules ({policies.length})</TabsTrigger>
             <TabsTrigger value="active">
               Active ({activePolicies.length})
             </TabsTrigger>

@@ -4,6 +4,7 @@ import { environmentRouter } from "./router/environment";
 import { githubRouter } from "./router/github";
 import { jobRouter } from "./router/job";
 import { policyRouter } from "./router/policy/router";
+import { resourceSchemaRouter } from "./router/resource-schema";
 import { resourceRouter } from "./router/resources";
 import { runbookRouter } from "./router/runbook";
 import { runtimeRouter } from "./router/runtime";
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   workspace: workspaceRouter,
   job: jobRouter,
   resource: resourceRouter,
+  resourceSchema: resourceSchemaRouter,
   github: githubRouter,
   dashboard: dashboardRouter,
   variableSet: variableSetRouter,
