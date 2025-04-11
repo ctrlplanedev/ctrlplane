@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import {
   IconList,
   IconPlug,
+  IconSchema,
   IconTable,
   IconView360Arrow,
 } from "@tabler/icons-react";
@@ -16,6 +17,7 @@ import {
 } from "@ctrlplane/ui/sidebar";
 
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 import { SidebarGroupKinds } from "./SidebarKinds";
 import { SidebarLink } from "./SidebarLink";
@@ -37,25 +39,35 @@ export default async function Layout(props: {
               <SidebarMenu>
                 <SidebarLink
                   icon={<IconList />}
-                  href={`/${workspace.slug}/resources/list`}
+                  href={urls.workspace(workspace.slug).resources().list()}
                 >
                   List
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconPlug />}
-                  href={`/${workspace.slug}/resources/providers`}
+                  href={urls
+                    .workspace(workspace.slug)
+                    .resources()
+                    .providers()
+                    .baseUrl()}
                 >
                   Providers
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconTable />}
-                  href={`/${workspace.slug}/resources/groupings`}
+                  href={urls.workspace(workspace.slug).resources().groupings()}
                 >
                   Groupings
                 </SidebarLink>
                 <SidebarLink
+                  icon={<IconSchema />}
+                  href={urls.workspace(workspace.slug).resources().schemas()}
+                >
+                  Schemas
+                </SidebarLink>
+                <SidebarLink
                   icon={<IconView360Arrow />}
-                  href={`/${workspace.slug}/resources/views`}
+                  href={urls.workspace(workspace.slug).resources().views()}
                 >
                   Views
                 </SidebarLink>

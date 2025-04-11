@@ -76,6 +76,7 @@ const resources = (workspaceSlug: string) => ({
   list: () => buildUrl(workspaceSlug, "resources", "list"),
   providers: () => providers(workspaceSlug),
   groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
+  schemas: () => buildUrl(workspaceSlug, "resources", "schemas"),
   views: () => buildUrl(workspaceSlug, "resources", "views"),
 });
 
