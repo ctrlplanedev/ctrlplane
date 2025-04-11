@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, eq, isNull } from "@ctrlplane/db";
+import { and, eq, isNull, upsertResources } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { deleteResources, upsertResources } from "@ctrlplane/job-dispatch";
+import { Channel, getQueue } from "@ctrlplane/events";
+import { deleteResources } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -93,9 +94,10 @@ export const PATCH = request()
         { status: 404 },
       );
 
-    const { all } = await upsertResources(db, [_.merge(resource, body)]);
+    const all = await upsertResources(db, [_.merge(resource, body)]);
     const res = all.at(0);
     if (res == null) throw new Error("Failed to update resource");
+    await getQueue(Channel.UpdatedResource).add(res.id, res);
     return NextResponse.json(res);
   });
 

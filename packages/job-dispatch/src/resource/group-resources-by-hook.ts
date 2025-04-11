@@ -2,8 +2,9 @@ import type { Tx } from "@ctrlplane/db";
 import type { InsertResource, Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { and, buildConflictUpdateColumns, eq, isNull, or } from "@ctrlplane/db";
+import { and, eq, isNull, or } from "@ctrlplane/db";
 import { resource } from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 /**
  * Gets resources for a specific provider
@@ -53,6 +54,8 @@ const findExistingResources = async (
   tx: Tx,
   resourcesToInsert: InsertResource[],
 ): Promise<Resource[]> => {
+  logger.info(`Finding existing resources: ${resourcesToInsert.length}`);
+
   const resourcesByProvider = _.groupBy(
     resourcesToInsert,
     (r) => r.providerId ?? "null",
@@ -70,23 +73,24 @@ const findExistingResources = async (
 };
 
 /**
- * Inserts or updates resources in the database. Note that this function only
- * handles the core resource fields - it does not insert/update associated
- * metadata or variables. Those must be handled separately.
+ * Groups resources into categories based on what type of hook operation needs to be performed.
+ * Compares input resources against existing database records to determine which resources
+ * need to be created, updated, or deleted.
  *
  * @param tx - Database transaction
- * @param resourcesToInsert - Array of resources to insert/update. Can include
- *                           metadata and variables but these will not be
- *                           persisted by this function.
- * @returns Promise resolving to array of inserted/updated resources, with any
- *          metadata/variables from the input merged onto the DB records
+ * @param resourcesToInsert - Array of resources to process and categorize
+ * @returns {Object} Object containing three arrays of resources:
+ *   - new: Resources that don't exist in the database and need to be created
+ *   - upsert: Resources that exist and need to be updated
+ *   - delete: Existing resources that are no longer present in the input and should be deleted
  */
-export const insertResources = async (
+export const groupResourcesByHook = async (
   tx: Tx,
   resourcesToInsert: InsertResource[],
 ) => {
   const existingResources = await findExistingResources(tx, resourcesToInsert);
-  const deleted = existingResources.filter(
+  logger.info(`Found ${existingResources.length} existing resources`);
+  const toDelete = existingResources.filter(
     (existing) =>
       !resourcesToInsert.some(
         (inserted) =>
@@ -94,24 +98,22 @@ export const insertResources = async (
           inserted.workspaceId === existing.workspaceId,
       ),
   );
-  const insertedResources = await tx
-    .insert(resource)
-    .values(resourcesToInsert)
-    .onConflictDoUpdate({
-      target: [resource.identifier, resource.workspaceId],
-      set: {
-        ...buildConflictUpdateColumns(resource, [
-          "name",
-          "version",
-          "kind",
-          "config",
-          "providerId",
-        ]),
-        updatedAt: new Date(),
-        deletedAt: null,
-      },
-    })
-    .returning();
+  const toInsert = resourcesToInsert.filter(
+    (r) =>
+      !existingResources.some(
+        (er) =>
+          er.identifier === r.identifier && er.workspaceId === r.workspaceId,
+      ),
+  );
+  const toUpdate = resourcesToInsert.filter((r) =>
+    existingResources.some(
+      (er) =>
+        er.identifier === r.identifier && er.workspaceId === r.workspaceId,
+    ),
+  );
+  logger.info(`Found ${toInsert.length} resources to insert`);
+  logger.info(`Found ${toUpdate.length} resources to update`);
+  logger.info(`Found ${toDelete.length} resources to delete`);
 
-  return { all: insertedResources, deleted };
+  return { toInsert, toUpdate, toDelete };
 };

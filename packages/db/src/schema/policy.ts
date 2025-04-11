@@ -1,6 +1,5 @@
 import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
-import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { InferSelectModel } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import {
@@ -18,10 +17,12 @@ import { z } from "zod";
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
 
+import type { policyDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
 import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
 import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
 import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
+import { createPolicyDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable("policy", {
@@ -55,27 +56,6 @@ export const policyTarget = pgTable("policy_target", {
     .$type<EnvironmentCondition | null>(),
 });
 
-export const policyDeploymentVersionSelector = pgTable(
-  "policy_deployment_version_selector",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-
-    // can only have one deployment version selector per policy, you can do and
-    // ors in the deployment version selector.
-    policyId: uuid("policy_id")
-      .notNull()
-      .unique()
-      .references(() => policy.id, { onDelete: "cascade" }),
-
-    name: text("name").notNull(),
-    description: text("description"),
-
-    deploymentVersionSelector: jsonb("deployment_version_selector")
-      .notNull()
-      .$type<DeploymentVersionCondition>(),
-  },
-);
-
 // Create zod schemas from drizzle schemas
 const policyInsertSchema = createInsertSchema(policy, {
   name: z.string().min(1, "Policy name is required"),
@@ -90,13 +70,6 @@ const policyTargetInsertSchema = createInsertSchema(policyTarget, {
   deploymentSelector: deploymentCondition.nullable(),
   environmentSelector: environmentCondition.nullable(),
 }).omit({ id: true });
-
-const createPolicyDeploymentVersionSelector = createInsertSchema(
-  policyDeploymentVersionSelector,
-  {
-    policyId: z.string().uuid(),
-  },
-).omit({ id: true });
 
 // Export schemas and types
 export const createPolicy = z.intersection(
@@ -124,7 +97,28 @@ export const createPolicy = z.intersection(
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;
 
-export const updatePolicy = policyInsertSchema.partial();
+export const updatePolicy = policyInsertSchema.partial().extend({
+  targets: z
+    .array(policyTargetInsertSchema.omit({ policyId: true }))
+    .optional(),
+  denyWindows: z
+    .array(createPolicyRuleDenyWindow.omit({ policyId: true }))
+    .optional(),
+  deploymentVersionSelector: createPolicyDeploymentVersionSelector
+    .omit({ policyId: true })
+    .optional()
+    .nullable(),
+  versionAnyApprovals: createPolicyRuleAnyApproval
+    .omit({ policyId: true })
+    .optional()
+    .nullable(),
+  versionUserApprovals: z
+    .array(createPolicyRuleUserApproval.omit({ policyId: true }))
+    .optional(),
+  versionRoleApprovals: z
+    .array(createPolicyRuleRoleApproval.omit({ policyId: true }))
+    .optional(),
+});
 export type UpdatePolicy = z.infer<typeof updatePolicy>;
 
 export const createPolicyTarget = policyTargetInsertSchema;

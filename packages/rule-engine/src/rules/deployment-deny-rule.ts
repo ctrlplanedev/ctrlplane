@@ -5,7 +5,7 @@ import {
   isSameDay,
   isWithinInterval,
 } from "date-fns";
-import rrule from "rrule";
+import * as rrule from "rrule";
 
 import type {
   RuleEngineContext,
@@ -17,7 +17,7 @@ import type {
 // common js bs
 const { datetime, RRule } = rrule;
 
-function getDatePartsInTimeZone(date: Date, timeZone: string) {
+export function getDatePartsInTimeZone(date: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "2-digit",

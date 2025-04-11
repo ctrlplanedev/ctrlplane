@@ -8,7 +8,7 @@ import {
   VersionApprovalRule,
 } from "../rules/version-approval-rule.js";
 
-const denyWindows = (policy: Policy | null) =>
+export const denyWindows = (policy: Policy | null) =>
   policy == null
     ? []
     : policy.denyWindows.map(
@@ -25,13 +25,12 @@ const versionAnyApprovalRule = (
   approvalRules?: Policy["versionAnyApprovals"] | null,
 ) => {
   if (approvalRules == null) return [];
-  return approvalRules.map(
-    (approval) =>
-      new VersionApprovalRule({
-        minApprovals: approval.requiredApprovalsCount,
-        getApprovalRecords: getAnyApprovalRecords,
-      }),
-  );
+  return [
+    new VersionApprovalRule({
+      minApprovals: approvalRules.requiredApprovalsCount,
+      getApprovalRecords: getAnyApprovalRecords,
+    }),
+  ];
 };
 
 const versionRoleApprovalRule = (
@@ -59,6 +58,14 @@ const versionUserApprovalRule = (
       }),
   );
 };
+
+export const getVersionApprovalRules = (
+  policy: Policy | null,
+): RuleEngineFilter<Version>[] => [
+  ...versionUserApprovalRule(policy?.versionUserApprovals),
+  ...versionAnyApprovalRule(policy?.versionAnyApprovals),
+  ...versionRoleApprovalRule(policy?.versionRoleApprovals),
+];
 
 export const getRules = (
   policy: Policy | null,

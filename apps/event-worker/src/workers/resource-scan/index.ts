@@ -10,7 +10,7 @@ import {
   workspace,
 } from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { upsertResources } from "@ctrlplane/job-dispatch";
+import { handleResourceProviderScan } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
 import { getEksResources } from "./aws/eks.js";
@@ -96,7 +96,7 @@ export const resourceScanWorker = createWorker(
       log.info(
         `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
       );
-      await upsertResources(db, resources);
+      await handleResourceProviderScan(db, resources);
     } catch (error: any) {
       log.error(
         `Error scanning/upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,

@@ -43,7 +43,9 @@ const POLICY_TABS: TabConfig[] = [
   },
 ];
 
-export const PolicyCreationTabs: React.FC = () => {
+export const PolicyCreationTabs: React.FC<{
+  workspaceId: string;
+}> = ({ workspaceId }) => {
   const { activeTab, setActiveTab } = usePolicyContext();
 
   const renderTabContent = () => {
@@ -55,7 +57,7 @@ export const PolicyCreationTabs: React.FC = () => {
       case "deployment-flow":
         return <DeploymentFlow />;
       case "quality-security":
-        return <QualitySecurity />;
+        return <QualitySecurity workspaceId={workspaceId} />;
     }
   };
 

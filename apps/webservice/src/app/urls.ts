@@ -41,10 +41,20 @@ const workspacePolicies = (slug: string) => {
     analytics: () => buildUrl(...base, "analytics"),
     settings: () => buildUrl(...base, "settings"),
     denyWindows: () => buildUrl(...base, "deny-windows"),
-    gradualRollouts: () => buildUrl(...base, "gradual-rollouts"),
-    successCriteria: () => buildUrl(...base, "success-criteria"),
-    dependencies: () => buildUrl(...base, "dependencies"),
     approvalGates: () => buildUrl(...base, "approval-gates"),
+    versionConditions: () => buildUrl(...base, "version-conditions"),
+    edit: (policyId: string) => workspacePolicyEdit(slug, policyId),
+  };
+};
+
+const workspacePolicyEdit = (slug: string, policyId: string) => {
+  const base = [slug, "policies", policyId, "edit"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    configuration: () => buildUrl(...base, "configuration"),
+    timeWindows: () => buildUrl(...base, "time-windows"),
+    deploymentFlow: () => buildUrl(...base, "deployment-flow"),
+    qualitySecurity: () => buildUrl(...base, "quality-security"),
   };
 };
 
@@ -77,6 +87,7 @@ const resources = (workspaceSlug: string) => ({
   list: () => buildUrl(workspaceSlug, "resources", "list"),
   providers: () => providers(workspaceSlug),
   groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
+  schemas: () => buildUrl(workspaceSlug, "resources", "schemas"),
   views: () => buildUrl(workspaceSlug, "resources", "views"),
 });
 
