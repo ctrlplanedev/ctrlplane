@@ -26,22 +26,7 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  allOf: [
-                    { $ref: "#/components/schemas/System" },
-                    {
-                      type: "object",
-                      properties: {
-                        environments: {
-                          type: "array",
-                          items: { $ref: "#/components/schemas/Environment" },
-                        },
-                        deployments: {
-                          type: "array",
-                          items: { $ref: "#/components/schemas/Deployment" },
-                        },
-                      },
-                    },
-                  ],
+                  $ref: "#/components/schemas/SystemWithEnvironmentsAndDeployments",
                 },
               },
             },
