@@ -38,7 +38,7 @@ export const JobAgentJenkinsPipelineConfig: React.FC<
       </FormItem>
 
       <div className="flex">
-        <Button type="submit" disabled={disabled || isPending}>
+        <Button type="submit" disabled={disabled ?? isPending}>
           {isPending ? "Saving..." : "Save"}
         </Button>
       </div>
