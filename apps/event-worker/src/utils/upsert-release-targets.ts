@@ -4,6 +4,7 @@ import { isPresent } from "ts-is-present";
 
 import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 const getReleaseTargetInsertsForSystem = async (
   db: Tx,
@@ -54,10 +55,10 @@ export const upsertReleaseTargets = async (
     ),
   ).then((results) => results.flat());
 
-  if (releaseTargetInserts.length === 0) return [];
-  return db
-    .insert(SCHEMA.releaseTarget)
-    .values(releaseTargetInserts)
-    .onConflictDoNothing()
-    .returning();
+  // if (releaseTargetInserts.length === 0) return [];
+  // return db
+  //   .insert(SCHEMA.releaseTarget)
+  //   .values(releaseTargetInserts)
+  //   .onConflictDoNothing()
+  //   .returning();``
 };

@@ -16,6 +16,13 @@ import { ReleaseTargetMutex } from "../releases/mutex.js";
 
 const log = logger.child({ worker: "policy-evaluate" });
 
+/**
+ * Creates a new release job with the given version and variable releases
+ * @param tx - Database transaction
+ * @param release - Release object containing version and variable release IDs
+ * @returns Created job
+ * @throws Error if version release, job agent, or variable release not found
+ */
 const createRelease = async (
   tx: Tx,
   release: { id: string; versionReleaseId: string; variableReleaseId: string },
@@ -76,6 +83,12 @@ const createRelease = async (
   return job;
 };
 
+/**
+ * Handles version release evaluation and creation for a release target
+ * @param releaseTarget - Release target to evaluate
+ * @returns Created version release
+ * @throws Error if no candidate is chosen
+ */
 const handleVersionRelease = async (releaseTarget: any) => {
   const vrm = new VersionReleaseManager(db, {
     ...releaseTarget,
@@ -83,7 +96,7 @@ const handleVersionRelease = async (releaseTarget: any) => {
   });
 
   const { chosenCandidate } = await vrm.evaluate();
-  if (!chosenCandidate) throw new Error("Failed to get chosen release");
+  if (!chosenCandidate) return null;
 
   const { release: versionRelease } = await vrm.upsertRelease(
     chosenCandidate.id,
@@ -92,6 +105,11 @@ const handleVersionRelease = async (releaseTarget: any) => {
   return versionRelease;
 };
 
+/**
+ * Handles variable release evaluation and creation for a release target
+ * @param releaseTarget - Release target to evaluate
+ * @returns Created variable release
+ */
 const handleVariableRelease = async (releaseTarget: any) => {
   const varrm = new VariableReleaseManager(db, {
     ...releaseTarget,
@@ -105,6 +123,11 @@ const handleVariableRelease = async (releaseTarget: any) => {
   return variableRelease;
 };
 
+/**
+ * Worker that evaluates a release target and creates necessary releases and jobs
+ * Only runs in development environment
+ * Uses mutex to prevent concurrent evaluations of the same target
+ */
 export const evaluateReleaseTarget = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
@@ -125,6 +148,11 @@ export const evaluateReleaseTarget = createWorker(
 
       const versionRelease = await handleVersionRelease(releaseTarget);
       const variableRelease = await handleVariableRelease(releaseTarget);
+
+      if (versionRelease == null) {
+        log.info("No valid version release found.", { releaseTarget });
+        return;
+      }
 
       const release = await db
         .insert(schema.release)
@@ -149,4 +177,6 @@ export const evaluateReleaseTarget = createWorker(
       await mutex.unlock();
     }
   },
+  // Member intensive work, attemp to reduce crashing
+  { concurrency: 10 },
 );

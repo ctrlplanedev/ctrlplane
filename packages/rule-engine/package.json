@@ -30,6 +30,7 @@
     "@date-fns/tz": "^1.2.0",
     "date-fns": "^4.1.0",
     "lodash": "catalog:",
+    "object-sizeof": "^2.6.5",
     "rrule": "^2.8.1",
     "ts-is-present": "catalog:",
     "zod": "catalog:"

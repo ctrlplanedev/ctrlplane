@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
+import sizeOf from "object-sizeof";
 
 import {
   and,
@@ -12,6 +13,7 @@ import {
 } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { Version } from "../manager/version-rule-engine.js";
@@ -21,6 +23,10 @@ import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getRules } from "./version-manager-rules.js";
+
+const log = logger.child({
+  module: "version-manager",
+});
 
 type VersionEvaluateOptions = {
   rules?: (p: Policy | null) => RuleEngineFilter<Version>[];
@@ -182,7 +188,33 @@ export class VersionReleaseManager implements ReleaseManager {
     const engine = new VersionRuleEngine(rules);
     const versions =
       options?.versions ?? (await this.findVersionsForEvaluate());
+
+    const bytes = sizeOf(versions);
+    log.info(`Evaluating ${versions.length} versions`, {
+      size: formatBytes(bytes),
+      bytes,
+    });
     const result = await engine.evaluate(ctx, versions);
     return result;
   }
+}
+
+/**
+ * Formats a byte size into a human readable string with appropriate units.
+ * Handles sizes from bytes up to terabytes.
+ *
+ * @param bytes - The number of bytes to format
+ * @returns A formatted string like "1.5 MB" or "800 KB"
+ */
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+
+  // Get appropriate unit by calculating log base 1024
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  // Format with 2 decimal places and trim trailing zeros
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }

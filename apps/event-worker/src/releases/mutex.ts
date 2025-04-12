@@ -1,7 +1,14 @@
 import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
+import ms from "ms";
 import { Mutex as RedisMutex } from "redis-semaphore";
 
+import { logger } from "@ctrlplane/logger";
+
 import { redis } from "../redis.js";
+
+const log = logger.child({
+  module: "release-target-mutex",
+});
 
 export class ReleaseTargetMutex {
   static async lock(releaseTargetIdentifier: ReleaseTargetIdentifier) {
@@ -10,20 +17,31 @@ export class ReleaseTargetMutex {
     return mutex;
   }
 
+  private readonly key: string;
   private mutex: RedisMutex;
 
   constructor(releaseTargetIdentifier: ReleaseTargetIdentifier) {
-    const key = `release-target-mutex-${releaseTargetIdentifier.deploymentId}-${releaseTargetIdentifier.resourceId}-${releaseTargetIdentifier.environmentId}`;
-    this.mutex = new RedisMutex(redis, key, {});
+    this.key = `release-target-mutex-${releaseTargetIdentifier.deploymentId}-${releaseTargetIdentifier.resourceId}-${releaseTargetIdentifier.environmentId}`;
+    this.mutex = new RedisMutex(redis, this.key, {
+      lockTimeout: ms("30s"),
+      onLockLost: (e) => {
+        log.warning("Lock lost for release target", {
+          error: e,
+          releaseTargetIdentifier,
+        });
+      },
+    });
   }
 
-  async lock(): Promise<void> {
+  lock(): Promise<void> {
+    log.info("Locking mutex", { key: this.key });
     if (this.mutex.isAcquired) throw new Error("Mutex is already locked");
-    await this.mutex.acquire();
+    return this.mutex.acquire();
   }
 
-  async unlock(): Promise<void> {
+  unlock(): Promise<void> {
+    log.info("Unlocking mutex", { key: this.key });
     if (!this.mutex.isAcquired) throw new Error("Mutex is not locked");
-    await this.mutex.release();
+    return this.mutex.release();
   }
 }

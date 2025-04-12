@@ -5,6 +5,7 @@ import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -69,6 +70,9 @@ export const newDeploymentVersionWorker = createWorker(
       deploymentId: version.deploymentId,
     }));
 
+    logger.info(
+      `Inserting ${releaseTargetInserts.length} release targets for new version`,
+    );
     await db
       .insert(schema.releaseTarget)
       .values(releaseTargetInserts)
