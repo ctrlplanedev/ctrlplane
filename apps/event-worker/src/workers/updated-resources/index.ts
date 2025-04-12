@@ -10,7 +10,7 @@ import { dispatchExitHooks } from "./dispatch-exit-hooks.js";
 export const updatedResourceWorker = createWorker(
   Channel.UpdatedResource,
   async ({ data: resource }) => {
-    logger.info(`started processing updated resource ${resource.id}`);
+    const startTime = performance.now();
 
     const currentReleaseTargets = await db.query.releaseTarget.findMany({
       where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
@@ -18,7 +18,11 @@ export const updatedResourceWorker = createWorker(
 
     await upsertReleaseTargets(db, resource);
 
-    logger.info(`finished processing updated resource ${resource.id}`);
+    const endTime = performance.now();
+
+    logger.info(
+      `finished processing updated resource ${resource.id} in ${endTime - startTime}ms`,
+    );
 
     return;
 
