@@ -31,8 +31,9 @@ import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
+import type {
+  ResourceCondition} from "@ctrlplane/validators/resources";
 import {
-  ResourceCondition,
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 

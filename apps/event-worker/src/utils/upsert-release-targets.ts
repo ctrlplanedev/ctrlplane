@@ -4,7 +4,6 @@ import { isPresent } from "ts-is-present";
 
 import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 const getReleaseTargetInsertsForSystem = async (
   db: Tx,
