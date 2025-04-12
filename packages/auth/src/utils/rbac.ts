@@ -19,6 +19,7 @@ import {
   environmentPolicy,
   job,
   jobAgent,
+  policy,
   releaseJobTrigger,
   resource,
   resourceMetadataGroup,
@@ -382,8 +383,21 @@ const getJobScopes = async (id: string) => {
   ];
 };
 
-type Scope = { type: ScopeType; id: string };
+const getPolicyScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(policy)
+    .innerJoin(workspace, eq(policy.workspaceId, workspace.id))
+    .where(eq(policy.id, id))
+    .then(takeFirst);
 
+  return [
+    { type: "policy" as const, id: result.policy.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
+type Scope = { type: ScopeType; id: string };
 export const scopeHandlers: Record<
   ScopeType,
   (id: string) => Promise<Array<Scope>>
@@ -404,6 +418,7 @@ export const scopeHandlers: Record<
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
   job: getJobScopes,
+  policy: getPolicyScopes,
 };
 
 const fetchScopeHierarchyForResource = async (resource: {

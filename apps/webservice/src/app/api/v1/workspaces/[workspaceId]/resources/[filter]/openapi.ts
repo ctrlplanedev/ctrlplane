@@ -37,7 +37,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           "400": {
-            description: "Invalid filter",
+            description: "Invalid selector",
             content: {
               "application/json": {
                 schema: {

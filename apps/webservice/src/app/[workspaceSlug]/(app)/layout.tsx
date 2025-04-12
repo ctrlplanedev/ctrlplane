@@ -1,5 +1,10 @@
 import React from "react";
-import { IconCube, IconRocket, IconSettings } from "@tabler/icons-react";
+import {
+  IconCube,
+  IconRocket,
+  IconSettings,
+  IconShieldCheck,
+} from "@tabler/icons-react";
 
 import { EnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment/drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
@@ -37,11 +42,11 @@ export default async function Layout(props: {
               label="Inventory"
               href={workspaceUrls.resources().baseUrl()}
             />
-            {/* <TopSidebarIcon
-              icon={<IconChartBar />}
-              label="Insights"
-              href={workspaceUrls.insights()}
-            /> */}
+            <TopSidebarIcon
+              icon={<IconShieldCheck />}
+              label="Policies"
+              href={workspaceUrls.policies().baseUrl()}
+            />
             <div className="flex-grow" />
             {/* <TopSidebarIcon
             icon={<IconPlug />}

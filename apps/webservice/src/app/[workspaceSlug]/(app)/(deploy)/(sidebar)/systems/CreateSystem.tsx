@@ -43,6 +43,7 @@ export const CreateSystemDialog: React.FC<{
   const [open, setOpen] = useState(false);
   const createSystem = api.system.create.useMutation();
   const router = useRouter();
+  const utils = api.useUtils();
 
   const form = useForm({
     schema: systemForm,
@@ -61,6 +62,7 @@ export const CreateSystemDialog: React.FC<{
   const onSubmit = handleSubmit((system) =>
     createSystem
       .mutateAsync({ workspaceId: workspace.id, ...system })
+      .then(() => utils.system.list.invalidate())
       .then(() => router.refresh())
       .then(() =>
         router.push(

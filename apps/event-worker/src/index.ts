@@ -1,18 +1,16 @@
 import { logger } from "@ctrlplane/logger";
 
-import { createDispatchExecutionJobWorker } from "./job-dispatch/index.js";
-import { redis } from "./redis.js";
-import { createResourceScanWorker } from "./resource-scan/index.js";
+import { register } from "./instrumentation.js";
+import { workers } from "./workers/index.js";
 
-const resourceScanWorker = createResourceScanWorker();
-const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();
+console.log("Registering instrumentation...");
+await register();
 
 const shutdown = () => {
   logger.warn("Exiting...");
-  resourceScanWorker.close();
-  dispatchExecutionJobWorker.close();
-  redis.quit();
-  process.exit(0);
+  Promise.all(Object.values(workers).map((w) => w?.close())).then(() =>
+    process.exit(0),
+  );
 };
 
 process.on("SIGTERM", shutdown);

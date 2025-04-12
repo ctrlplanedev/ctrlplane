@@ -3,12 +3,12 @@ import _ from "lodash";
 
 import { eq, inArray, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTriggeredRunbookJob } from "./job-creation.js";
 import { updateJob } from "./job-update.js";
 import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
-import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
@@ -93,13 +93,12 @@ class DispatchBuilder {
     );
 
     if (validJobsWithResolvedVariables.length > 0) {
-      await dispatchJobsQueue.addBulk(
+      await getQueue(Channel.DispatchJob).addBulk(
         validJobsWithResolvedVariables.map((wf) => ({
           name: wf.id,
           data: { jobId: wf.id },
         })),
       );
-
       await Promise.all(
         validJobsWithResolvedVariables.map((j) =>
           updateJob(this.db, j.id, { status: JobStatus.InProgress }),
@@ -133,6 +132,6 @@ export const dispatchRunbook = async (
     .where(eq(schema.runbook.id, runbookId))
     .then(takeFirst);
   const job = await createTriggeredRunbookJob(db, runbook, values);
-  await dispatchJobsQueue.add(job.id, { jobId: job.id });
+  await getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
   return job;
 };

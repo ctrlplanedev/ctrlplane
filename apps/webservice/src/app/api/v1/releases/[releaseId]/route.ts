@@ -20,7 +20,10 @@ import { parseBody } from "../../body-parser";
 import { request } from "../../middleware";
 
 const patchSchema = SCHEMA.updateDeploymentVersion.and(
-  z.object({ metadata: z.record(z.string()).optional() }),
+  z.object({
+    metadata: z.record(z.string()).optional(),
+    version: z.string().optional(),
+  }),
 );
 
 export const PATCH = request()
@@ -41,9 +44,10 @@ export const PATCH = request()
     const { body, user, req } = ctx;
 
     try {
+      const tag = body.tag ?? body.version;
       const release = await ctx.db
         .update(SCHEMA.deploymentVersion)
-        .set(body)
+        .set({ ...body, tag })
         .where(eq(SCHEMA.deploymentVersion.id, versionId))
         .returning()
         .then(takeFirst);

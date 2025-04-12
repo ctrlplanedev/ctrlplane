@@ -1,4 +1,4 @@
-import type { RouterOutputs } from "@ctrlplane/api";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -11,11 +11,8 @@ import { Label } from "@ctrlplane/ui/label";
 import { urls } from "~/app/urls";
 import { ResourceIcon } from "../ResourceIcon";
 
-type Resource =
-  RouterOutputs["resource"]["byWorkspaceId"]["list"]["items"][number];
-
 type ResourceListProps = {
-  resources: Resource[];
+  resources: SCHEMA.Resource[];
   count: number;
   filter: ResourceCondition;
 };

@@ -32,7 +32,9 @@ COPY packages/db/package.json ./packages/db/package.json
 COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
+COPY packages/rule-engine/package.json ./packages/rule-engine/package.json
 COPY packages/secrets/package.json ./packages/secrets/package.json
+COPY packages/events/package.json ./packages/events/package.json
 
 COPY apps/event-worker/package.json ./apps/event-worker/package.json
 
@@ -47,5 +49,6 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
 ENV NODE_ENV=production
+ENV NODE_MAX_OLD_SPACE_SIZE=4096
 
-CMD ["node", "apps/event-worker/dist/index.js"]
+CMD node --max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE} apps/event-worker/dist/index.js

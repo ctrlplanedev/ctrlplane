@@ -37,7 +37,7 @@ import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job/drawer
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
-import { useFilter } from "~/app/[workspaceSlug]/(app)/_hooks/useFilter";
+import { useCondition } from "~/app/[workspaceSlug]/(app)/_hooks/useCondition";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
 import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
@@ -78,15 +78,15 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   );
 
   const allTriggers = Object.values(triggersByResource).flat();
-  const allJobIds = allTriggers.map((t) => t.job.id);
-  const latestStatusesByResource = Object.entries(triggersByResource).map(
+  const latestJobsByResource = Object.entries(triggersByResource).map(
     ([_, triggers]) => {
       const sortedByCreatedAt = triggers.sort(
         (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
       );
-      return sortedByCreatedAt[sortedByCreatedAt.length - 1]!.job.status;
+      return sortedByCreatedAt[sortedByCreatedAt.length - 1]!.job;
     },
   );
+  const latestStatusesByResource = latestJobsByResource.map((j) => j.status);
 
   const sortedAndGroupedTriggers = Object.entries(triggersByResource)
     .sort(([_, a], [__, b]) =>
@@ -198,7 +198,9 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 />
               ))}
 
-              <EnvironmentRowDropdown jobIds={allJobIds}>
+              <EnvironmentRowDropdown
+                jobIds={latestJobsByResource.map((j) => j.id)}
+              >
                 <Button variant="ghost" size="icon" className="h-7 w-7">
                   <IconDots className="h-4 w-4" />
                 </Button>
@@ -471,9 +473,9 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
   deployment,
   environments,
 }) => {
-  const { filter, setFilter } = useFilter<JobCondition>();
+  const { condition, setCondition } = useCondition<JobCondition>();
   const releaseJobTriggerQuery = api.job.config.byDeploymentVersionId.useQuery(
-    { versionId: deploymentVersion.id, filter: filter ?? undefined },
+    { versionId: deploymentVersion.id, condition: condition ?? undefined },
     { refetchInterval: 5_000 },
   );
   const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];
@@ -486,6 +488,11 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
       resources: _.groupBy(triggers, (t) => t.resource.id),
     }))
     .filter((t) => isPresent(t.environment))
+    .sort((a, b) =>
+      a.environment!.name.localeCompare(b.environment!.name, undefined, {
+        sensitivity: "accent",
+      }),
+    )
     .value();
 
   return (
@@ -494,12 +501,12 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
         <SidebarTrigger name={Sidebars.Release}>
           <IconMenu2 className="h-4 w-4" />
         </SidebarTrigger>
-        <JobConditionDialog condition={filter} onChange={setFilter}>
+        <JobConditionDialog condition={condition} onChange={setCondition}>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <IconFilter className="h-4 w-4" />
             </Button>
-            {filter != null && <JobConditionBadge condition={filter} />}
+            {condition != null && <JobConditionBadge condition={condition} />}
           </div>
         </JobConditionDialog>
       </div>

@@ -8,7 +8,7 @@ import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
 import {
-  ResourceFilterType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -49,12 +49,12 @@ export default async function VariablesPage(props: {
     deployment.id,
   );
 
-  const systemResourcesFilter: ComparisonCondition = {
-    type: ResourceFilterType.Comparison,
+  const systemResourcesCondition: ComparisonCondition = {
+    type: ResourceConditionType.Comparison,
     operator: ResourceOperator.Or,
     conditions: await api.environment
       .bySystemId(deployment.systemId)
-      .then((envs) => envs.map((e) => e.resourceFilter).filter(isPresent)),
+      .then((envs) => envs.map((e) => e.resourceSelector).filter(isPresent)),
   };
 
   const variablesPromises = variablesByDeployment.map(async (variable) => {
@@ -64,27 +64,27 @@ export default async function VariablesPage(props: {
     const rest = variable.values.filter((v) => v.id !== defaultValue?.id);
 
     const valuesPromises = rest.map(async (v) => {
-      if (v.resourceFilter == null)
+      if (v.resourceSelector == null)
         return {
           ...v,
           resourceCount: 0,
           resources: [],
-          filterHash: "",
+          conditionHash: "",
         };
 
-      const filterHash = LZString.compressToEncodedURIComponent(
-        JSON.stringify(v.resourceFilter),
+      const conditionHash = LZString.compressToEncodedURIComponent(
+        JSON.stringify(v.resourceSelector),
       );
 
-      const filter: ComparisonCondition = {
-        type: ResourceFilterType.Comparison,
+      const condition: ComparisonCondition = {
+        type: ResourceConditionType.Comparison,
         operator: ResourceOperator.And,
-        conditions: [systemResourcesFilter, v.resourceFilter],
+        conditions: [systemResourcesCondition, v.resourceSelector],
       };
 
       const resources = await api.resource.byWorkspaceId.list({
         workspaceId,
-        filter,
+        filter: condition,
         limit: 5,
       });
 
@@ -92,28 +92,30 @@ export default async function VariablesPage(props: {
         ...v,
         resourceCount: resources.total,
         resources: resources.items,
-        filterHash,
+        conditionHash,
       };
     });
 
     const values = await Promise.all(valuesPromises);
 
     if (defaultValue != null) {
-      const restFilters = rest.map((v) => v.resourceFilter).filter(isPresent);
+      const restConditions = rest
+        .map((v) => v.resourceSelector)
+        .filter(isPresent);
 
       const filter: ResourceCondition =
-        restFilters.length === 0
-          ? systemResourcesFilter
+        restConditions.length === 0
+          ? systemResourcesCondition
           : {
-              type: ResourceFilterType.Comparison,
+              type: ResourceConditionType.Comparison,
               operator: ResourceOperator.And,
               conditions: [
-                systemResourcesFilter,
+                systemResourcesCondition,
                 {
-                  type: ResourceFilterType.Comparison,
+                  type: ResourceConditionType.Comparison,
                   operator: ResourceOperator.Or,
                   not: true,
-                  conditions: restFilters,
+                  conditions: restConditions,
                 },
               ],
             };
@@ -124,7 +126,7 @@ export default async function VariablesPage(props: {
         limit: 5,
       });
 
-      const filterHash = LZString.compressToEncodedURIComponent(
+      const conditionHash = LZString.compressToEncodedURIComponent(
         JSON.stringify(filter),
       );
 
@@ -132,7 +134,7 @@ export default async function VariablesPage(props: {
         ...defaultValue,
         resourceCount: defaultResources.total,
         resources: defaultResources.items,
-        filterHash,
+        conditionHash,
       });
     }
 

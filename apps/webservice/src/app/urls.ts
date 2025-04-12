@@ -34,6 +34,30 @@ const workspaceSettingsIntegrations = (slug: string) => {
   };
 };
 
+const workspacePolicies = (slug: string) => {
+  const base = [slug, "policies"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    analytics: () => buildUrl(...base, "analytics"),
+    settings: () => buildUrl(...base, "settings"),
+    denyWindows: () => buildUrl(...base, "deny-windows"),
+    approvalGates: () => buildUrl(...base, "approval-gates"),
+    versionConditions: () => buildUrl(...base, "version-conditions"),
+    edit: (policyId: string) => workspacePolicyEdit(slug, policyId),
+  };
+};
+
+const workspacePolicyEdit = (slug: string, policyId: string) => {
+  const base = [slug, "policies", policyId, "edit"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    configuration: () => buildUrl(...base, "configuration"),
+    timeWindows: () => buildUrl(...base, "time-windows"),
+    deploymentFlow: () => buildUrl(...base, "deployment-flow"),
+    qualitySecurity: () => buildUrl(...base, "quality-security"),
+  };
+};
+
 // Workspace URL functions
 const workspace = (slug: string) => {
   return {
@@ -45,6 +69,7 @@ const workspace = (slug: string) => {
     insights: () => buildUrl(slug, "insights"),
     resources: () => resources(slug),
     resource: (resourceId: string) => resource(slug, resourceId),
+    policies: () => workspacePolicies(slug),
     settings: () => workspaceSettings(slug),
   };
 };
@@ -62,6 +87,7 @@ const resources = (workspaceSlug: string) => ({
   list: () => buildUrl(workspaceSlug, "resources", "list"),
   providers: () => providers(workspaceSlug),
   groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
+  schemas: () => buildUrl(workspaceSlug, "resources", "schemas"),
   views: () => buildUrl(workspaceSlug, "resources", "views"),
 });
 
@@ -106,6 +132,7 @@ const system = (params: SystemParams) => {
       deployment({ ...params, deploymentSlug }),
     environments: () => buildUrl(...base, "environments"),
     environment: (id: string) => environment({ ...params, environmentId: id }),
+    policies: () => buildUrl(...base, "policies"),
     runbooks: () => runbooks(params),
   };
 };
@@ -141,6 +168,7 @@ const environment = (params: EnvironmentParams) => {
     resources: () => buildUrl(...base, "resources"),
     variables: () => buildUrl(...base, "variables"),
     settings: () => buildUrl(...base, "settings"),
+    overview: () => buildUrl(...base, "overview"),
   };
 };
 type DeploymentParams = SystemParams & {
@@ -189,6 +217,7 @@ const release = (params: ReleaseParams) => {
 
   return {
     baseUrl: () => buildUrl(...base),
+    jobs: () => buildUrl(...base, "jobs"),
   };
 };
 

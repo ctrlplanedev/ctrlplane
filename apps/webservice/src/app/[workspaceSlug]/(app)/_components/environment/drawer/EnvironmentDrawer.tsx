@@ -98,7 +98,7 @@ export const EnvironmentDrawer: React.FC = () => {
   const loading =
     environmentQ.isLoading || workspaceQ.isLoading || deploymentsQ.isLoading;
 
-  const isUsingOverridePolicy = environment?.policy.isOverride ?? false;
+  const isUsingOverridePolicy = environment?.policy.isDefaultPolicy ?? false;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -224,7 +224,7 @@ export const EnvironmentDrawer: React.FC = () => {
                       workspaceId={workspace.id}
                     />
                   )}
-                {environment.policy.isOverride && (
+                {environment.policy.isDefaultPolicy && (
                   <UpdateOverridePolicy
                     environment={environment}
                     environmentPolicy={environment.policy}

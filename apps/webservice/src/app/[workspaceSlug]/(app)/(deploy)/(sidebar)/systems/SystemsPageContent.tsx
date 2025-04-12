@@ -1,7 +1,7 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -16,6 +16,7 @@ import {
   IconSortDescending,
   IconTopologyComplex,
 } from "@tabler/icons-react";
+import { useDebounce } from "react-use";
 
 import {
   Breadcrumb,
@@ -48,21 +49,23 @@ import { CreateSystemDialog } from "./CreateSystem";
 
 type SortOrder = "name-asc" | "name-desc" | "envs-asc" | "envs-desc";
 
-const useSystemFilter = () => {
+const CONDITION_PARAM = "condition";
+
+const useSystemCondition = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const filter = searchParams.get("filter");
+  const condition = searchParams.get(CONDITION_PARAM);
   const sort = searchParams.get("sort") as SortOrder | null;
 
-  const setParams = (params: { filter?: string; sort?: SortOrder | "" }) => {
+  const setParams = (params: { condition?: string; sort?: SortOrder | "" }) => {
     const url = new URL(window.location.href);
     const urlParams = new URLSearchParams(url.search);
 
-    if (params.filter !== undefined) {
-      if (params.filter === "") {
-        urlParams.delete("filter");
+    if (params.condition !== undefined) {
+      if (params.condition === "") {
+        urlParams.delete(CONDITION_PARAM);
       } else {
-        urlParams.set("filter", params.filter);
+        urlParams.set(CONDITION_PARAM, params.condition);
       }
     }
 
@@ -76,9 +79,9 @@ const useSystemFilter = () => {
   };
 
   return {
-    filter,
+    condition,
     sort,
-    setFilter: (filter: string) => setParams({ filter }),
+    setCondition: (condition: string) => setParams({ condition: condition }),
     setSort: (sort: SortOrder) => setParams({ sort }),
     setParams,
   };
@@ -87,20 +90,19 @@ const useSystemFilter = () => {
 export const SystemsPageContent: React.FC<{
   workspace: SCHEMA.Workspace;
 }> = ({ workspace }) => {
-  const { filter, sort, setFilter, setSort } = useSystemFilter();
-  const [search, setSearch] = useState(filter ?? "");
+  const { condition, sort, setCondition, setSort } = useSystemCondition();
+  const [search, setSearch] = useState(condition ?? "");
 
-  useEffect(() => {
-    if (search !== (filter ?? "")) {
-      const debounceTimeout = setTimeout(() => {
-        setFilter(search);
-      }, 300);
-      return () => clearTimeout(debounceTimeout);
-    }
-  }, [search, filter, setFilter]);
+  useDebounce(
+    () => {
+      if (search !== (condition ?? "")) setCondition(search);
+    },
+    300,
+    [search],
+  );
 
   const workspaceId = workspace.id;
-  const query = filter ?? undefined;
+  const query = condition ?? undefined;
   const { data, isLoading } = api.system.list.useQuery(
     { workspaceId, query },
     { placeholderData: (prev) => prev },
@@ -311,16 +313,36 @@ export const SystemsPageContent: React.FC<{
         {!isLoading &&
           systems.length === 0 &&
           (search ? (
-            <Card className="flex flex-col items-center justify-center p-12 text-center">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/5">
-                <IconTopologyComplex className="h-10 w-10 text-primary/60" />
+            <>
+              <div className="relative w-full md:w-1/2 lg:w-1/3">
+                <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    // If no results, clear the search immediately instead of waiting for debounce
+                    // otherwise it will show the empty state below for a split second before clearing
+                    if (value.length === 0) {
+                      setCondition("");
+                      setSearch("");
+                    }
+                    if (value.length > 0) setSearch(value);
+                  }}
+                  placeholder="Search systems and deployments..."
+                  className="pl-9"
+                />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">No systems found</h3>
-              <p className="mb-8 max-w-md text-muted-foreground">
-                No systems match your search "{search}". Try a different search
-                term.
-              </p>
-            </Card>
+              <Card className="flex flex-col items-center justify-center p-12 text-center">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/5">
+                  <IconTopologyComplex className="h-10 w-10 text-primary/60" />
+                </div>
+                <h3 className="mb-2 text-xl font-semibold">No systems found</h3>
+                <p className="mb-8 max-w-md text-muted-foreground">
+                  No systems match your search "{search}". Try a different
+                  search term.
+                </p>
+              </Card>
+            </>
           ) : (
             <div className="h-full w-full p-20">
               <div className="container m-auto max-w-xl space-y-6 p-20">

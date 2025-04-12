@@ -3,7 +3,10 @@ import type {
   MetadataCondition,
   VersionCondition,
 } from "@ctrlplane/validators/conditions";
-import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+import type {
+  DeploymentVersionCondition,
+  TagCondition,
+} from "@ctrlplane/validators/releases";
 import type { InferSelectModel, SQL } from "drizzle-orm";
 import {
   and,
@@ -17,6 +20,7 @@ import {
   not,
   notExists,
   or,
+  relations,
   sql,
 } from "drizzle-orm";
 import {
@@ -121,7 +125,9 @@ export const deploymentVersion = pgTable(
       .references(() => deployment.id, { onDelete: "cascade" }),
     status: versionStatus("status").notNull().default("ready"),
     message: text("message"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true, precision: 3 })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
     unq: uniqueIndex().on(t.deploymentId, t.tag),
@@ -260,6 +266,16 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
   return ilike(deploymentVersion.tag, `%${cond.value}%`);
 };
 
+const buildTagCondition = (cond: TagCondition): SQL => {
+  if (cond.operator === ColumnOperator.Equals)
+    return eq(deploymentVersion.tag, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return ilike(deploymentVersion.tag, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return ilike(deploymentVersion.tag, `%${cond.value}`);
+  return ilike(deploymentVersion.tag, `%${cond.value}%`);
+};
+
 const buildCondition = (tx: Tx, cond: DeploymentVersionCondition): SQL => {
   if (cond.type === DeploymentVersionConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
@@ -267,6 +283,8 @@ const buildCondition = (tx: Tx, cond: DeploymentVersionCondition): SQL => {
     return buildCreatedAtCondition(cond);
   if (cond.type === DeploymentVersionConditionType.Version)
     return buildVersionCondition(cond);
+  if (cond.type === DeploymentVersionConditionType.Tag)
+    return buildTagCondition(cond);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 
@@ -286,3 +304,49 @@ export function deploymentVersionMatchesCondition(
     ? undefined
     : buildCondition(tx, condition);
 }
+
+export const deploymentVersionRelations = relations(
+  deploymentVersion,
+  ({ one, many }) => ({
+    deployment: one(deployment, {
+      fields: [deploymentVersion.deploymentId],
+      references: [deployment.id],
+    }),
+    metadata: many(deploymentVersionMetadata),
+    dependencies: many(versionDependency),
+  }),
+);
+
+export const deploymentVersionChannelRelations = relations(
+  deploymentVersionChannel,
+  ({ one }) => ({
+    deployment: one(deployment, {
+      fields: [deploymentVersionChannel.deploymentId],
+      references: [deployment.id],
+    }),
+  }),
+);
+
+export const versionDependencyRelations = relations(
+  versionDependency,
+  ({ one }) => ({
+    version: one(deploymentVersion, {
+      fields: [versionDependency.versionId],
+      references: [deploymentVersion.id],
+    }),
+    deployment: one(deployment, {
+      fields: [versionDependency.deploymentId],
+      references: [deployment.id],
+    }),
+  }),
+);
+
+export const deploymentVersionMetadataRelations = relations(
+  deploymentVersionMetadata,
+  ({ one }) => ({
+    version: one(deploymentVersion, {
+      fields: [deploymentVersionMetadata.versionId],
+      references: [deploymentVersion.id],
+    }),
+  }),
+);

@@ -39,17 +39,21 @@
     "rest": "pnpm with-env psql $POSTGRES_URL -c \"DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;\""
   },
   "dependencies": {
+    "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "drizzle-orm": "^0.33.0",
     "drizzle-zod": "^0.5.1",
+    "lodash": "catalog:",
     "pg": "^8.11.5",
+    "rrule": "^2.8.1",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/lodash": "catalog:",
     "@types/node": "catalog:node22",
     "@types/pg": "^8.11.6",
     "dotenv-cli": "catalog:",

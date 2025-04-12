@@ -1,19 +1,17 @@
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
-import { Overview } from "./Overview";
+import { SettingsPageContent } from "./SettingsPageContent";
 
-export default async function SettingsPage(props: {
+export default async function EnvironmentSettingsPage({
+  params,
+}: {
   params: Promise<{ environmentId: string }>;
 }) {
-  const { environmentId } = await props.params;
+  const { environmentId } = await params;
 
   const environment = await api.environment.byId(environmentId);
-  if (environment == null) notFound();
+  if (environment == null) return notFound();
 
-  return (
-    <div className="container">
-      <Overview environment={environment} />
-    </div>
-  );
+  return <SettingsPageContent environment={environment} />;
 }

@@ -38,11 +38,11 @@ import { createInsertSchema } from "drizzle-zod";
 import {
   ColumnOperator,
   ComparisonOperator,
+  ConditionType,
   DateOperator,
-  FilterType,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
-import { JobFilterType } from "@ctrlplane/validators/jobs";
+import { JobConditionType } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../common.js";
 import { deploymentVersion } from "./deployment-version.js";
@@ -105,7 +105,11 @@ export const job = pgTable(
   }),
 );
 
-export const jobRelations = relations(job, ({ many }) => ({
+export const jobRelations = relations(job, ({ many, one }) => ({
+  agent: one(jobAgent, {
+    fields: [job.jobAgentId],
+    references: [jobAgent.id],
+  }),
   releaseTrigger: many(releaseJobTrigger),
   jobRelationships: many(jobResourceRelationship),
   metadata: many(jobMetadata),
@@ -252,18 +256,19 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
-  if (cond.type === FilterType.Metadata)
+  if (cond.type === ConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
-  if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
-  if (cond.type === JobFilterType.Deployment)
+  if (cond.type === ConditionType.CreatedAt)
+    return buildCreatedAtCondition(cond);
+  if (cond.type === JobConditionType.Status) return eq(job.status, cond.value);
+  if (cond.type === JobConditionType.Deployment)
     return eq(deploymentVersion.deploymentId, cond.value);
-  if (cond.type === JobFilterType.Environment)
+  if (cond.type === JobConditionType.Environment)
     return eq(releaseJobTrigger.environmentId, cond.value);
-  if (cond.type === FilterType.Version) return buildVersionCondition(cond);
-  if (cond.type === JobFilterType.JobResource)
+  if (cond.type === ConditionType.Version) return buildVersionCondition(cond);
+  if (cond.type === JobConditionType.JobResource)
     return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
-  if (cond.type === JobFilterType.Release)
+  if (cond.type === JobConditionType.Release)
     return eq(deploymentVersion.id, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
@@ -274,17 +279,18 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
 
 const buildRunbookCondition = (tx: Tx, cond: JobCondition): SQL | undefined => {
   if (
-    cond.type !== FilterType.Metadata &&
-    cond.type !== FilterType.CreatedAt &&
-    cond.type !== JobFilterType.Status &&
-    cond.type !== FilterType.Comparison
+    cond.type !== ConditionType.Metadata &&
+    cond.type !== ConditionType.CreatedAt &&
+    cond.type !== JobConditionType.Status &&
+    cond.type !== ConditionType.Comparison
   )
     return undefined;
 
-  if (cond.type === FilterType.Metadata)
+  if (cond.type === ConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
-  if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
+  if (cond.type === ConditionType.CreatedAt)
+    return buildCreatedAtCondition(cond);
+  if (cond.type === JobConditionType.Status) return eq(job.status, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =

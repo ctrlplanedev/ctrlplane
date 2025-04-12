@@ -6,6 +6,9 @@ dotenv.config();
 
 export const env = createEnv({
   server: {
+    NODE_ENV: z
+      .enum(["development", "production", "test"])
+      .default("development"),
     POSTGRES_URL: z.string().url(),
     REDIS_URL: z.string().url(),
     GITHUB_BOT_APP_ID: z.string().optional(),

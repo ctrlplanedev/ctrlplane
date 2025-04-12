@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
-export default async function EnvironmentPage(props: {
+import { urls } from "~/app/urls";
+
+export default async function EnvironmentOverviewPage(props: {
   params: Promise<{
     workspaceSlug: string;
     systemSlug: string;
@@ -8,7 +10,10 @@ export default async function EnvironmentPage(props: {
   }>;
 }) {
   const { workspaceSlug, systemSlug, environmentId } = await props.params;
-  return redirect(
-    `/${workspaceSlug}/systems/${systemSlug}/environments/${environmentId}/deployments`,
-  );
+  const overviewUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .environment(environmentId)
+    .overview();
+  return redirect(overviewUrl);
 }

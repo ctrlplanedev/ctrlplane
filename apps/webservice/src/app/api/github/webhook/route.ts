@@ -3,10 +3,13 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { Webhooks } from "@octokit/webhooks";
 
+import { logger } from "@ctrlplane/logger";
 import { GithubEvent } from "@ctrlplane/validators/github";
 
 import { env } from "~/env";
 import { handleWorkflowWebhookEvent } from "./workflow/handler";
+
+const log = logger.child({ module: "github-webhook" });
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -28,6 +31,8 @@ export const POST = async (req: NextRequest) => {
       await handleWorkflowWebhookEvent(data as WorkflowRunEvent);
     return new NextResponse("OK");
   } catch (e) {
-    return new NextResponse((e as any).message, { status: 500 });
+    const message = e instanceof Error ? e.message : String(e);
+    log.error(message);
+    return new NextResponse(message, { status: 500 });
   }
 };

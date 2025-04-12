@@ -5,14 +5,16 @@ import { z } from "zod";
 
 import {
   and,
-  createEnv,
+  count,
   eq,
+  ilike,
   inArray,
   isNotNull,
   isNull,
   ne,
   not,
   takeFirst,
+  upsertEnv,
 } from "@ctrlplane/db";
 import {
   createEnvironment,
@@ -27,6 +29,7 @@ import {
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   dispatchJobsForAddedResources,
   getEventsForEnvironmentDeleted,
@@ -35,16 +38,18 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { environmentPageRouter } from "./environment-page/router";
 import { policyRouter } from "./environment-policy";
 import { environmentStatsRouter } from "./environment-stats";
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
   stats: environmentStatsRouter,
+  page: environmentPageRouter,
 
   byId: protectedProcedure
     .meta({
@@ -125,7 +130,7 @@ export const environmentRouter = createTRPCRouter({
               .filter(isPresent)
               .uniqBy((r) => r.id)
               .value(),
-            isOverride:
+            isDefaultPolicy:
               env.environment_policy.environmentId === env.environment.id,
           };
 
@@ -182,6 +187,58 @@ export const environmentRouter = createTRPCRouter({
         ),
     ),
 
+  bySystemIdWithSearch: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "system", id: input.systemId }),
+    })
+    .input(
+      z.object({
+        systemId: z.string().uuid(),
+        query: z.string().default(""),
+        limit: z.number().default(500),
+        offset: z.number().default(0),
+      }),
+    )
+    .query(({ ctx, input }) => {
+      const itemsPromise = ctx.db
+        .select()
+        .from(environment)
+        .where(
+          and(
+            input.query != ""
+              ? ilike(environment.name, `%${input.query}%`)
+              : undefined,
+            eq(environment.systemId, input.systemId),
+          ),
+        )
+        .orderBy(environment.name)
+        .limit(input.limit)
+        .offset(input.offset);
+
+      const countPromise = ctx.db
+        .select({ count: count() })
+        .from(environment)
+        .where(
+          and(
+            input.query != ""
+              ? ilike(environment.name, `%${input.query}%`)
+              : undefined,
+            eq(environment.systemId, input.systemId),
+          ),
+        )
+        .then(takeFirst);
+
+      return Promise.all([itemsPromise, countPromise]).then(
+        ([items, { count }]) => ({
+          items,
+          count,
+        }),
+      );
+    }),
+
   byWorkspaceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -211,7 +268,7 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(createEnvironment)
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((db) => createEnv(db, input)),
+      ctx.db.transaction((db) => upsertEnv(db, input)),
     ),
 
   update: protectedProcedure
@@ -251,34 +308,44 @@ export const environmentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const { resourceFilter } = input.data;
-      const isUpdatingResourceFilter =
-        resourceFilter != null || oldEnv.environment.resourceFilter != null;
-      if (isUpdatingResourceFilter) {
-        const hasResourceFiltersChanged = !_.isEqual(
-          oldEnv.environment.resourceFilter,
-          resourceFilter,
+      const { resourceSelector } = input.data;
+      const isUpdatingResourceSelector =
+        resourceSelector != null || oldEnv.environment.resourceSelector != null;
+
+      getQueue(Channel.UpdateEnvironment).add(input.id, {
+        ...updatedEnv,
+        oldSelector: oldEnv.environment.resourceSelector,
+      });
+
+      if (isUpdatingResourceSelector) {
+        const hasResourceSelectorsChanged = !_.isEqual(
+          oldEnv.environment.resourceSelector,
+          resourceSelector,
         );
 
-        if (hasResourceFiltersChanged) {
+        if (hasResourceSelectorsChanged) {
           const isOtherEnv = and(
-            isNotNull(environment.resourceFilter),
+            isNotNull(environment.resourceSelector),
             ne(environment.id, input.id),
           );
           const sys = await ctx.db.query.system.findFirst({
             where: eq(system.id, oldEnv.system.id),
-            with: { environments: { where: isOtherEnv }, deployments: true },
+            with: {
+              environments: { where: isOtherEnv },
+              deployments: true,
+            },
           });
 
           const otherEnvFilters =
-            sys?.environments.map((e) => e.resourceFilter).filter(isPresent) ??
-            [];
+            sys?.environments
+              .map((e) => e.resourceSelector)
+              .filter(isPresent) ?? [];
 
           const oldQuery = resourceMatchesMetadata(
             ctx.db,
-            oldEnv.environment.resourceFilter,
+            oldEnv.environment.resourceSelector,
           );
-          const newQuery = resourceMatchesMetadata(ctx.db, resourceFilter);
+          const newQuery = resourceMatchesMetadata(ctx.db, resourceSelector);
 
           const newResources =
             newQuery != null
@@ -309,7 +376,7 @@ export const environmentRouter = createTRPCRouter({
 
           if (removedResources.length > 0) {
             const sysFilter: ResourceCondition = {
-              type: FilterType.Comparison,
+              type: ConditionType.Comparison,
               operator: ComparisonOperator.Or,
               not: true,
               conditions: otherEnvFilters,

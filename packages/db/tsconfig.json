@@ -2,7 +2,9 @@
   "extends": "@ctrlplane/tsconfig/internal-package.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
   "include": ["src", "../api/src/utils", "migrate.ts"],
   "exclude": ["node_modules"]

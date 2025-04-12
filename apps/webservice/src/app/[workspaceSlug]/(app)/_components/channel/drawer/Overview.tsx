@@ -22,7 +22,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
@@ -79,7 +79,7 @@ const getVersionSelector = (
   if (versionSelector == null) return null;
   if (!isComparisonCondition(versionSelector))
     return {
-      type: FilterType.Comparison,
+      type: ConditionType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
       conditions: [versionSelector],
@@ -133,7 +133,7 @@ export const Overview: React.FC<OverviewProps> = ({
 
   const versionsQ = api.deployment.version.list.useQuery({
     deploymentId,
-    selector,
+    filter: selector,
     limit: 5,
   });
   const versions = versionsQ.data;

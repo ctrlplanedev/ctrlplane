@@ -1,22 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
-import {
-  and,
-  desc,
-  eq,
-  inArray,
-  isNotNull,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
+import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
-import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
-import { handleEvent } from "../events/index.js";
 import { dispatchReleaseJobTriggers } from "../job-dispatch.js";
 import { isPassingAllPolicies } from "../policy-checker.js";
 import { createJobApprovals } from "../policy-create.js";
@@ -133,110 +121,3 @@ export async function dispatchJobsForAddedResources(
     triggerCount: releaseJobTriggers.length,
   });
 }
-
-/**
- * Gets all deployments associated with an environment
- * @param db - Database transaction
- * @param envId - Environment ID to get deployments for
- * @returns Promise resolving to array of deployments
- */
-const getEnvironmentDeployments = (db: Tx, envId: string) =>
-  db
-    .select()
-    .from(SCHEMA.deployment)
-    .innerJoin(SCHEMA.system, eq(SCHEMA.deployment.systemId, SCHEMA.system.id))
-    .innerJoin(
-      SCHEMA.environment,
-      eq(SCHEMA.system.id, SCHEMA.environment.systemId),
-    )
-    .where(eq(SCHEMA.environment.id, envId))
-    .then((rows) => rows.map((r) => r.deployment));
-
-/**
- * Gets the not in system filter for a system
- * @param systemId - System ID to get the not in system filter for
- * @returns Promise resolving to the not in system filter or null if not found
- */
-const getNotInSystemFilter = async (
-  systemId: string,
-): Promise<ResourceCondition | null> => {
-  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
-  const system = await db.query.system.findFirst({
-    where: eq(SCHEMA.system.id, systemId),
-    with: { environments: { where: hasFilter } },
-  });
-  if (system == null) return null;
-
-  const filters = system.environments
-    .map((e) => e.resourceFilter)
-    .filter(isPresent);
-  if (filters.length === 0) return null;
-
-  return {
-    type: ResourceFilterType.Comparison,
-    operator: ComparisonOperator.Or,
-    not: true,
-    conditions: filters,
-  };
-};
-
-/**
- * Dispatches hook events for resources that were removed from an environment
- * @param db - Database transaction
- * @param resourceIds - IDs of the resources that were removed
- * @param env - Environment the resources were removed from
- */
-export const dispatchEventsForRemovedResources = async (
-  db: Tx,
-  resourceIds: string[],
-  env: { id: string; systemId: string },
-): Promise<void> => {
-  const { id: envId, systemId } = env;
-  log.info("Dispatching events for removed resources", { resourceIds, envId });
-
-  const deployments = await getEnvironmentDeployments(db, envId);
-  if (deployments.length === 0) {
-    log.info("No deployments found for environment");
-    return;
-  }
-
-  const notInSystemFilter = await getNotInSystemFilter(systemId);
-  if (notInSystemFilter == null) {
-    log.warn("No system found for environment", { envId });
-    return;
-  }
-
-  const matchesResources = inArray(SCHEMA.resource.id, resourceIds);
-  const isRemovedFromSystem = SCHEMA.resourceMatchesMetadata(
-    db,
-    notInSystemFilter,
-  );
-  const resources = await db.query.resource.findMany({
-    where: and(matchesResources, isRemovedFromSystem),
-  });
-
-  log.debug("Creating removal events", {
-    resourceCount: resources.length,
-    deploymentCount: deployments.length,
-  });
-  const events = resources.flatMap((resource) =>
-    deployments.map((deployment) => ({
-      action: "deployment.resource.removed" as const,
-      payload: { deployment, resource },
-    })),
-  );
-
-  log.debug("Handling removal events", { eventCount: events.length });
-  const handleEventPromises = events.map(handleEvent);
-  const results = await Promise.allSettled(handleEventPromises);
-
-  const failures = results.filter((r) => r.status === "rejected").length;
-  if (failures > 0)
-    log.warn("Some removal events failed", { failureCount: failures });
-
-  log.info("Finished dispatching removal events", {
-    total: events.length,
-    succeeded: events.length - failures,
-    failed: failures,
-  });
-};

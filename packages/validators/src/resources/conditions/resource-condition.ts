@@ -10,9 +10,10 @@ import type { KindCondition } from "./kind-condition.js";
 import type { LastSyncCondition } from "./last-sync-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
+import type { VersionCondition } from "./version-condition.js";
 import {
+  ConditionType,
   createdAtCondition,
-  FilterType,
   metadataCondition,
 } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
@@ -21,6 +22,7 @@ import { kindCondition } from "./kind-condition.js";
 import { lastSyncCondition } from "./last-sync-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
+import { versionCondition } from "./version-condition.js";
 
 export type ResourceCondition =
   | ComparisonCondition
@@ -30,7 +32,8 @@ export type ResourceCondition =
   | ProviderCondition
   | IdentifierCondition
   | CreatedAtCondition
-  | LastSyncCondition;
+  | LastSyncCondition
+  | VersionCondition;
 
 export const resourceCondition = z.union([
   comparisonCondition,
@@ -41,6 +44,7 @@ export const resourceCondition = z.union([
   identifierCondition,
   createdAtCondition,
   lastSyncCondition,
+  versionCondition,
 ]);
 
 export enum ResourceOperator {
@@ -51,7 +55,7 @@ export enum ResourceOperator {
   Or = "or",
 }
 
-export enum ResourceFilterType {
+export enum ResourceConditionType {
   Metadata = "metadata",
   Kind = "kind",
   Name = "name",
@@ -59,10 +63,11 @@ export enum ResourceFilterType {
   Provider = "provider",
   Comparison = "comparison",
   LastSync = "last-sync",
+  Version = "version",
 }
 
 export const defaultCondition: ResourceCondition = {
-  type: ResourceFilterType.Comparison,
+  type: ResourceConditionType.Comparison,
   operator: ResourceOperator.And,
   not: false,
   conditions: [],
@@ -71,7 +76,7 @@ export const defaultCondition: ResourceCondition = {
 export const isComparisonCondition = (
   condition: ResourceCondition,
 ): condition is ComparisonCondition =>
-  condition.type === ResourceFilterType.Comparison;
+  condition.type === ResourceConditionType.Comparison;
 
 export const MAX_DEPTH_ALLOWED = 2; // 0 indexed
 
@@ -97,34 +102,40 @@ export const isEmptyCondition = (condition: ResourceCondition): boolean =>
 export const isMetadataCondition = (
   condition: ResourceCondition,
 ): condition is MetadataCondition =>
-  condition.type === ResourceFilterType.Metadata;
+  condition.type === ResourceConditionType.Metadata;
 
 export const isKindCondition = (
   condition: ResourceCondition,
-): condition is KindCondition => condition.type === ResourceFilterType.Kind;
+): condition is KindCondition => condition.type === ResourceConditionType.Kind;
 
 export const isNameCondition = (
   condition: ResourceCondition,
-): condition is NameCondition => condition.type === ResourceFilterType.Name;
+): condition is NameCondition => condition.type === ResourceConditionType.Name;
 
 export const isProviderCondition = (
   condition: ResourceCondition,
 ): condition is ProviderCondition =>
-  condition.type === ResourceFilterType.Provider;
+  condition.type === ResourceConditionType.Provider;
 
 export const isIdentifierCondition = (
   condition: ResourceCondition,
 ): condition is IdentifierCondition =>
-  condition.type === ResourceFilterType.Identifier;
+  condition.type === ResourceConditionType.Identifier;
 
 export const isCreatedAtCondition = (
   condition: ResourceCondition,
-): condition is CreatedAtCondition => condition.type === FilterType.CreatedAt;
+): condition is CreatedAtCondition =>
+  condition.type === ConditionType.CreatedAt;
 
 export const isLastSyncCondition = (
   condition: ResourceCondition,
 ): condition is LastSyncCondition =>
-  condition.type === ResourceFilterType.LastSync;
+  condition.type === ResourceConditionType.LastSync;
+
+export const isVersionCondition = (
+  condition: ResourceCondition,
+): condition is VersionCondition =>
+  condition.type === ResourceConditionType.Version;
 
 export const isValidResourceCondition = (
   condition: ResourceCondition,

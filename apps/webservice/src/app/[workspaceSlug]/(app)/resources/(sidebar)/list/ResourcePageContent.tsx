@@ -31,7 +31,7 @@ import {
   ResourceConditionDialog,
 } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionDialog";
 import { ResourceViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceViewActionsDropdown";
-import { useResourceFilter } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/useResourceFilter";
+import { useResourceCondition } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/useResourceCondition";
 import { api } from "~/trpc/react";
 import { exportResources } from "./export-resources";
 import { ResourceGettingStarted } from "./ResourceGettingStarted";
@@ -83,18 +83,18 @@ export const ResourcePageContent: React.FC<{
   view: schema.ResourceView | null;
 }> = ({ workspace, view }) => {
   const [search, setSearch] = React.useState("");
-  const { filter, setFilter } = useResourceFilter();
+  const { condition, setCondition } = useResourceCondition();
 
   useDebounce(
     () => {
       if (search !== "") {
-        setFilter({
+        setCondition({
           type: "comparison",
           operator: "and",
           conditions: [
             // Keep any non-name conditions from existing filter
-            ...(filter && "conditions" in filter
-              ? filter.conditions.filter(
+            ...(condition && "conditions" in condition
+              ? condition.conditions.filter(
                   (c: ResourceCondition) => c.type !== "name",
                 )
               : []),
@@ -108,14 +108,14 @@ export const ResourcePageContent: React.FC<{
         return;
       }
 
-      if (filter == null || !isComparisonCondition(filter)) return;
-      const otherConditions = filter.conditions.filter(
+      if (condition == null || !isComparisonCondition(condition)) return;
+      const otherConditions = condition.conditions.filter(
         (c: ResourceCondition) => c.type !== "name",
       );
-      setFilter(
+      setCondition(
         otherConditions.length === 0
           ? null
-          : { ...filter, conditions: otherConditions },
+          : { ...condition, conditions: otherConditions },
       );
     },
     500,
@@ -128,13 +128,13 @@ export const ResourcePageContent: React.FC<{
     limit: 0,
   });
   const resources = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter: filter ?? undefined, limit: 500 },
+    { workspaceId, filter: condition ?? undefined, limit: 500 },
     { placeholderData: (prev) => prev },
   );
 
-  const onFilterChange = (condition: ResourceCondition | null) => {
+  const onConditionChange = (condition: ResourceCondition | null) => {
     const cond = condition ?? defaultCondition;
-    setFilter(isEmptyCondition(cond) ? null : cond);
+    setCondition(isEmptyCondition(cond) ? null : cond);
   };
 
   const router = useRouter();
@@ -147,7 +147,10 @@ export const ResourcePageContent: React.FC<{
       <div className="flex h-[41px] items-center justify-between border-b border-neutral-800 p-1 px-2">
         <div className="flex items-center gap-1 pl-1">
           <SearchInput value={search} onChange={setSearch} />
-          <ResourceConditionDialog condition={filter} onChange={onFilterChange}>
+          <ResourceConditionDialog
+            condition={condition}
+            onChange={onConditionChange}
+          >
             <div className="flex items-center gap-2">
               {view == null && (
                 <Button
@@ -159,8 +162,8 @@ export const ResourcePageContent: React.FC<{
                 </Button>
               )}
 
-              {filter != null && view == null && (
-                <ResourceConditionBadge condition={filter} />
+              {condition != null && view == null && (
+                <ResourceConditionBadge condition={condition} />
               )}
               {view != null && (
                 <>
@@ -183,11 +186,11 @@ export const ResourcePageContent: React.FC<{
           )}
         </div>
         <div className="flex items-center gap-2">
-          {filter != null && view == null && (
+          {condition != null && view == null && (
             <CreateResourceViewDialog
               workspaceId={workspace.id}
-              filter={filter}
-              onSubmit={(v) => setFilter(v.filter, v.id)}
+              filter={condition}
+              onSubmit={(v) => setCondition(v.filter, v.id)}
             >
               <Button className="h-7">Save view</Button>
             </CreateResourceViewDialog>
@@ -232,7 +235,7 @@ export const ResourcePageContent: React.FC<{
         <NoFilterMatch
           numItems={resourcesAll.data?.total ?? 0}
           itemType="resource"
-          onClear={() => setFilter(null)}
+          onClear={() => setCondition(null)}
         />
       )}
       {resources.data != null && resources.data.total > 0 && (

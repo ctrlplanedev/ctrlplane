@@ -60,6 +60,432 @@
         }
       }
     },
+    "/v1/deployment-version-channels": {
+      "post": {
+        "summary": "Create a deployment version channel",
+        "operationId": "createDeploymentVersionChannel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deploymentId",
+                  "name",
+                  "versionSelector"
+                ],
+                "properties": {
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "versionSelector": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deployment version channel created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "versionSelector": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "deploymentId",
+                    "name",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deployment version channel already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create deployment version channel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/deployment-versions/{deploymentVersionId}": {
+      "patch": {
+        "summary": "Updates a deployment version",
+        "operationId": "updateDeploymentVersion",
+        "parameters": [
+          {
+            "name": "deploymentVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The deployment version ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "type": "string"
+                  },
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "jobAgentConfig": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ready",
+                      "building",
+                      "failed"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployment-versions": {
+      "post": {
+        "summary": "Upserts a deployment version",
+        "operationId": "upsertDeploymentVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "type": "string"
+                  },
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "jobAgentConfig": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ready",
+                      "building",
+                      "failed"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "tag",
+                  "deploymentId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deployment version already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployments/{deploymentId}/deployment-version-channels/name/{name}": {
+      "delete": {
+        "summary": "Delete a deployment version channel",
+        "operationId": "deleteDeploymentVersionChannel",
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deployment version channel deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Deployment version channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to delete deployment version channel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/deployments/{deploymentId}": {
       "get": {
         "summary": "Get a deployment",
@@ -395,9 +821,9 @@
                     "description": "The timeout for the deployment",
                     "example": 60
                   },
-                  "resourceFilter": {
+                  "resourceSelector": {
                     "type": "object",
-                    "description": "The resource filter for the deployment",
+                    "description": "The resource selector for the deployment",
                     "example": {
                       "key": "value"
                     }
@@ -565,7 +991,7 @@
                   "description": {
                     "type": "string"
                   },
-                  "resourceFilter": {
+                  "resourceSelector": {
                     "type": "object",
                     "additionalProperties": true
                   },
@@ -573,6 +999,12 @@
                     "type": "string"
                   },
                   "releaseChannels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "deploymentVersionChannels": {
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -1258,7 +1690,7 @@
                 "required": [
                   "deploymentId",
                   "name",
-                  "releaseFilter"
+                  "releaseSelector"
                 ],
                 "properties": {
                   "deploymentId": {
@@ -1271,7 +1703,7 @@
                     "type": "string",
                     "nullable": true
                   },
-                  "releaseFilter": {
+                  "releaseSelector": {
                     "type": "object",
                     "additionalProperties": true
                   }
@@ -1305,7 +1737,7 @@
                       "type": "string",
                       "format": "date-time"
                     },
-                    "releaseFilter": {
+                    "releaseSelector": {
                       "type": "object",
                       "additionalProperties": true
                     }
@@ -2659,7 +3091,7 @@
             }
           },
           "400": {
-            "description": "Invalid filter",
+            "description": "Invalid selector",
             "content": {
               "application/json": {
                 "schema": {
@@ -3037,6 +3469,9 @@
               "release": {
                 "$ref": "#/components/schemas/Release"
               },
+              "deploymentVersion": {
+                "$ref": "#/components/schemas/DeploymentVersion"
+              },
               "deployment": {
                 "$ref": "#/components/schemas/Deployment"
               },
@@ -3272,6 +3707,50 @@
           "jobAgentConfig"
         ]
       },
+      "DeploymentVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "jobAgentConfig": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "deploymentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tag",
+          "config",
+          "deploymentId",
+          "createdAt",
+          "jobAgentConfig"
+        ]
+      },
       "Policy": {
         "type": "object",
         "properties": {
@@ -3371,7 +3850,7 @@
             "format": "uuid",
             "nullable": true
           },
-          "resourceFilter": {
+          "resourceSelector": {
             "type": "object",
             "nullable": true,
             "additionalProperties": true
@@ -3586,10 +4065,9 @@
       }
     },
     "securitySchemes": {
-      "apiKey": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "x-api-key"
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

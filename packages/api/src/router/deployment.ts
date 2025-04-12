@@ -13,6 +13,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   getEventsForDeploymentRemoved,
   handleEvent,
@@ -120,6 +121,9 @@ const hookRouter = createTRPCRouter({
           .values({ hookId: h.id, runbookId: rb.id })
           .returning()
           .then(takeFirst);
+
+        await getQueue(Channel.NewDeployment).add(dep.id, dep);
+
         return { ...h, runhook: rh };
       }),
     ),
@@ -502,7 +506,7 @@ export const deploymentRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.system.workspaceId, tg.workspaceId),
-            isNotNull(SCHEMA.environment.resourceFilter),
+            isNotNull(SCHEMA.environment.resourceSelector),
           ),
         );
 
@@ -527,7 +531,7 @@ export const deploymentRouter = createTRPCRouter({
               SCHEMA.resource,
               SCHEMA.resourceMatchesMetadata(
                 ctx.db,
-                env.environment.resourceFilter,
+                env.environment.resourceSelector,
               ),
             )
             .leftJoin(

@@ -34,7 +34,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   description: {
                     type: "string",
                   },
-                  resourceFilter: {
+                  resourceSelector: {
                     type: "object",
                     additionalProperties: true,
                   },
@@ -42,6 +42,12 @@ export const openapi: Swagger.SwaggerV3 = {
                     type: "string",
                   },
                   releaseChannels: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                  },
+                  deploymentVersionChannels: {
                     type: "array",
                     items: {
                       type: "string",

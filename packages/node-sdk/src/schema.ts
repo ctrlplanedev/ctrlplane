@@ -24,6 +24,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployment-version-channels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a deployment version channel */
+    post: operations["createDeploymentVersionChannel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Updates a deployment version */
+    patch: operations["updateDeploymentVersion"];
+    trace?: never;
+  };
+  "/v1/deployment-versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Upserts a deployment version */
+    post: operations["upsertDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployments/{deploymentId}/deployment-version-channels/name/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a deployment version channel */
+    delete: operations["deleteDeploymentVersionChannel"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployments/{deploymentId}": {
     parameters: {
       query?: never;
@@ -600,6 +668,7 @@ export interface components {
     };
     JobWithTrigger: components["schemas"]["Job"] & {
       release?: components["schemas"]["Release"];
+      deploymentVersion?: components["schemas"]["DeploymentVersion"];
       deployment?: components["schemas"]["Deployment"];
       runbook?: components["schemas"]["Runbook"];
       resource?: components["schemas"]["Resource"];
@@ -696,6 +765,25 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    DeploymentVersion: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      tag: string;
+      config: {
+        [key: string]: unknown;
+      };
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+      /** Format: uuid */
+      deploymentId: string;
+      /** Format: date-time */
+      createdAt: string;
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
     Policy: {
       /**
        * Format: uuid
@@ -744,7 +832,7 @@ export interface components {
       description?: string;
       /** Format: uuid */
       policyId?: string | null;
-      resourceFilter?: {
+      resourceSelector?: {
         [key: string]: unknown;
       } | null;
       /**
@@ -870,6 +958,249 @@ export interface operations {
           "application/json": {
             /** @example Cloud provider 'unknown' not found */
             error?: string;
+          };
+        };
+      };
+    };
+  };
+  createDeploymentVersionChannel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          deploymentId: string;
+          name: string;
+          description?: string | null;
+          versionSelector: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Deployment version channel created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            deploymentId: string;
+            name: string;
+            description?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            versionSelector?: {
+              [key: string]: unknown;
+            };
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Deployment version channel already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+            id: string;
+          };
+        };
+      };
+      /** @description Failed to create deployment version channel */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  updateDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          tag?: string;
+          deploymentId?: string;
+          /** Format: date-time */
+          createdAt?: string;
+          name?: string;
+          config?: {
+            [key: string]: unknown;
+          };
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          /** @enum {string} */
+          status?: "ready" | "building" | "failed";
+          message?: string;
+          metadata?: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVersion"];
+        };
+      };
+    };
+  };
+  upsertDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          tag: string;
+          deploymentId: string;
+          /** Format: date-time */
+          createdAt?: string;
+          name?: string;
+          config?: {
+            [key: string]: unknown;
+          };
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          /** @enum {string} */
+          status?: "ready" | "building" | "failed";
+          message?: string;
+          metadata?: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVersion"];
+        };
+      };
+      /** @description Deployment version already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+            id?: string;
+          };
+        };
+      };
+    };
+  };
+  deleteDeploymentVersionChannel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deployment version channel deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            message: string;
+          };
+        };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Deployment version channel not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to delete deployment version channel */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
           };
         };
       };
@@ -1113,12 +1444,12 @@ export interface operations {
            */
           timeout?: number;
           /**
-           * @description The resource filter for the deployment
+           * @description The resource selector for the deployment
            * @example {
            *       "key": "value"
            *     }
            */
-          resourceFilter?: Record<string, never>;
+          resourceSelector?: Record<string, never>;
         };
       };
     };
@@ -1233,11 +1564,12 @@ export interface operations {
           systemId: string;
           name: string;
           description?: string;
-          resourceFilter?: {
+          resourceSelector?: {
             [key: string]: unknown;
           };
           policyId?: string;
           releaseChannels?: string[];
+          deploymentVersionChannels?: string[];
           metadata?: {
             [key: string]: string;
           };
@@ -1710,7 +2042,7 @@ export interface operations {
           deploymentId: string;
           name: string;
           description?: string | null;
-          releaseFilter: {
+          releaseSelector: {
             [key: string]: unknown;
           };
         };
@@ -1730,7 +2062,7 @@ export interface operations {
             description?: string | null;
             /** Format: date-time */
             createdAt: string;
-            releaseFilter?: {
+            releaseSelector?: {
               [key: string]: unknown;
             };
           };
@@ -2577,7 +2909,7 @@ export interface operations {
           "application/json": components["schemas"]["Resource"][];
         };
       };
-      /** @description Invalid filter */
+      /** @description Invalid selector */
       400: {
         headers: {
           [name: string]: unknown;

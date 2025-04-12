@@ -7,14 +7,16 @@ import {
   and,
   asc,
   count,
-  createEnv,
   eq,
+  exists,
   ilike,
   isNotNull,
   isNull,
   or,
+  sql,
   takeFirst,
   takeFirstOrNull,
+  upsertEnv,
 } from "@ctrlplane/db";
 import {
   createSystem,
@@ -29,7 +31,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
-  FilterType,
+  ConditionType,
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -57,15 +59,54 @@ export const systemRouter = createTRPCRouter({
         ? or(
             ilike(system.name, `%${input.query}%`),
             ilike(system.slug, `%${input.query}%`),
-            ilike(deployment.name, `%${input.query}%`),
-            ilike(deployment.slug, `%${input.query}%`),
+            exists(
+              ctx.db
+                .select()
+                .from(deployment)
+                .where(
+                  and(
+                    eq(deployment.systemId, system.id),
+                    or(
+                      ilike(deployment.name, `%${input.query}%`),
+                      ilike(deployment.slug, `%${input.query}%`),
+                    ),
+                  ),
+                ),
+            ),
           )
         : undefined;
       const where = and(isInWorkspace, isMatchingSearch);
 
+      const deploymentsWhere = input.query
+        ? or(
+            ilike(deployment.name, `%${input.query}%`),
+            ilike(deployment.slug, `%${input.query}%`),
+            exists(
+              ctx.db
+                .select()
+                .from(system)
+                .where(
+                  and(
+                    or(
+                      ilike(system.name, `%${input.query}%`),
+                      ilike(system.slug, `%${input.query}%`),
+                    ),
+                    sql`${system.id} = system_deployments.system_id`,
+                  ),
+                ),
+            ),
+          )
+        : undefined;
+
       const items = ctx.db.query.system.findMany({
         where,
-        with: { environments: true, deployments: true },
+        with: {
+          environments: true,
+          deployments: {
+            where: deploymentsWhere,
+            orderBy: [asc(deployment.name)],
+          },
+        },
         limit: input.limit,
         offset: input.offset,
         orderBy: [asc(system.name)],
@@ -158,9 +199,9 @@ export const systemRouter = createTRPCRouter({
           .then(takeFirst);
 
         await Promise.all([
-          createEnv(db, { systemId: sys.id, name: "Production" }),
-          createEnv(db, { systemId: sys.id, name: "QA" }),
-          createEnv(db, { systemId: sys.id, name: "Staging" }),
+          upsertEnv(db, { systemId: sys.id, name: "Production" }),
+          upsertEnv(db, { systemId: sys.id, name: "QA" }),
+          upsertEnv(db, { systemId: sys.id, name: "Staging" }),
         ]);
         return sys;
       }),
@@ -228,14 +269,14 @@ export const systemRouter = createTRPCRouter({
         .where(
           and(
             eq(environment.systemId, input.systemId),
-            isNotNull(environment.resourceFilter),
+            isNotNull(environment.resourceSelector),
           ),
         );
 
       const filter: ResourceCondition = {
-        type: FilterType.Comparison,
+        type: ConditionType.Comparison,
         operator: ComparisonOperator.Or,
-        conditions: envsWithFilter.map((env) => env.resourceFilter!),
+        conditions: envsWithFilter.map((env) => env.resourceSelector!),
       };
 
       const itemsPromise = ctx.db
