@@ -1,6 +1,7 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { JobAgentType } from "@ctrlplane/validators/jobs";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconBolt, IconCheck, IconRocket } from "@tabler/icons-react";
@@ -19,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
+import { JobAgentTypeDisplayNames } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { useJobStats } from "./_hooks/useJobStats";
@@ -148,7 +150,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, className }) => {
       <CardContent className="flex items-center justify-between p-0">
         <div className="flex items-center gap-6 pl-1">
           <div className="text-xs font-medium text-muted-foreground">
-            Github App
+            {JobAgentTypeDisplayNames[agent.type as JobAgentType]}
           </div>
 
           <TooltipProvider>
