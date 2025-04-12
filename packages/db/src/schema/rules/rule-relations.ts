@@ -16,7 +16,7 @@ import {
   policyRuleUserApprovalRecord,
 } from "./approval-user.js";
 import { policyRuleDenyWindow } from "./deny-window.js";
-import { policyDeploymentVersionSelector } from "./deployment-selector.js";
+import { policyRuleDeploymentVersionSelector } from "./deployment-selector.js";
 
 // User relations to approval records
 export const userApprovalRelations = relations(user, ({ many }) => ({
@@ -119,10 +119,10 @@ export const policyRuleDenyWindowRelations = relations(
 );
 
 export const policyDeploymentVersionSelectorRelations = relations(
-  policyDeploymentVersionSelector,
+  policyRuleDeploymentVersionSelector,
   ({ one }) => ({
     policy: one(policy, {
-      fields: [policyDeploymentVersionSelector.policyId],
+      fields: [policyRuleDeploymentVersionSelector.policyId],
       references: [policy.id],
     }),
   }),

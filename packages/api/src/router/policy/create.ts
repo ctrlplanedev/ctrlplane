@@ -63,7 +63,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
   await insertDenyWindows(tx, policyId, denyWindows);
 
   if (deploymentVersionSelector != null)
-    await tx.insert(SCHEMA.policyDeploymentVersionSelector).values({
+    await tx.insert(SCHEMA.policyRuleDeploymentVersionSelector).values({
       ...deploymentVersionSelector,
       policyId: policy.id,
       deploymentVersionSelector:

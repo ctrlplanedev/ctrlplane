@@ -2,9 +2,9 @@ import { relations } from "drizzle-orm";
 
 import { policy, policyTarget } from "./policy.js";
 import {
-  policyDeploymentVersionSelector,
   policyRuleAnyApproval,
   policyRuleDenyWindow,
+  policyRuleDeploymentVersionSelector,
   policyRuleRoleApproval,
   policyRuleUserApproval,
 } from "./rules/index.js";
@@ -17,7 +17,7 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   }),
   targets: many(policyTarget),
   denyWindows: many(policyRuleDenyWindow),
-  deploymentVersionSelector: one(policyDeploymentVersionSelector),
+  deploymentVersionSelector: one(policyRuleDeploymentVersionSelector),
 
   versionUserApprovals: many(policyRuleUserApproval),
   versionRoleApprovals: many(policyRuleRoleApproval),

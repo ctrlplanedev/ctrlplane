@@ -5,8 +5,8 @@ import { z } from "zod";
 
 import { policy } from "../policy.js";
 
-export const policyDeploymentVersionSelector = pgTable(
-  "policy_deployment_version_selector",
+export const policyRuleDeploymentVersionSelector = pgTable(
+  "policy_rule_deployment_version_selector",
   {
     id: uuid("id").primaryKey().defaultRandom(),
 
@@ -26,7 +26,7 @@ export const policyDeploymentVersionSelector = pgTable(
   },
 );
 
-export const createPolicyDeploymentVersionSelector = createInsertSchema(
-  policyDeploymentVersionSelector,
+export const createPolicyRuleDeploymentVersionSelector = createInsertSchema(
+  policyRuleDeploymentVersionSelector,
   { policyId: z.string().uuid() },
 ).omit({ id: true });

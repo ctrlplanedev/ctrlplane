@@ -64,11 +64,11 @@ const updateDeploymentVersionSelector = async (
   if (deploymentVersionSelector === undefined) return;
   if (deploymentVersionSelector === null)
     return tx
-      .delete(SCHEMA.policyDeploymentVersionSelector)
-      .where(eq(SCHEMA.policyDeploymentVersionSelector.policyId, policyId));
+      .delete(SCHEMA.policyRuleDeploymentVersionSelector)
+      .where(eq(SCHEMA.policyRuleDeploymentVersionSelector.policyId, policyId));
 
   await tx
-    .insert(SCHEMA.policyDeploymentVersionSelector)
+    .insert(SCHEMA.policyRuleDeploymentVersionSelector)
     .values({
       ...deploymentVersionSelector,
       policyId,
@@ -76,12 +76,11 @@ const updateDeploymentVersionSelector = async (
         deploymentVersionSelector.deploymentVersionSelector as DeploymentVersionCondition,
     })
     .onConflictDoUpdate({
-      target: [SCHEMA.policyDeploymentVersionSelector.policyId],
-      set: buildConflictUpdateColumns(SCHEMA.policyDeploymentVersionSelector, [
-        "name",
-        "description",
-        "deploymentVersionSelector",
-      ]),
+      target: [SCHEMA.policyRuleDeploymentVersionSelector.policyId],
+      set: buildConflictUpdateColumns(
+        SCHEMA.policyRuleDeploymentVersionSelector,
+        ["name", "description", "deploymentVersionSelector"],
+      ),
     });
 };
 

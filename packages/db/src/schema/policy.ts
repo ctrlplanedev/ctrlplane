@@ -1,5 +1,6 @@
 import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { InferSelectModel } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import {
@@ -16,13 +17,14 @@ import { z } from "zod";
 
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
+import { resourceCondition } from "@ctrlplane/validators/resources";
 
-import type { policyDeploymentVersionSelector } from "./rules/deployment-selector.js";
+import type { policyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
 import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
 import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
 import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
-import { createPolicyDeploymentVersionSelector } from "./rules/deployment-selector.js";
+import { createPolicyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable("policy", {
@@ -54,6 +56,9 @@ export const policyTarget = pgTable("policy_target", {
   environmentSelector: jsonb("environment_selector")
     .default(sql`NULL`)
     .$type<EnvironmentCondition | null>(),
+  resourceSelector: jsonb("resource_selector")
+    .default(sql`NULL`)
+    .$type<ResourceCondition | null>(),
 });
 
 // Create zod schemas from drizzle schemas
@@ -69,6 +74,7 @@ const policyTargetInsertSchema = createInsertSchema(policyTarget, {
   policyId: z.string().uuid(),
   deploymentSelector: deploymentCondition.nullable(),
   environmentSelector: environmentCondition.nullable(),
+  resourceSelector: resourceCondition.nullable(),
 }).omit({ id: true });
 
 // Export schemas and types
@@ -78,7 +84,7 @@ export const createPolicy = z.intersection(
     targets: z.array(policyTargetInsertSchema.omit({ policyId: true })),
 
     denyWindows: z.array(createPolicyRuleDenyWindow.omit({ policyId: true })),
-    deploymentVersionSelector: createPolicyDeploymentVersionSelector
+    deploymentVersionSelector: createPolicyRuleDeploymentVersionSelector
       .omit({ policyId: true })
       .optional()
       .nullable(),
@@ -104,7 +110,7 @@ export const updatePolicy = policyInsertSchema.partial().extend({
   denyWindows: z
     .array(createPolicyRuleDenyWindow.omit({ policyId: true }))
     .optional(),
-  deploymentVersionSelector: createPolicyDeploymentVersionSelector
+  deploymentVersionSelector: createPolicyRuleDeploymentVersionSelector
     .omit({ policyId: true })
     .optional()
     .nullable(),
@@ -131,5 +137,5 @@ export type UpdatePolicyTarget = z.infer<typeof updatePolicyTarget>;
 export type Policy = InferSelectModel<typeof policy>;
 export type PolicyTarget = InferSelectModel<typeof policyTarget>;
 export type PolicyDeploymentVersionSelector = InferSelectModel<
-  typeof policyDeploymentVersionSelector
+  typeof policyRuleDeploymentVersionSelector
 >;
