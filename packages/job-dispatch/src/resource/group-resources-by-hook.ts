@@ -148,21 +148,5 @@ export const groupResourcesByHook = async (
     return isResourceUpdated(existing, r);
   });
 
-  const unchanged = resourcesToUpsert.filter(
-    (r) =>
-      !toInsert.some(
-        (ir) =>
-          ir.identifier === r.identifier && ir.workspaceId === r.workspaceId,
-      ) &&
-      !toUpdate.some(
-        (ur) =>
-          ur.identifier === r.identifier && ur.workspaceId === r.workspaceId,
-      ) &&
-      !toDelete.some(
-        (dr) =>
-          dr.identifier === r.identifier && dr.workspaceId === r.workspaceId,
-      ),
-  );
-
-  return { toInsert, toUpdate, toDelete, unchanged };
+  return { toInsert, toUpdate, toDelete };
 };
