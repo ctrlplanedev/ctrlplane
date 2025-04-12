@@ -98,15 +98,18 @@ const handleVersionRelease = async (releaseTarget: any) => {
   });
 
   const { chosenCandidate } = await vrm.evaluate();
-  if (!chosenCandidate) return null;
-
-  const { release: versionRelease } = await vrm.upsertRelease(
-    chosenCandidate.id,
-  );
-
   const endTime = performance.now();
   log.info(
     `version release evaluation took ${((endTime - startTime) / 1000).toFixed(2)}s`,
+  );
+
+  if (!chosenCandidate) {
+    log.info("No valid version release found.", { releaseTarget });
+    return null;
+  }
+
+  const { release: versionRelease } = await vrm.upsertRelease(
+    chosenCandidate.id,
   );
 
   return versionRelease;
