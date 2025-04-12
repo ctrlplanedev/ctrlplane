@@ -7,16 +7,11 @@ const queue = getQueue(Channel.EvaluateReleaseTarget);
 export const newResourceWorker = createWorker(
   Channel.NewResource,
   async ({ data: resource }) => {
-    console.log("new resource", resource);
-    return;
-    // db.transaction(async (tx) => {
-    //   const rts = await upsertReleaseTargets(tx, resource);
-    //   await queue.addBulk(
-    //     rts.map((rt) => ({
-    //       name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-    //       data: rt,
-    //     })),
-    //   );
-    // }),
+    const rts = await upsertReleaseTargets(db, resource);
+    const jobs = rts.map((rt) => ({
+      name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+      data: rt,
+    }));
+    await queue.addBulk(jobs);
   },
 );

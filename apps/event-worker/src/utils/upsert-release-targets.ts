@@ -55,10 +55,10 @@ export const upsertReleaseTargets = async (
     ),
   ).then((results) => results.flat());
 
-  // if (releaseTargetInserts.length === 0) return [];
-  // return db
-  //   .insert(SCHEMA.releaseTarget)
-  //   .values(releaseTargetInserts)
-  //   .onConflictDoNothing()
-  //   .returning();``
+  if (releaseTargetInserts.length === 0) return [];
+  return db
+    .insert(SCHEMA.releaseTarget)
+    .values(releaseTargetInserts)
+    .onConflictDoNothing()
+    .returning();
 };

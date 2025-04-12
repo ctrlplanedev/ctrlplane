@@ -16,53 +16,43 @@ export const updatedResourceWorker = createWorker(
       where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
     });
 
-    await upsertReleaseTargets(db, resource);
+    const upsertedReleaseTargets = await upsertReleaseTargets(db, resource);
+    const releaseTargetsToDelete = currentReleaseTargets.filter(
+      (rt) => !upsertedReleaseTargets.some((nrt) => nrt.id === rt.id),
+    );
+
+    await db.delete(SCHEMA.releaseTarget).where(
+      inArray(
+        SCHEMA.releaseTarget.id,
+        releaseTargetsToDelete.map((rt) => rt.id),
+      ),
+    );
+
+    const dispatchExitHooksPromise = dispatchExitHooks(
+      db,
+      resource,
+      currentReleaseTargets,
+      upsertedReleaseTargets,
+    );
+
+    const addToEvaluateQueuePromise = getQueue(
+      Channel.EvaluateReleaseTarget,
+    ).addBulk(
+      upsertedReleaseTargets.map((rt) => ({
+        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+        data: rt,
+      })),
+    );
+
+    await Promise.allSettled([
+      dispatchExitHooksPromise,
+      addToEvaluateQueuePromise,
+    ]);
 
     const endTime = performance.now();
 
     logger.info(
       `finished processing updated resource ${resource.id} in ${endTime - startTime}ms`,
     );
-
-    return;
-
-    // db.transaction(async (tx) => {
-    //   const currentReleaseTargets = await tx.query.releaseTarget.findMany({
-    //     where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
-    //   });
-
-    //   const newReleaseTargets = await upsertReleaseTargets(tx, resource);
-    //   const releaseTargetsToDelete = currentReleaseTargets.filter(
-    //     (rt) => !newReleaseTargets.some((nrt) => nrt.id === rt.id),
-    //   );
-
-    //   await tx.delete(SCHEMA.releaseTarget).where(
-    //     inArray(
-    //       SCHEMA.releaseTarget.id,
-    //       releaseTargetsToDelete.map((rt) => rt.id),
-    //     ),
-    //   );
-
-    //   const dispatchExitHooksPromise = dispatchExitHooks(
-    //     tx,
-    //     resource,
-    //     currentReleaseTargets,
-    //     newReleaseTargets,
-    //   );
-
-    //   const addToEvaluateQueuePromise = getQueue(
-    //     Channel.EvaluateReleaseTarget,
-    //   ).addBulk(
-    //     newReleaseTargets.map((rt) => ({
-    //       name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-    //       data: rt,
-    //     })),
-    //   );
-
-    //   await Promise.allSettled([
-    //     dispatchExitHooksPromise,
-    //     addToEvaluateQueuePromise,
-    //   ]);
-    // });
   },
 );
