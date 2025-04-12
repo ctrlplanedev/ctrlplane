@@ -17,10 +17,16 @@ import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { Version } from "../manager/version-rule-engine.js";
-import type { Policy, RuleEngineContext, RuleEngineFilter } from "../types.js";
+import type {
+  FilterRule,
+  Policy,
+  PreValidationRule,
+  RuleEngineContext,
+} from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
+import { ConstantMap, isFilterRule, isPreValidationRule } from "../types.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getRules } from "./version-manager-rules.js";
 
@@ -29,7 +35,7 @@ const log = logger.child({
 });
 
 type VersionEvaluateOptions = {
-  rules?: (p: Policy | null) => RuleEngineFilter<Version>[];
+  rules?: (p: Policy | null) => Array<FilterRule<Version> | PreValidationRule>;
   versions?: Version[];
 };
 
@@ -185,7 +191,22 @@ export class VersionReleaseManager implements ReleaseManager {
     const policy = await this.getPolicy();
     const rules = (options?.rules ?? getRules)(policy);
 
-    const engine = new VersionRuleEngine(rules);
+    const filterRules = rules.filter(isFilterRule);
+    const preValidationRules = rules.filter(isPreValidationRule);
+
+    for (const rule of preValidationRules) {
+      const result = rule.passing(ctx);
+      if (!result.passing) {
+        return {
+          chosenCandidate: null,
+          rejectionReasons: new ConstantMap<string, string>(
+            result.rejectionReason ?? "",
+          ),
+        };
+      }
+    }
+
+    const engine = new VersionRuleEngine(filterRules);
     const versions =
       options?.versions ?? (await this.findVersionsForEvaluate());
 

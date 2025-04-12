@@ -8,9 +8,9 @@ import {
 import * as rrule from "rrule";
 
 import type {
+  PreValidationResult,
+  PreValidationRule,
   RuleEngineContext,
-  RuleEngineFilter,
-  RuleEngineRuleResult,
 } from "../types.js";
 
 // https://github.com/jkbrzt/rrule/issues/478
@@ -42,7 +42,7 @@ export function getDatePartsInTimeZone(date: Date, timeZone: string) {
   };
 }
 
-export interface DeploymentDenyRuleOptions<T> extends Partial<rrule.Options> {
+export interface DeploymentDenyRuleOptions extends Partial<rrule.Options> {
   dtend?: Date | null;
 
   /**
@@ -50,31 +50,25 @@ export interface DeploymentDenyRuleOptions<T> extends Partial<rrule.Options> {
    * denied due to time-based restrictions"
    */
   denyReason?: string;
-
-  getCandidateId(this: void, candidate: T): string;
 }
 
-export class DeploymentDenyRule<T> implements RuleEngineFilter<T> {
+export class DeploymentDenyRule implements PreValidationRule {
   public readonly name = "DeploymentDenyRule";
   private rrule: rrule.RRule;
   private denyReason: string;
   private dtend: Date | null;
   private timezone: string;
   private dtstart: Date | null;
-  private getCandidateId: (candidate: T) => string;
 
   constructor({
     denyReason = "Deployment denied due to time-based restrictions",
     dtend = null,
     dtstart = null,
     until = null,
-    getCandidateId,
     ...options
-  }: DeploymentDenyRuleOptions<T>) {
+  }: DeploymentDenyRuleOptions) {
     this.timezone = options.tzid ?? "UTC";
     this.denyReason = denyReason;
-
-    this.getCandidateId = getCandidateId;
 
     const dtStartCasted =
       dtstart != null ? this.castTimezone(dtstart, this.timezone) : null;
@@ -97,25 +91,20 @@ export class DeploymentDenyRule<T> implements RuleEngineFilter<T> {
     return new Date();
   }
 
-  filter(_: RuleEngineContext, candidates: T[]): RuleEngineRuleResult<T> {
+  passing(_: RuleEngineContext): PreValidationResult {
     const now = this.getCurrentTime();
 
     // Check if current time matches one of the rrules
     const isDenied = this.isDeniedTime(now);
 
     if (isDenied) {
-      // Build rejection reasons for each release
-      const rejectionReasons = new Map<string, string>(
-        candidates.map((candidate) => [
-          this.getCandidateId(candidate),
-          this.denyReason,
-        ]),
-      );
-      return { allowedCandidates: [], rejectionReasons };
+      return {
+        passing: false,
+        rejectionReason: this.denyReason,
+      };
     }
 
-    // Allow all releases if time is not denied
-    return { allowedCandidates: candidates };
+    return { passing: true };
   }
 
   /**

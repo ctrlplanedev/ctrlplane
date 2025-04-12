@@ -32,20 +32,43 @@ export type RuleEngineRuleResult<T> = {
   rejectionReasons?: Map<string, string>;
 };
 
-export type RuleEngineSelectionResult<T> = {
-  chosenCandidate: T | null;
-  rejectionReasons: Map<string, string>;
-};
-
 /**
  * A rule to filter/reorder the candidate versions.
  */
-export interface RuleEngineFilter<T> {
+export interface FilterRule<T> {
   name: string;
   filter(
     context: RuleEngineContext,
     candidates: T[],
   ): RuleEngineRuleResult<T> | Promise<RuleEngineRuleResult<T>>;
+}
+
+export type PreValidationResult = {
+  passing: boolean;
+  rejectionReason?: string;
+};
+
+export interface PreValidationRule {
+  name: string;
+  passing(context: RuleEngineContext): PreValidationResult;
+}
+
+/**
+ * Type guard to check if a rule is a RuleEngineFilter
+ */
+export function isFilterRule<T>(
+  rule: FilterRule<T> | PreValidationRule,
+): rule is FilterRule<T> {
+  return "filter" in rule;
+}
+
+/**
+ * Type guard to check if a rule is a PreFetchRuleFilter
+ */
+export function isPreValidationRule(
+  rule: FilterRule<any> | PreValidationRule,
+): rule is PreValidationRule {
+  return "passing" in rule;
 }
 
 export type Policy = schema.Policy & {
@@ -62,9 +85,32 @@ export type ReleaseTargetIdentifier = {
   resourceId: string;
 };
 
+export type RuleSelectionResult<T> = {
+  chosenCandidate: T | null;
+  rejectionReasons: Map<string, string>;
+};
+
 export type RuleEngine<T> = {
   evaluate: (
     context: RuleEngineContext,
     candidates: T[],
-  ) => Promise<RuleEngineSelectionResult<T>>;
+  ) => Promise<RuleSelectionResult<T>>;
 };
+
+export class ConstantMap<K, V> extends Map<K, V> {
+  constructor(private readonly value: V) {
+    super();
+  }
+
+  get(_: K): V {
+    return this.value;
+  }
+
+  set(_: K, __: V): this {
+    return this;
+  }
+
+  delete(_: K): boolean {
+    return false;
+  }
+}

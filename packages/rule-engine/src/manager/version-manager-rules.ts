@@ -1,4 +1,4 @@
-import type { Policy, RuleEngineFilter } from "../types";
+import type { FilterRule, Policy } from "../types";
 import type { Version } from "./version-rule-engine";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
 import {
@@ -61,15 +61,13 @@ const versionUserApprovalRule = (
 
 export const getVersionApprovalRules = (
   policy: Policy | null,
-): RuleEngineFilter<Version>[] => [
+): FilterRule<Version>[] => [
   ...versionUserApprovalRule(policy?.versionUserApprovals),
   ...versionAnyApprovalRule(policy?.versionAnyApprovals),
   ...versionRoleApprovalRule(policy?.versionRoleApprovals),
 ];
 
-export const getRules = (
-  policy: Policy | null,
-): RuleEngineFilter<Version>[] => {
+export const getRules = (policy: Policy | null): FilterRule<Version>[] => {
   return [
     ...denyWindows(policy),
     ...versionUserApprovalRule(policy?.versionUserApprovals),
