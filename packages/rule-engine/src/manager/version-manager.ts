@@ -120,32 +120,35 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const policy = await this.getPolicy();
 
-    const versions = await this.db.query.deploymentVersion.findMany({
-      where: and(
-        eq(
-          schema.deploymentVersion.deploymentId,
-          this.releaseTarget.deploymentId,
+    const versions = await this.db
+      .select()
+      .from(schema.deploymentVersion)
+      .where(
+        and(
+          eq(
+            schema.deploymentVersion.deploymentId,
+            this.releaseTarget.deploymentId,
+          ),
+          schema.deploymentVersionMatchesCondition(
+            this.db,
+            policy?.deploymentVersionSelector?.deploymentVersionSelector,
+          ),
+          latestDeployedVersion != null
+            ? gte(
+                schema.deploymentVersion.createdAt,
+                latestDeployedVersion.createdAt,
+              )
+            : undefined,
+          latestVersionMatchingPolicy != null
+            ? lte(
+                schema.deploymentVersion.createdAt,
+                latestVersionMatchingPolicy.createdAt,
+              )
+            : undefined,
         ),
-        schema.deploymentVersionMatchesCondition(
-          this.db,
-          policy?.deploymentVersionSelector?.deploymentVersionSelector,
-        ),
-        latestDeployedVersion != null
-          ? gte(
-              schema.deploymentVersion.createdAt,
-              latestDeployedVersion.createdAt,
-            )
-          : undefined,
-        latestVersionMatchingPolicy != null
-          ? lte(
-              schema.deploymentVersion.createdAt,
-              latestVersionMatchingPolicy.createdAt,
-            )
-          : undefined,
-      ),
-      orderBy: desc(schema.deploymentVersion.createdAt),
-      limit: 1_000,
-    });
+      )
+      .orderBy(desc(schema.deploymentVersion.createdAt))
+      .limit(1_000);
 
     // const versionIds = versions.map((v) => v.id);
     // const allMetadata = await this.db.query.deploymentVersionMetadata.findMany({
@@ -154,7 +157,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const endTime = performance.now();
     log.info(
-      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions)`,
+      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.id}, [${latestDeployedVersion?.id} - ${latestVersionMatchingPolicy?.id}]))`,
     );
 
     return versions.map((v) => {
