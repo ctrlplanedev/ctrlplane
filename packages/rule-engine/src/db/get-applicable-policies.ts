@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -31,8 +32,8 @@ const matchPolicyTargetForResource = async (
   releaseTargetIdentifier: ReleaseTargetIdentifier,
   target: schema.PolicyTarget,
 ) => {
-  const { deploymentSelector, environmentSelector } = target;
-  const { deploymentId, environmentId } = releaseTargetIdentifier;
+  const { deploymentSelector, environmentSelector, resourceSelector } = target;
+  const { deploymentId, environmentId, resourceId } = releaseTargetIdentifier;
   const deploymentsQuery =
     deploymentSelector == null
       ? null
@@ -61,33 +62,56 @@ const matchPolicyTargetForResource = async (
           )
           .then(takeFirstOrNull);
 
-  const [deployments, env] = await Promise.all([deploymentsQuery, envQuery]);
-  const hasDeploymentSelector = deploymentSelector != null;
-  const hasDeployment = deployments != null;
+  const resourceQuery =
+    resourceSelector == null
+      ? null
+      : tx
+          .select()
+          .from(schema.resource)
+          .where(
+            and(
+              schema.resourceMatchesMetadata(db, resourceSelector),
+              eq(schema.resource.id, resourceId),
+            ),
+          )
+          .then(takeFirstOrNull);
 
-  const hasEnvironmentSelector = environmentSelector != null;
-  const hasEnvironment = env != null;
+  const [deployment, env, resource] = await Promise.all([
+    deploymentsQuery,
+    envQuery,
+    resourceQuery,
+  ]);
 
-  // Case 1: Both environment and deployment match their respective
-  // selectors This is the most specific match where both selectors exist
-  // and match
-  if (hasEnvironment && hasDeployment) {
-    return { environment: env, deployment: deployments };
-  }
+  // Check if each selector exists and has a matching entity
+  const selectors = {
+    deployment: {
+      hasSelector: deploymentSelector != null,
+      hasEntity: deployment != null,
+    },
+    environment: {
+      hasSelector: environmentSelector != null,
+      hasEntity: env != null,
+    },
+    resource: {
+      hasSelector: resourceSelector != null,
+      hasEntity: resource != null,
+    },
+  } as const;
 
-  // Case 2: Environment matches and there is no deployment selector This
-  // means the policy applies to all deployments in this environment
-  if (hasEnvironment && !hasDeploymentSelector) {
-    return { environment: env, deployment: null };
-  }
+  const hasSelectors = _(selectors)
+    .entries()
+    .filter(([_, s]) => s.hasSelector)
+    .map(([key]) => key)
+    .value();
 
-  // Case 3: Deployment matches and there is no environment selector This
-  // means the policy applies to this deployment across all environments
-  if (hasDeployment && !hasEnvironmentSelector) {
-    return { environment: null, deployment: deployments };
-  }
+  const hasEntities = _(selectors)
+    .entries()
+    .filter(([_, s]) => s.hasEntity)
+    .map(([key]) => key)
+    .value();
 
-  return null;
+  // Check if arrays have same values in any order using lodash
+  return _.isEqual(_.sortBy(hasSelectors), _.sortBy(hasEntities));
 };
 
 /**
@@ -128,12 +152,15 @@ export const getApplicablePolicies = async (
 
   return Promise.all(
     policy.map(async (p) => {
-      const matches = await Promise.all(
-        p.targets.map((t) =>
-          matchPolicyTargetForResource(tx, releaseTargetIdentifier, t),
+      // Check if any of the policy's targets match the release target
+      const targetMatches = await Promise.all(
+        p.targets.map((target) =>
+          matchPolicyTargetForResource(tx, releaseTargetIdentifier, target),
         ),
       );
-      if (matches.some((match) => match !== null)) return p;
+
+      // Return the policy if at least one target matches
+      if (targetMatches.some((v) => v)) return p;
     }),
   ).then((policies) => policies.filter(isPresent));
 };

@@ -25,6 +25,7 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { DeploymentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/condition/DeploymentConditionRender";
 import { EnvironmentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/environment/condition/EnvironmentConditionRender";
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionRender";
 import { usePolicyContext } from "./PolicyContext";
 
 // Available options for environments and deployments
@@ -38,6 +39,7 @@ const TARGET_SCOPE_OPTIONS = [
     description: "Apply policy to selected deployments across all environments",
     isDeploymentSelectorNull: false,
     isEnvironmentSelectorNull: true,
+    isResourceSelectorNull: true,
   },
   {
     value: "environment_specific",
@@ -45,6 +47,7 @@ const TARGET_SCOPE_OPTIONS = [
     description: "Apply policy to selected environments across all deployments",
     isDeploymentSelectorNull: true,
     isEnvironmentSelectorNull: false,
+    isResourceSelectorNull: true,
   },
   {
     value: "deployment_environment_pair",
@@ -53,6 +56,15 @@ const TARGET_SCOPE_OPTIONS = [
       "Apply policy when both deployment conditions and environment conditions match",
     isDeploymentSelectorNull: false,
     isEnvironmentSelectorNull: false,
+    isResourceSelectorNull: true,
+  },
+  {
+    value: "resource_specific",
+    label: "Specific Resources",
+    description: "Apply policy to selected resources",
+    isDeploymentSelectorNull: true,
+    isEnvironmentSelectorNull: true,
+    isResourceSelectorNull: false,
   },
 ];
 
@@ -174,7 +186,8 @@ export const BasicConfiguration: React.FC = () => {
         <div className="space-y-1">
           <h3 className="text-md font-medium">Policy Targets</h3>
           <p className="text-sm text-muted-foreground">
-            Define which environments and deployments this policy applies to
+            Define which environments, deployments and resources this policy
+            applies to
           </p>
         </div>
 
@@ -185,10 +198,6 @@ export const BasicConfiguration: React.FC = () => {
               className="flex items-start gap-4 rounded-lg border p-4"
             >
               <div className="flex-1 space-y-4">
-                {/* <FormField
-                      control={form.control}
-                      name={`targets.${index}.targetScope`}
-                      render={({ field }) => ( */}
                 <div>
                   <Label>Type</Label>
                   <DropdownMenu>
@@ -201,7 +210,9 @@ export const BasicConfiguration: React.FC = () => {
                             opt.isDeploymentSelectorNull ===
                               (target.deploymentSelector === null) &&
                             opt.isEnvironmentSelectorNull ===
-                              (target.environmentSelector === null),
+                              (target.environmentSelector === null) &&
+                            opt.isResourceSelectorNull ===
+                              (target.resourceSelector === null),
                         );
                         return (
                           <span>
@@ -234,6 +245,14 @@ export const BasicConfiguration: React.FC = () => {
                                       operator: "and",
                                       conditions: [],
                                     },
+                              resourceSelector: option.isResourceSelectorNull
+                                ? null
+                                : {
+                                    type: "comparison",
+                                    not: false,
+                                    operator: "and",
+                                    conditions: [],
+                                  },
                             })
                           }
                           className="flex flex-col items-start"
@@ -266,12 +285,7 @@ export const BasicConfiguration: React.FC = () => {
                         <FormMessage />
                       </FormItem>
                     ) : (
-                      <FormItem>
-                        <FormLabel>Environment</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Applies to all environments under those deployments.
-                        </div>
-                      </FormItem>
+                      <></>
                     )
                   }
                 />
@@ -285,6 +299,29 @@ export const BasicConfiguration: React.FC = () => {
                         <FormLabel>Deployment</FormLabel>
                         <div className="min-w-[1000px] text-sm">
                           <DeploymentConditionRender
+                            condition={value}
+                            onChange={onChange}
+                            depth={0}
+                            className="w-full"
+                          />
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    ) : (
+                      <></>
+                    )
+                  }
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`targets.${index}.resourceSelector`}
+                  render={({ field: { value, onChange } }) =>
+                    value != null ? (
+                      <FormItem>
+                        <FormLabel>Resource</FormLabel>
+                        <div className="min-w-[1000px] text-sm">
+                          <ResourceConditionRender
                             condition={value}
                             onChange={onChange}
                             depth={0}
@@ -326,6 +363,7 @@ export const BasicConfiguration: React.FC = () => {
                   conditions: [],
                 },
                 deploymentSelector: null,
+                resourceSelector: null,
               })
             }
           >
