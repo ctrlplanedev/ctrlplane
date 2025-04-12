@@ -111,7 +111,7 @@ const matchPolicyTargetForResource = async (
     .value();
 
   // Check if arrays have same values in any order using lodash
-  return _.isEqual(_.sortBy(hasSelectors), _.sortBy(hasEntities));
+  return _.isEqual(hasSelectors.sort(), hasEntities.sort());
 };
 
 /**
