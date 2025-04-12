@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 
-import { upsertResources } from "@ctrlplane/db";
+import { insertResources, updateResources } from "@ctrlplane/db";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
@@ -32,9 +32,15 @@ export const handleResourceProviderScan = async (
     log.info(
       `found ${toInsert.length} resources to insert and ${toUpdate.length} resources to update `,
     );
+
+    const toUpdateWithMetadataAndVariables = toUpdate.map((r) => {
+      const rt = resourcesToInsert.find((ri) => ri.identifier === r.identifier);
+      return { ...r, metadata: rt?.metadata, variables: rt?.variables };
+    });
+
     const [insertedResources, updatedResources] = await Promise.all([
-      upsertResources(tx, toInsert),
-      upsertResources(tx, toUpdate),
+      insertResources(tx, toInsert),
+      updateResources(tx, toUpdateWithMetadataAndVariables),
     ]);
 
     log.info(
@@ -42,7 +48,9 @@ export const handleResourceProviderScan = async (
     );
 
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
-    const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
+    const updateJobs = updatedResources
+      .filter((r) => r.isChanged)
+      .map((r) => ({ name: r.resource.id, data: r.resource }));
 
     await Promise.all([
       getQueue(Channel.NewResource).addBulk(insertJobs),

@@ -2,7 +2,7 @@ import type * as schema from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { upsertResources } from "@ctrlplane/db";
+import { insertResources, updateResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -65,15 +65,25 @@ export const POST = request()
         ctx.body.resources.map((r) => ({ ...r, workspaceId })),
       );
 
+      const toUpdateWithMetadataAndVariables = toUpdate.map((r) => {
+        const rt = ctx.body.resources.find(
+          (ri) => ri.identifier === r.identifier,
+        );
+        if (rt == null) throw new Error(`Resource ${r.identifier} not found`);
+        return { ...r, ...rt };
+      });
+
       const [insertedResources, updatedResources] = await Promise.all([
-        upsertResources(db, toInsert),
-        upsertResources(db, toUpdate),
+        insertResources(db, toInsert),
+        updateResources(db, toUpdateWithMetadataAndVariables),
       ]);
       const insertJobs = insertedResources.map((r) => ({
         name: r.id,
         data: r,
       }));
-      const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
+      const updateJobs = updatedResources
+        .filter((r) => r.isChanged)
+        .map((r) => ({ name: r.resource.id, data: r.resource }));
 
       await Promise.all([
         getQueue(Channel.NewResource).addBulk(insertJobs),

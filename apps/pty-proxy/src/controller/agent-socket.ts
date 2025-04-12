@@ -9,7 +9,7 @@ import type WebSocket from "ws";
 import type { MessageEvent } from "ws";
 
 import { can, getUser } from "@ctrlplane/auth/utils";
-import { eq, upsertResources } from "@ctrlplane/db";
+import { and, eq, updateResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -125,20 +125,32 @@ export class AgentSocket {
       "name" | "version" | "kind" | "identifier" | "workspaceId"
     >,
   ) {
-    const all = await upsertResources(db, [
+    const identifier = `ctrlplane/access/access-node/${this.name}`;
+    const existing = await db.query.resource.findFirst({
+      where: and(
+        eq(schema.resource.identifier, identifier),
+        eq(schema.resource.workspaceId, this.workspaceId),
+      ),
+    });
+
+    if (existing == null) throw new Error(`Resource not found ${identifier}`);
+
+    const all = await updateResources(db, [
       {
+        ...existing,
         ...resource,
         name: this.name,
         version: "ctrlplane.access/v1",
         kind: "AccessNode",
-        identifier: `ctrlplane/access/access-node/${this.name}`,
+        identifier,
         workspaceId: this.workspaceId,
         updatedAt: new Date(),
       },
     ]);
-    const res = all.at(0);
-    if (res == null) throw new Error("Failed to create resource");
-    await getQueue(Channel.UpdatedResource).add(res.id, res);
+    const updatedResult = all.at(0);
+    if (updatedResult == null) throw new Error("Failed to update resource");
+    const { resource: res, isChanged } = updatedResult;
+    if (isChanged) await getQueue(Channel.UpdatedResource).add(res.id, res);
     this.resource = res;
     agents.set(res.id, { lastSync: new Date(), agent: this });
   }

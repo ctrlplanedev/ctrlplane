@@ -113,7 +113,11 @@ export const createResource = createInsertSchema(resource, {
 }).omit({ id: true });
 
 export type InsertResource = InferInsertModel<typeof resource>;
-export type ResourceToUpsert = InsertResource & {
+export type ResourceToInsert = InsertResource & {
+  metadata?: Record<string, string>;
+  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+};
+export type ResourceToUpdate = Resource & {
   metadata?: Record<string, string>;
   variables?: Array<{ key: string; value: any; sensitive: boolean }>;
 };

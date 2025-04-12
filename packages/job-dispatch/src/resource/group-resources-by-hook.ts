@@ -101,10 +101,10 @@ export const groupResourcesByHook = async (
           er.identifier === r.identifier && er.workspaceId === r.workspaceId,
       ),
   );
-  const toUpdate = resourcesToInsert.filter((r) =>
-    existingResources.some(
-      (er) =>
-        er.identifier === r.identifier && er.workspaceId === r.workspaceId,
+
+  const toUpdate = existingResources.filter((er) =>
+    resourcesToInsert.some(
+      (r) => r.identifier === er.identifier && r.workspaceId === er.workspaceId,
     ),
   );
 

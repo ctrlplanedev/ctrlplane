@@ -4,7 +4,7 @@ import _ from "lodash";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
 import type { Tx } from "./common.js";
-import { buildConflictUpdateColumns } from "./common.js";
+import { buildConflictUpdateColumns, takeFirst } from "./common.js";
 import * as SCHEMA from "./schema/index.js";
 
 type ResourceWithMetadata = SCHEMA.Resource & {
@@ -117,9 +117,9 @@ export const updateResourceVariables = async (
   return new Set(updatedResourceIds);
 };
 
-export const upsertResources = async (
+export const insertResources = async (
   tx: Tx,
-  resourcesToUpsert: SCHEMA.ResourceToUpsert[],
+  resourcesToUpsert: SCHEMA.ResourceToInsert[],
 ) => {
   if (resourcesToUpsert.length === 0) return [];
   const resources = await tx
@@ -153,3 +153,61 @@ export const upsertResources = async (
 
   return resourcesWithId;
 };
+
+const updateResource = async (tx: Tx, resource: SCHEMA.ResourceToUpdate) => {
+  const existingResource = await tx.query.resource.findFirst({
+    where: eq(SCHEMA.resource.id, resource.id),
+    with: {
+      metadata: { orderBy: [SCHEMA.resourceMetadata.key] },
+      variables: { orderBy: [SCHEMA.resourceVariable.key] },
+    },
+  });
+  if (existingResource == null)
+    throw new Error(`Resource ${resource.id} not found`);
+
+  const { metadata: __, variables: ___, ...rest } = resource;
+
+  const updatedResource = await tx
+    .update(SCHEMA.resource)
+    .set({ ...rest, updatedAt: new Date(), deletedAt: null })
+    .where(eq(SCHEMA.resource.id, resource.id))
+    .returning()
+    .then(takeFirst);
+
+  const updatesWithId = { ...resource, ...updatedResource };
+
+  await updateResourceMetadata(tx, [updatesWithId]);
+  await updateResourceVariables(tx, [updatesWithId]);
+
+  const updatedWithMetadataAndVariables = await tx.query.resource.findFirst({
+    where: eq(SCHEMA.resource.id, resource.id),
+    with: {
+      metadata: { orderBy: [SCHEMA.resourceMetadata.key] },
+      variables: { orderBy: [SCHEMA.resourceVariable.key] },
+    },
+  });
+
+  if (updatedWithMetadataAndVariables == null)
+    throw new Error(`Resource ${resource.id} not found`);
+
+  const existingResourceWithoutUpdatedAt = _.omit(
+    existingResource,
+    "updatedAt",
+  );
+  const updatedResourceWithoutUpdatedAt = _.omit(
+    updatedWithMetadataAndVariables,
+    "updatedAt",
+  );
+
+  const isChanged = !_.isEqual(
+    existingResourceWithoutUpdatedAt,
+    updatedResourceWithoutUpdatedAt,
+  );
+
+  return { resource: updatesWithId, isChanged };
+};
+
+export const updateResources = (
+  tx: Tx,
+  resourcesToUpdate: SCHEMA.ResourceToUpdate[],
+) => Promise.all(resourcesToUpdate.map((r) => updateResource(tx, r)));
