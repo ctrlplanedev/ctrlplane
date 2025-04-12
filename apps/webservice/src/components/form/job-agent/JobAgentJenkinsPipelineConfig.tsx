@@ -12,12 +12,8 @@ interface JobAgentJenkinsPipelineConfigProps {
 export const JobAgentJenkinsPipelineConfig: React.FC<
   JobAgentJenkinsPipelineConfigProps
 > = ({ value = {}, onChange, disabled = false }) => {
-  const handleJobUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange({
-      ...value,
-      jobUrl: e.target.value,
-    });
-  };
+  const handleJobUrlChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    onChange({ ...value, jobUrl: e.target.value})
 
   return (
     <div className="space-y-4">
