@@ -9,7 +9,7 @@ import { bullmqRedis } from "./redis.js";
 export const createWorker = <T extends keyof ChannelMap>(
   name: T,
   handler: (job: Job<ChannelMap[T]>) => Promise<void>,
-  opts?: WorkerOptions,
+  opts?: Partial<WorkerOptions>,
 ) => {
   logger.info(`Creating worker ${name}`);
 
@@ -17,7 +17,7 @@ export const createWorker = <T extends keyof ChannelMap>(
     connection: bullmqRedis,
     removeOnComplete: { age: 1 * 60 * 60, count: 5000 },
     removeOnFail: { age: 12 * 60 * 60, count: 5000 },
-    concurrency: 100,
+    concurrency: 50,
     ...opts,
   });
 };

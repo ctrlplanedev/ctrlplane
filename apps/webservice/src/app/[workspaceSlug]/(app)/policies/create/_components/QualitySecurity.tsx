@@ -299,7 +299,7 @@ export const QualitySecurity: React.FC<{ workspaceId: string }> = ({
                               onCheckedChange={(checked) =>
                                 field.onChange(
                                   checked
-                                    ? { requiredApprovalsCount: 1 }
+                                    ? { name: "", requiredApprovalsCount: 1 }
                                     : null,
                                 )
                               }

@@ -53,6 +53,7 @@ export const PolicySubmit: React.FC<{
         disabled={generateName.isPending}
         variant="ghost"
         className="gap-2"
+        type="button"
       >
         <IconSparkles className="h-4 w-4" />
         {generateName.isPending ? "Generating..." : "Generate Name"}
@@ -65,6 +66,7 @@ export const PolicySubmit: React.FC<{
         disabled={generateDescription.isPending}
         variant="ghost"
         className="gap-2"
+        type="button"
       >
         <IconSparkles className="h-4 w-4" />
         {generateDescription.isPending
