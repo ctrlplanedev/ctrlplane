@@ -71,8 +71,8 @@ export const getRules = (
 ): Array<FilterRule<Version> | PreValidationRule> => {
   return [
     ...denyWindows(policy),
-    ...versionUserApprovalRule(policy?.versionUserApprovals),
-    ...versionAnyApprovalRule(policy?.versionAnyApprovals),
+    // ...versionUserApprovalRule(policy?.versionUserApprovals),
+    // ...versionAnyApprovalRule(policy?.versionAnyApprovals),
     ...versionRoleApprovalRule(policy?.versionRoleApprovals),
   ];
 };

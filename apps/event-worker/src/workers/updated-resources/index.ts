@@ -35,6 +35,10 @@ export const updatedResourceWorker = createWorker(
       upsertedReleaseTargets,
     );
 
+    logger.info(
+      `dispatching ${upsertedReleaseTargets.length} evaluations for release targets of resource ${resource.id}`,
+    );
+
     const addToEvaluateQueuePromise = getQueue(
       Channel.EvaluateReleaseTarget,
     ).addBulk(
@@ -52,7 +56,7 @@ export const updatedResourceWorker = createWorker(
     const endTime = performance.now();
 
     logger.info(
-      `finished processing updated resource ${resource.id} in ${endTime - startTime}ms`,
+      `finished processing updated resource ${resource.id} in ${((endTime - startTime) / 1000).toFixed(2)}s`,
     );
   },
 );

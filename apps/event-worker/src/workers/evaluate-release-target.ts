@@ -14,7 +14,7 @@ import {
 import { env } from "../config.js";
 import { ReleaseTargetMutex } from "../releases/mutex.js";
 
-const log = logger.child({ worker: "policy-evaluate" });
+const log = logger.child({ worker: "evaluate-release-target" });
 
 /**
  * Creates a new release job with the given version and variable releases
@@ -90,13 +90,23 @@ const createRelease = async (
  * @throws Error if no candidate is chosen
  */
 const handleVersionRelease = async (releaseTarget: any) => {
+  const startTime = performance.now();
+
   const vrm = new VersionReleaseManager(db, {
     ...releaseTarget,
     workspaceId: releaseTarget.resource.workspaceId,
   });
 
   const { chosenCandidate } = await vrm.evaluate();
-  if (!chosenCandidate) return null;
+  const endTime = performance.now();
+  log.info(
+    `version release evaluation took ${((endTime - startTime) / 1000).toFixed(2)}s`,
+  );
+
+  if (!chosenCandidate) {
+    log.info("No valid version release found.", { releaseTarget });
+    return null;
+  }
 
   const { release: versionRelease } = await vrm.upsertRelease(
     chosenCandidate.id,
@@ -131,7 +141,13 @@ const handleVariableRelease = async (releaseTarget: any) => {
 export const evaluateReleaseTarget = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
+    log.info(`Evaluating release target ${job.data.resourceId}`, {
+      jobId: job.id,
+    });
     const mutex = await ReleaseTargetMutex.lock(job.data);
+    log.info(`Acquired mutex lock for release target ${job.data.resourceId}`, {
+      jobId: job.id,
+    });
 
     try {
       // Get release target
