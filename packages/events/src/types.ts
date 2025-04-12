@@ -49,5 +49,4 @@ export type ChannelMap = {
   [Channel.ResourceScan]: { resourceProviderId: string };
   [Channel.UpdatedResource]: schema.Resource;
   [Channel.NewResource]: schema.Resource;
-  [Channel.DeleteDeployment]: schema.Deployment;
 };
