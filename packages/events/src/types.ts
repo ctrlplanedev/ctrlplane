@@ -17,9 +17,9 @@ export enum Channel {
   NewResource = "new-resource",
 
   UpdatedResource = "updated-resource",
+  UpdateResourceVariable = "update-resource-variable",
   UpdateEnvironment = "update-environment",
   UpdateDeploymentVariable = "update-deployment-variable",
-  UpdateResourceVariable = "update-resource-variable",
 
   DeleteDeployment = "delete-deployment",
   DeleteEnvironment = "delete-environment",
