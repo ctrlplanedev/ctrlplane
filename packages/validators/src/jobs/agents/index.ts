@@ -3,6 +3,7 @@ export enum JobAgentType {
   GithubApp = "github-app",
   ExecWindows = "exec-windows",
   ExecLinux = "exec-linux",
+  JenkinsPipeline = "jenkins-pipeline"
 }
 
 export const JobAgentTypeDisplayNames: Record<JobAgentType, string> = {
@@ -10,4 +11,5 @@ export const JobAgentTypeDisplayNames: Record<JobAgentType, string> = {
   [JobAgentType.GithubApp]: "Github App",
   [JobAgentType.ExecWindows]: "PowerShell",
   [JobAgentType.ExecLinux]: "Shell",
+  [JobAgentType.JenkinsPipeline]: "Jenkins Pipeline",
 };
