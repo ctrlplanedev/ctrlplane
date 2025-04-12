@@ -17,6 +17,7 @@ export const env = createEnv({
     GITHUB_BOT_CLIENT_SECRET: z.string().optional(),
     AZURE_APP_CLIENT_ID: z.string().optional(),
     AZURE_APP_CLIENT_SECRET: z.string().optional(),
+    PORT: z.number().default(3123),
   },
   runtimeEnv: process.env,
 });

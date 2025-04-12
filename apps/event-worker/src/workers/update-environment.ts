@@ -210,6 +210,10 @@ export const updateEnvironmentWorker = createWorker(
         environment.resourceSelector,
       );
 
+    logger.info(
+      `Creating release targets for ${newlyMatchedResources.length} resources`,
+    );
+
     const createReleaseTargetsPromise = createReleaseTargets(
       db,
       newlyMatchedResources,

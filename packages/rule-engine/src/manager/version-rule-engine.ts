@@ -1,10 +1,10 @@
 import _ from "lodash";
 
 import type {
+  FilterRule,
   RuleEngine,
   RuleEngineContext,
-  RuleEngineFilter,
-  RuleEngineSelectionResult,
+  RuleSelectionResult,
 } from "../types.js";
 
 export type Version = {
@@ -33,7 +33,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
    *                evaluation. Rules can be provided directly or as functions that
    *                return a rule or promise of a rule.
    */
-  constructor(private rules: Array<RuleEngineFilter<Version>>) {}
+  constructor(private rules: Array<FilterRule<Version>>) {}
 
   /**
    * Evaluates a context against all configured rules to determine which version
@@ -62,7 +62,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
   async evaluate(
     context: RuleEngineContext,
     candidates: Version[],
-  ): Promise<RuleEngineSelectionResult<Version>> {
+  ): Promise<RuleSelectionResult<Version>> {
     // Track rejection reasons for each version across all rules
     let rejectionReasons = new Map<string, string>();
 

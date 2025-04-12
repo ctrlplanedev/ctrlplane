@@ -6,8 +6,8 @@ import * as schema from "@ctrlplane/db/schema";
 
 import type { Version } from "../manager/version-rule-engine.js";
 import type {
+  FilterRule,
   RuleEngineContext,
-  RuleEngineFilter,
   RuleEngineRuleResult,
 } from "../types.js";
 
@@ -29,7 +29,7 @@ type VersionApprovalRuleOptions = {
   getApprovalRecords: GetApprovalRecordsFunc;
 };
 
-export class VersionApprovalRule implements RuleEngineFilter<Version> {
+export class VersionApprovalRule implements FilterRule<Version> {
   public readonly name = "VersionApprovalRule";
 
   constructor(private readonly options: VersionApprovalRuleOptions) {}

@@ -610,6 +610,13 @@
       "when": 1744151212079,
       "tag": "0086_marvelous_katie_power",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1744481295153,
+      "tag": "0087_flawless_stick",
+      "breakpoints": true
     }
   ]
 }

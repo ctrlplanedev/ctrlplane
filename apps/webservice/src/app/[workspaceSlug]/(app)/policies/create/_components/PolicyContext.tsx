@@ -1,7 +1,17 @@
 "use client";
 
-import type { Policy } from "@ctrlplane/rule-engine";
+import type { CreatePolicy } from "@ctrlplane/db/schema";
+import type { Dispatch, SetStateAction } from "react";
+import type { UseFormReturn } from "react-hook-form";
 import { createContext, useContext, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+
+import { createPolicy as policySchema } from "@ctrlplane/db/schema";
+import { Form, useForm } from "@ctrlplane/ui/form";
+import { toast } from "@ctrlplane/ui/toast";
+
+import { urls } from "~/app/urls";
+import { api } from "~/trpc/react";
 
 export type PolicyTab =
   | "config"
@@ -9,29 +19,32 @@ export type PolicyTab =
   | "deployment-flow"
   | "quality-security";
 
-type InsertPolicy = Omit<Policy, "createdAt" | "updatedAt" | "id">;
-
 type PolicyContextType = {
+  form: UseFormReturn<CreatePolicy>;
   activeTab: PolicyTab;
-  setActiveTab: (tab: PolicyTab) => void;
-  policy: InsertPolicy;
-  setPolicy: (policy: InsertPolicy) => void;
+  setActiveTab: Dispatch<SetStateAction<PolicyTab>>;
+  policy: CreatePolicy;
+  setPolicy: Dispatch<SetStateAction<CreatePolicy>>;
 };
 
-const defaultPolicy: InsertPolicy = {
+const defaultPolicy: CreatePolicy = {
   name: "",
   description: "",
   priority: 0,
   workspaceId: "",
-  enabled: false,
+  enabled: true,
+
+  targets: [],
+
   denyWindows: [],
   deploymentVersionSelector: null,
-  versionAnyApprovals: [],
+  versionAnyApprovals: null,
   versionUserApprovals: [],
   versionRoleApprovals: [],
 };
 
 const PolicyContext = createContext<PolicyContextType>({
+  form: {} as UseFormReturn<CreatePolicy>,
   activeTab: "config",
   setActiveTab: () => {},
   policy: defaultPolicy,
@@ -44,15 +57,69 @@ export const usePolicyContext = () => {
 
 export const PolicyContextProvider: React.FC<{
   children: React.ReactNode;
-}> = ({ children }) => {
+  workspaceId: string;
+}> = ({ children, workspaceId }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+
+  const form = useForm({
+    mode: "onChange",
+    schema: policySchema,
+    defaultValues: {
+      workspaceId,
+      name: "",
+      description: "",
+      priority: 0,
+      enabled: true,
+
+      targets: [],
+
+      denyWindows: [],
+      deploymentVersionSelector: null,
+      versionAnyApprovals: null,
+      versionUserApprovals: [],
+      versionRoleApprovals: [],
+    },
+  });
   const [activeTab, setActiveTab] = useState<PolicyTab>("config");
-  const [policy, setPolicy] = useState<InsertPolicy>(defaultPolicy);
+  const [policy, setPolicy] = useState<CreatePolicy>(defaultPolicy);
+
+  const router = useRouter();
+
+  const utils = api.useUtils();
+  const createPolicy = api.policy.create.useMutation();
+
+  const onSubmit = form.handleSubmit((data) => {
+    console.log(data);
+
+    createPolicy
+      .mutateAsync({ ...data, workspaceId })
+      .then(() => {
+        toast.success("Policy created successfully");
+        router.push(urls.workspace(workspaceSlug).policies().baseUrl());
+        utils.policy.list.invalidate();
+      })
+      .catch((error) => {
+        toast.error("Failed to create policy", {
+          description: error.message,
+        });
+      });
+  });
+
+  const state = form.watch();
+  console.log(state);
 
   return (
     <PolicyContext.Provider
-      value={{ activeTab, setActiveTab, policy, setPolicy }}
+      value={{ form, activeTab, setActiveTab, policy, setPolicy }}
     >
-      {children}
+      <Form {...form}>
+        <form
+          onSubmit={onSubmit}
+          className="flex h-full w-full flex-col overflow-hidden"
+        >
+          {children}
+        </form>
+      </Form>
     </PolicyContext.Provider>
   );
 };

@@ -23,6 +23,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         systemCondition,
         idCondition,
         metadataCondition,
+        comparisonCondition,
       ]),
     ),
   }),
@@ -38,5 +39,6 @@ export type ComparisonCondition = {
     | SystemCondition
     | IdCondition
     | MetadataCondition
+    | ComparisonCondition
   >;
 };

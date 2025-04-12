@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
+import sizeOf from "object-sizeof";
 
 import {
   and,
@@ -12,14 +13,31 @@ import {
 } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import type { Policy, RuleEngineContext } from "../types.js";
+import type { Version } from "../manager/version-rule-engine.js";
+import type {
+  FilterRule,
+  Policy,
+  PreValidationRule,
+  RuleEngineContext,
+} from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
+import { ConstantMap, isFilterRule, isPreValidationRule } from "../types.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getRules } from "./version-manager-rules.js";
+
+const log = logger.child({
+  module: "version-manager",
+});
+
+type VersionEvaluateOptions = {
+  rules?: (p: Policy | null) => Array<FilterRule<Version> | PreValidationRule>;
+  versions?: Version[];
+};
 
 export class VersionReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
@@ -125,6 +143,7 @@ export class VersionReleaseManager implements ReleaseManager {
         ),
         with: { metadata: true },
         orderBy: desc(schema.deploymentVersion.createdAt),
+        limit: 1_000,
       })
       .then((versions) =>
         versions.map((version) => ({
@@ -156,7 +175,7 @@ export class VersionReleaseManager implements ReleaseManager {
     return this.cachedPolicy;
   }
 
-  async evaluate() {
+  async evaluate(options?: VersionEvaluateOptions) {
     const ctx: RuleEngineContext | undefined =
       await this.db.query.releaseTarget.findFirst({
         where: eq(schema.releaseTarget.id, this.releaseTarget.id),
@@ -171,11 +190,57 @@ export class VersionReleaseManager implements ReleaseManager {
       throw new Error(`Release target ${this.releaseTarget.id} not found`);
 
     const policy = await this.getPolicy();
-    const rules = getRules(policy);
+    const rules = (options?.rules ?? getRules)(policy);
 
-    const engine = new VersionRuleEngine(rules);
-    const versions = await this.findVersionsForEvaluate();
+    const filterRules = rules.filter(isFilterRule);
+    const preValidationRules = rules.filter(isPreValidationRule);
+
+    for (const rule of preValidationRules) {
+      const result = rule.passing(ctx);
+      if (!result.passing) {
+        log.info("Pre-validation rule failed", {
+          rule: rule.constructor.name,
+          rejectionReason: result.rejectionReason,
+        });
+        return {
+          chosenCandidate: null,
+          rejectionReasons: new ConstantMap<string, string>(
+            result.rejectionReason ?? "",
+          ),
+        };
+      }
+    }
+
+    const engine = new VersionRuleEngine(filterRules);
+    const versions =
+      options?.versions ?? (await this.findVersionsForEvaluate());
+
+    const bytes = sizeOf(versions);
+    log.info(`Evaluating ${versions.length} versions`, {
+      size: formatBytes(bytes),
+      bytes,
+    });
     const result = await engine.evaluate(ctx, versions);
     return result;
   }
+}
+
+/**
+ * Formats a byte size into a human readable string with appropriate units.
+ * Handles sizes from bytes up to terabytes.
+ *
+ * @param bytes - The number of bytes to format
+ * @returns A formatted string like "1.5 MB" or "800 KB"
+ */
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+
+  // Get appropriate unit by calculating log base 1024
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  // Format with 2 decimal places and trim trailing zeros
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }

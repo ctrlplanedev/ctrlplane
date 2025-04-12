@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type {
+  FilterRule,
   RuleEngineContext,
-  RuleEngineFilter,
   RuleEngineRuleResult,
 } from "../../types.js";
 import type { Version } from "../version-rule-engine.js";
 import { VersionRuleEngine } from "../version-rule-engine.js";
 
 // Mock rule implementation
-class MockRule implements RuleEngineFilter<Version> {
+class MockRule implements FilterRule<Version> {
   public readonly name = "MockRule";
   constructor(private readonly allowedIds: string[]) {}
 

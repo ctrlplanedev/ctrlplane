@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { IconCircleFilled } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
@@ -42,7 +43,9 @@ const POLICY_TABS: TabConfig[] = [
   },
 ];
 
-export function PolicyCreationTabs() {
+export const PolicyCreationTabs: React.FC<{
+  workspaceId: string;
+}> = ({ workspaceId }) => {
   const { activeTab, setActiveTab } = usePolicyContext();
 
   const renderTabContent = () => {
@@ -54,7 +57,7 @@ export function PolicyCreationTabs() {
       case "deployment-flow":
         return <DeploymentFlow />;
       case "quality-security":
-        return <QualitySecurity />;
+        return <QualitySecurity workspaceId={workspaceId} />;
     }
   };
 
@@ -67,17 +70,24 @@ export function PolicyCreationTabs() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex w-full cursor-pointer justify-start gap-3 p-3 text-muted-foreground hover:bg-purple-500/5",
+                "flex w-full cursor-pointer justify-start gap-3 p-3 text-muted-foreground",
 
                 activeTab === tab.id
                   ? "bg-purple-500/10 text-purple-300"
-                  : "hover:text-purple-300",
+                  : "hover:bg-purple-500/5 hover:text-purple-300",
               )}
             >
               <IconCircleFilled className="ml-4 mt-2 size-2" />
               <div className="space-y-1">
                 <div>{tab.label}</div>
-                <div className="text-xs text-neutral-500">
+                <div
+                  className={cn(
+                    "text-xs",
+                    activeTab === tab.id
+                      ? "text-purple-300"
+                      : "text-muted-foreground",
+                  )}
+                >
                   {tab.description}
                 </div>
               </div>
@@ -93,4 +103,4 @@ export function PolicyCreationTabs() {
       </div>
     </div>
   );
-}
+};

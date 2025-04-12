@@ -15,7 +15,13 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
     operator: z.literal("and").or(z.literal("or")),
     not: z.boolean().optional().default(false),
     conditions: z.array(
-      z.union([nameCondition, slugCondition, systemCondition, idCondition]),
+      z.union([
+        nameCondition,
+        slugCondition,
+        systemCondition,
+        idCondition,
+        comparisonCondition,
+      ]),
     ),
   }),
 );
@@ -25,6 +31,10 @@ export type ComparisonCondition = {
   operator: "and" | "or";
   not?: boolean;
   conditions: Array<
-    NameCondition | SlugCondition | SystemCondition | IdCondition
+    | NameCondition
+    | SlugCondition
+    | SystemCondition
+    | IdCondition
+    | ComparisonCondition
   >;
 };

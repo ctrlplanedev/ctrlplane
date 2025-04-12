@@ -9,7 +9,7 @@ import {
   resourceProvider,
   workspace,
 } from "@ctrlplane/db/schema";
-import { upsertResources } from "@ctrlplane/job-dispatch";
+import { handleResourceProviderScan } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -77,7 +77,7 @@ export const PATCH = request()
       workspaceId: provider.workspaceId,
     }));
 
-    const resources = await upsertResources(
+    const resources = await handleResourceProviderScan(
       db,
       resourcesToInsert.map((r) => ({
         ...r,
