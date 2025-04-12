@@ -12,18 +12,20 @@ export enum Channel {
 
   NewDeployment = "new-deployment",
   NewDeploymentVersion = "new-deployment-version",
-
   NewEnvironment = "new-environment",
-  UpdateEnvironment = "update-environment",
   NewRelease = "new-release",
-
-  UpdateDeploymentVariable = "update-deployment-variable",
-  UpdateResourceVariable = "update-resource-variable",
-
-  EvaluateReleaseTarget = "evaluate-release-target",
+  NewResource = "new-resource",
 
   UpdatedResource = "updated-resource",
-  NewResource = "new-resource",
+  UpdateResourceVariable = "update-resource-variable",
+  UpdateEnvironment = "update-environment",
+  UpdateDeploymentVariable = "update-deployment-variable",
+
+  DeleteDeployment = "delete-deployment",
+  DeleteEnvironment = "delete-environment",
+  DeleteResource = "delete-resource",
+
+  EvaluateReleaseTarget = "evaluate-release-target",
 }
 
 export type EvaluateReleaseTargetJob = {
@@ -47,4 +49,5 @@ export type ChannelMap = {
   [Channel.ResourceScan]: { resourceProviderId: string };
   [Channel.UpdatedResource]: schema.Resource;
   [Channel.NewResource]: schema.Resource;
+  [Channel.DeleteDeployment]: schema.Deployment;
 };

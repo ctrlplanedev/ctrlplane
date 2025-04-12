@@ -31,6 +31,10 @@ import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
+import {
+  ResourceCondition,
+  resourceCondition,
+} from "@ctrlplane/validators/resources";
 
 import { DeploymentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/condition/DeploymentConditionRender";
 import { EnvironmentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/environment/condition/EnvironmentConditionRender";
@@ -45,6 +49,7 @@ const editConfigSchema = z.object({
     z.object({
       deploymentSelector: deploymentCondition.nullable(),
       environmentSelector: environmentCondition.nullable(),
+      resourceSelector: resourceCondition.nullable(),
     }),
   ),
 });
@@ -60,6 +65,7 @@ const TARGET_SCOPE_OPTIONS = [
     description: "Apply policy to selected deployments across all environments",
     isDeploymentSelectorNull: false,
     isEnvironmentSelectorNull: true,
+    isResourceSelectorNull: true,
   },
   {
     value: "environment_specific",
@@ -67,6 +73,7 @@ const TARGET_SCOPE_OPTIONS = [
     description: "Apply policy to selected environments across all deployments",
     isDeploymentSelectorNull: true,
     isEnvironmentSelectorNull: false,
+    isResourceSelectorNull: true,
   },
   {
     value: "deployment_environment_pair",
@@ -75,6 +82,15 @@ const TARGET_SCOPE_OPTIONS = [
       "Apply policy when both deployment conditions and environment conditions match",
     isDeploymentSelectorNull: false,
     isEnvironmentSelectorNull: false,
+    isResourceSelectorNull: true,
+  },
+  {
+    value: "resource_specific",
+    label: "Specific Resources",
+    description: "Apply policy to selected resources",
+    isDeploymentSelectorNull: true,
+    isEnvironmentSelectorNull: true,
+    isResourceSelectorNull: false,
   },
 ];
 
@@ -83,6 +99,7 @@ export const EditConfiguration: React.FC<{
     targets: Array<{
       deploymentSelector: DeploymentCondition | null;
       environmentSelector: EnvironmentCondition | null;
+      resourceSelector: ResourceCondition | null;
     }>;
   };
 }> = ({ policy }) => {
@@ -251,7 +268,9 @@ export const EditConfiguration: React.FC<{
                               opt.isDeploymentSelectorNull ===
                                 (target.deploymentSelector === null) &&
                               opt.isEnvironmentSelectorNull ===
-                                (target.environmentSelector === null),
+                                (target.environmentSelector === null) &&
+                              opt.isResourceSelectorNull ===
+                                (target.resourceSelector === null),
                           );
                           return (
                             <span>
@@ -284,6 +303,14 @@ export const EditConfiguration: React.FC<{
                                         operator: "and",
                                         conditions: [],
                                       },
+                                resourceSelector: option.isResourceSelectorNull
+                                  ? null
+                                  : {
+                                      type: "comparison",
+                                      not: false,
+                                      operator: "and",
+                                      conditions: [],
+                                    },
                               })
                             }
                             className="flex flex-col items-start"
@@ -348,6 +375,29 @@ export const EditConfiguration: React.FC<{
                       )
                     }
                   />
+
+                  <FormField
+                    control={form.control}
+                    name={`targets.${index}.deploymentSelector`}
+                    render={({ field: { value, onChange } }) =>
+                      value != null ? (
+                        <FormItem>
+                          <FormLabel>Deployment</FormLabel>
+                          <div className="min-w-[1000px] text-sm">
+                            <DeploymentConditionRender
+                              condition={value}
+                              onChange={onChange}
+                              depth={0}
+                              className="w-full"
+                            />
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      ) : (
+                        <></>
+                      )
+                    }
+                  />
                 </div>
 
                 <Button
@@ -376,6 +426,7 @@ export const EditConfiguration: React.FC<{
                     conditions: [],
                   },
                   deploymentSelector: null,
+                  resourceSelector: null,
                 })
               }
             >

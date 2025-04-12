@@ -143,6 +143,7 @@ export class VersionReleaseManager implements ReleaseManager {
         ),
         with: { metadata: true },
         orderBy: desc(schema.deploymentVersion.createdAt),
+        limit: 1_000,
       })
       .then((versions) =>
         versions.map((version) => ({

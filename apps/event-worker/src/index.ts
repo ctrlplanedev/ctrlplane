@@ -1,5 +1,8 @@
+import { createServer } from "node:http";
+
 import { logger } from "@ctrlplane/logger";
 
+import { env } from "./config.js";
 import { register } from "./instrumentation.js";
 import { workers } from "./workers/index.js";
 
@@ -15,3 +18,19 @@ const shutdown = () => {
 
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
+
+const server = createServer((req, res) => {
+  if (req.url === "/healthz") {
+    res.writeHead(200);
+    res.end("ok");
+    return;
+  }
+
+  res.writeHead(404);
+  res.end();
+});
+
+const port = env.PORT;
+server.listen(port, () => {
+  logger.info(`Health check endpoint listening on port ${port}`);
+});

@@ -51,4 +51,6 @@ USER nodejs
 ENV NODE_ENV=production
 ENV NODE_MAX_OLD_SPACE_SIZE=4096
 
+EXPOSE 3123
+
 CMD node --max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE} apps/event-worker/dist/index.js
