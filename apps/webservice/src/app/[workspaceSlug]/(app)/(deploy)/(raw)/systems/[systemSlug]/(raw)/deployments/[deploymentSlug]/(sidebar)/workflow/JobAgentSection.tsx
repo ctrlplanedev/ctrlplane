@@ -7,12 +7,14 @@ import _ from "lodash";
 import { z } from "zod";
 
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
+import { Button } from "@ctrlplane/ui/button";
 import { Form, FormField, useForm } from "@ctrlplane/ui/form";
 import { JobAgentType } from "@ctrlplane/validators/jobs";
 
 import { JobAgentKubernetesConfig } from "~/components/form/job-agent/JobAgentKubernetesConfig";
 import { JobAgentScriptConfig } from "~/components/form/job-agent/JobAgentScriptConfig";
 import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
+import { JobAgentJenkinsPipelineConfig } from "~/components/form/job-agent/JobAgentJenkinsPipelineConfig";
 import { api } from "~/trpc/react";
 import { DeploymentJobAgentGithubConfig } from "./DeploymentJobAgentGithubConfig";
 
@@ -94,9 +96,20 @@ const JobAgentForm: React.FC<{
                   disabled={update.isPending}
                 />
               )}
+              {selectedJobAgent?.type === JobAgentType.Jenkins && (
+                <JobAgentJenkinsPipelineConfig {...field} disabled={update.isPending} />
+              )}
             </>
           )}
         />
+
+        {selectedJobAgent?.type === JobAgentType.Jenkins && (
+          <div className="flex justify-end">
+            <Button type="submit" disabled={update.isPending}>
+              {update.isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );
