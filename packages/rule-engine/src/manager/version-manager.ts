@@ -147,10 +147,10 @@ export class VersionReleaseManager implements ReleaseManager {
       limit: 1_000,
     });
 
-    const versionIds = versions.map((v) => v.id);
-    const allMetadata = await this.db.query.deploymentVersionMetadata.findMany({
-      where: inArray(schema.deploymentVersionMetadata.versionId, versionIds),
-    });
+    // const versionIds = versions.map((v) => v.id);
+    // const allMetadata = await this.db.query.deploymentVersionMetadata.findMany({
+    //   where: inArray(schema.deploymentVersionMetadata.versionId, versionIds),
+    // });
 
     const endTime = performance.now();
     log.info(
@@ -158,13 +158,7 @@ export class VersionReleaseManager implements ReleaseManager {
     );
 
     return versions.map((v) => {
-      const versionMetadata = Object.fromEntries(
-        allMetadata
-          .filter((m) => m.versionId === v.id)
-          .map((m) => [m.key, m.value]),
-      );
-
-      return { ...v, metadata: versionMetadata };
+      return { ...v, metadata: {} as Record<string, string> };
     });
   }
 
