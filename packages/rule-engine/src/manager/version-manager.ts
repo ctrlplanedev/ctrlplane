@@ -109,6 +109,8 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async findVersionsForEvaluate() {
+    const startTime = performance.now();
+
     const [latestDeployedVersion, latestVersionMatchingPolicy] =
       await Promise.all([
         this.findLastestDeployedVersion(),
@@ -117,7 +119,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const policy = await this.getPolicy();
 
-    return this.db.query.deploymentVersion
+    const versions = await this.db.query.deploymentVersion
       .findMany({
         where: and(
           eq(
@@ -153,6 +155,13 @@ export class VersionReleaseManager implements ReleaseManager {
           ),
         })),
       );
+
+    const endTime = performance.now();
+    log.info(
+      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions)`,
+    );
+
+    return versions;
   }
 
   async findLatestRelease() {
@@ -196,7 +205,17 @@ export class VersionReleaseManager implements ReleaseManager {
     const preValidationRules = rules.filter(isPreValidationRule);
 
     for (const rule of preValidationRules) {
+      const startTime = performance.now();
       const result = rule.passing(ctx);
+      const endTime = performance.now();
+
+      const duration = (endTime - startTime) / 1000;
+      if (duration > 1) {
+        log.warn(
+          `[time] pre validation rule ${rule.constructor.name} took ${duration.toFixed(2)}s`,
+        );
+      }
+
       if (!result.passing) {
         log.info("Pre-validation rule failed", {
           rule: rule.constructor.name,
@@ -216,10 +235,13 @@ export class VersionReleaseManager implements ReleaseManager {
       options?.versions ?? (await this.findVersionsForEvaluate());
 
     const bytes = sizeOf(versions);
-    log.info(`Evaluating ${versions.length} versions`, {
-      size: formatBytes(bytes),
-      bytes,
-    });
+    log.info(
+      `Evaluating ${versions.length} versions (${this.releaseTarget.id})`,
+      {
+        size: formatBytes(bytes),
+        bytes,
+      },
+    );
     const result = await engine.evaluate(ctx, versions);
     return result;
   }

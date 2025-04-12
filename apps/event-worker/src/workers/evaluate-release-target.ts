@@ -100,7 +100,7 @@ const handleVersionRelease = async (releaseTarget: any) => {
   const { chosenCandidate } = await vrm.evaluate();
   const endTime = performance.now();
   log.info(
-    `version release evaluation took ${((endTime - startTime) / 1000).toFixed(2)}s`,
+    `[time] version release evaluation took ${((endTime - startTime) / 1000).toFixed(2)}s`,
   );
 
   if (!chosenCandidate) {

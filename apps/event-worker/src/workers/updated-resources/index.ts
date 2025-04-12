@@ -56,7 +56,7 @@ export const updatedResourceWorker = createWorker(
     const endTime = performance.now();
 
     logger.info(
-      `finished processing updated resource ${resource.id} in ${((endTime - startTime) / 1000).toFixed(2)}s`,
+      `[time]finished processing updated resource ${resource.id} in ${((endTime - startTime) / 1000).toFixed(2)}s`,
     );
   },
 );
