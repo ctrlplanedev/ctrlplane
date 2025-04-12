@@ -71,6 +71,45 @@ const findExistingResources = async (
   return results.flat();
 };
 
+const isBaseFieldsUpdated = (
+  existing: Resource,
+  inserted: ResourceToUpsert,
+) => {
+  const requiredFields = [
+    "identifier",
+    "version",
+    "name",
+    "kind",
+    "workspaceId",
+  ];
+  const existingRequired = _.pick(existing, requiredFields);
+  const insertedRequired = _.pick(inserted, requiredFields);
+  if (!_.isEqual(existingRequired, insertedRequired)) return true;
+
+  const isProviderIdChanged =
+    inserted.providerId !== undefined &&
+    existing.providerId !== inserted.providerId;
+  if (isProviderIdChanged) return true;
+
+  const isConfigChanged =
+    inserted.config != null && !_.isEqual(existing.config, inserted.config);
+  if (isConfigChanged) return true;
+
+  const isLockedAtChanged =
+    inserted.lockedAt !== undefined && existing.lockedAt !== inserted.lockedAt;
+  if (isLockedAtChanged) return true;
+
+  const isCreatedAtChanged =
+    inserted.createdAt !== undefined &&
+    existing.createdAt !== inserted.createdAt;
+  if (isCreatedAtChanged) return true;
+
+  const isDeletedAtChanged =
+    inserted.deletedAt !== undefined &&
+    existing.deletedAt !== inserted.deletedAt;
+  return isDeletedAtChanged;
+};
+
 const isResourceUpdated = (
   existing: Resource & {
     metadata: ResourceMetadata[];
@@ -78,16 +117,16 @@ const isResourceUpdated = (
   },
   inserted: ResourceToUpsert,
 ) => {
-  const { metadata, variables, ...existingRest } = existing;
-  const { metadata: newMetadata, variables: newVariables, ...rest } = inserted;
+  const { metadata, variables } = existing;
+  const { metadata: newMetadata, variables: newVariables } = inserted;
 
-  const isBaseFieldsUpdated = !_.isEqual(existingRest, rest);
-  if (isBaseFieldsUpdated) return true;
+  if (isBaseFieldsUpdated(existing, inserted)) return true;
 
   const existingMetadata = Object.fromEntries(
     metadata.map((m) => [m.key, m.value]),
   );
   const isMetadataUpdated = !_.isEqual(existingMetadata, newMetadata);
+  console.log({ existingMetadata, newMetadata });
   if (isMetadataUpdated) return true;
 
   const existingVarsMap = Object.fromEntries(
@@ -100,6 +139,7 @@ const isResourceUpdated = (
     ]),
   );
   const isVariablesUpdated = !_.isEqual(existingVarsMap, newVarsMap);
+  console.log({ existingVarsMap, newVarsMap, isVariablesUpdated });
   return isVariablesUpdated;
 };
 
@@ -145,5 +185,6 @@ export const groupResourcesByHook = async (
     return isResourceUpdated(existing, r);
   });
 
+  console.log({ toInsert, toUpdate, toDelete });
   return { toInsert, toUpdate, toDelete };
 };
