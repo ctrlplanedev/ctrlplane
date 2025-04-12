@@ -7,6 +7,7 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   lte,
   takeFirst,
   takeFirstOrNull,
@@ -119,49 +120,52 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const policy = await this.getPolicy();
 
-    const versions = await this.db.query.deploymentVersion
-      .findMany({
-        where: and(
-          eq(
-            schema.deploymentVersion.deploymentId,
-            this.releaseTarget.deploymentId,
-          ),
-          schema.deploymentVersionMatchesCondition(
-            this.db,
-            policy?.deploymentVersionSelector?.deploymentVersionSelector,
-          ),
-          latestDeployedVersion != null
-            ? gte(
-                schema.deploymentVersion.createdAt,
-                latestDeployedVersion.createdAt,
-              )
-            : undefined,
-          latestVersionMatchingPolicy != null
-            ? lte(
-                schema.deploymentVersion.createdAt,
-                latestVersionMatchingPolicy.createdAt,
-              )
-            : undefined,
+    const versions = await this.db.query.deploymentVersion.findMany({
+      where: and(
+        eq(
+          schema.deploymentVersion.deploymentId,
+          this.releaseTarget.deploymentId,
         ),
-        with: { metadata: true },
-        orderBy: desc(schema.deploymentVersion.createdAt),
-        limit: 1_000,
-      })
-      .then((versions) =>
-        versions.map((version) => ({
-          ...version,
-          metadata: Object.fromEntries(
-            version.metadata.map((m) => [m.key, m.value]),
-          ),
-        })),
-      );
+        schema.deploymentVersionMatchesCondition(
+          this.db,
+          policy?.deploymentVersionSelector?.deploymentVersionSelector,
+        ),
+        latestDeployedVersion != null
+          ? gte(
+              schema.deploymentVersion.createdAt,
+              latestDeployedVersion.createdAt,
+            )
+          : undefined,
+        latestVersionMatchingPolicy != null
+          ? lte(
+              schema.deploymentVersion.createdAt,
+              latestVersionMatchingPolicy.createdAt,
+            )
+          : undefined,
+      ),
+      orderBy: desc(schema.deploymentVersion.createdAt),
+      limit: 1_000,
+    });
+
+    const versionIds = versions.map((v) => v.id);
+    const allMetadata = await this.db.query.deploymentVersionMetadata.findMany({
+      where: inArray(schema.deploymentVersionMetadata.versionId, versionIds),
+    });
 
     const endTime = performance.now();
     log.info(
       `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions)`,
     );
 
-    return versions;
+    return versions.map((v) => {
+      const versionMetadata = Object.fromEntries(
+        allMetadata
+          .filter((m) => m.versionId === v.id)
+          .map((m) => [m.key, m.value]),
+      );
+
+      return { ...v, metadata: versionMetadata };
+    });
   }
 
   async findLatestRelease() {
