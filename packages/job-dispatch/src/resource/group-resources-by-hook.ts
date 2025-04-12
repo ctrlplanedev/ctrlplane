@@ -85,16 +85,13 @@ const isResourceUpdated = (
   if (isBaseFieldsUpdated) return true;
 
   const existingMetadata = Object.fromEntries(
-    existing.metadata.map((m) => [m.key, m.value]),
+    metadata.map((m) => [m.key, m.value]),
   );
   const isMetadataUpdated = !_.isEqual(existingMetadata, newMetadata);
   if (isMetadataUpdated) return true;
 
   const existingVarsMap = Object.fromEntries(
-    existing.variables.map((v) => [
-      v.key,
-      { value: v.value, sensitive: v.sensitive },
-    ]),
+    variables.map((v) => [v.key, { value: v.value, sensitive: v.sensitive }]),
   );
   const newVarsMap = Object.fromEntries(
     (newVariables ?? []).map((v) => [
