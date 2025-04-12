@@ -16,8 +16,8 @@ const triggerPolicyEvaluation = async () => {
   let hasMore = true;
   let totalProcessed = 0;
 
-  logger.info('Starting policy evaluation for all release targets');
-  
+  logger.info("Starting policy evaluation for all release targets");
+
   while (hasMore) {
     try {
       const releaseTargets = await db.query.releaseTarget.findMany({
@@ -30,10 +30,12 @@ const triggerPolicyEvaluation = async () => {
         break;
       }
 
-      logger.debug(`Processing ${releaseTargets.length} release targets (offset: ${offset})`);
+      logger.debug(
+        `Processing ${releaseTargets.length} release targets (offset: ${offset})`,
+      );
       totalProcessed += releaseTargets.length;
-      
-      getQueue(Channel.EvaluateReleaseTarget).addBulk(
+
+      await getQueue(Channel.EvaluateReleaseTarget).addBulk(
         releaseTargets.map((rt) => ({
           name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
           data: rt,
@@ -42,12 +44,14 @@ const triggerPolicyEvaluation = async () => {
 
       offset += PAGE_SIZE;
     } catch (error) {
-      logger.error('Error during policy evaluation:', error);
+      logger.error("Error during policy evaluation:", error);
       throw error;
     }
   }
-  
-  logger.info(`Completed policy evaluation for ${totalProcessed} release targets`);
+
+  logger.info(
+    `Completed policy evaluation for ${totalProcessed} release targets`,
+  );
 };
 
 export const run = async () => {
