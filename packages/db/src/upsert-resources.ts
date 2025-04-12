@@ -1,4 +1,4 @@
-import { and, eq, inArray, notInArray, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
 import _ from "lodash";
 
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -121,7 +121,32 @@ export const upsertResources = async (
   tx: Tx,
   resourcesToUpsert: SCHEMA.ResourceToUpsert[],
 ) => {
-  if (resourcesToUpsert.length === 0) return [];
+  if (resourcesToUpsert.length === 0)
+    return {
+      resources: [],
+      created: [],
+      updated: [],
+      unchanged: [],
+    };
+
+  const existingResources = await tx.query.resource.findMany({
+    where: and(
+      or(
+        ...resourcesToUpsert.map((r) =>
+          and(
+            eq(SCHEMA.resource.identifier, r.identifier),
+            eq(SCHEMA.resource.workspaceId, r.workspaceId),
+          ),
+        ),
+      ),
+      isNull(SCHEMA.resource.deletedAt),
+    ),
+    with: {
+      metadata: true,
+      variables: true,
+    },
+  });
+
   const resources = await tx
     .insert(SCHEMA.resource)
     .values(resourcesToUpsert)
@@ -151,5 +176,50 @@ export const upsertResources = async (
     updateResourceVariables(tx, resourcesWithId),
   ]);
 
-  return resourcesWithId;
+  const created = resourcesWithId.filter(
+    (r) => !existingResources.some((er) => er.id === r.id),
+  );
+
+  const updated = resourcesToUpsert.filter((r) => {
+    const existing = existingResources.find(
+      (er) => er.identifier === r.identifier,
+    );
+    if (!existing) return false;
+
+    const variables = _(existing.variables)
+      .map((v) => [v.key, v.value])
+      .fromPairs()
+      .value();
+    const rVariables = _(r.variables)
+      .map((v) => [v.key, v.value])
+      .fromPairs()
+      .value();
+
+    if (!_.isEqual(variables, rVariables)) return true;
+
+    const existingMetadata = _(existing.metadata)
+      .map((v) => [v.key, v.value])
+      .fromPairs()
+      .value();
+
+    if (!_.isEqual(existingMetadata, r.metadata)) return true;
+
+    const pickedAndOmitted = _.pick(existing, Object.keys(r));
+    delete pickedAndOmitted.metadata;
+    delete pickedAndOmitted.variables;
+    return _.isEqual(pickedAndOmitted, r);
+  });
+
+  const unchanged = resources.filter(
+    (r) =>
+      !created.some((c) => c.id === r.id) &&
+      !updated.some((u) => u.identifier === r.identifier),
+  );
+
+  return {
+    resources: resourcesWithId,
+    created,
+    updated,
+    unchanged,
+  };
 };
