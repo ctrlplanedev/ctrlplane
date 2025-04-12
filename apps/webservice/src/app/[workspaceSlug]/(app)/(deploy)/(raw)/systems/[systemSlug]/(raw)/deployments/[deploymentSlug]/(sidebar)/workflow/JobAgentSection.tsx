@@ -7,7 +7,6 @@ import _ from "lodash";
 import { z } from "zod";
 
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
-import { Button } from "@ctrlplane/ui/button";
 import { Form, FormField, useForm } from "@ctrlplane/ui/form";
 import { JobAgentType } from "@ctrlplane/validators/jobs";
 
@@ -100,19 +99,12 @@ const JobAgentForm: React.FC<{
                 <JobAgentJenkinsPipelineConfig
                   {...field}
                   disabled={update.isPending}
+                  isPending={update.isPending}
                 />
               )}
             </>
           )}
         />
-
-        {selectedJobAgent?.type === JobAgentType.Jenkins && (
-          <div className="flex justify-end">
-            <Button type="submit" disabled={update.isPending}>
-              {update.isPending ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        )}
       </form>
     </Form>
   );
