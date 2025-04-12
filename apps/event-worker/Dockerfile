@@ -49,5 +49,6 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
 ENV NODE_ENV=production
+ENV NODE_MAX_OLD_SPACE_SIZE=4096
 
-CMD ["node", "apps/event-worker/dist/index.js"]
+CMD node --max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE} apps/event-worker/dist/index.js
