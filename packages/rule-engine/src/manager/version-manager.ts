@@ -198,6 +198,10 @@ export class VersionReleaseManager implements ReleaseManager {
     for (const rule of preValidationRules) {
       const result = rule.passing(ctx);
       if (!result.passing) {
+        log.info("Pre-validation rule failed", {
+          rule: rule.constructor.name,
+          rejectionReason: result.rejectionReason,
+        });
         return {
           chosenCandidate: null,
           rejectionReasons: new ConstantMap<string, string>(
