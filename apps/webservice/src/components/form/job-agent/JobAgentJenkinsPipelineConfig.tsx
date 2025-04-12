@@ -9,11 +9,9 @@ interface JobAgentJenkinsPipelineConfigProps {
   disabled?: boolean;
 }
 
-export const JobAgentJenkinsPipelineConfig: React.FC<JobAgentJenkinsPipelineConfigProps> = ({
-  value = {},
-  onChange,
-  disabled = false,
-}) => {
+export const JobAgentJenkinsPipelineConfig: React.FC<
+  JobAgentJenkinsPipelineConfigProps
+> = ({ value = {}, onChange, disabled = false }) => {
   const handleJobUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
       ...value,
@@ -25,16 +23,17 @@ export const JobAgentJenkinsPipelineConfig: React.FC<JobAgentJenkinsPipelineConf
     <div className="space-y-4">
       <FormItem>
         <FormLabel>Jenkins Job URL</FormLabel>
-        <Input 
-          placeholder="e.g. http://jenkins/job/org/job/repo/job/branch" 
-          value={value?.jobUrl || ""}
+        <Input
+          placeholder="e.g. http://jenkins/job/org/job/repo/job/branch"
+          value={value.jobUrl || ""}
           onChange={handleJobUrlChange}
           disabled={disabled}
         />
         <FormDescription>
-          The URL path to the Jenkins job (format: http://jenkins/job/org/job/repo/job/branch)
+          The URL path to the Jenkins job (format:
+          http://jenkins/job/org/job/repo/job/branch)
         </FormDescription>
       </FormItem>
     </div>
   );
-}; 
+};

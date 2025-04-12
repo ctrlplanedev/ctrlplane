@@ -3,6 +3,7 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { z } from "zod";
@@ -31,10 +32,7 @@ import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
-import {
-  ResourceCondition,
-  resourceCondition,
-} from "@ctrlplane/validators/resources";
+import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { DeploymentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/condition/DeploymentConditionRender";
 import { EnvironmentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/environment/condition/EnvironmentConditionRender";

@@ -3,7 +3,7 @@ export enum JobAgentType {
   GithubApp = "github-app",
   ExecWindows = "exec-windows",
   ExecLinux = "exec-linux",
-  Jenkins = "jenkins"
+  Jenkins = "jenkins",
 }
 
 export const JobAgentTypeDisplayNames: Record<JobAgentType, string> = {
