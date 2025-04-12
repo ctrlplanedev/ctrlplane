@@ -31,7 +31,7 @@ export const JobAgentJenkinsPipelineConfig: React.FC<
         />
         <FormDescription>
           The URL path to the Jenkins job (format:
-          http://jenkins/job/org/job/repo/job/branch)
+          {JENKINS_URL}/job/org/job/repo/job/branch)
         </FormDescription>
       </FormItem>
     </div>
