@@ -1,4 +1,4 @@
-import type { FilterRule, Policy } from "../types";
+import type { FilterRule, Policy, PreValidationRule } from "../types";
 import type { Version } from "./version-rule-engine";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
 import {
@@ -13,11 +13,10 @@ export const denyWindows = (policy: Policy | null) =>
     ? []
     : policy.denyWindows.map(
         (denyWindow) =>
-          new DeploymentDenyRule<Version>({
+          new DeploymentDenyRule({
             ...denyWindow.rrule,
             tzid: denyWindow.timeZone,
             dtend: denyWindow.dtend,
-            getCandidateId: (candidate) => candidate.id,
           }),
       );
 
@@ -67,7 +66,9 @@ export const getVersionApprovalRules = (
   ...versionRoleApprovalRule(policy?.versionRoleApprovals),
 ];
 
-export const getRules = (policy: Policy | null): FilterRule<Version>[] => {
+export const getRules = (
+  policy: Policy | null,
+): Array<FilterRule<Version> | PreValidationRule> => {
   return [
     ...denyWindows(policy),
     ...versionUserApprovalRule(policy?.versionUserApprovals),
