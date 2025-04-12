@@ -44,7 +44,12 @@ export const MetadataConditionRender: React.FC<
       ? onChange({ ...condition, operator, value: undefined })
       : onChange({ ...condition, operator, value: condition.value ?? "" });
 
+  const [commandInput, setCommandInput] = useState("");
   const [open, setOpen] = useState(false);
+
+  const filteredMetadataKeys = metadataKeys.filter((key) =>
+    key.toLowerCase().includes(commandInput.toLowerCase()),
+  );
 
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
@@ -69,10 +74,14 @@ export const MetadataConditionRender: React.FC<
               onOpenAutoFocus={(e) => e.preventDefault()}
               className="w-[462px] p-0"
             >
-              <Command>
-                <CommandInput placeholder="Search key..." />
-                <CommandList>
-                  {metadataKeys.map((key) => (
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder="Search key..."
+                  value={commandInput}
+                  onValueChange={setCommandInput}
+                />
+                <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
+                  {filteredMetadataKeys.map((key) => (
                     <CommandItem
                       key={key}
                       value={key}
@@ -80,10 +89,24 @@ export const MetadataConditionRender: React.FC<
                         setKey(key);
                         setOpen(false);
                       }}
+                      className="cursor-pointer"
                     >
                       {key}
                     </CommandItem>
                   ))}
+                  {filteredMetadataKeys.length === 0 && (
+                    <CommandItem
+                      key="no-results"
+                      value={commandInput}
+                      onSelect={() => {
+                        setKey(commandInput);
+                        setOpen(false);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      Use custom key
+                    </CommandItem>
+                  )}
                 </CommandList>
               </Command>
             </PopoverContent>
