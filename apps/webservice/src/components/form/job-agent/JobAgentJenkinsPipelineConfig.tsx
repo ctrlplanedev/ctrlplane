@@ -25,7 +25,7 @@ export const JobAgentJenkinsPipelineConfig: React.FC<
         <FormLabel>Jenkins Job URL</FormLabel>
         <Input
           placeholder="e.g. http://jenkins/job/org/job/repo/job/branch"
-          value={value.jobUrl || ""}
+          value={value.jobUrl ?? ""}
           onChange={handleJobUrlChange}
           disabled={disabled}
         />
