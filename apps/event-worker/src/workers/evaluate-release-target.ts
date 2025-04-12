@@ -138,7 +138,13 @@ const handleVariableRelease = async (releaseTarget: any) => {
 export const evaluateReleaseTarget = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
+    log.info(`Evaluating release target ${job.data.resourceId}`, {
+      jobId: job.id,
+    });
     const mutex = await ReleaseTargetMutex.lock(job.data);
+    log.info(`Acquired mutex lock for release target ${job.data.resourceId}`, {
+      jobId: job.id,
+    });
 
     try {
       // Get release target
