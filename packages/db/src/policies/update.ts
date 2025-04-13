@@ -1,10 +1,10 @@
-import type { Tx } from "@ctrlplane/db";
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+import { eq } from "drizzle-orm";
 
-import { buildConflictUpdateColumns, eq, takeFirst } from "@ctrlplane/db";
-import * as SCHEMA from "@ctrlplane/db/schema";
-
-import { getLocalDateAsUTC } from "./time-util";
+import type { Tx } from "../common.js";
+import { buildConflictUpdateColumns, takeFirst } from "../common.js";
+import * as SCHEMA from "../schema/index.js";
+import { getLocalDateAsUTC } from "./time-util.js";
 
 const updateTargets = async (
   tx: Tx,

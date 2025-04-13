@@ -1,11 +1,10 @@
-import type { Tx } from "@ctrlplane/db";
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { z } from "zod";
 
-import { takeFirst } from "@ctrlplane/db";
-import * as SCHEMA from "@ctrlplane/db/schema";
-
-import { getLocalDateAsUTC } from "./time-util";
+import type { Tx } from "../common.js";
+import { takeFirst } from "../common.js";
+import * as SCHEMA from "../schema/index.js";
+import { getLocalDateAsUTC } from "./time-util.js";
 
 type CreatePolicyInput = z.infer<typeof SCHEMA.createPolicy>;
 

@@ -3,7 +3,14 @@ import { generateText } from "ai";
 import _ from "lodash";
 import { z } from "zod";
 
-import { asc, desc, eq, takeFirst } from "@ctrlplane/db";
+import {
+  asc,
+  createPolicyInTx,
+  desc,
+  eq,
+  takeFirst,
+  updatePolicyInTx,
+} from "@ctrlplane/db";
 import {
   createPolicy,
   createPolicyRuleDenyWindow,
@@ -17,9 +24,7 @@ import {
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { createPolicyInTx } from "./create";
-import { updatePolicyInTx } from "./update";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const policyRouter = createTRPCRouter({
   ai: createTRPCRouter({

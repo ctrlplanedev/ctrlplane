@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
 import { z } from "zod";
 
+import { createPolicyInTx } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { api } from "~/trpc/server";
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
@@ -23,9 +23,9 @@ export const POST = request()
         .on({ type: "workspace", id: ctx.body.workspaceId }),
     ),
   )
-  .handle<{ body: z.infer<typeof SCHEMA.createPolicy> }>(({ body }) =>
-    api.policy
-      .create(body)
+  .handle<{ body: z.infer<typeof SCHEMA.createPolicy> }>(({ db, body }) =>
+    db
+      .transaction((tx) => createPolicyInTx(tx, body))
       .then((policy) => NextResponse.json(policy))
       .catch((error) => {
         log.error("Failed to create policy", { error });
