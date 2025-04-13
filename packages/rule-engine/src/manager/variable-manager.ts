@@ -5,14 +5,11 @@ import { desc, eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Policy } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
 import type { MaybeVariable } from "./variables/types.js";
 import { VariableManager } from "./variables/variables.js";
 
 export class VariableReleaseManager implements ReleaseManager {
-  private cachedPolicy: Policy | null = null;
-
   constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,

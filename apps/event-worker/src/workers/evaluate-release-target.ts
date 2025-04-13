@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
-import type { Span } from "@opentelemetry/api";
-import { SpanStatusCode, trace } from "@opentelemetry/api";
+import { trace } from "@opentelemetry/api";
 import _ from "lodash";
+import { withSpan } from "src/utils/spans.js";
 
 import { and, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -18,31 +18,7 @@ import { ReleaseTargetMutex } from "../releases/mutex.js";
 
 const log = logger.child({ worker: "evaluate-release-target" });
 const tracer = trace.getTracer("evaluate-release-target");
-
-/**
- * Helper function to wrap an operation in a span
- */
-const withSpan = async <T>(
-  name: string,
-  operation: (span: Span) => Promise<T>,
-  attributes: Record<string, string> = {},
-): Promise<T> => {
-  return tracer.startActiveSpan(name, async (span) => {
-    try {
-      Object.entries(attributes).forEach(([key, value]) => {
-        span.setAttribute(key, value);
-      });
-      const result = await operation(span);
-      return result;
-    } catch (error) {
-      span.recordException(error as Error);
-      span.setStatus({ code: SpanStatusCode.ERROR });
-      throw error;
-    } finally {
-      span.end();
-    }
-  });
-};
+const withEvaluateReleaseTargetSpan = withSpan(tracer);
 
 /**
  * Creates a new release job with the given version and variable releases
@@ -55,7 +31,7 @@ const createRelease = async (
   tx: Tx,
   release: { id: string; versionReleaseId: string; variableReleaseId: string },
 ) => {
-  return withSpan(
+  return withEvaluateReleaseTargetSpan(
     "createRelease",
     async (span) => {
       // Get version release and related data
@@ -131,7 +107,7 @@ const createRelease = async (
  * @throws Error if no candidate is chosen
  */
 const handleVersionRelease = async (releaseTarget: any) => {
-  return withSpan(
+  return withEvaluateReleaseTargetSpan(
     "handleVersionRelease",
     async (span) => {
       const vrm = new VersionReleaseManager(db, {
@@ -139,7 +115,7 @@ const handleVersionRelease = async (releaseTarget: any) => {
         workspaceId: releaseTarget.resource.workspaceId,
       });
 
-      const { chosenCandidate } = await withSpan(
+      const { chosenCandidate } = await withEvaluateReleaseTargetSpan(
         "evaluateVersions",
         async (evaluateSpan) => {
           const result = await vrm.evaluate();
@@ -160,7 +136,7 @@ const handleVersionRelease = async (releaseTarget: any) => {
 
       span.setAttribute("chosenCandidate.id", chosenCandidate.id);
 
-      const { release: versionRelease } = await withSpan(
+      const { release: versionRelease } = await withEvaluateReleaseTargetSpan(
         "upsertVersionRelease",
         async (upsertSpan) => {
           const result = await vrm.upsertRelease(chosenCandidate.id);
@@ -185,7 +161,7 @@ const handleVersionRelease = async (releaseTarget: any) => {
  * @returns Created variable release
  */
 const handleVariableRelease = async (releaseTarget: any) => {
-  return withSpan(
+  return withEvaluateReleaseTargetSpan(
     "handleVariableRelease",
     async (span) => {
       const varrm = new VariableReleaseManager(db, {
@@ -193,12 +169,12 @@ const handleVariableRelease = async (releaseTarget: any) => {
         workspaceId: releaseTarget.resource.workspaceId,
       });
 
-      const { chosenCandidate: variableValues } = await withSpan(
-        "evaluateVariables",
-        async () => varrm.evaluate(),
-      );
+      const { chosenCandidate: variableValues } =
+        await withEvaluateReleaseTargetSpan("evaluateVariables", async () =>
+          varrm.evaluate(),
+        );
 
-      const { release: variableRelease } = await withSpan(
+      const { release: variableRelease } = await withEvaluateReleaseTargetSpan(
         "upsertVariableRelease",
         async (upsertSpan) => {
           const result = await varrm.upsertRelease(variableValues);
@@ -225,7 +201,7 @@ const handleVariableRelease = async (releaseTarget: any) => {
 export const evaluateReleaseTarget = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
-    return withSpan(
+    return withEvaluateReleaseTargetSpan(
       "evaluateReleaseTarget",
       async (span) => {
         log.info(`Evaluating release target ${job.data.resourceId}`, {
