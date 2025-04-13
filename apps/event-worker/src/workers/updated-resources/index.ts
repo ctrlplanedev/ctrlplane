@@ -19,7 +19,9 @@ export const updatedResourceWorker = createWorker(
       where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
     });
 
-    const upsertedReleaseTargets = await upsertReleaseTargets(db, resource);
+    const upsertedReleaseTargets = await db.transaction(async (tx) =>
+      upsertReleaseTargets(tx, resource),
+    );
     const releaseTargetsToDelete = currentReleaseTargets.filter(
       (rt) => !upsertedReleaseTargets.some((nrt) => nrt.id === rt.id),
     );
