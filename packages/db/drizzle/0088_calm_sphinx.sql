@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "deployment_version_metadata_version_id_idx" ON "deployment_version_metadata" USING btree ("deployment_version_id");

@@ -132,8 +132,19 @@ export class VersionReleaseManager implements ReleaseManager {
         this.findLatestVersionMatchingPolicy(),
       ]);
 
+    const versionsStartTime = performance.now();
+    log.info(
+      `[time] getting latest versions took ${((versionsStartTime - startTime) / 1000).toFixed(2)}s`,
+    );
+
     const policy = await this.getPolicy();
 
+    const policyEndTime = performance.now();
+    log.info(
+      `[time] getting policy took ${((policyEndTime - versionsStartTime) / 1000).toFixed(2)}s`,
+    );
+
+    const queryStartTime = performance.now();
     const versions = await this.db
       .select()
       .from(schema.deploymentVersion)
@@ -164,18 +175,55 @@ export class VersionReleaseManager implements ReleaseManager {
       .orderBy(desc(schema.deploymentVersion.createdAt))
       .limit(1_000);
 
-    // const versionIds = versions.map((v) => v.id);
-    // const allMetadata = await this.db.query.deploymentVersionMetadata.findMany({
-    //   where: inArray(schema.deploymentVersionMetadata.versionId, versionIds),
-    // });
+    const queryEndTime = performance.now();
+    log.info(
+      `[time] versions query took ${((queryEndTime - queryStartTime) / 1000).toFixed(2)}s`,
+    );
+
+    const metadataStartTime = performance.now();
+    const versionsWithMetadata = await this.db
+      .select({
+        versionId: schema.deploymentVersion.id,
+        key: schema.deploymentVersionMetadata.key,
+        value: schema.deploymentVersionMetadata.value,
+      })
+      .from(schema.deploymentVersion)
+      .innerJoin(
+        schema.deploymentVersionMetadata,
+        eq(
+          schema.deploymentVersionMetadata.versionId,
+          schema.deploymentVersion.id,
+        ),
+      )
+      .where(
+        inArray(
+          schema.deploymentVersion.id,
+          versions.map((v) => v.id),
+        ),
+      )
+      .then((results) =>
+        results.reduce(
+          (acc, { versionId, key, value }) => {
+            if (!acc[versionId]) {
+              acc[versionId] = {};
+            }
+            acc[versionId][key] = value;
+            return acc;
+          },
+          {} as Record<string, Record<string, string>>,
+        ),
+      );
 
     const endTime = performance.now();
     log.info(
-      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.deploymentId}, [${latestDeployedVersion?.createdAt} - ${latestVersionMatchingPolicy?.createdAt}]))`,
+      `[time] metadata query took ${((endTime - metadataStartTime) / 1000).toFixed(2)}s`,
+    );
+    log.info(
+      `[time] total version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.deploymentId}, []))`,
     );
 
     return versions.map((v) => {
-      return { ...v, metadata: {} as Record<string, string> };
+      return { ...v, metadata: versionsWithMetadata[v.id] ?? {} };
     });
   }
 

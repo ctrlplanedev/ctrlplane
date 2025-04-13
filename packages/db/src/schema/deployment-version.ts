@@ -167,7 +167,12 @@ export const deploymentVersionMetadata = pgTable(
     key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.versionId) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.key, t.versionId),
+    versionIdIdx: index("deployment_version_metadata_version_id_idx").on(
+      t.versionId,
+    ),
+  }),
 );
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
