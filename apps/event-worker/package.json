@@ -28,6 +28,7 @@
     "@kubernetes/client-node": "^0.22.0",
     "@octokit/auth-app": "catalog:",
     "@octokit/rest": "catalog:",
+    "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-node": "^0.52.1",
     "@opentelemetry/exporter-logs-otlp-http": "^0.54.2",
     "@opentelemetry/exporter-trace-otlp-http": "^0.54.2",
