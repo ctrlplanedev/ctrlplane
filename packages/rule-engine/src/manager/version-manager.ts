@@ -184,7 +184,7 @@ export class VersionReleaseManager implements ReleaseManager {
     steps.forEach((step) => {
       const percentage = ((step.duration / totalTime) * 100).toFixed(1);
       log.info(
-        `[time] ${step.name} took ${percentage}% of total time (id: ${this.releaseTarget.id})`,
+        `[time] ${step.name} took ${percentage}% (${(step.duration / 1000).toFixed(3)}s) of total time (id: ${this.releaseTarget.id})`,
       );
     });
 
