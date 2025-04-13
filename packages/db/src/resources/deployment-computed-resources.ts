@@ -8,9 +8,7 @@ export const computeDeploymentSelectorResources = async (
   deployment: Pick<SCHEMA.Deployment, "id" | "resourceSelector">,
 ) => {
   const { workspaceId } = await db
-    .select({
-      workspaceId: SCHEMA.system.workspaceId,
-    })
+    .select({ workspaceId: SCHEMA.system.workspaceId })
     .from(SCHEMA.deployment)
     .innerJoin(SCHEMA.system, eq(SCHEMA.deployment.systemId, SCHEMA.system.id))
     .where(eq(SCHEMA.deployment.id, deployment.id))
