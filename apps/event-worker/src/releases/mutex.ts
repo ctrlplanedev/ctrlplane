@@ -1,22 +1,34 @@
 import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
+import { trace } from "@opentelemetry/api";
 import ms from "ms";
 import { Mutex as RedisMutex } from "redis-semaphore";
 
 import { logger } from "@ctrlplane/logger";
 
 import { redis } from "../redis.js";
+import { makeWithSpan } from "../utils/spans.js";
 
 const log = logger.child({
   module: "release-target-mutex",
 });
 
-export class ReleaseTargetMutex {
-  static async lock(releaseTargetIdentifier: ReleaseTargetIdentifier) {
+const tracer = trace.getTracer("release-target-mutex");
+const withSpan = makeWithSpan(tracer);
+
+export const createAndAcquireMutex = withSpan(
+  "createAndAcquireMutex",
+  async (span, releaseTargetIdentifier: ReleaseTargetIdentifier) => {
+    span.setAttribute("environment.id", releaseTargetIdentifier.environmentId);
+    span.setAttribute("deployment.id", releaseTargetIdentifier.deploymentId);
+    span.setAttribute("resource.id", releaseTargetIdentifier.resourceId);
+
     const mutex = new ReleaseTargetMutex(releaseTargetIdentifier);
     await mutex.lock();
     return mutex;
-  }
+  },
+);
 
+class ReleaseTargetMutex {
   private readonly key: string;
   private mutex: RedisMutex;
 

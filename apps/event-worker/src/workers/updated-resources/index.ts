@@ -6,11 +6,14 @@ import { logger } from "@ctrlplane/logger";
 
 import { upsertReleaseTargets } from "../../utils/upsert-release-targets.js";
 import { dispatchExitHooks } from "./dispatch-exit-hooks.js";
+import { withSpan } from "./span.js";
 
 export const updatedResourceWorker = createWorker(
   Channel.UpdatedResource,
-  async ({ data: resource }) => {
-    const startTime = performance.now();
+  withSpan("updatedResourceWorker", async (span, { data: resource }) => {
+    span.setAttribute("resource.id", resource.id);
+    span.setAttribute("resource.name", resource.name);
+    span.setAttribute("workspace.id", resource.workspaceId);
 
     const currentReleaseTargets = await db.query.releaseTarget.findMany({
       where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
@@ -52,11 +55,5 @@ export const updatedResourceWorker = createWorker(
       dispatchExitHooksPromise,
       addToEvaluateQueuePromise,
     ]);
-
-    const endTime = performance.now();
-
-    logger.info(
-      `[time]finished processing updated resource ${resource.id} in ${((endTime - startTime) / 1000).toFixed(2)}s`,
-    );
-  },
+  }),
 );
