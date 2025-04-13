@@ -11,6 +11,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -135,15 +136,14 @@ export const environmentMetadata = pgTable(
 export const environmentSelectorComputedResource = pgTable(
   "environment_selector_computed_resource",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    environmentId: uuid("environment_id").references(() => environment.id, {
-      onDelete: "cascade",
-    }),
-    resourceId: uuid("resource_id").references(() => resource.id, {
-      onDelete: "cascade",
-    }),
+    environmentId: uuid("environment_id")
+      .references(() => environment.id, { onDelete: "cascade" })
+      .notNull(),
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
+      .notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.environmentId, t.resourceId) }),
+  (t) => ({ pk: primaryKey({ columns: [t.environmentId, t.resourceId] }) }),
 );
 
 export const approvalRequirement = pgEnum(

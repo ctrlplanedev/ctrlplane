@@ -6,6 +6,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   uniqueIndex,
   uuid,
@@ -116,15 +117,14 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
 export const deploymentSelectorComputedResource = pgTable(
   "deployment_selector_computed_resource",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    deploymentId: uuid("deployment_id").references(() => deployment.id, {
-      onDelete: "cascade",
-    }),
-    resourceId: uuid("resource_id").references(() => resource.id, {
-      onDelete: "cascade",
-    }),
+    deploymentId: uuid("deployment_id")
+      .references(() => deployment.id, { onDelete: "cascade" })
+      .notNull(),
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
+      .notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.resourceId) }),
+  (t) => ({ pk: primaryKey({ columns: [t.deploymentId, t.resourceId] }) }),
 );
 
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {

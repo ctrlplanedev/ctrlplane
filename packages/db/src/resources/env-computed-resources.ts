@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { Tx } from "../common";
 import * as SCHEMA from "../schema/index.js";
@@ -33,11 +33,10 @@ export const computeEnvironmentSelectorResources = async (
     .select(
       db
         .select({
-          environmentId: SCHEMA.environment.id,
+          environmentId: sql<string>`${environment.id}`.as("environmentId"),
           resourceId: SCHEMA.resource.id,
         })
         .from(SCHEMA.resource)
-        .innerJoin(SCHEMA.environment, eq(SCHEMA.environment.id, environmentId))
         .where(
           and(
             eq(SCHEMA.resource.workspaceId, workspaceId),
