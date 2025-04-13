@@ -62,6 +62,7 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async findLatestVersionMatchingPolicy() {
+    const startTime = performance.now();
     const policy = await this.getPolicy();
     const deploymentVersion = await this.db.query.deploymentVersion.findFirst({
       where: and(
@@ -77,11 +78,17 @@ export class VersionReleaseManager implements ReleaseManager {
       orderBy: desc(schema.deploymentVersion.createdAt),
     });
 
+    const endTime = performance.now();
+    log.info(
+      `[time] latest version matching policy query took ${((endTime - startTime) / 1000).toFixed(2)}s for (${this.releaseTarget.id})`,
+    );
+
     return deploymentVersion;
   }
 
   async findLastestDeployedVersion() {
-    return this.db
+    const startTime = performance.now();
+    const result = await this.db
       .select()
       .from(schema.deploymentVersion)
       .innerJoin(
@@ -107,6 +114,13 @@ export class VersionReleaseManager implements ReleaseManager {
       .limit(1)
       .then(takeFirstOrNull)
       .then((result) => result?.deployment_version);
+
+    const endTime = performance.now();
+    log.info(
+      `[time] lastest deployed version query took ${((endTime - startTime) / 1000).toFixed(2)}s for (${this.releaseTarget.id})`,
+    );
+
+    return result;
   }
 
   async findVersionsForEvaluate() {
@@ -157,7 +171,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const endTime = performance.now();
     log.info(
-      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.id}, [${latestDeployedVersion?.createdAt} - ${latestVersionMatchingPolicy?.createdAt}]))`,
+      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.deploymentId}, [${latestDeployedVersion?.createdAt} - ${latestVersionMatchingPolicy?.createdAt}]))`,
     );
 
     return versions.map((v) => {
