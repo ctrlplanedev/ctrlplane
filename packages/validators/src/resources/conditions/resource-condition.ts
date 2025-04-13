@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type {
   CreatedAtCondition,
+  IdCondition,
   MetadataCondition,
 } from "../../conditions/index.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
@@ -14,6 +15,7 @@ import type { VersionCondition } from "./version-condition.js";
 import {
   ConditionType,
   createdAtCondition,
+  idCondition,
   metadataCondition,
 } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
@@ -33,7 +35,8 @@ export type ResourceCondition =
   | IdentifierCondition
   | CreatedAtCondition
   | LastSyncCondition
-  | VersionCondition;
+  | VersionCondition
+  | IdCondition;
 
 export const resourceCondition = z.union([
   comparisonCondition,
@@ -45,6 +48,7 @@ export const resourceCondition = z.union([
   createdAtCondition,
   lastSyncCondition,
   versionCondition,
+  idCondition,
 ]);
 
 export enum ResourceOperator {
@@ -64,6 +68,7 @@ export enum ResourceConditionType {
   Comparison = "comparison",
   LastSync = "last-sync",
   Version = "version",
+  Id = "id",
 }
 
 export const defaultCondition: ResourceCondition = {

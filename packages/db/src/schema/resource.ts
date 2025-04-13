@@ -310,6 +310,8 @@ const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
     return buildLastSyncCondition(tx, cond);
   if (cond.type === ResourceConditionType.Version)
     return eq(resource.version, cond.value);
+  if (cond.type === ResourceConditionType.Id)
+    return eq(resource.id, cond.value);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 
