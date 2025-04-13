@@ -3,11 +3,9 @@ import { createServer } from "node:http";
 import { logger } from "@ctrlplane/logger";
 
 import { env } from "./config.js";
-import { register } from "./instrumentation.js";
 import { workers } from "./workers/index.js";
 
 console.log("Registering instrumentation...");
-await register();
 
 const shutdown = () => {
   logger.warn("Exiting...");
