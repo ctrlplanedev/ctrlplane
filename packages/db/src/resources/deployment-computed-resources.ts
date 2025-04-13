@@ -1,26 +1,25 @@
 import { and, eq, sql } from "drizzle-orm";
 
-import { Tx } from "../common";
+import { takeFirst, Tx } from "../common";
 import * as SCHEMA from "../schema/index.js";
 
 export const computeDeploymentSelectorResources = async (
   db: Tx,
-  deploymentId: string,
+  deployment: Pick<SCHEMA.Deployment, "id" | "resourceSelector">,
 ) => {
-  const deployment = await db.query.deployment.findFirst({
-    where: eq(SCHEMA.deployment.id, deploymentId),
-    with: { system: true },
-  });
-  if (deployment == null)
-    throw new Error(`Deployment not found: ${deploymentId}`);
-
-  const { system } = deployment;
-  const { workspaceId } = system;
+  const { workspaceId } = await db
+    .select({
+      workspaceId: SCHEMA.system.workspaceId,
+    })
+    .from(SCHEMA.deployment)
+    .innerJoin(SCHEMA.system, eq(SCHEMA.deployment.systemId, SCHEMA.system.id))
+    .where(eq(SCHEMA.deployment.id, deployment.id))
+    .then(takeFirst);
 
   await db
     .delete(SCHEMA.deploymentSelectorComputedResource)
     .where(
-      eq(SCHEMA.deploymentSelectorComputedResource.deploymentId, deploymentId),
+      eq(SCHEMA.deploymentSelectorComputedResource.deploymentId, deployment.id),
     );
 
   if (deployment.resourceSelector == null) return;

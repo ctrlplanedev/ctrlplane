@@ -1,28 +1,27 @@
 import { and, eq, sql } from "drizzle-orm";
 
-import { Tx } from "../common";
+import { takeFirst, Tx } from "../common";
 import * as SCHEMA from "../schema/index.js";
 
 export const computeEnvironmentSelectorResources = async (
   db: Tx,
-  environmentId: string,
+  environment: Pick<SCHEMA.Environment, "id" | "resourceSelector">,
 ) => {
-  const environment = await db.query.environment.findFirst({
-    where: eq(SCHEMA.environment.id, environmentId),
-    with: { system: true },
-  });
-  if (environment == null)
-    throw new Error(`Environment not found: ${environmentId}`);
-
-  const { system } = environment;
-  const { workspaceId } = system;
+  const { workspaceId } = await db
+    .select({
+      workspaceId: SCHEMA.system.workspaceId,
+    })
+    .from(SCHEMA.environment)
+    .innerJoin(SCHEMA.system, eq(SCHEMA.environment.systemId, SCHEMA.system.id))
+    .where(eq(SCHEMA.environment.id, environment.id))
+    .then(takeFirst);
 
   await db
     .delete(SCHEMA.environmentSelectorComputedResource)
     .where(
       eq(
         SCHEMA.environmentSelectorComputedResource.environmentId,
-        environmentId,
+        environment.id,
       ),
     );
 

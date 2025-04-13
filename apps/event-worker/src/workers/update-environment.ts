@@ -207,7 +207,7 @@ export const updateEnvironmentWorker = createWorker(
     }
 
     await db.transaction((tx) =>
-      computeEnvironmentSelectorResources(tx, environment.id),
+      computeEnvironmentSelectorResources(tx, environment),
     );
 
     const { workspaceId, deployments } = system;
