@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { Tx } from "../common";
 import * as SCHEMA from "../schema/index.js";
 
-export const computeDeploymentComputedResources = async (
+export const computeDeploymentSelectorResources = async (
   db: Tx,
   deploymentId: string,
 ) => {

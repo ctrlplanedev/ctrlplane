@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { computeDeploymentComputedResources } from "@ctrlplane/db";
+import { computeDeploymentSelectorResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { Channel, createWorker } from "@ctrlplane/events";
 
@@ -11,7 +11,7 @@ export const updateDeploymentWorker = createWorker(
     if (_.isEqual(oldSelector, resourceSelector)) return;
 
     await db.transaction((tx) =>
-      computeDeploymentComputedResources(tx, data.id),
+      computeDeploymentSelectorResources(tx, data.id),
     );
   },
 );
