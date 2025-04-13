@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { withSpan } from "src/span.js";
 
 import type {
   FilterRule,
@@ -7,6 +6,7 @@ import type {
   RuleEngineContext,
   RuleSelectionResult,
 } from "../types.js";
+import { withSpan } from "../span.js";
 
 export type Version = {
   id: string;

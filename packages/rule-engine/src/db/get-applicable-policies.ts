@@ -1,6 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
-import { withSpan } from "src/span.js";
 import { isPresent } from "ts-is-present";
 
 import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -8,6 +7,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseTargetIdentifier } from "../types.js";
+import { withSpan } from "../span.js";
 
 /**
  * Checks if a policy target matches a given release repository by evaluating
