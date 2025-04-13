@@ -11,6 +11,5 @@ export default defineConfig({
   dialect: "postgresql",
   verbose: true,
   dbCredentials: { url: nonPoolingUrl },
-  tablesFilter: ["t3turbo_*"],
   out: "./drizzle",
 });
