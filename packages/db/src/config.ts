@@ -7,6 +7,11 @@ export const env = createEnv({
     POSTGRES_URL: z
       .string()
       .default("postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane"),
+
+    POSTGRES_MAX_POOL_SIZE: z
+      .string()
+      .default("50")
+      .transform((value) => parseInt(value)),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
