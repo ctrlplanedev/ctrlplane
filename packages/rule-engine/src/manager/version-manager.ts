@@ -218,10 +218,15 @@ export class VersionReleaseManager implements ReleaseManager {
   async getPolicy(forceRefresh = false): Promise<Policy | null> {
     if (!forceRefresh && this.cachedPolicy !== null) return this.cachedPolicy;
 
+    const startTime = performance.now();
     const policies = await getApplicablePolicies(
       this.db,
       this.releaseTarget.workspaceId,
       this.releaseTarget,
+    );
+    const endTime = performance.now();
+    log.info(
+      `[time] getting applicable policies took ${((endTime - startTime) / 1000).toFixed(2)}s`,
     );
 
     this.cachedPolicy = mergePolicies(policies);
