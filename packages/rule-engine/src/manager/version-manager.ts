@@ -157,7 +157,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const endTime = performance.now();
     log.info(
-      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.id}, [${latestDeployedVersion?.id} - ${latestVersionMatchingPolicy?.id}]))`,
+      `[time] version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.id}, [${latestDeployedVersion?.createdAt} - ${latestVersionMatchingPolicy?.createdAt}]))`,
     );
 
     return versions.map((v) => {
