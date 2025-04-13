@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Form, FormField, useForm } from "@ctrlplane/ui/form";
 import { JobAgentType } from "@ctrlplane/validators/jobs";
 
+import { JobAgentJenkinsPipelineConfig } from "~/components/form/job-agent/JobAgentJenkinsPipelineConfig";
 import { JobAgentKubernetesConfig } from "~/components/form/job-agent/JobAgentKubernetesConfig";
 import { JobAgentScriptConfig } from "~/components/form/job-agent/JobAgentScriptConfig";
 import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
@@ -83,7 +84,7 @@ const JobAgentForm: React.FC<{
                   disabled={update.isPending}
                 />
               )}
-              {selectedJobAgent?.type.startsWith("exec-") && (
+              {selectedJobAgent?.type.startsWith("exec") && (
                 <JobAgentScriptConfig
                   type={
                     selectedJobAgent.type.startsWith(JobAgentType.ExecWindows)
@@ -92,6 +93,13 @@ const JobAgentForm: React.FC<{
                   }
                   {...field}
                   disabled={update.isPending}
+                />
+              )}
+              {selectedJobAgent?.type === JobAgentType.Jenkins && (
+                <JobAgentJenkinsPipelineConfig
+                  {...field}
+                  disabled={update.isPending}
+                  isPending={update.isPending}
                 />
               )}
             </>

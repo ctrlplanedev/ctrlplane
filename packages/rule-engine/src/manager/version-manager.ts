@@ -61,6 +61,7 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async findLatestVersionMatchingPolicy() {
+    const startTime = performance.now();
     const policy = await this.getPolicy();
     const deploymentVersion = await this.db.query.deploymentVersion.findFirst({
       where: and(
@@ -76,11 +77,17 @@ export class VersionReleaseManager implements ReleaseManager {
       orderBy: desc(schema.deploymentVersion.createdAt),
     });
 
+    const endTime = performance.now();
+    log.info(
+      `[time] latest version matching policy query took ${((endTime - startTime) / 1000).toFixed(2)}s for (${this.releaseTarget.id})`,
+    );
+
     return deploymentVersion;
   }
 
   async findLastestDeployedVersion() {
-    return this.db
+    const startTime = performance.now();
+    const result = await this.db
       .select()
       .from(schema.deploymentVersion)
       .innerJoin(
@@ -106,53 +113,99 @@ export class VersionReleaseManager implements ReleaseManager {
       .limit(1)
       .then(takeFirstOrNull)
       .then((result) => result?.deployment_version);
-  }
 
+    const endTime = performance.now();
+    log.info(
+      `[time] lastest deployed version query took ${((endTime - startTime) / 1000).toFixed(2)}s for (${this.releaseTarget.id})`,
+    );
+
+    return result;
+  }
   async findVersionsForEvaluate() {
-    const [latestDeployedVersion, latestVersionMatchingPolicy] =
-      await Promise.all([
-        this.findLastestDeployedVersion(),
-        this.findLatestVersionMatchingPolicy(),
-      ]);
+    const startTime = performance.now();
+
+    // Measure findLatestVersionMatchingPolicy
+    const latestVersionStartTime = performance.now();
+    const latestVersionMatchingPolicy =
+      await this.findLatestVersionMatchingPolicy();
+    const latestVersionEndTime = performance.now();
+
+    log.info(
+      `[time] findLatestVersionMatchingPolicy took ${((latestVersionEndTime - latestVersionStartTime) / 1000).toFixed(3)}s`,
+    );
+
+    // Measure findLastestDeployedVersion
+    const latestDeployedStartTime = performance.now();
+    const latestDeployedVersion = await this.findLastestDeployedVersion();
+    const latestDeployedEndTime = performance.now();
+
+    log.info(
+      `[time] findLastestDeployedVersion took ${((latestDeployedEndTime - latestDeployedStartTime) / 1000).toFixed(3)}s`,
+    );
+
+    const versionsStartTime = performance.now();
 
     const policy = await this.getPolicy();
+    const policyEndTime = performance.now();
 
-    return this.db.query.deploymentVersion
-      .findMany({
-        where: and(
-          eq(
-            schema.deploymentVersion.deploymentId,
-            this.releaseTarget.deploymentId,
-          ),
-          schema.deploymentVersionMatchesCondition(
-            this.db,
-            policy?.deploymentVersionSelector?.deploymentVersionSelector,
-          ),
-          latestDeployedVersion != null
-            ? gte(
-                schema.deploymentVersion.createdAt,
-                latestDeployedVersion.createdAt,
-              )
-            : undefined,
-          latestVersionMatchingPolicy != null
-            ? lte(
-                schema.deploymentVersion.createdAt,
-                latestVersionMatchingPolicy.createdAt,
-              )
-            : undefined,
+    const queryStartTime = performance.now();
+    const versions = await this.db.query.deploymentVersion.findMany({
+      where: and(
+        eq(
+          schema.deploymentVersion.deploymentId,
+          this.releaseTarget.deploymentId,
         ),
-        with: { metadata: true },
-        orderBy: desc(schema.deploymentVersion.createdAt),
-        limit: 1_000,
-      })
-      .then((versions) =>
-        versions.map((version) => ({
-          ...version,
-          metadata: Object.fromEntries(
-            version.metadata.map((m) => [m.key, m.value]),
-          ),
-        })),
+        schema.deploymentVersionMatchesCondition(
+          this.db,
+          policy?.deploymentVersionSelector?.deploymentVersionSelector,
+        ),
+        latestDeployedVersion != null
+          ? gte(
+              schema.deploymentVersion.createdAt,
+              latestDeployedVersion.createdAt,
+            )
+          : undefined,
+        latestVersionMatchingPolicy != null
+          ? lte(
+              schema.deploymentVersion.createdAt,
+              latestVersionMatchingPolicy.createdAt,
+            )
+          : undefined,
+      ),
+      orderBy: desc(schema.deploymentVersion.createdAt),
+      limit: 1_000,
+      with: { metadata: true },
+    });
+
+    const queryEndTime = performance.now();
+
+    const totalTime = queryEndTime - startTime;
+    const steps = [
+      {
+        name: "getting latest versions",
+        duration: versionsStartTime - startTime,
+      },
+      {
+        name: "getting policy",
+        duration: policyEndTime - versionsStartTime,
+      },
+      {
+        name: "versions query",
+        duration: queryEndTime - queryStartTime,
+      },
+    ];
+
+    steps.forEach((step) => {
+      const percentage = ((step.duration / totalTime) * 100).toFixed(1);
+      log.info(
+        `[time] ${step.name} took ${percentage}% (${(step.duration / 1000).toFixed(3)}s) of total time (id: ${this.releaseTarget.id})`,
       );
+    });
+
+    return versions.map((v) => ({
+      ...v,
+      metadata: Object.fromEntries(v.metadata.map((m) => [m.key, m.value])),
+    }));
   }
 
   async findLatestRelease() {
@@ -165,10 +218,15 @@ export class VersionReleaseManager implements ReleaseManager {
   async getPolicy(forceRefresh = false): Promise<Policy | null> {
     if (!forceRefresh && this.cachedPolicy !== null) return this.cachedPolicy;
 
+    const startTime = performance.now();
     const policies = await getApplicablePolicies(
       this.db,
       this.releaseTarget.workspaceId,
       this.releaseTarget,
+    );
+    const endTime = performance.now();
+    log.info(
+      `[time] getting applicable policies took ${((endTime - startTime) / 1000).toFixed(2)}s`,
     );
 
     this.cachedPolicy = mergePolicies(policies);
@@ -196,7 +254,17 @@ export class VersionReleaseManager implements ReleaseManager {
     const preValidationRules = rules.filter(isPreValidationRule);
 
     for (const rule of preValidationRules) {
+      const startTime = performance.now();
       const result = rule.passing(ctx);
+      const endTime = performance.now();
+
+      const duration = (endTime - startTime) / 1000;
+      if (duration > 1) {
+        log.warn(
+          `[time] pre validation rule ${rule.constructor.name} took ${duration.toFixed(2)}s`,
+        );
+      }
+
       if (!result.passing) {
         log.info("Pre-validation rule failed", {
           rule: rule.constructor.name,
@@ -216,10 +284,13 @@ export class VersionReleaseManager implements ReleaseManager {
       options?.versions ?? (await this.findVersionsForEvaluate());
 
     const bytes = sizeOf(versions);
-    log.info(`Evaluating ${versions.length} versions`, {
-      size: formatBytes(bytes),
-      bytes,
-    });
+    log.info(
+      `Evaluating ${versions.length} versions (${this.releaseTarget.id})`,
+      {
+        size: formatBytes(bytes),
+        bytes,
+      },
+    );
     const result = await engine.evaluate(ctx, versions);
     return result;
   }

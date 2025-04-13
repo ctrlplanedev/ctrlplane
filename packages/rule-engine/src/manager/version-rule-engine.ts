@@ -1,5 +1,7 @@
 import _ from "lodash";
 
+import { logger } from "@ctrlplane/logger";
+
 import type {
   FilterRule,
   RuleEngine,
@@ -14,6 +16,10 @@ export type Version = {
   metadata: Record<string, string>;
   createdAt: Date;
 };
+
+const log = logger.child({
+  module: "VersionRuleEngine",
+});
 
 /**
  * The VersionRuleEngine applies a sequence of rules to filter candidate versions
@@ -68,7 +74,16 @@ export class VersionRuleEngine implements RuleEngine<Version> {
 
     // Apply each rule in sequence to filter candidate versions
     for (const rule of this.rules) {
+      const startTime = performance.now();
       const result = await rule.filter(context, candidates);
+      const endTime = performance.now();
+
+      const duration = (endTime - startTime) / 1000;
+      if (duration > 1) {
+        log.warn(
+          `[time] version rule ${rule.constructor.name} took ${duration.toFixed(2)}s`,
+        );
+      }
 
       // If the rule yields no candidates, we must stop.
       if (result.allowedCandidates.length === 0) {

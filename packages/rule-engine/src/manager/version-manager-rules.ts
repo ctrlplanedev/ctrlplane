@@ -69,10 +69,5 @@ export const getVersionApprovalRules = (
 export const getRules = (
   policy: Policy | null,
 ): Array<FilterRule<Version> | PreValidationRule> => {
-  return [
-    ...denyWindows(policy),
-    ...versionUserApprovalRule(policy?.versionUserApprovals),
-    ...versionAnyApprovalRule(policy?.versionAnyApprovals),
-    ...versionRoleApprovalRule(policy?.versionRoleApprovals),
-  ];
+  return [...denyWindows(policy), ...getVersionApprovalRules(policy)];
 };

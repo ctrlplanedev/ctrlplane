@@ -22,7 +22,7 @@ catalog:
   "next": 15.2.1
   "next-auth": "5.0.0-beta.25"
   "@next/eslint-plugin-next": ^15.2.2
-  "bullmq": ^5.15.0
+  "bullmq": ^5.48.1
   "ts-is-present": ^1.2.2
   react-hook-form: ^7.54.2
   semver: ^7.7.1
