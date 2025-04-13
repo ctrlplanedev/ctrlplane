@@ -25,21 +25,23 @@ export const computeEnvironmentSelectorResources = async (
 
   if (environment.resourceSelector == null) return;
 
+  const resourceIds = await db
+    .select({ resourceId: SCHEMA.resource.id })
+    .from(SCHEMA.resource)
+    .where(
+      and(
+        eq(SCHEMA.resource.workspaceId, workspaceId),
+        SCHEMA.resourceMatchesMetadata(db, environment.resourceSelector),
+      ),
+    );
+
+  const inserts = resourceIds.map((r) => ({
+    environmentId: environment.id,
+    resourceId: r.resourceId,
+  }));
+
   await db
     .insert(SCHEMA.environmentSelectorComputedResource)
-    .select(
-      db
-        .select({
-          environmentId: sql<string>`${environment.id}`.as("environmentId"),
-          resourceId: SCHEMA.resource.id,
-        })
-        .from(SCHEMA.resource)
-        .where(
-          and(
-            eq(SCHEMA.resource.workspaceId, workspaceId),
-            SCHEMA.resourceMatchesMetadata(db, environment.resourceSelector),
-          ),
-        ),
-    )
+    .values(inserts)
     .onConflictDoNothing();
 };

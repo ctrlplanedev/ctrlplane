@@ -22,21 +22,23 @@ export const computeDeploymentSelectorResources = async (
 
   if (deployment.resourceSelector == null) return;
 
+  const resourceIds = await db
+    .select({ resourceId: SCHEMA.resource.id })
+    .from(SCHEMA.resource)
+    .where(
+      and(
+        eq(SCHEMA.resource.workspaceId, workspaceId),
+        SCHEMA.resourceMatchesMetadata(db, deployment.resourceSelector),
+      ),
+    );
+
+  const inserts = resourceIds.map((r) => ({
+    deploymentId: deployment.id,
+    resourceId: r.resourceId,
+  }));
+
   await db
     .insert(SCHEMA.deploymentSelectorComputedResource)
-    .select(
-      db
-        .select({
-          deploymentId: sql<string>`${deployment.id}`.as("deploymentId"),
-          resourceId: SCHEMA.resource.id,
-        })
-        .from(SCHEMA.resource)
-        .where(
-          and(
-            eq(SCHEMA.resource.workspaceId, workspaceId),
-            SCHEMA.resourceMatchesMetadata(db, deployment.resourceSelector),
-          ),
-        ),
-    )
+    .values(inserts)
     .onConflictDoNothing();
 };
