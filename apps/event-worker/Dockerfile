@@ -22,6 +22,7 @@ COPY turbo.json turbo.json
 RUN pnpm add -g turbo
 
 COPY package.json package.json
+COPY .npmrc .npmrc
 COPY pnpm-*.yaml .
 
 COPY tooling/prettier/package.json ./tooling/prettier/package.json
