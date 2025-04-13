@@ -1045,11 +1045,11 @@ importers:
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
       drizzle-orm:
-        specifier: ^0.34.1
-        version: 0.34.1(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
+        specifier: ^0.35.3
+        version: 0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
       drizzle-zod:
         specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.34.1(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2)
+        version: 0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2)
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
@@ -3429,6 +3429,14 @@ packages:
 
   '@kubernetes/client-node@0.22.1':
     resolution: {integrity: sha512-bNz2uoxJTA/m10h2TsM5e021I9OndpxYYj5hGdHnrmhA+Dk56ohhbbvnJz7TADTEgyBHQ6NAT0QrILypbdFusQ==}
+
+  '@libsql/client-wasm@0.15.3':
+    resolution: {integrity: sha512-swgeXDNL05sJAo44Fp69ZqqbKPi3nC1fIYRbRsQwPlsT+Lv1gQ3T2cS2SuxmyRt1I1wH7VRRw/Hxz7DS6J3g5Q==}
+    bundledDependencies:
+      - '@libsql/libsql-wasm-experimental'
+
+  '@libsql/core@0.15.3':
+    resolution: {integrity: sha512-q5l+h0vtXbn1gTfpkau4P946IutaaiRzpfPX9lJzEOWu2Pt1n9BtbIWpDYLk8A5t81xXWlZvvCe9GgE61tgFrw==}
 
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
@@ -7625,13 +7633,14 @@ packages:
     resolution: {integrity: sha512-U4wWit0fyZuGuP7iNmRleQyK2V8wCuv57vf5l3MnG4z4fzNTjY/U13M8owyQ5RavqvqxBifWORaR3wIUzlN64g==}
     hasBin: true
 
-  drizzle-orm@0.34.1:
-    resolution: {integrity: sha512-t+zCwyWWt8xTqtYV4doE/xYmT7hpv1L8pQ66zddEz+3VWyedBBtctjMAp22mAJPfyWurRQXUJ1nrTtqLq+DqNA==}
+  drizzle-orm@0.35.3:
+    resolution: {integrity: sha512-Uv6N+b36x4BaZlxc96e+ag7RnMapBLGhc4SSi2F7RDwqYJipWjaU/P68RUp1FbW9r+mxoDp8nMz2Eece8PJxfA==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=3'
       '@electric-sql/pglite': '>=0.1.1'
       '@libsql/client': '>=0.10.0'
+      '@libsql/client-wasm': '>=0.10.0'
       '@neondatabase/serverless': '>=0.1'
       '@op-engineering/op-sqlite': '>=2'
       '@opentelemetry/api': ^1.4.1
@@ -13585,6 +13594,15 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@libsql/client-wasm@0.15.3':
+    dependencies:
+      '@libsql/core': 0.15.3
+      js-base64: 3.7.7
+
+  '@libsql/core@0.15.3':
+    dependencies:
+      js-base64: 3.7.7
+
   '@lukeed/csprng@1.1.0': {}
 
   '@medv/finder@3.2.0': {}
@@ -18859,7 +18877,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.34.1(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0):
+  drizzle-orm@0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0):
+    dependencies:
+      '@libsql/client-wasm': 0.15.3
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/pg': 8.11.12
@@ -18867,9 +18887,9 @@ snapshots:
       pg: 8.14.1
       react: 19.0.0
 
-  drizzle-zod@0.5.1(drizzle-orm@0.34.1(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2):
+  drizzle-zod@0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2):
     dependencies:
-      drizzle-orm: 0.34.1(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
+      drizzle-orm: 0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
       zod: 3.24.2
 
   dunder-proto@1.0.1:
