@@ -26,6 +26,8 @@ export const computeEnvironmentSelectorResources = async (
       ),
     );
 
+  if (environment.resourceSelector == null) return;
+
   await db
     .insert(SCHEMA.environmentSelectorComputedResource)
     .select(

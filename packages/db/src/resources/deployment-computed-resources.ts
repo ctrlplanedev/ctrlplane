@@ -23,6 +23,8 @@ export const computeDeploymentComputedResources = async (
       eq(SCHEMA.deploymentSelectorComputedResource.deploymentId, deploymentId),
     );
 
+  if (deployment.resourceSelector == null) return;
+
   await db
     .insert(SCHEMA.deploymentSelectorComputedResource)
     .select(
