@@ -121,14 +121,28 @@ export class VersionReleaseManager implements ReleaseManager {
 
     return result;
   }
-
   async findVersionsForEvaluate() {
     const startTime = performance.now();
-    const [latestDeployedVersion, latestVersionMatchingPolicy] =
-      await Promise.all([
-        this.findLastestDeployedVersion(),
-        this.findLatestVersionMatchingPolicy(),
-      ]);
+
+    // Measure findLatestVersionMatchingPolicy
+    const latestVersionStartTime = performance.now();
+    const latestVersionMatchingPolicy =
+      await this.findLatestVersionMatchingPolicy();
+    const latestVersionEndTime = performance.now();
+
+    log.info(
+      `[time] findLatestVersionMatchingPolicy took ${((latestVersionEndTime - latestVersionStartTime) / 1000).toFixed(3)}s`,
+    );
+
+    // Measure findLastestDeployedVersion
+    const latestDeployedStartTime = performance.now();
+    const latestDeployedVersion = await this.findLastestDeployedVersion();
+    const latestDeployedEndTime = performance.now();
+
+    log.info(
+      `[time] findLastestDeployedVersion took ${((latestDeployedEndTime - latestDeployedStartTime) / 1000).toFixed(3)}s`,
+    );
+
     const versionsStartTime = performance.now();
 
     const policy = await this.getPolicy();
