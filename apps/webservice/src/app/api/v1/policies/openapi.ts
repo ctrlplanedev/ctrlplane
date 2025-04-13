@@ -13,7 +13,7 @@ export const openapi: Swagger.SwaggerV3 = {
         properties: {
           deploymentSelector: { type: "object", additionalProperties: true },
           environmentSelector: { type: "object", additionalProperties: true },
-          releaseSelector: { type: "object", additionalProperties: true },
+          resourceSelector: { type: "object", additionalProperties: true },
         },
       },
       DenyWindow: {

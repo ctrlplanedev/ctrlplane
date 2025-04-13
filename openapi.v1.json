@@ -4365,7 +4365,7 @@
             "type": "object",
             "additionalProperties": true
           },
-          "releaseSelector": {
+          "resourceSelector": {
             "type": "object",
             "additionalProperties": true
           }
