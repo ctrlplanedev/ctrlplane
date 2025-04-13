@@ -43,7 +43,7 @@
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "drizzle-orm": "^0.41.0",
-    "drizzle-zod": "^0.5.1",
+    "drizzle-zod": "^0.7.1",
     "lodash": "catalog:",
     "pg": "^8.11.5",
     "rrule": "^2.8.1",
@@ -57,7 +57,7 @@
     "@types/node": "catalog:node22",
     "@types/pg": "^8.11.6",
     "dotenv-cli": "catalog:",
-    "drizzle-kit": "^0.24.2",
+    "drizzle-kit": "^0.30.6",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
