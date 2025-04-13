@@ -20,11 +20,13 @@ export enum Channel {
   UpdateResourceVariable = "update-resource-variable",
   UpdateEnvironment = "update-environment",
   UpdateDeploymentVariable = "update-deployment-variable",
-  UpdateDeployment = "update-deployment",
 
   DeleteDeployment = "delete-deployment",
   DeleteEnvironment = "delete-environment",
   DeleteResource = "delete-resource",
+
+  ComputeDeploymentSelectorResources = "compute-deployment-selector-resources",
+  ComputeEnvironmentSelectorResources = "compute-environment-selector-resources",
 
   EvaluateReleaseTarget = "evaluate-release-target",
 }
@@ -44,9 +46,8 @@ export type ChannelMap = {
   [Channel.UpdateEnvironment]: schema.Environment & {
     oldSelector: ResourceCondition | null;
   };
-  [Channel.UpdateDeployment]: schema.Deployment & {
-    oldSelector: ResourceCondition | null;
-  };
+  [Channel.ComputeDeploymentSelectorResources]: { deploymentId: string };
+  [Channel.ComputeEnvironmentSelectorResources]: { environmentId: string };
   [Channel.EvaluateReleaseTarget]: EvaluateReleaseTargetJob;
   [Channel.DispatchJob]: { jobId: string };
   [Channel.ResourceScan]: { resourceProviderId: string };
