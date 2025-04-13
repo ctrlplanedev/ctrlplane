@@ -198,21 +198,30 @@ const handleVariableRelease = async (releaseTarget: any) => {
  * Only runs in development environment
  * Uses mutex to prevent concurrent evaluations of the same target
  */
-export const evaluateReleaseTarget = createWorker(
+export const evaluateReleaseTargetWorker = createWorker(
   Channel.EvaluateReleaseTarget,
   async (job) => {
-    log.info(`Evaluating release target ${job.data.resourceId}`, {
-      jobId: job.id,
-    });
-
-    const mutex = await ReleaseTargetMutex.lock(job.data);
-    log.info(`Acquired mutex lock for release target ${job.data.resourceId}`, {
-      jobId: job.id,
-    });
-
     return withEvaluateReleaseTargetSpan(
       "evaluateReleaseTarget",
       async (span) => {
+        const mutex = await withEvaluateReleaseTargetSpan(
+          "acquireMutex",
+          async () => {
+            log.info(`Evaluating release target ${job.data.resourceId}`, {
+              jobId: job.id,
+            });
+
+            const mutex = await ReleaseTargetMutex.lock(job.data);
+            log.info(
+              `Acquired mutex lock for release target ${job.data.resourceId}`,
+              {
+                jobId: job.id,
+              },
+            );
+            return mutex;
+          },
+        );
+
         try {
           // Get release target
           const releaseTarget = await db.query.releaseTarget.findFirst({
@@ -227,8 +236,10 @@ export const evaluateReleaseTarget = createWorker(
 
           span.setAttribute("releaseTarget.id", String(releaseTarget.id));
 
-          const versionRelease = await handleVersionRelease(releaseTarget);
-          const variableRelease = await handleVariableRelease(releaseTarget);
+          const [versionRelease, variableRelease] = await Promise.all([
+            handleVersionRelease(releaseTarget),
+            handleVariableRelease(releaseTarget),
+          ]);
 
           if (versionRelease == null) {
             log.info("No valid version release found.", { releaseTarget });

@@ -28,104 +28,102 @@ import { withSpan } from "../span.js";
  * @returns Promise resolving to matching environment and deployment if target
  * matches, null otherwise
  */
-const matchPolicyTargetForResource = async (
-  tx: Tx,
-  releaseTargetIdentifier: ReleaseTargetIdentifier,
-  target: schema.PolicyTarget,
-) =>
-  withSpan(
-    "matchPolicyTargetForResource",
-    async () => {
-      const { deploymentSelector, environmentSelector, resourceSelector } =
-        target;
-      const { deploymentId, environmentId, resourceId } =
-        releaseTargetIdentifier;
-      const deploymentsQuery =
-        deploymentSelector == null
-          ? null
-          : tx
-              .select()
-              .from(schema.deployment)
-              .where(
-                and(
-                  schema.deploymentMatchSelector(deploymentSelector),
-                  eq(schema.deployment.id, deploymentId),
-                ),
-              )
-              .then(takeFirstOrNull);
+const matchPolicyTargetForResource = withSpan(
+  "matchPolicyTargetForResource",
+  async (
+    span,
+    tx: Tx,
+    releaseTargetIdentifier: ReleaseTargetIdentifier,
+    target: schema.PolicyTarget,
+  ) => {
+    span.setAttribute("target.id", target.id);
+    span.setAttribute("environment.id", releaseTargetIdentifier.environmentId);
+    span.setAttribute("deployment.id", releaseTargetIdentifier.deploymentId);
+    span.setAttribute("resource.id", releaseTargetIdentifier.resourceId);
 
-      const envQuery =
-        environmentSelector == null
-          ? null
-          : tx
-              .select()
-              .from(schema.environment)
-              .where(
-                and(
-                  schema.environmentMatchSelector(db, environmentSelector),
-                  eq(schema.environment.id, environmentId),
-                ),
-              )
-              .then(takeFirstOrNull);
+    const { deploymentSelector, environmentSelector, resourceSelector } =
+      target;
+    const { deploymentId, environmentId, resourceId } = releaseTargetIdentifier;
+    const deploymentsQuery =
+      deploymentSelector == null
+        ? null
+        : tx
+            .select()
+            .from(schema.deployment)
+            .where(
+              and(
+                schema.deploymentMatchSelector(deploymentSelector),
+                eq(schema.deployment.id, deploymentId),
+              ),
+            )
+            .then(takeFirstOrNull);
 
-      const resourceQuery =
-        resourceSelector == null
-          ? null
-          : tx
-              .select()
-              .from(schema.resource)
-              .where(
-                and(
-                  schema.resourceMatchesMetadata(db, resourceSelector),
-                  eq(schema.resource.id, resourceId),
-                ),
-              )
-              .then(takeFirstOrNull);
+    const envQuery =
+      environmentSelector == null
+        ? null
+        : tx
+            .select()
+            .from(schema.environment)
+            .where(
+              and(
+                schema.environmentMatchSelector(db, environmentSelector),
+                eq(schema.environment.id, environmentId),
+              ),
+            )
+            .then(takeFirstOrNull);
 
-      const [deployment, env, resource] = await Promise.all([
-        deploymentsQuery,
-        envQuery,
-        resourceQuery,
-      ]);
+    const resourceQuery =
+      resourceSelector == null
+        ? null
+        : tx
+            .select()
+            .from(schema.resource)
+            .where(
+              and(
+                schema.resourceMatchesMetadata(db, resourceSelector),
+                eq(schema.resource.id, resourceId),
+              ),
+            )
+            .then(takeFirstOrNull);
 
-      // Check if each selector exists and has a matching entity
-      const selectors = {
-        deployment: {
-          hasSelector: deploymentSelector != null,
-          hasEntity: deployment != null,
-        },
-        environment: {
-          hasSelector: environmentSelector != null,
-          hasEntity: env != null,
-        },
-        resource: {
-          hasSelector: resourceSelector != null,
-          hasEntity: resource != null,
-        },
-      } as const;
+    const [deployment, env, resource] = await Promise.all([
+      deploymentsQuery,
+      envQuery,
+      resourceQuery,
+    ]);
 
-      const hasSelectors = _(selectors)
-        .entries()
-        .filter(([_, s]) => s.hasSelector)
-        .map(([key]) => key)
-        .value();
+    // Check if each selector exists and has a matching entity
+    const selectors = {
+      deployment: {
+        hasSelector: deploymentSelector != null,
+        hasEntity: deployment != null,
+      },
+      environment: {
+        hasSelector: environmentSelector != null,
+        hasEntity: env != null,
+      },
+      resource: {
+        hasSelector: resourceSelector != null,
+        hasEntity: resource != null,
+      },
+    } as const;
 
-      const hasEntities = _(selectors)
-        .entries()
-        .filter(([_, s]) => s.hasEntity)
-        .map(([key]) => key)
-        .value();
+    const hasSelectors = _(selectors)
+      .entries()
+      .filter(([_, s]) => s.hasSelector)
+      .map(([key]) => key)
+      .value();
 
-      // Check if arrays have same values in any order using lodash
-      return _.isEqual(hasSelectors.sort(), hasEntities.sort());
-    },
-    {
-      "policyTarget.id": target.id,
-      "deployment.id": releaseTargetIdentifier.deploymentId,
-      "environment.id": releaseTargetIdentifier.environmentId,
-      "resource.id": releaseTargetIdentifier.resourceId,
-    },
-  );
+    const hasEntities = _(selectors)
+      .entries()
+      .filter(([_, s]) => s.hasEntity)
+      .map(([key]) => key)
+      .value();
+
+    // Check if arrays have same values in any order using lodash
+    return _.isEqual(hasSelectors.sort(), hasEntities.sort());
+  },
+);
 
 /**
  * Gets applicable policies for a given workspace and release repository.
@@ -142,48 +140,47 @@ const matchPolicyTargetForResource = async (
  * @returns Promise resolving to array of matching policies with their targets
  * and deny windows
  */
-export const getApplicablePolicies = async (
-  tx: Tx,
-  workspaceId: string,
-  releaseTargetIdentifier: ReleaseTargetIdentifier,
-) =>
-  withSpan(
-    "getApplicablePolicies",
-    async () => {
-      const policy = await tx.query.policy.findMany({
-        where: and(
-          eq(schema.policy.workspaceId, workspaceId),
-          eq(schema.policy.enabled, true),
-        ),
-        with: {
-          targets: true,
-          denyWindows: true,
-          deploymentVersionSelector: true,
-          versionAnyApprovals: true,
-          versionRoleApprovals: true,
-          versionUserApprovals: true,
-        },
-        orderBy: [desc(schema.policy.priority)],
-      });
+export const getApplicablePolicies = withSpan(
+  "getApplicablePolicies",
+  async (
+    span,
+    tx: Tx,
+    workspaceId: string,
+    releaseTargetIdentifier: ReleaseTargetIdentifier,
+  ) => {
+    span.setAttribute("workspace.id", workspaceId);
+    span.setAttribute("environment.id", releaseTargetIdentifier.environmentId);
+    span.setAttribute("deployment.id", releaseTargetIdentifier.deploymentId);
+    span.setAttribute("resource.id", releaseTargetIdentifier.resourceId);
 
-      return Promise.all(
-        policy.map(async (p) => {
-          // Check if any of the policy's targets match the release target
-          const targetMatches = await Promise.all(
-            p.targets.map((target) =>
-              matchPolicyTargetForResource(tx, releaseTargetIdentifier, target),
-            ),
-          );
+    const policy = await tx.query.policy.findMany({
+      where: and(
+        eq(schema.policy.workspaceId, workspaceId),
+        eq(schema.policy.enabled, true),
+      ),
+      with: {
+        targets: true,
+        denyWindows: true,
+        deploymentVersionSelector: true,
+        versionAnyApprovals: true,
+        versionRoleApprovals: true,
+        versionUserApprovals: true,
+      },
+      orderBy: [desc(schema.policy.priority)],
+    });
 
-          // Return the policy if at least one target matches
-          if (targetMatches.some((v) => v)) return p;
-        }),
-      ).then((policies) => policies.filter(isPresent));
-    },
-    {
-      "workspace.id": workspaceId,
-      "deployment.id": releaseTargetIdentifier.deploymentId,
-      "environment.id": releaseTargetIdentifier.environmentId,
-      "resource.id": releaseTargetIdentifier.resourceId,
-    },
-  );
+    return Promise.all(
+      policy.map(async (p) => {
+        // Check if any of the policy's targets match the release target
+        const targetMatches = await Promise.all(
+          p.targets.map((target) =>
+            matchPolicyTargetForResource(tx, releaseTargetIdentifier, target),
+          ),
+        );
+
+        // Return the policy if at least one target matches
+        if (targetMatches.some((v) => v)) return p;
+      }),
+    ).then((policies) => policies.filter(isPresent));
+  },
+);

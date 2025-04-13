@@ -26,7 +26,6 @@ import type {
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
-import { withSpan } from "../span.js";
 import { ConstantMap, isFilterRule, isPreValidationRule } from "../types.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getRules } from "./version-manager-rules.js";
@@ -62,83 +61,62 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async findLatestVersionMatchingPolicy() {
-    return withSpan(
-      "findLatestVersionMatchingPolicy",
-      async () => {
-        const policy = await this.getPolicy();
+    const policy = await this.getPolicy();
 
-        const deploymentVersion =
-          await this.db.query.deploymentVersion.findFirst({
-            where: and(
-              eq(
-                schema.deploymentVersion.deploymentId,
-                this.releaseTarget.deploymentId,
-              ),
-              schema.deploymentVersionMatchesCondition(
-                this.db,
-                policy?.deploymentVersionSelector?.deploymentVersionSelector,
-              ),
-            ),
-            orderBy: desc(schema.deploymentVersion.createdAt),
-          });
+    const deploymentVersion = await this.db.query.deploymentVersion.findFirst({
+      where: and(
+        eq(
+          schema.deploymentVersion.deploymentId,
+          this.releaseTarget.deploymentId,
+        ),
+        schema.deploymentVersionMatchesCondition(
+          this.db,
+          policy?.deploymentVersionSelector?.deploymentVersionSelector,
+        ),
+      ),
+      orderBy: desc(schema.deploymentVersion.createdAt),
+    });
 
-        return deploymentVersion;
-      },
-      {
-        "releaseTarget.id": this.releaseTarget.id,
-        "resource.id": this.releaseTarget.resourceId,
-        "environment.id": this.releaseTarget.environmentId,
-        "deployment.id": this.releaseTarget.deploymentId,
-      },
-    );
+    return deploymentVersion;
   }
 
   async findLastestDeployedVersion() {
-    return withSpan(
-      "findLastestDeployedVersion",
-      async () => {
-        const result = await this.db
-          .select()
-          .from(schema.deploymentVersion)
-          .innerJoin(
-            schema.versionRelease,
-            eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
-          )
-          .innerJoin(
-            schema.release,
-            eq(schema.release.versionReleaseId, schema.versionRelease.id),
-          )
-          .innerJoin(
-            schema.releaseJob,
-            eq(schema.releaseJob.releaseId, schema.release.id),
-          )
-          .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
-          .where(
-            and(
-              eq(schema.job.status, JobStatus.Successful),
-              eq(schema.versionRelease.releaseTargetId, this.releaseTarget.id),
-            ),
-          )
-          .orderBy(desc(schema.job.createdAt))
-          .limit(1)
-          .then(takeFirstOrNull)
-          .then((result) => result?.deployment_version);
+    const result = await this.db
+      .select()
+      .from(schema.deploymentVersion)
+      .innerJoin(
+        schema.versionRelease,
+        eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
+      )
+      .innerJoin(
+        schema.release,
+        eq(schema.release.versionReleaseId, schema.versionRelease.id),
+      )
+      .innerJoin(
+        schema.releaseJob,
+        eq(schema.releaseJob.releaseId, schema.release.id),
+      )
+      .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
+      .where(
+        and(
+          eq(schema.job.status, JobStatus.Successful),
+          eq(schema.versionRelease.releaseTargetId, this.releaseTarget.id),
+        ),
+      )
+      .orderBy(desc(schema.job.createdAt))
+      .limit(1)
+      .then(takeFirstOrNull)
+      .then((result) => result?.deployment_version);
 
-        return result;
-      },
-      {
-        "releaseTarget.id": this.releaseTarget.id,
-        "resource.id": this.releaseTarget.resourceId,
-        "environment.id": this.releaseTarget.environmentId,
-        "deployment.id": this.releaseTarget.deploymentId,
-      },
-    );
+    return result;
   }
 
   async findVersionsForEvaluate() {
-    const latestVersionMatchingPolicy =
-      await this.findLatestVersionMatchingPolicy();
-    const latestDeployedVersion = await this.findLastestDeployedVersion();
+    const [latestVersionMatchingPolicy, latestDeployedVersion] =
+      await Promise.all([
+        this.findLatestVersionMatchingPolicy(),
+        this.findLastestDeployedVersion(),
+      ]);
 
     const policy = await this.getPolicy();
     const versions = await this.db.query.deploymentVersion.findMany({
@@ -183,7 +161,7 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async getPolicy(forceRefresh = false): Promise<Policy | null> {
-    if (!forceRefresh && this.cachedPolicy !== null) return this.cachedPolicy;
+    if (!forceRefresh && this.cachedPolicy != null) return this.cachedPolicy;
 
     const policies = await getApplicablePolicies(
       this.db,
@@ -216,18 +194,7 @@ export class VersionReleaseManager implements ReleaseManager {
     const preValidationRules = rules.filter(isPreValidationRule);
 
     for (const rule of preValidationRules) {
-      const startTime = performance.now();
-      const result = await withSpan(rule.constructor.name, () =>
-        rule.passing(ctx),
-      );
-      const endTime = performance.now();
-
-      const duration = (endTime - startTime) / 1000;
-      if (duration > 1) {
-        log.warn(
-          `[time] pre validation rule ${rule.constructor.name} took ${duration.toFixed(2)}s`,
-        );
-      }
+      const result = rule.passing(ctx);
 
       if (!result.passing) {
         log.info("Pre-validation rule failed", {
