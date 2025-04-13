@@ -1429,6 +1429,139 @@
         }
       }
     },
+    "/v1/policies": {
+      "post": {
+        "summary": "Create a policy",
+        "operationId": "createPolicy",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "priority": {
+                    "type": "number"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "workspaceId": {
+                    "type": "string"
+                  },
+                  "targets": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PolicyTarget"
+                    }
+                  },
+                  "denyWindows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "timeZone": {
+                          "type": "string"
+                        },
+                        "rrule": {
+                          "type": "object",
+                          "additionalProperties": true
+                        },
+                        "dtend": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "timeZone"
+                      ]
+                    }
+                  },
+                  "deploymentVersionSelector": {
+                    "$ref": "#/components/schemas/DeploymentVersionSelector"
+                  },
+                  "versionAnyApprovals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "requiredApprovalsCount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  },
+                  "versionUserApprovals": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/VersionUserApproval"
+                    }
+                  },
+                  "versionRoleApprovals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "roleId": {
+                          "type": "string"
+                        },
+                        "requiredApprovalsCount": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "required": [
+                      "roleId"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "workspaceId",
+                  "targets",
+                  "denyWindows",
+                  "versionUserApprovals",
+                  "versionRoleApprovals"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy1"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/relationship/job-to-resource": {
       "post": {
         "summary": "Create a relationship between a job and a resource",
@@ -2085,6 +2218,164 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/v1/resource-schemas": {
+      "post": {
+        "summary": "Create a resource schema",
+        "operationId": "createResourceSchema",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "workspaceId",
+                  "version",
+                  "kind",
+                  "jsonSchema"
+                ],
+                "properties": {
+                  "workspaceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The ID of the workspace"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "Version of the schema"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "Kind of resource this schema is for"
+                  },
+                  "jsonSchema": {
+                    "type": "object",
+                    "description": "The JSON schema definition"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resource schema created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "workspaceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "jsonSchema": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Schema already exists for this version and kind",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/resource-schemas/{schemaId}": {
+      "delete": {
+        "summary": "Delete a resource schema",
+        "operationId": "deleteResourceSchema",
+        "parameters": [
+          {
+            "name": "schemaId",
+            "in": "path",
+            "required": true,
+            "description": "UUID of the schema to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Schema not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Schema not found"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -4062,6 +4353,173 @@
             "type": "boolean"
           }
         }
+      },
+      "PolicyTarget": {
+        "type": "object",
+        "properties": {
+          "deploymentSelector": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "environmentSelector": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "releaseSelector": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "DenyWindow": {
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "rrule": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "dtend": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "timeZone",
+          "rrule"
+        ]
+      },
+      "DeploymentVersionSelector": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "deploymentVersionSelector": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "deploymentVersionSelector"
+        ]
+      },
+      "VersionAnyApproval": {
+        "type": "object",
+        "properties": {
+          "requiredApprovalsCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requiredApprovalsCount"
+        ]
+      },
+      "VersionUserApproval": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "VersionRoleApproval": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string"
+          },
+          "requiredApprovalsCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "roleId",
+          "requiredApprovalsCount"
+        ]
+      },
+      "Policy1": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PolicyTarget"
+            }
+          },
+          "denyWindows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DenyWindow"
+            }
+          },
+          "deploymentVersionSelector": {
+            "$ref": "#/components/schemas/DeploymentVersionSelector"
+          },
+          "versionAnyApprovals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionAnyApproval"
+            }
+          },
+          "versionUserApprovals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionUserApproval"
+            }
+          },
+          "versionRoleApprovals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionRoleApproval"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "priority",
+          "createdAt",
+          "enabled",
+          "workspaceId",
+          "targets",
+          "denyWindows",
+          "versionUserApprovals",
+          "versionRoleApprovals"
+        ]
       }
     },
     "securitySchemes": {

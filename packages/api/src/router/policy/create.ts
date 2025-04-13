@@ -89,5 +89,13 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         versionRoleApprovals.map((approval) => ({ ...approval, policyId })),
       );
 
-  return policy;
+  return {
+    ...policy,
+    targets,
+    denyWindows,
+    deploymentVersionSelector,
+    versionAnyApprovals,
+    versionUserApprovals,
+    versionRoleApprovals,
+  };
 };
