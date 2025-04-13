@@ -7,7 +7,8 @@ import * as schema from "./schema/index.js";
 const { Pool } = pg;
 export const pool = new Pool({
   max: 30,
-  idleTimeoutMillis: 2000,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 2000,
   connectionString: env.POSTGRES_URL,
   ssl: false,
 });
