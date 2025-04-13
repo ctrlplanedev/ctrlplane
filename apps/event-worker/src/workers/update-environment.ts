@@ -3,7 +3,13 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  getResourceSelectorDiff,
+  inArray,
+  isNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -18,47 +24,6 @@ const log = logger.child({
   module: "env-selector-update",
   function: "envSelectorUpdateWorker",
 });
-
-const getAffectedResources = async (
-  db: Tx,
-  workspaceId: string,
-  oldSelector: ResourceCondition | null,
-  newSelector: ResourceCondition | null,
-) => {
-  const oldResources =
-    oldSelector == null
-      ? []
-      : await db.query.resource.findMany({
-          where: and(
-            eq(schema.resource.workspaceId, workspaceId),
-            schema.resourceMatchesMetadata(db, oldSelector),
-            isNull(schema.resource.deletedAt),
-          ),
-        });
-
-  const newResources =
-    newSelector == null
-      ? []
-      : await db.query.resource.findMany({
-          where: and(
-            eq(schema.resource.workspaceId, workspaceId),
-            schema.resourceMatchesMetadata(db, newSelector),
-            isNull(schema.resource.deletedAt),
-          ),
-        });
-
-  const newlyMatchedResources = newResources.filter(
-    (newResource) =>
-      !oldResources.some((oldResource) => oldResource.id === newResource.id),
-  );
-
-  const unmatchedResources = oldResources.filter(
-    (oldResource) =>
-      !newResources.some((newResource) => newResource.id === oldResource.id),
-  );
-
-  return { newlyMatchedResources, unmatchedResources };
-};
 
 const createReleaseTargets = (
   db: Tx,
@@ -161,6 +126,36 @@ const dispatchExitHooks = async (
   await Promise.allSettled(handleEventPromises);
 };
 
+const updateEnvironmentSelectorComputedResources = async (
+  environmentId: string,
+  unmatchedResourceIds: string[],
+  matchedResourceIds: string[],
+) => {
+  await db
+    .delete(schema.environmentSelectorComputedResource)
+    .where(
+      and(
+        eq(
+          schema.environmentSelectorComputedResource.environmentId,
+          environmentId,
+        ),
+        inArray(
+          schema.environmentSelectorComputedResource.resourceId,
+          unmatchedResourceIds,
+        ),
+      ),
+    );
+
+  const inserts = matchedResourceIds.map((resourceId) => ({
+    environmentId,
+    resourceId,
+  }));
+
+  await db
+    .insert(schema.environmentSelectorComputedResource)
+    .values(inserts)
+    .onConflictDoNothing();
+};
 /**
  * Worker that handles environment updates.
  *
@@ -202,13 +197,19 @@ export const updateEnvironmentWorker = createWorker(
 
     const { workspaceId, deployments } = system;
 
-    const { newlyMatchedResources, unmatchedResources } =
-      await getAffectedResources(
+    const { newlyMatchedResources, unmatchedResources, unchangedResources } =
+      await getResourceSelectorDiff(
         db,
         workspaceId,
         oldSelector,
         environment.resourceSelector,
       );
+
+    await updateEnvironmentSelectorComputedResources(
+      environment.id,
+      unmatchedResources.map((r) => r.id),
+      [...newlyMatchedResources, ...unchangedResources].map((r) => r.id),
+    );
 
     logger.info(
       `Creating release targets for ${newlyMatchedResources.length} resources`,

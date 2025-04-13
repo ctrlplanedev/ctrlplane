@@ -32,6 +32,7 @@ import type { Tx } from "../common.js";
 import { ColumnOperatorFn } from "../common.js";
 import { user } from "./auth.js";
 import { deploymentVersion } from "./deployment-version.js";
+import { resource } from "./resource.js";
 import { system } from "./system.js";
 
 export const directoryPath = z
@@ -129,6 +130,20 @@ export const environmentMetadata = pgTable(
     value: text("value").notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
+);
+
+export const environmentSelectorComputedResource = pgTable(
+  "environment_selector_computed_resource",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    environmentId: uuid("environment_id").references(() => environment.id, {
+      onDelete: "cascade",
+    }),
+    resourceId: uuid("resource_id").references(() => resource.id, {
+      onDelete: "cascade",
+    }),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.environmentId, t.resourceId) }),
 );
 
 export const approvalRequirement = pgEnum(

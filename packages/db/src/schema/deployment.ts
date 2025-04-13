@@ -21,6 +21,7 @@ import {
 
 import { ColumnOperatorFn } from "../common.js";
 import { jobAgent } from "./job-agent.js";
+import { resource } from "./resource.js";
 import { system } from "./system.js";
 
 export const deploymentSchema = z.object({
@@ -111,6 +112,20 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
     references: [jobAgent.id],
   }),
 }));
+
+export const deploymentSelectorComputedResource = pgTable(
+  "deployment_selector_computed_resource",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    deploymentId: uuid("deployment_id").references(() => deployment.id, {
+      onDelete: "cascade",
+    }),
+    resourceId: uuid("resource_id").references(() => resource.id, {
+      onDelete: "cascade",
+    }),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.resourceId) }),
+);
 
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
   if (cond.type === "name")
