@@ -3,13 +3,59 @@ import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
 import { trace } from "@opentelemetry/api";
 import { isPresent } from "ts-is-present";
 
-import { and, eq } from "@ctrlplane/db";
+import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { makeWithSpan } from "./spans.js";
 
 const tracer = trace.getTracer("upsert-release-targets");
 const withSpan = makeWithSpan(tracer);
+
+const isResourceMatchingEnvAndDep = async (
+  db: Tx,
+  resourceId: string,
+  env: SCHEMA.Environment,
+  dep: SCHEMA.Deployment,
+) => {
+  const baseChecks = [
+    eq(SCHEMA.resource.id, resourceId),
+    eq(SCHEMA.environmentSelectorComputedResource.environmentId, env.id),
+  ];
+
+  const baseQuery = db
+    .select()
+    .from(SCHEMA.resource)
+    .innerJoin(
+      SCHEMA.environmentSelectorComputedResource,
+      eq(
+        SCHEMA.environmentSelectorComputedResource.resourceId,
+        SCHEMA.resource.id,
+      ),
+    );
+
+  if (dep.resourceSelector == null) {
+    const res = await baseQuery.where(and(...baseChecks)).then(takeFirstOrNull);
+    return res != null;
+  }
+
+  const res = await baseQuery
+    .innerJoin(
+      SCHEMA.deploymentSelectorComputedResource,
+      eq(
+        SCHEMA.deploymentSelectorComputedResource.resourceId,
+        SCHEMA.resource.id,
+      ),
+    )
+    .where(
+      and(
+        ...baseChecks,
+        eq(SCHEMA.deploymentSelectorComputedResource.deploymentId, dep.id),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  return res != null;
+};
 
 const getReleaseTargetInsertsForSystem = withSpan(
   "getReleaseTargetInsertsForSystem",
@@ -33,15 +79,13 @@ const getReleaseTargetInsertsForSystem = withSpan(
 
     const maybeTargetsPromises = envs.flatMap((env) =>
       deployments.map(async (dep) => {
-        const resource = await db.query.resource.findFirst({
-          where: and(
-            eq(SCHEMA.resource.id, resourceId),
-            SCHEMA.resourceMatchesMetadata(db, env.resourceSelector),
-            SCHEMA.resourceMatchesMetadata(db, dep.resourceSelector),
-          ),
-        });
-
-        if (resource == null) return null;
+        const isMatching = await isResourceMatchingEnvAndDep(
+          db,
+          resourceId,
+          env,
+          dep,
+        );
+        if (!isMatching) return null;
         return { environmentId: env.id, deploymentId: dep.id };
       }),
     );
