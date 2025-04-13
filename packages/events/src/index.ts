@@ -18,7 +18,7 @@ export const createWorker = <T extends keyof ChannelMap>(
     connection: bullmqRedis,
     removeOnComplete: { age: 1 * 60 * 60, count: 5000 },
     removeOnFail: { age: 12 * 60 * 60, count: 5000 },
-    concurrency: 50,
+    concurrency: 5,
     telemetry: new BullMQOtel("ctrlplane/event-worker"),
     ...opts,
   });
