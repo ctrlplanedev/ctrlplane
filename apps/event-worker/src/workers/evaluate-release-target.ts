@@ -1,7 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import { trace } from "@opentelemetry/api";
 import _ from "lodash";
-import { withSpan } from "src/utils/spans.js";
 
 import { and, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -15,6 +14,7 @@ import {
 
 import { env } from "../config.js";
 import { ReleaseTargetMutex } from "../releases/mutex.js";
+import { withSpan } from "../utils/spans.js";
 
 const log = logger.child({ worker: "evaluate-release-target" });
 const tracer = trace.getTracer("evaluate-release-target");
