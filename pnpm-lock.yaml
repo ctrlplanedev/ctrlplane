@@ -1172,6 +1172,9 @@ importers:
       bullmq:
         specifier: 'catalog:'
         version: 5.48.1
+      bullmq-otel:
+        specifier: ^1.0.1
+        version: 1.0.1
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -6964,6 +6967,9 @@ packages:
   bufrw@1.4.0:
     resolution: {integrity: sha512-sWm8iPbqvL9+5SiYxXH73UOkyEbGQg7kyHQmReF89WJHQJw2eV4P/yZ0E+b71cczJ4pPobVhXxgQcmfSTgGHxQ==}
     engines: {node: '>= 0.10.x'}
+
+  bullmq-otel@1.0.1:
+    resolution: {integrity: sha512-9SSBA/iq8bFUJ9I5bDwv1UmtbJAmIGHt796g5lsYZWasqouTqkFA3+Z/n17mCc8VzfxxygCCCBsXdC1mICbxdw==}
 
   bullmq@5.48.1:
     resolution: {integrity: sha512-WA/NlPwmxgbDsL8KGIkQvGlRkBdVAyRiypP+Witm6Tyd2PwnBQ8K62ifnlA16rF59vpnEKwO+rmh/ZM7gKmDqg==}
@@ -18159,6 +18165,13 @@ snapshots:
       error: 7.0.2
       hexer: 1.5.0
       xtend: 4.0.2
+
+  bullmq-otel@1.0.1:
+    dependencies:
+      '@opentelemetry/api': 1.9.0
+      bullmq: 5.48.1
+    transitivePeerDependencies:
+      - supports-color
 
   bullmq@5.48.1:
     dependencies:

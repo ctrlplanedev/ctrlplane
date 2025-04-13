@@ -1,5 +1,6 @@
 import type { Job, WorkerOptions } from "bullmq";
 import { Queue, Worker } from "bullmq";
+import { BullMQOtel } from "bullmq-otel";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -18,6 +19,7 @@ export const createWorker = <T extends keyof ChannelMap>(
     removeOnComplete: { age: 1 * 60 * 60, count: 5000 },
     removeOnFail: { age: 12 * 60 * 60, count: 5000 },
     concurrency: 50,
+    telemetry: new BullMQOtel("ctrlplane/event-worker"),
     ...opts,
   });
 };
