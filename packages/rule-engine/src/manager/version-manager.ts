@@ -7,7 +7,6 @@ import {
   desc,
   eq,
   gte,
-  inArray,
   lte,
   takeFirst,
   takeFirstOrNull,
@@ -145,86 +144,47 @@ export class VersionReleaseManager implements ReleaseManager {
     );
 
     const queryStartTime = performance.now();
-    const versions = await this.db
-      .select()
-      .from(schema.deploymentVersion)
-      .where(
-        and(
-          eq(
-            schema.deploymentVersion.deploymentId,
-            this.releaseTarget.deploymentId,
-          ),
-          schema.deploymentVersionMatchesCondition(
-            this.db,
-            policy?.deploymentVersionSelector?.deploymentVersionSelector,
-          ),
-          latestDeployedVersion != null
-            ? gte(
-                schema.deploymentVersion.createdAt,
-                latestDeployedVersion.createdAt,
-              )
-            : undefined,
-          latestVersionMatchingPolicy != null
-            ? lte(
-                schema.deploymentVersion.createdAt,
-                latestVersionMatchingPolicy.createdAt,
-              )
-            : undefined,
+    const versions = await this.db.query.deploymentVersion.findMany({
+      where: and(
+        eq(
+          schema.deploymentVersion.deploymentId,
+          this.releaseTarget.deploymentId,
         ),
-      )
-      .orderBy(desc(schema.deploymentVersion.createdAt))
-      .limit(1_000);
+        schema.deploymentVersionMatchesCondition(
+          this.db,
+          policy?.deploymentVersionSelector?.deploymentVersionSelector,
+        ),
+        latestDeployedVersion != null
+          ? gte(
+              schema.deploymentVersion.createdAt,
+              latestDeployedVersion.createdAt,
+            )
+          : undefined,
+        latestVersionMatchingPolicy != null
+          ? lte(
+              schema.deploymentVersion.createdAt,
+              latestVersionMatchingPolicy.createdAt,
+            )
+          : undefined,
+      ),
+      orderBy: desc(schema.deploymentVersion.createdAt),
+      limit: 1_000,
+      with: { metadata: true },
+    });
 
     const queryEndTime = performance.now();
     log.info(
       `[time] versions query took ${((queryEndTime - queryStartTime) / 1000).toFixed(2)}s`,
     );
 
-    const metadataStartTime = performance.now();
-    const versionsWithMetadata = await this.db
-      .select({
-        versionId: schema.deploymentVersion.id,
-        key: schema.deploymentVersionMetadata.key,
-        value: schema.deploymentVersionMetadata.value,
-      })
-      .from(schema.deploymentVersion)
-      .innerJoin(
-        schema.deploymentVersionMetadata,
-        eq(
-          schema.deploymentVersionMetadata.versionId,
-          schema.deploymentVersion.id,
-        ),
-      )
-      .where(
-        inArray(
-          schema.deploymentVersion.id,
-          versions.map((v) => v.id),
-        ),
-      )
-      .then((results) =>
-        results.reduce(
-          (acc, { versionId, key, value }) => {
-            if (!acc[versionId]) {
-              acc[versionId] = {};
-            }
-            acc[versionId][key] = value;
-            return acc;
-          },
-          {} as Record<string, Record<string, string>>,
-        ),
-      );
-
-    const endTime = performance.now();
     log.info(
-      `[time] metadata query took ${((endTime - metadataStartTime) / 1000).toFixed(2)}s`,
-    );
-    log.info(
-      `[time] total version query took ${((endTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.deploymentId}, []))`,
+      `[time] total version query took ${((queryEndTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.deploymentId}, []))`,
     );
 
-    return versions.map((v) => {
-      return { ...v, metadata: versionsWithMetadata[v.id] ?? {} };
-    });
+    return versions.map((v) => ({
+      ...v,
+      metadata: Object.fromEntries(v.metadata.map((m) => [m.key, m.value])),
+    }));
   }
 
   async findLatestRelease() {
