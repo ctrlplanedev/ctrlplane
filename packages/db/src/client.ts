@@ -4,11 +4,22 @@ import pg from "pg";
 import { env } from "./config.js";
 import * as schema from "./schema/index.js";
 
-const { Pool } = pg;
-export const pool = new Pool({
-  max: 30,
-  connectionString: env.POSTGRES_URL,
-  ssl: false,
-});
+const globalForDrizzle = globalThis as unknown as {
+  pool?: pg.Pool;
+  db?: ReturnType<typeof drizzle<typeof schema>>;
+};
 
-export const db = drizzle(pool, { schema });
+if (!globalForDrizzle.pool) {
+  globalForDrizzle.pool = new pg.Pool({
+    max: 30,
+    connectionString: env.POSTGRES_URL,
+    ssl: false,
+  });
+}
+
+if (!globalForDrizzle.db) {
+  globalForDrizzle.db = drizzle(globalForDrizzle.pool, { schema });
+}
+
+export const db = globalForDrizzle.db;
+export const pool = globalForDrizzle.pool;
