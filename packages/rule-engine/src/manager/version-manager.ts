@@ -124,24 +124,15 @@ export class VersionReleaseManager implements ReleaseManager {
 
   async findVersionsForEvaluate() {
     const startTime = performance.now();
-
     const [latestDeployedVersion, latestVersionMatchingPolicy] =
       await Promise.all([
         this.findLastestDeployedVersion(),
         this.findLatestVersionMatchingPolicy(),
       ]);
-
     const versionsStartTime = performance.now();
-    log.info(
-      `[time] getting latest versions took ${((versionsStartTime - startTime) / 1000).toFixed(2)}s`,
-    );
 
     const policy = await this.getPolicy();
-
     const policyEndTime = performance.now();
-    log.info(
-      `[time] getting policy took ${((policyEndTime - versionsStartTime) / 1000).toFixed(2)}s`,
-    );
 
     const queryStartTime = performance.now();
     const versions = await this.db.query.deploymentVersion.findMany({
@@ -173,13 +164,27 @@ export class VersionReleaseManager implements ReleaseManager {
     });
 
     const queryEndTime = performance.now();
-    log.info(
-      `[time] versions query took ${((queryEndTime - queryStartTime) / 1000).toFixed(2)}s`,
-    );
 
-    log.info(
-      `[time] total version query took ${((queryEndTime - startTime) / 1000).toFixed(2)}s (found ${versions.length} versions for (${this.releaseTarget.deploymentId}, []))`,
-    );
+    const totalTime = queryEndTime - startTime;
+    const steps = [
+      {
+        name: "getting latest versions",
+        duration: versionsStartTime - startTime,
+      },
+      {
+        name: "getting policy",
+        duration: policyEndTime - versionsStartTime,
+      },
+      {
+        name: "versions query",
+        duration: queryEndTime - queryStartTime,
+      },
+    ];
+
+    steps.forEach((step) => {
+      const percentage = ((step.duration / totalTime) * 100).toFixed(1);
+      log.info(`[time] ${step.name} took ${percentage}% of total time`);
+    });
 
     return versions.map((v) => ({
       ...v,
