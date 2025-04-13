@@ -1,6 +1,6 @@
+import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
-import type { z } from "zod";
 
 import { createPolicyInTx } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
