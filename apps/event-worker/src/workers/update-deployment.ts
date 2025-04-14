@@ -9,7 +9,6 @@ export const updateDeploymentWorker = createWorker(
   async ({ data }) => {
     const { oldSelector, resourceSelector } = data;
     if (_.isEqual(oldSelector, resourceSelector)) return;
-
-    await db.transaction((tx) => computeDeploymentSelectorResources(tx, data));
+    await computeDeploymentSelectorResources(db, data);
   },
 );
