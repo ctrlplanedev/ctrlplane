@@ -1,4 +1,5 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
+import { isAfter } from "date-fns";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -63,6 +64,11 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   if (job == null)
     throw new Error(`Job not found: externalId=${id} name=${name}`);
 
+  const updatedAt = new Date(updated_at);
+  // safeguard against out of order events, if the job's updatedAt is after the webhook event
+  // this means a more recent event has already been processed, so just skip
+  if (isAfter(job.updatedAt, updatedAt)) return;
+
   const status =
     conclusion != null
       ? convertConclusion(conclusion)
@@ -74,7 +80,7 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   // the workflow run object doesn't have an explicit completedAt field
   // but if the job is in an exited state, the updated_at field works as a proxy
   // since thats the last time the job was updated
-  const completedAt = isJobCompleted ? new Date(updated_at) : null;
+  const completedAt = isJobCompleted ? updatedAt : null;
 
   const externalId = id.toString();
   const Run = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
