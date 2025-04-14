@@ -58,7 +58,8 @@ export const upsertReleaseTargets = withSpan(
         resourceId: resource.id,
       }));
 
-    await db
+    if (targets.length === 0) return [];
+    return db
       .insert(SCHEMA.releaseTarget)
       .values(targets)
       .onConflictDoNothing()
