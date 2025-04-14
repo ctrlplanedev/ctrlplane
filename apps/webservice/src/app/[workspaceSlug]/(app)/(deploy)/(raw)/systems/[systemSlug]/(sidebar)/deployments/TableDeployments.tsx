@@ -5,11 +5,12 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 import Link from "next/link";
-import { IconFolder, IconLoader2 } from "@tabler/icons-react";
+import { IconDotsVertical, IconFolder, IconLoader2 } from "@tabler/icons-react";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
+import { Button } from "@ctrlplane/ui/button";
 import {
   ComparisonOperator,
   ConditionType,
@@ -207,7 +208,11 @@ const DeploymentTable: React.FC<{
                   >
                     {r.name}
                   </Link>
-                  <DeploymentOptionsDropdown {...r} />
+                  <DeploymentOptionsDropdown {...r}>
+                    <Button size="icon" variant="ghost">
+                      <IconDotsVertical className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </DeploymentOptionsDropdown>
                 </div>
               </td>
 

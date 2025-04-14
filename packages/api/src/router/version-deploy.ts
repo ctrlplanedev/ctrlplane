@@ -1,6 +1,7 @@
+import _ from "lodash";
 import { z } from "zod";
 
-import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, isNull, selector, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -13,6 +14,7 @@ import {
   isPassingLockingPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { jobCondition } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -139,5 +141,70 @@ export const versionDeployRouter = createTRPCRouter({
         .dispatch();
 
       return releaseJobTriggers[0]!;
+    }),
+
+  allJobsInDeployment: protectedProcedure
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        jobSelector: jobCondition.optional(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select()
+        .from(SCHEMA.job)
+        .innerJoin(
+          SCHEMA.releaseJobTrigger,
+          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+        )
+        .innerJoin(
+          SCHEMA.deploymentVersion,
+          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
+        )
+        .where(
+          and(
+            eq(SCHEMA.deploymentVersion.deploymentId, input.deploymentId),
+            selector(ctx.db).query().jobs().where(input.jobSelector).sql(),
+          ),
+        );
+
+      const triggers = await _.chain(rows)
+        .groupBy((row) => [
+          row.release_job_trigger.environmentId,
+          row.release_job_trigger.versionId,
+        ])
+        .map((group) => {
+          const { environmentId, versionId } = group[0]!.release_job_trigger;
+          const resourceIds = group.map(
+            (r) => r.release_job_trigger.resourceId,
+          );
+          return createReleaseJobTriggers(ctx.db, "force_deploy")
+            .causedById(ctx.session.user.id)
+            .environments([environmentId])
+            .versions([versionId])
+            .resources(resourceIds)
+            .filter(isPassingChannelSelectorPolicy)
+            .then(cancelPreviousJobsForRedeployedTriggers)
+            .then(createJobApprovals)
+            .insert();
+        })
+        .thru((promises) =>
+          Promise.all(promises).then((triggers) => triggers.flat()),
+        )
+        .value();
+
+      await dispatchReleaseJobTriggers(ctx.db)
+        .releaseTriggers(triggers)
+        .filter(isPassingAllPoliciesExceptNewerThanLastActive)
+        .dispatch();
+
+      return triggers;
     }),
 });

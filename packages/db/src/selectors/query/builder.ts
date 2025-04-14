@@ -1,10 +1,13 @@
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
+import { JobCondition } from "@ctrlplane/validators/jobs";
+
 import type { Tx } from "../../common.js";
-import type { Environment, Resource } from "../../schema/index.js";
+import type { Environment, Job, Resource } from "../../schema/index.js";
 import { WhereBuilder } from "./builder-types.js";
 import { EnvironmentOutputBuilder } from "./environments-selector.js";
+import { JobOutputBuilder } from "./job-selector.js";
 import { ResourceOutputBuilder } from "./resource-selector.js";
 
 export class QueryBuilder {
@@ -23,5 +26,9 @@ export class QueryBuilder {
       this.tx,
       ResourceOutputBuilder,
     );
+  }
+
+  jobs() {
+    return new WhereBuilder<JobCondition, Job>(this.tx, JobOutputBuilder);
   }
 }
