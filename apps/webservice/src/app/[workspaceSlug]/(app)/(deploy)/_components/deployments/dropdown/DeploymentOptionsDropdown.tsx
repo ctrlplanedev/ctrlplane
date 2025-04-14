@@ -2,14 +2,12 @@
 
 import React, { useState } from "react";
 import {
-  IconDotsVertical,
   IconEdit,
   IconRefresh,
   IconRocket,
   IconTrash,
 } from "@tabler/icons-react";
 
-import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

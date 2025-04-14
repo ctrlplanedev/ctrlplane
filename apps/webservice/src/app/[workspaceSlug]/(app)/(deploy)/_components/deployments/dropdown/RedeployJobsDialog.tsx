@@ -1,3 +1,4 @@
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconAlertTriangle } from "@tabler/icons-react";
@@ -12,7 +13,7 @@ import {
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
 import { toast } from "@ctrlplane/ui/toast";
-import { defaultCondition, JobCondition } from "@ctrlplane/validators/jobs";
+import { defaultCondition } from "@ctrlplane/validators/jobs";
 
 import { JobConditionRender } from "~/app/[workspaceSlug]/(app)/_components/job/condition/JobConditionRender";
 import { api } from "~/trpc/react";
