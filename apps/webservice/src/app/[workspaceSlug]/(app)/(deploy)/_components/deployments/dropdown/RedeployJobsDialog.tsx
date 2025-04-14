@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconAlertTriangle } from "@tabler/icons-react";
 
+import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -55,6 +57,17 @@ export const RedeployJobsDialog: React.FC<{
         <DialogHeader>
           <DialogTitle>Redeploy Jobs</DialogTitle>
         </DialogHeader>
+
+        <Alert variant="warning">
+          <IconAlertTriangle className="h-5 w-5" />
+          <AlertTitle>Warning</AlertTitle>
+          <AlertDescription>
+            Redeploying jobs will cancel any existing jobs that are pending or
+            in progress, and will redeploy across all environments. Please
+            verify the job selector before proceeding and ensure this action is
+            intended.
+          </AlertDescription>
+        </Alert>
 
         <span className="text-sm text-muted-foreground">
           Select the jobs you want to redeploy, or leave blank to redeploy all
