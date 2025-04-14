@@ -1,9 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
-import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
 import { trace } from "@opentelemetry/api";
-import { isPresent } from "ts-is-present";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { makeWithSpan } from "./spans.js";

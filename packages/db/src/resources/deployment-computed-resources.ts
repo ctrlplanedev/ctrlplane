@@ -1,6 +1,7 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 
-import { takeFirst, Tx } from "../common";
+import type { Tx } from "../common.js";
+import { takeFirst } from "../common.js";
 import * as SCHEMA from "../schema/index.js";
 
 export const computeDeploymentSelectorResources = async (
