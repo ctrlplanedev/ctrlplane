@@ -18,11 +18,11 @@ export const upsertReleaseTargets = withSpan(
 
     const rows = await db
       .select()
-      .from(SCHEMA.environmentSelectorComputedResource)
+      .from(SCHEMA.computedEnvironmentResource)
       .innerJoin(
         SCHEMA.environment,
         eq(
-          SCHEMA.environmentSelectorComputedResource.environmentId,
+          SCHEMA.computedEnvironmentResource.environmentId,
           SCHEMA.environment.id,
         ),
       )
@@ -31,24 +31,22 @@ export const upsertReleaseTargets = withSpan(
         eq(SCHEMA.deployment.systemId, SCHEMA.environment.systemId),
       )
       .leftJoin(
-        SCHEMA.deploymentSelectorComputedResource,
+        SCHEMA.computedDeploymentResource,
         and(
           eq(
-            SCHEMA.deploymentSelectorComputedResource.deploymentId,
+            SCHEMA.computedDeploymentResource.deploymentId,
             SCHEMA.deployment.id,
           ),
-          eq(SCHEMA.deploymentSelectorComputedResource.resourceId, resource.id),
+          eq(SCHEMA.computedDeploymentResource.resourceId, resource.id),
         ),
       )
-      .where(
-        eq(SCHEMA.environmentSelectorComputedResource.resourceId, resource.id),
-      );
+      .where(eq(SCHEMA.computedEnvironmentResource.resourceId, resource.id));
 
     const targets = rows
       .filter(
         (r) =>
           r.deployment.resourceSelector == null ||
-          r.deployment_selector_computed_resource != null,
+          r.computed_deployment_resource != null,
       )
       .map((r) => ({
         environmentId: r.environment.id,

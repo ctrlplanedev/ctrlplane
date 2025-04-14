@@ -17,15 +17,12 @@ export class EnvironmentBuilder {
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.environmentSelectorComputedResource,
+      SCHEMA.computedEnvironmentResource,
       async (tx) => {
         await tx
-          .delete(SCHEMA.environmentSelectorComputedResource)
+          .delete(SCHEMA.computedEnvironmentResource)
           .where(
-            inArray(
-              SCHEMA.environmentSelectorComputedResource.environmentId,
-              this.ids,
-            ),
+            inArray(SCHEMA.computedEnvironmentResource.environmentId, this.ids),
           );
       },
       async (tx) => {
@@ -87,12 +84,12 @@ export class WorkspaceEnvironmentBuilder {
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.environmentSelectorComputedResource,
+      SCHEMA.computedEnvironmentResource,
       async (tx) => {
         const envs = await getEnvsInWorkspace(tx, this.workspaceId);
-        await tx.delete(SCHEMA.environmentSelectorComputedResource).where(
+        await tx.delete(SCHEMA.computedEnvironmentResource).where(
           inArray(
-            SCHEMA.environmentSelectorComputedResource.environmentId,
+            SCHEMA.computedEnvironmentResource.environmentId,
             envs.map((e) => e.id),
           ),
         );

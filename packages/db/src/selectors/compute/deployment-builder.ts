@@ -17,15 +17,12 @@ export class DeploymentBuilder {
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.deploymentSelectorComputedResource,
+      SCHEMA.computedDeploymentResource,
       async (tx) => {
         await tx
-          .delete(SCHEMA.deploymentSelectorComputedResource)
+          .delete(SCHEMA.computedDeploymentResource)
           .where(
-            inArray(
-              SCHEMA.deploymentSelectorComputedResource.deploymentId,
-              this.ids,
-            ),
+            inArray(SCHEMA.computedDeploymentResource.deploymentId, this.ids),
           );
       },
       async (tx) => {
@@ -87,15 +84,15 @@ export class WorkspaceDeploymentBuilder {
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.deploymentSelectorComputedResource,
+      SCHEMA.computedDeploymentResource,
       async (tx) => {
         const deployments = await getDeploymentsInWorkspace(
           tx,
           this.workspaceId,
         );
-        await tx.delete(SCHEMA.deploymentSelectorComputedResource).where(
+        await tx.delete(SCHEMA.computedDeploymentResource).where(
           inArray(
-            SCHEMA.deploymentSelectorComputedResource.deploymentId,
+            SCHEMA.computedDeploymentResource.deploymentId,
             deployments.map((d) => d.id),
           ),
         );

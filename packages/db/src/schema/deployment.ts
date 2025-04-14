@@ -114,8 +114,8 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
   }),
 }));
 
-export const deploymentSelectorComputedResource = pgTable(
-  "deployment_selector_computed_resource",
+export const computedDeploymentResource = pgTable(
+  "computed_deployment_resource",
   {
     deploymentId: uuid("deployment_id")
       .references(() => deployment.id, { onDelete: "cascade" })

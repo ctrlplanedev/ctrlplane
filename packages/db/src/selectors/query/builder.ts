@@ -1,5 +1,4 @@
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
-
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../../common.js";

@@ -133,8 +133,8 @@ export const environmentMetadata = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
 );
 
-export const environmentSelectorComputedResource = pgTable(
-  "environment_selector_computed_resource",
+export const computedEnvironmentResource = pgTable(
+  "computed_environment_resource",
   {
     environmentId: uuid("environment_id")
       .references(() => environment.id, { onDelete: "cascade" })
