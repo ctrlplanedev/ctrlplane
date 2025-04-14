@@ -11,6 +11,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -32,6 +33,7 @@ import type { Tx } from "../common.js";
 import { ColumnOperatorFn } from "../common.js";
 import { user } from "./auth.js";
 import { deploymentVersion } from "./deployment-version.js";
+import { resource } from "./resource.js";
 import { system } from "./system.js";
 
 export const directoryPath = z
@@ -129,6 +131,19 @@ export const environmentMetadata = pgTable(
     value: text("value").notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
+);
+
+export const computedEnvironmentResource = pgTable(
+  "computed_environment_resource",
+  {
+    environmentId: uuid("environment_id")
+      .references(() => environment.id, { onDelete: "cascade" })
+      .notNull(),
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
+      .notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.environmentId, t.resourceId] }) }),
 );
 
 export const approvalRequirement = pgEnum(

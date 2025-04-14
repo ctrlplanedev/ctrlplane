@@ -6,6 +6,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   uniqueIndex,
   uuid,
@@ -21,6 +22,7 @@ import {
 
 import { ColumnOperatorFn } from "../common.js";
 import { jobAgent } from "./job-agent.js";
+import { resource } from "./resource.js";
 import { system } from "./system.js";
 
 export const deploymentSchema = z.object({
@@ -111,6 +113,19 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
     references: [jobAgent.id],
   }),
 }));
+
+export const computedDeploymentResource = pgTable(
+  "computed_deployment_resource",
+  {
+    deploymentId: uuid("deployment_id")
+      .references(() => deployment.id, { onDelete: "cascade" })
+      .notNull(),
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
+      .notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.deploymentId, t.resourceId] }) }),
+);
 
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
   if (cond.type === "name")

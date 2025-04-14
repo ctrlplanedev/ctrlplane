@@ -3,7 +3,7 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -199,6 +199,12 @@ export const updateEnvironmentWorker = createWorker(
       });
       return;
     }
+
+    await selector(db)
+      .compute()
+      .environments([environment.id])
+      .resourceSelectors()
+      .replace();
 
     const { workspaceId, deployments } = system;
 

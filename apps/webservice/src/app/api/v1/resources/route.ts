@@ -2,7 +2,7 @@ import type * as schema from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { upsertResources } from "@ctrlplane/db";
+import { selector, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -74,7 +74,18 @@ export const POST = request()
         data: r,
       }));
       const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
-
+      await Promise.all([
+        selector(db)
+          .compute()
+          .allEnvironments(workspaceId)
+          .resourceSelectors()
+          .replace(),
+        selector(db)
+          .compute()
+          .allDeployments(workspaceId)
+          .resourceSelectors()
+          .replace(),
+      ]);
       await Promise.all([
         getQueue(Channel.NewResource).addBulk(insertJobs),
         getQueue(Channel.UpdatedResource).addBulk(updateJobs),
