@@ -51,7 +51,7 @@ export const computeEnvironmentSelectorResources = async (
       .onConflictDoNothing();
   });
 
-export const recomputeAllEnvsInWorkspace = async (
+export const recomputeAllEnvSelectorsInWorkspace = async (
   db: Tx,
   workspaceId: string,
 ) => {

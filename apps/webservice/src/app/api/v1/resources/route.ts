@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  recomputeAllDeploysInWorkspace,
-  recomputeAllEnvsInWorkspace,
+  recomputeAllDeploymentSelectorsInWorkspace,
+  recomputeAllEnvSelectorsInWorkspace,
   upsertResources,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -79,8 +79,8 @@ export const POST = request()
       }));
       const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
       await Promise.all([
-        recomputeAllEnvsInWorkspace(db, workspaceId),
-        recomputeAllDeploysInWorkspace(db, workspaceId),
+        recomputeAllEnvSelectorsInWorkspace(db, workspaceId),
+        recomputeAllDeploymentSelectorsInWorkspace(db, workspaceId),
       ]);
       await Promise.all([
         getQueue(Channel.NewResource).addBulk(insertJobs),

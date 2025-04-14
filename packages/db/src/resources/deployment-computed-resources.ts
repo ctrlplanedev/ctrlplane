@@ -51,7 +51,7 @@ export const computeDeploymentSelectorResources = async (
       .onConflictDoNothing();
   });
 
-export const recomputeAllDeploysInWorkspace = async (
+export const recomputeAllDeploymentSelectorsInWorkspace = async (
   db: Tx,
   workspaceId: string,
 ) => {

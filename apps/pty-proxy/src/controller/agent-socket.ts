@@ -11,8 +11,8 @@ import type { MessageEvent } from "ws";
 import { can, getUser } from "@ctrlplane/auth/utils";
 import {
   eq,
-  recomputeAllDeploysInWorkspace,
-  recomputeAllEnvsInWorkspace,
+  recomputeAllDeploymentSelectorsInWorkspace,
+  recomputeAllEnvSelectorsInWorkspace,
   upsertResources,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -144,8 +144,8 @@ export class AgentSocket {
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
     await Promise.all([
-      recomputeAllEnvsInWorkspace(db, this.workspaceId),
-      recomputeAllDeploysInWorkspace(db, this.workspaceId),
+      recomputeAllEnvSelectorsInWorkspace(db, this.workspaceId),
+      recomputeAllDeploymentSelectorsInWorkspace(db, this.workspaceId),
     ]);
     await getQueue(Channel.UpdatedResource).add(res.id, res);
     this.resource = res;
