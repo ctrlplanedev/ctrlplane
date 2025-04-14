@@ -100,7 +100,7 @@ export class WorkspaceEnvironmentBuilder {
       async (tx) => {
         const envs = await getEnvsInWorkspace(tx, this.workspaceId);
         const promises = envs.map(async (env) => {
-          const resources = await this.tx.query.resource.findMany({
+          const resources = await tx.query.resource.findMany({
             where: and(
               eq(SCHEMA.resource.workspaceId, this.workspaceId),
               this._queryBuilder.resources().where(env.resourceSelector).sql(),

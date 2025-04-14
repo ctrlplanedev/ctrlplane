@@ -106,7 +106,7 @@ export class WorkspaceDeploymentBuilder {
           this.workspaceId,
         );
         const promises = deployments.map(async (d) => {
-          const resources = await this.tx.query.resource.findMany({
+          const resources = await tx.query.resource.findMany({
             where: and(
               eq(SCHEMA.resource.workspaceId, this.workspaceId),
               this._queryBuilder.resources().where(d.resourceSelector).sql(),
