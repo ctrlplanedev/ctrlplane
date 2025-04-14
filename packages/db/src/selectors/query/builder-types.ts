@@ -1,6 +1,7 @@
 import type { VersionCondition } from "@ctrlplane/validators/conditions";
 import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { SQL } from "drizzle-orm";
 
@@ -10,7 +11,8 @@ type SelectorCondition =
   | ResourceCondition
   | VersionCondition
   | DeploymentCondition
-  | EnvironmentCondition;
+  | EnvironmentCondition
+  | JobCondition;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface OutputBuilder<T extends object> {

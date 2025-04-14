@@ -3,11 +3,12 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import Link from "next/link";
-import { IconFolder, IconLoader2 } from "@tabler/icons-react";
+import { IconDotsVertical, IconFolder, IconLoader2 } from "@tabler/icons-react";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
+import { Button } from "@ctrlplane/ui/button";
 import {
   Table,
   TableBody,
@@ -22,6 +23,7 @@ import {
 } from "@ctrlplane/validators/conditions";
 
 import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
+import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/dropdown/DeploymentOptionsDropdown";
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
@@ -166,6 +168,15 @@ const DeploymentTable: React.FC<{
                   >
                     {r.name}
                   </Link>
+                  <DeploymentOptionsDropdown {...r}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 shrink-0"
+                    >
+                      <IconDotsVertical className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </DeploymentOptionsDropdown>
                 </div>
               </TableCell>
               {environments.map((env) => (

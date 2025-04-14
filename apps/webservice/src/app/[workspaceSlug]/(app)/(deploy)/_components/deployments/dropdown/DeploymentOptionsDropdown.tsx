@@ -2,13 +2,12 @@
 
 import React, { useState } from "react";
 import {
-  IconDotsVertical,
   IconEdit,
+  IconRefresh,
   IconRocket,
   IconTrash,
 } from "@tabler/icons-react";
 
-import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +19,7 @@ import {
 import { CreateDeploymentVersionDialog } from "../../deployment-version/CreateDeploymentVersion";
 import { DeleteDeploymentDialog } from "./DeleteDeployment";
 import { EditDeploymentDialog } from "./EditDeploymentDialog";
+import { RedeployJobsDialog } from "./RedeployJobsDialog";
 
 export const DeploymentOptionsDropdown: React.FC<{
   id: string;
@@ -27,16 +27,15 @@ export const DeploymentOptionsDropdown: React.FC<{
   slug: string;
   description: string;
   systemId: string;
+  children: React.ReactNode;
 }> = (props) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="icon" variant="ghost">
-            <IconDotsVertical className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>{props.children}</DropdownMenuTrigger>
         <DropdownMenuContent
           className="w-42 bg-neutral-900"
           align="center"
@@ -64,6 +63,18 @@ export const DeploymentOptionsDropdown: React.FC<{
                 Edit
               </DropdownMenuItem>
             </EditDeploymentDialog>
+            <RedeployJobsDialog
+              deploymentId={props.id}
+              onClose={() => setOpen(false)}
+            >
+              <DropdownMenuItem
+                className="flex items-center gap-2"
+                onSelect={(e) => e.preventDefault()}
+              >
+                <IconRefresh className="h-4 w-4" />
+                Redeploy Jobs
+              </DropdownMenuItem>
+            </RedeployJobsDialog>
             <DropdownMenuItem
               className="flex items-center gap-2 text-red-400 hover:text-red-200"
               onSelect={() => setDeleteDialogOpen(true)}
