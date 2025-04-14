@@ -9,12 +9,7 @@ import type WebSocket from "ws";
 import type { MessageEvent } from "ws";
 
 import { can, getUser } from "@ctrlplane/auth/utils";
-import {
-  eq,
-  recomputeAllDeploymentSelectorsInWorkspace,
-  recomputeAllEnvSelectorsInWorkspace,
-  upsertResources,
-} from "@ctrlplane/db";
+import { eq, selector, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -144,8 +139,16 @@ export class AgentSocket {
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
     await Promise.all([
-      recomputeAllEnvSelectorsInWorkspace(db, this.workspaceId),
-      recomputeAllDeploymentSelectorsInWorkspace(db, this.workspaceId),
+      selector(db)
+        .compute()
+        .allEnvironments(this.workspaceId)
+        .resourceSelectors()
+        .replace(),
+      selector(db)
+        .compute()
+        .allDeployments(this.workspaceId)
+        .resourceSelectors()
+        .replace(),
     ]);
     await getQueue(Channel.UpdatedResource).add(res.id, res);
     this.resource = res;

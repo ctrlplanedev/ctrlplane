@@ -1,7 +1,6 @@
 import _ from "lodash";
 
-import { computeDeploymentSelectorResources } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
+import { selector } from "@ctrlplane/db";
 import { Channel, createWorker } from "@ctrlplane/events";
 
 export const updateDeploymentWorker = createWorker(
@@ -9,6 +8,10 @@ export const updateDeploymentWorker = createWorker(
   async ({ data }) => {
     const { oldSelector, resourceSelector } = data;
     if (_.isEqual(oldSelector, resourceSelector)) return;
-    await computeDeploymentSelectorResources(db, data);
+    await selector()
+      .compute()
+      .deployments([data.id])
+      .resourceSelectors()
+      .replace();
   },
 );

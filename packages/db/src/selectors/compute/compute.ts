@@ -1,53 +1,12 @@
-import type { PgTableWithColumns } from "drizzle-orm/pg-core";
-import { resource } from "src/schema/index.js";
-
 import type { Tx } from "../../common.js";
-
-class InsertBuilder<T extends PgTableWithColumns<any>> {
-  constructor(
-    private readonly tx: Tx,
-    private readonly table: T,
-    private readonly values: () => Promise<any[]>,
-  ) {}
-
-  async insert() {
-    const vals = await this.values();
-    if (vals.length === 0) return;
-    return this.tx.insert(this.table).values(vals);
-  }
-}
-
-class EnvironmentBuilder {
-  constructor(
-    private readonly tx: Tx,
-    private readonly ids: string[],
-  ) {}
-
-  resourceSelector() {
-    return new InsertBuilder(this.tx, resource, async () => {
-      // return this.tx
-      //   .select()
-      //   .from(resource)
-      //   .where(eq(resource.workspaceId, this.workspaceId));
-    });
-  }
-}
-
-class WorkspaceEnvironmentBuilder {
-  constructor(
-    private readonly tx: Tx,
-    private readonly workspaceId: string,
-  ) {}
-
-  resourceSelectors() {
-    return new InsertBuilder(this.tx, resource, async () => {
-      // return this.tx
-      //   .select()
-      //   .from(resource)
-      //   .where(eq(resource.workspaceId, this.workspaceId));
-    });
-  }
-}
+import {
+  DeploymentBuilder,
+  WorkspaceDeploymentBuilder,
+} from "./deployment-builder.js";
+import {
+  EnvironmentBuilder,
+  WorkspaceEnvironmentBuilder,
+} from "./environment-builder.js";
 
 export class ComputeBuilder {
   constructor(private readonly tx: Tx) {}
@@ -58,5 +17,13 @@ export class ComputeBuilder {
 
   environments(ids: string[]) {
     return new EnvironmentBuilder(this.tx, ids);
+  }
+
+  allDeployments(workspaceId: string) {
+    return new WorkspaceDeploymentBuilder(this.tx, workspaceId);
+  }
+
+  deployments(ids: string[]) {
+    return new DeploymentBuilder(this.tx, ids);
   }
 }

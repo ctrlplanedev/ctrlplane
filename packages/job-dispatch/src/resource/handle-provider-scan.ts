@@ -1,11 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 
-import {
-  recomputeAllDeploymentSelectorsInWorkspace,
-  recomputeAllEnvSelectorsInWorkspace,
-  upsertResources,
-} from "@ctrlplane/db";
+import { selector, upsertResources } from "@ctrlplane/db";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
@@ -49,8 +45,16 @@ export const handleResourceProviderScan = async (
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
 
     await Promise.all([
-      recomputeAllEnvSelectorsInWorkspace(tx, workspaceId),
-      recomputeAllDeploymentSelectorsInWorkspace(tx, workspaceId),
+      selector(tx)
+        .compute()
+        .allEnvironments(workspaceId)
+        .resourceSelectors()
+        .replace(),
+      selector(tx)
+        .compute()
+        .allDeployments(workspaceId)
+        .resourceSelectors()
+        .replace(),
     ]);
 
     await Promise.all([
