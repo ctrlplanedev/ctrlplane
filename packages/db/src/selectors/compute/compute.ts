@@ -11,7 +11,9 @@ class InsertBuilder<T extends PgTableWithColumns<any>> {
   ) {}
 
   async insert() {
-    return this.tx.insert(this.table).values(await this.values());
+    const vals = await this.values();
+    if (vals.length === 0) return;
+    return this.tx.insert(this.table).values(vals);
   }
 }
 
