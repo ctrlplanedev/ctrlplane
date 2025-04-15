@@ -91,7 +91,7 @@ export const POST = request()
         selector(db)
           .compute()
           .allPolicies(workspaceId)
-          .resourceSelectors()
+          .releaseTargetSelectors()
           .replace(),
       ])
         .then(() =>

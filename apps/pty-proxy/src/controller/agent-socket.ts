@@ -138,23 +138,11 @@ export class AgentSocket {
     ]);
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
-    Promise.all([
-      selector(db)
-        .compute()
-        .allEnvironments(this.workspaceId)
-        .resourceSelectors()
-        .replace(),
-      selector(db)
-        .compute()
-        .allDeployments(this.workspaceId)
-        .resourceSelectors()
-        .replace(),
-      selector(db)
-        .compute()
-        .allPolicies(this.workspaceId)
-        .resourceSelectors()
-        .replace(),
-    ])
+    selector()
+      .compute()
+      .allPolicies(this.workspaceId)
+      .releaseTargetSelectors()
+      .replace()
       .then(() => getQueue(Channel.UpdatedResource).add(res.id, res))
       .catch((err) =>
         logger.error(`Error recomputing policy deployments: ${err}`),

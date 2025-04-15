@@ -165,8 +165,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
     const policies = await getApplicablePolicies(
       this.db,
-      this.releaseTarget.workspaceId,
-      this.releaseTarget,
+      this.releaseTarget.id,
     );
 
     this.cachedPolicy = mergePolicies(policies);

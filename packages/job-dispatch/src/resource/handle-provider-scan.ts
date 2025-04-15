@@ -58,7 +58,7 @@ export const handleResourceProviderScan = async (
       selector(tx)
         .compute()
         .allPolicies(workspaceId)
-        .resourceSelectors()
+        .releaseTargetSelectors()
         .replace(),
     ])
       .then(() =>

@@ -223,7 +223,7 @@ export const updateEnvironmentWorker = createWorker(
     await selector(db)
       .compute()
       .allPolicies(workspaceId)
-      .environmentSelectors()
+      .releaseTargetSelectors()
       .replace();
 
     const createReleaseTargetsPromise = createReleaseTargets(

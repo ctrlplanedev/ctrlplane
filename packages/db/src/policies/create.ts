@@ -93,30 +93,16 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         versionRoleApprovals.map((approval) => ({ ...approval, policyId })),
       );
 
-  const policyTargetsComputer = selector().compute().policies([policyId]);
-  policyTargetsComputer
-    .deploymentSelectors()
+  selector()
+    .compute()
+    .policies([policyId])
+    .releaseTargetSelectors()
     .replace()
     .catch((e) =>
       log.error(
         e,
-        `Error replacing deployment selectors for policy ${policyId}`,
+        `Error replacing release target selectors for policy ${policyId}`,
       ),
-    );
-  policyTargetsComputer
-    .environmentSelectors()
-    .replace()
-    .catch((e) =>
-      log.error(
-        e,
-        `Error replacing environment selectors for policy ${policyId}`,
-      ),
-    );
-  policyTargetsComputer
-    .resourceSelectors()
-    .replace()
-    .catch((e) =>
-      log.error(e, `Error replacing resource selectors for policy ${policyId}`),
     );
 
   return {

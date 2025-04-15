@@ -198,34 +198,18 @@ export const updatePolicyInTx = async (
 
   if (updatedPolicy == null) throw new Error("Policy not found");
 
-  const policyTargetsComputer = selector().compute().policies([policy.id]);
-  policyTargetsComputer
-    .deploymentSelectors()
+  selector()
+    .compute()
+    .policies([policy.id])
+    .releaseTargetSelectors()
     .replace()
     .catch((e) =>
       log.error(
         e,
-        `Error replacing deployment selectors for policy ${policy.id}`,
-      ),
-    );
-  policyTargetsComputer
-    .environmentSelectors()
-    .replace()
-    .catch((e) =>
-      log.error(
-        e,
-        `Error replacing environment selectors for policy ${policy.id}`,
-      ),
-    );
-  policyTargetsComputer
-    .resourceSelectors()
-    .replace()
-    .catch((e) =>
-      log.error(
-        e,
-        `Error replacing resource selectors for policy ${policy.id}`,
+        `Error replacing release target selectors for policy ${policy.id}`,
       ),
     );
 
+  return updatedPolicy;
   return updatedPolicy;
 };

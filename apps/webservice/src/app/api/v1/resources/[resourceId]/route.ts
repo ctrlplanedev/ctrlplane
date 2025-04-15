@@ -102,23 +102,11 @@ export const PATCH = request()
 
     if (res == null) throw new Error("Failed to update resource");
 
-    Promise.all([
-      selector(db)
-        .compute()
-        .allPolicies(resource.workspaceId)
-        .resourceSelectors()
-        .replace(),
-      selector(db)
-        .compute()
-        .allDeployments(resource.workspaceId)
-        .resourceSelectors()
-        .replace(),
-      selector(db)
-        .compute()
-        .allEnvironments(resource.workspaceId)
-        .resourceSelectors()
-        .replace(),
-    ])
+    selector(db)
+      .compute()
+      .allPolicies(resource.workspaceId)
+      .releaseTargetSelectors()
+      .replace()
       .then(() => getQueue(Channel.UpdatedResource).add(res.id, res))
       .catch((err) =>
         log.error(`Error recomputing policy deployments: ${err}`),

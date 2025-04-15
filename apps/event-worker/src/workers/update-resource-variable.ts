@@ -48,7 +48,7 @@ export const updateResourceVariableWorker = createWorker(
     selector(db)
       .compute()
       .allPolicies(resource.workspaceId)
-      .resourceSelectors()
+      .releaseTargetSelectors()
       .replace()
       .then(() =>
         getQueue(Channel.EvaluateReleaseTarget).addBulk(

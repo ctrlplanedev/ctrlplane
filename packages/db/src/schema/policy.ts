@@ -21,9 +21,7 @@ import { environmentCondition } from "@ctrlplane/validators/environments";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import type { policyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
-import { deployment } from "./deployment.js";
-import { environment } from "./environment.js";
-import { resource } from "./resource.js";
+import { releaseTarget } from "./release.js";
 import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
 import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
 import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
@@ -65,50 +63,20 @@ export const policyTarget = pgTable("policy_target", {
     .$type<ResourceCondition | null>(),
 });
 
-export const computedPolicyTargetDeployment = pgTable(
-  "computed_policy_target_deployment",
+export const computedPolicyTargetReleaseTarget = pgTable(
+  "computed_policy_target_release_target",
   {
     policyTargetId: uuid("policy_target_id")
       .notNull()
       .references(() => policyTarget.id, { onDelete: "cascade" }),
-    deploymentId: uuid("deployment_id")
+    releaseTargetId: uuid("release_target_id")
       .notNull()
-      .references(() => deployment.id, { onDelete: "cascade" }),
+      .references(() => releaseTarget.id, { onDelete: "cascade" }),
   },
-  (t) => ({ pk: primaryKey({ columns: [t.policyTargetId, t.deploymentId] }) }),
+  (t) => ({
+    pk: primaryKey({ columns: [t.policyTargetId, t.releaseTargetId] }),
+  }),
 );
-export type ComputedPolicyTargetDeployment =
-  typeof computedPolicyTargetDeployment.$inferSelect;
-
-export const computedPolicyTargetEnvironment = pgTable(
-  "computed_policy_target_environment",
-  {
-    policyTargetId: uuid("policy_target_id")
-      .notNull()
-      .references(() => policyTarget.id, { onDelete: "cascade" }),
-    environmentId: uuid("environment_id")
-      .notNull()
-      .references(() => environment.id, { onDelete: "cascade" }),
-  },
-  (t) => ({ pk: primaryKey({ columns: [t.policyTargetId, t.environmentId] }) }),
-);
-export type ComputedPolicyTargetEnvironment =
-  typeof computedPolicyTargetEnvironment.$inferSelect;
-
-export const computedPolicyTargetResource = pgTable(
-  "computed_policy_target_resource",
-  {
-    policyTargetId: uuid("policy_target_id")
-      .notNull()
-      .references(() => policyTarget.id, { onDelete: "cascade" }),
-    resourceId: uuid("resource_id")
-      .notNull()
-      .references(() => resource.id, { onDelete: "cascade" }),
-  },
-  (t) => ({ pk: primaryKey({ columns: [t.policyTargetId, t.resourceId] }) }),
-);
-export type ComputedPolicyTargetResource =
-  typeof computedPolicyTargetResource.$inferSelect;
 
 // Create zod schemas from drizzle schemas
 const policyInsertSchema = createInsertSchema(policy, {

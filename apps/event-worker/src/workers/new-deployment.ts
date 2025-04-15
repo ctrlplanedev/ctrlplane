@@ -60,7 +60,7 @@ const recomputeAllPolicyDeployments = async (tx: Tx, systemId: string) => {
   await selector(tx)
     .compute()
     .allPolicies(workspaceId)
-    .deploymentSelectors()
+    .releaseTargetSelectors()
     .replace();
 };
 

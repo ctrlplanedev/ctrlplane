@@ -1,5 +1,5 @@
 {
-  "id": "2592f483-324f-4a65-ae9d-8b64572503ae",
+  "id": "c1194476-3b12-47d0-afbc-12b37bfa80d1",
   "prevId": "1912d8ec-3a65-4793-8e5e-f9796d8551d4",
   "version": "7",
   "dialect": "postgresql",
@@ -4665,8 +4665,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.computed_policy_target_deployment": {
-      "name": "computed_policy_target_deployment",
+    "public.computed_policy_target_release_target": {
+      "name": "computed_policy_target_release_target",
       "schema": "",
       "columns": {
         "policy_target_id": {
@@ -4675,8 +4675,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "deployment_id": {
-          "name": "deployment_id",
+        "release_target_id": {
+          "name": "release_target_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -4684,127 +4684,29 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "computed_policy_target_deployment_policy_target_id_policy_target_id_fk": {
-          "name": "computed_policy_target_deployment_policy_target_id_policy_target_id_fk",
-          "tableFrom": "computed_policy_target_deployment",
+        "computed_policy_target_release_target_policy_target_id_policy_target_id_fk": {
+          "name": "computed_policy_target_release_target_policy_target_id_policy_target_id_fk",
+          "tableFrom": "computed_policy_target_release_target",
           "tableTo": "policy_target",
           "columnsFrom": ["policy_target_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "computed_policy_target_deployment_deployment_id_deployment_id_fk": {
-          "name": "computed_policy_target_deployment_deployment_id_deployment_id_fk",
-          "tableFrom": "computed_policy_target_deployment",
-          "tableTo": "deployment",
-          "columnsFrom": ["deployment_id"],
+        "computed_policy_target_release_target_release_target_id_release_target_id_fk": {
+          "name": "computed_policy_target_release_target_release_target_id_release_target_id_fk",
+          "tableFrom": "computed_policy_target_release_target",
+          "tableTo": "release_target",
+          "columnsFrom": ["release_target_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "computed_policy_target_deployment_policy_target_id_deployment_id_pk": {
-          "name": "computed_policy_target_deployment_policy_target_id_deployment_id_pk",
-          "columns": ["policy_target_id", "deployment_id"]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.computed_policy_target_environment": {
-      "name": "computed_policy_target_environment",
-      "schema": "",
-      "columns": {
-        "policy_target_id": {
-          "name": "policy_target_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "environment_id": {
-          "name": "environment_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "computed_policy_target_environment_policy_target_id_policy_target_id_fk": {
-          "name": "computed_policy_target_environment_policy_target_id_policy_target_id_fk",
-          "tableFrom": "computed_policy_target_environment",
-          "tableTo": "policy_target",
-          "columnsFrom": ["policy_target_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "computed_policy_target_environment_environment_id_environment_id_fk": {
-          "name": "computed_policy_target_environment_environment_id_environment_id_fk",
-          "tableFrom": "computed_policy_target_environment",
-          "tableTo": "environment",
-          "columnsFrom": ["environment_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "computed_policy_target_environment_policy_target_id_environment_id_pk": {
-          "name": "computed_policy_target_environment_policy_target_id_environment_id_pk",
-          "columns": ["policy_target_id", "environment_id"]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.computed_policy_target_resource": {
-      "name": "computed_policy_target_resource",
-      "schema": "",
-      "columns": {
-        "policy_target_id": {
-          "name": "policy_target_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "resource_id": {
-          "name": "resource_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "computed_policy_target_resource_policy_target_id_policy_target_id_fk": {
-          "name": "computed_policy_target_resource_policy_target_id_policy_target_id_fk",
-          "tableFrom": "computed_policy_target_resource",
-          "tableTo": "policy_target",
-          "columnsFrom": ["policy_target_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "computed_policy_target_resource_resource_id_resource_id_fk": {
-          "name": "computed_policy_target_resource_resource_id_resource_id_fk",
-          "tableFrom": "computed_policy_target_resource",
-          "tableTo": "resource",
-          "columnsFrom": ["resource_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "computed_policy_target_resource_policy_target_id_resource_id_pk": {
-          "name": "computed_policy_target_resource_policy_target_id_resource_id_pk",
-          "columns": ["policy_target_id", "resource_id"]
+        "computed_policy_target_release_target_policy_target_id_release_target_id_pk": {
+          "name": "computed_policy_target_release_target_policy_target_id_release_target_id_pk",
+          "columns": ["policy_target_id", "release_target_id"]
         }
       },
       "uniqueConstraints": {},
