@@ -2,6 +2,9 @@ import { and, eq, inArray, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
+
+const log = logger.child({ module: "update-resource-variable" });
 
 export const updateResourceVariableWorker = createWorker(
   Channel.UpdateResourceVariable,
@@ -54,6 +57,9 @@ export const updateResourceVariableWorker = createWorker(
             data: rt,
           })),
         ),
+      )
+      .catch((err) =>
+        log.error(`Error recomputing policy deployments: ${err}`),
       );
   },
 );

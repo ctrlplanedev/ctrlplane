@@ -5,6 +5,9 @@ import { and, eq, isNull, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
+
+const log = logger.child({ module: "new-deployment" });
 
 const getDeploymentResources = async (
   tx: Tx,
@@ -74,8 +77,10 @@ export const newDeploymentWorker = createWorker(
         data: { resourceId, environmentId, deploymentId },
       };
     });
-    recomputeAllPolicyDeployments(db, job.data.systemId).then(() =>
-      evaluatedQueue.addBulk(jobData),
-    );
+    recomputeAllPolicyDeployments(db, job.data.systemId)
+      .then(() => evaluatedQueue.addBulk(jobData))
+      .catch((err) =>
+        log.error(`Error recomputing policy deployments: ${err}`),
+      );
   },
 );

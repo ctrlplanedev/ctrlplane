@@ -60,12 +60,16 @@ export const handleResourceProviderScan = async (
         .allPolicies(workspaceId)
         .resourceSelectors()
         .replace(),
-    ]).then(() =>
-      Promise.all([
-        getQueue(Channel.NewResource).addBulk(insertJobs),
-        getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-      ]),
-    );
+    ])
+      .then(() =>
+        Promise.all([
+          getQueue(Channel.NewResource).addBulk(insertJobs),
+          getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+        ]),
+      )
+      .catch((err) =>
+        log.error(`Error recomputing policy deployments: ${err}`),
+      );
 
     const deleted = await deleteResources(tx, toDelete);
     log.info("completed handling resource provider scan");

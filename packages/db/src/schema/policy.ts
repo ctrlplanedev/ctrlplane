@@ -65,44 +65,50 @@ export const policyTarget = pgTable("policy_target", {
     .$type<ResourceCondition | null>(),
 });
 
-export const computedPolicyDeployment = pgTable(
-  "computed_policy_deployment",
+export const computedPolicyTargetDeployment = pgTable(
+  "computed_policy_target_deployment",
   {
-    policyId: uuid("policy_id")
+    policyTargetId: uuid("policy_target_id")
       .notNull()
       .references(() => policy.id, { onDelete: "cascade" }),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
   },
-  (t) => ({ pk: primaryKey({ columns: [t.policyId, t.deploymentId] }) }),
+  (t) => ({ pk: primaryKey({ columns: [t.policyTargetId, t.deploymentId] }) }),
 );
+export type ComputedPolicyTargetDeployment =
+  typeof computedPolicyTargetDeployment.$inferSelect;
 
-export const computedPolicyEnvironment = pgTable(
-  "computed_policy_environment",
+export const computedPolicyTargetEnvironment = pgTable(
+  "computed_policy_target_environment",
   {
-    policyId: uuid("policy_id")
+    policyTargetId: uuid("policy_target_id")
       .notNull()
       .references(() => policy.id, { onDelete: "cascade" }),
     environmentId: uuid("environment_id")
       .notNull()
       .references(() => environment.id, { onDelete: "cascade" }),
   },
-  (t) => ({ pk: primaryKey({ columns: [t.policyId, t.environmentId] }) }),
+  (t) => ({ pk: primaryKey({ columns: [t.policyTargetId, t.environmentId] }) }),
 );
+export type ComputedPolicyTargetEnvironment =
+  typeof computedPolicyTargetEnvironment.$inferSelect;
 
-export const computedPolicyResource = pgTable(
-  "computed_policy_resource",
+export const computedPolicyTargetResource = pgTable(
+  "computed_policy_target_resource",
   {
-    policyId: uuid("policy_id")
+    policyTargetId: uuid("policy_target_id")
       .notNull()
       .references(() => policy.id, { onDelete: "cascade" }),
     resourceId: uuid("resource_id")
       .notNull()
       .references(() => resource.id, { onDelete: "cascade" }),
   },
-  (t) => ({ pk: primaryKey({ columns: [t.policyId, t.resourceId] }) }),
+  (t) => ({ pk: primaryKey({ columns: [t.policyTargetId, t.resourceId] }) }),
 );
+export type ComputedPolicyTargetResource =
+  typeof computedPolicyTargetResource.$inferSelect;
 
 // Create zod schemas from drizzle schemas
 const policyInsertSchema = createInsertSchema(policy, {

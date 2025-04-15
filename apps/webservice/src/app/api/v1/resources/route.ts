@@ -7,11 +7,14 @@ import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { groupResourcesByHook } from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
+
+const log = logger.child({ module: "v1/resources" });
 
 const patchBodySchema = z.object({
   workspaceId: z.string().uuid(),
@@ -90,12 +93,16 @@ export const POST = request()
           .allPolicies(workspaceId)
           .resourceSelectors()
           .replace(),
-      ]).then(() =>
-        Promise.all([
-          getQueue(Channel.NewResource).addBulk(insertJobs),
-          getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-        ]),
-      );
+      ])
+        .then(() =>
+          Promise.all([
+            getQueue(Channel.NewResource).addBulk(insertJobs),
+            getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+          ]),
+        )
+        .catch((err) =>
+          log.error(`Error recomputing policy deployments: ${err}`),
+        );
 
       const count = insertedResources.length + updatedResources.length;
       return NextResponse.json({ count });

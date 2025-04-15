@@ -4,6 +4,9 @@ import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
+
+const log = logger.child({ module: "update-deployment" });
 
 const recomputeAllPolicyDeployments = async (systemId: string) => {
   const system = await db.query.system.findFirst({
@@ -27,7 +30,10 @@ export const updateDeploymentWorker = createWorker(
       .compute()
       .deployments([data.id])
       .resourceSelectors()
-      .replace();
-    recomputeAllPolicyDeployments(data.systemId);
+      .replace()
+      .then(() => recomputeAllPolicyDeployments(data.systemId))
+      .catch((err) =>
+        log.error(`Error recomputing policy deployments: ${err}`),
+      );
   },
 );

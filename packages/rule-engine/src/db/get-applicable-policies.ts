@@ -1,129 +1,72 @@
 import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
-import { isPresent } from "ts-is-present";
 
-import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
+import { and, desc, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseTargetIdentifier } from "../types.js";
 import { withSpan } from "../span.js";
 
 /**
- * Checks if a policy target matches a given release repository by evaluating
- * deployment and environment selectors.
+ * Checks if a policy target matches a given release target by evaluating
+ * the target identifiers against the release target's computed deployments,
+ * environments, and resources.
  *
  * The function handles three cases:
- * 1. Both environment and deployment match their respective selectors (most
- *    specific match)
+ * 1. All target identifiers match their respective selectors (most specific
+ *    match)
  * 2. Environment matches and there is no deployment selector (policy applies to
  *    all deployments in environment)
  * 3. Deployment matches and there is no environment selector (policy applies
  *    across all environments)
  *
- * @param tx - Database transaction object for querying
- * @param repo - Repository containing deployment and environment IDs to match
- * against
+ * @param releaseTargetIdentifier - The release target to match against
  * @param target - Policy target containing deployment and environment selectors
- * @returns Promise resolving to matching environment and deployment if target
- * matches, null otherwise
+ * @returns boolean indicating whether the target matches the release target
  */
-const matchPolicyTargetForResource = withSpan(
-  "matchPolicyTargetForResource",
-  async (
-    span,
-    tx: Tx,
-    releaseTargetIdentifier: ReleaseTargetIdentifier,
-    target: schema.PolicyTarget,
-  ) => {
-    span.setAttribute("target.id", target.id);
-    span.setAttribute("environment.id", releaseTargetIdentifier.environmentId);
-    span.setAttribute("deployment.id", releaseTargetIdentifier.deploymentId);
-    span.setAttribute("resource.id", releaseTargetIdentifier.resourceId);
-
-    const { deploymentSelector, environmentSelector, resourceSelector } =
-      target;
-    const { deploymentId, environmentId, resourceId } = releaseTargetIdentifier;
-    const deploymentsQuery =
-      deploymentSelector == null
-        ? null
-        : tx
-            .select()
-            .from(schema.deployment)
-            .where(
-              and(
-                schema.deploymentMatchSelector(deploymentSelector),
-                eq(schema.deployment.id, deploymentId),
-              ),
-            )
-            .then(takeFirstOrNull);
-
-    const envQuery =
-      environmentSelector == null
-        ? null
-        : tx
-            .select()
-            .from(schema.environment)
-            .where(
-              and(
-                schema.environmentMatchSelector(db, environmentSelector),
-                eq(schema.environment.id, environmentId),
-              ),
-            )
-            .then(takeFirstOrNull);
-
-    const resourceQuery =
-      resourceSelector == null
-        ? null
-        : tx
-            .select()
-            .from(schema.resource)
-            .where(
-              and(
-                schema.resourceMatchesMetadata(db, resourceSelector),
-                eq(schema.resource.id, resourceId),
-              ),
-            )
-            .then(takeFirstOrNull);
-
-    const [deployment, env, resource] = await Promise.all([
-      deploymentsQuery,
-      envQuery,
-      resourceQuery,
-    ]);
-
-    // Check if each selector exists and has a matching entity
-    const selectors = {
-      deployment: {
-        hasSelector: deploymentSelector != null,
-        hasEntity: deployment != null,
-      },
-      environment: {
-        hasSelector: environmentSelector != null,
-        hasEntity: env != null,
-      },
-      resource: {
-        hasSelector: resourceSelector != null,
-        hasEntity: resource != null,
-      },
-    } as const;
-
-    const hasSelectors = _(selectors)
-      .entries()
-      .filter(([_, s]) => s.hasSelector)
-      .map(([key]) => key)
-      .value();
-
-    const hasEntities = _(selectors)
-      .entries()
-      .filter(([_, s]) => s.hasEntity)
-      .map(([key]) => key)
-      .value();
-
-    // Check if arrays have same values in any order using lodash
-    return _.isEqual(hasSelectors.sort(), hasEntities.sort());
+const matchPolicyTargetForResource = (
+  releaseTargetIdentifier: ReleaseTargetIdentifier,
+  target: schema.PolicyTarget & {
+    computedDeployments: schema.ComputedPolicyTargetDeployment[];
+    computedEnvironments: schema.ComputedPolicyTargetEnvironment[];
+    computedResources: schema.ComputedPolicyTargetResource[];
   },
-);
+) => {
+  const {
+    deploymentSelector,
+    environmentSelector,
+    resourceSelector,
+    computedDeployments,
+    computedEnvironments,
+    computedResources,
+  } = target;
+  const { deploymentId, environmentId, resourceId } = releaseTargetIdentifier;
+
+  const hasNoSelectors =
+    deploymentSelector == null &&
+    environmentSelector == null &&
+    resourceSelector == null;
+
+  // if there are no selectors, the policy should not be applicable to anything
+  if (hasNoSelectors) return false;
+
+  const isFulfillingResourceSelector =
+    resourceSelector == null ||
+    computedResources.some((r) => r.resourceId === resourceId);
+
+  const isFulfillingDeploymentSelector =
+    deploymentSelector == null ||
+    computedDeployments.some((d) => d.deploymentId === deploymentId);
+
+  const isFulfillingEnvironmentSelector =
+    environmentSelector == null ||
+    computedEnvironments.some((e) => e.environmentId === environmentId);
+
+  return (
+    isFulfillingResourceSelector &&
+    isFulfillingDeploymentSelector &&
+    isFulfillingEnvironmentSelector
+  );
+};
 
 /**
  * Gets applicable policies for a given workspace and release repository.
@@ -159,7 +102,13 @@ export const getApplicablePolicies = withSpan(
         eq(schema.policy.enabled, true),
       ),
       with: {
-        targets: true,
+        targets: {
+          with: {
+            computedDeployments: true,
+            computedEnvironments: true,
+            computedResources: true,
+          },
+        },
         denyWindows: true,
         deploymentVersionSelector: true,
         versionAnyApprovals: true,
@@ -169,18 +118,10 @@ export const getApplicablePolicies = withSpan(
       orderBy: [desc(schema.policy.priority)],
     });
 
-    return Promise.all(
-      policy.map(async (p) => {
-        // Check if any of the policy's targets match the release target
-        const targetMatches = await Promise.all(
-          p.targets.map((target) =>
-            matchPolicyTargetForResource(tx, releaseTargetIdentifier, target),
-          ),
-        );
-
-        // Return the policy if at least one target matches
-        if (targetMatches.some((v) => v)) return p;
-      }),
-    ).then((policies) => policies.filter(isPresent));
+    return policy.filter((p) =>
+      p.targets.some((target) =>
+        matchPolicyTargetForResource(releaseTargetIdentifier, target),
+      ),
+    );
   },
 );

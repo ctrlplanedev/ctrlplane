@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm/pg-core/expressions";
+import { and, eq, inArray, isNotNull } from "drizzle-orm/pg-core/expressions";
 
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
@@ -14,49 +14,70 @@ export class PolicyBuilder {
   environmentSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.computedPolicyEnvironment,
+      SCHEMA.computedPolicyTargetEnvironment,
       async (tx) => {
-        await tx
-          .delete(SCHEMA.computedPolicyEnvironment)
-          .where(inArray(SCHEMA.computedPolicyEnvironment.policyId, this.ids));
+        const targets = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .where(
+            and(
+              inArray(SCHEMA.policyTarget.policyId, this.ids),
+              isNotNull(SCHEMA.policyTarget.environmentSelector),
+            ),
+          );
+
+        await tx.delete(SCHEMA.computedPolicyTargetEnvironment).where(
+          inArray(
+            SCHEMA.computedPolicyTargetEnvironment.policyTargetId,
+            targets.map((t) => t.id),
+          ),
+        );
       },
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: inArray(SCHEMA.policy.id, this.ids),
-          with: { targets: true },
+        const rows = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              inArray(SCHEMA.policyTarget.policyId, this.ids),
+              isNotNull(SCHEMA.policyTarget.environmentSelector),
+            ),
+          );
+
+        const targets = rows.map((row) => ({
+          ...row.policy_target,
+          workspaceId: row.policy.workspaceId,
+        }));
+
+        const targetPromises = targets.map(async (t) => {
+          const { environmentSelector, workspaceId } = t;
+          if (environmentSelector == null) return [];
+
+          const envQuery = new QueryBuilder(tx)
+            .environments()
+            .where(environmentSelector)
+            .sql();
+
+          const rows = await tx
+            .select()
+            .from(SCHEMA.environment)
+            .innerJoin(
+              SCHEMA.system,
+              eq(SCHEMA.environment.systemId, SCHEMA.system.id),
+            )
+            .where(and(eq(SCHEMA.system.workspaceId, workspaceId), envQuery));
+
+          return rows.map((row) => ({
+            policyTargetId: t.id,
+            environmentId: row.environment.id,
+          }));
         });
 
-        const promises = policies.map(async (p) => {
-          const { targets, workspaceId } = p;
-          const targetPromises = targets.map(async (t) => {
-            const { environmentSelector } = t;
-            if (environmentSelector == null) return [];
-
-            const envQuery = new QueryBuilder(tx)
-              .environments()
-              .where(environmentSelector)
-              .sql();
-
-            const rows = await tx
-              .select()
-              .from(SCHEMA.environment)
-              .innerJoin(
-                SCHEMA.system,
-                eq(SCHEMA.environment.systemId, SCHEMA.system.id),
-              )
-              .where(and(eq(SCHEMA.system.workspaceId, workspaceId), envQuery));
-
-            return rows.map((row) => ({
-              policyId: p.id,
-              environmentId: row.environment.id,
-            }));
-          });
-
-          const fulfilled = await Promise.all(targetPromises);
-          return fulfilled.flat();
-        });
-
-        const fulfilled = await Promise.all(promises);
+        const fulfilled = await Promise.all(targetPromises);
         return fulfilled.flat();
       },
     );
@@ -65,49 +86,70 @@ export class PolicyBuilder {
   deploymentSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.computedPolicyDeployment,
+      SCHEMA.computedPolicyTargetDeployment,
       async (tx) => {
-        await tx
-          .delete(SCHEMA.computedPolicyDeployment)
-          .where(inArray(SCHEMA.computedPolicyDeployment.policyId, this.ids));
+        const targets = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .where(
+            and(
+              inArray(SCHEMA.policyTarget.policyId, this.ids),
+              isNotNull(SCHEMA.policyTarget.deploymentSelector),
+            ),
+          );
+
+        await tx.delete(SCHEMA.computedPolicyTargetDeployment).where(
+          inArray(
+            SCHEMA.computedPolicyTargetDeployment.policyTargetId,
+            targets.map((t) => t.id),
+          ),
+        );
       },
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: inArray(SCHEMA.policy.id, this.ids),
-          with: { targets: true },
+        const rows = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              inArray(SCHEMA.policyTarget.policyId, this.ids),
+              isNotNull(SCHEMA.policyTarget.deploymentSelector),
+            ),
+          );
+
+        const targets = rows.map((row) => ({
+          ...row.policy_target,
+          workspaceId: row.policy.workspaceId,
+        }));
+
+        const targetPromises = targets.map(async (t) => {
+          const { deploymentSelector, workspaceId } = t;
+          if (deploymentSelector == null) return [];
+
+          const depQuery = new QueryBuilder(tx)
+            .deployments()
+            .where(deploymentSelector)
+            .sql();
+
+          const rows = await tx
+            .select()
+            .from(SCHEMA.deployment)
+            .innerJoin(
+              SCHEMA.system,
+              eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
+            )
+            .where(and(eq(SCHEMA.system.workspaceId, workspaceId), depQuery));
+
+          return rows.map((row) => ({
+            policyTargetId: t.id,
+            deploymentId: row.deployment.id,
+          }));
         });
 
-        const promises = policies.map(async (p) => {
-          const { targets, workspaceId } = p;
-          const targetPromises = targets.map(async (t) => {
-            const { deploymentSelector } = t;
-            if (deploymentSelector == null) return [];
-
-            const depQuery = new QueryBuilder(tx)
-              .deployments()
-              .where(deploymentSelector)
-              .sql();
-
-            const rows = await tx
-              .select()
-              .from(SCHEMA.deployment)
-              .innerJoin(
-                SCHEMA.system,
-                eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
-              )
-              .where(and(eq(SCHEMA.system.workspaceId, workspaceId), depQuery));
-
-            return rows.map((row) => ({
-              policyId: p.id,
-              deploymentId: row.deployment.id,
-            }));
-          });
-
-          const fulfilled = await Promise.all(targetPromises);
-          return fulfilled.flat();
-        });
-
-        const fulfilled = await Promise.all(promises);
+        const fulfilled = await Promise.all(targetPromises);
         return fulfilled.flat();
       },
     );
@@ -116,47 +158,66 @@ export class PolicyBuilder {
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.computedPolicyResource,
+      SCHEMA.computedPolicyTargetResource,
       async (tx) => {
-        await tx
-          .delete(SCHEMA.computedPolicyResource)
-          .where(inArray(SCHEMA.computedPolicyResource.policyId, this.ids));
+        const targets = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .where(
+            and(
+              inArray(SCHEMA.policyTarget.policyId, this.ids),
+              isNotNull(SCHEMA.policyTarget.resourceSelector),
+            ),
+          );
+
+        await tx.delete(SCHEMA.computedPolicyTargetResource).where(
+          inArray(
+            SCHEMA.computedPolicyTargetResource.policyTargetId,
+            targets.map((t) => t.id),
+          ),
+        );
       },
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: inArray(SCHEMA.policy.id, this.ids),
-          with: { targets: true },
+        const rows = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              inArray(SCHEMA.policyTarget.policyId, this.ids),
+              isNotNull(SCHEMA.policyTarget.resourceSelector),
+            ),
+          );
+
+        const targets = rows.map((row) => ({
+          ...row.policy_target,
+          workspaceId: row.policy.workspaceId,
+        }));
+
+        const targetPromises = targets.map(async (t) => {
+          const { resourceSelector, workspaceId } = t;
+          if (resourceSelector == null) return [];
+
+          const resQuery = new QueryBuilder(tx)
+            .resources()
+            .where(resourceSelector)
+            .sql();
+
+          const rows = await tx
+            .select()
+            .from(SCHEMA.resource)
+            .where(and(eq(SCHEMA.resource.workspaceId, workspaceId), resQuery));
+
+          return rows.map((row) => ({
+            policyTargetId: t.id,
+            resourceId: row.id,
+          }));
         });
 
-        const promises = policies.map(async (p) => {
-          const { targets, workspaceId } = p;
-          const targetPromises = targets.map(async (t) => {
-            const { resourceSelector } = t;
-            if (resourceSelector == null) return [];
-
-            const resQuery = new QueryBuilder(tx)
-              .resources()
-              .where(resourceSelector)
-              .sql();
-
-            const rows = await tx
-              .select()
-              .from(SCHEMA.resource)
-              .where(
-                and(eq(SCHEMA.resource.workspaceId, workspaceId), resQuery),
-              );
-
-            return rows.map((row) => ({
-              policyId: p.id,
-              resourceId: row.id,
-            }));
-          });
-
-          const fulfilled = await Promise.all(targetPromises);
-          return fulfilled.flat();
-        });
-
-        const fulfilled = await Promise.all(promises);
+        const fulfilled = await Promise.all(targetPromises);
         return fulfilled.flat();
       },
     );
@@ -172,53 +233,74 @@ export class WorkspacePolicyBuilder {
   environmentSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.computedPolicyEnvironment,
+      SCHEMA.computedPolicyTargetEnvironment,
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: eq(SCHEMA.policy.workspaceId, this.workspaceId),
-        });
-        const policyIds = policies.map((p) => p.id);
-        await tx
-          .delete(SCHEMA.computedPolicyEnvironment)
-          .where(inArray(SCHEMA.computedPolicyEnvironment.policyId, policyIds));
+        const targets = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              eq(SCHEMA.policy.workspaceId, this.workspaceId),
+              isNotNull(SCHEMA.policyTarget.environmentSelector),
+            ),
+          );
+
+        await tx.delete(SCHEMA.computedPolicyTargetEnvironment).where(
+          inArray(
+            SCHEMA.computedPolicyTargetEnvironment.policyTargetId,
+            targets.map((t) => t.policy_target.id),
+          ),
+        );
       },
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: eq(SCHEMA.policy.workspaceId, this.workspaceId),
-          with: { targets: true },
+        const rows = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              eq(SCHEMA.policy.workspaceId, this.workspaceId),
+              isNotNull(SCHEMA.policyTarget.environmentSelector),
+            ),
+          );
+
+        const targets = rows.map((row) => ({
+          ...row.policy_target,
+          workspaceId: row.policy.workspaceId,
+        }));
+
+        const targetPromises = targets.map(async (t) => {
+          const { environmentSelector, workspaceId } = t;
+          if (environmentSelector == null) return [];
+
+          const envQuery = new QueryBuilder(tx)
+            .environments()
+            .where(environmentSelector)
+            .sql();
+
+          const rows = await tx
+            .select()
+            .from(SCHEMA.environment)
+            .innerJoin(
+              SCHEMA.system,
+              eq(SCHEMA.environment.systemId, SCHEMA.system.id),
+            )
+            .where(and(eq(SCHEMA.system.workspaceId, workspaceId), envQuery));
+
+          return rows.map((row) => ({
+            policyTargetId: t.id,
+            environmentId: row.environment.id,
+          }));
         });
 
-        const promises = policies.map(async (p) => {
-          const { targets, workspaceId } = p;
-          const targetPromises = targets.map(async (t) => {
-            const { environmentSelector } = t;
-            if (environmentSelector == null) return [];
-
-            const envQuery = new QueryBuilder(tx)
-              .environments()
-              .where(environmentSelector)
-              .sql();
-
-            const rows = await tx
-              .select()
-              .from(SCHEMA.environment)
-              .innerJoin(
-                SCHEMA.system,
-                eq(SCHEMA.environment.systemId, SCHEMA.system.id),
-              )
-              .where(and(eq(SCHEMA.system.workspaceId, workspaceId), envQuery));
-
-            return rows.map((row) => ({
-              policyId: p.id,
-              environmentId: row.environment.id,
-            }));
-          });
-
-          const fulfilled = await Promise.all(targetPromises);
-          return fulfilled.flat();
-        });
-
-        const fulfilled = await Promise.all(promises);
+        const fulfilled = await Promise.all(targetPromises);
         return fulfilled.flat();
       },
     );
@@ -227,53 +309,74 @@ export class WorkspacePolicyBuilder {
   deploymentSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.computedPolicyDeployment,
+      SCHEMA.computedPolicyTargetDeployment,
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: eq(SCHEMA.policy.workspaceId, this.workspaceId),
-        });
-        const policyIds = policies.map((p) => p.id);
-        await tx
-          .delete(SCHEMA.computedPolicyDeployment)
-          .where(inArray(SCHEMA.computedPolicyDeployment.policyId, policyIds));
+        const targets = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              eq(SCHEMA.policy.workspaceId, this.workspaceId),
+              isNotNull(SCHEMA.policyTarget.deploymentSelector),
+            ),
+          );
+
+        await tx.delete(SCHEMA.computedPolicyTargetDeployment).where(
+          inArray(
+            SCHEMA.computedPolicyTargetDeployment.policyTargetId,
+            targets.map((t) => t.policy_target.id),
+          ),
+        );
       },
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: eq(SCHEMA.policy.workspaceId, this.workspaceId),
-          with: { targets: true },
+        const rows = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              eq(SCHEMA.policy.workspaceId, this.workspaceId),
+              isNotNull(SCHEMA.policyTarget.deploymentSelector),
+            ),
+          );
+
+        const targets = rows.map((row) => ({
+          ...row.policy_target,
+          workspaceId: row.policy.workspaceId,
+        }));
+
+        const targetPromises = targets.map(async (t) => {
+          const { deploymentSelector, workspaceId } = t;
+          if (deploymentSelector == null) return [];
+
+          const depQuery = new QueryBuilder(tx)
+            .deployments()
+            .where(deploymentSelector)
+            .sql();
+
+          const rows = await tx
+            .select()
+            .from(SCHEMA.deployment)
+            .innerJoin(
+              SCHEMA.system,
+              eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
+            )
+            .where(and(eq(SCHEMA.system.workspaceId, workspaceId), depQuery));
+
+          return rows.map((row) => ({
+            policyTargetId: t.id,
+            deploymentId: row.deployment.id,
+          }));
         });
 
-        const promises = policies.map(async (p) => {
-          const { targets, workspaceId } = p;
-          const targetPromises = targets.map(async (t) => {
-            const { deploymentSelector } = t;
-            if (deploymentSelector == null) return [];
-
-            const depQuery = new QueryBuilder(tx)
-              .deployments()
-              .where(deploymentSelector)
-              .sql();
-
-            const rows = await tx
-              .select()
-              .from(SCHEMA.deployment)
-              .innerJoin(
-                SCHEMA.system,
-                eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
-              )
-              .where(and(eq(SCHEMA.system.workspaceId, workspaceId), depQuery));
-
-            return rows.map((row) => ({
-              policyId: p.id,
-              deploymentId: row.deployment.id,
-            }));
-          });
-
-          const fulfilled = await Promise.all(targetPromises);
-          return fulfilled.flat();
-        });
-
-        const fulfilled = await Promise.all(promises);
+        const fulfilled = await Promise.all(targetPromises);
         return fulfilled.flat();
       },
     );
@@ -282,51 +385,70 @@ export class WorkspacePolicyBuilder {
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
-      SCHEMA.computedPolicyResource,
+      SCHEMA.computedPolicyTargetResource,
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: eq(SCHEMA.policy.workspaceId, this.workspaceId),
-        });
-        const policyIds = policies.map((p) => p.id);
-        await tx
-          .delete(SCHEMA.computedPolicyResource)
-          .where(inArray(SCHEMA.computedPolicyResource.policyId, policyIds));
+        const targets = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              eq(SCHEMA.policy.workspaceId, this.workspaceId),
+              isNotNull(SCHEMA.policyTarget.resourceSelector),
+            ),
+          );
+
+        await tx.delete(SCHEMA.computedPolicyTargetResource).where(
+          inArray(
+            SCHEMA.computedPolicyTargetResource.policyTargetId,
+            targets.map((t) => t.policy_target.id),
+          ),
+        );
       },
       async (tx) => {
-        const policies = await tx.query.policy.findMany({
-          where: eq(SCHEMA.policy.workspaceId, this.workspaceId),
-          with: { targets: true },
+        const rows = await tx
+          .select()
+          .from(SCHEMA.policyTarget)
+          .innerJoin(
+            SCHEMA.policy,
+            eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          )
+          .where(
+            and(
+              eq(SCHEMA.policy.workspaceId, this.workspaceId),
+              isNotNull(SCHEMA.policyTarget.resourceSelector),
+            ),
+          );
+
+        const targets = rows.map((row) => ({
+          ...row.policy_target,
+          workspaceId: row.policy.workspaceId,
+        }));
+
+        const targetPromises = targets.map(async (t) => {
+          const { resourceSelector, workspaceId } = t;
+          if (resourceSelector == null) return [];
+
+          const resQuery = new QueryBuilder(tx)
+            .resources()
+            .where(resourceSelector)
+            .sql();
+
+          const rows = await tx
+            .select()
+            .from(SCHEMA.resource)
+            .where(and(eq(SCHEMA.resource.workspaceId, workspaceId), resQuery));
+
+          return rows.map((row) => ({
+            policyTargetId: t.id,
+            resourceId: row.id,
+          }));
         });
 
-        const promises = policies.map(async (p) => {
-          const { targets, workspaceId } = p;
-          const targetPromises = targets.map(async (t) => {
-            const { resourceSelector } = t;
-            if (resourceSelector == null) return [];
-
-            const resQuery = new QueryBuilder(tx)
-              .resources()
-              .where(resourceSelector)
-              .sql();
-
-            const rows = await tx
-              .select()
-              .from(SCHEMA.resource)
-              .where(
-                and(eq(SCHEMA.resource.workspaceId, workspaceId), resQuery),
-              );
-
-            return rows.map((row) => ({
-              policyId: p.id,
-              resourceId: row.id,
-            }));
-          });
-
-          const fulfilled = await Promise.all(targetPromises);
-          return fulfilled.flat();
-        });
-
-        const fulfilled = await Promise.all(promises);
+        const fulfilled = await Promise.all(targetPromises);
         return fulfilled.flat();
       },
     );

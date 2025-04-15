@@ -6,12 +6,15 @@ import { and, eq, isNull, selector, upsertResources } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { deleteResources } from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
 import { parseBody } from "../../body-parser";
 import { request } from "../../middleware";
+
+const log = logger.child({ module: "v1/resources/[resourceId]" });
 
 export const GET = request()
   .use(authn)
@@ -115,7 +118,11 @@ export const PATCH = request()
         .allEnvironments(resource.workspaceId)
         .resourceSelectors()
         .replace(),
-    ]).then(() => getQueue(Channel.UpdatedResource).add(res.id, res));
+    ])
+      .then(() => getQueue(Channel.UpdatedResource).add(res.id, res))
+      .catch((err) =>
+        log.error(`Error recomputing policy deployments: ${err}`),
+      );
     return NextResponse.json(res);
   });
 

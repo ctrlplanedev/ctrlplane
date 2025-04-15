@@ -154,7 +154,11 @@ export class AgentSocket {
         .allPolicies(this.workspaceId)
         .resourceSelectors()
         .replace(),
-    ]).then(() => getQueue(Channel.UpdatedResource).add(res.id, res));
+    ])
+      .then(() => getQueue(Channel.UpdatedResource).add(res.id, res))
+      .catch((err) =>
+        logger.error(`Error recomputing policy deployments: ${err}`),
+      );
     this.resource = res;
     agents.set(res.id, { lastSync: new Date(), agent: this });
   }

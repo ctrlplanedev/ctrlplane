@@ -1,6 +1,12 @@
 import { relations } from "drizzle-orm";
 
-import { policy, policyTarget } from "./policy.js";
+import {
+  computedPolicyTargetDeployment,
+  computedPolicyTargetEnvironment,
+  computedPolicyTargetResource,
+  policy,
+  policyTarget,
+} from "./policy.js";
 import {
   policyRuleAnyApproval,
   policyRuleDenyWindow,
@@ -24,9 +30,45 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   versionAnyApprovals: one(policyRuleAnyApproval),
 }));
 
-export const policyTargetRelations = relations(policyTarget, ({ one }) => ({
-  policy: one(policy, {
-    fields: [policyTarget.policyId],
-    references: [policy.id],
+export const policyTargetRelations = relations(
+  policyTarget,
+  ({ one, many }) => ({
+    policy: one(policy, {
+      fields: [policyTarget.policyId],
+      references: [policy.id],
+    }),
+    computedDeployments: many(computedPolicyTargetDeployment),
+    computedEnvironments: many(computedPolicyTargetEnvironment),
+    computedResources: many(computedPolicyTargetResource),
   }),
-}));
+);
+
+export const computedPolicyTargetDeploymentRelations = relations(
+  computedPolicyTargetDeployment,
+  ({ one }) => ({
+    policyTarget: one(policyTarget, {
+      fields: [computedPolicyTargetDeployment.policyTargetId],
+      references: [policyTarget.id],
+    }),
+  }),
+);
+
+export const computedPolicyTargetEnvironmentRelations = relations(
+  computedPolicyTargetEnvironment,
+  ({ one }) => ({
+    policyTarget: one(policyTarget, {
+      fields: [computedPolicyTargetEnvironment.policyTargetId],
+      references: [policyTarget.id],
+    }),
+  }),
+);
+
+export const computedPolicyTargetResourceRelations = relations(
+  computedPolicyTargetResource,
+  ({ one }) => ({
+    policyTarget: one(policyTarget, {
+      fields: [computedPolicyTargetResource.policyTargetId],
+      references: [policyTarget.id],
+    }),
+  }),
+);
