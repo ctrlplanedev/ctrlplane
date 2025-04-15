@@ -1045,11 +1045,11 @@ importers:
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
       drizzle-orm:
-        specifier: ^0.35.3
-        version: 0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
+        specifier: ^0.37.0
+        version: 0.37.0(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
       drizzle-zod:
         specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2)
+        version: 0.5.1(drizzle-orm@0.37.0(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2)
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
@@ -7633,15 +7633,15 @@ packages:
     resolution: {integrity: sha512-U4wWit0fyZuGuP7iNmRleQyK2V8wCuv57vf5l3MnG4z4fzNTjY/U13M8owyQ5RavqvqxBifWORaR3wIUzlN64g==}
     hasBin: true
 
-  drizzle-orm@0.35.3:
-    resolution: {integrity: sha512-Uv6N+b36x4BaZlxc96e+ag7RnMapBLGhc4SSi2F7RDwqYJipWjaU/P68RUp1FbW9r+mxoDp8nMz2Eece8PJxfA==}
+  drizzle-orm@0.37.0:
+    resolution: {integrity: sha512-AsCNACQ/T2CyZUkrBRUqFT2ibHJ9ZHz3+lzYJFFn3hnj7ylIeItMz5kacRG89uSE74nXYShqehr6u+6ks4JR1A==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
-      '@cloudflare/workers-types': '>=3'
-      '@electric-sql/pglite': '>=0.1.1'
+      '@cloudflare/workers-types': '>=4'
+      '@electric-sql/pglite': '>=0.2.0'
       '@libsql/client': '>=0.10.0'
       '@libsql/client-wasm': '>=0.10.0'
-      '@neondatabase/serverless': '>=0.1'
+      '@neondatabase/serverless': '>=0.10.0'
       '@op-engineering/op-sqlite': '>=2'
       '@opentelemetry/api': ^1.4.1
       '@planetscale/database': '>=1'
@@ -7655,7 +7655,7 @@ packages:
       '@xata.io/client': '*'
       better-sqlite3: '>=7'
       bun-types: '*'
-      expo-sqlite: '>=13.2.0'
+      expo-sqlite: '>=14.0.0'
       knex: '*'
       kysely: '*'
       mysql2: '>=2'
@@ -7673,6 +7673,8 @@ packages:
       '@electric-sql/pglite':
         optional: true
       '@libsql/client':
+        optional: true
+      '@libsql/client-wasm':
         optional: true
       '@neondatabase/serverless':
         optional: true
@@ -13598,10 +13600,12 @@ snapshots:
     dependencies:
       '@libsql/core': 0.15.3
       js-base64: 3.7.7
+    optional: true
 
   '@libsql/core@0.15.3':
     dependencies:
       js-base64: 3.7.7
+    optional: true
 
   '@lukeed/csprng@1.1.0': {}
 
@@ -18877,19 +18881,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0):
-    dependencies:
-      '@libsql/client-wasm': 0.15.3
+  drizzle-orm@0.37.0(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0):
     optionalDependencies:
+      '@libsql/client-wasm': 0.15.3
       '@opentelemetry/api': 1.9.0
       '@types/pg': 8.11.12
       '@types/react': 19.0.8
       pg: 8.14.1
       react: 19.0.0
 
-  drizzle-zod@0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2):
+  drizzle-zod@0.5.1(drizzle-orm@0.37.0(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0))(zod@3.24.2):
     dependencies:
-      drizzle-orm: 0.35.3(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
+      drizzle-orm: 0.37.0(@libsql/client-wasm@0.15.3)(@opentelemetry/api@1.9.0)(@types/pg@8.11.12)(@types/react@19.0.8)(pg@8.14.1)(react@19.0.0)
       zod: 3.24.2
 
   dunder-proto@1.0.1:
