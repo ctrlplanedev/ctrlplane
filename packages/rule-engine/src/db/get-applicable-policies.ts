@@ -54,35 +54,3 @@ export const getApplicablePolicies = withSpan(
     );
   },
 );
-
-/*
-export const getApplicablePolicies = withSpan(
-  "getApplicablePolicies",
-  async (span, tx: Tx, releaseTargetId: string) => {
-    span.setAttribute("release.target.id", releaseTargetId);
-
-    const rows = await tx
-      .select()
-      .from(schema.computedPolicyTargetReleaseTarget)
-      .innerJoin(
-        schema.policyTarget,
-        eq(
-          schema.computedPolicyTargetReleaseTarget.policyTargetId,
-          schema.policyTarget.id,
-        ),
-      )
-      .innerJoin(
-        schema.policy,
-        eq(schema.policyTarget.policyId, schema.policy.id),
-      )
-      .where(
-        eq(
-          schema.computedPolicyTargetReleaseTarget.releaseTargetId,
-          releaseTargetId,
-        ),
-      );
-
-    return rows.map((r) => r.policy);
-  },
-);
-*/
