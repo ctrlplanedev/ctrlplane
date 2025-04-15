@@ -1,5 +1,5 @@
 {
-  "id": "cdaf6028-3d50-4797-8878-c04978b62215",
+  "id": "2592f483-324f-4a65-ae9d-8b64572503ae",
   "prevId": "1912d8ec-3a65-4793-8e5e-f9796d8551d4",
   "version": "7",
   "dialect": "postgresql",
@@ -5045,10 +5045,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "computed_policy_target_deployment_policy_target_id_policy_id_fk": {
-          "name": "computed_policy_target_deployment_policy_target_id_policy_id_fk",
+        "computed_policy_target_deployment_policy_target_id_policy_target_id_fk": {
+          "name": "computed_policy_target_deployment_policy_target_id_policy_target_id_fk",
           "tableFrom": "computed_policy_target_deployment",
-          "tableTo": "policy",
+          "tableTo": "policy_target",
           "columnsFrom": [
             "policy_target_id"
           ],
@@ -5105,10 +5105,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "computed_policy_target_environment_policy_target_id_policy_id_fk": {
-          "name": "computed_policy_target_environment_policy_target_id_policy_id_fk",
+        "computed_policy_target_environment_policy_target_id_policy_target_id_fk": {
+          "name": "computed_policy_target_environment_policy_target_id_policy_target_id_fk",
           "tableFrom": "computed_policy_target_environment",
-          "tableTo": "policy",
+          "tableTo": "policy_target",
           "columnsFrom": [
             "policy_target_id"
           ],
@@ -5165,10 +5165,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "computed_policy_target_resource_policy_target_id_policy_id_fk": {
-          "name": "computed_policy_target_resource_policy_target_id_policy_id_fk",
+        "computed_policy_target_resource_policy_target_id_policy_target_id_fk": {
+          "name": "computed_policy_target_resource_policy_target_id_policy_target_id_fk",
           "tableFrom": "computed_policy_target_resource",
-          "tableTo": "policy",
+          "tableTo": "policy_target",
           "columnsFrom": [
             "policy_target_id"
           ],

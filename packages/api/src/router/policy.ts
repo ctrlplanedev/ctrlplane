@@ -279,8 +279,10 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updatePolicy }))
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) => updatePolicyInTx(tx, input.id, input.data)),
+      updatePolicyInTx(ctx.db, input.id, input.data),
     ),
+  // ctx.db.transaction((tx) => updatePolicyInTx(tx, input.id, input.data)),
+  // ),
 
   delete: protectedProcedure
     .meta({

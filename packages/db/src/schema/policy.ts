@@ -70,7 +70,7 @@ export const computedPolicyTargetDeployment = pgTable(
   {
     policyTargetId: uuid("policy_target_id")
       .notNull()
-      .references(() => policy.id, { onDelete: "cascade" }),
+      .references(() => policyTarget.id, { onDelete: "cascade" }),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
@@ -85,7 +85,7 @@ export const computedPolicyTargetEnvironment = pgTable(
   {
     policyTargetId: uuid("policy_target_id")
       .notNull()
-      .references(() => policy.id, { onDelete: "cascade" }),
+      .references(() => policyTarget.id, { onDelete: "cascade" }),
     environmentId: uuid("environment_id")
       .notNull()
       .references(() => environment.id, { onDelete: "cascade" }),
@@ -100,7 +100,7 @@ export const computedPolicyTargetResource = pgTable(
   {
     policyTargetId: uuid("policy_target_id")
       .notNull()
-      .references(() => policy.id, { onDelete: "cascade" }),
+      .references(() => policyTarget.id, { onDelete: "cascade" }),
     resourceId: uuid("resource_id")
       .notNull()
       .references(() => resource.id, { onDelete: "cascade" }),
