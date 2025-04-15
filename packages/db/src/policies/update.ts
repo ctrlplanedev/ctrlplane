@@ -9,9 +9,7 @@ import * as SCHEMA from "../schema/index.js";
 import { selector } from "../selectors/index.js";
 import { getLocalDateAsUTC } from "./time-util.js";
 
-const log = logger.child({
-  module: "policies/update",
-});
+const log = logger.child({ module: "policies/update" });
 
 const updateTargets = async (
   tx: Tx,
@@ -200,7 +198,7 @@ export const updatePolicyInTx = async (
 
   if (updatedPolicy == null) throw new Error("Policy not found");
 
-  const policyTargetsComputer = selector(tx).compute().policies([policy.id]);
+  const policyTargetsComputer = selector().compute().policies([policy.id]);
   policyTargetsComputer
     .deploymentSelectors()
     .replace()

@@ -11,9 +11,7 @@ import { getLocalDateAsUTC } from "./time-util.js";
 
 type CreatePolicyInput = z.infer<typeof SCHEMA.createPolicy>;
 
-const log = logger.child({
-  module: "policies/create",
-});
+const log = logger.child({ module: "policies/create" });
 
 const insertDenyWindows = async (
   tx: Tx,
@@ -95,7 +93,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         versionRoleApprovals.map((approval) => ({ ...approval, policyId })),
       );
 
-  const policyTargetsComputer = selector(tx).compute().policies([policyId]);
+  const policyTargetsComputer = selector().compute().policies([policyId]);
   policyTargetsComputer
     .deploymentSelectors()
     .replace()
