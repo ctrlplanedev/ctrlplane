@@ -18,15 +18,21 @@ const getVMClient = (targetPrincipal?: string | null) =>
 const getFlattenedMetadata = (metadata?: google.cloud.compute.v1.IMetadata) => {
   if (metadata == null) return {};
   const { items } = metadata;
-  return _.fromPairs(
-    items?.map(({ key, value }) => [`vm/metadata/${key}`, value ?? ""]) ?? [],
-  );
+  return _.fromPairs([
+    ...(items?.map(({ key, value }) => [`compute/label/${key}`, value ?? ""]) ??
+      []),
+    ...(items?.map(({ key, value }) => [`google/label/${key}`, value ?? ""]) ??
+      []),
+  ]);
 };
 
 const getFlattenedTags = (tags?: google.cloud.compute.v1.ITags) => {
   if (tags == null) return {};
   const { items } = tags;
-  return _.fromPairs(items?.map((value) => [`vm/tag/${value}`, true]) ?? []);
+  return _.fromPairs([
+    ...(items?.map((value) => [`compute/tag/${value}`, "true"]) ?? []),
+    ...(items?.map((value) => [`google/tag/${value}`, "true"]) ?? []),
+  ]);
 };
 
 const instanceToResource = (
