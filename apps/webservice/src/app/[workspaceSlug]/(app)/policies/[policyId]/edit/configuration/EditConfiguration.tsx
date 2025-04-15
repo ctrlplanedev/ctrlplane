@@ -373,29 +373,6 @@ export const EditConfiguration: React.FC<{
                       )
                     }
                   />
-
-                  <FormField
-                    control={form.control}
-                    name={`targets.${index}.deploymentSelector`}
-                    render={({ field: { value, onChange } }) =>
-                      value != null ? (
-                        <FormItem>
-                          <FormLabel>Deployment</FormLabel>
-                          <div className="min-w-[1000px] text-sm">
-                            <DeploymentConditionRender
-                              condition={value}
-                              onChange={onChange}
-                              depth={0}
-                              className="w-full"
-                            />
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      ) : (
-                        <></>
-                      )
-                    }
-                  />
                 </div>
 
                 <Button

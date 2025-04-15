@@ -42,6 +42,11 @@ export const baseApprovalRecordFields = {
   ),
 };
 
+export enum ApprovalStatus {
+  Approved = "approved",
+  Rejected = "rejected",
+}
+
 // Base validation fields for approval records
 export const baseApprovalRecordValidationFields = {
   deploymentVersionId: z.string().uuid(),
