@@ -43,7 +43,7 @@
     "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
-    "drizzle-orm": "^0.35.3",
+    "drizzle-orm": "^0.37.0",
     "drizzle-zod": "^0.5.1",
     "lodash": "catalog:",
     "pg": "^8.14.1",
