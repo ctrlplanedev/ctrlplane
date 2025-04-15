@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { IconDots, IconPencil, IconTrash } from "@tabler/icons-react";
+import { useInView } from "react-intersection-observer";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -23,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import { toast } from "@ctrlplane/ui/toast";
 
 import type { RuleType } from "./rule-themes";
 import { urls } from "~/app/urls";
@@ -47,6 +47,7 @@ const getRules = (policy: RouterOutputs["policy"]["list"][number]) => {
     policy.versionRoleApprovals.length > 0
   )
     rules.push("approval-gate");
+
   if (policy.deploymentVersionSelector != null)
     rules.push("deployment-version-selector");
 
@@ -59,13 +60,22 @@ interface PolicyTableRowProps {
 
 const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const utils = api.useUtils();
+  const { ref, inView } = useInView();
   const updatePolicy = api.policy.update.useMutation();
-  const deletePolicy = api.policy.delete.useMutation();
+  const deletePolicy = api.policy.delete.useMutation({
+    onSuccess: () => {
+      utils.policy.list.invalidate();
+      router.refresh();
+    },
+  });
   const router = useRouter();
   const [isEnabled, setIsEnabled] = useState(policy.enabled);
   const rules = getRules(policy);
-  const environmentCount = 0;
-  const deploymentCount = 0;
+
+  const releaseTargets = api.policy.releaseTargets.useQuery(policy.id, {
+    enabled: inView,
+  });
 
   const editUrl = urls
     .workspace(workspaceSlug)
@@ -74,7 +84,7 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
     .baseUrl();
 
   return (
-    <TableRow className="group cursor-pointer hover:bg-muted/50">
+    <TableRow ref={ref} className="group cursor-pointer hover:bg-muted/50">
       {/* Name column */}
       <TableCell>
         <div className="font-medium">{policy.name}</div>
@@ -92,15 +102,25 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
           ) : (
             rules.map((rule, idx) => {
               const Icon = getRuleTypeIcon(rule);
+              const baseUrl = urls.workspace(workspaceSlug).policies();
+              const url =
+                rule === "approval-gate"
+                  ? baseUrl.approvalGates()
+                  : rule === "deployment-version-selector"
+                    ? baseUrl.versionConditions()
+                    : baseUrl.denyWindows();
+
               return (
-                <Badge
-                  key={idx}
-                  variant="outline"
-                  className={`pl-1.5 pr-2 text-xs ${getTypeColorClass(rule)}`}
-                >
-                  <Icon className="size-3" />
-                  <span className="ml-1">{getRuleTypeLabel(rule)}</span>
-                </Badge>
+                <Link href={url} key={idx}>
+                  <Badge
+                    key={idx}
+                    variant="outline"
+                    className={`pl-1.5 pr-2 text-xs ${getTypeColorClass(rule)}`}
+                  >
+                    <Icon className="size-3" />
+                    <span className="ml-1">{getRuleTypeLabel(rule)}</span>
+                  </Badge>
+                </Link>
               );
             })
           )}
@@ -112,11 +132,7 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-1">
             <Badge variant="secondary" className="text-xs">
-              D: {deploymentCount}
-            </Badge>
-
-            <Badge variant="outline" className="text-xs">
-              E: {environmentCount}
+              {releaseTargets.data?.count ?? "-"}
             </Badge>
           </div>
         </div>
@@ -137,8 +153,6 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
               data: { enabled: checked },
             });
             setIsEnabled(checked);
-            router.refresh();
-            toast.success("Policy updated");
           }}
           className="data-[state=checked]:bg-green-500"
         />
@@ -161,11 +175,7 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
             </Link>
             <DropdownMenuItem
               className="cursor-pointer text-destructive focus:text-destructive"
-              onClick={() => {
-                deletePolicy.mutate(policy.id);
-                toast.success("Policy deleted");
-                router.refresh();
-              }}
+              onClick={() => deletePolicy.mutate(policy.id)}
             >
               <IconTrash className="mr-2 h-4 w-4" />
               Delete
