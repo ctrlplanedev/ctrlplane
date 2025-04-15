@@ -60,6 +60,7 @@ interface PolicyTableRowProps {
 const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const updatePolicy = api.policy.update.useMutation();
+  const deletePolicy = api.policy.delete.useMutation();
   const router = useRouter();
   const [isEnabled, setIsEnabled] = useState(policy.enabled);
   const rules = getRules(policy);
@@ -158,7 +159,14 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
                 Edit
               </DropdownMenuItem>
             </Link>
-            <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive"
+              onClick={() => {
+                deletePolicy.mutate(policy.id);
+                toast.success("Policy deleted");
+                router.refresh();
+              }}
+            >
               <IconTrash className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
