@@ -4,7 +4,9 @@ import _ from "lodash";
 import { z } from "zod";
 
 import {
+  and,
   asc,
+  count,
   createPolicyInTx,
   desc,
   eq,
@@ -22,6 +24,7 @@ import {
   updatePolicyRuleDenyWindow,
   updatePolicyTarget,
 } from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -204,6 +207,56 @@ export const policyRouter = createTRPCRouter({
         },
       }),
     ),
+
+  releaseTargets: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.PolicyGet).on({ type: "policy", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) => {
+      const policy = await ctx.db.query.policy.findFirst({
+        where: eq(schema.policy.id, input),
+        with: {
+          targets: true,
+        },
+      });
+      if (policy == null) throw new Error("Policy not found");
+
+      const counts = await Promise.all(
+        policy.targets.map(async (target) => {
+          const releaseTargets = await ctx.db
+            .select({ count: count() })
+            .from(schema.releaseTarget)
+            .innerJoin(
+              schema.deployment,
+              eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+            )
+            .innerJoin(
+              schema.environment,
+              eq(schema.releaseTarget.environmentId, schema.environment.id),
+            )
+            .innerJoin(
+              schema.resource,
+              eq(schema.releaseTarget.resourceId, schema.resource.id),
+            )
+            .where(
+              and(
+                schema.environmentMatchSelector(
+                  ctx.db,
+                  target.environmentSelector,
+                ),
+                schema.deploymentMatchSelector(target.deploymentSelector),
+                schema.resourceMatchesMetadata(ctx.db, target.resourceSelector),
+              ),
+            );
+
+          return releaseTargets.map((rt) => rt.count);
+        }),
+      );
+
+      return { count: _.chain(counts).flatten().sum().value() };
+    }),
 
   create: protectedProcedure
     .meta({
