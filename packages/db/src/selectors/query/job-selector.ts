@@ -1,4 +1,10 @@
-import type { SQL} from "drizzle-orm";
+import type {
+  CreatedAtCondition,
+  MetadataCondition,
+  VersionCondition,
+} from "@ctrlplane/validators/conditions";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
+import type { SQL } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import {
   and,
@@ -15,23 +21,18 @@ import {
   or,
 } from "drizzle-orm/pg-core/expressions";
 
-import type {
-  CreatedAtCondition,
-  MetadataCondition,
-  VersionCondition} from "@ctrlplane/validators/conditions";
 import {
   ColumnOperator,
   ComparisonOperator,
   ConditionType,
   DateOperator,
-  MetadataOperator
+  MetadataOperator,
 } from "@ctrlplane/validators/conditions";
-import type { JobCondition} from "@ctrlplane/validators/jobs";
 import { JobConditionType } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../../common.js";
-import * as SCHEMA from "../../schema/index.js";
 import type { OutputBuilder } from "./builder-types.js";
+import * as SCHEMA from "../../schema/index.js";
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
