@@ -71,11 +71,13 @@ const ApprovalDialog: React.FC<{
             <Button
               variant="outline"
               onClick={() => handleSubmit(SCHEMA.ApprovalStatus.Rejected)}
+              disabled={addRecord.isPending}
             >
               Reject
             </Button>
             <Button
               onClick={() => handleSubmit(SCHEMA.ApprovalStatus.Approved)}
+              disabled={addRecord.isPending}
             >
               Approve
             </Button>
@@ -117,7 +119,7 @@ export const ApprovalCheck: React.FC<{
       </div>
     );
 
-  if (rejectionReasonEntries.length > 0) {
+  if (rejectionReasonEntries.length > 0)
     return (
       <TooltipProvider>
         <Tooltip>
@@ -141,7 +143,6 @@ export const ApprovalCheck: React.FC<{
         </Tooltip>
       </TooltipProvider>
     );
-  }
 
   return (
     <div className="flex items-center justify-between">
