@@ -102,15 +102,25 @@ const PolicyTableRow: React.FC<PolicyTableRowProps> = ({ policy }) => {
           ) : (
             rules.map((rule, idx) => {
               const Icon = getRuleTypeIcon(rule);
+              const baseUrl = urls.workspace(workspaceSlug).policies();
+              const url =
+                rule === "approval-gate"
+                  ? baseUrl.approvalGates()
+                  : rule === "deployment-version-selector"
+                    ? baseUrl.versionConditions()
+                    : baseUrl.denyWindows();
+
               return (
-                <Badge
-                  key={idx}
-                  variant="outline"
-                  className={`pl-1.5 pr-2 text-xs ${getTypeColorClass(rule)}`}
-                >
-                  <Icon className="size-3" />
-                  <span className="ml-1">{getRuleTypeLabel(rule)}</span>
-                </Badge>
+                <Link href={url} key={idx}>
+                  <Badge
+                    key={idx}
+                    variant="outline"
+                    className={`pl-1.5 pr-2 text-xs ${getTypeColorClass(rule)}`}
+                  >
+                    <Icon className="size-3" />
+                    <span className="ml-1">{getRuleTypeLabel(rule)}</span>
+                  </Badge>
+                </Link>
               );
             })
           )}
