@@ -1,7 +1,7 @@
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
-import { JobCondition } from "@ctrlplane/validators/jobs";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../../common.js";
 import type { Environment, Job, Resource } from "../../schema/index.js";

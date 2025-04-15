@@ -83,7 +83,10 @@ export const createPolicy = z.intersection(
   z.object({
     targets: z.array(policyTargetInsertSchema.omit({ policyId: true })),
 
-    denyWindows: z.array(createPolicyRuleDenyWindow.omit({ policyId: true })),
+    denyWindows: z
+      .array(createPolicyRuleDenyWindow.omit({ policyId: true }))
+      .optional()
+      .nullable(),
     deploymentVersionSelector: createPolicyRuleDeploymentVersionSelector
       .omit({ policyId: true })
       .optional()
@@ -93,12 +96,14 @@ export const createPolicy = z.intersection(
       .omit({ policyId: true })
       .optional()
       .nullable(),
-    versionUserApprovals: z.array(
-      createPolicyRuleUserApproval.omit({ policyId: true }),
-    ),
-    versionRoleApprovals: z.array(
-      createPolicyRuleRoleApproval.omit({ policyId: true }),
-    ),
+    versionUserApprovals: z
+      .array(createPolicyRuleUserApproval.omit({ policyId: true }))
+      .optional()
+      .nullable(),
+    versionRoleApprovals: z
+      .array(createPolicyRuleRoleApproval.omit({ policyId: true }))
+      .optional()
+      .nullable(),
   }),
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;

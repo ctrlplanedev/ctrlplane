@@ -13,7 +13,7 @@ const insertDenyWindows = async (
   policyId: string,
   denyWindows: CreatePolicyInput["denyWindows"],
 ) => {
-  if (denyWindows.length === 0) return;
+  if (denyWindows == null || denyWindows.length === 0) return;
 
   await tx.insert(SCHEMA.policyRuleDenyWindow).values(
     denyWindows.map((denyWindow) => {
@@ -74,14 +74,14 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .insert(SCHEMA.policyRuleAnyApproval)
       .values({ ...versionAnyApprovals, policyId });
 
-  if (versionUserApprovals.length > 0)
+  if (versionUserApprovals != null && versionUserApprovals.length > 0)
     await tx
       .insert(SCHEMA.policyRuleUserApproval)
       .values(
         versionUserApprovals.map((approval) => ({ ...approval, policyId })),
       );
 
-  if (versionRoleApprovals.length > 0)
+  if (versionRoleApprovals != null && versionRoleApprovals.length > 0)
     await tx
       .insert(SCHEMA.policyRuleRoleApproval)
       .values(
