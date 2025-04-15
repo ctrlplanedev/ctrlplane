@@ -20,15 +20,13 @@ export const DenyWindowCheck: React.FC<{
       versionId,
     });
 
-  const isBlocked = data?.blocked ?? false;
-  const rejectionReasonEntries = Array.from(
-    data?.rejectionReasons.entries() ?? [],
-  );
+  const isBlocked = data ?? false;
+  const rejectionReasonEntries: Array<[string, string]> = [];
 
   if (isLoading)
     return (
       <div className="flex items-center gap-2">
-        <Loading /> Loading approval status
+        <Loading /> Loading deny windows
       </div>
     );
 

@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
-  denyWindows,
   getVersionApprovalRules,
   VersionReleaseManager,
 } from "@ctrlplane/rule-engine";
@@ -75,6 +75,66 @@ const approvalRouter = createTRPCRouter({
         };
       },
     ),
+
+  addRecord: protectedProcedure
+    .input(
+      z.object({
+        deploymentVersionId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+        status: z.nativeEnum(SCHEMA.ApprovalStatus),
+        reason: z.string().optional(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVersionGet).on({
+          type: "deploymentVersion",
+          id: input.deploymentVersionId,
+        }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const { deploymentVersionId, environmentId, status, reason } = input;
+
+      const record = await ctx.db
+        .insert(SCHEMA.policyRuleAnyApprovalRecord)
+        .values({
+          deploymentVersionId,
+          userId: ctx.session.user.id,
+          status,
+          reason,
+          approvedAt:
+            status === SCHEMA.ApprovalStatus.Approved ? new Date() : null,
+        })
+        .returning();
+
+      const rows = await ctx.db
+        .select()
+        .from(SCHEMA.deploymentVersion)
+        .innerJoin(
+          SCHEMA.releaseTarget,
+          eq(
+            SCHEMA.deploymentVersion.deploymentId,
+            SCHEMA.releaseTarget.deploymentId,
+          ),
+        )
+        .where(
+          and(
+            eq(SCHEMA.deploymentVersion.id, deploymentVersionId),
+            eq(SCHEMA.releaseTarget.environmentId, environmentId),
+          ),
+        );
+
+      const targets = rows.map((row) => row.release_target);
+      if (targets.length > 0)
+        await getQueue(Channel.EvaluateReleaseTarget).addBulk(
+          targets.map((rt) => ({
+            name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+            data: rt,
+          })),
+        );
+
+      return record;
+    }),
 });
 
 const denyWindowRouter = createTRPCRouter({
@@ -93,52 +153,7 @@ const denyWindowRouter = createTRPCRouter({
           id: input.versionId,
         }),
     })
-    .query(
-      async ({ ctx, input: { versionId, environmentId, workspaceId } }) => {
-        const v = await ctx.db.query.deploymentVersion.findFirst({
-          where: eq(SCHEMA.deploymentVersion.id, versionId),
-          with: { metadata: true },
-        });
-
-        if (v == null)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Deployment version not found: ${versionId}`,
-          });
-
-        const metadata = Object.fromEntries(
-          v.metadata.map((m) => [m.key, m.value]),
-        );
-        const version = { ...v, metadata };
-
-        const { deploymentId } = version;
-        // since the resource does not affect the approval rules, we can just use any release target
-        // for the given deployment and environment
-        const rt = await ctx.db.query.releaseTarget.findFirst({
-          where: and(
-            eq(SCHEMA.releaseTarget.deploymentId, deploymentId),
-            eq(SCHEMA.releaseTarget.environmentId, environmentId),
-          ),
-        });
-        if (rt == null) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Release target not found: ${deploymentId} ${environmentId}`,
-          });
-        }
-
-        const releaseTarget = { ...rt, workspaceId };
-        const manager = new VersionReleaseManager(ctx.db, releaseTarget);
-        const { chosenCandidate, rejectionReasons } = await manager.evaluate({
-          versions: [version],
-          rules: denyWindows,
-        });
-        return {
-          blocked: chosenCandidate == null,
-          rejectionReasons,
-        };
-      },
-    ),
+    .query(() => false),
 });
 
 export const deploymentVersionChecksRouter = createTRPCRouter({

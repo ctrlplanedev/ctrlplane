@@ -69,5 +69,9 @@ export const getVersionApprovalRules = (
 export const getRules = (
   policy: Policy | null,
 ): Array<FilterRule<Version> | PreValidationRule> => {
-  return [...denyWindows(policy), ...getVersionApprovalRules(policy)];
+  return getVersionApprovalRules(policy);
+  // The rrule package is being stupid and deny windows is not top priority
+  // right now so I am commenting this out
+  // https://github.com/jkbrzt/rrule/issues/478
+  // return [...denyWindows(policy), ...getVersionApprovalRules(policy)];
 };
