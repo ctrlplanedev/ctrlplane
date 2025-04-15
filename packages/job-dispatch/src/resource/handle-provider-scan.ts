@@ -44,7 +44,7 @@ export const handleResourceProviderScan = async (
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
 
-    await Promise.all([
+    Promise.all([
       selector(tx)
         .compute()
         .allEnvironments(workspaceId)
@@ -55,12 +55,17 @@ export const handleResourceProviderScan = async (
         .allDeployments(workspaceId)
         .resourceSelectors()
         .replace(),
-    ]);
-
-    await Promise.all([
-      getQueue(Channel.NewResource).addBulk(insertJobs),
-      getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-    ]);
+      selector(tx)
+        .compute()
+        .allPolicies(workspaceId)
+        .resourceSelectors()
+        .replace(),
+    ]).then(() =>
+      Promise.all([
+        getQueue(Channel.NewResource).addBulk(insertJobs),
+        getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+      ]),
+    );
 
     const deleted = await deleteResources(tx, toDelete);
     log.info("completed handling resource provider scan");

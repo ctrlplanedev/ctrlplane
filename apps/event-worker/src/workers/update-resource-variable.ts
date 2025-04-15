@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "@ctrlplane/db";
+import { and, eq, inArray, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -42,11 +42,18 @@ export const updateResourceVariableWorker = createWorker(
       ),
     });
 
-    await getQueue(Channel.EvaluateReleaseTarget).addBulk(
-      releaseTargets.map((rt) => ({
-        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-        data: rt,
-      })),
-    );
+    selector(db)
+      .compute()
+      .allPolicies(resource.workspaceId)
+      .resourceSelectors()
+      .replace()
+      .then(() =>
+        getQueue(Channel.EvaluateReleaseTarget).addBulk(
+          releaseTargets.map((rt) => ({
+            name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+            data: rt,
+          })),
+        ),
+      );
   },
 );

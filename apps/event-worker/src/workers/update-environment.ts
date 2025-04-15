@@ -220,6 +220,12 @@ export const updateEnvironmentWorker = createWorker(
       `Creating release targets for ${newlyMatchedResources.length} resources`,
     );
 
+    await selector(db)
+      .compute()
+      .allPolicies(workspaceId)
+      .environmentSelectors()
+      .replace();
+
     const createReleaseTargetsPromise = createReleaseTargets(
       db,
       newlyMatchedResources,

@@ -1,8 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import _ from "lodash";
 
-import { and, eq, isNull } from "@ctrlplane/db";
+import { and, eq, isNull, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -49,6 +48,19 @@ const getDeploymentResources = async (
 
 const evaluatedQueue = getQueue(Channel.EvaluateReleaseTarget);
 
+const recomputeAllPolicyDeployments = async (tx: Tx, systemId: string) => {
+  const system = await tx.query.system.findFirst({
+    where: eq(schema.system.id, systemId),
+  });
+  if (system == null) throw new Error(`System not found: ${systemId}`);
+  const { workspaceId } = system;
+  await selector(tx)
+    .compute()
+    .allPolicies(workspaceId)
+    .deploymentSelectors()
+    .replace();
+};
+
 export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,
   async (job) => {
@@ -62,6 +74,8 @@ export const newDeploymentWorker = createWorker(
         data: { resourceId, environmentId, deploymentId },
       };
     });
-    await evaluatedQueue.addBulk(jobData);
+    recomputeAllPolicyDeployments(db, job.data.systemId).then(() =>
+      evaluatedQueue.addBulk(jobData),
+    );
   },
 );

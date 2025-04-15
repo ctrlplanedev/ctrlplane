@@ -74,7 +74,7 @@ export const POST = request()
         data: r,
       }));
       const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
-      await Promise.all([
+      Promise.all([
         selector(db)
           .compute()
           .allEnvironments(workspaceId)
@@ -85,11 +85,17 @@ export const POST = request()
           .allDeployments(workspaceId)
           .resourceSelectors()
           .replace(),
-      ]);
-      await Promise.all([
-        getQueue(Channel.NewResource).addBulk(insertJobs),
-        getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-      ]);
+        selector(db)
+          .compute()
+          .allPolicies(workspaceId)
+          .resourceSelectors()
+          .replace(),
+      ]).then(() =>
+        Promise.all([
+          getQueue(Channel.NewResource).addBulk(insertJobs),
+          getQueue(Channel.UpdatedResource).addBulk(updateJobs),
+        ]),
+      );
 
       const count = insertedResources.length + updatedResources.length;
       return NextResponse.json({ count });

@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -20,6 +21,9 @@ import { environmentCondition } from "@ctrlplane/validators/environments";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import type { policyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
+import { deployment } from "./deployment.js";
+import { environment } from "./environment.js";
+import { resource } from "./resource.js";
 import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
 import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
 import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
@@ -60,6 +64,45 @@ export const policyTarget = pgTable("policy_target", {
     .default(sql`NULL`)
     .$type<ResourceCondition | null>(),
 });
+
+export const computedPolicyDeployment = pgTable(
+  "computed_policy_deployment",
+  {
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.policyId, t.deploymentId] }) }),
+);
+
+export const computedPolicyEnvironment = pgTable(
+  "computed_policy_environment",
+  {
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    environmentId: uuid("environment_id")
+      .notNull()
+      .references(() => environment.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.policyId, t.environmentId] }) }),
+);
+
+export const computedPolicyResource = pgTable(
+  "computed_policy_resource",
+  {
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policy.id, { onDelete: "cascade" }),
+    resourceId: uuid("resource_id")
+      .notNull()
+      .references(() => resource.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.policyId, t.resourceId] }) }),
+);
 
 // Create zod schemas from drizzle schemas
 const policyInsertSchema = createInsertSchema(policy, {

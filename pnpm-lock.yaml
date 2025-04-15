@@ -1035,6 +1035,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@ctrlplane/secrets':
         specifier: workspace:*
         version: link:../secrets
