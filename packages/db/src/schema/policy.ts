@@ -10,6 +10,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -27,23 +28,27 @@ import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
 import { createPolicyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { workspace } from "./workspace.js";
 
-export const policy = pgTable("policy", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description"),
+export const policy = pgTable(
+  "policy",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
 
-  priority: integer("priority").notNull().default(0),
+    priority: integer("priority").notNull().default(0),
 
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspace.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
 
-  enabled: boolean("enabled").notNull().default(true),
+    enabled: boolean("enabled").notNull().default(true),
 
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({ uniquePolicy: unique().on(t.workspaceId, t.name) }),
+);
 
 export const policyTarget = pgTable("policy_target", {
   id: uuid("id").primaryKey().defaultRandom(),

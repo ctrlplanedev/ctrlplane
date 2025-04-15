@@ -1,0 +1,1 @@
+ALTER TABLE "policy" ADD CONSTRAINT "policy_workspace_id_name_unique" UNIQUE("workspace_id","name");
