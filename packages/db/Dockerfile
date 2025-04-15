@@ -23,6 +23,7 @@ COPY tooling/prettier/package.json ./tooling/prettier/package.json
 COPY tooling/eslint/package.json ./tooling/eslint/package.json
 COPY tooling/typescript/package.json ./tooling/typescript/package.json
 
+COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/secrets/package.json ./packages/secrets/package.json
 COPY packages/db/package.json ./packages/db/package.json
