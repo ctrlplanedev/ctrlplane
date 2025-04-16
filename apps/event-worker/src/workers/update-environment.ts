@@ -99,7 +99,8 @@ export const updateEnvironmentWorker = createWorker(
 
       const { newResources, exitedResources } =
         await recomputeResourcesAndReturnDiff(db, environment.id);
-      const releaseTargetPromises = newResources.map(async (r) =>
+      const allResources = [...newResources, ...exitedResources];
+      const releaseTargetPromises = allResources.map(async (r) =>
         upsertReleaseTargets(db, r),
       );
       const fulfilled = await Promise.all(releaseTargetPromises);

@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { eq, selector, takeFirst } from "@ctrlplane/db";
+import { eq, inArray, selector, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -26,35 +26,80 @@ const dispatchExitHooks = async (
   await Promise.allSettled(handleEventPromises);
 };
 
+/**
+ * Extracted into its own function to solve for the following edge case -
+ *   if are are setting a resource selector on a deployment to null
+ *   then beacuse we do not store computed resources for deployments with no
+ *   resource selector, we need to compute the resources based on the environments
+ *   in the system that the deployment is in.
+ *
+ *  Otherwise, just use the computed resources for the deployment if it is
+ *   not null.
+ *
+ * @param db
+ * @param deployment
+ * @returns
+ */
+const getNewDeploymentComputedResources = async (
+  db: Tx,
+  deployment: schema.Deployment,
+) => {
+  if (deployment.resourceSelector != null)
+    return db
+      .select()
+      .from(schema.computedDeploymentResource)
+      .innerJoin(
+        schema.resource,
+        eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
+      )
+      .where(eq(schema.computedDeploymentResource.deploymentId, deployment.id))
+      .then((rows) => rows.map((r) => r.resource));
+
+  const system = await db.query.system.findFirst({
+    where: eq(schema.system.id, deployment.systemId),
+    with: { environments: true },
+  });
+  if (system == null) throw new Error("System not found");
+
+  const releaseTargets = await db.query.releaseTarget.findMany({
+    where: inArray(
+      schema.releaseTarget.environmentId,
+      system.environments.map((e) => e.id),
+    ),
+    with: { resource: true },
+  });
+
+  return releaseTargets.map((rt) => rt.resource);
+};
+
 const recomputeResourcesAndReturnDiff = async (
   db: Tx,
-  deploymentId: string,
+  deployment: schema.Deployment,
 ) => {
+  /*
+   we use the release targest instead of the computed resources 
+   because a deployment with no resource selector technically matches all 
+   deployments but won't have any computed entries. Hence if you add a
+   resource selector after the fact, if you used the previous computed resources
+   to calculate the diff it would not be picked up
+  */
   const currentComputedResources = await db
-    .select()
-    .from(schema.computedDeploymentResource)
+    .selectDistinctOn([schema.releaseTarget.resourceId])
+    .from(schema.releaseTarget)
     .innerJoin(
       schema.resource,
-      eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
+      eq(schema.releaseTarget.resourceId, schema.resource.id),
     )
-    .where(eq(schema.computedDeploymentResource.deploymentId, deploymentId));
+    .where(eq(schema.releaseTarget.deploymentId, deployment.id));
   const currentResources = currentComputedResources.map((r) => r.resource);
 
   await selector()
     .compute()
-    .deployments([deploymentId])
+    .deployments([deployment.id])
     .resourceSelectors()
     .replace();
 
-  const newComputedResources = await db
-    .select()
-    .from(schema.computedDeploymentResource)
-    .innerJoin(
-      schema.resource,
-      eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
-    )
-    .where(eq(schema.computedDeploymentResource.deploymentId, deploymentId));
-  const newResources = newComputedResources.map((r) => r.resource);
+  const newResources = await getNewDeploymentComputedResources(db, deployment);
 
   const exitedResources = currentResources.filter(
     (r) => !newResources.some((nr) => nr.id === r.id),
@@ -71,7 +116,7 @@ export const updateDeploymentWorker = createWorker(
       if (_.isEqual(oldSelector, resourceSelector)) return;
 
       const { newResources, exitedResources } =
-        await recomputeResourcesAndReturnDiff(db, data.id);
+        await recomputeResourcesAndReturnDiff(db, data);
 
       const system = await db
         .select()
@@ -79,8 +124,8 @@ export const updateDeploymentWorker = createWorker(
         .where(eq(schema.system.id, data.systemId))
         .then(takeFirst);
       const { workspaceId } = system;
-
-      const releaseTargetPromises = newResources.map(async (r) =>
+      const allResources = [...newResources, ...exitedResources];
+      const releaseTargetPromises = allResources.map(async (r) =>
         upsertReleaseTargets(db, r),
       );
       const fulfilled = await Promise.all(releaseTargetPromises);
