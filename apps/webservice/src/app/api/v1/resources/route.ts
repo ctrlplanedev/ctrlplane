@@ -6,7 +6,10 @@ import { selector, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import { groupResourcesByHook } from "@ctrlplane/job-dispatch";
+import {
+  groupResourcesByHook,
+  replaceReleaseTargetsAndDispatchExitHooks,
+} from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -88,6 +91,12 @@ export const POST = request()
           cb.allEnvironments(workspaceId).resourceSelectors().replace(),
           cb.allDeployments(workspaceId).resourceSelectors().replace(),
         ]);
+
+        await Promise.all(
+          [...insertedResources, ...updatedResources].map((r) =>
+            replaceReleaseTargetsAndDispatchExitHooks(db, r),
+          ),
+        );
 
         await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
 
