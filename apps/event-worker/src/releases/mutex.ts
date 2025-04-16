@@ -3,15 +3,11 @@ import { trace } from "@opentelemetry/api";
 import ms from "ms";
 import { Mutex as RedisMutex } from "redis-semaphore";
 
-import { logger } from "@ctrlplane/logger";
+import { logger, makeWithSpan } from "@ctrlplane/logger";
 
 import { redis } from "../redis.js";
-import { makeWithSpan } from "../utils/spans.js";
 
-const log = logger.child({
-  module: "release-target-mutex",
-});
-
+const log = logger.child({ module: "release-target-mutex" });
 const tracer = trace.getTracer("release-target-mutex");
 const withSpan = makeWithSpan(tracer);
 

@@ -1,5 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { VmV1 } from "@ctrlplane/validators/resources";
+import type { InstanceV1 } from "@ctrlplane/validators/resources";
 import type { google } from "@google-cloud/compute/build/protos/protos.js";
 import { InstancesClient } from "@google-cloud/compute";
 import _ from "lodash";
@@ -18,15 +18,21 @@ const getVMClient = (targetPrincipal?: string | null) =>
 const getFlattenedMetadata = (metadata?: google.cloud.compute.v1.IMetadata) => {
   if (metadata == null) return {};
   const { items } = metadata;
-  return _.fromPairs(
-    items?.map(({ key, value }) => [`vm/metadata/${key}`, value ?? ""]) ?? [],
-  );
+  return _.fromPairs([
+    ...(items?.map(({ key, value }) => [`compute/label/${key}`, value ?? ""]) ??
+      []),
+    ...(items?.map(({ key, value }) => [`google/label/${key}`, value ?? ""]) ??
+      []),
+  ]);
 };
 
 const getFlattenedTags = (tags?: google.cloud.compute.v1.ITags) => {
   if (tags == null) return {};
   const { items } = tags;
-  return _.fromPairs(items?.map((value) => [`vm/tag/${value}`, true]) ?? []);
+  return _.fromPairs([
+    ...(items?.map((value) => [`compute/tag/${value}`, "true"]) ?? []),
+    ...(items?.map((value) => [`google/tag/${value}`, "true"]) ?? []),
+  ]);
 };
 
 const instanceToResource = (
@@ -34,7 +40,7 @@ const instanceToResource = (
   workspaceId: string,
   providerId: string,
   projectId: string,
-): VmV1 => {
+): InstanceV1 => {
   const instanceZone =
     instance.zone != null ? instance.zone.split("/").pop() : null;
   const appUrl = `https://console.cloud.google.com/compute/instancesDetail/zones/${instanceZone}/instances/${instance.name}?project=${projectId}`;
@@ -43,84 +49,97 @@ const instanceToResource = (
     name: String(instance.name ?? instance.id ?? ""),
     providerId,
     identifier: `${projectId}/${instance.name}`,
-    version: "vm/v1",
-    kind: "VM",
+    version: "compute/v1",
+    kind: "Instance",
     config: {
       name: String(instance.name ?? instance.id ?? ""),
-      status: instance.status ?? "STATUS_UNSPECIFIED",
       id: String(instance.id ?? ""),
-      machineType: instance.machineType?.split("/").pop() ?? "",
-      type: { type: "google", project: projectId, zone: instanceZone ?? "" },
-      disks:
-        instance.disks?.map((disk) => ({
-          name: disk.deviceName ?? "",
-          size: Number(disk.diskSizeGb),
-          type: disk.type ?? "",
-          encrypted: disk.diskEncryptionKey?.rawKey != null,
-        })) ?? [],
+      connectionMethod: {
+        type: "gcp",
+        project: projectId,
+        instanceName: String(instance.name ?? instance.id ?? ""),
+        zone: instanceZone ?? "",
+        username: instance.serviceAccounts?.[0]?.email ?? "",
+      },
     },
     metadata: omitNullUndefined({
-      [ReservedMetadataKey.Links]: JSON.stringify({
-        "Google Console": appUrl,
-      }),
+      "compute/machine-type": instance.machineType?.split("/").pop(),
+      "compute/type": instance.machineType?.toLowerCase().includes("compute")
+        ? "compute"
+        : instance.machineType?.toLowerCase().includes("memory") ||
+            instance.machineType?.toLowerCase().includes("highmem")
+          ? "memory"
+          : instance.machineType?.toLowerCase().includes("storage")
+            ? "storage"
+            : instance.machineType?.toLowerCase().includes("gpu") ||
+                instance.machineType?.toLowerCase().includes("tpu")
+              ? "accelerated"
+              : "standard",
+
+      [ReservedMetadataKey.Links]: JSON.stringify({ "Google Console": appUrl }),
+
       [ReservedMetadataKey.ExternalId]: instance.id ?? "",
       "google/self-link": instance.selfLink,
       "google/project": projectId,
       "google/zone": instance.zone,
-      "vm/machine-type": instance.machineType?.split("/").pop() ?? null,
-      "vm/can-ip-forward": instance.canIpForward,
-      "vm/cpu-platform": instance.cpuPlatform,
-      "vm/deletion-protection": instance.deletionProtection,
-      "vm/description": instance.description,
-      "vm/status": instance.status,
-      "vm/disk-count": instance.disks?.length ?? 0,
-      "vm/disk-size-gb": _.sumBy(instance.disks, (disk) =>
+      "compute/can-ip-forward": instance.canIpForward,
+      "compute/cpu-platform": instance.cpuPlatform,
+      "compute/deletion-protection": instance.deletionProtection,
+      "compute/description": instance.description,
+      "compute/status": instance.status,
+      "compute/disk-count": instance.disks?.length ?? 0,
+      "compute/disk-size-gb": _.sumBy(instance.disks, (disk) =>
         disk.diskSizeGb != null ? Number(disk.diskSizeGb) : 0,
       ),
-      "vm/disk-type": instance.disks?.map((disk) => disk.type).join(", ") ?? "",
-      "vm/instance-status": instance.status,
-      "vm/fingerprint": instance.fingerprint,
-      "vm/hostname": instance.hostname,
-      "vm/instance-encryption-key": instance.instanceEncryptionKey,
-      "vm/key-revocation-action-type": instance.keyRevocationActionType,
-      "vm/kind": instance.kind,
-      ..._.mapKeys(instance.labels ?? {}, (_value, key) => `vm/label/${key}`),
-      "vm/last-start-timestamp": instance.lastStartTimestamp,
-      "vm/last-stop-timestamp": instance.lastStopTimestamp,
-      "vm/last-suspended-timestamp": instance.lastSuspendedTimestamp,
+      "compute/disk-type":
+        instance.disks?.map((disk) => disk.type).join(", ") ?? "",
+      "compute/instance-status": instance.status,
+      "compute/fingerprint": instance.fingerprint,
+      "compute/hostname": instance.hostname,
+      "compute/instance-encryption-key": instance.instanceEncryptionKey,
+      "compute/key-revocation-action-type": instance.keyRevocationActionType,
+      "compute/kind": instance.kind,
+      "compute/last-start-timestamp": instance.lastStartTimestamp,
+      "compute/last-stop-timestamp": instance.lastStopTimestamp,
+      "compute/last-suspended-timestamp": instance.lastSuspendedTimestamp,
       ...getFlattenedMetadata(instance.metadata ?? undefined),
-      "vm/min-cpu-platform": instance.minCpuPlatform,
-      "vm/network-performance-config/total-egress-bandwith-tier":
+      "compute/min-cpu-platform": instance.minCpuPlatform,
+      "compute/network-performance-config/total-egress-bandwith-tier":
         instance.networkPerformanceConfig?.totalEgressBandwidthTier,
-      "vm/private-ipv6-google-access": instance.privateIpv6GoogleAccess,
-      "vm/reservation-affinity/consume-reservation-type":
+      "compute/private-ipv6-google-access": instance.privateIpv6GoogleAccess,
+      "compute/reservation-affinity/consume-reservation-type":
         instance.reservationAffinity?.consumeReservationType,
-      "vm/resource-policies": instance.resourcePolicies?.join(", ") ?? null,
-      "vm/scheduling/automatic-restart": instance.scheduling?.automaticRestart,
-      "vm/scheduling/availability-domain":
+      "compute/resource-policies":
+        instance.resourcePolicies?.join(", ") ?? null,
+      "compute/scheduling/automatic-restart":
+        instance.scheduling?.automaticRestart,
+      "compute/scheduling/availability-domain":
         instance.scheduling?.availabilityDomain,
-      "vm/scheduling/instance-termination-action":
+      "compute/scheduling/instance-termination-action":
         instance.scheduling?.instanceTerminationAction,
-      "vm/scheduling/local-ssd-recovery-timeout":
+      "compute/scheduling/local-ssd-recovery-timeout":
         instance.scheduling?.localSsdRecoveryTimeout,
-      "vm/scheduling/location-hint": instance.scheduling?.locationHint,
-      "vm/scheduling/max-run-duration": instance.scheduling?.maxRunDuration,
-      "vm/scheduling/min-node-cpus": instance.scheduling?.minNodeCpus,
-      "vm/scheduling/node-affinities":
+      "compute/scheduling/location-hint": instance.scheduling?.locationHint,
+      "compute/scheduling/max-run-duration":
+        instance.scheduling?.maxRunDuration,
+      "compute/scheduling/min-node-cpus": instance.scheduling?.minNodeCpus,
+      "compute/scheduling/node-affinities":
         instance.scheduling?.nodeAffinities
           ?.map((affinity) => affinity.key)
           .join(", ") ?? null,
-      "vm/scheduling/on-host-maintenance":
+      "compute/scheduling/on-host-maintenance":
         instance.scheduling?.onHostMaintenance,
-      "vm/scheduling/on-instance-stop-action":
+      "compute/scheduling/on-instance-stop-action":
         instance.scheduling?.onInstanceStopAction,
-      "vm/scheduling/preemptible": instance.scheduling?.preemptible,
-      "vm/scheduling/provisioning-model":
+      "compute/scheduling/preemptible": instance.scheduling?.preemptible,
+      "compute/scheduling/provisioning-model":
         instance.scheduling?.provisioningModel,
-      "vm/scheduling/termination-time": instance.scheduling?.terminationTime,
-      "vm/service-accounts":
+      "compute/scheduling/termination-time":
+        instance.scheduling?.terminationTime,
+      "compute/service-accounts":
         instance.serviceAccounts?.map((account) => account.email).join(", ") ??
         null,
+      ...instance.labels,
       ...getFlattenedTags(instance.tags ?? undefined),
     }),
   };

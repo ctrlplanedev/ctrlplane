@@ -11,9 +11,21 @@ export const openapi: Swagger.SwaggerV3 = {
       PolicyTarget: {
         type: "object",
         properties: {
-          deploymentSelector: { type: "object", additionalProperties: true },
-          environmentSelector: { type: "object", additionalProperties: true },
-          resourceSelector: { type: "object", additionalProperties: true },
+          deploymentSelector: {
+            type: "object",
+            additionalProperties: true,
+            nullable: true,
+          },
+          environmentSelector: {
+            type: "object",
+            additionalProperties: true,
+            nullable: true,
+          },
+          resourceSelector: {
+            type: "object",
+            additionalProperties: true,
+            nullable: true,
+          },
         },
       },
       DenyWindow: {
@@ -107,8 +119,8 @@ export const openapi: Swagger.SwaggerV3 = {
   paths: {
     "/v1/policies": {
       post: {
-        summary: "Create a policy",
-        operationId: "createPolicy",
+        summary: "Upsert a policy",
+        operationId: "upsertPolicy",
         requestBody: {
           required: true,
           content: {

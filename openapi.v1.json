@@ -1431,8 +1431,8 @@
     },
     "/v1/policies": {
       "post": {
-        "summary": "Create a policy",
-        "operationId": "createPolicy",
+        "summary": "Upsert a policy",
+        "operationId": "upsertPolicy",
         "requestBody": {
           "required": true,
           "content": {
@@ -3287,7 +3287,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             },
             "description": "ID of the workspace"
           },
@@ -4372,15 +4373,18 @@
         "properties": {
           "deploymentSelector": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": true,
+            "nullable": true
           },
           "environmentSelector": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": true,
+            "nullable": true
           },
           "resourceSelector": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": true,
+            "nullable": true
           }
         }
       },

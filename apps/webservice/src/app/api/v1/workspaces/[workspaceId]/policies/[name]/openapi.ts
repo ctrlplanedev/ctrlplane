@@ -18,6 +18,7 @@ export const openapi: Swagger.SwaggerV3 = {
             required: true,
             schema: {
               type: "string",
+              format: "uuid",
             },
             description: "ID of the workspace",
           },
