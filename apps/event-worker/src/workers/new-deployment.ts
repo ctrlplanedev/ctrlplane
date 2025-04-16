@@ -4,10 +4,22 @@ import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
-import { upsertReleaseTargets } from "../utils/upsert-release-targets.js";
+import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
 
 const log = logger.child({ module: "new-deployment" });
 
+/**
+ * Worker that processes new deployment events.
+ *
+ * When a new deployment is created, perform the following steps:
+ * 1. Compute the deployment's resources based on its selector
+ * 2. Upsert release targets for the newly computed resources
+ * 3. Recompute all policy targets' computed release targets
+ * 4. Add all upserted release targets to the evaluation queue
+ *
+ * @param {Job<ChannelMap[Channel.NewDeployment]>} job - The deployment data
+ * @returns {Promise<void>} A promise that resolves when processing is complete
+ */
 export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,
   async (job) => {
@@ -36,7 +48,7 @@ export const newDeploymentWorker = createWorker(
       const resources = computedDeploymentResources.map((r) => r.resource);
 
       const releaseTargetPromises = resources.map(async (r) =>
-        upsertReleaseTargets(db, r),
+        replaceReleaseTargets(db, r),
       );
       const fulfilled = await Promise.all(releaseTargetPromises);
       const rts = fulfilled.flat();

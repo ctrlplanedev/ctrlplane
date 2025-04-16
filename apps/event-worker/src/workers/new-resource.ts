@@ -2,9 +2,22 @@ import { selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
-import { upsertReleaseTargets } from "../utils/upsert-release-targets.js";
+import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
 
 const queue = getQueue(Channel.EvaluateReleaseTarget);
+
+/**
+ * Worker that processes new resource events.
+ *
+ * When a new resource is created, perform the following steps:
+ * 1. Recompute all environments' and deployments' resource selectors
+ * 2. Upsert release targets for the resource
+ * 3. Recompute all policy targets' computed release targets
+ * 4. Add all upserted release targets to the evaluation queue
+ *
+ * @param {Job<ChannelMap[Channel.NewResource]>} job - The resource data
+ * @returns {Promise<void>} A promise that resolves when processing is complete
+ */
 export const newResourceWorker = createWorker(
   Channel.NewResource,
   async ({ data: resource }) => {
@@ -15,7 +28,7 @@ export const newResourceWorker = createWorker(
       cb.allDeployments(resource.workspaceId).resourceSelectors().replace(),
     ]);
 
-    const rts = await upsertReleaseTargets(db, resource);
+    const rts = await replaceReleaseTargets(db, resource);
     await cb
       .allPolicies(resource.workspaceId)
       .releaseTargetSelectors()

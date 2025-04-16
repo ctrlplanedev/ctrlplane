@@ -8,7 +8,7 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
-import { upsertReleaseTargets } from "../utils/upsert-release-targets.js";
+import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
 
 const log = logger.child({
   module: "env-selector-update",
@@ -77,14 +77,13 @@ const recomputeResourcesAndReturnDiff = async (
 /**
  * Worker that handles environment updates.
  *
- * When an environment is updated:
- * 1. Finds newly matched resources and resources that no longer match the selector
- * 2. For each newly matched resource,
- *    - creates release targets for all deployments in the system associated with the environment
- *    - inserts the new release targets into the database
- * 3. For each unmatched resource,
- *    - removes the release targets (and consequently the releases) for the resource + environment
- *    - dispatches exit hooks for the resource per deployment if the resource is no longer in the system
+ * When an environment is updated and the resource selector is changed, perform the following steps:
+ * 1. Recompute the resources for the environment and return which resources
+ *    have been added and which have been removed
+ * 2. For all affected resources, replace the release targets based on new computations
+ * 3. Recompute all policy targets' computed release targets based on the new release targets
+ * 4. Add all replaced release targets to the evaluation queue
+ * 5. Dispatch exit hooks for the exited resources
  *
  * @param {Job<ChannelMap[Channel.UpdateEnvironment]>} job - The job containing environment data with old and new selectors
  * @returns {Promise<void>} - Resolves when processing is complete
@@ -101,7 +100,7 @@ export const updateEnvironmentWorker = createWorker(
         await recomputeResourcesAndReturnDiff(db, environment.id);
       const allResources = [...newResources, ...exitedResources];
       const releaseTargetPromises = allResources.map(async (r) =>
-        upsertReleaseTargets(db, r),
+        replaceReleaseTargets(db, r),
       );
       const fulfilled = await Promise.all(releaseTargetPromises);
       const rts = fulfilled.flat();
