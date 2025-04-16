@@ -2,13 +2,10 @@ import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, eq, isNull, selector, upsertResources } from "@ctrlplane/db";
+import { and, eq, isNull, upsertResources } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import {
-  deleteResources,
-  replaceReleaseTargetsAndDispatchExitHooks,
-} from "@ctrlplane/job-dispatch";
+import { deleteResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -100,23 +97,12 @@ export const PATCH = request()
           { error: "Resource not found" },
           { status: 404 },
         );
-      const { workspaceId } = resource;
 
       const all = await upsertResources(db, [_.merge(resource, body)]);
       const res = all.at(0);
 
       if (res == null) throw new Error("Failed to update resource");
 
-      const cb = selector().compute();
-      await Promise.all([
-        cb.allEnvironments(workspaceId).resourceSelectors().replace(),
-        cb.allDeployments(workspaceId).resourceSelectors().replace(),
-      ]);
-      await replaceReleaseTargetsAndDispatchExitHooks(db, res);
-      await cb
-        .allPolicies(resource.workspaceId)
-        .releaseTargetSelectors()
-        .replace();
       await getQueue(Channel.UpdatedResource).add(res.id, res);
       return NextResponse.json(res);
     } catch (err) {

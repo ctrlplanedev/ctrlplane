@@ -14,43 +14,53 @@ export class EnvironmentBuilder {
     this._queryBuilder = new QueryBuilder(tx);
   }
 
+  private async _preHook(_tx: Tx) {}
+
+  private async _deletePrevious(tx: Tx) {
+    await tx
+      .delete(SCHEMA.computedEnvironmentResource)
+      .where(
+        inArray(SCHEMA.computedEnvironmentResource.environmentId, this.ids),
+      );
+  }
+
+  private async _values(tx: Tx) {
+    const envs = await tx.query.environment.findMany({
+      where: inArray(SCHEMA.environment.id, this.ids),
+      with: { system: true },
+    });
+
+    const promises = envs.map(async (env) => {
+      const { system } = env;
+      const { workspaceId } = system;
+      if (env.resourceSelector == null) return [];
+      const resources = await this.tx.query.resource.findMany({
+        where: and(
+          eq(SCHEMA.resource.workspaceId, workspaceId),
+          this._queryBuilder.resources().where(env.resourceSelector).sql(),
+        ),
+      });
+
+      return resources.map((r) => ({
+        environmentId: env.id,
+        resourceId: r.id,
+      }));
+    });
+
+    const fulfilled = await Promise.all(promises);
+    return fulfilled.flat();
+  }
+
+  private async _postHook(_tx: Tx) {}
+
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
       SCHEMA.computedEnvironmentResource,
-      async (tx) => {
-        await tx
-          .delete(SCHEMA.computedEnvironmentResource)
-          .where(
-            inArray(SCHEMA.computedEnvironmentResource.environmentId, this.ids),
-          );
-      },
-      async (tx) => {
-        const envs = await tx.query.environment.findMany({
-          where: inArray(SCHEMA.environment.id, this.ids),
-          with: { system: true },
-        });
-
-        const promises = envs.map(async (env) => {
-          const { system } = env;
-          const { workspaceId } = system;
-          if (env.resourceSelector == null) return [];
-          const resources = await this.tx.query.resource.findMany({
-            where: and(
-              eq(SCHEMA.resource.workspaceId, workspaceId),
-              this._queryBuilder.resources().where(env.resourceSelector).sql(),
-            ),
-          });
-
-          return resources.map((r) => ({
-            environmentId: env.id,
-            resourceId: r.id,
-          }));
-        });
-
-        const fulfilled = await Promise.all(promises);
-        return fulfilled.flat();
-      },
+      (tx) => this._preHook(tx),
+      (tx) => this._deletePrevious(tx),
+      (tx) => this._values(tx),
+      (tx) => this._postHook(tx),
     );
   }
 }
@@ -81,39 +91,49 @@ export class WorkspaceEnvironmentBuilder {
     this._queryBuilder = new QueryBuilder(tx);
   }
 
+  private async _preRun(_tx: Tx) {}
+
+  private async _deletePrevious(tx: Tx) {
+    const envs = await getEnvsInWorkspace(tx, this.workspaceId);
+    await tx.delete(SCHEMA.computedEnvironmentResource).where(
+      inArray(
+        SCHEMA.computedEnvironmentResource.environmentId,
+        envs.map((e) => e.id),
+      ),
+    );
+  }
+
+  private async _values(tx: Tx) {
+    const envs = await getEnvsInWorkspace(tx, this.workspaceId);
+    const promises = envs.map(async (env) => {
+      if (env.resourceSelector == null) return [];
+      const resources = await tx.query.resource.findMany({
+        where: and(
+          eq(SCHEMA.resource.workspaceId, this.workspaceId),
+          this._queryBuilder.resources().where(env.resourceSelector).sql(),
+        ),
+      });
+
+      return resources.map((r) => ({
+        environmentId: env.id,
+        resourceId: r.id,
+      }));
+    });
+
+    const fulfilled = await Promise.all(promises);
+    return fulfilled.flat();
+  }
+
+  private async _postRun(_tx: Tx) {}
+
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
       SCHEMA.computedEnvironmentResource,
-      async (tx) => {
-        const envs = await getEnvsInWorkspace(tx, this.workspaceId);
-        await tx.delete(SCHEMA.computedEnvironmentResource).where(
-          inArray(
-            SCHEMA.computedEnvironmentResource.environmentId,
-            envs.map((e) => e.id),
-          ),
-        );
-      },
-      async (tx) => {
-        const envs = await getEnvsInWorkspace(tx, this.workspaceId);
-        const promises = envs.map(async (env) => {
-          if (env.resourceSelector == null) return [];
-          const resources = await tx.query.resource.findMany({
-            where: and(
-              eq(SCHEMA.resource.workspaceId, this.workspaceId),
-              this._queryBuilder.resources().where(env.resourceSelector).sql(),
-            ),
-          });
-
-          return resources.map((r) => ({
-            environmentId: env.id,
-            resourceId: r.id,
-          }));
-        });
-
-        const fulfilled = await Promise.all(promises);
-        return fulfilled.flat();
-      },
+      (tx) => this._preRun(tx),
+      (tx) => this._deletePrevious(tx),
+      (tx) => this._values(tx),
+      (tx) => this._postRun(tx),
     );
   }
 }

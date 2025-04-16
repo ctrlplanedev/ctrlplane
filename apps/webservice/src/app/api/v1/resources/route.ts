@@ -2,14 +2,11 @@ import type * as schema from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { selector, upsertResources } from "@ctrlplane/db";
+import { upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import {
-  groupResourcesByHook,
-  replaceReleaseTargetsAndDispatchExitHooks,
-} from "@ctrlplane/job-dispatch";
+import { groupResourcesByHook } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -84,21 +81,6 @@ export const POST = request()
           name: r.id,
           data: r,
         }));
-
-        const cb = selector().compute();
-
-        await Promise.all([
-          cb.allEnvironments(workspaceId).resourceSelectors().replace(),
-          cb.allDeployments(workspaceId).resourceSelectors().replace(),
-        ]);
-
-        await Promise.all(
-          [...insertedResources, ...updatedResources].map((r) =>
-            replaceReleaseTargetsAndDispatchExitHooks(db, r),
-          ),
-        );
-
-        await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
 
         await getQueue(Channel.NewResource).addBulk(insertJobs);
         await getQueue(Channel.UpdatedResource).addBulk(updateJobs);

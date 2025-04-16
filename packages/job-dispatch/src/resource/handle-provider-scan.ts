@@ -1,13 +1,12 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 
-import { selector, upsertResources } from "@ctrlplane/db";
+import { upsertResources } from "@ctrlplane/db";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 import { deleteResources } from "./delete.js";
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
-import { replaceReleaseTargetsAndDispatchExitHooks } from "./replace-release-targets.js";
 
 const log = logger.child({ label: "upsert-resources" });
 
@@ -44,17 +43,6 @@ export const handleResourceProviderScan = async (
 
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
-
-    const cb = selector().compute();
-    await Promise.all([
-      cb.allEnvironments(workspaceId).resourceSelectors().replace(),
-      cb.allDeployments(workspaceId).resourceSelectors().replace(),
-    ]);
-    const promises = [...insertedResources, ...updatedResources].map(
-      (resource) => replaceReleaseTargetsAndDispatchExitHooks(tx, resource),
-    );
-    await Promise.all(promises);
-    await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
 
     await getQueue(Channel.NewResource).addBulk(insertJobs);
     await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
