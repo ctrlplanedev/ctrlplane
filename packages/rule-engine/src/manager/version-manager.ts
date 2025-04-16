@@ -37,6 +37,7 @@ const log = logger.child({
 type VersionEvaluateOptions = {
   rules?: (p: Policy | null) => Array<FilterRule<Version> | PreValidationRule>;
   versions?: Version[];
+  policy?: Policy;
 };
 
 export class VersionReleaseManager implements ReleaseManager {
@@ -186,7 +187,7 @@ export class VersionReleaseManager implements ReleaseManager {
     if (ctx == null)
       throw new Error(`Release target ${this.releaseTarget.id} not found`);
 
-    const policy = await this.getPolicy();
+    const policy = options?.policy ?? (await this.getPolicy());
     const rules = (options?.rules ?? getRules)(policy);
 
     const filterRules = rules.filter(isFilterRule);

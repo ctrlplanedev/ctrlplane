@@ -34,7 +34,7 @@ export class DeploymentBuilder {
         const promises = deployments.map(async (d) => {
           const { system } = d;
           const { workspaceId } = system;
-
+          if (d.resourceSelector == null) return [];
           const resources = await tx.query.resource.findMany({
             where: and(
               eq(SCHEMA.resource.workspaceId, workspaceId),
@@ -103,6 +103,7 @@ export class WorkspaceDeploymentBuilder {
           this.workspaceId,
         );
         const promises = deployments.map(async (d) => {
+          if (d.resourceSelector == null) return [];
           const resources = await tx.query.resource.findMany({
             where: and(
               eq(SCHEMA.resource.workspaceId, this.workspaceId),

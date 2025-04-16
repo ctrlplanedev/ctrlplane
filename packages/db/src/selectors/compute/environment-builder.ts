@@ -34,7 +34,7 @@ export class EnvironmentBuilder {
         const promises = envs.map(async (env) => {
           const { system } = env;
           const { workspaceId } = system;
-
+          if (env.resourceSelector == null) return [];
           const resources = await this.tx.query.resource.findMany({
             where: and(
               eq(SCHEMA.resource.workspaceId, workspaceId),
@@ -97,6 +97,7 @@ export class WorkspaceEnvironmentBuilder {
       async (tx) => {
         const envs = await getEnvsInWorkspace(tx, this.workspaceId);
         const promises = envs.map(async (env) => {
+          if (env.resourceSelector == null) return [];
           const resources = await tx.query.resource.findMany({
             where: and(
               eq(SCHEMA.resource.workspaceId, this.workspaceId),

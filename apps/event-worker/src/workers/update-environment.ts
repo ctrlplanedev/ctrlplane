@@ -1,157 +1,32 @@
 import type { Tx } from "@ctrlplane/db";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull, selector } from "@ctrlplane/db";
+import { eq, selector, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
-import {
-  ComparisonOperator,
-  ConditionType,
-} from "@ctrlplane/validators/conditions";
+
+import { upsertReleaseTargets } from "../utils/upsert-release-targets.js";
 
 const log = logger.child({
   module: "env-selector-update",
   function: "envSelectorUpdateWorker",
 });
 
-const getAffectedResources = async (
-  db: Tx,
-  workspaceId: string,
-  oldSelector: ResourceCondition | null,
-  newSelector: ResourceCondition | null,
-) => {
-  const oldResources =
-    oldSelector == null
-      ? []
-      : await db.query.resource.findMany({
-          where: and(
-            eq(schema.resource.workspaceId, workspaceId),
-            schema.resourceMatchesMetadata(db, oldSelector),
-            isNull(schema.resource.deletedAt),
-          ),
-        });
-
-  const newResources =
-    newSelector == null
-      ? []
-      : await db.query.resource.findMany({
-          where: and(
-            eq(schema.resource.workspaceId, workspaceId),
-            schema.resourceMatchesMetadata(db, newSelector),
-            isNull(schema.resource.deletedAt),
-          ),
-        });
-
-  const newlyMatchedResources = newResources.filter(
-    (newResource) =>
-      !oldResources.some((oldResource) => oldResource.id === newResource.id),
-  );
-
-  const unmatchedResources = oldResources.filter(
-    (oldResource) =>
-      !newResources.some((newResource) => newResource.id === oldResource.id),
-  );
-
-  return { newlyMatchedResources, unmatchedResources };
-};
-
-const createReleaseTargets = (
-  db: Tx,
-  newlyMatchedResources: schema.Resource[],
-  environmentId: string,
-  deployments: schema.Deployment[],
-) =>
-  db
-    .insert(schema.releaseTarget)
-    .values(
-      newlyMatchedResources.flatMap((resource) =>
-        deployments.map((deployment) => ({
-          resourceId: resource.id,
-          deploymentId: deployment.id,
-          environmentId: environmentId,
-        })),
-      ),
-    )
-    .onConflictDoNothing()
-    .returning()
-    .then((releaseTargets) =>
-      getQueue(Channel.EvaluateReleaseTarget).addBulk(
-        releaseTargets.map((rt) => ({
-          name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-          data: rt,
-        })),
-      ),
-    );
-
-const removeReleaseTargets = (
-  db: Tx,
-  unmatchedResources: schema.Resource[],
-  environmentId: string,
-) =>
-  db.delete(schema.releaseTarget).where(
-    and(
-      eq(schema.releaseTarget.environmentId, environmentId),
-      inArray(
-        schema.releaseTarget.resourceId,
-        unmatchedResources.map((r) => r.id),
-      ),
-    ),
-  );
-
-type SystemWithDeploymentsAndEnvironments = schema.System & {
-  deployments: schema.Deployment[];
-  environments: schema.Environment[];
-};
-
-const getNotInSystemCondition = (
-  environmentId: string,
-  system: SystemWithDeploymentsAndEnvironments,
-): ResourceCondition | null => {
-  const otherEnvironmentsWithSelector = system.environments.filter(
-    (e) => e.id !== environmentId && e.resourceSelector != null,
-  );
-
-  if (otherEnvironmentsWithSelector.length === 0) return null;
-
-  return {
-    type: ConditionType.Comparison,
-    operator: ComparisonOperator.Or,
-    not: true,
-    conditions: otherEnvironmentsWithSelector
-      .map((e) => e.resourceSelector)
-      .filter(isPresent),
-  };
-};
-
 const dispatchExitHooks = async (
   db: Tx,
-  environmentId: string,
-  system: SystemWithDeploymentsAndEnvironments,
-  unmatchedResources: schema.Resource[],
+  systemId: string,
+  exitedResources: schema.Resource[],
 ) => {
-  const notInSystemCondition = getNotInSystemCondition(environmentId, system);
-
-  if (notInSystemCondition == null) return;
-
-  const exitedResources = await db.query.resource.findMany({
-    where: and(
-      eq(schema.resource.workspaceId, system.workspaceId),
-      isNull(schema.resource.deletedAt),
-      schema.resourceMatchesMetadata(db, notInSystemCondition),
-      inArray(
-        schema.resource.id,
-        unmatchedResources.map((r) => r.id),
-      ),
-    ),
-  });
+  const deployments = await db
+    .select()
+    .from(schema.deployment)
+    .where(eq(schema.deployment.systemId, systemId));
 
   const events = exitedResources.flatMap((resource) =>
-    system.deployments.map((deployment) => ({
+    deployments.map((deployment) => ({
       action: "deployment.resource.removed" as const,
       payload: { deployment, resource },
     })),
@@ -159,6 +34,44 @@ const dispatchExitHooks = async (
 
   const handleEventPromises = events.map(handleEvent);
   await Promise.allSettled(handleEventPromises);
+};
+
+const recomputeResourcesAndReturnDiff = async (
+  db: Tx,
+  environmentId: string,
+) => {
+  const currentComputedResources = await db
+    .select()
+    .from(schema.computedEnvironmentResource)
+    .innerJoin(
+      schema.resource,
+      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
+    )
+    .where(eq(schema.computedEnvironmentResource.environmentId, environmentId));
+  const currentResources = currentComputedResources.map((r) => r.resource);
+
+  await selector()
+    .compute()
+    .environments([environmentId])
+    .resourceSelectors()
+    .replace();
+
+  const newComputedResources = await db
+    .select()
+    .from(schema.computedEnvironmentResource)
+    .innerJoin(
+      schema.resource,
+      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
+    )
+    .where(eq(schema.computedEnvironmentResource.environmentId, environmentId));
+
+  const newResources = newComputedResources.map((r) => r.resource);
+
+  const exitedResources = currentResources.filter(
+    (r) => !newResources.some((nr) => nr.id === r.id),
+  );
+
+  return { newResources, exitedResources };
 };
 
 /**
@@ -180,76 +93,39 @@ const dispatchExitHooks = async (
 export const updateEnvironmentWorker = createWorker(
   Channel.UpdateEnvironment,
   async (job) => {
-    const { oldSelector, ...environment } = job.data;
-    const system = await db.query.environment
-      .findFirst({
-        where: eq(schema.environment.id, environment.id),
-        with: { system: { with: { deployments: true, environments: true } } },
-      })
-      .then((res) => res?.system);
+    try {
+      const { oldSelector, ...environment } = job.data;
+      if (_.isEqual(oldSelector, environment.resourceSelector)) return;
 
-    if (system == null) {
-      log.error("System not found", { environmentId: environment.id });
-      return;
-    }
+      const { newResources, exitedResources } =
+        await recomputeResourcesAndReturnDiff(db, environment.id);
 
-    if (_.isEqual(oldSelector, environment.resourceSelector)) {
-      log.info("No change in environment selector", {
-        environmentId: environment.id,
-      });
-      return;
-    }
+      const system = await db
+        .select()
+        .from(schema.system)
+        .where(eq(schema.system.id, environment.systemId))
+        .then(takeFirst);
+      const { workspaceId } = system;
 
-    await selector(db)
-      .compute()
-      .environments([environment.id])
-      .resourceSelectors()
-      .replace();
+      await selector()
+        .compute()
+        .allPolicies(workspaceId)
+        .releaseTargetSelectors()
+        .replace();
 
-    const { workspaceId, deployments } = system;
-
-    const { newlyMatchedResources, unmatchedResources } =
-      await getAffectedResources(
-        db,
-        workspaceId,
-        oldSelector,
-        environment.resourceSelector,
+      const releaseTargetPromises = newResources.map(async (r) =>
+        upsertReleaseTargets(db, r),
       );
+      const fulfilled = await Promise.all(releaseTargetPromises);
+      const rts = fulfilled.flat();
 
-    logger.info(
-      `Creating release targets for ${newlyMatchedResources.length} resources`,
-    );
+      const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
+      await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
 
-    await selector(db)
-      .compute()
-      .allPolicies(workspaceId)
-      .releaseTargetSelectors()
-      .replace();
-
-    const createReleaseTargetsPromise = createReleaseTargets(
-      db,
-      newlyMatchedResources,
-      environment.id,
-      deployments,
-    );
-
-    const removeReleaseTargetsPromise = removeReleaseTargets(
-      db,
-      unmatchedResources,
-      environment.id,
-    );
-
-    const dispatchExitHooksPromise = dispatchExitHooks(
-      db,
-      environment.id,
-      system,
-      unmatchedResources,
-    );
-
-    await Promise.all([
-      createReleaseTargetsPromise,
-      removeReleaseTargetsPromise,
-      dispatchExitHooksPromise,
-    ]);
+      await dispatchExitHooks(db, environment.systemId, exitedResources);
+    } catch (error) {
+      log.error("Error updating environment", { error });
+      throw error;
+    }
   },
 );

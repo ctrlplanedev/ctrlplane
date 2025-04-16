@@ -25,22 +25,21 @@ export const getApplicablePolicies = withSpan(
   async (span, tx: Tx, releaseTargetId: string) => {
     span.setAttribute("release.target.id", releaseTargetId);
 
-    const releaseTarget = await tx.query.releaseTarget.findFirst({
-      where: eq(schema.releaseTarget.id, releaseTargetId),
+    const crts = await tx.query.computedPolicyTargetReleaseTarget.findMany({
+      where: eq(
+        schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+        releaseTargetId,
+      ),
       with: {
-        computedReleaseTargets: {
+        policyTarget: {
           with: {
-            policyTarget: {
+            policy: {
               with: {
-                policy: {
-                  with: {
-                    denyWindows: true,
-                    deploymentVersionSelector: true,
-                    versionAnyApprovals: true,
-                    versionRoleApprovals: true,
-                    versionUserApprovals: true,
-                  },
-                },
+                denyWindows: true,
+                deploymentVersionSelector: true,
+                versionAnyApprovals: true,
+                versionRoleApprovals: true,
+                versionUserApprovals: true,
               },
             },
           },
@@ -48,9 +47,6 @@ export const getApplicablePolicies = withSpan(
       },
     });
 
-    if (releaseTarget == null) return [];
-    return releaseTarget.computedReleaseTargets.map(
-      (crt) => crt.policyTarget.policy,
-    );
+    return crts.map((crt) => crt.policyTarget.policy);
   },
 );

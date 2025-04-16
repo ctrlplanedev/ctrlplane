@@ -36,6 +36,12 @@ export class PolicyBuilder {
 
         const qb = new QueryBuilder(tx);
         const targetPromises = targets.map(async (t) => {
+          if (
+            t.resourceSelector == null &&
+            t.deploymentSelector == null &&
+            t.environmentSelector == null
+          )
+            return [];
           const releaseTargets = await tx
             .select()
             .from(SCHEMA.releaseTarget)
