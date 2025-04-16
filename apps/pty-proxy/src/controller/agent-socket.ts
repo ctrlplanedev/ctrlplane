@@ -13,6 +13,7 @@ import { eq, selector, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
+import { replaceReleaseTargetsAndDispatchExitHooks } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
@@ -138,19 +139,16 @@ export class AgentSocket {
     ]);
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
+    const cb = selector().compute();
     await Promise.all([
-      selector(db)
-        .compute()
-        .allEnvironments(this.workspaceId)
-        .resourceSelectors()
-        .replace(),
-      selector(db)
-        .compute()
-        .allDeployments(this.workspaceId)
-        .resourceSelectors()
-        .replace(),
+      cb.allEnvironments(this.workspaceId).resourceSelectors().replace(),
+      cb.allDeployments(this.workspaceId).resourceSelectors().replace(),
     ]);
+    await replaceReleaseTargetsAndDispatchExitHooks(db, res);
+    await cb.allPolicies(this.workspaceId).releaseTargetSelectors().replace();
+
     await getQueue(Channel.UpdatedResource).add(res.id, res);
+
     this.resource = res;
     agents.set(res.id, { lastSync: new Date(), agent: this });
   }

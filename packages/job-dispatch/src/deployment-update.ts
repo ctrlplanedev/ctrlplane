@@ -6,6 +6,7 @@ import { isPresent } from "ts-is-present";
 import { and, eq, inArray, isNotNull, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   ComparisonOperator,
   ConditionType,
@@ -191,6 +192,11 @@ export const updateDeployment = async (
       prevDeployment.systemId,
       userId,
     );
+
+  getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
+    ...updatedDeployment,
+    oldSelector: prevDeployment.resourceSelector,
+  });
 
   if (
     !_.isEqual(

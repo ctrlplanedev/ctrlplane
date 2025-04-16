@@ -1,17 +1,29 @@
+import type { DeploymentCondition } from "@ctrlplane/validators/deployments";
 import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../../common.js";
-import type { Environment, Job, Resource } from "../../schema/index.js";
+import type {
+  Deployment,
+  Environment,
+  Job,
+  Resource,
+} from "../../schema/index.js";
 import { WhereBuilder } from "./builder-types.js";
+import { DeploymentOutputBuilder } from "./deployment-selector.js";
 import { EnvironmentOutputBuilder } from "./environments-selector.js";
 import { JobOutputBuilder } from "./job-selector.js";
 import { ResourceOutputBuilder } from "./resource-selector.js";
 
 export class QueryBuilder {
   constructor(private readonly tx: Tx) {}
-  deployments() {}
+  deployments() {
+    return new WhereBuilder<DeploymentCondition, Deployment>(
+      this.tx,
+      DeploymentOutputBuilder,
+    );
+  }
 
   environments() {
     return new WhereBuilder<EnvironmentCondition, Environment>(

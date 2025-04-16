@@ -1,45 +1,9 @@
-import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
-
-import { and, eq, isNull } from "@ctrlplane/db";
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { logger } from "@ctrlplane/logger";
 
-const getDeploymentResources = async (
-  tx: Tx,
-  deployment: schema.Deployment,
-) => {
-  const system = await tx.query.system.findFirst({
-    where: eq(schema.system.id, deployment.systemId),
-    with: { environments: true },
-  });
-
-  if (system == null) throw new Error("System or deployment not found");
-
-  const { environments } = system;
-  const resources = await Promise.all(
-    environments.map(async (env) => {
-      if (env.resourceSelector == null) return [];
-
-      const res = await tx
-        .select()
-        .from(schema.resource)
-        .where(
-          and(
-            eq(schema.resource.workspaceId, system.workspaceId),
-            isNull(schema.resource.deletedAt),
-            schema.resourceMatchesMetadata(tx, env.resourceSelector),
-            schema.resourceMatchesMetadata(tx, deployment.resourceSelector),
-          ),
-        );
-      return res.map((r) => ({ ...r, environment: env }));
-    }),
-  ).then((arrays) => arrays.flat());
-
-  return resources;
-};
+import { upsertReleaseTargets } from "../utils/upsert-release-targets.js";
 
 /**
  * Worker that handles new deployment versions. When a new version is created
@@ -62,25 +26,24 @@ export const newDeploymentVersionWorker = createWorker(
 
     if (!deployment) throw new Error("Deployment not found");
 
-    const resources = await getDeploymentResources(db, deployment);
+    const computedResources = await db
+      .select()
+      .from(schema.computedDeploymentResource)
+      .innerJoin(
+        schema.resource,
+        eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
+      )
+      .where(
+        eq(
+          schema.computedDeploymentResource.deploymentId,
+          version.deploymentId,
+        ),
+      );
+    const resources = computedResources.map((r) => r.resource);
 
-    const releaseTargetInserts = resources.map((resource) => ({
-      resourceId: resource.id,
-      environmentId: resource.environment.id,
-      deploymentId: version.deploymentId,
-    }));
-
-    logger.info(
-      `Inserting ${releaseTargetInserts.length} release targets for new version`,
-    );
-    await db
-      .insert(schema.releaseTarget)
-      .values(releaseTargetInserts)
-      .onConflictDoNothing();
-
-    const releaseTargets = await db.query.releaseTarget.findMany({
-      where: eq(schema.releaseTarget.deploymentId, version.deploymentId),
-    });
+    const targetPromises = resources.map((r) => upsertReleaseTargets(db, r));
+    const fulfilled = await Promise.all(targetPromises);
+    const releaseTargets = fulfilled.flat();
 
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(
       releaseTargets.map((rt) => ({

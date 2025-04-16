@@ -1,6 +1,11 @@
 import { relations } from "drizzle-orm";
 
-import { policy, policyTarget } from "./policy.js";
+import {
+  computedPolicyTargetReleaseTarget,
+  policy,
+  policyTarget,
+} from "./policy.js";
+import { releaseTarget } from "./release.js";
 import {
   policyRuleAnyApproval,
   policyRuleDenyWindow,
@@ -24,9 +29,27 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   versionAnyApprovals: one(policyRuleAnyApproval),
 }));
 
-export const policyTargetRelations = relations(policyTarget, ({ one }) => ({
-  policy: one(policy, {
-    fields: [policyTarget.policyId],
-    references: [policy.id],
+export const policyTargetRelations = relations(
+  policyTarget,
+  ({ one, many }) => ({
+    policy: one(policy, {
+      fields: [policyTarget.policyId],
+      references: [policy.id],
+    }),
+    computedReleaseTargets: many(computedPolicyTargetReleaseTarget),
   }),
-}));
+);
+
+export const computedPolicyTargetReleaseTargetRelations = relations(
+  computedPolicyTargetReleaseTarget,
+  ({ one }) => ({
+    policyTarget: one(policyTarget, {
+      fields: [computedPolicyTargetReleaseTarget.policyTargetId],
+      references: [policyTarget.id],
+    }),
+    releaseTarget: one(releaseTarget, {
+      fields: [computedPolicyTargetReleaseTarget.releaseTargetId],
+      references: [releaseTarget.id],
+    }),
+  }),
+);

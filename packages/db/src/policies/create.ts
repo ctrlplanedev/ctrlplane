@@ -1,12 +1,17 @@
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { z } from "zod";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { Tx } from "../common.js";
 import { buildConflictUpdateColumns, takeFirst } from "../common.js";
 import * as SCHEMA from "../schema/index.js";
+import { selector } from "../selectors/index.js";
 import { getLocalDateAsUTC } from "./time-util.js";
 
 type CreatePolicyInput = z.infer<typeof SCHEMA.createPolicy>;
+
+const log = logger.child({ module: "policies/create" });
 
 const insertDenyWindows = async (
   tx: Tx,
@@ -144,6 +149,18 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
           "requiredApprovalsCount",
         ]),
       });
+
+  selector()
+    .compute()
+    .policies([policyId])
+    .releaseTargetSelectors()
+    .replace()
+    .catch((e) =>
+      log.error(
+        e,
+        `Error replacing release target selectors for policy ${policyId}`,
+      ),
+    );
 
   return {
     ...policy,

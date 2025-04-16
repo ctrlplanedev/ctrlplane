@@ -13,6 +13,7 @@ import { deploymentVersion } from "./deployment-version.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { job } from "./job.js";
+import { computedPolicyTargetReleaseTarget } from "./policy.js";
 import { resource } from "./resource.js";
 import { workspace } from "./workspace.js";
 
@@ -149,6 +150,8 @@ export const releaseTargetRelations = relations(
       fields: [releaseTarget.resourceId],
       references: [resource.id],
     }),
+
+    computedReleaseTargets: many(computedPolicyTargetReleaseTarget),
 
     versionReleases: many(versionRelease),
     variableReleases: many(variableSetRelease),

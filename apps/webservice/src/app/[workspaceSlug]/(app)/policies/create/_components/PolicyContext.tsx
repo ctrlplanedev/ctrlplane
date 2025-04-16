@@ -88,9 +88,7 @@ export const PolicyContextProvider: React.FC<{
   const utils = api.useUtils();
   const createPolicy = api.policy.create.useMutation();
 
-  const onSubmit = form.handleSubmit((data) => {
-    console.log(data);
-
+  const onSubmit = form.handleSubmit((data) =>
     createPolicy
       .mutateAsync({ ...data, workspaceId })
       .then(() => {
@@ -102,11 +100,8 @@ export const PolicyContextProvider: React.FC<{
         toast.error("Failed to create policy", {
           description: error.message,
         });
-      });
-  });
-
-  const state = form.watch();
-  console.log(state);
+      }),
+  );
 
   return (
     <PolicyContext.Provider

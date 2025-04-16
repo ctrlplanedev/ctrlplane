@@ -7,6 +7,7 @@ import {
   EnvironmentBuilder,
   WorkspaceEnvironmentBuilder,
 } from "./environment-builder.js";
+import { PolicyBuilder, WorkspacePolicyBuilder } from "./policy-builder.js";
 
 export class ComputeBuilder {
   constructor(private readonly tx: Tx) {}
@@ -25,5 +26,13 @@ export class ComputeBuilder {
 
   deployments(ids: string[]) {
     return new DeploymentBuilder(this.tx, ids);
+  }
+
+  allPolicies(workspaceId: string) {
+    return new WorkspacePolicyBuilder(this.tx, workspaceId);
+  }
+
+  policies(ids: string[]) {
+    return new PolicyBuilder(this.tx, ids);
   }
 }

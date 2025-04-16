@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -21,6 +22,7 @@ import { environmentCondition } from "@ctrlplane/validators/environments";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import type { policyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
+import { releaseTarget } from "./release.js";
 import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
 import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
 import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
@@ -65,6 +67,21 @@ export const policyTarget = pgTable("policy_target", {
     .default(sql`NULL`)
     .$type<ResourceCondition | null>(),
 });
+
+export const computedPolicyTargetReleaseTarget = pgTable(
+  "computed_policy_target_release_target",
+  {
+    policyTargetId: uuid("policy_target_id")
+      .notNull()
+      .references(() => policyTarget.id, { onDelete: "cascade" }),
+    releaseTargetId: uuid("release_target_id")
+      .notNull()
+      .references(() => releaseTarget.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.policyTargetId, t.releaseTargetId] }),
+  }),
+);
 
 // Create zod schemas from drizzle schemas
 const policyInsertSchema = createInsertSchema(policy, {

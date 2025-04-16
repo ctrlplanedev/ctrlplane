@@ -6,12 +6,18 @@ import { selector, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import { groupResourcesByHook } from "@ctrlplane/job-dispatch";
+import {
+  groupResourcesByHook,
+  replaceReleaseTargetsAndDispatchExitHooks,
+} from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
+
+const log = logger.child({ module: "v1/resources" });
 
 const patchBodySchema = z.object({
   workspaceId: z.string().uuid(),
@@ -51,47 +57,61 @@ export const POST = request()
   )
   .handle<{ user: schema.User; body: z.infer<typeof patchBodySchema> }>(
     async (ctx) => {
-      if (ctx.body.resources.length === 0)
-        return NextResponse.json(
-          { error: "No resources provided" },
-          { status: 400 },
+      try {
+        if (ctx.body.resources.length === 0)
+          return NextResponse.json(
+            { error: "No resources provided" },
+            { status: 400 },
+          );
+
+        // since this endpoint is not scoped to a provider, we will ignore deleted resources
+        // as someone may be calling this endpoint to do a pure upsert
+        const { workspaceId } = ctx.body;
+        const { toInsert, toUpdate } = await groupResourcesByHook(
+          db,
+          ctx.body.resources.map((r) => ({ ...r, workspaceId })),
         );
 
-      // since this endpoint is not scoped to a provider, we will ignore deleted resources
-      // as someone may be calling this endpoint to do a pure upsert
-      const { workspaceId } = ctx.body;
-      const { toInsert, toUpdate } = await groupResourcesByHook(
-        db,
-        ctx.body.resources.map((r) => ({ ...r, workspaceId })),
-      );
+        const [insertedResources, updatedResources] = await Promise.all([
+          upsertResources(db, toInsert),
+          upsertResources(db, toUpdate),
+        ]);
+        const insertJobs = insertedResources.map((r) => ({
+          name: r.id,
+          data: r,
+        }));
+        const updateJobs = updatedResources.map((r) => ({
+          name: r.id,
+          data: r,
+        }));
 
-      const [insertedResources, updatedResources] = await Promise.all([
-        upsertResources(db, toInsert),
-        upsertResources(db, toUpdate),
-      ]);
-      const insertJobs = insertedResources.map((r) => ({
-        name: r.id,
-        data: r,
-      }));
-      const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
-      await Promise.all([
-        selector(db)
-          .compute()
-          .allEnvironments(workspaceId)
-          .resourceSelectors()
-          .replace(),
-        selector(db)
-          .compute()
-          .allDeployments(workspaceId)
-          .resourceSelectors()
-          .replace(),
-      ]);
-      await Promise.all([
-        getQueue(Channel.NewResource).addBulk(insertJobs),
-        getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-      ]);
+        const cb = selector().compute();
 
-      const count = insertedResources.length + updatedResources.length;
-      return NextResponse.json({ count });
+        await Promise.all([
+          cb.allEnvironments(workspaceId).resourceSelectors().replace(),
+          cb.allDeployments(workspaceId).resourceSelectors().replace(),
+        ]);
+
+        await Promise.all(
+          [...insertedResources, ...updatedResources].map((r) =>
+            replaceReleaseTargetsAndDispatchExitHooks(db, r),
+          ),
+        );
+
+        await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
+
+        await getQueue(Channel.NewResource).addBulk(insertJobs);
+        await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
+
+        const count = insertedResources.length + updatedResources.length;
+        return NextResponse.json({ count });
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        log.error(`Error updating resources: ${error}`);
+        return NextResponse.json(
+          { error: "Failed to update resources" },
+          { status: 500 },
+        );
+      }
     },
   );
