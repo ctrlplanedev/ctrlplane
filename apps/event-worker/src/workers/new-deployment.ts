@@ -25,12 +25,6 @@ export const newDeploymentWorker = createWorker(
         .then(takeFirst);
       const { workspaceId } = system;
 
-      await selector()
-        .compute()
-        .allPolicies(workspaceId)
-        .releaseTargetSelectors()
-        .replace();
-
       const computedDeploymentResources = await db
         .select()
         .from(schema.computedDeploymentResource)
@@ -46,6 +40,12 @@ export const newDeploymentWorker = createWorker(
       );
       const fulfilled = await Promise.all(releaseTargetPromises);
       const rts = fulfilled.flat();
+
+      await selector()
+        .compute()
+        .allPolicies(workspaceId)
+        .releaseTargetSelectors()
+        .replace();
 
       const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
       await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);

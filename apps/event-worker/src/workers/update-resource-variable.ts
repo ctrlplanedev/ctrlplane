@@ -29,8 +29,8 @@ export const updateResourceVariableWorker = createWorker(
         cb.allDeployments(workspaceId).resourceSelectors().replace(),
       ]);
 
-      await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
       const rts = await upsertReleaseTargets(db, resource);
+      await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
       const jobs = rts.map((rt) => ({
         name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
         data: rt,

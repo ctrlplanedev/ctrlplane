@@ -80,17 +80,16 @@ export const updateDeploymentWorker = createWorker(
         .then(takeFirst);
       const { workspaceId } = system;
 
-      await selector()
-        .compute()
-        .allPolicies(workspaceId)
-        .releaseTargetSelectors()
-        .replace();
-
       const releaseTargetPromises = newResources.map(async (r) =>
         upsertReleaseTargets(db, r),
       );
       const fulfilled = await Promise.all(releaseTargetPromises);
       const rts = fulfilled.flat();
+      await selector()
+        .compute()
+        .allPolicies(workspaceId)
+        .releaseTargetSelectors()
+        .replace();
 
       const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
       await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);

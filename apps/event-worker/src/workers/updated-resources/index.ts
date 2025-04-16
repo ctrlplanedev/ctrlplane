@@ -1,4 +1,4 @@
-import { eq, inArray } from "@ctrlplane/db";
+import { eq, inArray, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -19,11 +19,20 @@ export const updatedResourceWorker = createWorker(
       where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
     });
 
+    const cb = selector().compute();
+    await Promise.all([
+      cb.allEnvironments(resource.workspaceId).resourceSelectors().replace(),
+      cb.allDeployments(resource.workspaceId).resourceSelectors().replace(),
+    ]);
     const upsertedReleaseTargets = await upsertReleaseTargets(db, resource);
+    await cb
+      .allPolicies(resource.workspaceId)
+      .releaseTargetSelectors()
+      .replace();
+
     const releaseTargetsToDelete = currentReleaseTargets.filter(
       (rt) => !upsertedReleaseTargets.some((nrt) => nrt.id === rt.id),
     );
-
     await db.delete(SCHEMA.releaseTarget).where(
       inArray(
         SCHEMA.releaseTarget.id,

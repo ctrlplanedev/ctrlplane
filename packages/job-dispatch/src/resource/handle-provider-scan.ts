@@ -7,6 +7,7 @@ import { logger } from "@ctrlplane/logger";
 
 import { deleteResources } from "./delete.js";
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
+import { replaceReleaseTargetsAndDispatchExitHooks } from "./replace-release-targets.js";
 
 const log = logger.child({ label: "upsert-resources" });
 
@@ -49,6 +50,10 @@ export const handleResourceProviderScan = async (
       cb.allEnvironments(workspaceId).resourceSelectors().replace(),
       cb.allDeployments(workspaceId).resourceSelectors().replace(),
     ]);
+    const promises = [...insertedResources, ...updatedResources].map(
+      (resource) => replaceReleaseTargetsAndDispatchExitHooks(tx, resource),
+    );
+    await Promise.all(promises);
     await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
 
     await getQueue(Channel.NewResource).addBulk(insertJobs);

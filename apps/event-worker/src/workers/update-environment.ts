@@ -99,6 +99,11 @@ export const updateEnvironmentWorker = createWorker(
 
       const { newResources, exitedResources } =
         await recomputeResourcesAndReturnDiff(db, environment.id);
+      const releaseTargetPromises = newResources.map(async (r) =>
+        upsertReleaseTargets(db, r),
+      );
+      const fulfilled = await Promise.all(releaseTargetPromises);
+      const rts = fulfilled.flat();
 
       const system = await db
         .select()
@@ -112,12 +117,6 @@ export const updateEnvironmentWorker = createWorker(
         .allPolicies(workspaceId)
         .releaseTargetSelectors()
         .replace();
-
-      const releaseTargetPromises = newResources.map(async (r) =>
-        upsertReleaseTargets(db, r),
-      );
-      const fulfilled = await Promise.all(releaseTargetPromises);
-      const rts = fulfilled.flat();
 
       const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
       await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
