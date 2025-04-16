@@ -26,7 +26,7 @@ export const newDeploymentVersionWorker = createWorker(
 
     if (!deployment) throw new Error("Deployment not found");
 
-    const rows = await db
+    const computedResources = await db
       .select()
       .from(schema.computedDeploymentResource)
       .innerJoin(
@@ -39,10 +39,10 @@ export const newDeploymentVersionWorker = createWorker(
           version.deploymentId,
         ),
       );
-    const resources = rows.map((row) => row.resource);
+    const resources = computedResources.map((r) => r.resource);
 
-    const promises = resources.map((r) => upsertReleaseTargets(db, r));
-    const fulfilled = await Promise.all(promises);
+    const targetPromises = resources.map((r) => upsertReleaseTargets(db, r));
+    const fulfilled = await Promise.all(targetPromises);
     const releaseTargets = fulfilled.flat();
 
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(

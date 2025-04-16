@@ -86,32 +86,43 @@ export const PATCH = request()
     { body: z.infer<typeof patchSchema> },
     { params: { resourceId: string } }
   >(async ({ db, body }, { params }) => {
-    const isResource = eq(schema.resource.id, params.resourceId);
-    const isNotDeleted = isNull(schema.resource.deletedAt);
-    const where = and(isResource, isNotDeleted);
-    const resource = await db.query.resource.findFirst({ where });
+    try {
+      const isResource = eq(schema.resource.id, params.resourceId);
+      const isNotDeleted = isNull(schema.resource.deletedAt);
+      const where = and(isResource, isNotDeleted);
+      const resource = await db.query.resource.findFirst({ where });
 
-    if (resource == null)
+      if (resource == null)
+        return NextResponse.json(
+          { error: "Resource not found" },
+          { status: 404 },
+        );
+      const { workspaceId } = resource;
+
+      const all = await upsertResources(db, [_.merge(resource, body)]);
+      const res = all.at(0);
+
+      if (res == null) throw new Error("Failed to update resource");
+
+      const cb = selector().compute();
+      await Promise.all([
+        cb.allEnvironments(workspaceId).resourceSelectors().replace(),
+        cb.allDeployments(workspaceId).resourceSelectors().replace(),
+      ]);
+      await cb
+        .allPolicies(resource.workspaceId)
+        .releaseTargetSelectors()
+        .replace();
+      await getQueue(Channel.UpdatedResource).add(res.id, res);
+      return NextResponse.json(res);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      log.error(`Error updating resource: ${error}`);
       return NextResponse.json(
-        { error: "Resource not found" },
-        { status: 404 },
+        { error: "Failed to update resource" },
+        { status: 500 },
       );
-
-    const all = await upsertResources(db, [_.merge(resource, body)]);
-    const res = all.at(0);
-
-    if (res == null) throw new Error("Failed to update resource");
-
-    selector(db)
-      .compute()
-      .allPolicies(resource.workspaceId)
-      .releaseTargetSelectors()
-      .replace()
-      .then(() => getQueue(Channel.UpdatedResource).add(res.id, res))
-      .catch((err) =>
-        log.error(`Error recomputing policy deployments: ${err}`),
-      );
-    return NextResponse.json(res);
+    }
   });
 
 export const DELETE = request()

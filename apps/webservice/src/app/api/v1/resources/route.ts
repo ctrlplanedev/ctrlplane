@@ -54,57 +54,55 @@ export const POST = request()
   )
   .handle<{ user: schema.User; body: z.infer<typeof patchBodySchema> }>(
     async (ctx) => {
-      if (ctx.body.resources.length === 0)
+      try {
+        if (ctx.body.resources.length === 0)
+          return NextResponse.json(
+            { error: "No resources provided" },
+            { status: 400 },
+          );
+
+        // since this endpoint is not scoped to a provider, we will ignore deleted resources
+        // as someone may be calling this endpoint to do a pure upsert
+        const { workspaceId } = ctx.body;
+        const { toInsert, toUpdate } = await groupResourcesByHook(
+          db,
+          ctx.body.resources.map((r) => ({ ...r, workspaceId })),
+        );
+
+        const [insertedResources, updatedResources] = await Promise.all([
+          upsertResources(db, toInsert),
+          upsertResources(db, toUpdate),
+        ]);
+        const insertJobs = insertedResources.map((r) => ({
+          name: r.id,
+          data: r,
+        }));
+        const updateJobs = updatedResources.map((r) => ({
+          name: r.id,
+          data: r,
+        }));
+
+        const cb = selector().compute();
+
+        await Promise.all([
+          cb.allEnvironments(workspaceId).resourceSelectors().replace(),
+          cb.allDeployments(workspaceId).resourceSelectors().replace(),
+        ]);
+
+        await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
+
+        await getQueue(Channel.NewResource).addBulk(insertJobs);
+        await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
+
+        const count = insertedResources.length + updatedResources.length;
+        return NextResponse.json({ count });
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        log.error(`Error updating resources: ${error}`);
         return NextResponse.json(
-          { error: "No resources provided" },
-          { status: 400 },
+          { error: "Failed to update resources" },
+          { status: 500 },
         );
-
-      // since this endpoint is not scoped to a provider, we will ignore deleted resources
-      // as someone may be calling this endpoint to do a pure upsert
-      const { workspaceId } = ctx.body;
-      const { toInsert, toUpdate } = await groupResourcesByHook(
-        db,
-        ctx.body.resources.map((r) => ({ ...r, workspaceId })),
-      );
-
-      const [insertedResources, updatedResources] = await Promise.all([
-        upsertResources(db, toInsert),
-        upsertResources(db, toUpdate),
-      ]);
-      const insertJobs = insertedResources.map((r) => ({
-        name: r.id,
-        data: r,
-      }));
-      const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
-      Promise.all([
-        selector(db)
-          .compute()
-          .allEnvironments(workspaceId)
-          .resourceSelectors()
-          .replace(),
-        selector(db)
-          .compute()
-          .allDeployments(workspaceId)
-          .resourceSelectors()
-          .replace(),
-        selector(db)
-          .compute()
-          .allPolicies(workspaceId)
-          .releaseTargetSelectors()
-          .replace(),
-      ])
-        .then(() =>
-          Promise.all([
-            getQueue(Channel.NewResource).addBulk(insertJobs),
-            getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-          ]),
-        )
-        .catch((err) =>
-          log.error(`Error recomputing policy deployments: ${err}`),
-        );
-
-      const count = insertedResources.length + updatedResources.length;
-      return NextResponse.json({ count });
+      }
     },
   );

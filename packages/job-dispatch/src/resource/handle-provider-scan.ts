@@ -44,32 +44,15 @@ export const handleResourceProviderScan = async (
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
 
-    Promise.all([
-      selector(tx)
-        .compute()
-        .allEnvironments(workspaceId)
-        .resourceSelectors()
-        .replace(),
-      selector(tx)
-        .compute()
-        .allDeployments(workspaceId)
-        .resourceSelectors()
-        .replace(),
-      selector(tx)
-        .compute()
-        .allPolicies(workspaceId)
-        .releaseTargetSelectors()
-        .replace(),
-    ])
-      .then(() =>
-        Promise.all([
-          getQueue(Channel.NewResource).addBulk(insertJobs),
-          getQueue(Channel.UpdatedResource).addBulk(updateJobs),
-        ]),
-      )
-      .catch((err) =>
-        log.error(`Error recomputing policy deployments: ${err}`),
-      );
+    const cb = selector().compute();
+    await Promise.all([
+      cb.allEnvironments(workspaceId).resourceSelectors().replace(),
+      cb.allDeployments(workspaceId).resourceSelectors().replace(),
+    ]);
+    await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
+
+    await getQueue(Channel.NewResource).addBulk(insertJobs);
+    await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
 
     const deleted = await deleteResources(tx, toDelete);
     log.info("completed handling resource provider scan");
