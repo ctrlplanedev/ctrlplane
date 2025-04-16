@@ -93,12 +93,12 @@ class DispatchBuilder {
     );
 
     if (validJobsWithResolvedVariables.length > 0) {
-      await getQueue(Channel.DispatchJob).addBulk(
-        validJobsWithResolvedVariables.map((wf) => ({
-          name: wf.id,
-          data: { jobId: wf.id },
-        })),
-      );
+      // await getQueue(Channel.DispatchJob).addBulk(
+      //   validJobsWithResolvedVariables.map((wf) => ({
+      //     name: wf.id,
+      //     data: { jobId: wf.id },
+      //   })),
+      // );
     }
 
     await Promise.all(
