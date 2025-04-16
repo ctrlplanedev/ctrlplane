@@ -8,7 +8,7 @@ import { ZodError } from "zod";
 
 import { can } from "@ctrlplane/auth/utils";
 import { db } from "@ctrlplane/db/client";
-import { logger, makeWithSpan, trace } from "@ctrlplane/logger";
+import { logger, makeWithSpan, SpanStatusCode, trace } from "@ctrlplane/logger";
 
 export const createTRPCContext = (opts: {
   headers: Headers;
@@ -109,7 +109,19 @@ const spanProcedure = loggedProcedure.use(
     span.setAttribute("trpc.path", rest.path);
     span.setAttribute("trpc.type", rest.type);
     span.setAttribute("trpc.source", ctx.trpcSource);
-    return next({ ctx: { ...ctx, span } });
+
+    const t = await next({ ctx: { ...ctx, span } });
+
+    span.setAttribute("trpc.ok", t.ok);
+    if (!t.ok) {
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      span.setAttributes({
+        "trpc.error.name": t.error.name,
+        "trpc.error.message": t.error.message,
+        "trpc.error.code": t.error.code,
+      });
+    }
+    return t;
   }),
 );
 
