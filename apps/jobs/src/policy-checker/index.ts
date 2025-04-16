@@ -55,7 +55,7 @@ const triggerPolicyEvaluation = async () => {
 };
 
 export const run = async () => {
-  // await triggerPolicyEvaluation();
+  await triggerPolicyEvaluation();
 
   const isPassingApprovalGate = or(
     eq(schema.environmentPolicy.approvalRequirement, "automatic"),
