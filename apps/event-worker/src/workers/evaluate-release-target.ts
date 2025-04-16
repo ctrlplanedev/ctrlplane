@@ -1,12 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
-import { trace } from "@opentelemetry/api";
 import _ from "lodash";
 
 import { and, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { logger } from "@ctrlplane/logger";
+import { logger, makeWithSpan, trace } from "@ctrlplane/logger";
 import {
   VariableReleaseManager,
   VersionReleaseManager,
@@ -14,7 +13,6 @@ import {
 
 import { env } from "../config.js";
 import { createAndAcquireMutex } from "../releases/mutex.js";
-import { makeWithSpan } from "../utils/spans.js";
 
 const log = logger.child({ worker: "evaluate-release-target" });
 const tracer = trace.getTracer("evaluate-release-target");

@@ -1,10 +1,8 @@
 import type { Tx } from "@ctrlplane/db";
-import { trace } from "@opentelemetry/api";
 
 import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-
-import { makeWithSpan } from "./spans.js";
+import { makeWithSpan, trace } from "@ctrlplane/logger";
 
 const tracer = trace.getTracer("upsert-release-targets");
 const withSpan = makeWithSpan(tracer);

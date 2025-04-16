@@ -8,7 +8,7 @@ import { ZodError } from "zod";
 
 import { can } from "@ctrlplane/auth/utils";
 import { db } from "@ctrlplane/db/client";
-import { logger } from "@ctrlplane/logger";
+import { logger, makeWithSpan, trace } from "@ctrlplane/logger";
 
 export const createTRPCContext = (opts: {
   headers: Headers;
@@ -102,9 +102,20 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
   return result;
 });
 
-export const publicProcedure = loggedProcedure;
+const tracer = trace.getTracer("trpc");
+const withSpan = makeWithSpan(tracer);
+const spanProcedure = loggedProcedure.use(
+  withSpan("trpc", async (span, { ctx, next, ...rest }) => {
+    span.setAttribute("trpc.path", rest.path);
+    span.setAttribute("trpc.type", rest.type);
+    span.setAttribute("trpc.source", ctx.trpcSource);
+    return next({ ctx: { ...ctx, span } });
+  }),
+);
 
-const authnProcedure = loggedProcedure.use(({ ctx, next }) => {
+export const publicProcedure = spanProcedure;
+
+const authnProcedure = spanProcedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
   return next({
     ctx: {

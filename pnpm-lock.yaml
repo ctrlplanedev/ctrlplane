@@ -1291,6 +1291,9 @@ importers:
       '@colors/colors':
         specifier: ^1.6.0
         version: 1.6.0
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.0
       '@opentelemetry/winston-transport':
         specifier: ^0.7.0
         version: 0.7.0
