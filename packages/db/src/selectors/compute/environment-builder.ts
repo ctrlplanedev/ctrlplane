@@ -91,7 +91,7 @@ export class WorkspaceEnvironmentBuilder {
     this._queryBuilder = new QueryBuilder(tx);
   }
 
-  private async _preRun(_tx: Tx) {}
+  private async _preHook(_tx: Tx) {}
 
   private async _deletePrevious(tx: Tx) {
     const envs = await getEnvsInWorkspace(tx, this.workspaceId);
@@ -124,16 +124,16 @@ export class WorkspaceEnvironmentBuilder {
     return fulfilled.flat();
   }
 
-  private async _postRun(_tx: Tx) {}
+  private async _postHook(_tx: Tx) {}
 
   resourceSelectors() {
     return new ReplaceBuilder(
       this.tx,
       SCHEMA.computedEnvironmentResource,
-      (tx) => this._preRun(tx),
+      (tx) => this._preHook(tx),
       (tx) => this._deletePrevious(tx),
       (tx) => this._values(tx),
-      (tx) => this._postRun(tx),
+      (tx) => this._postHook(tx),
     );
   }
 }
