@@ -4,7 +4,7 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
-import { upsertReleaseTargets } from "../../utils/upsert-release-targets.js";
+import { replaceReleaseTargets } from "../../utils/replace-release-targets.js";
 import { dispatchExitHooks } from "./dispatch-exit-hooks.js";
 import { withSpan } from "./span.js";
 
@@ -24,7 +24,7 @@ export const updatedResourceWorker = createWorker(
       cb.allEnvironments(resource.workspaceId).resourceSelectors().replace(),
       cb.allDeployments(resource.workspaceId).resourceSelectors().replace(),
     ]);
-    const upsertedReleaseTargets = await upsertReleaseTargets(db, resource);
+    const upsertedReleaseTargets = await replaceReleaseTargets(db, resource);
     await cb
       .allPolicies(resource.workspaceId)
       .releaseTargetSelectors()

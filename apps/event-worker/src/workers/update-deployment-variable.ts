@@ -4,12 +4,14 @@ import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
 /**
- * Worker that handles deployment variable changes by triggering evaluations for
- * all existing release targets related to that deployment. This keeps the logic
- * simple by re-evaluating all affected releases.
+ * Worker that handles deployment variable changes
  *
- * Note: This assumes that release targets have been correctly created
- * previously. The worker only handles re-evaluation of existing targets.
+ * When a deployment variable is updated, perform the following steps:
+ * 1. Grab all release targe†s associated with the deployment
+ * 2. Add them to the evaluation queue
+ *
+ * @param {Job<ChannelMap[Channel.UpdateDeploymentVariable]>} job - The deployment variable data
+ * @returns {Promise<void>} A promise that resolves when processing is complete
  */
 export const updateDeploymentVariableWorker = createWorker(
   Channel.UpdateDeploymentVariable,

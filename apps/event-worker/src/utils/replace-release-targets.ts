@@ -7,8 +7,8 @@ import { makeWithSpan, trace } from "@ctrlplane/logger";
 const tracer = trace.getTracer("upsert-release-targets");
 const withSpan = makeWithSpan(tracer);
 
-export const upsertReleaseTargets = withSpan(
-  "upsertReleaseTargets",
+export const replaceReleaseTargets = withSpan(
+  "replaceReleaseTargets",
   async (span, db: Tx, resource: SCHEMA.Resource) => {
     span.setAttribute("resource.id", resource.id);
     span.setAttribute("resource.name", resource.name);

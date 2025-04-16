@@ -8,7 +8,7 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
-import { upsertReleaseTargets } from "../utils/upsert-release-targets.js";
+import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
 
 const log = logger.child({ module: "update-deployment" });
 
@@ -36,9 +36,9 @@ const dispatchExitHooks = async (
  *  Otherwise, just use the computed resources for the deployment if it is
  *   not null.
  *
- * @param db
- * @param deployment
- * @returns
+ * @param {Tx} db - The database transaction
+ * @param {Deployment} deployment - The deployment to get the computed resources for
+ * @returns {Promise<Resource[]>} A promise that resolves to the computed resources
  */
 const getNewDeploymentComputedResources = async (
   db: Tx,
@@ -72,6 +72,14 @@ const getNewDeploymentComputedResources = async (
   return releaseTargets.map((rt) => rt.resource);
 };
 
+/**
+ * Recomputes the resources for a deployment and returns the difference between
+ * the current and new resources.
+ *
+ * @param {Tx} db - The database transaction
+ * @param {Deployment} deployment - The deployment to recompute the resources for
+ * @returns {Promise<{ newResources: Resource[], exitedResources: Resource[] }>} A promise that resolves to the new and exited resources
+ */
 const recomputeResourcesAndReturnDiff = async (
   db: Tx,
   deployment: schema.Deployment,
@@ -108,6 +116,21 @@ const recomputeResourcesAndReturnDiff = async (
   return { newResources, exitedResources };
 };
 
+/**
+ * Worker that updates a deployment
+ *
+ * When a deployment is updated and the resource selector is changed, perform the following steps:
+ * 1. Recompute the resources for the deployment and return which resources
+ *    have been added and which have been removed
+ * 2. For all affected resources, replace the release targets based on new computations
+ * 3. Recompute all policy targets' computed release targets based on the new release targets
+ * 4. Add all replaced release targets to the evaluation queue
+ * 5. Dispatch exit hooks for the exited resources
+ *
+ *
+ * @param {Job<ChannelMap[Channel.UpdateDeployment]>} job - The deployment data
+ * @returns {Promise<void>} A promise that resolves when processing is complete
+ */
 export const updateDeploymentWorker = createWorker(
   Channel.UpdateDeployment,
   async ({ data }) => {
@@ -126,7 +149,7 @@ export const updateDeploymentWorker = createWorker(
       const { workspaceId } = system;
       const allResources = [...newResources, ...exitedResources];
       const releaseTargetPromises = allResources.map(async (r) =>
-        upsertReleaseTargets(db, r),
+        replaceReleaseTargets(db, r),
       );
       const fulfilled = await Promise.all(releaseTargetPromises);
       const rts = fulfilled.flat();
