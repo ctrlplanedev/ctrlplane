@@ -1,5 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
 import sizeOf from "object-sizeof";
 
 import {
@@ -8,6 +7,7 @@ import {
   eq,
   gte,
   lte,
+  selector,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -120,16 +120,18 @@ export class VersionReleaseManager implements ReleaseManager {
       ]);
 
     const policy = await this.getPolicy();
+    const sql = selector()
+      .query()
+      .deploymentVersions()
+      .where(policy?.deploymentVersionSelector?.deploymentVersionSelector)
+      .sql();
     const versions = await this.db.query.deploymentVersion.findMany({
       where: and(
         eq(
           schema.deploymentVersion.deploymentId,
           this.releaseTarget.deploymentId,
         ),
-        schema.deploymentVersionMatchesCondition(
-          this.db,
-          policy?.deploymentVersionSelector?.deploymentVersionSelector,
-        ),
+        sql,
         latestDeployedVersion != null
           ? gte(
               schema.deploymentVersion.createdAt,
