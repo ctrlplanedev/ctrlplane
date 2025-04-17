@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import { and, eq, inArray, isNotNull } from "drizzle-orm/pg-core/expressions";
 
 import type { Tx } from "../../common.js";
