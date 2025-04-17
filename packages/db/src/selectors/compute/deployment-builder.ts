@@ -63,17 +63,16 @@ export class DeploymentBuilder {
 
 export class WorkspaceDeploymentBuilder {
   private readonly _queryBuilder;
-  private deployments: SCHEMA.Deployment[];
+
   constructor(
     private readonly tx: Tx,
     private readonly workspaceId: string,
   ) {
     this._queryBuilder = new QueryBuilder(tx);
-    this.deployments = [];
   }
 
-  private async getDeploymentsInWorkspace(tx: Tx) {
-    this.deployments = await tx
+  private getDeploymentsInWorkspace(tx: Tx) {
+    return tx
       .select()
       .from(SCHEMA.deployment)
       .innerJoin(
@@ -89,17 +88,23 @@ export class WorkspaceDeploymentBuilder {
       .then((m) => m.map((d) => d.deployment));
   }
 
-  private async deleteExistingComputedResources(tx: Tx) {
+  private async deleteExistingComputedResources(
+    tx: Tx,
+    deployments: SCHEMA.Deployment[],
+  ) {
     await tx.delete(SCHEMA.computedDeploymentResource).where(
       inArray(
         SCHEMA.computedDeploymentResource.deploymentId,
-        this.deployments.map((d) => d.id),
+        deployments.map((d) => d.id),
       ),
     );
   }
 
-  private async findMatchingResourcesForDeployments(tx: Tx) {
-    const promises = this.deployments.map(async (d) => {
+  private async findMatchingResourcesForDeployments(
+    tx: Tx,
+    deployments: SCHEMA.Deployment[],
+  ) {
+    const promises = deployments.map(async (d) => {
       if (d.resourceSelector == null) return [];
       const resources = await tx.query.resource.findMany({
         where: and(
@@ -120,10 +125,10 @@ export class WorkspaceDeploymentBuilder {
 
   async resourceSelectors() {
     return this.tx.transaction(async (tx) => {
-      await this.getDeploymentsInWorkspace(tx);
-      await this.deleteExistingComputedResources(tx);
+      const deployments = await this.getDeploymentsInWorkspace(tx);
+      await this.deleteExistingComputedResources(tx, deployments);
       const computedResourceInserts =
-        await this.findMatchingResourcesForDeployments(tx);
+        await this.findMatchingResourcesForDeployments(tx, deployments);
       if (computedResourceInserts.length === 0) return [];
       return this.tx
         .insert(SCHEMA.computedDeploymentResource)
