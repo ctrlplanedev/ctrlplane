@@ -6,26 +6,50 @@ import { WorkspaceDeploymentBuilder } from "./deployment-builder.js";
 import { WorkspaceEnvironmentBuilder } from "./environment-builder.js";
 import { WorkspacePolicyBuilder } from "./policy-builder.js";
 
+/**
+ * Builder class for computing release targets for a set of resources.
+ *
+ * This class handles:
+ * 1. Recomputing resource selectors for environments and deployments
+ * 2. Finding matching environment-deployment pairs for resources
+ * 3. Creating release targets for those matches
+ * 4. Updating policy release target selectors
+ *
+ * All resources must belong to the same workspace.
+ */
 export class ResourceBuilder {
-  private workspaceId: string;
+  private readonly workspaceId: string;
 
   constructor(
     private readonly tx: Tx,
     private readonly resources: SCHEMA.Resource[],
   ) {
-    const workspaceIds = new Set(this.resources.map((r) => r.workspaceId));
+    const workspaceIds = new Set(resources.map((r) => r.workspaceId));
     if (workspaceIds.size !== 1)
       throw new Error("All resources must be in the same workspace");
     this.workspaceId = Array.from(workspaceIds)[0]!;
   }
 
-  private async recomputeResourceSelectors(tx: Tx) {
+  /**
+   * Recomputes all resource selectors for environments and deployments in the
+   * workspace.
+   *
+   * When creating release targets, we need to ensure all computed selectors are
+   * up-to-date so resources are properly included in the correct environments
+   * and deployments.
+   *
+   * While we could assume everything is already computed correctly, we
+   * recompute here to guarantee correctness. If this becomes a performance
+   * bottleneck, this recomputation could be removed - but we must ensure all
+   * edge cases properly trigger recomputation when needed.
+   */
+  private recomputeResourceSelectors(tx: Tx) {
     const envComputer = new WorkspaceEnvironmentBuilder(tx, this.workspaceId);
     const deploymentComputer = new WorkspaceDeploymentBuilder(
       tx,
       this.workspaceId,
     );
-    await Promise.all([
+    return Promise.all([
       envComputer.resourceSelectors().replace(),
       deploymentComputer.resourceSelectors().replace(),
     ]);
@@ -35,8 +59,8 @@ export class ResourceBuilder {
     return this.resources.map((r) => r.id);
   }
 
-  private async deleteExistingReleaseTargets(tx: Tx) {
-    await tx
+  private deleteExistingReleaseTargets(tx: Tx) {
+    return tx
       .delete(SCHEMA.releaseTarget)
       .where(inArray(SCHEMA.releaseTarget.resourceId, this.resourceIds));
   }
@@ -60,7 +84,7 @@ export class ResourceBuilder {
    *
    * Returns environment ID, deployment ID and resource ID for each match.
    */
-  private async findMatchingEnvironmentDeploymentPairs(tx: Tx) {
+  private findMatchingEnvironmentDeploymentPairs(tx: Tx) {
     const isResourceMatchingEnvironment = eq(
       SCHEMA.computedEnvironmentResource.resourceId,
       SCHEMA.resource.id,
@@ -70,7 +94,7 @@ export class ResourceBuilder {
       eq(SCHEMA.computedDeploymentResource.resourceId, SCHEMA.resource.id),
     );
 
-    const matchingEnvironmentDeploymentPairs = await tx
+    return tx
       .select({
         environmentId: SCHEMA.environment.id,
         deploymentId: SCHEMA.deployment.id,
@@ -106,13 +130,11 @@ export class ResourceBuilder {
           inArray(SCHEMA.resource.id, this.resourceIds),
         ),
       );
-
-    return matchingEnvironmentDeploymentPairs;
   }
 
-  private async updatePolicyReleaseTargets(tx: Tx) {
+  private recomputePolicyReleaseTargets(tx: Tx) {
     const policyComputer = new WorkspacePolicyBuilder(tx, this.workspaceId);
-    await policyComputer.releaseTargetSelectors().replace();
+    return policyComputer.releaseTargetSelectors().replace();
   }
 
   releaseTargets() {
@@ -121,12 +143,15 @@ export class ResourceBuilder {
       await this.deleteExistingReleaseTargets(tx);
       const vals = await this.findMatchingEnvironmentDeploymentPairs(tx);
       if (vals.length === 0) return [];
+
       const results = await tx
         .insert(SCHEMA.releaseTarget)
         .values(vals)
         .onConflictDoNothing()
         .returning();
-      await this.updatePolicyReleaseTargets(tx);
+
+      await this.recomputePolicyReleaseTargets(tx);
+
       return results;
     });
   }

@@ -65,23 +65,6 @@ export class EnvironmentBuilder {
   }
 }
 
-const getEnvsInWorkspace = async (tx: Tx, workspaceId: string) => {
-  const workspace = await tx.query.workspace.findFirst({
-    where: eq(SCHEMA.workspace.id, workspaceId),
-    with: {
-      systems: {
-        with: {
-          environments: {
-            where: isNotNull(SCHEMA.environment.resourceSelector),
-          },
-        },
-      },
-    },
-  });
-  if (workspace == null) throw new Error(`Workspace not found: ${workspaceId}`);
-  return workspace.systems.flatMap((s) => s.environments);
-};
-
 export class WorkspaceEnvironmentBuilder {
   private readonly _queryBuilder;
   constructor(
@@ -91,10 +74,27 @@ export class WorkspaceEnvironmentBuilder {
     this._queryBuilder = new QueryBuilder(tx);
   }
 
+  private async getEnvironmentsWithSelectors(tx: Tx) {
+    return tx
+      .select({ environment: SCHEMA.environment })
+      .from(SCHEMA.environment)
+      .innerJoin(
+        SCHEMA.system,
+        eq(SCHEMA.environment.systemId, SCHEMA.system.id),
+      )
+      .where(
+        and(
+          eq(SCHEMA.system.workspaceId, this.workspaceId),
+          isNotNull(SCHEMA.environment.resourceSelector),
+        ),
+      )
+      .then((m) => m.map((e) => e.environment));
+  }
+
   private async _preHook(_tx: Tx) {}
 
   private async _deletePrevious(tx: Tx) {
-    const envs = await getEnvsInWorkspace(tx, this.workspaceId);
+    const envs = await this.getEnvironmentsWithSelectors(tx);
     await tx.delete(SCHEMA.computedEnvironmentResource).where(
       inArray(
         SCHEMA.computedEnvironmentResource.environmentId,
@@ -104,7 +104,7 @@ export class WorkspaceEnvironmentBuilder {
   }
 
   private async _values(tx: Tx) {
-    const envs = await getEnvsInWorkspace(tx, this.workspaceId);
+    const envs = await this.getEnvironmentsWithSelectors(tx);
     const promises = envs.map(async (env) => {
       if (env.resourceSelector == null) return [];
       const resources = await tx.query.resource.findMany({
