@@ -50,9 +50,8 @@ export const updateResourceVariableWorker = createWorker(
 
       const rts = await selector()
         .compute()
-        .resources([resourceId])
-        .releaseTargets()
-        .replace();
+        .resources([resource])
+        .releaseTargets();
 
       const exitedDeployments = currentDeployments.filter(
         (d) => !rts.some((rt) => rt.deploymentId === d.id),

@@ -34,9 +34,8 @@ export const updatedResourceWorker = createWorker(
 
     const rts = await selector()
       .compute()
-      .resources([resource.id])
-      .releaseTargets()
-      .replace();
+      .resources([resource])
+      .releaseTargets();
 
     const jobs = rts.map((rt) => ({
       name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,

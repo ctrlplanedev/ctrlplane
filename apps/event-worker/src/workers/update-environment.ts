@@ -64,9 +64,8 @@ export const updateEnvironmentWorker = createWorker(
 
       const rts = await selector()
         .compute()
-        .resources(currentResources.map((r) => r.id))
-        .releaseTargets()
-        .replace();
+        .resources(currentResources)
+        .releaseTargets();
 
       const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
       await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);

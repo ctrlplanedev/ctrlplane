@@ -1,4 +1,5 @@
 import type { Tx } from "../../common.js";
+import type * as schema from "../../schema/index.js";
 import {
   DeploymentBuilder,
   WorkspaceDeploymentBuilder,
@@ -37,7 +38,7 @@ export class ComputeBuilder {
     return new PolicyBuilder(this.tx, ids);
   }
 
-  resources(ids: string[]) {
-    return new ResourceBuilder(this.tx, ids);
+  resources(resources: schema.Resource[]) {
+    return new ResourceBuilder(this.tx, resources);
   }
 }

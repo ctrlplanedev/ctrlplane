@@ -1,8 +1,6 @@
 import { selector } from "@ctrlplane/db";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
-const queue = getQueue(Channel.EvaluateReleaseTarget);
-
 /**
  * Worker that processes new resource events.
  *
@@ -20,13 +18,12 @@ export const newResourceWorker = createWorker(
   async ({ data: resource }) => {
     const releaseTargets = await selector()
       .compute()
-      .resources([resource.id])
-      .releaseTargets()
-      .replace();
+      .resources([resource])
+      .releaseTargets();
     const jobs = releaseTargets.map((rt) => ({
       name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
       data: rt,
     }));
-    await queue.addBulk(jobs);
+    await getQueue(Channel.EvaluateReleaseTarget).addBulk(jobs);
   },
 );

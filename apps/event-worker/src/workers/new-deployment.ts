@@ -24,17 +24,17 @@ export const newDeploymentWorker = createWorker(
     try {
       const environments = await db.query.environment.findMany({
         where: eq(schema.environment.systemId, job.data.systemId),
-        with: { computedResources: true },
+        with: { computedResources: { with: { resource: true } } },
       });
 
-      const resourceIds = environments.flatMap((e) =>
-        e.computedResources.map((r) => r.resourceId),
+      const resources = environments.flatMap((e) =>
+        e.computedResources.map((r) => r.resource),
       );
       const releaseTargets = await selector()
         .compute()
-        .resources(resourceIds)
-        .releaseTargets()
-        .replace();
+        .resources(resources)
+        .releaseTargets();
+
       const evaluateJobs = releaseTargets.map((rt) => ({
         name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
         data: rt,

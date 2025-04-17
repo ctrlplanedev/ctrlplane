@@ -44,9 +44,8 @@ export const updateDeploymentWorker = createWorker(
       const currentResources = currentReleaseTargets.map((rt) => rt.resource);
       const rts = await selector()
         .compute()
-        .resources(currentResources.map((r) => r.id))
-        .releaseTargets()
-        .replace();
+        .resources(currentResources)
+        .releaseTargets();
       const exitedResources = currentResources.filter(
         (r) =>
           !rts.some(
