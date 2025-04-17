@@ -129,7 +129,9 @@ export class WorkspaceDeploymentBuilder {
       await this.deleteExistingComputedResources(tx, deployments);
       const computedResourceInserts =
         await this.findMatchingResourcesForDeployments(tx, deployments);
+
       if (computedResourceInserts.length === 0) return [];
+
       return this.tx
         .insert(SCHEMA.computedDeploymentResource)
         .values(computedResourceInserts)

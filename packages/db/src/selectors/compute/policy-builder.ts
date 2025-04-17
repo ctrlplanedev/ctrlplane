@@ -149,7 +149,8 @@ export class WorkspacePolicyBuilder {
       return tx
         .insert(SCHEMA.computedPolicyTargetReleaseTarget)
         .values(computedPolicyTargetReleaseTargetInserts)
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning();
     });
   }
 }
