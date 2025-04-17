@@ -154,7 +154,6 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     .compute()
     .policies([policyId])
     .releaseTargetSelectors()
-    .replace()
     .catch((e) =>
       log.error(
         e,

@@ -202,7 +202,6 @@ export const updatePolicyInTx = async (
     .compute()
     .policies([policy.id])
     .releaseTargetSelectors()
-    .replace()
     .catch((e) =>
       log.error(
         e,
