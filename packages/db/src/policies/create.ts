@@ -52,7 +52,13 @@ const insertDenyWindows = async (
     });
 };
 
-export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
+export const createPolicyInTx = async (
+  tx: Tx,
+  input: CreatePolicyInput,
+  recomputedPolicyReleaseTargetsCallback?: (
+    computedTargets: SCHEMA.ComputedPolicyTargetReleaseTarget[],
+  ) => Promise<void>,
+) => {
   const {
     targets,
     denyWindows,
@@ -154,6 +160,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     .compute()
     .policies([policyId])
     .releaseTargetSelectors()
+    .then(recomputedPolicyReleaseTargetsCallback)
     .catch((e) =>
       log.error(
         e,

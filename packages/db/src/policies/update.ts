@@ -150,6 +150,9 @@ export const updatePolicyInTx = async (
   tx: Tx,
   id: string,
   input: SCHEMA.UpdatePolicy,
+  recomputedPolicyReleaseTargetsCallback?: (
+    computedTargets: SCHEMA.ComputedPolicyTargetReleaseTarget[],
+  ) => Promise<void>,
 ) => {
   const {
     targets,
@@ -202,13 +205,11 @@ export const updatePolicyInTx = async (
     .compute()
     .policies([policy.id])
     .releaseTargetSelectors()
+    .then(recomputedPolicyReleaseTargetsCallback)
     .catch((e) =>
       log.error(
         e,
         `Error replacing release target selectors for policy ${policy.id}`,
       ),
     );
-
-  return updatedPolicy;
-  return updatedPolicy;
 };

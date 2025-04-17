@@ -10,6 +10,7 @@ import {
   createPolicyInTx,
   desc,
   eq,
+  inArray,
   takeFirst,
   updatePolicyInTx,
 } from "@ctrlplane/db";
@@ -25,6 +26,7 @@ import {
   updatePolicyTarget,
 } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -267,7 +269,20 @@ export const policyRouter = createTRPCRouter({
     })
     .input(createPolicy)
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) => createPolicyInTx(tx, input)),
+      ctx.db.transaction((tx) =>
+        createPolicyInTx(tx, input, async (recomputedTargets) => {
+          const rtIds = recomputedTargets.map((rt) => rt.releaseTargetId);
+          const releaseTargets = await tx.query.releaseTarget.findMany({
+            where: inArray(schema.releaseTarget.id, rtIds),
+          });
+          await getQueue(Channel.EvaluateReleaseTarget).addBulk(
+            releaseTargets.map((rt) => ({
+              name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+              data: rt,
+            })),
+          );
+        }),
+      ),
     ),
 
   update: protectedProcedure
@@ -279,7 +294,25 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updatePolicy }))
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) => updatePolicyInTx(tx, input.id, input.data)),
+      ctx.db.transaction((tx) =>
+        updatePolicyInTx(
+          tx,
+          input.id,
+          input.data,
+          async (recomputedTargets) => {
+            const rtIds = recomputedTargets.map((rt) => rt.releaseTargetId);
+            const releaseTargets = await tx.query.releaseTarget.findMany({
+              where: inArray(schema.releaseTarget.id, rtIds),
+            });
+            await getQueue(Channel.EvaluateReleaseTarget).addBulk(
+              releaseTargets.map((rt) => ({
+                name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+                data: rt,
+              })),
+            );
+          },
+        ),
+      ),
     ),
 
   delete: protectedProcedure

@@ -81,7 +81,8 @@ export class PolicyBuilder {
       return tx
         .insert(SCHEMA.computedPolicyTargetReleaseTarget)
         .values(computedPolicyTargetReleaseTargetInserts)
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning();
     });
   }
 }

@@ -83,6 +83,9 @@ export const computedPolicyTargetReleaseTarget = pgTable(
   }),
 );
 
+export type ComputedPolicyTargetReleaseTarget =
+  typeof computedPolicyTargetReleaseTarget.$inferSelect;
+
 // Create zod schemas from drizzle schemas
 const policyInsertSchema = createInsertSchema(policy, {
   name: z.string().min(1, "Policy name is required"),
