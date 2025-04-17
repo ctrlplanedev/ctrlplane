@@ -42,8 +42,9 @@ export const updateDeploymentWorker = createWorker(
         with: { resource: true },
       });
       const currentResources = currentReleaseTargets.map((rt) => rt.resource);
-      const rts = await selector()
-        .compute()
+      const computeBuilder = selector().compute();
+      await computeBuilder.deployments([data.id]).resourceSelectors();
+      const rts = await computeBuilder
         .resources(currentResources)
         .releaseTargets();
       const exitedResources = currentResources.filter(

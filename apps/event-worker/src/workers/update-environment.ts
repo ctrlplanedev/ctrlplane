@@ -62,8 +62,9 @@ export const updateEnvironmentWorker = createWorker(
       });
       const currentResources = currentReleaseTargets.map((rt) => rt.resource);
 
-      const rts = await selector()
-        .compute()
+      const computeBuilder = selector().compute();
+      await computeBuilder.environments([environment]).resourceSelectors();
+      const rts = await computeBuilder
         .resources(currentResources)
         .releaseTargets();
 

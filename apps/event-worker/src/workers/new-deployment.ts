@@ -30,8 +30,10 @@ export const newDeploymentWorker = createWorker(
       const resources = environments.flatMap((e) =>
         e.computedResources.map((r) => r.resource),
       );
-      const releaseTargets = await selector()
-        .compute()
+
+      const computeBuilder = selector().compute();
+      await computeBuilder.deployments([job.data.id]).resourceSelectors();
+      const releaseTargets = await computeBuilder
         .resources(resources)
         .releaseTargets();
 

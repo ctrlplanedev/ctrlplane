@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, eq, isNull, upsertResources } from "@ctrlplane/db";
+import { and, eq, isNull, selector, upsertResources } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { deleteResources } from "@ctrlplane/job-dispatch";
@@ -103,7 +103,10 @@ export const PATCH = request()
 
       if (res == null) throw new Error("Failed to update resource");
 
-      await getQueue(Channel.UpdatedResource).add(res.id, res);
+      selector()
+        .compute()
+        .allResourceSelectors(res.workspaceId)
+        .then(() => getQueue(Channel.UpdatedResource).add(res.id, res));
       return NextResponse.json(res);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));

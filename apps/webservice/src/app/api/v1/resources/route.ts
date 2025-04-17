@@ -2,7 +2,7 @@ import type * as schema from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { upsertResources } from "@ctrlplane/db";
+import { selector, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -82,8 +82,13 @@ export const POST = request()
           data: r,
         }));
 
-        await getQueue(Channel.NewResource).addBulk(insertJobs);
-        await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
+        selector()
+          .compute()
+          .allResourceSelectors(workspaceId)
+          .then(() => {
+            getQueue(Channel.NewResource).addBulk(insertJobs);
+            getQueue(Channel.UpdatedResource).addBulk(updateJobs);
+          });
 
         const count = insertedResources.length + updatedResources.length;
         return NextResponse.json({ count });
