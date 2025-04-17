@@ -6,6 +6,7 @@ import {
   environmentMetadata,
   environmentPolicy,
 } from "./environment.js";
+import { releaseTarget } from "./release.js";
 import { resource } from "./resource.js";
 import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";
@@ -22,6 +23,7 @@ export const environmentRelations = relations(environment, ({ many, one }) => ({
   }),
   metadata: many(environmentMetadata),
   computedResources: many(computedEnvironmentResource),
+  releaseTargets: many(releaseTarget),
 }));
 
 export const environmentMetadataRelations = relations(

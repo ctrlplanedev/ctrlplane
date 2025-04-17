@@ -53,19 +53,25 @@ export const updateEnvironmentWorker = createWorker(
   Channel.UpdateEnvironment,
   async (job) => {
     try {
-      const { oldSelector, ...environment } = job.data;
-      if (_.isEqual(oldSelector, environment.resourceSelector)) return;
+      const { oldSelector, resourceSelector } = job.data;
+      if (_.isEqual(oldSelector, resourceSelector)) return;
 
-      const currentReleaseTargets = await db.query.releaseTarget.findMany({
-        where: eq(schema.releaseTarget.environmentId, environment.id),
-        with: { resource: true },
+      const environment = await db.query.environment.findFirst({
+        where: eq(schema.environment.id, job.data.id),
+        with: { system: true, releaseTargets: { with: { resource: true } } },
       });
+      if (environment == null)
+        throw new Error(`Environment not found: ${job.data.id}`);
+
+      const { releaseTargets: currentReleaseTargets } = environment;
       const currentResources = currentReleaseTargets.map((rt) => rt.resource);
 
       const computeBuilder = selector().compute();
       await computeBuilder.environments([environment]).resourceSelectors();
+      const { system } = environment;
+      const { workspaceId } = system;
       const rts = await computeBuilder
-        .resources(currentResources)
+        .allResources(workspaceId)
         .releaseTargets();
 
       const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));

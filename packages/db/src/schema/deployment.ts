@@ -22,6 +22,7 @@ import {
 
 import { ColumnOperatorFn } from "../common.js";
 import { jobAgent } from "./job-agent.js";
+import { releaseTarget } from "./release.js";
 import { resource } from "./resource.js";
 import { system } from "./system.js";
 
@@ -113,6 +114,7 @@ export const deploymentRelations = relations(deployment, ({ one, many }) => ({
     references: [jobAgent.id],
   }),
   computedResources: many(computedDeploymentResource),
+  releaseTargets: many(releaseTarget),
 }));
 
 export const computedDeploymentResource = pgTable(

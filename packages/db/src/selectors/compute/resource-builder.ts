@@ -129,3 +129,122 @@ export class ResourceBuilder {
     });
   }
 }
+
+export class WorkspaceResourceBuilder {
+  constructor(
+    private readonly tx: Tx,
+    private readonly workspaceId: string,
+  ) {}
+
+  private getResourcesInWorkspace() {
+    return this.tx.query.resource.findMany({
+      where: eq(SCHEMA.resource.workspaceId, this.workspaceId),
+    });
+  }
+
+  private deleteExistingReleaseTargets(tx: Tx, resourceIds: string[]) {
+    return tx
+      .delete(SCHEMA.releaseTarget)
+      .where(inArray(SCHEMA.releaseTarget.resourceId, resourceIds));
+  }
+
+  /**
+   * Finds matching environment-deployment pairs for the given resources.
+   *
+   * A resource matches an environment-deployment pair if:
+   * 1. The resource matches the environment's selector (via
+   *    computedEnvironmentResource)
+   * 2. Either:
+   *    - The deployment's resourceSelector is null (meaning it includes all
+   *      resources that match the environment's selector), OR
+   *    - The resource matches the deployment's selector (via
+   *      computedDeploymentResource)
+   *
+   * The query joins:
+   * - Resources with their computed environment matches
+   * - Those environments with their system's deployments
+   * - Optionally joins with computed deployment matches
+   *
+   * Returns environment ID, deployment ID and resource ID for each match.
+   *
+   * @note We assume the computed environment resource selector is up-to-date.
+   */
+  private findMatchingEnvironmentDeploymentPairs(
+    tx: Tx,
+    resourceIds: string[],
+  ) {
+    const isResourceMatchingEnvironment = eq(
+      SCHEMA.computedEnvironmentResource.resourceId,
+      SCHEMA.resource.id,
+    );
+    const isResourceMatchingDeployment = or(
+      isNull(SCHEMA.deployment.resourceSelector),
+      eq(SCHEMA.computedDeploymentResource.resourceId, SCHEMA.resource.id),
+    );
+
+    return tx
+      .select({
+        environmentId: SCHEMA.environment.id,
+        deploymentId: SCHEMA.deployment.id,
+        resourceId: SCHEMA.resource.id,
+      })
+      .from(SCHEMA.resource)
+      .innerJoin(
+        SCHEMA.computedEnvironmentResource,
+        eq(SCHEMA.computedEnvironmentResource.resourceId, SCHEMA.resource.id),
+      )
+      .innerJoin(
+        SCHEMA.environment,
+        eq(
+          SCHEMA.computedEnvironmentResource.environmentId,
+          SCHEMA.environment.id,
+        ),
+      )
+      .innerJoin(
+        SCHEMA.deployment,
+        eq(SCHEMA.deployment.systemId, SCHEMA.environment.systemId),
+      )
+      .leftJoin(
+        SCHEMA.computedDeploymentResource,
+        eq(
+          SCHEMA.computedDeploymentResource.deploymentId,
+          SCHEMA.deployment.id,
+        ),
+      )
+      .where(
+        and(
+          isResourceMatchingEnvironment,
+          isResourceMatchingDeployment,
+          inArray(SCHEMA.resource.id, resourceIds),
+        ),
+      );
+  }
+
+  private recomputePolicyReleaseTargets(tx: Tx) {
+    const policyComputer = new WorkspacePolicyBuilder(tx, this.workspaceId);
+    return policyComputer.releaseTargetSelectors();
+  }
+
+  releaseTargets() {
+    return this.tx.transaction(async (tx) => {
+      const resources = await this.getResourcesInWorkspace();
+      const resourceIds = resources.map((r) => r.id);
+      await this.deleteExistingReleaseTargets(tx, resourceIds);
+      const vals = await this.findMatchingEnvironmentDeploymentPairs(
+        tx,
+        resourceIds,
+      );
+      if (vals.length === 0) return [];
+
+      const results = await tx
+        .insert(SCHEMA.releaseTarget)
+        .values(vals)
+        .onConflictDoNothing()
+        .returning();
+
+      await this.recomputePolicyReleaseTargets(tx);
+
+      return results;
+    });
+  }
+}

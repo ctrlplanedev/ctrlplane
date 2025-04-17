@@ -37,15 +37,21 @@ export const updateDeploymentWorker = createWorker(
       const { oldSelector, resourceSelector } = data;
       if (_.isEqual(oldSelector, resourceSelector)) return;
 
-      const currentReleaseTargets = await db.query.releaseTarget.findMany({
-        where: eq(schema.releaseTarget.deploymentId, data.id),
-        with: { resource: true },
+      const deployment = await db.query.deployment.findFirst({
+        where: eq(schema.deployment.id, data.id),
+        with: { system: true, releaseTargets: { with: { resource: true } } },
       });
+      if (deployment == null)
+        throw new Error(`Deployment not found: ${data.id}`);
+
+      const { releaseTargets: currentReleaseTargets } = deployment;
       const currentResources = currentReleaseTargets.map((rt) => rt.resource);
       const computeBuilder = selector().compute();
       await computeBuilder.deployments([data]).resourceSelectors();
+      const { system } = deployment;
+      const { workspaceId } = system;
       const rts = await computeBuilder
-        .resources(currentResources)
+        .allResources(workspaceId)
         .releaseTargets();
       const exitedResources = currentResources.filter(
         (r) =>
@@ -56,7 +62,6 @@ export const updateDeploymentWorker = createWorker(
 
       const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
       await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
-
       await dispatchExitHooks(data, exitedResources);
     } catch (error) {
       log.error("Error updating deployment", { error });

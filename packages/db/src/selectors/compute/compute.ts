@@ -9,7 +9,10 @@ import {
   WorkspaceEnvironmentBuilder,
 } from "./environment-builder.js";
 import { PolicyBuilder, WorkspacePolicyBuilder } from "./policy-builder.js";
-import { ResourceBuilder } from "./resource-builder.js";
+import {
+  ResourceBuilder,
+  WorkspaceResourceBuilder,
+} from "./resource-builder.js";
 
 export class ComputeBuilder {
   constructor(private readonly tx: Tx) {}
@@ -47,5 +50,9 @@ export class ComputeBuilder {
 
   resources(resources: schema.Resource[]) {
     return new ResourceBuilder(this.tx, resources);
+  }
+
+  allResources(workspaceId: string) {
+    return new WorkspaceResourceBuilder(this.tx, workspaceId);
   }
 }
