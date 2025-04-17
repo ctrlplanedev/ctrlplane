@@ -3,7 +3,6 @@ import { and, eq, inArray, isNotNull } from "drizzle-orm/pg-core/expressions";
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
-import { ReplaceBuilder } from "./replace-builder.js";
 
 export class DeploymentBuilder {
   private readonly _queryBuilder;
@@ -14,15 +13,13 @@ export class DeploymentBuilder {
     this._queryBuilder = new QueryBuilder(tx);
   }
 
-  private async _preHook(_tx: Tx) {}
-
-  private async _deletePrevious(tx: Tx) {
+  private async deleteExistingComputedResources(tx: Tx) {
     await tx
       .delete(SCHEMA.computedDeploymentResource)
       .where(inArray(SCHEMA.computedDeploymentResource.deploymentId, this.ids));
   }
 
-  private async _values(tx: Tx) {
+  private async findMatchingResourcesForDeployments(tx: Tx) {
     const deployments = await tx.query.deployment.findMany({
       where: inArray(SCHEMA.deployment.id, this.ids),
       with: { system: true },
@@ -49,61 +46,60 @@ export class DeploymentBuilder {
     return fulfilled.flat();
   }
 
-  private async _postHook(_tx: Tx) {}
-
   resourceSelectors() {
-    return new ReplaceBuilder(
-      this.tx,
-      SCHEMA.computedDeploymentResource,
-      (tx) => this._preHook(tx),
-      (tx) => this._deletePrevious(tx),
-      (tx) => this._values(tx),
-      (tx) => this._postHook(tx),
-    );
+    return this.tx.transaction(async (tx) => {
+      await this.deleteExistingComputedResources(tx);
+      const computedResourceInserts =
+        await this.findMatchingResourcesForDeployments(tx);
+      if (computedResourceInserts.length === 0) return [];
+      return this.tx
+        .insert(SCHEMA.computedDeploymentResource)
+        .values(computedResourceInserts)
+        .onConflictDoNothing()
+        .returning();
+    });
   }
 }
 
-const getDeploymentsInWorkspace = async (tx: Tx, workspaceId: string) => {
-  const workspace = await tx.query.workspace.findFirst({
-    where: eq(SCHEMA.workspace.id, workspaceId),
-    with: {
-      systems: {
-        with: {
-          deployments: {
-            where: isNotNull(SCHEMA.deployment.resourceSelector),
-          },
-        },
-      },
-    },
-  });
-  if (workspace == null) throw new Error(`Workspace not found: ${workspaceId}`);
-  return workspace.systems.flatMap((s) => s.deployments);
-};
-
 export class WorkspaceDeploymentBuilder {
   private readonly _queryBuilder;
+  private deployments: SCHEMA.Deployment[];
   constructor(
     private readonly tx: Tx,
     private readonly workspaceId: string,
   ) {
     this._queryBuilder = new QueryBuilder(tx);
+    this.deployments = [];
   }
 
-  private async _preHook(_tx: Tx) {}
+  private async getDeploymentsInWorkspace(tx: Tx) {
+    this.deployments = await tx
+      .select()
+      .from(SCHEMA.deployment)
+      .innerJoin(
+        SCHEMA.system,
+        eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
+      )
+      .where(
+        and(
+          eq(SCHEMA.system.workspaceId, this.workspaceId),
+          isNotNull(SCHEMA.deployment.resourceSelector),
+        ),
+      )
+      .then((m) => m.map((d) => d.deployment));
+  }
 
-  private async _deletePrevious(tx: Tx) {
-    const deployments = await getDeploymentsInWorkspace(tx, this.workspaceId);
+  private async deleteExistingComputedResources(tx: Tx) {
     await tx.delete(SCHEMA.computedDeploymentResource).where(
       inArray(
         SCHEMA.computedDeploymentResource.deploymentId,
-        deployments.map((d) => d.id),
+        this.deployments.map((d) => d.id),
       ),
     );
   }
 
-  private async _values(tx: Tx) {
-    const deployments = await getDeploymentsInWorkspace(tx, this.workspaceId);
-    const promises = deployments.map(async (d) => {
+  private async findMatchingResourcesForDeployments(tx: Tx) {
+    const promises = this.deployments.map(async (d) => {
       if (d.resourceSelector == null) return [];
       const resources = await tx.query.resource.findMany({
         where: and(
@@ -122,16 +118,18 @@ export class WorkspaceDeploymentBuilder {
     return fulfilled.flat();
   }
 
-  private async _postHook(_tx: Tx) {}
-
-  resourceSelectors() {
-    return new ReplaceBuilder(
-      this.tx,
-      SCHEMA.computedDeploymentResource,
-      (tx) => this._preHook(tx),
-      (tx) => this._deletePrevious(tx),
-      (tx) => this._values(tx),
-      (tx) => this._postHook(tx),
-    );
+  async resourceSelectors() {
+    return this.tx.transaction(async (tx) => {
+      await this.getDeploymentsInWorkspace(tx);
+      await this.deleteExistingComputedResources(tx);
+      const computedResourceInserts =
+        await this.findMatchingResourcesForDeployments(tx);
+      if (computedResourceInserts.length === 0) return [];
+      return this.tx
+        .insert(SCHEMA.computedDeploymentResource)
+        .values(computedResourceInserts)
+        .onConflictDoNothing()
+        .returning();
+    });
   }
 }

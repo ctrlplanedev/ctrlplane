@@ -108,7 +108,7 @@ export class ResourceBuilder {
 
   private recomputePolicyReleaseTargets(tx: Tx) {
     const policyComputer = new WorkspacePolicyBuilder(tx, this.workspaceId);
-    return policyComputer.releaseTargetSelectors().replace();
+    return policyComputer.releaseTargetSelectors();
   }
 
   releaseTargets() {
