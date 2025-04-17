@@ -45,8 +45,6 @@ export const handleResourceProviderScan = async (
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
     const deleted = await deleteResources(tx, toDelete);
 
-    await selector(tx).compute().allResourceSelectors(workspaceId);
-
     await selector().compute().allResourceSelectors(workspaceId);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
     await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
