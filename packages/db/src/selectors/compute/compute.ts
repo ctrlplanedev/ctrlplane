@@ -16,7 +16,7 @@ export class ComputeBuilder {
 
   allResourceSelectors(workspaceId: string) {
     return Promise.all([
-      this.allEnvironments(workspaceId).resourceSelectors().replace(),
+      this.allEnvironments(workspaceId).resourceSelectors(),
       this.allDeployments(workspaceId).resourceSelectors().replace(),
     ]);
   }

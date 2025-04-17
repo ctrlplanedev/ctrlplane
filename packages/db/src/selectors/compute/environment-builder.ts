@@ -3,7 +3,6 @@ import { and, eq, inArray, isNotNull } from "drizzle-orm/pg-core/expressions";
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
-import { ReplaceBuilder } from "./replace-builder.js";
 
 export class EnvironmentBuilder {
   private readonly _queryBuilder;
@@ -14,10 +13,8 @@ export class EnvironmentBuilder {
     this._queryBuilder = new QueryBuilder(tx);
   }
 
-  private async _preHook(_tx: Tx) {}
-
-  private async _deletePrevious(tx: Tx) {
-    await tx
+  private deleteExistingComputedResources(tx: Tx) {
+    return tx
       .delete(SCHEMA.computedEnvironmentResource)
       .where(
         inArray(
@@ -60,8 +57,7 @@ export class EnvironmentBuilder {
 
   resourceSelectors() {
     return this.tx.transaction(async (tx) => {
-      await this._preHook(tx);
-      await this._deletePrevious(tx);
+      await this.deleteExistingComputedResources(tx);
       const vals = await this.findMatchingResourcesForEnvironments(tx);
 
       if (vals.length === 0) return [];
@@ -103,9 +99,7 @@ export class WorkspaceEnvironmentBuilder {
       .then((m) => m.map((e) => e.environment));
   }
 
-  private async _preHook(_tx: Tx) {}
-
-  private async _deletePrevious(tx: Tx) {
+  private async deleteExistingComputedResources(tx: Tx) {
     const envs = await this.getEnvironmentsWithSelectors(tx);
     await tx.delete(SCHEMA.computedEnvironmentResource).where(
       inArray(
@@ -115,7 +109,7 @@ export class WorkspaceEnvironmentBuilder {
     );
   }
 
-  private async _values(tx: Tx) {
+  private async findMatchingResourcesForEnvironments(tx: Tx) {
     const envs = await this.getEnvironmentsWithSelectors(tx);
     const promises = envs.map(async (env) => {
       if (env.resourceSelector == null) return [];
@@ -136,16 +130,20 @@ export class WorkspaceEnvironmentBuilder {
     return fulfilled.flat();
   }
 
-  private async _postHook(_tx: Tx) {}
-
   resourceSelectors() {
-    return new ReplaceBuilder(
-      this.tx,
-      SCHEMA.computedEnvironmentResource,
-      (tx) => this._preHook(tx),
-      (tx) => this._deletePrevious(tx),
-      (tx) => this._values(tx),
-      (tx) => this._postHook(tx),
-    );
+    return this.tx.transaction(async (tx) => {
+      await this.deleteExistingComputedResources(tx);
+      const vals = await this.findMatchingResourcesForEnvironments(tx);
+
+      if (vals.length === 0) return [];
+
+      const results = await tx
+        .insert(SCHEMA.computedEnvironmentResource)
+        .values(vals)
+        .onConflictDoNothing()
+        .returning();
+
+      return results;
+    });
   }
 }
