@@ -8,6 +8,7 @@ import { WorkspacePolicyBuilder } from "./policy-builder.js";
 
 export class ResourceBuilder {
   private workspaceId: string;
+
   constructor(
     private readonly tx: Tx,
     private readonly resources: SCHEMA.Resource[],
@@ -18,7 +19,7 @@ export class ResourceBuilder {
     this.workspaceId = Array.from(workspaceIds)[0]!;
   }
 
-  async recomputeResourceSelectors(tx: Tx) {
+  private async recomputeResourceSelectors(tx: Tx) {
     const envComputer = new WorkspaceEnvironmentBuilder(tx, this.workspaceId);
     const deploymentComputer = new WorkspaceDeploymentBuilder(
       tx,
@@ -30,17 +31,36 @@ export class ResourceBuilder {
     ]);
   }
 
-  get resourceIds() {
+  private get resourceIds() {
     return this.resources.map((r) => r.id);
   }
 
-  async deleteExistingReleaseTargets(tx: Tx) {
+  private async deleteExistingReleaseTargets(tx: Tx) {
     await tx
       .delete(SCHEMA.releaseTarget)
       .where(inArray(SCHEMA.releaseTarget.resourceId, this.resourceIds));
   }
 
-  async findMatchingEnvironmentDeploymentPairs(tx: Tx) {
+  /**
+   * Finds matching environment-deployment pairs for the given resources.
+   *
+   * A resource matches an environment-deployment pair if:
+   * 1. The resource matches the environment's selector (via
+   *    computedEnvironmentResource)
+   * 2. Either:
+   *    - The deployment's resourceSelector is null (meaning it includes all
+   *      resources that match the environment's selector), OR
+   *    - The resource matches the deployment's selector (via
+   *      computedDeploymentResource)
+   *
+   * The query joins:
+   * - Resources with their computed environment matches
+   * - Those environments with their system's deployments
+   * - Optionally joins with computed deployment matches
+   *
+   * Returns environment ID, deployment ID and resource ID for each match.
+   */
+  private async findMatchingEnvironmentDeploymentPairs(tx: Tx) {
     const isResourceMatchingEnvironment = eq(
       SCHEMA.computedEnvironmentResource.resourceId,
       SCHEMA.resource.id,
@@ -51,7 +71,11 @@ export class ResourceBuilder {
     );
 
     const matchingEnvironmentDeploymentPairs = await tx
-      .select()
+      .select({
+        environmentId: SCHEMA.environment.id,
+        deploymentId: SCHEMA.deployment.id,
+        resourceId: SCHEMA.resource.id,
+      })
       .from(SCHEMA.resource)
       .innerJoin(
         SCHEMA.computedEnvironmentResource,
@@ -83,14 +107,10 @@ export class ResourceBuilder {
         ),
       );
 
-    return matchingEnvironmentDeploymentPairs.map((r) => ({
-      environmentId: r.environment.id,
-      deploymentId: r.deployment.id,
-      resourceId: r.resource.id,
-    }));
+    return matchingEnvironmentDeploymentPairs;
   }
 
-  async updatePolicyReleaseTargets(tx: Tx) {
+  private async updatePolicyReleaseTargets(tx: Tx) {
     const policyComputer = new WorkspacePolicyBuilder(tx, this.workspaceId);
     await policyComputer.releaseTargetSelectors().replace();
   }
