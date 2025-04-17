@@ -43,12 +43,14 @@ export const handleResourceProviderScan = async (
 
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
+    const deleted = await deleteResources(tx, toDelete);
+
+    await selector(tx).compute().allResourceSelectors(workspaceId);
 
     await selector().compute().allResourceSelectors(workspaceId);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
     await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
 
-    const deleted = await deleteResources(tx, toDelete);
     log.info("completed handling resource provider scan");
     return { all: [...insertedResources, ...updatedResources], deleted };
   } catch (error) {
