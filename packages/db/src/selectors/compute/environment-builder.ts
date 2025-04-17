@@ -5,13 +5,10 @@ import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
 
 export class EnvironmentBuilder {
-  private readonly _queryBuilder;
   constructor(
     private readonly tx: Tx,
     private readonly environments: SCHEMA.Environment[],
-  ) {
-    this._queryBuilder = new QueryBuilder(tx);
-  }
+  ) {}
 
   private deleteExistingComputedResources(tx: Tx) {
     return tx
@@ -42,10 +39,11 @@ export class EnvironmentBuilder {
       const { system } = env;
       const { workspaceId } = system;
       if (env.resourceSelector == null) return [];
-      const resources = await this.tx.query.resource.findMany({
+      const qb = new QueryBuilder(tx);
+      const resources = await tx.query.resource.findMany({
         where: and(
           eq(SCHEMA.resource.workspaceId, workspaceId),
-          this._queryBuilder.resources().where(env.resourceSelector).sql(),
+          qb.resources().where(env.resourceSelector).sql(),
         ),
       });
       return resources.map((r) => ({ environmentId, resourceId: r.id }));
@@ -74,13 +72,10 @@ export class EnvironmentBuilder {
 }
 
 export class WorkspaceEnvironmentBuilder {
-  private readonly _queryBuilder;
   constructor(
     private readonly tx: Tx,
     private readonly workspaceId: string,
-  ) {
-    this._queryBuilder = new QueryBuilder(tx);
-  }
+  ) {}
 
   private async getEnvironmentsWithSelectors(tx: Tx) {
     return tx
@@ -113,10 +108,11 @@ export class WorkspaceEnvironmentBuilder {
     const envs = await this.getEnvironmentsWithSelectors(tx);
     const promises = envs.map(async (env) => {
       if (env.resourceSelector == null) return [];
+      const qb = new QueryBuilder(tx);
       const resources = await tx.query.resource.findMany({
         where: and(
           eq(SCHEMA.resource.workspaceId, this.workspaceId),
-          this._queryBuilder.resources().where(env.resourceSelector).sql(),
+          qb.resources().where(env.resourceSelector).sql(),
         ),
       });
 

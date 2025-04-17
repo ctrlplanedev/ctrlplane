@@ -16,8 +16,10 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 export const newResourceWorker = createWorker(
   Channel.NewResource,
   async ({ data: resource }) => {
-    const releaseTargets = await selector()
-      .compute()
+    const computeBuilder = selector().compute();
+    const { workspaceId } = resource;
+    await computeBuilder.allResourceSelectors(workspaceId);
+    const releaseTargets = await computeBuilder
       .resources([resource])
       .releaseTargets();
     const jobs = releaseTargets.map((rt) => ({

@@ -44,8 +44,9 @@ export const updateDeploymentWorker = createWorker(
       if (deployment == null)
         throw new Error(`Deployment not found: ${data.id}`);
 
-      const { releaseTargets: currentReleaseTargets } = deployment;
-      const currentResources = currentReleaseTargets.map((rt) => rt.resource);
+      const { releaseTargets } = deployment;
+      const currentResources = releaseTargets.map((rt) => rt.resource);
+
       const computeBuilder = selector().compute();
       await computeBuilder.deployments([data]).resourceSelectors();
       const { system } = deployment;
@@ -53,6 +54,7 @@ export const updateDeploymentWorker = createWorker(
       const rts = await computeBuilder
         .allResources(workspaceId)
         .releaseTargets();
+
       const exitedResources = currentResources.filter(
         (r) =>
           !rts.some(

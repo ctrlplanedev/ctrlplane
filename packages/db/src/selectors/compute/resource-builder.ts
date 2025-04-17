@@ -136,8 +136,8 @@ export class WorkspaceResourceBuilder {
     private readonly workspaceId: string,
   ) {}
 
-  private getResourcesInWorkspace() {
-    return this.tx.query.resource.findMany({
+  private getResourcesInWorkspace(tx: Tx) {
+    return tx.query.resource.findMany({
       where: eq(SCHEMA.resource.workspaceId, this.workspaceId),
     });
   }
@@ -227,7 +227,7 @@ export class WorkspaceResourceBuilder {
 
   releaseTargets() {
     return this.tx.transaction(async (tx) => {
-      const resources = await this.getResourcesInWorkspace();
+      const resources = await this.getResourcesInWorkspace(tx);
       const resourceIds = resources.map((r) => r.id);
       await this.deleteExistingReleaseTargets(tx, resourceIds);
       const vals = await this.findMatchingEnvironmentDeploymentPairs(

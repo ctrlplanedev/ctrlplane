@@ -63,9 +63,8 @@ export const updateEnvironmentWorker = createWorker(
       if (environment == null)
         throw new Error(`Environment not found: ${job.data.id}`);
 
-      const { releaseTargets: currentReleaseTargets } = environment;
-      const currentResources = currentReleaseTargets.map((rt) => rt.resource);
-
+      const { releaseTargets } = environment;
+      const currentResources = releaseTargets.map((rt) => rt.resource);
       const computeBuilder = selector().compute();
       await computeBuilder.environments([environment]).resourceSelectors();
       const { system } = environment;

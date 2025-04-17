@@ -5,13 +5,10 @@ import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
 
 export class DeploymentBuilder {
-  private readonly _queryBuilder;
   constructor(
     private readonly tx: Tx,
     private readonly deployments: SCHEMA.Deployment[],
-  ) {
-    this._queryBuilder = new QueryBuilder(tx);
-  }
+  ) {}
 
   private get deploymentIds() {
     return this.deployments.map((d) => d.id);
@@ -38,10 +35,11 @@ export class DeploymentBuilder {
       const { system } = d;
       const { workspaceId } = system;
       if (d.resourceSelector == null) return [];
+      const qb = new QueryBuilder(tx);
       const resources = await tx.query.resource.findMany({
         where: and(
           eq(SCHEMA.resource.workspaceId, workspaceId),
-          this._queryBuilder.resources().where(d.resourceSelector).sql(),
+          qb.resources().where(d.resourceSelector).sql(),
         ),
       });
 
@@ -61,7 +59,7 @@ export class DeploymentBuilder {
       const computedResourceInserts =
         await this.findMatchingResourcesForDeployments(tx);
       if (computedResourceInserts.length === 0) return [];
-      return this.tx
+      return tx
         .insert(SCHEMA.computedDeploymentResource)
         .values(computedResourceInserts)
         .onConflictDoNothing()
@@ -71,14 +69,10 @@ export class DeploymentBuilder {
 }
 
 export class WorkspaceDeploymentBuilder {
-  private readonly _queryBuilder;
-
   constructor(
     private readonly tx: Tx,
     private readonly workspaceId: string,
-  ) {
-    this._queryBuilder = new QueryBuilder(tx);
-  }
+  ) {}
 
   private getDeploymentsInWorkspace(tx: Tx) {
     return tx
@@ -115,10 +109,11 @@ export class WorkspaceDeploymentBuilder {
   ) {
     const promises = deployments.map(async (d) => {
       if (d.resourceSelector == null) return [];
+      const qb = new QueryBuilder(tx);
       const resources = await tx.query.resource.findMany({
         where: and(
           eq(SCHEMA.resource.workspaceId, this.workspaceId),
-          this._queryBuilder.resources().where(d.resourceSelector).sql(),
+          qb.resources().where(d.resourceSelector).sql(),
         ),
       });
 
@@ -141,7 +136,7 @@ export class WorkspaceDeploymentBuilder {
 
       if (computedResourceInserts.length === 0) return [];
 
-      return this.tx
+      return tx
         .insert(SCHEMA.computedDeploymentResource)
         .values(computedResourceInserts)
         .onConflictDoNothing()
