@@ -203,7 +203,12 @@ export const evaluateReleaseTargetWorker = createWorker(
           versionReleaseId: versionRelease.id,
           variableReleaseId: variableRelease.id,
         })
-        .onConflictDoNothing()
+        .onConflictDoNothing({
+          target: [
+            schema.release.versionReleaseId,
+            schema.release.variableReleaseId,
+          ],
+        })
         .returning()
         .then(takeFirst);
 
