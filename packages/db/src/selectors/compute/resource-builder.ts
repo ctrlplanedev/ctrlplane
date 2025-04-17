@@ -2,18 +2,15 @@ import { and, eq, inArray, isNull, or } from "drizzle-orm/pg-core/expressions";
 
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
-import { WorkspaceDeploymentBuilder } from "./deployment-builder.js";
-import { WorkspaceEnvironmentBuilder } from "./environment-builder.js";
 import { WorkspacePolicyBuilder } from "./policy-builder.js";
 
 /**
  * Builder class for computing release targets for a set of resources.
  *
  * This class handles:
- * 1. Recomputing resource selectors for environments and deployments
- * 2. Finding matching environment-deployment pairs for resources
- * 3. Creating release targets for those matches
- * 4. Updating policy release target selectors
+ * 1. Finding matching environment-deployment pairs for resources
+ * 2. Creating release targets for those matches
+ * 3. Updating policy release target selectors
  *
  * All resources must belong to the same workspace.
  */
@@ -28,31 +25,6 @@ export class ResourceBuilder {
     if (workspaceIds.size !== 1)
       throw new Error("All resources must be in the same workspace");
     this.workspaceId = Array.from(workspaceIds)[0]!;
-  }
-
-  /**
-   * Recomputes all resource selectors for environments and deployments in the
-   * workspace.
-   *
-   * When creating release targets, we need to ensure all computed selectors are
-   * up-to-date so resources are properly included in the correct environments
-   * and deployments.
-   *
-   * While we could assume everything is already computed correctly, we
-   * recompute here to guarantee correctness. If this becomes a performance
-   * bottleneck, this recomputation could be removed - but we must ensure all
-   * edge cases properly trigger recomputation when needed.
-   */
-  private recomputeResourceSelectors(tx: Tx) {
-    const envComputer = new WorkspaceEnvironmentBuilder(tx, this.workspaceId);
-    const deploymentComputer = new WorkspaceDeploymentBuilder(
-      tx,
-      this.workspaceId,
-    );
-    return Promise.all([
-      envComputer.resourceSelectors().replace(),
-      deploymentComputer.resourceSelectors().replace(),
-    ]);
   }
 
   private get resourceIds() {
@@ -83,6 +55,8 @@ export class ResourceBuilder {
    * - Optionally joins with computed deployment matches
    *
    * Returns environment ID, deployment ID and resource ID for each match.
+   *
+   * @note We assume the computed environment resource selector is up-to-date.
    */
   private findMatchingEnvironmentDeploymentPairs(tx: Tx) {
     const isResourceMatchingEnvironment = eq(
@@ -139,7 +113,6 @@ export class ResourceBuilder {
 
   releaseTargets() {
     return this.tx.transaction(async (tx) => {
-      await this.recomputeResourceSelectors(tx);
       await this.deleteExistingReleaseTargets(tx);
       const vals = await this.findMatchingEnvironmentDeploymentPairs(tx);
       if (vals.length === 0) return [];

@@ -14,12 +14,19 @@ import { ResourceBuilder } from "./resource-builder.js";
 export class ComputeBuilder {
   constructor(private readonly tx: Tx) {}
 
+  allResourceSelectors(workspaceId: string) {
+    return Promise.all([
+      this.allEnvironments(workspaceId).resourceSelectors().replace(),
+      this.allDeployments(workspaceId).resourceSelectors().replace(),
+    ]);
+  }
+
   allEnvironments(workspaceId: string) {
     return new WorkspaceEnvironmentBuilder(this.tx, workspaceId);
   }
 
-  environments(ids: string[]) {
-    return new EnvironmentBuilder(this.tx, ids);
+  environments(environments: schema.Environment[]) {
+    return new EnvironmentBuilder(this.tx, environments);
   }
 
   allDeployments(workspaceId: string) {
