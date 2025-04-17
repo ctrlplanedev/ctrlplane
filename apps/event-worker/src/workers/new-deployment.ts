@@ -32,7 +32,7 @@ export const newDeploymentWorker = createWorker(
       );
 
       const computeBuilder = selector().compute();
-      await computeBuilder.deployments([job.data.id]).resourceSelectors();
+      await computeBuilder.deployments([job.data]).resourceSelectors();
       const releaseTargets = await computeBuilder
         .resources(resources)
         .releaseTargets();

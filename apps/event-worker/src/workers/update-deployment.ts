@@ -43,7 +43,7 @@ export const updateDeploymentWorker = createWorker(
       });
       const currentResources = currentReleaseTargets.map((rt) => rt.resource);
       const computeBuilder = selector().compute();
-      await computeBuilder.deployments([data.id]).resourceSelectors();
+      await computeBuilder.deployments([data]).resourceSelectors();
       const rts = await computeBuilder
         .resources(currentResources)
         .releaseTargets();
