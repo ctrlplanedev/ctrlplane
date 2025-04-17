@@ -212,4 +212,6 @@ export const updatePolicyInTx = async (
         `Error replacing release target selectors for policy ${policy.id}`,
       ),
     );
+
+  return updatedPolicy;
 };
