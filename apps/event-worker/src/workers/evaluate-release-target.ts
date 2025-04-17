@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, eq, takeFirst } from "@ctrlplane/db";
+import { and, desc, eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -183,7 +183,19 @@ export const evaluateReleaseTargetWorker = createWorker(
           eq(schema.releaseTarget.environmentId, job.data.environmentId),
           eq(schema.releaseTarget.deploymentId, job.data.deploymentId),
         ),
-        with: { resource: true, environment: true, deployment: true },
+        with: {
+          resource: true,
+          environment: true,
+          deployment: true,
+          versionReleases: {
+            limit: 1,
+            orderBy: desc(schema.versionRelease.createdAt),
+          },
+          variableReleases: {
+            limit: 1,
+            orderBy: desc(schema.variableSetRelease.createdAt),
+          },
+        },
       });
       if (!releaseTarget) throw new Error("Failed to get release target");
 
@@ -197,17 +209,17 @@ export const evaluateReleaseTargetWorker = createWorker(
         return;
       }
 
+      const isSameVersionRelease =
+        releaseTarget.versionReleases.at(0)?.id === versionRelease.id;
+      const isSameVariableRelease =
+        releaseTarget.variableReleases.at(0)?.id === variableRelease.id;
+      if (isSameVersionRelease && isSameVariableRelease) return;
+
       const release = await db
         .insert(schema.release)
         .values({
           versionReleaseId: versionRelease.id,
           variableReleaseId: variableRelease.id,
-        })
-        .onConflictDoNothing({
-          target: [
-            schema.release.versionReleaseId,
-            schema.release.variableReleaseId,
-          ],
         })
         .returning()
         .then(takeFirst);
