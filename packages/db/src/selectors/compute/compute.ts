@@ -33,8 +33,8 @@ export class ComputeBuilder {
     return new WorkspaceDeploymentBuilder(this.tx, workspaceId);
   }
 
-  deployments(ids: string[]) {
-    return new DeploymentBuilder(this.tx, ids);
+  deployments(deployments: schema.Deployment[]) {
+    return new DeploymentBuilder(this.tx, deployments);
   }
 
   allPolicies(workspaceId: string) {

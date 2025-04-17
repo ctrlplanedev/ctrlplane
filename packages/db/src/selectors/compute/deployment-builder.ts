@@ -8,20 +8,29 @@ export class DeploymentBuilder {
   private readonly _queryBuilder;
   constructor(
     private readonly tx: Tx,
-    private readonly ids: string[],
+    private readonly deployments: SCHEMA.Deployment[],
   ) {
     this._queryBuilder = new QueryBuilder(tx);
+  }
+
+  private get deploymentIds() {
+    return this.deployments.map((d) => d.id);
   }
 
   private async deleteExistingComputedResources(tx: Tx) {
     await tx
       .delete(SCHEMA.computedDeploymentResource)
-      .where(inArray(SCHEMA.computedDeploymentResource.deploymentId, this.ids));
+      .where(
+        inArray(
+          SCHEMA.computedDeploymentResource.deploymentId,
+          this.deploymentIds,
+        ),
+      );
   }
 
   private async findMatchingResourcesForDeployments(tx: Tx) {
     const deployments = await tx.query.deployment.findMany({
-      where: inArray(SCHEMA.deployment.id, this.ids),
+      where: inArray(SCHEMA.deployment.id, this.deploymentIds),
       with: { system: true },
     });
 
