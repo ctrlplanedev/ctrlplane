@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { and, eq, inArray, isNotNull } from "drizzle-orm/pg-core/expressions";
 
 import type { Tx } from "../../common.js";
@@ -9,7 +10,7 @@ export class EnvironmentBuilder {
   private readonly _queryBuilder;
   constructor(
     private readonly tx: Tx,
-    private readonly ids: string[],
+    private readonly environments: SCHEMA.Environment[],
   ) {
     this._queryBuilder = new QueryBuilder(tx);
   }
@@ -20,17 +21,28 @@ export class EnvironmentBuilder {
     await tx
       .delete(SCHEMA.computedEnvironmentResource)
       .where(
-        inArray(SCHEMA.computedEnvironmentResource.environmentId, this.ids),
+        inArray(
+          SCHEMA.computedEnvironmentResource.environmentId,
+          this.environmentIds,
+        ),
       );
   }
 
-  private async _values(tx: Tx) {
+  private get environmentIds() {
+    return this.environments.map((e) => e.id);
+  }
+
+  private async findMatchingResourcesForEnvironments(tx: Tx) {
     const envs = await tx.query.environment.findMany({
-      where: inArray(SCHEMA.environment.id, this.ids),
+      where: and(
+        inArray(SCHEMA.environment.id, this.environmentIds),
+        isNotNull(SCHEMA.environment.resourceSelector),
+      ),
       with: { system: true },
     });
 
     const promises = envs.map(async (env) => {
+      const environmentId = env.id;
       const { system } = env;
       const { workspaceId } = system;
       if (env.resourceSelector == null) return [];
@@ -40,28 +52,29 @@ export class EnvironmentBuilder {
           this._queryBuilder.resources().where(env.resourceSelector).sql(),
         ),
       });
-
-      return resources.map((r) => ({
-        environmentId: env.id,
-        resourceId: r.id,
-      }));
+      return resources.map((r) => ({ environmentId, resourceId: r.id }));
     });
 
     const fulfilled = await Promise.all(promises);
     return fulfilled.flat();
   }
 
-  private async _postHook(_tx: Tx) {}
-
   resourceSelectors() {
-    return new ReplaceBuilder(
-      this.tx,
-      SCHEMA.computedEnvironmentResource,
-      (tx) => this._preHook(tx),
-      (tx) => this._deletePrevious(tx),
-      (tx) => this._values(tx),
-      (tx) => this._postHook(tx),
-    );
+    return this.tx.transaction(async (tx) => {
+      await this._preHook(tx);
+      await this._deletePrevious(tx);
+      const vals = await this.findMatchingResourcesForEnvironments(tx);
+
+      if (vals.length === 0) return [];
+
+      const results = await tx
+        .insert(SCHEMA.computedEnvironmentResource)
+        .values(vals)
+        .onConflictDoNothing()
+        .returning();
+
+      return results;
+    });
   }
 }
 
