@@ -36,6 +36,7 @@ import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { DeploymentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/condition/DeploymentConditionRender";
 import { EnvironmentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/environment/condition/EnvironmentConditionRender";
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionRender";
 import { api } from "~/trpc/react";
 
 const editConfigSchema = z.object({
@@ -360,6 +361,29 @@ export const EditConfiguration: React.FC<{
                           <FormLabel>Deployment</FormLabel>
                           <div className="min-w-[1000px] text-sm">
                             <DeploymentConditionRender
+                              condition={value}
+                              onChange={onChange}
+                              depth={0}
+                              className="w-full"
+                            />
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      ) : (
+                        <></>
+                      )
+                    }
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`targets.${index}.resourceSelector`}
+                    render={({ field: { value, onChange } }) =>
+                      value != null ? (
+                        <FormItem>
+                          <FormLabel>Resource</FormLabel>
+                          <div className="min-w-[1000px] text-sm">
+                            <ResourceConditionRender
                               condition={value}
                               onChange={onChange}
                               depth={0}
