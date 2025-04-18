@@ -5,7 +5,6 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     REDIS_URL: z.string(),
-    ENABLE_NEW_POLICY_ENGINE: z.boolean().default(false),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

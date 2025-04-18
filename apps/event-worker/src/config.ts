@@ -18,7 +18,6 @@ export const env = createEnv({
     AZURE_APP_CLIENT_ID: z.string().optional(),
     AZURE_APP_CLIENT_SECRET: z.string().optional(),
     PORT: z.number().default(3123),
-    ENABLE_NEW_POLICY_ENGINE: z.boolean().default(false),
   },
   runtimeEnv: process.env,
 });
