@@ -5,7 +5,7 @@
     "node": ">=22.10.0",
     "pnpm": "^10.2.0"
   },
-  "packageManager": "pnpm@10.7.1",
+  "packageManager": "pnpm@10.8.1",
   "scripts": {
     "build": "turbo build",
     "build:digitalocean": "pnpm install --production=false && pnpm build",
@@ -28,9 +28,9 @@
   },
   "devDependencies": {
     "@ctrlplane/prettier-config": "workspace:*",
-    "@turbo/gen": "^2.4.0",
+    "@turbo/gen": "^2.5.0",
     "prettier": "catalog:",
-    "turbo": "^2.4.0",
+    "turbo": "^2.5.0",
     "typescript": "^5.7.3"
   },
   "prettier": "@ctrlplane/prettier-config",
