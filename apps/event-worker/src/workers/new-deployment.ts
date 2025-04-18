@@ -1,8 +1,10 @@
 import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
+
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "new-deployment" });
 
@@ -41,12 +43,7 @@ export const newDeploymentWorker = createWorker(
       );
 
       const releaseTargets = await recomputeReleaseTargets(job.data, resources);
-
-      const evaluateJobs = releaseTargets.map((rt) => ({
-        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-        data: rt,
-      }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
+      await dispatchEvaluateJobs(releaseTargets);
     } catch (error) {
       log.error("Error upserting release targets", { error });
       throw error;
