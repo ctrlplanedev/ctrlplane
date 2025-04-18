@@ -210,5 +210,4 @@ export const updatePolicyInTx = async (
     );
 
   return updatedPolicy;
-  return updatedPolicy;
 };
