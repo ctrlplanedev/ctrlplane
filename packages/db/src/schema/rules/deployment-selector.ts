@@ -35,11 +35,8 @@ export const createPolicyRuleDeploymentVersionSelector = createInsertSchema(
   policyRuleDeploymentVersionSelector,
   {
     policyId: z.string().uuid(),
-    deploymentVersionSelector: deploymentVersionCondition
-      .nullable()
-      .refine(
-        (selector) =>
-          selector == null || isValidDeploymentVersionCondition(selector),
-      ),
+    deploymentVersionSelector: deploymentVersionCondition.refine(
+      isValidDeploymentVersionCondition,
+    ),
   },
 ).omit({ id: true });
