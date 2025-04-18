@@ -12,6 +12,10 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import {
+  convertEmptySelectorsToNull,
+  isValidTarget,
+} from "../../_utils/convert-targets";
 
 export type PolicyTab =
   | "config"
@@ -88,9 +92,18 @@ export const PolicyContextProvider: React.FC<{
   const utils = api.useUtils();
   const createPolicy = api.policy.create.useMutation();
 
-  const onSubmit = form.handleSubmit((data) =>
-    createPolicy
-      .mutateAsync({ ...data, workspaceId })
+  const onSubmit = form.handleSubmit((data) => {
+    const targets = data.targets.map(convertEmptySelectorsToNull);
+    const isTargetsValid = targets.every(isValidTarget);
+    if (!isTargetsValid) {
+      const errorStr = "One or more of your targets are invalid";
+      form.setError("targets", { message: errorStr });
+      toast.error("Error creating policy", { description: errorStr });
+      return;
+    }
+
+    return createPolicy
+      .mutateAsync({ ...data, workspaceId, targets })
       .then(() => {
         toast.success("Policy created successfully");
         router.push(urls.workspace(workspaceSlug).policies().baseUrl());
@@ -100,8 +113,8 @@ export const PolicyContextProvider: React.FC<{
         toast.error("Failed to create policy", {
           description: error.message,
         });
-      }),
-  );
+      });
+  });
 
   return (
     <PolicyContext.Provider

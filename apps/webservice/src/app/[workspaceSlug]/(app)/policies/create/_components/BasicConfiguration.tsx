@@ -3,6 +3,7 @@
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useFieldArray } from "react-hook-form";
 
+import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
@@ -66,6 +67,15 @@ const TARGET_SCOPE_OPTIONS = [
     isEnvironmentSelectorNull: true,
     isResourceSelectorNull: false,
   },
+  {
+    value: "custom",
+    label: "Custom",
+    description:
+      "Apply policy to any combination of deployments, environments, and resources",
+    isDeploymentSelectorNull: false,
+    isEnvironmentSelectorNull: false,
+    isResourceSelectorNull: false,
+  },
 ];
 
 export const BasicConfiguration: React.FC = () => {
@@ -75,6 +85,8 @@ export const BasicConfiguration: React.FC = () => {
     control: form.control,
     name: "targets",
   });
+
+  const isTargetsError = form.formState.errors.targets != null;
 
   return (
     <div className="space-y-8">
@@ -184,7 +196,14 @@ export const BasicConfiguration: React.FC = () => {
 
       <div className="space-y-6">
         <div className="space-y-1">
-          <h3 className="text-md font-medium">Policy Targets</h3>
+          <h3
+            className={cn(
+              "text-md font-medium",
+              isTargetsError && "text-red-500",
+            )}
+          >
+            Policy Targets
+          </h3>
           <p className="text-sm text-muted-foreground">
             Define which environments, deployments and resources this policy
             applies to

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { z } from "zod";
 
+import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +31,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { toast } from "@ctrlplane/ui/toast";
 import { deploymentCondition } from "@ctrlplane/validators/deployments";
 import { environmentCondition } from "@ctrlplane/validators/environments";
 import { resourceCondition } from "@ctrlplane/validators/resources";
@@ -37,6 +39,11 @@ import { resourceCondition } from "@ctrlplane/validators/resources";
 import { DeploymentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/condition/DeploymentConditionRender";
 import { EnvironmentConditionRender } from "~/app/[workspaceSlug]/(app)/_components/environment/condition/EnvironmentConditionRender";
 import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionRender";
+import {
+  convertEmptySelectorsToNull,
+  convertNullSelectorsToEmptyConditions,
+  isValidTarget,
+} from "~/app/[workspaceSlug]/(app)/policies/_utils/convert-targets";
 import { api } from "~/trpc/react";
 
 const editConfigSchema = z.object({
@@ -109,7 +116,7 @@ export const EditConfiguration: React.FC<{
       description: policy.description,
       priority: policy.priority,
       enabled: policy.enabled,
-      targets: policy.targets,
+      targets: policy.targets.map(convertNullSelectorsToEmptyConditions),
     },
   });
 
@@ -117,17 +124,28 @@ export const EditConfiguration: React.FC<{
   const router = useRouter();
 
   const { id } = policy;
-  const onSubmit = form.handleSubmit((data) =>
+  const onSubmit = form.handleSubmit((data) => {
+    const targets = data.targets.map(convertEmptySelectorsToNull);
+    const isTargetsValid = targets.every(isValidTarget);
+    if (!isTargetsValid) {
+      const errorStr = "One or more of your targets are invalid";
+      form.setError("targets", { message: errorStr });
+      toast.error("Error updating policy", { description: errorStr });
+      return;
+    }
+
     updatePolicy
-      .mutateAsync({ id, data })
+      .mutateAsync({ id, data: { ...data, targets } })
       .then((res) => form.reset(res))
-      .then(() => router.refresh()),
-  );
+      .then(() => router.refresh());
+  });
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "targets",
   });
+
+  const isTargetsError = form.formState.errors.targets != null;
 
   return (
     <Form {...form}>
@@ -238,7 +256,14 @@ export const EditConfiguration: React.FC<{
 
         <div className="space-y-6">
           <div className="space-y-1">
-            <h3 className="text-md font-medium">Policy Targets</h3>
+            <h3
+              className={cn(
+                "text-md font-medium",
+                isTargetsError && "text-red-500",
+              )}
+            >
+              Policy Targets
+            </h3>
             <p className="text-sm text-muted-foreground">
               Define which environments and deployments this policy applies to
             </p>
