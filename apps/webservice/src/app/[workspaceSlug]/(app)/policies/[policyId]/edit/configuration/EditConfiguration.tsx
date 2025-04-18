@@ -43,7 +43,7 @@ import {
   convertEmptySelectorsToNull,
   convertNullSelectorsToEmptyConditions,
   isValidTarget,
-} from "~/app/[workspaceSlug]/(app)/policies/_utils/convert-targets";
+} from "~/app/[workspaceSlug]/(app)/policies/_utils/policy-targets";
 import { api } from "~/trpc/react";
 
 const editConfigSchema = z.object({

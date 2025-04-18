@@ -15,7 +15,7 @@ import { api } from "~/trpc/react";
 import {
   convertEmptySelectorsToNull,
   isValidTarget,
-} from "../../_utils/convert-targets";
+} from "../../_utils/policy-targets";
 
 export type PolicyTab =
   | "config"
