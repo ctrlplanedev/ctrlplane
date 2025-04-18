@@ -70,7 +70,7 @@ export const VersionConditionsPoliciesTable: React.FC<
                           .workspace(workspaceSlug)
                           .policies()
                           .edit(policy.id)
-                          .baseUrl()}
+                          .deploymentFlow()}
                       >
                         <IconExternalLink className="h-4 w-4" />
                         <span className="sr-only">Edit Policy</span>

@@ -124,7 +124,7 @@ const PolicyActionMenu: React.FC<PolicyActionMenuProps> = ({
             .workspace(workspaceSlug)
             .policies()
             .edit(policy.id)
-            .baseUrl()}
+            .qualitySecurity()}
           className="flex cursor-pointer items-center gap-2"
         >
           <IconEdit className="h-4 w-4" />
