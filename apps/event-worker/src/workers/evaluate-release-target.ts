@@ -224,7 +224,7 @@ export const evaluateReleaseTargetWorker = createWorker(
         .returning()
         .then(takeFirst);
 
-      if (env.NODE_ENV === "development") {
+      if (env.ENABLE_NEW_POLICY_ENGINE) {
         const job = await db.transaction((tx) => createRelease(tx, release));
         getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
       }
