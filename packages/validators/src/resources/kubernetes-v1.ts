@@ -92,3 +92,58 @@ export const kubernetesNamespaceV1 = z.object({
 });
 
 export type KubernetesNamespaceV1 = z.infer<typeof kubernetesNamespaceV1>;
+
+export const kubernetesDeploymentV1 = z.object({
+  version: z.literal("kubernetes/v1"),
+  kind: z.literal("Deployment"),
+  identifier: z.string(),
+  name: z.string(),
+  config: clusterConfig.and(
+    z.object({
+      namespace: z.string(),
+      image: z.string(),
+      replicas: z.number().optional(),
+      ports: z
+        .array(
+          z.object({
+            containerPort: z.number(),
+            protocol: z.enum(["TCP", "UDP"]).optional(),
+          }),
+        )
+        .optional(),
+      env: z
+        .array(
+          z.object({
+            name: z.string(),
+            value: z.string().optional(),
+            valueFrom: z
+              .object({
+                configMapKeyRef: z
+                  .object({
+                    name: z.string(),
+                    key: z.string(),
+                  })
+                  .optional(),
+                secretKeyRef: z
+                  .object({
+                    name: z.string(),
+                    key: z.string(),
+                  })
+                  .optional(),
+              })
+              .optional(),
+          }),
+        )
+        .optional(),
+    }),
+  ),
+  metadata: z.record(z.string()).and(
+    z
+      .object({
+        "kubernetes/uid": z.string(),
+        "kubernetes/created-at": z.string(),
+        "kubernetes/generation": z.string(),
+      })
+      .partial(),
+  ),
+});
