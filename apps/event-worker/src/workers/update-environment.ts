@@ -4,9 +4,11 @@ import _ from "lodash";
 import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
+
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({
   module: "env-selector-update",
@@ -32,6 +34,16 @@ const dispatchExitHooks = async (
 
   const handleEventPromises = events.map(handleEvent);
   await Promise.allSettled(handleEventPromises);
+};
+
+const recomputeReleaseTargets = async (
+  environment: schema.Environment & { system: schema.System },
+) => {
+  const computeBuilder = selector().compute();
+  await computeBuilder.environments([environment]).resourceSelectors();
+  const { system } = environment;
+  const { workspaceId } = system;
+  return computeBuilder.allResources(workspaceId).releaseTargets();
 };
 
 /**
@@ -64,25 +76,24 @@ export const updateEnvironmentWorker = createWorker(
         throw new Error(`Environment not found: ${job.data.id}`);
 
       const { releaseTargets } = environment;
-      const currentResources = releaseTargets.map((rt) => rt.resource);
-      const computeBuilder = selector().compute();
-      await computeBuilder.environments([environment]).resourceSelectors();
-      const { system } = environment;
-      const { workspaceId } = system;
-      const rts = await computeBuilder
-        .allResources(workspaceId)
-        .releaseTargets();
+      const currentResources = _.chain(releaseTargets)
+        .map((rt) => rt.resource)
+        .uniqBy((r) => r.id)
+        .value();
 
-      const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
+      const rts = await recomputeReleaseTargets(environment);
+      await dispatchEvaluateJobs(rts);
 
-      const exitedResources = currentResources.filter(
-        (r) =>
-          !rts.some(
-            (rt) =>
-              rt.resourceId === r.id && rt.environmentId === environment.id,
-          ),
-      );
+      const exitedResources = _.chain(currentResources)
+        .filter(
+          (r) =>
+            !rts.some(
+              (rt) =>
+                rt.resourceId === r.id && rt.environmentId === environment.id,
+            ),
+        )
+        .uniqBy((r) => r.id)
+        .value();
       await dispatchExitHooks(db, environment.systemId, exitedResources);
     } catch (error) {
       log.error("Error updating environment", { error });

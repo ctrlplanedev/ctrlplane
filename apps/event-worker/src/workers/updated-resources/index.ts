@@ -1,9 +1,12 @@
+import _ from "lodash";
+
 import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 
+import { dispatchEvaluateJobs } from "../../utils/dispatch-evaluate-jobs.js";
 import { withSpan } from "./span.js";
 
 const dispatchExitHooks = async (
@@ -37,15 +40,12 @@ export const updatedResourceWorker = createWorker(
       .resources([resource])
       .releaseTargets();
 
-    const jobs = rts.map((rt) => ({
-      name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-      data: rt,
-    }));
-    await getQueue(Channel.EvaluateReleaseTarget).addBulk(jobs);
+    await dispatchEvaluateJobs(rts);
 
-    const exitedDeployments = currentDeployments.filter(
-      (d) => !rts.some((nrt) => nrt.deploymentId === d.id),
-    );
+    const exitedDeployments = _.chain(currentDeployments)
+      .filter((d) => !rts.some((nrt) => nrt.deploymentId === d.id))
+      .uniqBy((d) => d.id)
+      .value();
     await dispatchExitHooks(exitedDeployments, resource);
   }),
 );

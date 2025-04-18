@@ -6,6 +6,15 @@ import { logger } from "@ctrlplane/logger";
 
 const log = logger.child({ module: "new-deployment" });
 
+const recomputeReleaseTargets = async (
+  deployment: schema.Deployment,
+  resources: schema.Resource[],
+) => {
+  const computeBuilder = selector().compute();
+  await computeBuilder.deployments([deployment]).resourceSelectors();
+  return computeBuilder.resources(resources).releaseTargets();
+};
+
 /**
  * Worker that processes new deployment events.
  *
@@ -31,11 +40,7 @@ export const newDeploymentWorker = createWorker(
         e.computedResources.map((r) => r.resource),
       );
 
-      const computeBuilder = selector().compute();
-      await computeBuilder.deployments([job.data]).resourceSelectors();
-      const releaseTargets = await computeBuilder
-        .resources(resources)
-        .releaseTargets();
+      const releaseTargets = await recomputeReleaseTargets(job.data, resources);
 
       const evaluateJobs = releaseTargets.map((rt) => ({
         name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,

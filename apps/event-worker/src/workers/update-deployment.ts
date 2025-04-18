@@ -3,9 +3,11 @@ import _ from "lodash";
 import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
+
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "update-deployment" });
 
@@ -20,6 +22,16 @@ const dispatchExitHooks = async (
 
   const handleEventPromises = events.map(handleEvent);
   await Promise.allSettled(handleEventPromises);
+};
+
+const recomputeReleaseTargets = async (
+  deployment: schema.Deployment & { system: schema.System },
+) => {
+  const computeBuilder = selector().compute();
+  await computeBuilder.deployments([deployment]).resourceSelectors();
+  const { system } = deployment;
+  const { workspaceId } = system;
+  return computeBuilder.allResources(workspaceId).releaseTargets();
 };
 
 /**
@@ -47,23 +59,18 @@ export const updateDeploymentWorker = createWorker(
       const { releaseTargets } = deployment;
       const currentResources = releaseTargets.map((rt) => rt.resource);
 
-      const computeBuilder = selector().compute();
-      await computeBuilder.deployments([data]).resourceSelectors();
-      const { system } = deployment;
-      const { workspaceId } = system;
-      const rts = await computeBuilder
-        .allResources(workspaceId)
-        .releaseTargets();
+      const rts = await recomputeReleaseTargets(deployment);
+      await dispatchEvaluateJobs(rts);
 
-      const exitedResources = currentResources.filter(
-        (r) =>
-          !rts.some(
-            (rt) => rt.resourceId === r.id && rt.deploymentId === data.id,
-          ),
-      );
-
-      const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
+      const exitedResources = _.chain(currentResources)
+        .filter(
+          (r) =>
+            !rts.some(
+              (rt) => rt.resourceId === r.id && rt.deploymentId === data.id,
+            ),
+        )
+        .uniqBy((r) => r.id)
+        .value();
       await dispatchExitHooks(data, exitedResources);
     } catch (error) {
       log.error("Error updating deployment", { error });

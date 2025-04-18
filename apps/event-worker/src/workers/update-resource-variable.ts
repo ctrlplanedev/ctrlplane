@@ -1,9 +1,13 @@
+import _ from "lodash";
+
 import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
+
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "update-resource-variable" });
 
@@ -18,6 +22,12 @@ const dispatchExitHooks = async (
 
   const handleEventPromises = events.map(handleEvent);
   await Promise.allSettled(handleEventPromises);
+};
+
+const recomputeReleaseTargets = async (resource: schema.Resource) => {
+  const computeBuilder = selector().compute();
+  await computeBuilder.allResourceSelectors(resource.workspaceId);
+  return computeBuilder.resources([resource]).releaseTargets();
 };
 
 /**
@@ -48,19 +58,13 @@ export const updateResourceVariableWorker = createWorker(
         (rt) => rt.deployment,
       );
 
-      const computeBuilder = selector().compute();
-      await computeBuilder.allResourceSelectors(resource.workspaceId);
-      const rts = await computeBuilder.resources([resource]).releaseTargets();
+      const rts = await recomputeReleaseTargets(resource);
+      await dispatchEvaluateJobs(rts);
 
-      const exitedDeployments = currentDeployments.filter(
-        (d) => !rts.some((rt) => rt.deploymentId === d.id),
-      );
-
-      const jobs = rts.map((rt) => ({
-        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-        data: rt,
-      }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(jobs);
+      const exitedDeployments = _.chain(currentDeployments)
+        .filter((d) => !rts.some((rt) => rt.deploymentId === d.id))
+        .uniqBy((d) => d.id)
+        .value();
       await dispatchExitHooks(exitedDeployments, resource);
     } catch (error) {
       log.error("Error updating resource variable", { error });
