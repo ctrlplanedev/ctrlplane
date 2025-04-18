@@ -46,6 +46,13 @@ const cancelJobsForDeletedResources = (tx: Tx, resources: Resource[]) =>
       ),
     );
 
+const softDeleteResources = async (tx: Tx, resourceIds: string[]) =>
+  tx
+    .update(SCHEMA.resource)
+    .set({ deletedAt: new Date() })
+    .where(inArray(SCHEMA.resource.id, resourceIds))
+    .returning();
+
 /**
  * Delete resources from the database.
  *
@@ -59,16 +66,15 @@ export const deleteResources = async (tx: Tx, resources: Resource[]) => {
   const events = await eventsPromises.then((res) => res.flat());
   await Promise.all(events.map(handleEvent));
   const resourceIds = resources.map((r) => r.id);
-  const deleteAssociatedObjects = Promise.all(
+  const deleteAssociatedObjectsPromise = Promise.all(
     resources.map((r) => deleteObjectsAssociatedWithResource(tx, r)),
   );
-  const cancelJobs = cancelJobsForDeletedResources(tx, resources);
-  await Promise.all([
-    deleteAssociatedObjects,
-    cancelJobs,
-    tx
-      .update(SCHEMA.resource)
-      .set({ deletedAt: new Date() })
-      .where(inArray(SCHEMA.resource.id, resourceIds)),
+  const cancelJobsPromise = cancelJobsForDeletedResources(tx, resources);
+  const softDeleteResourcesPromise = softDeleteResources(tx, resourceIds);
+  const [, , softDeletedResources] = await Promise.all([
+    deleteAssociatedObjectsPromise,
+    cancelJobsPromise,
+    softDeleteResourcesPromise,
   ]);
+  return softDeletedResources;
 };
