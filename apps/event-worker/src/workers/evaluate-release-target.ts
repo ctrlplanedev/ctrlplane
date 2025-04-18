@@ -11,7 +11,6 @@ import {
   VersionReleaseManager,
 } from "@ctrlplane/rule-engine";
 
-import { env } from "../config.js";
 import { createAndAcquireMutex } from "../releases/mutex.js";
 
 const log = logger.child({ worker: "evaluate-release-target" });
