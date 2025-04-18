@@ -1,14 +1,14 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { eq, selector, takeFirst } from "@ctrlplane/db";
+import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
-import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({
   module: "env-selector-update",
@@ -36,42 +36,14 @@ const dispatchExitHooks = async (
   await Promise.allSettled(handleEventPromises);
 };
 
-const recomputeResourcesAndReturnDiff = async (
-  db: Tx,
-  environmentId: string,
+const recomputeReleaseTargets = async (
+  environment: schema.Environment & { system: schema.System },
 ) => {
-  const currentComputedResources = await db
-    .select()
-    .from(schema.computedEnvironmentResource)
-    .innerJoin(
-      schema.resource,
-      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
-    )
-    .where(eq(schema.computedEnvironmentResource.environmentId, environmentId));
-  const currentResources = currentComputedResources.map((r) => r.resource);
-
-  await selector()
-    .compute()
-    .environments([environmentId])
-    .resourceSelectors()
-    .replace();
-
-  const newComputedResources = await db
-    .select()
-    .from(schema.computedEnvironmentResource)
-    .innerJoin(
-      schema.resource,
-      eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
-    )
-    .where(eq(schema.computedEnvironmentResource.environmentId, environmentId));
-
-  const newResources = newComputedResources.map((r) => r.resource);
-
-  const exitedResources = currentResources.filter(
-    (r) => !newResources.some((nr) => nr.id === r.id),
-  );
-
-  return { newResources, exitedResources };
+  const computeBuilder = selector().compute();
+  await computeBuilder.environments([environment]).resourceSelectors();
+  const { system } = environment;
+  const { workspaceId } = system;
+  return computeBuilder.allResources(workspaceId).releaseTargets();
 };
 
 /**
@@ -93,34 +65,35 @@ export const updateEnvironmentWorker = createWorker(
   Channel.UpdateEnvironment,
   async (job) => {
     try {
-      const { oldSelector, ...environment } = job.data;
-      if (_.isEqual(oldSelector, environment.resourceSelector)) return;
+      const { oldSelector, resourceSelector } = job.data;
+      if (_.isEqual(oldSelector, resourceSelector)) return;
 
-      const { newResources, exitedResources } =
-        await recomputeResourcesAndReturnDiff(db, environment.id);
-      const allResources = [...newResources, ...exitedResources];
-      const releaseTargetPromises = allResources.map(async (r) =>
-        replaceReleaseTargets(db, r),
-      );
-      const fulfilled = await Promise.all(releaseTargetPromises);
-      const rts = fulfilled.flat();
+      const environment = await db.query.environment.findFirst({
+        where: eq(schema.environment.id, job.data.id),
+        with: { system: true, releaseTargets: { with: { resource: true } } },
+      });
+      if (environment == null)
+        throw new Error(`Environment not found: ${job.data.id}`);
 
-      const system = await db
-        .select()
-        .from(schema.system)
-        .where(eq(schema.system.id, environment.systemId))
-        .then(takeFirst);
-      const { workspaceId } = system;
+      const { releaseTargets } = environment;
+      const currentResources = _.chain(releaseTargets)
+        .map((rt) => rt.resource)
+        .uniqBy((r) => r.id)
+        .value();
 
-      await selector()
-        .compute()
-        .allPolicies(workspaceId)
-        .releaseTargetSelectors()
-        .replace();
+      const rts = await recomputeReleaseTargets(environment);
+      await dispatchEvaluateJobs(rts);
 
-      const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
-
+      const exitedResources = _.chain(currentResources)
+        .filter(
+          (r) =>
+            !rts.some(
+              (rt) =>
+                rt.resourceId === r.id && rt.environmentId === environment.id,
+            ),
+        )
+        .uniqBy((r) => r.id)
+        .value();
       await dispatchExitHooks(db, environment.systemId, exitedResources);
     } catch (error) {
       log.error("Error updating environment", { error });

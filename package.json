@@ -38,7 +38,13 @@
     "onlyBuiltDependencies": [
       "@nestjs/core",
       "@openapitools/openapi-generator-cli",
+      "@scarf/scarf",
+      "@tree-sitter-grammars/tree-sitter-yaml",
       "core-js-pure",
+      "esbuild",
+      "msgpackr-extract",
+      "protobufjs",
+      "sharp",
       "tree-sitter",
       "tree-sitter-json",
       "tree-sitter-yaml"

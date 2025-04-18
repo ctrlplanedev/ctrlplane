@@ -42,6 +42,8 @@ export const mergePolicies = (policies: Policy[]): Policy | null => {
 
   return {
     ...merged,
-    deploymentVersionSelector: mergedVersionSelector,
+    deploymentVersionSelector: {
+      deploymentVersionSelector: mergedVersionSelector,
+    },
   };
 };

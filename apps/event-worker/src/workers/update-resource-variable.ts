@@ -1,12 +1,34 @@
-import { eq, selector, takeFirst } from "@ctrlplane/db";
+import _ from "lodash";
+
+import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
+import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
-import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "update-resource-variable" });
+
+const dispatchExitHooks = async (
+  deployments: schema.Deployment[],
+  exitedResource: schema.Resource,
+) => {
+  const events = deployments.map((deployment) => ({
+    action: "deployment.resource.removed" as const,
+    payload: { deployment, resource: exitedResource },
+  }));
+
+  const handleEventPromises = events.map(handleEvent);
+  await Promise.allSettled(handleEventPromises);
+};
+
+const recomputeReleaseTargets = async (resource: schema.Resource) => {
+  const computeBuilder = selector().compute();
+  await computeBuilder.allResourceSelectors(resource.workspaceId);
+  return computeBuilder.resources([resource]).releaseTargets();
+};
 
 /**
  * Worker that updates a resource variable
@@ -26,27 +48,24 @@ export const updateResourceVariableWorker = createWorker(
     try {
       const { data } = job;
       const { resourceId } = data;
+      const resource = await db.query.resource.findFirst({
+        where: eq(schema.resource.id, resourceId),
+        with: { releaseTargets: { with: { deployment: true } } },
+      });
+      if (resource == null)
+        throw new Error(`Resource not found: ${resourceId}`);
+      const currentDeployments = resource.releaseTargets.map(
+        (rt) => rt.deployment,
+      );
 
-      const resource = await db
-        .select()
-        .from(schema.resource)
-        .where(eq(schema.resource.id, resourceId))
-        .then(takeFirst);
-      const { workspaceId } = resource;
+      const rts = await recomputeReleaseTargets(resource);
+      await dispatchEvaluateJobs(rts);
 
-      const cb = selector().compute();
-
-      await Promise.all([
-        cb.allEnvironments(workspaceId).resourceSelectors().replace(),
-        cb.allDeployments(workspaceId).resourceSelectors().replace(),
-      ]);
-      const rts = await replaceReleaseTargets(db, resource);
-      await cb.allPolicies(workspaceId).releaseTargetSelectors().replace();
-      const jobs = rts.map((rt) => ({
-        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-        data: rt,
-      }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(jobs);
+      const exitedDeployments = _.chain(currentDeployments)
+        .filter((d) => !rts.some((rt) => rt.deploymentId === d.id))
+        .uniqBy((d) => d.id)
+        .value();
+      await dispatchExitHooks(exitedDeployments, resource);
     } catch (error) {
       log.error("Error updating resource variable", { error });
       throw error;

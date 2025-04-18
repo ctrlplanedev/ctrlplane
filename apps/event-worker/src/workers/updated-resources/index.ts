@@ -1,12 +1,26 @@
-import { eq, inArray, selector } from "@ctrlplane/db";
+import _ from "lodash";
+
+import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { logger } from "@ctrlplane/logger";
+import { Channel, createWorker } from "@ctrlplane/events";
+import { handleEvent } from "@ctrlplane/job-dispatch";
 
-import { replaceReleaseTargets } from "../../utils/replace-release-targets.js";
-import { dispatchExitHooks } from "./dispatch-exit-hooks.js";
+import { dispatchEvaluateJobs } from "../../utils/dispatch-evaluate-jobs.js";
 import { withSpan } from "./span.js";
+
+const dispatchExitHooks = async (
+  deployments: SCHEMA.Deployment[],
+  exitedResource: SCHEMA.Resource,
+) => {
+  const events = deployments.map((deployment) => ({
+    action: "deployment.resource.removed" as const,
+    payload: { deployment, resource: exitedResource },
+  }));
+
+  const handleEventPromises = events.map(handleEvent);
+  await Promise.allSettled(handleEventPromises);
+};
 
 export const updatedResourceWorker = createWorker(
   Channel.UpdatedResource,
@@ -17,52 +31,21 @@ export const updatedResourceWorker = createWorker(
 
     const currentReleaseTargets = await db.query.releaseTarget.findMany({
       where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
+      with: { deployment: true },
     });
+    const currentDeployments = currentReleaseTargets.map((rt) => rt.deployment);
 
-    const cb = selector().compute();
-    await Promise.all([
-      cb.allEnvironments(resource.workspaceId).resourceSelectors().replace(),
-      cb.allDeployments(resource.workspaceId).resourceSelectors().replace(),
-    ]);
-    const upsertedReleaseTargets = await replaceReleaseTargets(db, resource);
-    await cb
-      .allPolicies(resource.workspaceId)
-      .releaseTargetSelectors()
-      .replace();
+    const rts = await selector()
+      .compute()
+      .resources([resource])
+      .releaseTargets();
 
-    const releaseTargetsToDelete = currentReleaseTargets.filter(
-      (rt) => !upsertedReleaseTargets.some((nrt) => nrt.id === rt.id),
-    );
-    await db.delete(SCHEMA.releaseTarget).where(
-      inArray(
-        SCHEMA.releaseTarget.id,
-        releaseTargetsToDelete.map((rt) => rt.id),
-      ),
-    );
+    await dispatchEvaluateJobs(rts);
 
-    const dispatchExitHooksPromise = dispatchExitHooks(
-      db,
-      resource,
-      currentReleaseTargets,
-      upsertedReleaseTargets,
-    );
-
-    logger.info(
-      `dispatching ${upsertedReleaseTargets.length} evaluations for release targets of resource ${resource.id}`,
-    );
-
-    const addToEvaluateQueuePromise = getQueue(
-      Channel.EvaluateReleaseTarget,
-    ).addBulk(
-      upsertedReleaseTargets.map((rt) => ({
-        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-        data: rt,
-      })),
-    );
-
-    await Promise.allSettled([
-      dispatchExitHooksPromise,
-      addToEvaluateQueuePromise,
-    ]);
+    const exitedDeployments = _.chain(currentDeployments)
+      .filter((d) => !rts.some((nrt) => nrt.deploymentId === d.id))
+      .uniqBy((d) => d.id)
+      .value();
+    await dispatchExitHooks(exitedDeployments, resource);
   }),
 );

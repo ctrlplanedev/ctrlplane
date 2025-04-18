@@ -1,10 +1,16 @@
+import type * as schema from "@ctrlplane/db/schema";
+
 import { selector } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 
-import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
-const queue = getQueue(Channel.EvaluateReleaseTarget);
+const recomputeReleaseTargets = async (resource: schema.Resource) => {
+  const computeBuilder = selector().compute();
+  const { workspaceId } = resource;
+  await computeBuilder.allResourceSelectors(workspaceId);
+  return computeBuilder.resources([resource]).releaseTargets();
+};
 
 /**
  * Worker that processes new resource events.
@@ -21,23 +27,7 @@ const queue = getQueue(Channel.EvaluateReleaseTarget);
 export const newResourceWorker = createWorker(
   Channel.NewResource,
   async ({ data: resource }) => {
-    const cb = selector().compute();
-
-    await Promise.all([
-      cb.allEnvironments(resource.workspaceId).resourceSelectors().replace(),
-      cb.allDeployments(resource.workspaceId).resourceSelectors().replace(),
-    ]);
-
-    const rts = await replaceReleaseTargets(db, resource);
-    await cb
-      .allPolicies(resource.workspaceId)
-      .releaseTargetSelectors()
-      .replace();
-
-    const jobs = rts.map((rt) => ({
-      name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-      data: rt,
-    }));
-    await queue.addBulk(jobs);
+    const releaseTargets = await recomputeReleaseTargets(resource);
+    await dispatchEvaluateJobs(releaseTargets);
   },
 );

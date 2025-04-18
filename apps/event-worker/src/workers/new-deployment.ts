@@ -1,12 +1,21 @@
-import { eq, selector, takeFirst } from "@ctrlplane/db";
+import { eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
-import { replaceReleaseTargets } from "../utils/replace-release-targets.js";
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "new-deployment" });
+
+const recomputeReleaseTargets = async (
+  deployment: schema.Deployment,
+  resources: schema.Resource[],
+) => {
+  const computeBuilder = selector().compute();
+  await computeBuilder.deployments([deployment]).resourceSelectors();
+  return computeBuilder.resources(resources).releaseTargets();
+};
 
 /**
  * Worker that processes new deployment events.
@@ -24,43 +33,17 @@ export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,
   async (job) => {
     try {
-      await selector()
-        .compute()
-        .deployments([job.data.id])
-        .resourceSelectors()
-        .replace();
+      const environments = await db.query.environment.findMany({
+        where: eq(schema.environment.systemId, job.data.systemId),
+        with: { computedResources: { with: { resource: true } } },
+      });
 
-      const system = await db
-        .select()
-        .from(schema.system)
-        .where(eq(schema.system.id, job.data.systemId))
-        .then(takeFirst);
-      const { workspaceId } = system;
-
-      const computedDeploymentResources = await db
-        .select()
-        .from(schema.computedDeploymentResource)
-        .innerJoin(
-          schema.resource,
-          eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
-        )
-        .where(eq(schema.computedDeploymentResource.deploymentId, job.data.id));
-      const resources = computedDeploymentResources.map((r) => r.resource);
-
-      const releaseTargetPromises = resources.map(async (r) =>
-        replaceReleaseTargets(db, r),
+      const resources = environments.flatMap((e) =>
+        e.computedResources.map((r) => r.resource),
       );
-      const fulfilled = await Promise.all(releaseTargetPromises);
-      const rts = fulfilled.flat();
 
-      await selector()
-        .compute()
-        .allPolicies(workspaceId)
-        .releaseTargetSelectors()
-        .replace();
-
-      const evaluateJobs = rts.map((rt) => ({ name: rt.id, data: rt }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(evaluateJobs);
+      const releaseTargets = await recomputeReleaseTargets(job.data, resources);
+      await dispatchEvaluateJobs(releaseTargets);
     } catch (error) {
       log.error("Error upserting release targets", { error });
       throw error;

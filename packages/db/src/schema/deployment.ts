@@ -22,6 +22,7 @@ import {
 
 import { ColumnOperatorFn } from "../common.js";
 import { jobAgent } from "./job-agent.js";
+import { releaseTarget } from "./release.js";
 import { resource } from "./resource.js";
 import { system } from "./system.js";
 
@@ -103,7 +104,7 @@ export const updateDeployment = deploymentInsert.partial();
 export type UpdateDeployment = z.infer<typeof updateDeployment>;
 export type Deployment = InferSelectModel<typeof deployment>;
 
-export const deploymentRelations = relations(deployment, ({ one }) => ({
+export const deploymentRelations = relations(deployment, ({ one, many }) => ({
   system: one(system, {
     fields: [deployment.systemId],
     references: [system.id],
@@ -112,6 +113,8 @@ export const deploymentRelations = relations(deployment, ({ one }) => ({
     fields: [deployment.jobAgentId],
     references: [jobAgent.id],
   }),
+  computedResources: many(computedDeploymentResource),
+  releaseTargets: many(releaseTarget),
 }));
 
 export const computedDeploymentResource = pgTable(
@@ -125,6 +128,20 @@ export const computedDeploymentResource = pgTable(
       .notNull(),
   },
   (t) => ({ pk: primaryKey({ columns: [t.deploymentId, t.resourceId] }) }),
+);
+
+export const computedDeploymentResourceRelations = relations(
+  computedDeploymentResource,
+  ({ one }) => ({
+    deployment: one(deployment, {
+      fields: [computedDeploymentResource.deploymentId],
+      references: [deployment.id],
+    }),
+    resource: one(resource, {
+      fields: [computedDeploymentResource.resourceId],
+      references: [resource.id],
+    }),
+  }),
 );
 
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
