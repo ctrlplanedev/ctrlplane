@@ -11,7 +11,6 @@ import {
   VersionReleaseManager,
 } from "@ctrlplane/rule-engine";
 
-import { env } from "../config.js";
 import { createAndAcquireMutex } from "../releases/mutex.js";
 
 const log = logger.child({ worker: "evaluate-release-target" });
@@ -224,7 +223,7 @@ export const evaluateReleaseTargetWorker = createWorker(
         .returning()
         .then(takeFirst);
 
-      if (env.ENABLE_NEW_POLICY_ENGINE) {
+      if (process.env.ENABLE_NEW_POLICY_ENGINE === "true") {
         const job = await db.transaction((tx) => createRelease(tx, release));
         getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
       }

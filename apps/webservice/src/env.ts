@@ -31,7 +31,6 @@ export const env = createEnv({
     OPENREPLAY_INGEST_POINT: z.string().optional(),
     AZURE_APP_CLIENT_ID: z.string().optional(),
     REDIS_URL: z.string(),
-    ENABLE_NEW_POLICY_ENGINE: z.boolean().default(false),
   },
 
   /**
