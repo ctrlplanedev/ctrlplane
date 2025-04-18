@@ -1,4 +1,3 @@
-import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import { eq } from "drizzle-orm";
 
 import { logger } from "@ctrlplane/logger";
@@ -74,12 +73,7 @@ const updateDeploymentVersionSelector = async (
 
   await tx
     .insert(SCHEMA.policyRuleDeploymentVersionSelector)
-    .values({
-      ...deploymentVersionSelector,
-      policyId,
-      deploymentVersionSelector:
-        deploymentVersionSelector.deploymentVersionSelector as DeploymentVersionCondition,
-    })
+    .values({ ...deploymentVersionSelector, policyId })
     .onConflictDoUpdate({
       target: [SCHEMA.policyRuleDeploymentVersionSelector.policyId],
       set: buildConflictUpdateColumns(

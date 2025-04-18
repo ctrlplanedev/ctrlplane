@@ -1,4 +1,3 @@
-import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { z } from "zod";
 
 import { logger } from "@ctrlplane/logger";
@@ -98,12 +97,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
   if (deploymentVersionSelector != null)
     await tx
       .insert(SCHEMA.policyRuleDeploymentVersionSelector)
-      .values({
-        ...deploymentVersionSelector,
-        policyId: policy.id,
-        deploymentVersionSelector:
-          deploymentVersionSelector.deploymentVersionSelector as DeploymentVersionCondition,
-      })
+      .values({ ...deploymentVersionSelector, policyId: policy.id })
       .onConflictDoUpdate({
         target: [SCHEMA.policyRuleDeploymentVersionSelector.id],
         set: buildConflictUpdateColumns(

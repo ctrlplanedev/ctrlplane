@@ -17,9 +17,18 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { deploymentCondition } from "@ctrlplane/validators/deployments";
-import { environmentCondition } from "@ctrlplane/validators/environments";
-import { resourceCondition } from "@ctrlplane/validators/resources";
+import {
+  deploymentCondition,
+  isValidDeploymentCondition,
+} from "@ctrlplane/validators/deployments";
+import {
+  environmentCondition,
+  isValidEnvironmentCondition,
+} from "@ctrlplane/validators/environments";
+import {
+  isValidResourceCondition,
+  resourceCondition,
+} from "@ctrlplane/validators/resources";
 
 import type { policyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { releaseTarget } from "./release.js";
@@ -94,9 +103,21 @@ const policyInsertSchema = createInsertSchema(policy, {
 
 const policyTargetInsertSchema = createInsertSchema(policyTarget, {
   policyId: z.string().uuid(),
-  deploymentSelector: deploymentCondition.nullable(),
-  environmentSelector: environmentCondition.nullable(),
-  resourceSelector: resourceCondition.nullable(),
+  deploymentSelector: deploymentCondition
+    .nullable()
+    .refine(
+      (selector) => selector == null || isValidDeploymentCondition(selector),
+    ),
+  environmentSelector: environmentCondition
+    .nullable()
+    .refine(
+      (selector) => selector == null || isValidEnvironmentCondition(selector),
+    ),
+  resourceSelector: resourceCondition
+    .nullable()
+    .refine(
+      (selector) => selector == null || isValidResourceCondition(selector),
+    ),
 }).omit({ id: true });
 
 // Export schemas and types
