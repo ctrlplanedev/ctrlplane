@@ -6,6 +6,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
+import { env } from "./config.js";
 import { createTriggeredRunbookJob } from "./job-creation.js";
 import { updateJob } from "./job-update.js";
 import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
@@ -46,6 +47,8 @@ class DispatchBuilder {
   }
 
   async dispatch(): Promise<schema.Job[]> {
+    if (env.ENABLE_NEW_POLICY_ENGINE) return [];
+
     let t = this._releaseTriggers;
     for (const func of this._filters) t = await func(this.db, t);
 
