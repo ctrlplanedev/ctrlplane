@@ -3,6 +3,11 @@ import { jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import {
+  deploymentVersionCondition,
+  isValidDeploymentVersionCondition,
+} from "@ctrlplane/validators/releases";
+
 import { policy } from "../policy.js";
 
 export const policyRuleDeploymentVersionSelector = pgTable(
@@ -28,5 +33,13 @@ export const policyRuleDeploymentVersionSelector = pgTable(
 
 export const createPolicyRuleDeploymentVersionSelector = createInsertSchema(
   policyRuleDeploymentVersionSelector,
-  { policyId: z.string().uuid() },
+  {
+    policyId: z.string().uuid(),
+    deploymentVersionSelector: deploymentVersionCondition
+      .nullable()
+      .refine(
+        (selector) =>
+          selector == null || isValidDeploymentVersionCondition(selector),
+      ),
+  },
 ).omit({ id: true });
