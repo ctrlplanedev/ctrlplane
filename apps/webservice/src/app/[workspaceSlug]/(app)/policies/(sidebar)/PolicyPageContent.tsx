@@ -16,7 +16,7 @@ export const PolicyPageContent: React.FC<{
   const [search, setSearch] = useState("");
 
   const policies = api.policy.list.useQuery(
-    { workspaceId: workspace.id, limit: 500 },
+    { workspaceId: workspace.id, search, limit: 500 },
     { placeholderData: (prev) => prev },
   );
 

@@ -3,16 +3,7 @@ import { generateText } from "ai";
 import _ from "lodash";
 import { z } from "zod";
 
-import {
-  and,
-  asc,
-  count,
-  createPolicyInTx,
-  desc,
-  eq,
-  takeFirst,
-  updatePolicyInTx,
-} from "@ctrlplane/db";
+import { and, asc, desc, eq, ilike, takeFirst } from "@ctrlplane/db";
 import {
   createPolicy,
   createPolicyRuleDenyWindow,
@@ -25,6 +16,7 @@ import {
   updatePolicyTarget,
 } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
+import { createPolicyInTx, updatePolicyInTx } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -168,12 +160,18 @@ export const policyRouter = createTRPCRouter({
     .input(
       z.object({
         workspaceId: z.string().uuid(),
+        search: z.string().optional(),
         limit: z.number().optional(),
       }),
     )
     .query(({ ctx, input }) =>
       ctx.db.query.policy.findMany({
-        where: eq(policy.workspaceId, input.workspaceId),
+        where: and(
+          eq(policy.workspaceId, input.workspaceId),
+          input.search != null
+            ? ilike(policy.name, `%${input.search}%`)
+            : undefined,
+        ),
         with: {
           targets: true,
           denyWindows: true,
@@ -229,39 +227,51 @@ export const policyRouter = createTRPCRouter({
       });
       if (policy == null) throw new Error("Policy not found");
 
-      const counts = await Promise.all(
-        policy.targets.map(async (target) => {
-          const releaseTargets = await ctx.db
-            .select({ count: count() })
-            .from(schema.releaseTarget)
-            .innerJoin(
-              schema.deployment,
-              eq(schema.releaseTarget.deploymentId, schema.deployment.id),
-            )
-            .innerJoin(
-              schema.environment,
-              eq(schema.releaseTarget.environmentId, schema.environment.id),
-            )
-            .innerJoin(
-              schema.resource,
-              eq(schema.releaseTarget.resourceId, schema.resource.id),
-            )
-            .where(
-              and(
-                schema.environmentMatchSelector(
-                  ctx.db,
-                  target.environmentSelector,
-                ),
-                schema.deploymentMatchSelector(target.deploymentSelector),
-                schema.resourceMatchesMetadata(ctx.db, target.resourceSelector),
-              ),
-            );
+      const releaseTargets = await ctx.db
+        .select()
+        .from(schema.policyTarget)
+        .innerJoin(
+          schema.computedPolicyTargetReleaseTarget,
+          eq(
+            schema.policyTarget.id,
+            schema.computedPolicyTargetReleaseTarget.policyTargetId,
+          ),
+        )
+        .innerJoin(
+          schema.releaseTarget,
+          eq(
+            schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+            schema.releaseTarget.id,
+          ),
+        )
+        .innerJoin(
+          schema.deployment,
+          eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+        )
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseTarget.resourceId, schema.resource.id),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(schema.releaseTarget.environmentId, schema.environment.id),
+        )
+        .innerJoin(
+          schema.system,
+          eq(schema.environment.systemId, schema.system.id),
+        )
+        .where(and(eq(schema.policyTarget.policyId, input)))
+        .then((r) =>
+          r.map((rt) => ({
+            ...rt.release_target,
+            deployment: rt.deployment,
+            resource: rt.resource,
+            environment: rt.environment,
+            system: rt.system,
+          })),
+        );
 
-          return releaseTargets.map((rt) => rt.count);
-        }),
-      );
-
-      return { count: _.chain(counts).flatten().sum().value() };
+      return { releaseTargets, count: releaseTargets.length };
     }),
 
   create: protectedProcedure

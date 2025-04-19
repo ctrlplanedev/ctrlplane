@@ -1,12 +1,13 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
-import { urls } from "~/app/urls";
+import { api } from "~/trpc/server";
 
 export default async function PolicyPage(props: {
   params: Promise<{ workspaceSlug: string; policyId: string }>;
 }) {
-  const { workspaceSlug, policyId } = await props.params;
-  return redirect(
-    urls.workspace(workspaceSlug).policies().edit(policyId).baseUrl(),
-  );
+  const { policyId } = await props.params;
+  const policy = await api.policy.byId({ policyId });
+  if (policy == null) notFound();
+
+  return <></>;
 }

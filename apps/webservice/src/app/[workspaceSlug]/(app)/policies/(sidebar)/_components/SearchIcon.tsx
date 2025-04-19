@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { IconSearch } from "@tabler/icons-react";
 import { useKey } from "react-use";
 
@@ -12,9 +12,9 @@ export const SearchInput: React.FC<{
   const inputRef = React.useRef<HTMLInputElement>(null);
   useKey("Escape", () => setIsExpanded(false));
 
-  useEffect(() => {
-    if (isExpanded) inputRef.current?.focus();
-  }, [isExpanded]);
+  // useEffect(() => {
+  //   if (isExpanded) inputRef.current?.focus();
+  // }, [value, isExpanded]);
 
   return (
     <div className="flex items-center">
@@ -33,7 +33,7 @@ export const SearchInput: React.FC<{
         ref={inputRef}
         type="text"
         className={`bg-transparent outline-none transition-all duration-200 ${
-          isExpanded ? "w-[150px] pl-1" : "w-0"
+          isExpanded || value.length > 0 ? "w-[150px] pl-1" : "w-0"
         }`}
         placeholder="Search..."
         onBlur={() => setIsExpanded(false)}

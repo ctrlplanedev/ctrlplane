@@ -2,9 +2,9 @@ import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
 
-import { createPolicyInTx } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
+import { createPolicyInTx } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -23,15 +23,18 @@ export const POST = request()
         .on({ type: "workspace", id: ctx.body.workspaceId }),
     ),
   )
-  .handle<{ body: z.infer<typeof SCHEMA.createPolicy> }>(({ db, body }) =>
-    db
-      .transaction((tx) => createPolicyInTx(tx, body))
-      .then((policy) => NextResponse.json(policy))
-      .catch((error) => {
-        log.error("Failed to create policy", { error });
-        return NextResponse.json(
-          { error: "Failed to create policy" },
-          { status: INTERNAL_SERVER_ERROR },
-        );
-      }),
+  .handle<{ body: z.infer<typeof SCHEMA.createPolicy> }>(
+    async ({ db, body }) => {
+      const policy = await db
+        .transaction((tx) => createPolicyInTx(tx, body))
+        .catch((error) => {
+          log.error("Failed to create policy", { error });
+          return NextResponse.json(
+            { error: "Failed to create policy" },
+            { status: INTERNAL_SERVER_ERROR },
+          );
+        });
+
+      return NextResponse.json(policy);
+    },
   );

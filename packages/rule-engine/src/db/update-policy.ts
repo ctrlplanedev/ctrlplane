@@ -1,12 +1,11 @@
+import type { Tx } from "@ctrlplane/db";
 import { eq } from "drizzle-orm";
 
+import { buildConflictUpdateColumns, selector, takeFirst } from "@ctrlplane/db";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
-import type { Tx } from "../common.js";
-import { buildConflictUpdateColumns, takeFirst } from "../common.js";
-import * as SCHEMA from "../schema/index.js";
-import { selector } from "../selectors/index.js";
-import { getLocalDateAsUTC } from "./time-util.js";
+import { getLocalDateAsUTC } from "../utils/time-utils.js";
 
 const log = logger.child({ module: "policies/update" });
 

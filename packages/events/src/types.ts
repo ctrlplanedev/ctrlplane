@@ -15,6 +15,7 @@ export enum Channel {
   NewEnvironment = "new-environment",
   NewRelease = "new-release",
   NewResource = "new-resource",
+  NewPolicy = "new-policy",
 
   UpdatedResource = "updated-resource",
   UpdateResourceVariable = "update-resource-variable",
@@ -52,4 +53,5 @@ export type ChannelMap = {
   [Channel.ResourceScan]: { resourceProviderId: string };
   [Channel.UpdatedResource]: schema.Resource;
   [Channel.NewResource]: schema.Resource;
+  [Channel.NewPolicy]: schema.Policy;
 };
