@@ -214,6 +214,12 @@ export const evaluateReleaseTargetWorker = createWorker(
         releaseTarget.variableReleases.at(0)?.id === variableRelease.id;
       if (isSameVersionRelease && isSameVariableRelease) return;
 
+      log.info("Creating new release for target", {
+        releaseTarget,
+        versionRelease,
+        variableRelease,
+      });
+
       const release = await db
         .insert(schema.release)
         .values({
