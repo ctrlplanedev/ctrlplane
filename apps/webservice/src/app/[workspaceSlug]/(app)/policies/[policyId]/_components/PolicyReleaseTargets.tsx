@@ -1,11 +1,13 @@
+"use client";
+
 import _ from "lodash";
 
 import { api } from "~/trpc/react";
 
 export const PolicyReleaseTargets: React.FC<{
-  policyId: string;
-}> = ({ policyId }) => {
-  const { data } = api.policy.releaseTargets.useQuery(policyId, {
+  policy: { id: string };
+}> = ({ policy }) => {
+  const { data } = api.policy.releaseTargets.useQuery(policy.id, {
     refetchInterval: 60_000,
   });
 
@@ -27,9 +29,9 @@ export const PolicyReleaseTargets: React.FC<{
             <div className="flex flex-col gap-2">
               {rts.map((rt) => (
                 <div key={rt.id}>
-                  <p>{rt.deployment.name}</p>
-                  <p>{rt.environment.name}</p>
-                  <p>{rt.resource.name}</p>
+                  <span>{rt.deployment.name}</span> /{" "}
+                  <span>{rt.environment.name}</span> /{" "}
+                  <span>{rt.resource.name}</span>
                 </div>
               ))}
             </div>

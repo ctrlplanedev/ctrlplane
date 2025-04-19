@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
+import { PolicyReleaseTargets } from "./_components/PolicyReleaseTargets";
 
 export default async function PolicyPage(props: {
   params: Promise<{ workspaceSlug: string; policyId: string }>;
@@ -9,5 +10,9 @@ export default async function PolicyPage(props: {
   const policy = await api.policy.byId({ policyId });
   if (policy == null) notFound();
 
-  return <></>;
+  return (
+    <>
+      <PolicyReleaseTargets policy={policy} />
+    </>
+  );
 }
