@@ -25,6 +25,7 @@ export const newResourceWorker = createWorker(
       .compute()
       .resources([resource])
       .releaseTargets();
+
     await dispatchEvaluateJobs(releaseTargets);
   },
 );

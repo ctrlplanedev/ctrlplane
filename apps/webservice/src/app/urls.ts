@@ -44,6 +44,7 @@ const workspacePolicies = (slug: string) => {
     approvalGates: () => buildUrl(...base, "approval-gates"),
     versionConditions: () => buildUrl(...base, "version-conditions"),
     edit: (policyId: string) => workspacePolicyEdit(slug, policyId),
+    byId: (policyId: string) => buildUrl(...base, policyId),
   };
 };
 
