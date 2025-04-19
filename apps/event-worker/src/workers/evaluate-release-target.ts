@@ -222,7 +222,9 @@ export const evaluateReleaseTargetWorker = createWorker(
 
       log.info("Creating new release for target", {
         releaseTarget,
+        existingVersionRelease,
         versionRelease,
+        existingVariableRelease,
         variableRelease,
       });
 
