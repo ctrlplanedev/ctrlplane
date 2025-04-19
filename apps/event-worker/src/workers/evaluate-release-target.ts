@@ -186,12 +186,6 @@ export const evaluateReleaseTargetWorker = createWorker(
           resource: true,
           environment: true,
           deployment: true,
-          versionReleases: {
-            orderBy: desc(schema.versionRelease.createdAt),
-          },
-          variableReleases: {
-            orderBy: desc(schema.variableSetRelease.createdAt),
-          },
         },
       });
       if (!releaseTarget) throw new Error("Failed to get release target");
@@ -210,9 +204,6 @@ export const evaluateReleaseTargetWorker = createWorker(
           orderBy: desc(schema.variableSetRelease.createdAt),
         });
 
-      log.info("Existing version release", { existingVersionRelease });
-      log.info("Existing variable release", { existingVariableRelease });
-
       const [versionRelease, variableRelease] = await Promise.all([
         handleVersionRelease(releaseTarget),
         handleVariableRelease(releaseTarget),
@@ -224,9 +215,9 @@ export const evaluateReleaseTargetWorker = createWorker(
       }
 
       const isSameVersionRelease =
-        releaseTarget.versionReleases.at(0)?.id === versionRelease.id;
+        existingVersionRelease?.id === versionRelease.id;
       const isSameVariableRelease =
-        releaseTarget.variableReleases.at(0)?.id === variableRelease.id;
+        existingVariableRelease?.id === variableRelease.id;
       if (isSameVersionRelease && isSameVariableRelease) return;
 
       log.info("Creating new release for target", {
