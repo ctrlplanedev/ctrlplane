@@ -413,7 +413,7 @@ export default async function ApprovalGatesPage({
   const workspaceSlug = (await params).workspaceSlug;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();
-  const policies = await api.policy.list(workspace.id);
+  const policies = await api.policy.list({ workspaceId: workspace.id });
 
   // Filter policies to only those with approval requirements
   const policiesWithApprovals = policies.filter(
