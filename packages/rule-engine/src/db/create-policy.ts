@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { buildConflictUpdateColumns, selector, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 function getDatePartsInTimeZone(date: Date, timeZone: string) {
@@ -190,6 +191,8 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         `Error replacing release target selectors for policy ${policyId}`,
       ),
     );
+
+  getQueue(Channel.NewPolicy).add(policy.id, policy);
 
   return {
     ...policy,

@@ -1368,6 +1368,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../events
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../logger

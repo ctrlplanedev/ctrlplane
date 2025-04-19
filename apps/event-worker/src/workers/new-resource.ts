@@ -1,16 +1,7 @@
-import type * as schema from "@ctrlplane/db/schema";
-
 import { selector } from "@ctrlplane/db";
 import { Channel, createWorker } from "@ctrlplane/events";
 
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
-
-const recomputeReleaseTargets = async (resource: schema.Resource) => {
-  const computeBuilder = selector().compute();
-  const { workspaceId } = resource;
-  await computeBuilder.allResourceSelectors(workspaceId);
-  return computeBuilder.resources([resource]).releaseTargets();
-};
 
 /**
  * Worker that processes new resource events.
@@ -27,7 +18,13 @@ const recomputeReleaseTargets = async (resource: schema.Resource) => {
 export const newResourceWorker = createWorker(
   Channel.NewResource,
   async ({ data: resource }) => {
-    const releaseTargets = await recomputeReleaseTargets(resource);
+    const { workspaceId } = resource;
+    await selector().compute().allResourceSelectors(workspaceId);
+
+    const releaseTargets = await selector()
+      .compute()
+      .resources([resource])
+      .releaseTargets();
     await dispatchEvaluateJobs(releaseTargets);
   },
 );
