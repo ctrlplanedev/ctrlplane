@@ -187,16 +187,31 @@ export const evaluateReleaseTargetWorker = createWorker(
           environment: true,
           deployment: true,
           versionReleases: {
-            limit: 1,
             orderBy: desc(schema.versionRelease.createdAt),
           },
           variableReleases: {
-            limit: 1,
             orderBy: desc(schema.variableSetRelease.createdAt),
           },
         },
       });
       if (!releaseTarget) throw new Error("Failed to get release target");
+
+      const existingVersionRelease = await db.query.versionRelease.findFirst({
+        where: eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
+        orderBy: desc(schema.versionRelease.createdAt),
+      });
+
+      const existingVariableRelease =
+        await db.query.variableSetRelease.findFirst({
+          where: eq(
+            schema.variableSetRelease.releaseTargetId,
+            releaseTarget.id,
+          ),
+          orderBy: desc(schema.variableSetRelease.createdAt),
+        });
+
+      log.info("Existing version release", { existingVersionRelease });
+      log.info("Existing variable release", { existingVariableRelease });
 
       const [versionRelease, variableRelease] = await Promise.all([
         handleVersionRelease(releaseTarget),
