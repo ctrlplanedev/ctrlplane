@@ -163,12 +163,17 @@ export const policyRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.PolicyList)
-          .on({ type: "workspace", id: input }),
+          .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(z.string().uuid())
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        limit: z.number().optional(),
+      }),
+    )
     .query(({ ctx, input }) =>
       ctx.db.query.policy.findMany({
-        where: eq(policy.workspaceId, input),
+        where: eq(policy.workspaceId, input.workspaceId),
         with: {
           targets: true,
           denyWindows: true,
@@ -178,6 +183,7 @@ export const policyRouter = createTRPCRouter({
           versionRoleApprovals: true,
         },
         orderBy: [desc(policy.priority), asc(policy.name)],
+        limit: input.limit,
       }),
     ),
 
