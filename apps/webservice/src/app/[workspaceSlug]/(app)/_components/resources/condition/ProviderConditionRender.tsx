@@ -24,7 +24,7 @@ export const ProviderConditionRender: React.FC<
 
   const options = (providers.data ?? []).map((provider) => ({
     key: provider.id,
-    value: provider.name,
+    value: provider.id,
     display: provider.name,
   }));
 
