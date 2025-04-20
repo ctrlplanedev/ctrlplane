@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { expect, test as setup } from "@playwright/test";
 import { faker } from "@faker-js/faker";
+import { expect, test as setup } from "@playwright/test";
 
 const generateRandomUsername = () =>
   `testuser_${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
@@ -19,6 +19,7 @@ if (!fs.existsSync(authDir)) {
 // Export workspace data type
 export type WorkspaceFixture = {
   name: string;
+  apiKey: string;
 };
 
 setup("authenticate", async ({ page }) => {
@@ -58,9 +59,16 @@ setup("authenticate", async ({ page }) => {
   // Wait for workspace creation and redirect
   await expect(page).toHaveURL(`/${workspaceName}`, { timeout: 10_000 });
 
+  // Create API key
+  await page.getByRole("button", { name: /create api key/i }).click();
+  const apiKey = await page
+    .getByRole("textbox", { name: /api key/i })
+    .inputValue();
+
   // Store the workspace information
   const workspaceData: WorkspaceFixture = {
     name: workspaceName,
+    apiKey: "test-api-key",
   };
 
   // Save workspace data to a file
