@@ -16,19 +16,18 @@ export const DELETE = request()
         .on({ type: "resource", id: params.resourceId ?? "" });
     }),
   )
-  .handle<{ params: { schemaId: string } }>(async ({ db, params }) => {
+  .handle<{ params: Promise<{ schemaId: string }> }>(async ({ db, params }) => {
+    const { schemaId } = await params;
     const schema = await db
       .select()
       .from(resourceSchema)
-      .where(eq(resourceSchema.id, params.schemaId))
+      .where(eq(resourceSchema.id, schemaId))
       .then(takeFirstOrNull);
 
     if (!schema)
       return NextResponse.json({ error: "Schema not found" }, { status: 404 });
 
-    await db
-      .delete(resourceSchema)
-      .where(eq(resourceSchema.id, params.schemaId));
+    await db.delete(resourceSchema).where(eq(resourceSchema.id, schemaId));
 
     return NextResponse.json(schema, { status: 204 });
   });
