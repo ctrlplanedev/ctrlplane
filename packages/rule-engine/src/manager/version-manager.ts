@@ -48,9 +48,17 @@ export class VersionReleaseManager implements ReleaseManager {
 
   async upsertRelease(versionId: string) {
     const latestRelease = await this.findLatestRelease();
+    log.info("found latest release", {
+      latestRelease,
+      versionId,
+    });
     if (latestRelease?.versionId === versionId)
       return { created: false, release: latestRelease };
 
+    log.info("inserting release", {
+      releaseTargetId: this.releaseTarget.id,
+      versionId,
+    });
     const release = await this.db
       .insert(schema.versionRelease)
       .values({ releaseTargetId: this.releaseTarget.id, versionId })
