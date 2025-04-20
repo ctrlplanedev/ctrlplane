@@ -14,7 +14,9 @@ export const generateRandomWorkspaceName = () =>
 // Export workspace data type
 export type WorkspaceFixture = {
   name: string;
+  slug: string;
   apiKey: string;
+  id: string;
 };
 
 // Ensure auth directory exists
@@ -32,6 +34,12 @@ const createWorkspace = async (page: Page) => {
   await page.getByTestId("name").fill(workspaceName);
   await page.getByTestId("submit").click();
   return workspaceName;
+};
+
+const getWorkspaceId = async (page: Page, workspaceName: string) => {
+  await page.goto(`/${workspaceName}/settings/workspace/general`);
+  const workspaceId = await page.getByTestId("workspace-id").inputValue();
+  return workspaceId;
 };
 
 const createApiKey = async (page: Page, workspaceName: string) => {
@@ -71,8 +79,14 @@ setup("authenticate", async ({ page }) => {
   await page.context().storageState({ path: path.join(stateDir, "user.json") });
 
   const workspaceName = await createWorkspace(page);
+  const workspaceId = await getWorkspaceId(page, workspaceName);
   const apiKey = await createApiKey(page, workspaceName);
 
-  const workspaceData: WorkspaceFixture = { name: workspaceName, apiKey };
+  const workspaceData: WorkspaceFixture = {
+    name: workspaceName,
+    apiKey,
+    slug: workspaceName,
+    id: workspaceId,
+  };
   await fs.promises.writeFile(workspaceFile, JSON.stringify(workspaceData));
 });

@@ -62,7 +62,12 @@ export const WorkspaceUpdateSection: React.FC<WorkspaceUpdateSectionProps> = ({
         <div className="space-y-2">
           <Label>Workspace ID</Label>
           <div className="flex items-center gap-2">
-            <Input value={workspace.id} disabled className="max-w-[350px]" />
+            <Input
+              value={workspace.id}
+              disabled
+              className="max-w-[350px]"
+              data-testid="workspace-id"
+            />
             <div className="relative">
               <Button
                 variant="ghost"

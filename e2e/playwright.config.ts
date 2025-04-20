@@ -1,7 +1,7 @@
 import path from "path";
 import { defineConfig, devices } from "@playwright/test";
 
-const authFile = path.join(process.cwd(), ".auth", "user.json");
+const authFile = path.join(process.cwd(), ".state", "user.json");
 
 /**
  * Read environment variables from file.
