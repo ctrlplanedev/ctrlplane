@@ -1429,9 +1429,6 @@ importers:
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
-      object-sizeof:
-        specifier: ^2.6.5
-        version: 2.6.5
       rrule:
         specifier: ^2.8.1
         version: 2.8.1
@@ -9550,9 +9547,6 @@ packages:
   object-keys@1.1.1:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
     engines: {node: '>= 0.4'}
-
-  object-sizeof@2.6.5:
-    resolution: {integrity: sha512-Mu3udRqIsKpneKjIEJ2U/s1KmEgpl+N6cEX1o+dDl2aZ+VW5piHqNgomqAk5YMsDoSkpcA8HnIKx1eqGTKzdfw==}
 
   object.assign@4.1.5:
     resolution: {integrity: sha512-byy+U7gp+FVwmyzKPYhW2h5l3crpmGsxl7X2s8y43IgxvG4g3QZ6CffDtsNQy1WsmZpQbO+ybo0AlW7TY6DcBQ==}
@@ -21121,10 +21115,6 @@ snapshots:
   object-inspect@1.13.2: {}
 
   object-keys@1.1.1: {}
-
-  object-sizeof@2.6.5:
-    dependencies:
-      buffer: 6.0.3
 
   object.assign@4.1.5:
     dependencies:
