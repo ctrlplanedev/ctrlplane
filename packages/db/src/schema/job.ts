@@ -48,6 +48,7 @@ import type { Tx } from "../common.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { jobAgent } from "./job-agent.js";
 import { releaseJobTrigger } from "./release-job-trigger.js";
+import { releaseJob } from "./release.js";
 import { jobResourceRelationship, resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
@@ -113,6 +114,10 @@ export const jobRelations = relations(job, ({ many, one }) => ({
   releaseTrigger: many(releaseJobTrigger),
   jobRelationships: many(jobResourceRelationship),
   metadata: many(jobMetadata),
+  releaseJob: one(releaseJob, {
+    fields: [job.id],
+    references: [releaseJob.jobId],
+  }),
 }));
 
 export const jobMetadata = pgTable(
