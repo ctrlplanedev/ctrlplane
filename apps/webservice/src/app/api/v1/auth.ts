@@ -25,6 +25,7 @@ export const authz: (
     ctx: Context<{ user: User; body: any }>;
     extra: any;
     can: PermissionChecker;
+    params: Record<string, string>;
   }) => Promise<boolean>,
 ) => Middleware<any, { user: User; body: any }> =
   (checker) => async (ctx, extra, next) => {
@@ -32,6 +33,7 @@ export const authz: (
       const allowed = await checker({
         ctx,
         extra,
+        params: await (extra as any).params,
         can: can().user(ctx.user.id),
       });
       if (!allowed) {

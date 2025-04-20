@@ -12,14 +12,14 @@ import { request } from "~/app/api/v1/middleware";
 export const GET = request()
   .use(authn)
   .use(
-    authz(async ({ can, extra }) => {
-      const { workspaceId, identifier } = extra;
+    authz(async ({ can, params }) => {
+      const { workspaceId, identifier } = params;
 
       // we don't check deletedAt as we may be querying for soft-deleted resources
       const resource = await db.query.resource.findFirst({
         where: and(
-          eq(schema.resource.workspaceId, workspaceId),
-          eq(schema.resource.identifier, identifier),
+          eq(schema.resource.workspaceId, workspaceId ?? ""),
+          eq(schema.resource.identifier, identifier ?? ""),
         ),
       });
 
@@ -29,46 +29,49 @@ export const GET = request()
         .on({ type: "resource", id: resource.id });
     }),
   )
-  .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
-    async (_, { params }) => {
-      // we don't check deletedAt as we may be querying for soft-deleted resources
-      const data = await db.query.resource.findFirst({
-        where: and(
-          eq(schema.resource.workspaceId, params.workspaceId),
-          eq(schema.resource.identifier, params.identifier),
-        ),
-        with: {
-          metadata: true,
-          variables: true,
-          provider: true,
-        },
-      });
+  .handle<
+    unknown,
+    { params: Promise<{ workspaceId: string; identifier: string }> }
+  >(async (_, { params }) => {
+    // we don't check deletedAt as we may be querying for soft-deleted resources
+    const { workspaceId, identifier } = await params;
+    const data = await db.query.resource.findFirst({
+      where: and(
+        eq(schema.resource.workspaceId, workspaceId),
+        eq(schema.resource.identifier, identifier),
+        isNull(schema.resource.deletedAt),
+      ),
+      with: {
+        metadata: true,
+        variables: true,
+        provider: true,
+      },
+    });
 
-      if (data == null)
-        return NextResponse.json(
-          { error: "Resource not found" },
-          { status: 404 },
-        );
+    if (data == null)
+      return NextResponse.json(
+        { error: "Resource not found" },
+        { status: 404 },
+      );
 
-      const { metadata, ...resource } = data;
+    const { metadata, ...resource } = data;
 
-      return NextResponse.json({
-        ...resource,
-        metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
-      });
-    },
-  );
+    return NextResponse.json({
+      ...resource,
+      metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
+    });
+  });
 
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(async ({ can, extra }) => {
-      const { workspaceId, identifier } = extra.params;
+    authz(async ({ can, params }) => {
+      const { workspaceId, identifier } = params;
 
       const resource = await db.query.resource.findFirst({
         where: and(
-          eq(schema.resource.workspaceId, workspaceId),
-          eq(schema.resource.identifier, identifier),
+          eq(schema.resource.workspaceId, workspaceId ?? ""),
+          eq(schema.resource.identifier, identifier ?? ""),
           isNull(schema.resource.deletedAt),
         ),
       });
@@ -79,25 +82,27 @@ export const DELETE = request()
         .on({ type: "resource", id: resource.id });
     }),
   )
-  .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
-    async (_, { params }) => {
-      const resource = await db.query.resource.findFirst({
-        where: and(
-          eq(schema.resource.workspaceId, params.workspaceId),
-          eq(schema.resource.identifier, params.identifier),
-          isNull(schema.resource.deletedAt),
-        ),
-      });
+  .handle<
+    unknown,
+    { params: Promise<{ workspaceId: string; identifier: string }> }
+  >(async (_, { params }) => {
+    const { workspaceId, identifier } = await params;
+    const resource = await db.query.resource.findFirst({
+      where: and(
+        eq(schema.resource.workspaceId, workspaceId),
+        eq(schema.resource.identifier, identifier),
+        isNull(schema.resource.deletedAt),
+      ),
+    });
 
-      if (resource == null) {
-        return NextResponse.json(
-          { error: `Resource not found for identifier: ${params.identifier}` },
-          { status: 404 },
-        );
-      }
+    if (resource == null) {
+      return NextResponse.json(
+        { error: `Resource not found for identifier: ${identifier}` },
+        { status: 404 },
+      );
+    }
 
-      await getQueue(Channel.DeleteResource).add(resource.id, resource);
+    await getQueue(Channel.DeleteResource).add(resource.id, resource);
 
-      return NextResponse.json({ success: true });
-    },
-  );
+    return NextResponse.json({ success: true });
+  });

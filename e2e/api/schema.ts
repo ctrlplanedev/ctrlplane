@@ -3363,7 +3363,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data?: components["schemas"]["Resource"][];
+                        resources?: components["schemas"]["Resource"][];
                     };
                 };
             };

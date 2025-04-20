@@ -16,8 +16,8 @@ import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
-  releaseChannels: z.array(z.string()),
-  deploymentVersionChannels: z.array(z.string()),
+  releaseChannels: z.array(z.string()).optional(),
+  deploymentVersionChannels: z.array(z.string()).optional(),
 });
 
 export const POST = request()
@@ -34,21 +34,27 @@ export const POST = request()
     ({ db, body }) =>
       db.transaction(async (tx) => {
         try {
-          const channels = await tx
-            .select()
-            .from(schema.deploymentVersionChannel)
-            .where(
-              inArray(schema.deploymentVersionChannel.id, [
-                ...body.releaseChannels,
-                ...body.deploymentVersionChannels,
-              ]),
-            )
-            .then((rows) =>
-              _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
-                channelId: r.id,
-                deploymentId: r.deploymentId,
-              })),
-            );
+          const releaseChannels = body.releaseChannels?.length ?? 0;
+          const deploymentVersionChannels =
+            body.deploymentVersionChannels?.length ?? 0;
+          const channels =
+            releaseChannels + deploymentVersionChannels > 0
+              ? await tx
+                  .select()
+                  .from(schema.deploymentVersionChannel)
+                  .where(
+                    inArray(schema.deploymentVersionChannel.id, [
+                      ...(body.releaseChannels ?? []),
+                      ...(body.deploymentVersionChannels ?? []),
+                    ]),
+                  )
+                  .then((rows) =>
+                    _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
+                      channelId: r.id,
+                      deploymentId: r.deploymentId,
+                    })),
+                  )
+              : [];
 
           const existingEnv = await db
             .select()

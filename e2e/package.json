@@ -7,8 +7,8 @@
   "author": "",
   "license": "ISC",
   "scripts": {
-    "test": "pnpm generate && pnpm exec playwright test",
-    "test:ui": "pnpm generate && pnpm exec playwright test --ui",
+    "test": "pnpm exec playwright test",
+    "test:ui": "pnpm exec playwright test --ui",
     "clean": "rm -rf .turbo node_modules",
     "show-report": "pnpm exec playwright show-report",
     "format": "prettier --check . --ignore-path ../../.gitignore",

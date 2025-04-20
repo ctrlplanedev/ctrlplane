@@ -4,7 +4,8 @@ import { test as base } from "@playwright/test";
 
 import type { WorkspaceFixture } from "./auth.setup";
 import { createClient } from "../api";
-import { workspaceFile } from "./auth.setup";
+
+const workspaceFile = path.join(process.cwd(), ".state", "workspace.json");
 
 // Extend the test type to include our workspace fixture
 export const test = base.extend<{

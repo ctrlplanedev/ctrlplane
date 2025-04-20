@@ -30,7 +30,7 @@ export const openapi: Swagger.SwaggerV3 = {
                 schema: {
                   type: "object",
                   properties: {
-                    data: {
+                    resources: {
                       type: "array",
                       items: { $ref: "#/components/schemas/Resource" },
                     },

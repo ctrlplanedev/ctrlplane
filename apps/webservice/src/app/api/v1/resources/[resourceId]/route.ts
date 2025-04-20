@@ -18,40 +18,45 @@ const log = logger.child({ module: "v1/resources/[resourceId]" });
 export const GET = request()
   .use(authn)
   .use(
-    authz(({ can, extra }) => {
+    authz(async ({ can, params }) => {
       return can
         .perform(Permission.ResourceGet)
-        .on({ type: "resource", id: extra.params.resourceId });
+        .on({ type: "resource", id: params.resourceId ?? "" });
     }),
   )
-  .handle(async ({ db }, { params }: { params: { resourceId: string } }) => {
-    // we don't check deletedAt as we may be querying for soft-deleted resources
-    const data = await db.query.resource.findFirst({
-      where: eq(schema.resource.id, params.resourceId),
-      with: { metadata: true, variables: true, provider: true },
-    });
+  .handle(
+    async ({ db }, { params }: { params: Promise<{ resourceId: string }> }) => {
+      // we don't check deletedAt as we may be querying for soft-deleted resources
+      const { resourceId } = await params;
+      const data = await db.query.resource.findFirst({
+        where: eq(schema.resource.id, resourceId),
+        with: { metadata: true, variables: true, provider: true },
+      });
 
-    if (data == null)
-      return NextResponse.json(
-        { error: "Resource not found" },
-        { status: 404 },
+      if (data == null)
+        return NextResponse.json(
+          { error: "Resource not found" },
+          { status: 404 },
+        );
+
+      const { variables, metadata, ...resource } = data;
+      const variable = Object.fromEntries(
+        variables.map((v) => {
+          const strval = String(v.value);
+          const value = v.sensitive
+            ? variablesAES256().decrypt(strval)
+            : strval;
+          return [v.key, value];
+        }),
       );
 
-    const { variables, metadata, ...resource } = data;
-    const variable = Object.fromEntries(
-      variables.map((v) => {
-        const strval = String(v.value);
-        const value = v.sensitive ? variablesAES256().decrypt(strval) : strval;
-        return [v.key, value];
-      }),
-    );
-
-    return NextResponse.json({
-      ...resource,
-      variable,
-      metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
-    });
-  });
+      return NextResponse.json({
+        ...resource,
+        variable,
+        metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
+      });
+    },
+  );
 
 const patchSchema = z.object({
   name: z.string().optional().optional(),
@@ -83,10 +88,11 @@ export const PATCH = request()
   .use(parseBody(patchSchema))
   .handle<
     { body: z.infer<typeof patchSchema> },
-    { params: { resourceId: string } }
+    { params: Promise<{ resourceId: string }> }
   >(async ({ db, body }, { params }) => {
     try {
-      const isResource = eq(schema.resource.id, params.resourceId);
+      const { resourceId } = await params;
+      const isResource = eq(schema.resource.id, resourceId);
       const isNotDeleted = isNull(schema.resource.deletedAt);
       const where = and(isResource, isNotDeleted);
       const resource = await db.query.resource.findFirst({ where });
@@ -120,24 +126,27 @@ export const PATCH = request()
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(({ can, extra }) =>
+    authz(({ can, params }) =>
       can
         .perform(Permission.ResourceDelete)
-        .on({ type: "resource", id: extra.params.resourceId }),
+        .on({ type: "resource", id: params.resourceId ?? "" }),
     ),
   )
-  .handle(async ({ db }, { params }: { params: { resourceId: string } }) => {
-    const isResource = eq(schema.resource.id, params.resourceId);
-    const isNotDeleted = isNull(schema.resource.deletedAt);
-    const where = and(isResource, isNotDeleted);
-    const resource = await db.query.resource.findFirst({ where });
+  .handle(
+    async ({ db }, { params }: { params: Promise<{ resourceId: string }> }) => {
+      const { resourceId } = await params;
+      const isResource = eq(schema.resource.id, resourceId);
+      const isNotDeleted = isNull(schema.resource.deletedAt);
+      const where = and(isResource, isNotDeleted);
+      const resource = await db.query.resource.findFirst({ where });
 
-    if (resource == null)
-      return NextResponse.json(
-        { error: "Resource not found" },
-        { status: 404 },
-      );
+      if (resource == null)
+        return NextResponse.json(
+          { error: "Resource not found" },
+          { status: 404 },
+        );
 
-    await getQueue(Channel.DeleteResource).add(resource.id, resource);
-    return NextResponse.json({ success: true });
-  });
+      await getQueue(Channel.DeleteResource).add(resource.id, resource);
+      return NextResponse.json({ success: true });
+    },
+  );

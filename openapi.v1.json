@@ -3623,7 +3623,7 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
+                    "resources": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Resource"

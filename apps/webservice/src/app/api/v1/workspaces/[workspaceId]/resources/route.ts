@@ -27,10 +27,8 @@ export const GET = request()
         .from(resource)
         .where(eq(resource.workspaceId, workspaceId))
         .orderBy(resource.name);
-      return NextResponse.json({ data: resources }, { status: httpStatus.OK });
+      return NextResponse.json({ resources }, { status: httpStatus.OK });
     } catch (error) {
-      //console.dir(error);
-
       return NextResponse.json(
         {
           error: "Internal Server Error",
