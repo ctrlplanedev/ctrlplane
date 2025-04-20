@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { faker } from "@faker-js/faker";
-import { expect, test as setup } from "@playwright/test";
+import { expect, Page, test as setup } from "@playwright/test";
+import ms from "ms";
 
 const generateRandomUsername = () =>
   `testuser_${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
@@ -10,19 +11,39 @@ const generateRandomEmail = (username: string) =>
 export const generateRandomWorkspaceName = () =>
   `workspace_${faker.string.alphanumeric(8)}`.toLocaleLowerCase();
 
-// Ensure auth directory exists
-const authDir = path.join(process.cwd(), ".auth");
-if (!fs.existsSync(authDir)) {
-  fs.mkdirSync(authDir, { recursive: true });
-}
-
 // Export workspace data type
 export type WorkspaceFixture = {
   name: string;
   apiKey: string;
 };
 
-setup("authenticate", async ({ page }) => {
+// Ensure auth directory exists
+const stateDir = path.join(process.cwd(), ".state");
+if (!fs.existsSync(stateDir)) {
+  fs.mkdirSync(stateDir, { recursive: true });
+}
+
+const stateFile = path.join(stateDir, "user.json");
+export const workspaceFile = path.join(stateDir, "workspace.json");
+
+const createWorkspace = async (page: Page) => {
+  await page.goto("/workspaces/create");
+  const workspaceName = generateRandomWorkspaceName();
+  await page.getByTestId("name").fill(workspaceName);
+  await page.getByTestId("submit").click();
+  return workspaceName;
+};
+
+const createApiKey = async (page: Page, workspaceName: string) => {
+  await page.goto(`/${workspaceName}/settings/account/api`);
+  const keyName = faker.string.alphanumeric(10);
+  await page.getByTestId("key-name").fill(keyName);
+  await page.getByTestId("create-key").click();
+  const apiKey = await page.getByTestId("key-value").inputValue();
+  return apiKey;
+};
+
+const signUp = async (page: Page) => {
   // Generate random credentials
   const name = generateRandomUsername();
   const email = generateRandomEmail(name);
@@ -32,48 +53,26 @@ setup("authenticate", async ({ page }) => {
   await page.goto("/sign-up");
 
   // Fill in registration form using more resilient selectors
-  await page.getByRole("textbox", { name: /name/i }).fill(name);
-  await page.getByRole("textbox", { name: /email/i }).fill(email);
-  await page.getByRole("textbox", { name: /password/i }).fill(password);
-  await page.getByRole("button", { name: /continue/i }).click();
+  await page.getByTestId("name").fill(name);
+  await page.getByTestId("email").fill(email);
+  await page.getByTestId("password").fill(password);
+  await page.getByTestId("submit").click();
 
   // Should be redirected to workspace creation
-  await expect(page).toHaveURL("/workspaces/create", { timeout: 10000 });
+  await expect(page).toHaveURL("/workspaces/create", { timeout: ms("1m") });
+};
 
-  // Save signed-in state
-  await page.context().storageState({ path: path.join(authDir, "user.json") });
-
-  const workspaceName = generateRandomWorkspaceName();
-  // Navigate to workspace creation if not already there
-  const currentUrl = page.url();
-  if (!currentUrl.includes("/workspaces/create")) {
-    await page.goto("/workspaces/create");
+setup("authenticate", async ({ page }) => {
+  if (fs.existsSync(stateFile) && fs.existsSync(workspaceFile)) {
+    return;
   }
 
-  // Create initial workspace
-  await page
-    .getByRole("textbox", { name: /name/i })
-    .pressSequentially(workspaceName, { delay: 100 });
-  await page.getByRole("button", { name: /create/i }).click();
+  await signUp(page);
+  await page.context().storageState({ path: path.join(stateDir, "user.json") });
 
-  // Wait for workspace creation and redirect
-  await expect(page).toHaveURL(`/${workspaceName}`, { timeout: 10_000 });
+  const workspaceName = await createWorkspace(page);
+  const apiKey = await createApiKey(page, workspaceName);
 
-  // Create API key
-  await page.getByRole("button", { name: /create api key/i }).click();
-  const apiKey = await page
-    .getByRole("textbox", { name: /api key/i })
-    .inputValue();
-
-  // Store the workspace information
-  const workspaceData: WorkspaceFixture = {
-    name: workspaceName,
-    apiKey: "test-api-key",
-  };
-
-  // Save workspace data to a file
-  await fs.promises.writeFile(
-    path.join(authDir, "workspace.json"),
-    JSON.stringify(workspaceData),
-  );
+  const workspaceData: WorkspaceFixture = { name: workspaceName, apiKey };
+  await fs.promises.writeFile(workspaceFile, JSON.stringify(workspaceData));
 });

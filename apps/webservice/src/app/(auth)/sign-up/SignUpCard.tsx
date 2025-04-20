@@ -127,6 +127,7 @@ export const SignUpCard: React.FC = () => {
                         <IconUser className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           {...field}
+                          data-testid="name"
                           className="bg-background/50 pl-10"
                           placeholder="John Doe"
                         />
@@ -148,6 +149,7 @@ export const SignUpCard: React.FC = () => {
                         <IconMail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           {...field}
+                          data-testid="email"
                           className="bg-background/50 pl-10"
                           placeholder="you@company.com"
                         />
@@ -170,6 +172,7 @@ export const SignUpCard: React.FC = () => {
                         <Input
                           {...field}
                           type="password"
+                          data-testid="password"
                           className="bg-background/50 pl-10"
                           placeholder="Create a secure password"
                         />
@@ -188,6 +191,7 @@ export const SignUpCard: React.FC = () => {
                   className="w-full"
                   size="lg"
                   disabled={loading || signUp.isPending}
+                  data-testid="submit"
                 >
                   {loading || signUp.isPending
                     ? "Creating account..."

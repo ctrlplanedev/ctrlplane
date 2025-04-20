@@ -32,12 +32,14 @@ export const CreateApiKey: React.FC = () => {
     <>
       <div className="flex items-center gap-4">
         <Input
+          data-testid="key-name"
           placeholder="Name"
           onChange={(e) => setName(e.target.value)}
           value={name}
         />
         <Button
           disabled={name.length === 0}
+          data-testid="create-key"
           onClick={async () => {
             const apiKey = await create.mutateAsync({ name });
             setKey(apiKey.key);
@@ -58,6 +60,7 @@ export const CreateApiKey: React.FC = () => {
           <div className="relative flex items-center">
             <Input
               value={key}
+              data-testid="key-value"
               className="text-ellipsis pr-8 disabled:cursor-default"
               disabled
             />

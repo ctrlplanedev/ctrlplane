@@ -108,7 +108,7 @@ export default function WorkspaceCreate() {
                   <FormItem>
                     <FormLabel>Workspace Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} data-testid="name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -122,7 +122,7 @@ export default function WorkspaceCreate() {
                   <FormItem>
                     <FormLabel>Workspace URL</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} data-testid="slug" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -133,6 +133,7 @@ export default function WorkspaceCreate() {
                 disabled={create.isPending}
                 size="lg"
                 className="mt-10 w-full font-semibold"
+                data-testid="submit"
               >
                 Create workspace
               </Button>
