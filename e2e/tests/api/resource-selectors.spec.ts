@@ -22,9 +22,7 @@ test.describe("Resource Selectors API", () => {
     await page.waitForTimeout(5_000);
     const releaseTargets = await api.GET(
       `/v1/environments/{environmentId}/resources`,
-      {
-        params: { path: { environmentId: environments.qa.id } },
-      },
+      { params: { path: { environmentId: environments.qa.id } } },
     );
 
     expect(releaseTargets.response.status).toBe(200);
@@ -35,9 +33,7 @@ test.describe("Resource Selectors API", () => {
     await page.waitForTimeout(5_000);
     const releaseTargets = await api.GET(
       `/v1/environments/{environmentId}/resources`,
-      {
-        params: { path: { environmentId: environments.prod.id } },
-      },
+      { params: { path: { environmentId: environments.prod.id } } },
     );
 
     expect(releaseTargets.response.status).toBe(200);

@@ -39,6 +39,7 @@ const triggerPolicyEvaluation = async () => {
         releaseTargets.map((rt) => ({
           name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
           data: rt,
+          priority: 10,
         })),
       );
 
