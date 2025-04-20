@@ -115,11 +115,11 @@ export const createExampleSystem = async (
   return {
     system: system.data!,
     resources: { qa: qaResources, prod: prodResources },
-    environment: { qa: qaEnvironment.data!, prod: prodEnvironment.data! },
+    environments: { qa: qaEnvironment.data!, prod: prodEnvironment.data! },
     deployments: {
       a: deploymentA.data!,
       b: deploymentB.data!,
-      withSelector: deploymentWithSelector.data!,
+      withSelectorForQa: deploymentWithSelector.data!,
     },
   };
 };

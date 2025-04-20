@@ -286,6 +286,23 @@ export interface paths {
     patch: operations["updateJob"];
     trace?: never;
   };
+  "/v1/policies/{policyId}/release-targets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get release targets for a policy */
+    get: operations["getReleaseTargetsForPolicy"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/policies": {
     parameters: {
       query?: never;
@@ -1949,6 +1966,64 @@ export interface operations {
         content: {
           "application/json": {
             id: string;
+          };
+        };
+      };
+    };
+  };
+  getReleaseTargetsForPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the policy */
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            releaseTargets?: {
+              id?: string;
+              name?: string;
+              description?: string;
+              policyTarget?: {
+                id?: string;
+                name?: string;
+                policyId?: string;
+                description?: string;
+              };
+              resource?: {
+                id?: string;
+                name?: string;
+                identifier?: string;
+                kind?: string;
+                version?: string;
+              };
+              environment?: {
+                id?: string;
+                name?: string;
+              };
+            }[];
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
           };
         };
       };
