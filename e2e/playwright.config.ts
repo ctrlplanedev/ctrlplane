@@ -39,8 +39,13 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: "setup",
-      testMatch: /.*\.setup\.ts/,
+      name: "auth-setup",
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
+      name: "api-setup",
+      testMatch: /api\.setup\.ts/,
+      dependencies: ["auth-setup"],
     },
     {
       name: "chromium",
@@ -48,8 +53,21 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         storageState: authFile,
       },
-      dependencies: ["setup"],
+      dependencies: ["auth-setup"],
       testMatch: /.*\.spec\.ts/,
+      testIgnore: /.*api\/.*\.spec\.ts/,
+    },
+    {
+      name: "api-tests",
+      testMatch: /.*api\/.*\.spec\.ts/,
+      dependencies: ["api-setup"],
+      use: {
+        baseURL: "http://localhost:3000",
+        extraHTTPHeaders: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
     },
   ],
 

@@ -8,13 +8,17 @@
   "license": "ISC",
   "scripts": {
     "test": "pnpm exec playwright test",
+    "test:api": "pnpm exec playwright test --project=api-tests",
+    "test:setup": "pnpm exec playwright test --project=auth-setup && pnpm exec playwright test --project=api-setup",
     "show-report": "pnpm exec playwright show-report",
     "test:ui": "pnpm exec playwright test --ui",
     "install-browsers": "npx playwright install --with-deps"
   },
   "devDependencies": {
+    "@ctrlplane/db": "workspace:*",
+    "@faker-js/faker": "^9.7.0",
     "@playwright/test": "^1.51.0",
     "@types/node": "^22.13.10",
-    "@faker-js/faker": "^9.6.0"
+    "rrule": "^2.8.1"
   }
 }

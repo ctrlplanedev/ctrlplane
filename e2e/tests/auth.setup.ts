@@ -29,34 +29,58 @@ setup("authenticate", async ({ page }) => {
 
   // Navigate to the registration page
   await page.goto("/sign-up");
-
-  // Fill in registration form using more resilient selectors
-  await page.getByRole("textbox", { name: /name/i }).fill(name);
-  await page.getByRole("textbox", { name: /email/i }).fill(email);
-  await page.getByRole("textbox", { name: /password/i }).fill(password);
-  await page.getByRole("button", { name: /continue/i }).click();
+  
+  // Take a snapshot to examine the page structure
+  await page.evaluate(() => {
+    const mcpBrowserSnapshot = (window as any).mcpBrowserSnapshot;
+    if (mcpBrowserSnapshot) mcpBrowserSnapshot();
+  });
+  
+  // Find and fill in the name field
+  const nameField = await page.waitForSelector('input[placeholder="John Doe"]');
+  await nameField.fill(name);
+  
+  // Find and fill in the email field
+  const emailField = await page.waitForSelector('input[placeholder="you@company.com"]');
+  await emailField.fill(email);
+  
+  // Find and fill in the password field
+  const passwordField = await page.waitForSelector('input[type="password"]');
+  await passwordField.fill(password);
+  
+  // Find and click the create account button
+  const createAccountButton = await page.waitForSelector('button[type="submit"]');
+  await createAccountButton.click();
+  await page.waitForURL("/workspaces/create", { timeout: 10000 });
 
   // Should be redirected to workspace creation
   await expect(page).toHaveURL("/workspaces/create", { timeout: 10000 });
+
+  // Take another snapshot at workspace creation page
+  await page.evaluate(() => {
+    const mcpBrowserSnapshot = (window as any).mcpBrowserSnapshot;
+    if (mcpBrowserSnapshot) mcpBrowserSnapshot();
+  });
 
   // Save signed-in state
   await page.context().storageState({ path: path.join(authDir, "user.json") });
 
   const workspaceName = generateRandomWorkspaceName();
-  // Navigate to workspace creation if not already there
-  const currentUrl = page.url();
-  if (!currentUrl.includes("/workspaces/create")) {
-    await page.goto("/workspaces/create");
-  }
+  
+  // Wait for heading to be visible to ensure the page is loaded
+  await page.waitForSelector('h1:has-text("Create a new workspace")', { timeout: 10000 });
+  
+  // Create initial workspace with role-based selector
+  const nameInput = await page.getByRole('textbox').first();
+  await nameInput.fill(workspaceName);
+  
+  // Find and click the create workspace button
+  const createButton = await page.getByRole('button', { name: /create workspace/i }).first();
+  await createButton.click();
+  await page.waitForURL(new RegExp(`/${workspaceName.toLowerCase()}`), { timeout: 15000 });
 
-  // Create initial workspace
-  await page
-    .getByRole("textbox", { name: /name/i })
-    .pressSequentially(workspaceName, { delay: 100 });
-  await page.getByRole("button", { name: /create/i }).click();
-
-  // Wait for workspace creation and redirect
-  await expect(page).toHaveURL(`/${workspaceName}`, { timeout: 10_000 });
+  // Wait for successful navigation to the workspace page
+  await expect(page).toHaveURL(new RegExp(`/${workspaceName.toLowerCase()}`), { timeout: 15000 });
 
   // Store the workspace information
   const workspaceData: WorkspaceFixture = {

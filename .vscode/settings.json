@@ -12,5 +12,14 @@
   },
   "files.associations": {
     "*.css": "tailwindcss"
+  },
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+      // Add other arguments here as needed (e.g., --headless, --vision)
+    }
   }
 }
