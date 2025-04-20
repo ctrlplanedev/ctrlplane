@@ -18,3 +18,5 @@ export function createClient(options: ClientOptions & { apiKey: string }) {
     headers: { "x-api-key": options?.apiKey },
   });
 }
+
+export type ApiClient = ReturnType<typeof createClient>;
