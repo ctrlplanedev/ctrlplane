@@ -10,10 +10,10 @@ import { request } from "../../middleware";
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(({ can, extra }) => {
+    authz(({ can, params }) => {
       return can
         .perform(Permission.ResourceDelete)
-        .on({ type: "resource", id: extra.params.resourceId });
+        .on({ type: "resource", id: params.resourceId ?? "" });
     }),
   )
   .handle<{ params: { schemaId: string } }>(async ({ db, params }) => {

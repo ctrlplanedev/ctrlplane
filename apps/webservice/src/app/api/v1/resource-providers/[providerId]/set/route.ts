@@ -45,10 +45,10 @@ export const PATCH = request()
   .use(authn)
   .use(parseBody(bodySchema))
   .use(
-    authz(({ can, extra }) =>
+    authz(({ can, params }) =>
       can
         .perform(Permission.ResourceUpdate)
-        .on({ type: "resourceProvider", id: extra.params.providerId }),
+        .on({ type: "resourceProvider", id: params.providerId }),
     ),
   )
   .handle<

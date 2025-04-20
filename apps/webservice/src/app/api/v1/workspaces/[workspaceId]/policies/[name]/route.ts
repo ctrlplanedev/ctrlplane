@@ -11,8 +11,8 @@ import { request } from "~/app/api/v1/middleware";
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(async ({ can, extra }) => {
-      const { workspaceId, name } = extra.params;
+    authz(async ({ can, params }) => {
+      const { workspaceId = "", name = "" } = params;
 
       const policy = await db.query.policy.findFirst({
         where: and(

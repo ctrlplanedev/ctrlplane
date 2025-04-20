@@ -79,10 +79,10 @@ const patchSchema = z.object({
 export const PATCH = request()
   .use(authn)
   .use(
-    authz(({ can, extra }) =>
+    authz(({ can, params }) =>
       can
         .perform(Permission.ResourceUpdate)
-        .on({ type: "resource", id: extra.params.resourceId }),
+        .on({ type: "resource", id: params.resourceId ?? "" }),
     ),
   )
   .use(parseBody(patchSchema))
