@@ -39,19 +39,23 @@ export type EvaluateReleaseTargetJob = {
 export type ChannelMap = {
   [Channel.NewDeployment]: schema.Deployment;
   [Channel.NewDeploymentVersion]: schema.DeploymentVersion;
+  [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
+  [Channel.NewResource]: schema.Resource;
+  [Channel.NewPolicy]: schema.Policy;
+
   [Channel.UpdateDeploymentVariable]: schema.DeploymentVariable;
   [Channel.UpdateResourceVariable]: schema.ResourceVariable;
-  [Channel.NewEnvironment]: typeof schema.environment.$inferSelect;
   [Channel.UpdateEnvironment]: schema.Environment & {
     oldSelector: ResourceCondition | null;
   };
   [Channel.UpdateDeployment]: schema.Deployment & {
     oldSelector: ResourceCondition | null;
   };
+  [Channel.UpdatedResource]: schema.Resource;
+
+  [Channel.DeleteResource]: schema.Resource;
+
   [Channel.EvaluateReleaseTarget]: EvaluateReleaseTargetJob;
   [Channel.DispatchJob]: { jobId: string };
   [Channel.ResourceScan]: { resourceProviderId: string };
-  [Channel.UpdatedResource]: schema.Resource;
-  [Channel.NewResource]: schema.Resource;
-  [Channel.NewPolicy]: schema.Policy;
 };

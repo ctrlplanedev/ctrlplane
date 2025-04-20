@@ -102,6 +102,7 @@ export class ResourceBuilder {
           isResourceMatchingEnvironment,
           isResourceMatchingDeployment,
           inArray(SCHEMA.resource.id, this.resourceIds),
+          isNull(SCHEMA.resource.deletedAt),
         ),
       );
   }
@@ -216,6 +217,7 @@ export class WorkspaceResourceBuilder {
           isResourceMatchingEnvironment,
           isResourceMatchingDeployment,
           inArray(SCHEMA.resource.id, resourceIds),
+          isNull(SCHEMA.resource.deletedAt),
         ),
       );
   }

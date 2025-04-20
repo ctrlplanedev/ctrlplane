@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { deleteResources } from "@ctrlplane/job-dispatch";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -96,7 +96,7 @@ export const DELETE = request()
         );
       }
 
-      await deleteResources(db, [resource]);
+      await getQueue(Channel.DeleteResource).add(resource.id, resource);
 
       return NextResponse.json({ success: true });
     },

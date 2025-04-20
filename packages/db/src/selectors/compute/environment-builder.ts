@@ -1,4 +1,10 @@
-import { and, eq, inArray, isNotNull } from "drizzle-orm/pg-core/expressions";
+import {
+  and,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+} from "drizzle-orm/pg-core/expressions";
 
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
@@ -44,6 +50,7 @@ export class EnvironmentBuilder {
         where: and(
           eq(SCHEMA.resource.workspaceId, workspaceId),
           qb.resources().where(env.resourceSelector).sql(),
+          isNull(SCHEMA.resource.deletedAt),
         ),
       });
       return resources.map((r) => ({ environmentId, resourceId: r.id }));
@@ -113,6 +120,7 @@ export class WorkspaceEnvironmentBuilder {
         where: and(
           eq(SCHEMA.resource.workspaceId, this.workspaceId),
           qb.resources().where(env.resourceSelector).sql(),
+          isNull(SCHEMA.resource.deletedAt),
         ),
       });
 

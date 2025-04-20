@@ -5,7 +5,6 @@ import { selector, upsertResources } from "@ctrlplane/db";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
-import { deleteResources } from "./delete.js";
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
 
 const log = logger.child({ label: "upsert-resources" });
@@ -43,14 +42,19 @@ export const handleResourceProviderScan = async (
 
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
     const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
-    const deleted = await deleteResources(tx, toDelete);
+    await getQueue(Channel.DeleteResource).addBulk(
+      toDelete.map((r) => ({ name: r.id, data: r })),
+    );
 
     await selector().compute().allResourceSelectors(workspaceId);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
     await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
 
     log.info("completed handling resource provider scan");
-    return { all: [...insertedResources, ...updatedResources], deleted };
+    return {
+      all: [...insertedResources, ...updatedResources],
+      deleted: toDelete,
+    };
   } catch (error) {
     log.error("Error upserting resources", { error });
     throw error;
