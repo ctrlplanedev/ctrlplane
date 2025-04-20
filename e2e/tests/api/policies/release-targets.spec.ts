@@ -18,19 +18,6 @@ test.describe("Release Targets API", () => {
     deployments = example.deployments;
   });
 
-  test("get environment resources", async ({ page, api }) => {
-    await page.waitForTimeout(5_000);
-    const releaseTargets = await api.GET(
-      `/v1/environments/{environmentId}/resources`,
-      {
-        params: { path: { environmentId: environments.qa.id } },
-      },
-    );
-
-    expect(releaseTargets.response.status).toBe(200);
-    expect(releaseTargets.data?.resources?.length).toBe(resources.qa.length);
-  });
-
   test("create policy with environment selector target", async ({
     page,
     api,

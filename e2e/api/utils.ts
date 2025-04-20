@@ -66,7 +66,7 @@ export const createExampleSystem = async (
         conditions: [
           {
             type: "identifier",
-            operator: "startsWith",
+            operator: "starts-with",
             value: systemName,
           },
           {
@@ -94,7 +94,7 @@ export const createExampleSystem = async (
         conditions: [
           {
             type: "identifier",
-            operator: "startsWith",
+            operator: "starts-with",
             value: systemName,
           },
           {
