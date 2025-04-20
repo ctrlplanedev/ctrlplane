@@ -118,7 +118,6 @@ const handleVersionRelease = withSpan(
     const { chosenCandidate } = await vrm.evaluate();
 
     if (!chosenCandidate) {
-      log.info("No valid version release found.", { releaseTarget });
       return null;
     }
 
@@ -168,10 +167,6 @@ export const evaluateReleaseTargetWorker = createWorker(
     span.setAttribute("environment.id", job.data.environmentId);
     span.setAttribute("deployment.id", job.data.deploymentId);
 
-    log.info(`Evaluating release target ${job.data.resourceId}`, {
-      jobId: job.id,
-    });
-
     const mutex = await createAndAcquireMutex(job.data);
 
     try {
@@ -210,7 +205,6 @@ export const evaluateReleaseTargetWorker = createWorker(
       ]);
 
       if (versionRelease == null) {
-        log.info("No valid version release found.", { releaseTarget });
         return;
       }
 

@@ -1,9 +1,10 @@
 import { expect } from "@playwright/test";
+import _ from "lodash";
 
 import { createExampleSystem, ExampleSystem } from "../../../api/utils";
 import { test } from "../../fixtures";
 
-test.describe("Policy Targets API", () => {
+test.describe("Release Targets API", () => {
   let system: ExampleSystem["system"];
   let resources: ExampleSystem["resources"];
   let environments: ExampleSystem["environments"];
@@ -17,20 +18,17 @@ test.describe("Policy Targets API", () => {
     deployments = example.deployments;
   });
 
-  test("create policy", async ({ api, workspace }) => {
-    const policyTarget = await api.POST("/v1/policies", {
-      body: {
-        name: system.name + "-base",
-        workspaceId: workspace.id,
-        enabled: false,
-        targets: [],
+  test("get environment resources", async ({ page, api }) => {
+    await page.waitForTimeout(5_000);
+    const releaseTargets = await api.GET(
+      `/v1/environments/{environmentId}/resources`,
+      {
+        params: { path: { environmentId: environments.qa.id } },
       },
-    });
+    );
 
-    expect(policyTarget.response.status).toBe(200);
-    expect(policyTarget.data?.id).toBeDefined();
-    expect(policyTarget.data?.name).toBe(system.name + "-base");
-    expect(policyTarget.data?.enabled).toBe(false);
+    expect(releaseTargets.response.status).toBe(200);
+    expect(releaseTargets.data?.resources?.length).toBe(resources.qa.length);
   });
 
   test("create policy with environment selector target", async ({
@@ -45,10 +43,21 @@ test.describe("Policy Targets API", () => {
         targets: [
           {
             environmentSelector: {
-              type: "metadata",
-              operator: "equals",
-              key: "env",
-              value: "qa",
+              type: "comparison",
+              operator: "and",
+              conditions: [
+                {
+                  type: "system",
+                  operator: "equals",
+                  value: system.id,
+                },
+                {
+                  type: "metadata",
+                  operator: "equals",
+                  key: "env",
+                  value: "qa",
+                },
+              ],
             },
           },
         ],
@@ -61,7 +70,7 @@ test.describe("Policy Targets API", () => {
     // Wait for the release targets to be computed, should take no more than 1
     // seconds. If it takes longer, we'll fail the test. Increase worker pods
     // if this becomes an issue.
-    await page.waitForTimeout(1_000);
+    await page.waitForTimeout(29_000);
 
     const releaseTargets = await api.GET(
       `/v1/policies/{policyId}/release-targets`,
@@ -72,8 +81,12 @@ test.describe("Policy Targets API", () => {
       },
     );
 
-    console.log(releaseTargets.data);
     expect(releaseTargets.response.status).toBe(200);
+    expect(
+      _.uniq(
+        releaseTargets.data?.releaseTargets?.map((rt) => rt.environment?.id),
+      ),
+    ).toEqual([environments.qa.id]);
 
     expect(releaseTargets.data?.count).toBe(
       resources.qa.length * 2, // 2 deployments apply to qa

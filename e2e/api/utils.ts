@@ -61,10 +61,24 @@ export const createExampleSystem = async (
       workspaceId,
       systemId: system.data!.id,
       resourceSelector: {
-        type: "metadata",
-        operator: "equals",
-        key: "env",
-        value: "qa",
+        type: "comparison",
+        operator: "and",
+        conditions: [
+          {
+            type: "identifier",
+            operator: "startsWith",
+            value: systemName,
+          },
+          {
+            type: "metadata",
+            operator: "equals",
+            key: "env",
+            value: "qa",
+          },
+        ],
+      },
+      metadata: {
+        env: "qa",
       },
     },
   });
@@ -75,10 +89,24 @@ export const createExampleSystem = async (
       workspaceId,
       systemId: system.data!.id,
       resourceSelector: {
-        type: "metadata",
-        operator: "equals",
-        key: "env",
-        value: "prod",
+        type: "comparison",
+        operator: "and",
+        conditions: [
+          {
+            type: "identifier",
+            operator: "startsWith",
+            value: systemName,
+          },
+          {
+            type: "metadata",
+            operator: "equals",
+            key: "env",
+            value: "prod",
+          },
+        ],
+      },
+      metadata: {
+        env: "prod",
       },
     },
   });

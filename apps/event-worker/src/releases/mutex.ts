@@ -42,13 +42,11 @@ class ReleaseTargetMutex {
   }
 
   lock(): Promise<void> {
-    log.info("Locking mutex", { key: this.key });
     if (this.mutex.isAcquired) throw new Error("Mutex is already locked");
     return this.mutex.acquire();
   }
 
   unlock(): Promise<void> {
-    log.info("Unlocking mutex", { key: this.key });
     if (!this.mutex.isAcquired) throw new Error("Mutex is not locked");
     return this.mutex.release();
   }

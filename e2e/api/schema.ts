@@ -163,6 +163,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/environments/{environmentId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get resources for an environment */
+    get: operations["getResourcesForEnvironment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/environments": {
     parameters: {
       query?: never;
@@ -1664,6 +1681,49 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  getResourcesForEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the environment */
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            resources?: {
+              id?: string;
+              name?: string;
+              identifier?: string;
+              kind?: string;
+              version?: string;
+            }[];
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
       };
     };
   };
