@@ -1,4 +1,11 @@
-import { and, eq, inArray, isNull, or } from "drizzle-orm/pg-core/expressions";
+import {
+  and,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+} from "drizzle-orm/pg-core/expressions";
 
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
@@ -102,6 +109,7 @@ export class ResourceBuilder {
           isResourceMatchingEnvironment,
           isResourceMatchingDeployment,
           inArray(SCHEMA.resource.id, this.resourceIds),
+          isNotNull(SCHEMA.resource.deletedAt),
         ),
       );
   }
@@ -216,6 +224,7 @@ export class WorkspaceResourceBuilder {
           isResourceMatchingEnvironment,
           isResourceMatchingDeployment,
           inArray(SCHEMA.resource.id, resourceIds),
+          isNotNull(SCHEMA.resource.deletedAt),
         ),
       );
   }

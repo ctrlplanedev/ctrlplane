@@ -40,6 +40,7 @@ export class DeploymentBuilder {
         where: and(
           eq(SCHEMA.resource.workspaceId, workspaceId),
           qb.resources().where(d.resourceSelector).sql(),
+          isNotNull(SCHEMA.resource.deletedAt),
         ),
       });
 
@@ -114,6 +115,7 @@ export class WorkspaceDeploymentBuilder {
         where: and(
           eq(SCHEMA.resource.workspaceId, this.workspaceId),
           qb.resources().where(d.resourceSelector).sql(),
+          isNotNull(SCHEMA.resource.deletedAt),
         ),
       });
 

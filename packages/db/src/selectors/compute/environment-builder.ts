@@ -44,6 +44,7 @@ export class EnvironmentBuilder {
         where: and(
           eq(SCHEMA.resource.workspaceId, workspaceId),
           qb.resources().where(env.resourceSelector).sql(),
+          isNotNull(SCHEMA.resource.deletedAt),
         ),
       });
       return resources.map((r) => ({ environmentId, resourceId: r.id }));
@@ -113,6 +114,7 @@ export class WorkspaceEnvironmentBuilder {
         where: and(
           eq(SCHEMA.resource.workspaceId, this.workspaceId),
           qb.resources().where(env.resourceSelector).sql(),
+          isNotNull(SCHEMA.resource.deletedAt),
         ),
       });
 

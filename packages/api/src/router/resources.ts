@@ -18,11 +18,11 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
   createReleaseJobTriggers,
-  deleteResources,
   dispatchReleaseJobTriggers,
   isPassingAllPoliciesExceptNewerThanLastActive,
   isPassingChannelSelectorPolicy,
@@ -695,13 +695,15 @@ export const resourceRouter = createTRPCRouter({
         ),
     })
     .input(z.array(z.string().uuid()))
-    .mutation(async ({ ctx, input }) =>
-      ctx.db.query.resource
-        .findMany({
-          where: and(inArray(schema.resource.id, input), isNotDeleted),
-        })
-        .then((resources) => deleteResources(ctx.db, resources)),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const resources = await ctx.db.query.resource.findMany({
+        where: and(inArray(schema.resource.id, input), isNotDeleted),
+      });
+      await getQueue(Channel.DeleteResource).addBulk(
+        resources.map((r) => ({ name: r.id, data: r })),
+      );
+      return resources;
+    }),
 
   metadataKeys: protectedProcedure
     .meta({
