@@ -48,7 +48,7 @@ export const PATCH = request()
     authz(({ can, params }) =>
       can
         .perform(Permission.ResourceUpdate)
-        .on({ type: "resourceProvider", id: params.providerId }),
+        .on({ type: "resourceProvider", id: params.providerId ?? "" }),
     ),
   )
   .handle<

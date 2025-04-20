@@ -8,8 +8,6 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "../../../auth";
 import { request } from "../../../middleware";
 
-type ListRequestParams = { params: { workspaceId: string } };
-
 export const GET = request()
   .use(authn)
   .use(
@@ -19,22 +17,24 @@ export const GET = request()
         .on({ type: "workspace", id: (await params).workspaceId }),
     ),
   )
-  .handle<unknown, Promise<ListRequestParams>>(async (ctx, extra) => {
-    try {
-      const { workspaceId } = (await extra).params;
-      const resources = await ctx.db
-        .select()
-        .from(resource)
-        .where(eq(resource.workspaceId, workspaceId))
-        .orderBy(resource.name);
-      return NextResponse.json({ resources }, { status: httpStatus.OK });
-    } catch (error) {
-      return NextResponse.json(
-        {
-          error: "Internal Server Error",
-          message: error instanceof Error ? error.message : "Unknown error",
-        },
-        { status: httpStatus.INTERNAL_SERVER_ERROR },
-      );
-    }
-  });
+  .handle<unknown, { params: Promise<{ workspaceId: string }> }>(
+    async (ctx, { params }) => {
+      try {
+        const { workspaceId } = await params;
+        const resources = await ctx.db
+          .select()
+          .from(resource)
+          .where(eq(resource.workspaceId, workspaceId))
+          .orderBy(resource.name);
+        return NextResponse.json({ resources }, { status: httpStatus.OK });
+      } catch (error) {
+        return NextResponse.json(
+          {
+            error: "Internal Server Error",
+            message: error instanceof Error ? error.message : "Unknown error",
+          },
+          { status: httpStatus.INTERNAL_SERVER_ERROR },
+        );
+      }
+    },
+  );
