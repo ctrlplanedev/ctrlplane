@@ -14,8 +14,6 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "install-browsers": "npx playwright install --with-deps",
-    "lint": "eslint",
-    "typecheck": "tsc",
     "generate": "pnpm dlx openapi-typescript ../openapi.v1.json -o api/schema.ts"
   },
   "devDependencies": {
