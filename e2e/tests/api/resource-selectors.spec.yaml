@@ -44,7 +44,7 @@ resources:
   - name: Production Resource A
     kind: TestResource
     identifier: selector-prod-resource-a
-    version: v1
+    version: test/v1
     config:
       enabled: true
     metadata:
@@ -55,7 +55,7 @@ resources:
   - name: Production Resource B
     kind: TestResource
     identifier: selector-prod-resource-b
-    version: v1
+    version: test/v1
     config:
       enabled: true
     metadata:
@@ -66,7 +66,7 @@ resources:
   - name: Staging Resource A
     kind: TestResource
     identifier: selector-staging-resource-a
-    version: v1
+    version: test/v1
     config:
       enabled: true
     metadata:
@@ -77,7 +77,7 @@ resources:
   - name: Staging Resource B
     kind: TestResource
     identifier: selector-staging-resource-b
-    version: v1
+    version: test/v1
     config:
       enabled: true
     metadata:
@@ -114,6 +114,10 @@ deployments:
       type: comparison
       operator: and
       conditions:
+        - type: metadata
+          operator: equals
+          key: system
+          value: "{{ prefix }}-selectors"
         - type: metadata
           operator: equals
           key: env
