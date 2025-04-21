@@ -50,10 +50,7 @@ export class DeploymentBuilder {
         ),
       });
 
-      return resources.map((r) => ({
-        deploymentId: d.id,
-        resourceId: r.id,
-      }));
+      return resources.map((r) => ({ deploymentId: d.id, resourceId: r.id }));
     });
 
     const fulfilled = await Promise.all(promises);

@@ -56,9 +56,6 @@ export class VariableManager {
   }
 
   async getVariables(): Promise<MaybeVariable[]> {
-    logger.info("Getting variables", {
-      keys: this.options.keys,
-    });
     return Promise.all(this.options.keys.map((key) => this.getVariable(key)));
   }
 

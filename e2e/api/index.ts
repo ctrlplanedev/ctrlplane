@@ -3,6 +3,7 @@ import createOClient, { ClientOptions } from "openapi-fetch";
 import { paths } from "./schema";
 
 export * from "./schema";
+export * from "./yaml-loader";
 
 export { operations as Operations } from "./schema";
 

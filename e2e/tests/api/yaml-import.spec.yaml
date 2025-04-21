@@ -1,0 +1,103 @@
+system:
+  name: "{{ prefix }}-yaml-test-system"
+  slug: "{{ prefix }}-yaml-test-system"
+  description: System created from YAML fixture
+
+environments:
+  - name: Production
+    description: Production environment
+    metadata:
+      env: prod
+      tier: production
+    resourceSelector:
+      type: comparison
+      operator: and
+      conditions:
+        - type: metadata
+          operator: equals
+          key: env
+          value: prod
+
+  - name: Staging
+    description: Staging environment
+    metadata:
+      env: staging
+      tier: pre-production
+    resourceSelector:
+      type: comparison
+      operator: and
+      conditions:
+        - type: metadata
+          operator: equals
+          key: env
+          value: staging
+
+resources:
+  - name: Prod Resource 1
+    kind: TestResource
+    identifier: yaml-prod-resource-1
+    version: v1
+    config:
+      key: value
+      enabled: true
+    metadata:
+      env: prod
+      service: api
+
+  - name: Prod Resource 2
+    kind: TestResource
+    identifier: yaml-prod-resource-2
+    version: v1
+    config:
+      key: value
+      enabled: true
+    metadata:
+      env: prod
+      service: worker
+
+  - name: Staging Resource 1
+    kind: TestResource
+    identifier: yaml-staging-resource-1
+    version: v1
+    config:
+      key: value
+      enabled: true
+    metadata:
+      env: staging
+      service: api
+
+deployments:
+  - name: API Deployment
+    slug: api-deployment
+    description: API service deployment
+    resourceSelector:
+      type: comparison
+      operator: and
+      conditions:
+        - type: metadata
+          operator: equals
+          key: service
+          value: api
+
+  - name: Worker Deployment
+    slug: worker-deployment
+    description: Background worker deployment
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: service
+      value: worker
+
+policies:
+  - name: Production Deployment Policy
+    targets:
+      - environmentSelector:
+          type: comparison
+          operator: and
+          conditions:
+            - type: metadata
+              operator: equals
+              key: tier
+              value: production
+    versionAnyApprovals:
+      requiredApprovalsCount: 2

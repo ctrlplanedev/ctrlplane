@@ -128,6 +128,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployments/{deploymentId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get resources for a deployment */
+    get: operations["getResourcesForDeployment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployments": {
     parameters: {
       query?: never;
@@ -301,6 +318,23 @@ export interface paths {
     head?: never;
     /** Update a job */
     patch: operations["updateJob"];
+    trace?: never;
+  };
+  "/v1/policies/{policyId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a policy */
+    delete: operations["deletePolicy"];
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/v1/policies/{policyId}/release-targets": {
@@ -1528,6 +1562,49 @@ export interface operations {
       };
     };
   };
+  getResourcesForDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the deployment */
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            resources?: {
+              id?: string;
+              name?: string;
+              identifier?: string;
+              kind?: string;
+              version?: string;
+            }[];
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   createDeployment: {
     parameters: {
       query?: never;
@@ -2028,6 +2105,37 @@ export interface operations {
             id: string;
           };
         };
+      };
+    };
+  };
+  deletePolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

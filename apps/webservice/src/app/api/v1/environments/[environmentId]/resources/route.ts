@@ -20,7 +20,7 @@ export const GET = request()
   .handle<unknown, { params: Promise<{ environmentId: string }> }>(
     async (ctx, { params }) => {
       const { environmentId } = await params;
-      const releaseTargetsQuery = ctx.db
+      const resources = await ctx.db
         .select()
         .from(schema.resource)
         .innerJoin(
@@ -32,8 +32,6 @@ export const GET = request()
         )
         .limit(1_000)
         .then((res) => res.map((r) => ({ ...r.resource })));
-
-      const resources = await releaseTargetsQuery;
 
       return NextResponse.json({
         resources,

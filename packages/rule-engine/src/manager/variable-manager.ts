@@ -22,10 +22,6 @@ export class VariableReleaseManager implements ReleaseManager {
 
   async upsertRelease(variables: MaybeVariable[]) {
     const latestRelease = await this.findLatestRelease();
-    logger.info("latest variable release", {
-      latestRelease,
-      variables,
-    });
 
     const oldVars = _(latestRelease?.values ?? [])
       .map((v) => [v.variableValueSnapshot.key, v.variableValueSnapshot.value])
