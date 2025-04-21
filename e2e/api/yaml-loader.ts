@@ -68,6 +68,7 @@ export interface ImportedEntities {
     name: string;
     kind: string;
     originalIdentifier?: string;
+    metadata?: Record<string, string>;
   }>;
   deployments: Array<{
     id: string;

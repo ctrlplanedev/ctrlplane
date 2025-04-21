@@ -136,5 +136,9 @@ policies:
           conditions:
             - type: metadata
               operator: equals
+              key: system
+              value: "{{ prefix }}-selectors"
+            - type: metadata
+              operator: equals
               key: tier
               value: production

@@ -15,39 +15,32 @@ test.describe("Resource Selectors API", () => {
       workspace.id,
       yamlPath,
     );
+    // wait for resources to be processed
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
   });
 
-  test("get qa environment resources", async ({ page, api }) => {
-    await page.waitForTimeout(5_000);
+  test("basic environment resource selector", async ({ page, api }) => {
+    const environment = importedEntities.environments.find(
+      (env) => env.name === "Production",
+    )!;
     const releaseTargets = await api.GET(
       `/v1/environments/{environmentId}/resources`,
       {
         params: {
-          path: { environmentId: importedEntities.environments[0].id },
+          path: { environmentId: environment.id },
         },
       },
     );
 
-    expect(releaseTargets.response.status).toBe(200);
-    expect(releaseTargets.data?.resources?.length).toBe(
-      importedEntities.resources.length,
+    const resources = importedEntities.resources.filter(
+      (resource) => resource.metadata?.env === "prod",
     );
+
+    expect(releaseTargets.response.status).toBe(200);
+    expect(releaseTargets.data?.resources?.length).toBe(resources.length);
   });
 
-  test("get prod environment resources", async ({ page, api }) => {
-    await page.waitForTimeout(5_000);
-    const res = await api.GET(`/v1/environments/{environmentId}/resources`, {
-      params: {
-        path: { environmentId: importedEntities.environments[1].id },
-      },
-    });
-
-    expect(res.response.status).toBe(200);
-    expect(res.data?.resources?.length).toBe(importedEntities.resources.length);
-  });
-
-  test("get deployment resources", async ({ page, api }) => {
-    await page.waitForTimeout(5_000);
+  test("basic deployment resource selector", async ({ page, api }) => {
     const res = await api.GET(`/v1/deployments/{deploymentId}/resources`, {
       params: {
         path: {
