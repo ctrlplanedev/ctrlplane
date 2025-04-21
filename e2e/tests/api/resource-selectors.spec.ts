@@ -31,12 +31,21 @@ test.describe("Resource Selectors API", () => {
 
   test("get prod environment resources", async ({ page, api }) => {
     await page.waitForTimeout(5_000);
-    const releaseTargets = await api.GET(
-      `/v1/environments/{environmentId}/resources`,
-      { params: { path: { environmentId: environments.prod.id } } },
-    );
+    const res = await api.GET(`/v1/environments/{environmentId}/resources`, {
+      params: { path: { environmentId: environments.prod.id } },
+    });
 
-    expect(releaseTargets.response.status).toBe(200);
-    expect(releaseTargets.data?.resources?.length).toBe(resources.prod.length);
+    expect(res.response.status).toBe(200);
+    expect(res.data?.resources?.length).toBe(resources.prod.length);
+  });
+
+  test("get deployment resources", async ({ page, api }) => {
+    await page.waitForTimeout(5_000);
+    const res = await api.GET(`/v1/deployments/{deploymentId}/resources`, {
+      params: { path: { deploymentId: deployments.withSelectorForQa.id } },
+    });
+
+    expect(res.response.status).toBe(200);
+    expect(res.data?.count).toBe(resources.qa.length);
   });
 });

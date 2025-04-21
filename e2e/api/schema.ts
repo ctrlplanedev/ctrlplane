@@ -128,6 +128,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployments/{deploymentId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get resources for a deployment */
+    get: operations["getResourcesForDeployment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployments": {
     parameters: {
       query?: never;
@@ -1523,6 +1540,49 @@ export interface operations {
         content: {
           "application/json": {
             error: string;
+          };
+        };
+      };
+    };
+  };
+  getResourcesForDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the deployment */
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            resources?: {
+              id?: string;
+              name?: string;
+              identifier?: string;
+              kind?: string;
+              version?: string;
+            }[];
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
           };
         };
       };
