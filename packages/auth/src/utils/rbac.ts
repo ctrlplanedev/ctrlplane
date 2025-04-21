@@ -376,7 +376,7 @@ const newJobScopes = async (id: string) =>
     .innerJoin(deployment, eq(releaseTarget.deploymentId, deployment.id))
     .innerJoin(system, eq(deployment.systemId, system.id))
     .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-    .where(eq(job.id, id))
+    .where(and(eq(job.id, id), isNull(resource.deletedAt)))
     .then(takeFirstOrNull);
 
 const getJobScopes = async (id: string) => {
