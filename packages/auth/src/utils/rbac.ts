@@ -20,7 +20,10 @@ import {
   job,
   jobAgent,
   policy,
+  release,
+  releaseJob,
   releaseJobTrigger,
+  releaseTarget,
   resource,
   resourceMetadataGroup,
   resourceProvider,
@@ -31,6 +34,7 @@ import {
   runbookJobTrigger,
   system,
   variableSet,
+  versionRelease,
   workspace,
 } from "@ctrlplane/db/schema";
 
@@ -335,6 +339,46 @@ const getJobAgentScopes = async (id: string) => {
   ];
 };
 
+const legacyJobScopes = async (id: string) =>
+  db
+    .select()
+    .from(job)
+    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+    .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
+    .innerJoin(
+      deploymentVersion,
+      eq(releaseJobTrigger.versionId, deploymentVersion.id),
+    )
+    .innerJoin(deployment, eq(deploymentVersion.deploymentId, deployment.id))
+    .innerJoin(system, eq(deployment.systemId, system.id))
+    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+    .where(and(eq(job.id, id), isNull(resource.deletedAt)))
+    .then(takeFirstOrNull);
+
+const newJobScopes = async (id: string) =>
+  db
+    .select()
+    .from(job)
+    .innerJoin(releaseJob, eq(releaseJob.jobId, job.id))
+    .innerJoin(release, eq(releaseJob.releaseId, release.id))
+    .innerJoin(versionRelease, eq(release.versionReleaseId, versionRelease.id))
+    .innerJoin(
+      deploymentVersion,
+      eq(versionRelease.versionId, deploymentVersion.id),
+    )
+    .innerJoin(
+      releaseTarget,
+      eq(versionRelease.releaseTargetId, releaseTarget.id),
+    )
+    .innerJoin(resource, eq(releaseTarget.resourceId, resource.id))
+    .innerJoin(environment, eq(releaseTarget.environmentId, environment.id))
+    .innerJoin(deployment, eq(releaseTarget.deploymentId, deployment.id))
+    .innerJoin(system, eq(deployment.systemId, system.id))
+    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+    .where(eq(job.id, id))
+    .then(takeFirstOrNull);
+
 const getJobScopes = async (id: string) => {
   const runbookResult = await db
     .select()
@@ -354,21 +398,13 @@ const getJobScopes = async (id: string) => {
       { type: "workspace" as const, id: runbookResult.workspace.id },
     ];
 
-  const result = await db
-    .select()
-    .from(job)
-    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-    .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(
-      deploymentVersion,
-      eq(releaseJobTrigger.versionId, deploymentVersion.id),
-    )
-    .innerJoin(deployment, eq(deploymentVersion.deploymentId, deployment.id))
-    .innerJoin(system, eq(deployment.systemId, system.id))
-    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-    .where(and(eq(job.id, id), isNull(resource.deletedAt)))
-    .then(takeFirstOrNull);
+  const isUsingNewPolicyEngine =
+    // eslint-disable-next-line no-restricted-properties
+    process.env.ENABLE_NEW_POLICY_ENGINE === "true";
+
+  const result = isUsingNewPolicyEngine
+    ? await newJobScopes(id)
+    : await legacyJobScopes(id);
 
   if (result == null) return [];
 

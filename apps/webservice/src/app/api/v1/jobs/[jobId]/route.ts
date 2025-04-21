@@ -15,27 +15,29 @@ import { getNewEngineJob } from "./new-engine-job";
 export const GET = request()
   .use(authn)
   .use(
-    authz(({ can, extra: { params } }) => {
-      return can
-        .perform(Permission.JobGet)
-        .on({ type: "job", id: params.jobId });
+    authz(async ({ can, extra: { params } }) => {
+      const { jobId } = await params;
+      return can.perform(Permission.JobGet).on({ type: "job", id: jobId });
     }),
   )
-  .handle<object, { params: { jobId: string } }>(async ({ db }, { params }) => {
-    // eslint-disable-next-line no-restricted-properties
-    const isUsingNewEngine = process.env.ENABLE_NEW_POLICY_ENGINE === "true";
-    const job = isUsingNewEngine
-      ? await getNewEngineJob(db, params.jobId)
-      : await getLegacyJob(db, params.jobId);
+  .handle<object, { params: Promise<{ jobId: string }> }>(
+    async ({ db }, { params }) => {
+      const { jobId } = await params;
+      // eslint-disable-next-line no-restricted-properties
+      const isUsingNewEngine = process.env.ENABLE_NEW_POLICY_ENGINE === "true";
+      const job = isUsingNewEngine
+        ? await getNewEngineJob(db, jobId)
+        : await getLegacyJob(db, jobId);
 
-    if (job == null)
-      return NextResponse.json(
-        { error: "Job not found" },
-        { status: NOT_FOUND },
-      );
+      if (job == null)
+        return NextResponse.json(
+          { error: "Job not found" },
+          { status: NOT_FOUND },
+        );
 
-    return NextResponse.json(job);
-  });
+      return NextResponse.json(job);
+    },
+  );
 
 const bodySchema = schema.updateJob;
 
