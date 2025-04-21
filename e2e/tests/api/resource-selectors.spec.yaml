@@ -1,6 +1,6 @@
 system:
-  name: selector-test-system
-  slug: selector-test-system
+  name: selectors
+  slug: selectors
   description: System for testing resource selectors
 
 environments:

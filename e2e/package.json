@@ -18,6 +18,7 @@
     "test:deployments": "pnpm exec playwright test tests/api/deployments.spec.ts",
     "test:yaml": "pnpm exec playwright test tests/api/yaml-import.spec.ts",
     "test:yaml-prefixed": "pnpm exec playwright test tests/api/random-prefix-yaml.spec.ts",
+    "test:yaml-template": "pnpm exec playwright test tests/api/template-yaml.spec.ts",
     "test:systems": "pnpm exec playwright test tests/systems.spec.ts",
     "clean": "rm -rf .turbo node_modules",
     "show-report": "pnpm exec playwright show-report",
@@ -34,14 +35,19 @@
     "@openapitools/openapi-generator-cli": "^2.13.5",
     "@playwright/test": "^1.51.0",
     "@types/js-yaml": "^4.0.9",
+    "@types/mustache": "^4.2.5",
     "@types/node": "^22.13.10",
+    "@types/uuid": "^9.0.8",
     "eslint": "catalog:",
     "ms": "^2.1.3",
     "openapi-fetch": "^0.13.0",
     "prettier": "catalog:"
   },
   "dependencies": {
+    "handlebars": "^4.7.8",
     "js-yaml": "^4.1.0",
-    "lodash": "catalog:"
+    "lodash": "catalog:",
+    "mustache": "^4.2.0",
+    "uuid": "^9.0.1"
   }
 }

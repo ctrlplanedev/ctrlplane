@@ -18,6 +18,7 @@ API tests are further organized by resource type:
 - `tests/api/resources.spec.ts` - Resource management endpoints
 - `tests/api/yaml-import.spec.ts` - YAML entity import functionality
 - `tests/api/random-prefix-yaml.spec.ts` - YAML import with random prefixes
+- `tests/api/template-yaml.spec.ts` - YAML import with template processing
 - `tests/api/policies/` - Policy-related API endpoints
   - `tests/api/policies/release-targets.spec.ts` - Policy release target functionality
   - `tests/api/policies/policies.spec.ts` - Core policy functionality
@@ -118,6 +119,70 @@ When using prefixes, the imported entities contain both the prefixed names and t
 }
 ```
 
+### Template Engine
+
+The YAML entity loader supports a template engine that lets you use dynamic values in your YAML files. This is useful for:
+
+1. Creating unique identifiers for each test run
+2. Generating random test data
+3. Making YAML fixtures more reusable
+
+Templates use Mustache syntax with double curly braces: `{{ functionName() }}`
+
+Example YAML with templates:
+
+```yaml
+system:
+  name: "test-system-{{ runid() }}"
+  slug: "test-{{ slug('System ' + timestamp()) }}"
+
+resources:
+  - name: "api-server-{{ randomString(5) }}"
+    identifier: "{{ runid('resource') }}-api"
+    version: "v1"
+    config:
+      replicas: {{ random(1, 5) }}
+```
+
+Available template functions:
+
+- `{{ runid([prefix]) }}` - Generate a unique run ID (timestamp + random number)
+- `{{ uuid() }}` - Generate a UUID v4
+- `{{ timestamp() }}` - Get current timestamp
+- `{{ random(min, max) }}` - Generate a random number between min and max
+- `{{ randomString(length) }}` - Generate a random alphanumeric string
+- `{{ randomName([prefix]) }}` - Generate a random name
+- `{{ slug(text) }}` - Convert text to a slug (lowercase, hyphenated)
+
+To use templates, set the `processTemplates` option to true (enabled by default):
+
+```typescript
+const entities = await importEntitiesFromYaml(
+  api, 
+  workspace.id, 
+  yamlPath,
+  {
+    processTemplates: true // Default is true
+  }
+);
+```
+
+You can also define custom template helpers:
+
+```typescript
+const entities = await importEntitiesFromYaml(
+  api, 
+  workspace.id, 
+  yamlPath,
+  {
+    templateHelpers: {
+      environment: () => process.env.NODE_ENV || 'test',
+      customPrefix: () => 'my-prefix'
+    }
+  }
+);
+```
+
 ### YAML File Structure
 
 YAML files should be structured as follows:
@@ -176,8 +241,9 @@ pnpm test:api
 To run the YAML import tests:
 
 ```bash
-pnpm test:yaml           # Basic YAML import
-pnpm test:yaml-prefixed  # YAML import with random prefix
+pnpm test:yaml            # Basic YAML import
+pnpm test:yaml-prefixed   # YAML import with random prefix
+pnpm test:yaml-template   # YAML import with template processing
 ```
 
 To run a specific test file:

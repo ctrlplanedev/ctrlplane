@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { faker } from "@faker-js/faker";
+import { compile } from "handlebars";
 import yaml from "js-yaml";
 
 import { ApiClient } from "./index";
@@ -51,9 +52,6 @@ export interface TestYamlFile {
 
 // Define return type for imported entities
 export interface ImportedEntities {
-  // The prefix that was used for entity names (if any)
-  prefix: string;
-
   system: {
     id: string;
     name: string;
@@ -85,13 +83,6 @@ export interface ImportedEntities {
 }
 
 /**
- * Apply a prefix to a string value
- */
-function applyPrefix(value: string, prefix: string): string {
-  return `${prefix}-${value}`;
-}
-
-/**
  * Import entities from a YAML file into the workspace
  * @param api API client instance
  * @param workspaceId ID of the workspace to import into
@@ -110,14 +101,14 @@ export async function importEntitiesFromYaml(
     : path.resolve(process.cwd(), yamlFilePath);
 
   const fileContent = fs.readFileSync(resolvedPath, "utf8");
-  const data = yaml.load(fileContent) as TestYamlFile;
-
-  // Determine prefix if needed
-  const prefix = `test-${faker.string.alphanumeric(8)}`;
+  const template = compile(fileContent);
+  const fileTemplated = template({
+    prefix: faker.string.alphanumeric(6),
+  });
+  let data = yaml.load(fileTemplated) as TestYamlFile;
 
   // Initialize result object
   const result: ImportedEntities = {
-    prefix,
     system: { id: "", name: "", slug: "" },
     environments: [],
     resources: [],
@@ -125,22 +116,12 @@ export async function importEntitiesFromYaml(
     policies: [],
   };
 
-  // Apply prefix to system data if needed
-  const systemName = prefix
-    ? applyPrefix(data.system.name, prefix)
-    : data.system.name;
-  const systemSlug = prefix
-    ? applyPrefix(data.system.slug, prefix)
-    : data.system.slug;
-
   // Create system
-  console.log(`Creating system: ${systemName}`);
+  console.log(`Creating system: ${data.system.name}`);
   const systemResponse = await api.POST("/v1/systems", {
     body: {
       workspaceId,
-      name: systemName,
-      slug: systemSlug,
-      description: data.system.description,
+      ...data.system,
     },
   });
 
@@ -158,28 +139,15 @@ export async function importEntitiesFromYaml(
   };
 
   // Create resources with prefix if needed
-  if (data.resources != null && data.resources.length > 0) {
+  if (data.resources && data.resources.length > 0) {
     console.log(`Creating ${data.resources.length} resources`);
-
-    // Apply prefix to resources if needed
-    const prefixedResources = data.resources.map((resource) => ({
-      ...resource,
-      name: applyPrefix(resource.name, prefix),
-      identifier: applyPrefix(resource.identifier, prefix),
-    }));
-
-    console.log(`Prefixed resources: ${JSON.stringify(prefixedResources)}`);
 
     const resourcesResponse = await api.POST("/v1/resources", {
       body: {
         workspaceId,
-        resources: prefixedResources.map((resource) => ({
-          name: resource.name,
-          kind: resource.kind,
-          identifier: resource.identifier,
-          version: resource.version,
-          config: (resource.config ?? {}) as any,
-          metadata: resource.metadata ?? {},
+        resources: data.resources.map((resource) => ({
+          ...resource,
+          config: resource.config as Record<string, never>,
         })),
       },
     });
@@ -191,22 +159,20 @@ export async function importEntitiesFromYaml(
     }
 
     // Store created resources in result
-    for (let i = 0; i < prefixedResources.length; i++) {
-      const resource = prefixedResources[i];
-      const originalResource = data.resources[i];
-
-      result.resources.push({
-        identifier: resource.identifier,
-        name: resource.name,
-        kind: resource.kind,
-        originalIdentifier: originalResource.identifier,
-      });
-    }
+    result.resources = data.resources.map((resource) => ({
+      ...resource,
+      originalIdentifier: resource.identifier,
+    }));
   }
 
   // Create environments with prefixes if needed
-  if (data.environments != null && data.environments.length > 0) {
+  if (data.environments && data.environments.length > 0) {
     for (const env of data.environments) {
+      console.log(`Creating environment: ${env.name}`);
+
+      // Update resource selector if needed
+      let resourceSelector = env.resourceSelector;
+
       const envResponse = await api.POST("/v1/environments", {
         body: {
           ...env,
@@ -231,6 +197,8 @@ export async function importEntitiesFromYaml(
   // Create deployments with prefixes if needed
   if (data.deployments && data.deployments.length > 0) {
     for (const deployment of data.deployments) {
+      console.log(`Creating deployment: ${deployment.name}`);
+
       const deploymentResponse = await api.POST("/v1/deployments", {
         body: {
           ...deployment,
@@ -256,13 +224,13 @@ export async function importEntitiesFromYaml(
   // Create policies with prefixes if needed
   if (data.policies && data.policies.length > 0) {
     for (const policy of data.policies) {
-      const policyName = prefix
-        ? applyPrefix(policy.name, prefix)
-        : policy.name;
-      console.log(`Creating policy: ${policyName}`);
+      console.log(`Creating policy: ${policy.name}`);
 
       const policyResponse = await api.POST("/v1/policies", {
-        body: { ...policy, workspaceId },
+        body: {
+          ...policy,
+          workspaceId,
+        },
       });
 
       if (policyResponse.response.status !== 200) {
@@ -291,21 +259,25 @@ export async function cleanupImportedEntities(
   api: ApiClient,
   entities: ImportedEntities,
 ): Promise<void> {
-  // // Delete deployments
-  // for (const deployment of entities.deployments) {
-  //   console.log(`Deleting deployment: ${deployment.name}`);
-  //   await api.DELETE(`/v1/deployments/${deployment.id}`);
-  // }
-  // // Delete environments
-  // for (const environment of entities.environments) {
-  //   console.log(`Deleting environment: ${environment.name}`);
-  //   await api.DELETE(`/v1/environments/${environment.id}`);
-  // }
-  // for (const policy of entities.policies) {
-  //   console.log(`Deleting policy: ${policy.name}`);
-  //   await api.DELETE(`/v1/policies/${policy.id}`);
-  // }
-  // // Delete system (this should cascade delete related resources)
-  // console.log(`Deleting system: ${entities.system.name}`);
-  // await api.DELETE(`/v1/systems/${entities.system.id}`);
+  // Delete policies
+  for (const policy of entities.policies) {
+    console.log(`Deleting policy: ${policy.name}`);
+    await api.DELETE(`/v1/policies/${policy.id}`);
+  }
+
+  // Delete deployments
+  for (const deployment of entities.deployments) {
+    console.log(`Deleting deployment: ${deployment.name}`);
+    await api.DELETE(`/v1/deployments/${deployment.id}`);
+  }
+
+  // Delete environments
+  for (const environment of entities.environments) {
+    console.log(`Deleting environment: ${environment.name}`);
+    await api.DELETE(`/v1/environments/${environment.id}`);
+  }
+
+  // Delete system (this should cascade delete related resources)
+  console.log(`Deleting system: ${entities.system.name}`);
+  await api.DELETE(`/v1/systems/${entities.system.id}`);
 }

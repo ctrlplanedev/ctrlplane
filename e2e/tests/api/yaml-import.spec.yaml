@@ -1,6 +1,6 @@
 system:
-  name: yaml-test-system
-  slug: yaml-test-system
+  name: "{{ prefix }}-yaml-test-system"
+  slug: "{{ prefix }}-yaml-test-system"
   description: System created from YAML fixture
 
 environments:
