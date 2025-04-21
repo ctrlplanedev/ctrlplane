@@ -76,7 +76,7 @@ const getReleaseTargets = async (
         jobs: [{ ...DEFAULT_JOB, id: rest.resource.id }],
       };
 
-    const jobs = versionRelease.release
+    const releaseJobs = versionRelease.release
       .flatMap((rel) =>
         rel.releaseJobs.map(({ job }) => ({
           id: job.id,
@@ -90,6 +90,11 @@ const getReleaseTargets = async (
         })),
       )
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const jobs =
+      releaseJobs.length > 0
+        ? releaseJobs
+        : [{ ...DEFAULT_JOB, id: rest.resource.id }];
 
     return { ...rest, jobs };
   });
@@ -106,8 +111,8 @@ const groupReleaseTargetsByEnvironment = (
 
       const sortedByLatestJobStatus = envReleaseTargets
         .sort((a, b) => {
-          const { status: statusA } = a.jobs[0]!;
-          const { status: statusB } = b.jobs[0]!;
+          const statusA = a.jobs[0]?.status ?? JobStatus.Pending;
+          const statusB = b.jobs[0]?.status ?? JobStatus.Pending;
 
           if (statusA === JobStatus.Failure && statusB !== JobStatus.Failure)
             return -1;
