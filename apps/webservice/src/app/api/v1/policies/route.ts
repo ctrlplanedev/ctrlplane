@@ -2,7 +2,6 @@ import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
 
-import { eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { createPolicyInTx } from "@ctrlplane/rule-engine/db";
