@@ -1,6 +1,6 @@
 system:
-  name: selectors
-  slug: selectors
+  name: "{{ prefix }}-selectors"
+  slug: "{{ prefix }}-selectors"
   description: System for testing resource selectors
 
 environments:
@@ -13,6 +13,10 @@ environments:
       type: comparison
       operator: and
       conditions:
+        - type: metadata
+          operator: equals
+          key: system
+          value: "{{ prefix }}-selectors"
         - type: metadata
           operator: equals
           key: env
@@ -29,6 +33,10 @@ environments:
       conditions:
         - type: metadata
           operator: equals
+          key: system
+          value: "{{ prefix }}-selectors"
+        - type: metadata
+          operator: equals
           key: env
           value: staging
 
@@ -40,6 +48,7 @@ resources:
     config:
       enabled: true
     metadata:
+      system: "{{ prefix }}-selectors"
       env: prod
       type: a
 
@@ -50,6 +59,7 @@ resources:
     config:
       enabled: true
     metadata:
+      system: "{{ prefix }}-selectors"
       env: prod
       type: b
 
@@ -60,6 +70,7 @@ resources:
     config:
       enabled: true
     metadata:
+      system: "{{ prefix }}-selectors"
       env: staging
       type: a
 
@@ -70,6 +81,7 @@ resources:
     config:
       enabled: true
     metadata:
+      system: "{{ prefix }}-selectors"
       env: staging
       type: b
 
@@ -78,6 +90,7 @@ deployments:
     slug: type-a-deployment
     description: Deployment for type A resources
     resourceSelector:
+      system: "{{ prefix }}-selectors"
       type: metadata
       operator: equals
       key: type
@@ -87,6 +100,7 @@ deployments:
     slug: type-b-deployment
     description: Deployment for type B resources
     resourceSelector:
+      system: "{{ prefix }}-selectors"
       type: metadata
       operator: equals
       key: type
@@ -96,6 +110,7 @@ deployments:
     slug: complex-selector-deployment
     description: Deployment with complex resource selector
     resourceSelector:
+      system: "{{ prefix }}-selectors"
       type: comparison
       operator: and
       conditions:
