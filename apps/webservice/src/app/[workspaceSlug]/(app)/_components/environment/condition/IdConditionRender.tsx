@@ -17,8 +17,11 @@ export const IdConditionRender: React.FC<
   );
 
   const onSelect = (value: string) => {
+    const [, , environmentId] = value.split("/");
+    if (environmentId == null) return;
+
     const environment = environments.data?.find(
-      (environment) => environment.id === value,
+      (environment) => environment.id === environmentId,
     );
     onChange({ ...condition, value: environment?.id ?? "" });
   };
@@ -29,17 +32,22 @@ export const IdConditionRender: React.FC<
 
   const options = (environments.data ?? []).map((environment) => ({
     key: environment.id,
-    value: environment.id,
+    value: `${environment.system.name}/${environment.name}/${environment.id}`,
     display: `${environment.system.name}/${environment.name}`,
   }));
 
   const loading = workspace.isLoading || environments.isLoading;
 
+  const selectedDisplay =
+    selectedEnvironment != null
+      ? `${selectedEnvironment.system.name}/${selectedEnvironment.name}`
+      : null;
+
   return (
     <ChoiceConditionRender
       type="environment"
       onSelect={onSelect}
-      selected={selectedEnvironment?.name ?? null}
+      selected={selectedDisplay}
       options={options}
       className={className}
       loading={loading}

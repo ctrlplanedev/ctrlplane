@@ -17,8 +17,11 @@ export const IdConditionRender: React.FC<
   );
 
   const onSelect = (value: string) => {
+    const [, , deploymentId] = value.split("/");
+    if (deploymentId == null) return;
+
     const deployment = deployments.data?.find(
-      (deployment) => deployment.id === value,
+      (deployment) => deployment.id === deploymentId,
     );
     onChange({ ...condition, value: deployment?.id ?? "" });
   };
@@ -29,17 +32,22 @@ export const IdConditionRender: React.FC<
 
   const options = (deployments.data ?? []).map((deployment) => ({
     key: deployment.id,
-    value: deployment.id,
+    value: `${deployment.system.name}/${deployment.name}/${deployment.id}`,
     display: `${deployment.system.name}/${deployment.name}`,
   }));
 
   const loading = workspace.isLoading || deployments.isLoading;
 
+  const selectedDisplay =
+    selectedDeployment != null
+      ? `${selectedDeployment.system.name}/${selectedDeployment.name}`
+      : null;
+
   return (
     <ChoiceConditionRender
       type="deployment"
       onSelect={onSelect}
-      selected={selectedDeployment?.name ?? null}
+      selected={selectedDisplay}
       options={options}
       className={className}
       loading={loading}
