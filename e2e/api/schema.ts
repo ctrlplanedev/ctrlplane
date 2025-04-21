@@ -320,6 +320,23 @@ export interface paths {
     patch: operations["updateJob"];
     trace?: never;
   };
+  "/v1/policies/{policyId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a policy */
+    delete: operations["deletePolicy"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/policies/{policyId}/release-targets": {
     parameters: {
       query?: never;
@@ -2088,6 +2105,37 @@ export interface operations {
             id: string;
           };
         };
+      };
+    };
+  };
+  deletePolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

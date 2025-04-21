@@ -59,13 +59,13 @@ const entities = await importEntitiesFromYaml(api, workspace.id, yamlPath);
 
 // Or with a random prefix to avoid naming conflicts
 const prefixedEntities = await importEntitiesFromYaml(
-  api, 
-  workspace.id, 
+  api,
+  workspace.id,
   yamlPath,
   {
-    addRandomPrefix: true,     // Add a random prefix to all entities
-    updateSelectors: true      // Update resource selectors to use the prefix
-  }
+    addRandomPrefix: true, // Add a random prefix to all entities
+    updateSelectors: true, // Update resource selectors to use the prefix
+  },
 );
 
 // With a custom prefix
@@ -75,8 +75,8 @@ const customEntities = await importEntitiesFromYaml(
   yamlPath,
   {
     customPrefix: "my-unique-prefix",
-    updateSelectors: true
-  }
+    updateSelectors: true,
+  },
 );
 
 // In tests, use the imported entities
@@ -141,7 +141,7 @@ resources:
     identifier: "{{ runid('resource') }}-api"
     version: "v1"
     config:
-      replicas: {{ random(1, 5) }}
+      replicas: { { random(1, 5) } }
 ```
 
 Available template functions:
@@ -157,30 +157,20 @@ Available template functions:
 To use templates, set the `processTemplates` option to true (enabled by default):
 
 ```typescript
-const entities = await importEntitiesFromYaml(
-  api, 
-  workspace.id, 
-  yamlPath,
-  {
-    processTemplates: true // Default is true
-  }
-);
+const entities = await importEntitiesFromYaml(api, workspace.id, yamlPath, {
+  processTemplates: true, // Default is true
+});
 ```
 
 You can also define custom template helpers:
 
 ```typescript
-const entities = await importEntitiesFromYaml(
-  api, 
-  workspace.id, 
-  yamlPath,
-  {
-    templateHelpers: {
-      environment: () => process.env.NODE_ENV || 'test',
-      customPrefix: () => 'my-prefix'
-    }
-  }
-);
+const entities = await importEntitiesFromYaml(api, workspace.id, yamlPath, {
+  templateHelpers: {
+    environment: () => process.env.NODE_ENV || "test",
+    customPrefix: () => "my-prefix",
+  },
+});
 ```
 
 ### YAML File Structure

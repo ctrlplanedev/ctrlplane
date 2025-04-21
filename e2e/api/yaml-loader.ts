@@ -260,25 +260,29 @@ export async function cleanupImportedEntities(
   api: ApiClient,
   entities: ImportedEntities,
 ): Promise<void> {
-  // Delete policies
   for (const policy of entities.policies) {
     console.log(`Deleting policy: ${policy.name}`);
-    await api.DELETE(`/v1/policies/${policy.id}`);
+    await api.DELETE(`/v1/policies/{policyId}`, {
+      params: { path: { policyId: policy.id } },
+    });
   }
 
-  // Delete deployments
   for (const deployment of entities.deployments) {
     console.log(`Deleting deployment: ${deployment.name}`);
-    await api.DELETE(`/v1/deployments/${deployment.id}`);
+    await api.DELETE(`/v1/deployments/{deploymentId}`, {
+      params: { path: { deploymentId: deployment.id } },
+    });
   }
 
-  // Delete environments
   for (const environment of entities.environments) {
     console.log(`Deleting environment: ${environment.name}`);
-    await api.DELETE(`/v1/environments/${environment.id}`);
+    await api.DELETE(`/v1/environments/{environmentId}`, {
+      params: { path: { environmentId: environment.id } },
+    });
   }
 
-  // Delete system (this should cascade delete related resources)
   console.log(`Deleting system: ${entities.system.name}`);
-  await api.DELETE(`/v1/systems/${entities.system.id}`);
+  await api.DELETE(`/v1/systems/{systemId}`, {
+    params: { path: { systemId: entities.system.id } },
+  });
 }
