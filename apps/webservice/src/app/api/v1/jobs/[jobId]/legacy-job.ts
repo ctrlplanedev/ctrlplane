@@ -1,5 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import { NextResponse } from "next/server";
 
 import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
@@ -82,11 +81,7 @@ export const getLegacyJob = async (db: Tx, jobId: string) => {
 
   const row = rows.at(0);
 
-  if (row == null)
-    return NextResponse.json(
-      { error: "Job execution not found." },
-      { status: 404 },
-    );
+  if (row == null) return null;
 
   const deploymentVersion =
     row.deployment_version != null
@@ -130,7 +125,7 @@ export const getLegacyJob = async (db: Tx, jobId: string) => {
         ? { ...je.deploymentVersion, version: je.deploymentVersion.tag }
         : { version: undefined },
   };
-  if (je.resource == null) return NextResponse.json(jobWithVariables);
+  if (je.resource == null) return jobWithVariables;
 
   const metadata = await db
     .select()
