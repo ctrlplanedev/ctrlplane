@@ -1,7 +1,6 @@
 import { expect } from "@playwright/test";
 import _ from "lodash";
 
-import { createExampleSystem, ExampleSystem } from "../../../api/utils";
 import { test } from "../../fixtures";
 
 test.describe("Release Targets API", () => {
