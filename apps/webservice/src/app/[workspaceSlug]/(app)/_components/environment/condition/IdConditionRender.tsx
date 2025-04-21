@@ -18,7 +18,7 @@ export const IdConditionRender: React.FC<
 
   const onSelect = (value: string) => {
     const environment = environments.data?.find(
-      (environment) => environment.name === value,
+      (environment) => environment.id === value,
     );
     onChange({ ...condition, value: environment?.id ?? "" });
   };
@@ -29,8 +29,8 @@ export const IdConditionRender: React.FC<
 
   const options = (environments.data ?? []).map((environment) => ({
     key: environment.id,
-    value: environment.name,
-    display: environment.name,
+    value: environment.id,
+    display: `${environment.system.name}/${environment.name}`,
   }));
 
   const loading = workspace.isLoading || environments.isLoading;

@@ -18,7 +18,7 @@ export const IdConditionRender: React.FC<
 
   const onSelect = (value: string) => {
     const deployment = deployments.data?.find(
-      (deployment) => deployment.slug === value,
+      (deployment) => deployment.id === value,
     );
     onChange({ ...condition, value: deployment?.id ?? "" });
   };
@@ -29,8 +29,8 @@ export const IdConditionRender: React.FC<
 
   const options = (deployments.data ?? []).map((deployment) => ({
     key: deployment.id,
-    value: deployment.slug,
-    display: deployment.slug,
+    value: deployment.id,
+    display: `${deployment.system.name}/${deployment.name}`,
   }));
 
   const loading = workspace.isLoading || deployments.isLoading;
