@@ -89,25 +89,13 @@ deployments:
   - name: Type A Deployment
     slug: type-a-deployment
     description: Deployment for type A resources
-    resourceSelector:
-      system: "{{ prefix }}-selectors"
-      type: metadata
-      operator: equals
-      key: type
-      value: a
 
   - name: Type B Deployment
     slug: type-b-deployment
     description: Deployment for type B resources
-    resourceSelector:
-      system: "{{ prefix }}-selectors"
-      type: metadata
-      operator: equals
-      key: type
-      value: b
 
-  - name: Complex Selector Deployment
-    slug: complex-selector-deployment
+  - name: Selector Deployment
+    slug: selector-deployment
     description: Deployment with complex resource selector
     resourceSelector:
       system: "{{ prefix }}-selectors"
@@ -122,10 +110,6 @@ deployments:
           operator: equals
           key: env
           value: prod
-        - type: metadata
-          operator: equals
-          key: type
-          value: a
 
 policies:
   - name: Production Deployment Policy

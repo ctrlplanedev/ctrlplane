@@ -41,15 +41,21 @@ test.describe("Resource Selectors API", () => {
   });
 
   test("basic deployment resource selector", async ({ page, api }) => {
+    const deployment = importedEntities.deployments.find(
+      (deployment) => deployment.slug === "selector-deployment",
+    )!;
     const res = await api.GET(`/v1/deployments/{deploymentId}/resources`, {
       params: {
         path: {
-          deploymentId: importedEntities.deployments[0].id,
+          deploymentId: deployment.id,
         },
       },
     });
 
     expect(res.response.status).toBe(200);
-    expect(res.data?.count).toBe(importedEntities.resources.length);
+    const resources = importedEntities.resources.filter(
+      (resource) => resource.metadata?.env === "prod",
+    );
+    expect(res.data?.count).toBe(resources.length);
   });
 });
