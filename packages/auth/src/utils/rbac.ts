@@ -398,14 +398,12 @@ const getJobScopes = async (id: string) => {
       { type: "workspace" as const, id: runbookResult.workspace.id },
     ];
 
-  const isUsingNewPolicyEngine =
-    // eslint-disable-next-line no-restricted-properties
-    process.env.ENABLE_NEW_POLICY_ENGINE === "true";
+  const [newEngine, legacy] = await Promise.all([
+    newJobScopes(id),
+    legacyJobScopes(id),
+  ]);
 
-  const result = isUsingNewPolicyEngine
-    ? await newJobScopes(id)
-    : await legacyJobScopes(id);
-
+  const result = newEngine ?? legacy;
   if (result == null) return [];
 
   return [

@@ -23,12 +23,13 @@ export const GET = request()
   .handle<object, { params: Promise<{ jobId: string }> }>(
     async ({ db }, { params }) => {
       const { jobId } = await params;
-      // eslint-disable-next-line no-restricted-properties
-      const isUsingNewEngine = process.env.ENABLE_NEW_POLICY_ENGINE === "true";
-      const job = isUsingNewEngine
-        ? await getNewEngineJob(db, jobId)
-        : await getLegacyJob(db, jobId);
 
+      const [newEngine, legacy] = await Promise.all([
+        getNewEngineJob(db, jobId),
+        getLegacyJob(db, jobId),
+      ]);
+
+      const job = newEngine ?? legacy;
       if (job == null)
         return NextResponse.json(
           { error: "Job not found" },
