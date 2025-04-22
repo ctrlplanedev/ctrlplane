@@ -155,7 +155,7 @@ test.describe("Resource API", () => {
         workspaceId: workspace.id,
         name: resourceName,
         kind: "ResourceAPI",
-        identifier: resourceName,
+        identifier: resourceIdentifer,
         version: "test-version/v1",
         config: { "e2e-test": true } as any,
         metadata: { "e2e-test": "true" },
