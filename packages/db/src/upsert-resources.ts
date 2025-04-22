@@ -119,12 +119,14 @@ export const updateResourceVariables = async (
 
 export const upsertResources = async (
   tx: Tx,
-  resourcesToUpsert: SCHEMA.ResourceToUpsert[],
+  workspaceId: string,
+  resourcesToUpsert: Omit<SCHEMA.ResourceToUpsert, "workspaceId">[],
 ) => {
   if (resourcesToUpsert.length === 0) return [];
+
   const resources = await tx
     .insert(SCHEMA.resource)
-    .values(resourcesToUpsert)
+    .values(resourcesToUpsert.map((r) => ({ ...r, workspaceId })))
     .onConflictDoUpdate({
       target: [SCHEMA.resource.identifier, SCHEMA.resource.workspaceId],
       set: {
@@ -151,5 +153,16 @@ export const upsertResources = async (
     updateResourceVariables(tx, resourcesWithId),
   ]);
 
-  return resourcesWithId;
+  return tx.query.resource.findMany({
+    where: and(
+      inArray(
+        SCHEMA.resource.identifier,
+        resourcesToUpsert.map((r) => r.identifier),
+      ),
+      eq(SCHEMA.resource.workspaceId, workspaceId),
+    ),
+    with: {
+      metadata: true,
+    },
+  });
 };

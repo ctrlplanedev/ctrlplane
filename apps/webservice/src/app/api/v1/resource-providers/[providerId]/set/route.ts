@@ -53,33 +53,30 @@ export const PATCH = request()
   )
   .handle<
     { body: z.infer<typeof bodySchema> },
-    { params: { providerId: string } }
+    { params: Promise<{ providerId: string }> }
   >(async (ctx, { params }) => {
     const { body } = ctx;
+    const { providerId } = await params;
 
     const query = await db
       .select()
       .from(resourceProvider)
       .innerJoin(workspace, eq(workspace.id, resourceProvider.workspaceId))
-      .where(eq(resourceProvider.id, params.providerId))
+      .where(eq(resourceProvider.id, providerId))
       .then(takeFirstOrNull);
 
     const provider = query?.resource_provider;
-    if (!provider)
+    if (provider == null)
       return NextResponse.json(
         { error: "Provider not found" },
         { status: 404 },
       );
 
-    const resourcesToInsert = body.resources.map((r) => ({
-      ...r,
-      providerId: provider.id,
-      workspaceId: provider.workspaceId,
-    }));
-
     const resources = await handleResourceProviderScan(
       db,
-      resourcesToInsert.map((r) => ({
+      provider.workspaceId,
+      provider.id,
+      body.resources.map((r) => ({
         ...r,
         variables: r.variables?.map((v) => ({
           ...v,

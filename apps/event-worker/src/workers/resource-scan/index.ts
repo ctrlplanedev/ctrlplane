@@ -96,7 +96,12 @@ export const resourceScanWorker = createWorker(
       log.info(
         `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
       );
-      await handleResourceProviderScan(db, resources);
+      await handleResourceProviderScan(
+        db,
+        rp.workspace.id,
+        rp.resource_provider.id,
+        resources,
+      );
     } catch (error: any) {
       log.error(
         `Error scanning/upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,

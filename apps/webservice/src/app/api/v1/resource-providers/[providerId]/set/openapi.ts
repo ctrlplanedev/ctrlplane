@@ -84,7 +84,36 @@ export const openapi: Swagger.SwaggerV3 = {
                     resources: {
                       type: "object",
                       properties: {
-                        all: {
+                        ignored: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              identifier: { type: "string" },
+                              name: { type: "string" },
+                              version: { type: "string" },
+                              kind: { type: "string" },
+                              workspaceId: { type: "string" },
+                            },
+                          },
+                        },
+                        inserted: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              id: { type: "string" },
+                              name: { type: "string" },
+                              version: { type: "string" },
+                              kind: { type: "string" },
+                              config: {
+                                type: "object",
+                                additionalProperties: true,
+                              },
+                            },
+                          },
+                        },
+                        updated: {
                           type: "array",
                           items: {
                             type: "object",

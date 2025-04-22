@@ -2,42 +2,8 @@ import type { Tx } from "@ctrlplane/db";
 import type { InsertResource, Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { and, eq, isNull, or } from "@ctrlplane/db";
+import { and, eq, inArray, or } from "@ctrlplane/db";
 import { resource } from "@ctrlplane/db/schema";
-
-/**
- * Gets resources for a specific provider
- * @param tx - Database transaction
- * @param providerId - ID of the provider to get resources for
- * @param options - Options object
- * @returns Promise resolving to array of resources
- */
-const getResourcesByProvider = (tx: Tx, providerId: string) =>
-  tx
-    .select()
-    .from(resource)
-    .where(
-      and(eq(resource.providerId, providerId), isNull(resource.deletedAt)),
-    );
-
-const getResourcesByWorkspaceIdAndIdentifier = (
-  tx: Tx,
-  resources: { workspaceId: string; identifier: string }[],
-) =>
-  tx
-    .select()
-    .from(resource)
-    .where(
-      or(
-        ...resources.map((r) =>
-          and(
-            eq(resource.workspaceId, r.workspaceId),
-            eq(resource.identifier, r.identifier),
-            isNull(resource.deletedAt),
-          ),
-        ),
-      ),
-    );
 
 /**
  * Fetches existing resources from the database that match the resources to be
@@ -51,22 +17,20 @@ const getResourcesByWorkspaceIdAndIdentifier = (
  */
 const findExistingResources = async (
   tx: Tx,
-  resourcesToInsert: InsertResource[],
+  workspaceId: string,
+  providerId: string,
+  resourceIdentifiers: string[],
 ): Promise<Resource[]> => {
-  const resourcesByProvider = _.groupBy(
-    resourcesToInsert,
-    (r) => r.providerId ?? "null",
-  );
-
-  const promises = Object.entries(resourcesByProvider).map(
-    ([providerId, resources]) =>
-      providerId === "null"
-        ? getResourcesByWorkspaceIdAndIdentifier(tx, resources)
-        : getResourcesByProvider(tx, providerId),
-  );
-
-  const results = await Promise.all(promises);
-  return results.flat();
+  const existingResources = await tx.query.resource.findMany({
+    where: and(
+      eq(resource.workspaceId, workspaceId),
+      or(
+        eq(resource.providerId, providerId),
+        inArray(resource.identifier, resourceIdentifiers),
+      ),
+    ),
+  });
+  return existingResources;
 };
 
 /**
@@ -83,30 +47,50 @@ const findExistingResources = async (
  */
 export const groupResourcesByHook = async (
   tx: Tx,
-  resourcesToInsert: InsertResource[],
+  workspaceId: string,
+  providerId: string,
+  resourcesToInsert: Omit<InsertResource, "providerId" | "workspaceId">[],
 ) => {
-  const existingResources = await findExistingResources(tx, resourcesToInsert);
-  const toDelete = existingResources.filter(
-    (existing) =>
-      !resourcesToInsert.some(
-        (inserted) =>
-          inserted.identifier === existing.identifier &&
-          inserted.workspaceId === existing.workspaceId,
-      ),
-  );
-  const toInsert = resourcesToInsert.filter(
-    (r) =>
-      !existingResources.some(
-        (er) =>
-          er.identifier === r.identifier && er.workspaceId === r.workspaceId,
-      ),
-  );
-  const toUpdate = resourcesToInsert.filter((r) =>
-    existingResources.some(
-      (er) =>
-        er.identifier === r.identifier && er.workspaceId === r.workspaceId,
-    ),
+  const existingResources = await findExistingResources(
+    tx,
+    workspaceId,
+    providerId,
+    resourcesToInsert.map((r) => r.identifier),
   );
 
-  return { toInsert, toUpdate, toDelete };
+  // Resources that belong to other providers should be ignored
+  const toIgnore = existingResources.filter(
+    (r) => r.providerId !== providerId && r.providerId != null,
+  );
+
+  // Resources we can actually operate on (not owned by other providers)
+  const actionableExistingResources = existingResources.filter(
+    (r) => !toIgnore.some((ignored) => ignored.identifier === r.identifier),
+  );
+
+  // Resources that exist in DB but not in the new set should be deleted
+  const toDelete = actionableExistingResources.filter(
+    (existing) =>
+      !resourcesToInsert.some((r) => r.identifier === existing.identifier),
+  );
+
+  console.log("toIgnore", toIgnore);
+  console.log("existingResources", existingResources);
+  console.log("actionableExistingResources", actionableExistingResources);
+  console.log("toDelete", toDelete);
+  console.log("resourcesToInsert", resourcesToInsert);
+
+  // Resources in the new set that don't exist in DB should be inserted
+  const toInsert = resourcesToInsert.filter(
+    (r) =>
+      !existingResources.some((er) => er.identifier === r.identifier) &&
+      !toIgnore.some((ignored) => ignored.identifier === r.identifier),
+  );
+
+  // Resources that exist in both sets should be updated
+  const toUpdate = resourcesToInsert.filter((r) =>
+    actionableExistingResources.some((er) => er.identifier === r.identifier),
+  );
+
+  return { toIgnore, toInsert, toUpdate, toDelete };
 };

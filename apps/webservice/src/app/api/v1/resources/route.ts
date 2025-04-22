@@ -53,9 +53,16 @@ export const POST = request()
             eq(schema.resource.identifier, ctx.body.identifier),
             eq(schema.resource.workspaceId, ctx.body.workspaceId),
           ),
+          with: {
+            metadata: true,
+          },
         });
 
-        const [insertedResource] = await upsertResources(db, [ctx.body]);
+        const [insertedResource] = await upsertResources(
+          db,
+          ctx.body.workspaceId,
+          [ctx.body],
+        );
         if (insertedResource == null)
           return NextResponse.json(
             { error: "Failed to update resources" },
@@ -71,7 +78,14 @@ export const POST = request()
           .allResourceSelectors(ctx.body.workspaceId)
           .then(() => queue.add(insertedResource.id, insertedResource));
 
-        return NextResponse.json(insertedResource, { status: 200 });
+        const resourceWithMeta = {
+          ...insertedResource,
+          metadata: Object.fromEntries(
+            insertedResource.metadata.map((m) => [m.key, m.value]),
+          ),
+        };
+
+        return NextResponse.json(resourceWithMeta, { status: 200 });
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         log.error(`Error updating resources: ${error}`);
