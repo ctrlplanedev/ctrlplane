@@ -25,10 +25,10 @@ test.describe("YAML Entity Import", () => {
     await new Promise((resolve) => setTimeout(resolve, 5000));
   });
 
-  test.afterAll(async ({ api }) => {
+  test.afterAll(async ({ api, workspace }) => {
     // Clean up all imported entities
     if (importedEntities) {
-      await cleanupImportedEntities(api, importedEntities);
+      await cleanupImportedEntities(api, importedEntities, workspace.id);
     }
   });
 

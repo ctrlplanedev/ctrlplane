@@ -259,6 +259,7 @@ export async function importEntitiesFromYaml(
 export async function cleanupImportedEntities(
   api: ApiClient,
   entities: ImportedEntities,
+  workspaceId: string,
 ): Promise<void> {
   for (const policy of entities.policies) {
     console.log(`Deleting policy: ${policy.name}`);
@@ -285,4 +286,22 @@ export async function cleanupImportedEntities(
   await api.DELETE(`/v1/systems/{systemId}`, {
     params: { path: { systemId: entities.system.id } },
   });
+
+  for (const resource of entities.resources) {
+    console.log(`Deleting resource: ${resource.identifier}`);
+    const response = await api.DELETE(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: { workspaceId: workspaceId, identifier: resource.identifier },
+        },
+      },
+    );
+
+    if (response.response.status !== 200) {
+      console.error(
+        `Failed to delete resource: ${JSON.stringify(response.error)}`,
+      );
+    }
+  }
 }
