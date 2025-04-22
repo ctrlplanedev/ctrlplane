@@ -125,20 +125,17 @@ export class ResourceBuilder {
       this.workspaceId,
       () =>
         this.tx.transaction(async (tx) => {
-          console.log("deleting release targets");
           await this.deleteExistingReleaseTargets(tx);
-          console.log("finding matching environment deployment pairs");
+
           const vals = await this.findMatchingEnvironmentDeploymentPairs(tx);
           if (vals.length === 0) return [];
 
-          console.log("inserting release targets");
           const results = await tx
             .insert(SCHEMA.releaseTarget)
             .values(vals)
             .onConflictDoNothing()
             .returning();
 
-          console.log("recomputing policy release targets");
           await this.recomputePolicyReleaseTargets(tx);
 
           return results;

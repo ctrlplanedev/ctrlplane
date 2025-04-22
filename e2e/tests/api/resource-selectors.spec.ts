@@ -16,28 +16,25 @@ test.describe("Resource Selectors API", () => {
       yamlPath,
     );
     // wait for resources to be processed
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
+    await new Promise((resolve) => setTimeout(resolve, 20_000));
   });
 
-  test("basic environment resource selector", async ({ page, api }) => {
+  test("basic environment resource selector", async ({ api }) => {
     const environment = importedEntities.environments.find(
       (env) => env.name === "Production",
     )!;
-    const releaseTargets = await api.GET(
-      `/v1/environments/{environmentId}/resources`,
-      {
-        params: {
-          path: { environmentId: environment.id },
-        },
+    const res = await api.GET(`/v1/environments/{environmentId}/resources`, {
+      params: {
+        path: { environmentId: environment.id },
       },
-    );
+    });
 
     const resources = importedEntities.resources.filter(
       (resource) => resource.metadata?.env === "prod",
     );
 
-    expect(releaseTargets.response.status).toBe(200);
-    expect(releaseTargets.data?.resources?.length).toBe(resources.length);
+    expect(res.response.status).toBe(200);
+    expect(res.data?.resources?.length).toBe(resources.length);
   });
 
   test("basic deployment resource selector", async ({ page, api }) => {

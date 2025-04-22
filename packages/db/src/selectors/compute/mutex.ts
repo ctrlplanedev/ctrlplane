@@ -78,6 +78,8 @@ export const withMutex = async <T>(
   if (!mutex.isAcquired) {
     throw new Error("Mutex is not acquired");
   }
+
+  log.info("Mutex acquired", { workspaceId, type });
   try {
     return await fn();
   } catch (error) {
@@ -85,5 +87,6 @@ export const withMutex = async <T>(
     throw error;
   } finally {
     await mutex.unlock();
+    log.info("Mutex released", { workspaceId, type });
   }
 };
