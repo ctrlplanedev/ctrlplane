@@ -58,7 +58,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/js-yaml": "^4.0.9",
     "@types/lodash": "catalog:",
-    "@types/ms": "^0.7.34",
+    "@types/ms": "catalog:",
     "@types/pg": "^8.11.12",
     "@types/semver": "^7.5.8",
     "@types/uuid": "^10.0.0",
