@@ -85,6 +85,7 @@ export class PolicyBuilder {
         eq(SCHEMA.policy.id, SCHEMA.policyTarget.policyId),
       )
       .where(inArray(SCHEMA.policyTarget.id, this.ids));
+    if (policies.length === 0) return [];
 
     const workspaceIds = new Set(policies.map((p) => p.policy.workspaceId));
     if (workspaceIds.size !== 1)
@@ -97,7 +98,7 @@ export class PolicyBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         await this.getTargets(tx);
         await this.deleteExistingComputedReleaseTargets(tx);
         const computedPolicyTargetReleaseTargetInserts =
@@ -196,7 +197,7 @@ export class WorkspacePolicyBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         const targets = await this.getTargets(tx);
 
         await this.deleteExistingComputedReleaseTargets(tx, targets);

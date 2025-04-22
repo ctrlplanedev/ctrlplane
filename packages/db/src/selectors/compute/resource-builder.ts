@@ -123,7 +123,7 @@ export class ResourceBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         await this.deleteExistingReleaseTargets(tx);
         const vals = await this.findMatchingEnvironmentDeploymentPairs(tx);
         if (vals.length === 0) return [];
@@ -253,7 +253,7 @@ export class WorkspaceResourceBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         const resources = await this.getResourcesInWorkspace(tx);
         const resourceIds = resources.map((r) => r.id);
         await this.deleteExistingReleaseTargets(tx, resourceIds);

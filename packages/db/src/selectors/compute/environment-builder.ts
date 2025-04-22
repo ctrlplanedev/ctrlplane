@@ -71,6 +71,7 @@ export class EnvironmentBuilder {
 
   async resourceSelectors() {
     const environments = await this.getEnvironments(this.tx);
+    if (environments.length === 0) return [];
     const workspaceIds = new Set(environments.map((e) => e.system.workspaceId));
     if (workspaceIds.size !== 1)
       throw new Error("All environments must be in the same workspace");
@@ -82,7 +83,7 @@ export class EnvironmentBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         await this.deleteExistingComputedResources(tx);
         const vals = await this.findMatchingResourcesForEnvironments(tx);
 
@@ -171,7 +172,7 @@ export class WorkspaceEnvironmentBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         await this.deleteExistingComputedResources(tx);
         const vals = await this.findMatchingResourcesForEnvironments(tx);
 

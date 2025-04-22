@@ -68,6 +68,7 @@ export class DeploymentBuilder {
 
   async resourceSelectors() {
     const deployments = await this.getDeployments(this.tx);
+    if (deployments.length === 0) return [];
     const workspaceIds = new Set(deployments.map((d) => d.system.workspaceId));
     if (workspaceIds.size !== 1)
       throw new Error("All deployments must be in the same workspace");
@@ -79,7 +80,7 @@ export class DeploymentBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         await this.deleteExistingComputedResources(tx);
         const computedResourceInserts =
           await this.findMatchingResourcesForDeployments(tx);
@@ -169,7 +170,7 @@ export class WorkspaceDeploymentBuilder {
     );
 
     try {
-      return this.tx.transaction(async (tx) => {
+      return await this.tx.transaction(async (tx) => {
         const deployments = await this.getDeploymentsInWorkspace(tx);
         await this.deleteExistingComputedResources(tx, deployments);
         const computedResourceInserts =
