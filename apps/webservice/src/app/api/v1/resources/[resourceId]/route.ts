@@ -103,7 +103,9 @@ export const PATCH = request()
           { status: 404 },
         );
 
-      const all = await upsertResources(db, [_.merge(resource, body)]);
+      const all = await upsertResources(db, resource.workspaceId, [
+        _.merge(resource, body),
+      ]);
       const res = all.at(0);
 
       if (res == null) throw new Error("Failed to update resource");
@@ -112,7 +114,12 @@ export const PATCH = request()
         .compute()
         .allResourceSelectors(res.workspaceId)
         .then(() => getQueue(Channel.UpdatedResource).add(res.id, res));
-      return NextResponse.json(res);
+
+      const resourceWithMeta = {
+        ...res,
+        metadata: Object.fromEntries(res.metadata.map((m) => [m.key, m.value])),
+      };
+      return NextResponse.json(resourceWithMeta);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       log.error(`Error updating resource: ${error}`);
@@ -135,10 +142,12 @@ export const DELETE = request()
   .handle(
     async ({ db }, { params }: { params: Promise<{ resourceId: string }> }) => {
       const { resourceId } = await params;
-      const isResource = eq(schema.resource.id, resourceId);
-      const isNotDeleted = isNull(schema.resource.deletedAt);
-      const where = and(isResource, isNotDeleted);
-      const resource = await db.query.resource.findFirst({ where });
+      const resource = await db.query.resource.findFirst({
+        where: and(
+          eq(schema.resource.id, resourceId),
+          isNull(schema.resource.deletedAt),
+        ),
+      });
 
       if (resource == null)
         return NextResponse.json(

@@ -87,6 +87,7 @@ export const POST = request()
 
         return NextResponse.json(resourceWithMeta, { status: 200 });
       } catch (err) {
+        console.error(err);
         const error = err instanceof Error ? err : new Error(String(err));
         log.error(`Error updating resources: ${error}`);
         return NextResponse.json(
