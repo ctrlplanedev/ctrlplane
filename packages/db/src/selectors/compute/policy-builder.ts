@@ -1,8 +1,13 @@
 import { and, eq, inArray } from "drizzle-orm/pg-core/expressions";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
+import { createAndAcquireMutex, SelectorComputeType } from "./mutex.js";
+
+const log = logger.child({ module: "policy-builder" });
 
 export class PolicyBuilder {
   private targets: SCHEMA.PolicyTarget[];
@@ -71,18 +76,47 @@ export class PolicyBuilder {
     return fulfilled.flat();
   }
 
-  releaseTargetSelectors() {
-    return this.tx.transaction(async (tx) => {
-      await this.getTargets(tx);
-      await this.deleteExistingComputedReleaseTargets(tx);
-      const computedPolicyTargetReleaseTargetInserts =
-        await this.findMatchingReleaseTargetsForTargets(tx);
-      if (computedPolicyTargetReleaseTargetInserts.length === 0) return [];
-      return tx
-        .insert(SCHEMA.computedPolicyTargetReleaseTarget)
-        .values(computedPolicyTargetReleaseTargetInserts)
-        .onConflictDoNothing();
-    });
+  async releaseTargetSelectors() {
+    const policies = await this.tx
+      .select()
+      .from(SCHEMA.policy)
+      .innerJoin(
+        SCHEMA.policyTarget,
+        eq(SCHEMA.policy.id, SCHEMA.policyTarget.policyId),
+      )
+      .where(inArray(SCHEMA.policyTarget.id, this.ids));
+
+    const workspaceIds = new Set(policies.map((p) => p.policy.workspaceId));
+    if (workspaceIds.size !== 1)
+      throw new Error("All policies must be in the same workspace");
+    const workspaceId = Array.from(workspaceIds)[0]!;
+
+    const mutex = await createAndAcquireMutex(
+      SelectorComputeType.PolicyBuilder,
+      workspaceId,
+    );
+
+    try {
+      return this.tx.transaction(async (tx) => {
+        await this.getTargets(tx);
+        await this.deleteExistingComputedReleaseTargets(tx);
+        const computedPolicyTargetReleaseTargetInserts =
+          await this.findMatchingReleaseTargetsForTargets(tx);
+        if (computedPolicyTargetReleaseTargetInserts.length === 0) return [];
+        return tx
+          .insert(SCHEMA.computedPolicyTargetReleaseTarget)
+          .values(computedPolicyTargetReleaseTargetInserts)
+          .onConflictDoNothing();
+      });
+    } catch (e) {
+      log.error("Error computing release target selectors", {
+        error: e,
+        workspaceId,
+      });
+      throw e;
+    } finally {
+      await mutex.unlock();
+    }
   }
 }
 
@@ -92,65 +126,99 @@ export class WorkspacePolicyBuilder {
     private readonly workspaceId: string,
   ) {}
 
-  releaseTargetSelectors() {
-    return this.tx.transaction(async (tx) => {
-      const targets = await tx
+  private async getTargets(tx: Tx) {
+    return tx
+      .select()
+      .from(SCHEMA.policyTarget)
+      .innerJoin(
+        SCHEMA.policy,
+        eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+      )
+      .where(eq(SCHEMA.policy.workspaceId, this.workspaceId))
+      .then((rows) => rows.map((r) => r.policy_target));
+  }
+
+  private async deleteExistingComputedReleaseTargets(
+    tx: Tx,
+    targets: SCHEMA.PolicyTarget[],
+  ) {
+    await tx.delete(SCHEMA.computedPolicyTargetReleaseTarget).where(
+      inArray(
+        SCHEMA.computedPolicyTargetReleaseTarget.policyTargetId,
+        targets.map((t) => t.id),
+      ),
+    );
+  }
+
+  private async findMatchingReleaseTargetsForTargets(
+    tx: Tx,
+    targets: SCHEMA.PolicyTarget[],
+  ) {
+    const qb = new QueryBuilder(tx);
+    const targetPromises = targets.map(async (t) => {
+      const releaseTargets = await tx
         .select()
-        .from(SCHEMA.policyTarget)
+        .from(SCHEMA.releaseTarget)
         .innerJoin(
-          SCHEMA.policy,
-          eq(SCHEMA.policyTarget.policyId, SCHEMA.policy.id),
+          SCHEMA.resource,
+          eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
         )
-        .where(eq(SCHEMA.policy.workspaceId, this.workspaceId))
-        .then((rows) => rows.map((r) => r.policy_target));
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.releaseTarget.deploymentId, SCHEMA.deployment.id),
+        )
+        .innerJoin(
+          SCHEMA.environment,
+          eq(SCHEMA.releaseTarget.environmentId, SCHEMA.environment.id),
+        )
+        .where(
+          and(
+            qb.resources().where(t.resourceSelector).sql(),
+            qb.deployments().where(t.deploymentSelector).sql(),
+            qb.environments().where(t.environmentSelector).sql(),
+          ),
+        );
 
-      await tx.delete(SCHEMA.computedPolicyTargetReleaseTarget).where(
-        inArray(
-          SCHEMA.computedPolicyTargetReleaseTarget.policyTargetId,
-          targets.map((t) => t.id),
-        ),
-      );
-
-      const qb = new QueryBuilder(tx);
-      const targetPromises = targets.map(async (t) => {
-        const releaseTargets = await tx
-          .select()
-          .from(SCHEMA.releaseTarget)
-          .innerJoin(
-            SCHEMA.resource,
-            eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
-          )
-          .innerJoin(
-            SCHEMA.deployment,
-            eq(SCHEMA.releaseTarget.deploymentId, SCHEMA.deployment.id),
-          )
-          .innerJoin(
-            SCHEMA.environment,
-            eq(SCHEMA.releaseTarget.environmentId, SCHEMA.environment.id),
-          )
-          .where(
-            and(
-              qb.resources().where(t.resourceSelector).sql(),
-              qb.deployments().where(t.deploymentSelector).sql(),
-              qb.environments().where(t.environmentSelector).sql(),
-            ),
-          );
-
-        return releaseTargets.map((rt) => ({
-          policyTargetId: t.id,
-          releaseTargetId: rt.release_target.id,
-        }));
-      });
-
-      const fulfilled = await Promise.all(targetPromises);
-      const computedPolicyTargetReleaseTargetInserts = fulfilled.flat();
-
-      if (computedPolicyTargetReleaseTargetInserts.length === 0) return [];
-      return tx
-        .insert(SCHEMA.computedPolicyTargetReleaseTarget)
-        .values(computedPolicyTargetReleaseTargetInserts)
-        .onConflictDoNothing()
-        .returning();
+      return releaseTargets.map((rt) => ({
+        policyTargetId: t.id,
+        releaseTargetId: rt.release_target.id,
+      }));
     });
+
+    const fulfilled = await Promise.all(targetPromises);
+    return fulfilled.flat();
+  }
+
+  async releaseTargetSelectors() {
+    const mutex = await createAndAcquireMutex(
+      SelectorComputeType.PolicyBuilder,
+      this.workspaceId,
+    );
+
+    try {
+      return this.tx.transaction(async (tx) => {
+        const targets = await this.getTargets(tx);
+
+        await this.deleteExistingComputedReleaseTargets(tx, targets);
+
+        const computedPolicyTargetReleaseTargetInserts =
+          await this.findMatchingReleaseTargetsForTargets(tx, targets);
+        if (computedPolicyTargetReleaseTargetInserts.length === 0) return [];
+
+        return tx
+          .insert(SCHEMA.computedPolicyTargetReleaseTarget)
+          .values(computedPolicyTargetReleaseTargetInserts)
+          .onConflictDoNothing()
+          .returning();
+      });
+    } catch (e) {
+      log.error("Error computing release target selectors", {
+        error: e,
+        workspaceId: this.workspaceId,
+      });
+      throw e;
+    } finally {
+      await mutex.unlock();
+    }
   }
 }

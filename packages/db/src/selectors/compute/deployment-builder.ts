@@ -6,9 +6,14 @@ import {
   isNull,
 } from "drizzle-orm/pg-core/expressions";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
+import { createAndAcquireMutex, SelectorComputeType } from "./mutex.js";
+
+const log = logger.child({ module: "deployment-builder" });
 
 export class DeploymentBuilder {
   constructor(
@@ -31,11 +36,15 @@ export class DeploymentBuilder {
       );
   }
 
-  private async findMatchingResourcesForDeployments(tx: Tx) {
-    const deployments = await tx.query.deployment.findMany({
+  private async getDeployments(tx: Tx) {
+    return tx.query.deployment.findMany({
       where: inArray(SCHEMA.deployment.id, this.deploymentIds),
       with: { system: true },
     });
+  }
+
+  private async findMatchingResourcesForDeployments(tx: Tx) {
+    const deployments = await this.getDeployments(tx);
 
     const promises = deployments.map(async (d) => {
       const { system } = d;
@@ -57,18 +66,39 @@ export class DeploymentBuilder {
     return fulfilled.flat();
   }
 
-  resourceSelectors() {
-    return this.tx.transaction(async (tx) => {
-      await this.deleteExistingComputedResources(tx);
-      const computedResourceInserts =
-        await this.findMatchingResourcesForDeployments(tx);
-      if (computedResourceInserts.length === 0) return [];
-      return tx
-        .insert(SCHEMA.computedDeploymentResource)
-        .values(computedResourceInserts)
-        .onConflictDoNothing()
-        .returning();
-    });
+  async resourceSelectors() {
+    const deployments = await this.getDeployments(this.tx);
+    const workspaceIds = new Set(deployments.map((d) => d.system.workspaceId));
+    if (workspaceIds.size !== 1)
+      throw new Error("All deployments must be in the same workspace");
+    const workspaceId = Array.from(workspaceIds)[0]!;
+
+    const mutex = await createAndAcquireMutex(
+      SelectorComputeType.DeploymentBuilder,
+      workspaceId,
+    );
+
+    try {
+      return this.tx.transaction(async (tx) => {
+        await this.deleteExistingComputedResources(tx);
+        const computedResourceInserts =
+          await this.findMatchingResourcesForDeployments(tx);
+        if (computedResourceInserts.length === 0) return [];
+        return tx
+          .insert(SCHEMA.computedDeploymentResource)
+          .values(computedResourceInserts)
+          .onConflictDoNothing()
+          .returning();
+      });
+    } catch (e) {
+      log.error("Error computing resource selectors", {
+        error: e,
+        workspaceId,
+      });
+      throw e;
+    } finally {
+      await mutex.unlock();
+    }
   }
 }
 
@@ -133,19 +163,34 @@ export class WorkspaceDeploymentBuilder {
   }
 
   async resourceSelectors() {
-    return this.tx.transaction(async (tx) => {
-      const deployments = await this.getDeploymentsInWorkspace(tx);
-      await this.deleteExistingComputedResources(tx, deployments);
-      const computedResourceInserts =
-        await this.findMatchingResourcesForDeployments(tx, deployments);
+    const mutex = await createAndAcquireMutex(
+      SelectorComputeType.DeploymentBuilder,
+      this.workspaceId,
+    );
 
-      if (computedResourceInserts.length === 0) return [];
+    try {
+      return this.tx.transaction(async (tx) => {
+        const deployments = await this.getDeploymentsInWorkspace(tx);
+        await this.deleteExistingComputedResources(tx, deployments);
+        const computedResourceInserts =
+          await this.findMatchingResourcesForDeployments(tx, deployments);
 
-      return tx
-        .insert(SCHEMA.computedDeploymentResource)
-        .values(computedResourceInserts)
-        .onConflictDoNothing()
-        .returning();
-    });
+        if (computedResourceInserts.length === 0) return [];
+
+        return tx
+          .insert(SCHEMA.computedDeploymentResource)
+          .values(computedResourceInserts)
+          .onConflictDoNothing()
+          .returning();
+      });
+    } catch (e) {
+      log.error("Error computing resource selectors", {
+        error: e,
+        workspaceId: this.workspaceId,
+      });
+      throw e;
+    } finally {
+      await mutex.unlock();
+    }
   }
 }
