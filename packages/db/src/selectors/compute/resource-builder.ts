@@ -152,7 +152,10 @@ export class WorkspaceResourceBuilder {
 
   private getResourcesInWorkspace(tx: Tx) {
     return tx.query.resource.findMany({
-      where: eq(SCHEMA.resource.workspaceId, this.workspaceId),
+      where: and(
+        eq(SCHEMA.resource.workspaceId, this.workspaceId),
+        isNull(SCHEMA.resource.deletedAt),
+      ),
     });
   }
 

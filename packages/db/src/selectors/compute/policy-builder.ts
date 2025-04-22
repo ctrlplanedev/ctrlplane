@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm/pg-core/expressions";
+import { and, eq, inArray, isNull } from "drizzle-orm/pg-core/expressions";
 
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
@@ -56,6 +56,7 @@ export class PolicyBuilder {
         )
         .where(
           and(
+            isNull(SCHEMA.resource.deletedAt),
             qb.resources().where(t.resourceSelector).sql(),
             qb.deployments().where(t.deploymentSelector).sql(),
             qb.environments().where(t.environmentSelector).sql(),
