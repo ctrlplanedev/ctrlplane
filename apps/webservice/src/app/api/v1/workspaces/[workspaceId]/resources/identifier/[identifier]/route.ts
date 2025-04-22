@@ -102,6 +102,11 @@ export const DELETE = request()
       );
     }
 
+    await db
+      .update(schema.resource)
+      .set({ deletedAt: new Date() })
+      .where(eq(schema.resource.id, resource.id));
+
     await getQueue(Channel.DeleteResource).add(resource.id, resource);
 
     return NextResponse.json({ success: true });

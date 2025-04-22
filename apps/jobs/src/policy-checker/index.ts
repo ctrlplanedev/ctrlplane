@@ -1,7 +1,6 @@
 import { and, eq, isNull, or } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   dispatchReleaseJobTriggers,
@@ -35,13 +34,13 @@ const triggerPolicyEvaluation = async () => {
       );
       totalProcessed += releaseTargets.length;
 
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(
-        releaseTargets.map((rt) => ({
-          name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-          data: rt,
-          priority: 10,
-        })),
-      );
+      // await getQueue(Channel.EvaluateReleaseTarget).addBulk(
+      //   releaseTargets.map((rt) => ({
+      //     name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+      //     data: rt,
+      //     priority: 10,
+      //   })),
+      // );
 
       offset += PAGE_SIZE;
     } catch (error) {
