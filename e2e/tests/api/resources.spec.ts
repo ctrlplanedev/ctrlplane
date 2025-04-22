@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import type { paths } from "../../api/schema";
 import { test } from "../fixtures";
 
 test.describe("Resource API", () => {
@@ -150,6 +149,7 @@ test.describe("Resource API", () => {
   test("delete a resource", async ({ api, workspace }) => {
     // First create a resource
     const resourceName = faker.string.alphanumeric(10);
+    const resourceIdentifer = `${resourceName}/${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
@@ -169,7 +169,7 @@ test.describe("Resource API", () => {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: resourceName,
+            identifier: resourceIdentifer,
           },
         },
       },
@@ -185,7 +185,7 @@ test.describe("Resource API", () => {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: resourceName,
+            identifier: resourceIdentifer,
           },
         },
       },
