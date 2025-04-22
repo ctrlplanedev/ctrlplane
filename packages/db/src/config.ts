@@ -12,6 +12,8 @@ export const env = createEnv({
       .string()
       .default("50")
       .transform((value) => parseInt(value)),
+
+    REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

@@ -125,14 +125,13 @@ export class AgentSocket {
       "name" | "version" | "kind" | "identifier" | "workspaceId"
     >,
   ) {
-    const all = await upsertResources(db, [
+    const all = await upsertResources(db, this.workspaceId, [
       {
         ...resource,
         name: this.name,
         version: "ctrlplane.access/v1",
         kind: "AccessNode",
         identifier: `ctrlplane/access/access-node/${this.name}`,
-        workspaceId: this.workspaceId,
         updatedAt: new Date(),
       },
     ]);
@@ -141,7 +140,10 @@ export class AgentSocket {
 
     await getQueue(Channel.UpdatedResource).add(res.id, res);
 
-    this.resource = res;
+    const metadata = Object.fromEntries(
+      res.metadata.map((m) => [m.key, m.value]),
+    );
+    this.resource = { ...res, metadata };
     agents.set(res.id, { lastSync: new Date(), agent: this });
   }
 

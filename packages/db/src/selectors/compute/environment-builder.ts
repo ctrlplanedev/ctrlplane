@@ -6,9 +6,14 @@ import {
   isNull,
 } from "drizzle-orm/pg-core/expressions";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
+import { createAndAcquireMutex, SelectorComputeType } from "./mutex.js";
+
+const log = logger.child({ module: "environment-builder" });
 
 export class EnvironmentBuilder {
   constructor(
@@ -31,14 +36,18 @@ export class EnvironmentBuilder {
     return this.environments.map((e) => e.id);
   }
 
-  private async findMatchingResourcesForEnvironments(tx: Tx) {
-    const envs = await tx.query.environment.findMany({
+  private async getEnvironments(tx: Tx) {
+    return tx.query.environment.findMany({
       where: and(
         inArray(SCHEMA.environment.id, this.environmentIds),
         isNotNull(SCHEMA.environment.resourceSelector),
       ),
       with: { system: true },
     });
+  }
+
+  private async findMatchingResourcesForEnvironments(tx: Tx) {
+    const envs = await this.getEnvironments(tx);
 
     const promises = envs.map(async (env) => {
       const environmentId = env.id;
@@ -60,21 +69,43 @@ export class EnvironmentBuilder {
     return fulfilled.flat();
   }
 
-  resourceSelectors() {
-    return this.tx.transaction(async (tx) => {
-      await this.deleteExistingComputedResources(tx);
-      const vals = await this.findMatchingResourcesForEnvironments(tx);
+  async resourceSelectors() {
+    const environments = await this.getEnvironments(this.tx);
+    if (environments.length === 0) return [];
+    const workspaceIds = new Set(environments.map((e) => e.system.workspaceId));
+    if (workspaceIds.size !== 1)
+      throw new Error("All environments must be in the same workspace");
+    const workspaceId = Array.from(workspaceIds)[0]!;
 
-      if (vals.length === 0) return [];
+    const mutex = await createAndAcquireMutex(
+      SelectorComputeType.EnvironmentBuilder,
+      workspaceId,
+    );
 
-      const results = await tx
-        .insert(SCHEMA.computedEnvironmentResource)
-        .values(vals)
-        .onConflictDoNothing()
-        .returning();
+    try {
+      return await this.tx.transaction(async (tx) => {
+        await this.deleteExistingComputedResources(tx);
+        const vals = await this.findMatchingResourcesForEnvironments(tx);
 
-      return results;
-    });
+        if (vals.length === 0) return [];
+
+        const results = await tx
+          .insert(SCHEMA.computedEnvironmentResource)
+          .values(vals)
+          .onConflictDoNothing()
+          .returning();
+
+        return results;
+      });
+    } catch (e) {
+      log.error("Error computing resource selectors", {
+        error: e,
+        workspaceId,
+      });
+      throw e;
+    } finally {
+      await mutex.unlock();
+    }
   }
 }
 
@@ -134,20 +165,35 @@ export class WorkspaceEnvironmentBuilder {
     return fulfilled.flat();
   }
 
-  resourceSelectors() {
-    return this.tx.transaction(async (tx) => {
-      await this.deleteExistingComputedResources(tx);
-      const vals = await this.findMatchingResourcesForEnvironments(tx);
+  async resourceSelectors() {
+    const mutex = await createAndAcquireMutex(
+      SelectorComputeType.EnvironmentBuilder,
+      this.workspaceId,
+    );
 
-      if (vals.length === 0) return [];
+    try {
+      return await this.tx.transaction(async (tx) => {
+        await this.deleteExistingComputedResources(tx);
+        const vals = await this.findMatchingResourcesForEnvironments(tx);
 
-      const results = await tx
-        .insert(SCHEMA.computedEnvironmentResource)
-        .values(vals)
-        .onConflictDoNothing()
-        .returning();
+        if (vals.length === 0) return [];
 
-      return results;
-    });
+        const results = await tx
+          .insert(SCHEMA.computedEnvironmentResource)
+          .values(vals)
+          .onConflictDoNothing()
+          .returning();
+
+        return results;
+      });
+    } catch (e) {
+      log.error("Error computing resource selectors", {
+        error: e,
+        workspaceId: this.workspaceId,
+      });
+      throw e;
+    } finally {
+      await mutex.unlock();
+    }
   }
 }

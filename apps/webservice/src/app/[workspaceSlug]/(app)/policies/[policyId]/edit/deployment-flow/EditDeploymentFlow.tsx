@@ -240,8 +240,6 @@ export const EditDeploymentFlow: React.FC<{
   );
   const versions = versionsQ.data?.items ?? [];
 
-  const errors = form.formState.errors;
-
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-8">
