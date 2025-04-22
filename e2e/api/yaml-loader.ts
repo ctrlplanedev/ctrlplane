@@ -143,20 +143,20 @@ export async function importEntitiesFromYaml(
   if (data.resources && data.resources.length > 0) {
     console.log(`Creating ${data.resources.length} resources`);
 
-    const resourcesResponse = await api.POST("/v1/resources", {
-      body: {
-        workspaceId,
-        resources: data.resources.map((resource) => ({
+    for (const resource of data.resources) {
+      const resourceResponse = await api.POST("/v1/resources", {
+        body: {
           ...resource,
+          workspaceId,
           config: resource.config as Record<string, never>,
-        })),
-      },
-    });
+        },
+      });
 
-    if (resourcesResponse.response.status !== 200) {
-      throw new Error(
-        `Failed to create resources: ${JSON.stringify(resourcesResponse.error)}`,
-      );
+      if (resourceResponse.response.status !== 200) {
+        throw new Error(
+          `Failed to create resource: ${JSON.stringify(resourceResponse.error)}`,
+        );
+      }
     }
 
     // Store created resources in result
