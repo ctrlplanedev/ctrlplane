@@ -26,7 +26,7 @@
     "bullmq": "catalog:",
     "bullmq-otel": "^1.0.1",
     "date-fns": "^4.1.0",
-    "ioredis": "^5.4.1",
+    "ioredis": "catalog:",
     "lodash": "catalog:",
     "zod": "catalog:"
   },
