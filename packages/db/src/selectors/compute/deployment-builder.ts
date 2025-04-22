@@ -6,14 +6,10 @@ import {
   isNull,
 } from "drizzle-orm/pg-core/expressions";
 
-import { logger } from "@ctrlplane/logger";
-
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
-import { createAndAcquireMutex, SelectorComputeType } from "./mutex.js";
-
-const log = logger.child({ module: "deployment-builder" });
+import { SelectorComputeType, withMutex } from "./mutex.js";
 
 export class DeploymentBuilder {
   constructor(
@@ -74,13 +70,8 @@ export class DeploymentBuilder {
       throw new Error("All deployments must be in the same workspace");
     const workspaceId = Array.from(workspaceIds)[0]!;
 
-    const mutex = await createAndAcquireMutex(
-      SelectorComputeType.DeploymentBuilder,
-      workspaceId,
-    );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
+    return withMutex(SelectorComputeType.DeploymentBuilder, workspaceId, () =>
+      this.tx.transaction(async (tx) => {
         await this.deleteExistingComputedResources(tx);
         const computedResourceInserts =
           await this.findMatchingResourcesForDeployments(tx);
@@ -90,16 +81,8 @@ export class DeploymentBuilder {
           .values(computedResourceInserts)
           .onConflictDoNothing()
           .returning();
-      });
-    } catch (e) {
-      log.error("Error computing resource selectors", {
-        error: e,
-        workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
+      }),
+    );
   }
 }
 
@@ -164,34 +147,24 @@ export class WorkspaceDeploymentBuilder {
   }
 
   async resourceSelectors() {
-    const mutex = await createAndAcquireMutex(
+    return withMutex(
       SelectorComputeType.DeploymentBuilder,
       this.workspaceId,
+      () =>
+        this.tx.transaction(async (tx) => {
+          const deployments = await this.getDeploymentsInWorkspace(tx);
+          await this.deleteExistingComputedResources(tx, deployments);
+          const computedResourceInserts =
+            await this.findMatchingResourcesForDeployments(tx, deployments);
+
+          if (computedResourceInserts.length === 0) return [];
+
+          return tx
+            .insert(SCHEMA.computedDeploymentResource)
+            .values(computedResourceInserts)
+            .onConflictDoNothing()
+            .returning();
+        }),
     );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
-        const deployments = await this.getDeploymentsInWorkspace(tx);
-        await this.deleteExistingComputedResources(tx, deployments);
-        const computedResourceInserts =
-          await this.findMatchingResourcesForDeployments(tx, deployments);
-
-        if (computedResourceInserts.length === 0) return [];
-
-        return tx
-          .insert(SCHEMA.computedDeploymentResource)
-          .values(computedResourceInserts)
-          .onConflictDoNothing()
-          .returning();
-      });
-    } catch (e) {
-      log.error("Error computing resource selectors", {
-        error: e,
-        workspaceId: this.workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
   }
 }

@@ -13,14 +13,20 @@ const withSpan = makeWithSpan(tracer);
 
 export const createAndAcquireMutex = withSpan(
   "createAndAcquireMutex",
-  async (span, releaseTargetIdentifier: ReleaseTargetIdentifier) => {
+  async (
+    span,
+    releaseTargetIdentifier: ReleaseTargetIdentifier,
+    opts = { tryLock: false },
+  ) => {
     span.setAttribute("environment.id", releaseTargetIdentifier.environmentId);
     span.setAttribute("deployment.id", releaseTargetIdentifier.deploymentId);
     span.setAttribute("resource.id", releaseTargetIdentifier.resourceId);
 
     const mutex = new ReleaseTargetMutex(releaseTargetIdentifier);
+    if (opts.tryLock) return [mutex, await mutex.tryLock()] as const;
+
     await mutex.lock();
-    return mutex;
+    return [mutex, true] as const;
   },
 );
 
@@ -41,6 +47,17 @@ class ReleaseTargetMutex {
     });
   }
 
+  async tryLock(): Promise<boolean> {
+    if (this.mutex.isAcquired) return false;
+    try {
+      await this.mutex.tryAcquire();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Regular lock that waits to acquire
   lock(): Promise<void> {
     if (this.mutex.isAcquired) throw new Error("Mutex is already locked");
     return this.mutex.acquire();

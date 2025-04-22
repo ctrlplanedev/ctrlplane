@@ -14,16 +14,18 @@ export enum SelectorComputeType {
   PolicyBuilder = "policy-builder",
 }
 
-export const createAndAcquireMutex = async (
+const createAndAcquireMutex = async (
   type: SelectorComputeType,
   workspaceId: string,
+  opts = { tryLock: false },
 ) => {
   const mutex = new SelectorComputeMutex(type, workspaceId);
+  if (opts.tryLock) return [mutex, await mutex.tryLock()] as const;
   await mutex.lock();
-  return mutex;
+  return [mutex, true] as const;
 };
 
-export class SelectorComputeMutex {
+class SelectorComputeMutex {
   private readonly key: string;
   private mutex: RedisMutex;
 
@@ -41,13 +43,37 @@ export class SelectorComputeMutex {
     });
   }
 
-  async lock() {
+  tryLock() {
+    return this.mutex.tryAcquire();
+  }
+
+  lock() {
     if (this.mutex.isAcquired) throw new Error("Mutex is already locked");
     return this.mutex.acquire();
   }
 
-  async unlock() {
+  unlock() {
     if (!this.mutex.isAcquired) throw new Error("Mutex is not locked");
     return this.mutex.release();
   }
 }
+
+/**
+ * Helper function to execute code with a mutex lock
+ * @param type - Type of selector compute mutex
+ * @param workspaceId - ID of workspace to lock
+ * @param fn - Function to execute while holding lock
+ * @returns Result of executed function
+ */
+export const withMutex = async <T>(
+  type: SelectorComputeType,
+  workspaceId: string,
+  fn: () => Promise<T> | T,
+): Promise<T> => {
+  const [mutex] = await createAndAcquireMutex(type, workspaceId);
+  try {
+    return await fn();
+  } finally {
+    await mutex.unlock();
+  }
+};

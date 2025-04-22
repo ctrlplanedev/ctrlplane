@@ -6,14 +6,10 @@ import {
   isNull,
 } from "drizzle-orm/pg-core/expressions";
 
-import { logger } from "@ctrlplane/logger";
-
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
-import { createAndAcquireMutex, SelectorComputeType } from "./mutex.js";
-
-const log = logger.child({ module: "environment-builder" });
+import { SelectorComputeType, withMutex } from "./mutex.js";
 
 export class EnvironmentBuilder {
   constructor(
@@ -77,13 +73,8 @@ export class EnvironmentBuilder {
       throw new Error("All environments must be in the same workspace");
     const workspaceId = Array.from(workspaceIds)[0]!;
 
-    const mutex = await createAndAcquireMutex(
-      SelectorComputeType.EnvironmentBuilder,
-      workspaceId,
-    );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
+    return withMutex(SelectorComputeType.EnvironmentBuilder, workspaceId, () =>
+      this.tx.transaction(async (tx) => {
         await this.deleteExistingComputedResources(tx);
         const vals = await this.findMatchingResourcesForEnvironments(tx);
 
@@ -96,16 +87,8 @@ export class EnvironmentBuilder {
           .returning();
 
         return results;
-      });
-    } catch (e) {
-      log.error("Error computing resource selectors", {
-        error: e,
-        workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
+      }),
+    );
   }
 }
 
@@ -166,34 +149,22 @@ export class WorkspaceEnvironmentBuilder {
   }
 
   async resourceSelectors() {
-    const mutex = await createAndAcquireMutex(
+    return withMutex(
       SelectorComputeType.EnvironmentBuilder,
       this.workspaceId,
+      () =>
+        this.tx.transaction(async (tx) => {
+          await this.deleteExistingComputedResources(tx);
+          const vals = await this.findMatchingResourcesForEnvironments(tx);
+
+          if (vals.length === 0) return [];
+
+          return tx
+            .insert(SCHEMA.computedEnvironmentResource)
+            .values(vals)
+            .onConflictDoNothing()
+            .returning();
+        }),
     );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
-        await this.deleteExistingComputedResources(tx);
-        const vals = await this.findMatchingResourcesForEnvironments(tx);
-
-        if (vals.length === 0) return [];
-
-        const results = await tx
-          .insert(SCHEMA.computedEnvironmentResource)
-          .values(vals)
-          .onConflictDoNothing()
-          .returning();
-
-        return results;
-      });
-    } catch (e) {
-      log.error("Error computing resource selectors", {
-        error: e,
-        workspaceId: this.workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
   }
 }

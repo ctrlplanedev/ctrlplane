@@ -172,7 +172,22 @@ export const evaluateReleaseTargetWorker = createWorker(
     span.setAttribute("environment.id", job.data.environmentId);
     span.setAttribute("deployment.id", job.data.deploymentId);
 
-    const mutex = await createAndAcquireMutex(job.data);
+    const [mutex, isAcquired] = await createAndAcquireMutex(job.data, {
+      tryLock: true,
+    });
+
+    if (!isAcquired) {
+      log.info("Failed to acquire mutex for release target", {
+        releaseTarget: job.data,
+      });
+
+      await getQueue(Channel.EvaluateReleaseTarget).add(job.name, job.data, {
+        jobId: job.id,
+        delay: 1000,
+      });
+
+      throw new Error("Failed to acquire mutex for release target");
+    }
 
     try {
       // Get release target

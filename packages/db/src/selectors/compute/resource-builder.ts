@@ -1,13 +1,10 @@
 import { and, eq, inArray, isNull, or } from "drizzle-orm/pg-core/expressions";
 
-import { logger } from "@ctrlplane/logger";
-
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
-import { createAndAcquireMutex, SelectorComputeType } from "./mutex.js";
+import { SelectorComputeType, withMutex } from "./mutex.js";
 import { WorkspacePolicyBuilder } from "./policy-builder.js";
 
-const log = logger.child({ module: "resource-builder" });
 /**
  * Builder class for computing release targets for a set of resources.
  *
@@ -117,36 +114,26 @@ export class ResourceBuilder {
   }
 
   async releaseTargets() {
-    const mutex = await createAndAcquireMutex(
+    return withMutex(
       SelectorComputeType.ResourceBuilder,
       this.workspaceId,
+      () =>
+        this.tx.transaction(async (tx) => {
+          await this.deleteExistingReleaseTargets(tx);
+          const vals = await this.findMatchingEnvironmentDeploymentPairs(tx);
+          if (vals.length === 0) return [];
+
+          const results = await tx
+            .insert(SCHEMA.releaseTarget)
+            .values(vals)
+            .onConflictDoNothing()
+            .returning();
+
+          await this.recomputePolicyReleaseTargets(tx);
+
+          return results;
+        }),
     );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
-        await this.deleteExistingReleaseTargets(tx);
-        const vals = await this.findMatchingEnvironmentDeploymentPairs(tx);
-        if (vals.length === 0) return [];
-
-        const results = await tx
-          .insert(SCHEMA.releaseTarget)
-          .values(vals)
-          .onConflictDoNothing()
-          .returning();
-
-        await this.recomputePolicyReleaseTargets(tx);
-
-        return results;
-      });
-    } catch (e) {
-      log.error("Error computing release targets", {
-        error: e,
-        workspaceId: this.workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
   }
 }
 
@@ -245,42 +232,31 @@ export class WorkspaceResourceBuilder {
     const policyComputer = new WorkspacePolicyBuilder(tx, this.workspaceId);
     return policyComputer.releaseTargetSelectors();
   }
-
   async releaseTargets() {
-    const mutex = await createAndAcquireMutex(
+    return withMutex(
       SelectorComputeType.ResourceBuilder,
       this.workspaceId,
+      () =>
+        this.tx.transaction(async (tx) => {
+          const resources = await this.getResourcesInWorkspace(tx);
+          const resourceIds = resources.map((r) => r.id);
+          await this.deleteExistingReleaseTargets(tx, resourceIds);
+          const vals = await this.findMatchingEnvironmentDeploymentPairs(
+            tx,
+            resourceIds,
+          );
+          if (vals.length === 0) return [];
+
+          const results = await tx
+            .insert(SCHEMA.releaseTarget)
+            .values(vals)
+            .onConflictDoNothing()
+            .returning();
+
+          await this.recomputePolicyReleaseTargets(tx);
+
+          return results;
+        }),
     );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
-        const resources = await this.getResourcesInWorkspace(tx);
-        const resourceIds = resources.map((r) => r.id);
-        await this.deleteExistingReleaseTargets(tx, resourceIds);
-        const vals = await this.findMatchingEnvironmentDeploymentPairs(
-          tx,
-          resourceIds,
-        );
-        if (vals.length === 0) return [];
-
-        const results = await tx
-          .insert(SCHEMA.releaseTarget)
-          .values(vals)
-          .onConflictDoNothing()
-          .returning();
-
-        await this.recomputePolicyReleaseTargets(tx);
-
-        return results;
-      });
-    } catch (e) {
-      log.error("Error computing release targets", {
-        error: e,
-        workspaceId: this.workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
   }
 }

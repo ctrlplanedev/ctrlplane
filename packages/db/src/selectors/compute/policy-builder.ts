@@ -1,13 +1,9 @@
 import { and, eq, inArray } from "drizzle-orm/pg-core/expressions";
 
-import { logger } from "@ctrlplane/logger";
-
 import type { Tx } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
 import { QueryBuilder } from "../query/builder.js";
-import { createAndAcquireMutex, SelectorComputeType } from "./mutex.js";
-
-const log = logger.child({ module: "policy-builder" });
+import { SelectorComputeType, withMutex } from "./mutex.js";
 
 export class PolicyBuilder {
   private targets: SCHEMA.PolicyTarget[];
@@ -88,36 +84,26 @@ export class PolicyBuilder {
     if (policies.length === 0) return [];
 
     const workspaceIds = new Set(policies.map((p) => p.policy.workspaceId));
+
     if (workspaceIds.size !== 1)
       throw new Error("All policies must be in the same workspace");
     const workspaceId = Array.from(workspaceIds)[0]!;
 
-    const mutex = await createAndAcquireMutex(
-      SelectorComputeType.PolicyBuilder,
-      workspaceId,
-    );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
+    return withMutex(SelectorComputeType.PolicyBuilder, workspaceId, () =>
+      this.tx.transaction(async (tx) => {
         await this.getTargets(tx);
         await this.deleteExistingComputedReleaseTargets(tx);
+
         const computedPolicyTargetReleaseTargetInserts =
           await this.findMatchingReleaseTargetsForTargets(tx);
         if (computedPolicyTargetReleaseTargetInserts.length === 0) return [];
-        return tx
+
+        await tx
           .insert(SCHEMA.computedPolicyTargetReleaseTarget)
           .values(computedPolicyTargetReleaseTargetInserts)
           .onConflictDoNothing();
-      });
-    } catch (e) {
-      log.error("Error computing release target selectors", {
-        error: e,
-        workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
+      }),
+    );
   }
 }
 
@@ -191,13 +177,8 @@ export class WorkspacePolicyBuilder {
   }
 
   async releaseTargetSelectors() {
-    const mutex = await createAndAcquireMutex(
-      SelectorComputeType.PolicyBuilder,
-      this.workspaceId,
-    );
-
-    try {
-      return await this.tx.transaction(async (tx) => {
+    return withMutex(SelectorComputeType.PolicyBuilder, this.workspaceId, () =>
+      this.tx.transaction(async (tx) => {
         const targets = await this.getTargets(tx);
 
         await this.deleteExistingComputedReleaseTargets(tx, targets);
@@ -211,15 +192,7 @@ export class WorkspacePolicyBuilder {
           .values(computedPolicyTargetReleaseTargetInserts)
           .onConflictDoNothing()
           .returning();
-      });
-    } catch (e) {
-      log.error("Error computing release target selectors", {
-        error: e,
-        workspaceId: this.workspaceId,
-      });
-      throw e;
-    } finally {
-      await mutex.unlock();
-    }
+      }),
+    );
   }
 }
