@@ -43,7 +43,7 @@
     "googleapis": "^144.0.0",
     "js-yaml": "^4.1.0",
     "lodash": "catalog:",
-    "ms": "^2.1.3",
+    "ms": "catalog:",
     "rrule": "^2.8.1",
     "superjson": "catalog:",
     "ts-is-present": "catalog:",

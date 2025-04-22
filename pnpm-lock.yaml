@@ -51,6 +51,9 @@ catalogs:
     lodash:
       specifier: ^4.17.21
       version: 4.17.21
+    ms:
+      specifier: ^2.1.3
+      version: 2.1.3
     next:
       specifier: 15.2.1
       version: 15.2.1
@@ -233,7 +236,7 @@ importers:
         specifier: 'catalog:'
         version: 4.17.21
       ms:
-        specifier: ^2.1.3
+        specifier: 'catalog:'
         version: 2.1.3
       redis-semaphore:
         specifier: 'catalog:'
@@ -385,7 +388,7 @@ importers:
         specifier: ^7.1.0
         version: 7.2.0
       ms:
-        specifier: ^2.1.3
+        specifier: 'catalog:'
         version: 2.1.3
       next-auth:
         specifier: 'catalog:'
@@ -808,7 +811,7 @@ importers:
         specifier: 'catalog:'
         version: 9.11.1(jiti@2.3.3)
       ms:
-        specifier: ^2.1.3
+        specifier: 'catalog:'
         version: 2.1.3
       openapi-fetch:
         specifier: ^0.13.0
@@ -969,7 +972,7 @@ importers:
         specifier: 'catalog:'
         version: 4.17.21
       ms:
-        specifier: ^2.1.3
+        specifier: 'catalog:'
         version: 2.1.3
       rrule:
         specifier: ^2.8.1
@@ -1126,6 +1129,9 @@ importers:
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
+      ms:
+        specifier: 'catalog:'
+        version: 2.1.3
       pg:
         specifier: ^8.14.1
         version: 8.14.1
@@ -1313,7 +1319,7 @@ importers:
         specifier: 'catalog:'
         version: 4.17.21
       ms:
-        specifier: ^2.1.3
+        specifier: 'catalog:'
         version: 2.1.3
       murmurhash:
         specifier: ^2.0.1

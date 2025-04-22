@@ -46,7 +46,7 @@
     "ioredis": "catalog:",
     "js-yaml": "^4.1.0",
     "lodash": "catalog:",
-    "ms": "^2.1.3",
+    "ms": "catalog:",
     "redis-semaphore": "catalog:",
     "semver": "catalog:",
     "ts-is-present": "^1.2.2",

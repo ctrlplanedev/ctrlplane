@@ -48,6 +48,7 @@
     "drizzle-zod": "^0.5.1",
     "ioredis": "catalog:",
     "lodash": "catalog:",
+    "ms": "catalog:",
     "pg": "^8.14.1",
     "redis-semaphore": "catalog:",
     "rrule": "^2.8.1",
