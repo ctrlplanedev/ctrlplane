@@ -2655,7 +2655,30 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": {
+            resources?: {
+              all?: {
+                id?: string;
+                name?: string;
+                version?: string;
+                kind?: string;
+                config?: {
+                  [key: string]: unknown;
+                };
+              }[];
+              deleted?: {
+                id?: string;
+                name?: string;
+                version?: string;
+                kind?: string;
+                config?: {
+                  [key: string]: unknown;
+                };
+              }[];
+            };
+          };
+        };
       };
       /** @description Invalid request */
       400: {
@@ -2669,7 +2692,11 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
       };
       /** @description Internal server error */
       500: {
@@ -3478,9 +3505,15 @@ export interface operations {
         content: {
           "application/json": {
             id: string;
-            identifier: string;
+            name: string;
             workspaceId: string;
+            kind: string;
+            identifier: string;
+            version: string;
             providerId: string;
+            config?: {
+              [key: string]: unknown;
+            };
             provider?: {
               id?: string;
               name?: string;

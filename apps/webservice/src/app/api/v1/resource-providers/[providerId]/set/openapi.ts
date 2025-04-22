@@ -76,12 +76,70 @@ export const openapi: Swagger.SwaggerV3 = {
         responses: {
           "200": {
             description: "Successfully updated the deployment resources",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    resources: {
+                      type: "object",
+                      properties: {
+                        all: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              id: { type: "string" },
+                              name: { type: "string" },
+                              version: { type: "string" },
+                              kind: { type: "string" },
+                              config: {
+                                type: "object",
+                                additionalProperties: true,
+                              },
+                            },
+                          },
+                        },
+                        deleted: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              id: { type: "string" },
+                              name: { type: "string" },
+                              version: { type: "string" },
+                              kind: { type: "string" },
+                              config: {
+                                type: "object",
+                                additionalProperties: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           "400": {
             description: "Invalid request",
           },
           "404": {
             description: "Deployment resources not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: {
+                      type: "string",
+                    },
+                  },
+                },
+              },
+            },
           },
           "500": {
             description: "Internal server error",

@@ -65,12 +65,8 @@ export const openapi: Swagger.SwaggerV3 = {
                       type: "object",
                       nullable: true,
                       properties: {
-                        id: {
-                          type: "string",
-                        },
-                        name: {
-                          type: "string",
-                        },
+                        id: { type: "string" },
+                        name: { type: "string" },
                       },
                     },
                     metadata: {

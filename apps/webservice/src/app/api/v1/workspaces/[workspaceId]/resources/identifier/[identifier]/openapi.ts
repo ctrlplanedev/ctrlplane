@@ -42,14 +42,27 @@ export const openapi: Swagger.SwaggerV3 = {
                     id: {
                       type: "string",
                     },
-                    identifier: {
+                    name: {
                       type: "string",
                     },
                     workspaceId: {
                       type: "string",
                     },
+                    kind: {
+                      type: "string",
+                    },
+                    identifier: {
+                      type: "string",
+                    },
+                    version: {
+                      type: "string",
+                    },
                     providerId: {
                       type: "string",
+                    },
+                    config: {
+                      type: "object",
+                      additionalProperties: true,
                     },
                     provider: {
                       type: "object",
@@ -77,7 +90,15 @@ export const openapi: Swagger.SwaggerV3 = {
                       },
                     },
                   },
-                  required: ["id", "identifier", "workspaceId", "providerId"],
+                  required: [
+                    "id",
+                    "name",
+                    "kind",
+                    "version",
+                    "identifier",
+                    "workspaceId",
+                    "providerId",
+                  ],
                 },
               },
             },
