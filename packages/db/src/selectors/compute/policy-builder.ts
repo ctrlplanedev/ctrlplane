@@ -169,6 +169,7 @@ export class WorkspacePolicyBuilder {
         )
         .where(
           and(
+            isNull(SCHEMA.resource.deletedAt),
             qb.resources().where(t.resourceSelector).sql(),
             qb.deployments().where(t.deploymentSelector).sql(),
             qb.environments().where(t.environmentSelector).sql(),
