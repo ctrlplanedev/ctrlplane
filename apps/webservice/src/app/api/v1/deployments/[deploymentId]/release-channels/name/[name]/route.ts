@@ -10,24 +10,22 @@ import { request } from "~/app/api/v1/middleware";
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(async ({ can, extra: { params } }) =>
+    authz(({ can, params }) =>
       can
         .perform(Permission.DeploymentVersionChannelDelete)
-        .on({ type: "deployment", id: params.deploymentId }),
+        .on({ type: "deployment", id: params.deploymentId ?? "" }),
     ),
   )
-  .handle<unknown, { params: { deploymentId: string; name: string } }>(
+  .handle<unknown, { params: Promise<{ deploymentId: string; name: string }> }>(
     async (ctx, { params }) => {
+      const { deploymentId, name } = await params;
       try {
         await ctx.db
           .delete(schema.deploymentVersionChannel)
           .where(
             and(
-              eq(
-                schema.deploymentVersionChannel.deploymentId,
-                params.deploymentId,
-              ),
-              eq(schema.deploymentVersionChannel.name, params.name),
+              eq(schema.deploymentVersionChannel.deploymentId, deploymentId),
+              eq(schema.deploymentVersionChannel.name, name),
             ),
           );
 

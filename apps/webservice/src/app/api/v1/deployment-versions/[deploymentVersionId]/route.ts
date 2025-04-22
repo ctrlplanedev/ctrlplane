@@ -27,17 +27,18 @@ export const PATCH = request()
   .use(authn)
   .use(parseBody(patchSchema))
   .use(
-    authz(({ can, extra: { params } }) =>
-      can
-        .perform(Permission.DeploymentVersionUpdate)
-        .on({ type: "deploymentVersion", id: params.deploymentVersionId }),
+    authz(({ can, params }) =>
+      can.perform(Permission.DeploymentVersionUpdate).on({
+        type: "deploymentVersion",
+        id: params.deploymentVersionId ?? "",
+      }),
     ),
   )
   .handle<
     { body: z.infer<typeof patchSchema>; user: SCHEMA.User },
-    { params: { deploymentVersionId: string } }
+    { params: Promise<{ deploymentVersionId: string }> }
   >(async (ctx, { params }) => {
-    const { deploymentVersionId } = params;
+    const { deploymentVersionId } = await params;
     const { body, user, req } = ctx;
 
     try {
