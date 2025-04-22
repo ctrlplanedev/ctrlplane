@@ -45,6 +45,7 @@ export const newDeploymentWorker = createWorker(
       const releaseTargets = await recomputeReleaseTargets(job.data, resources);
       await dispatchEvaluateJobs(releaseTargets);
     } catch (error) {
+      console.error(error);
       log.error("Error upserting release targets", { error });
       throw error;
     }

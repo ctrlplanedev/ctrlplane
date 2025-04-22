@@ -43,6 +43,10 @@ class SelectorComputeMutex {
     });
   }
 
+  get isAcquired() {
+    return this.mutex.isAcquired;
+  }
+
   tryLock() {
     return this.mutex.tryAcquire();
   }
@@ -71,8 +75,14 @@ export const withMutex = async <T>(
   fn: () => Promise<T> | T,
 ): Promise<T> => {
   const [mutex] = await createAndAcquireMutex(type, workspaceId);
+  if (!mutex.isAcquired) {
+    throw new Error("Mutex is not acquired");
+  }
   try {
     return await fn();
+  } catch (error) {
+    console.error(error);
+    throw error;
   } finally {
     await mutex.unlock();
   }

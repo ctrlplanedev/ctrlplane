@@ -129,12 +129,20 @@ export class WorkspacePolicyBuilder {
     tx: Tx,
     targets: SCHEMA.PolicyTarget[],
   ) {
-    await tx.delete(SCHEMA.computedPolicyTargetReleaseTarget).where(
-      inArray(
-        SCHEMA.computedPolicyTargetReleaseTarget.policyTargetId,
-        targets.map((t) => t.id),
-      ),
-    );
+    if (targets.length === 0) return;
+
+    await tx
+      .delete(SCHEMA.computedPolicyTargetReleaseTarget)
+      .where(
+        inArray(
+          SCHEMA.computedPolicyTargetReleaseTarget.policyTargetId,
+          targets.map((t) => t.id),
+        ),
+      )
+      .catch((error) => {
+        console.error(error);
+        throw error;
+      });
   }
 
   private async findMatchingReleaseTargetsForTargets(

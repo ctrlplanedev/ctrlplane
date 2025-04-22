@@ -16,12 +16,13 @@ export const DELETE = request()
         .on({ type: "system", id: params.systemId }),
     ),
   )
-  .handle<unknown, { params: { systemId: string; name: string } }>(
+  .handle<unknown, { params: Promise<{ systemId: string; name: string }> }>(
     async (ctx, { params }) => {
+      const { systemId, name } = await params;
       const environment = await ctx.db.query.environment.findFirst({
         where: and(
-          eq(schema.environment.systemId, params.systemId),
-          eq(schema.environment.name, params.name),
+          eq(schema.environment.systemId, systemId),
+          eq(schema.environment.name, name),
         ),
       });
       if (environment == null)
@@ -34,8 +35,8 @@ export const DELETE = request()
         .delete(schema.environment)
         .where(
           and(
-            eq(schema.environment.systemId, params.systemId),
-            eq(schema.environment.name, params.name),
+            eq(schema.environment.systemId, systemId),
+            eq(schema.environment.name, name),
           ),
         );
       return NextResponse.json(environment);

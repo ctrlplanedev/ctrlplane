@@ -19,10 +19,11 @@ export const GET = request()
         .on({ type: "system", id: params.systemId }),
     ),
   )
-  .handle<unknown, { params: { systemId: string } }>(
+  .handle<unknown, { params: Promise<{ systemId: string }> }>(
     async (ctx, { params }) => {
+      const { systemId } = await params;
       const system = await ctx.db.query.system.findFirst({
-        where: eq(schema.system.id, params.systemId),
+        where: eq(schema.system.id, systemId),
         with: { environments: true, deployments: true },
       });
       if (system == null)
@@ -39,10 +40,11 @@ export const PATCH = request()
   .use(parseBody(schema.updateSystem))
   .handle<
     { body: z.infer<typeof schema.updateSystem> },
-    { params: { systemId: string } }
+    { params: Promise<{ systemId: string }> }
   >(async ({ db, body }, { params }) => {
+    const { systemId } = await params;
     const existingSystem = await db.query.system.findFirst({
-      where: eq(schema.system.id, params.systemId),
+      where: eq(schema.system.id, systemId),
     });
     if (existingSystem == null)
       return NextResponse.json(
@@ -53,7 +55,7 @@ export const PATCH = request()
     return db
       .update(schema.system)
       .set(body)
-      .where(eq(schema.system.id, params.systemId))
+      .where(eq(schema.system.id, systemId))
       .returning()
       .then(takeFirst)
       .then((system) => NextResponse.json(system, { status: httpStatus.OK }))
@@ -74,10 +76,11 @@ export const DELETE = request()
         .on({ type: "system", id: params.systemId }),
     ),
   )
-  .handle<unknown, { params: { systemId: string } }>(
+  .handle<unknown, { params: Promise<{ systemId: string }> }>(
     async ({ db }, { params }) => {
+      const { systemId } = await params;
       const existingSystem = await db.query.system.findFirst({
-        where: eq(schema.system.id, params.systemId),
+        where: eq(schema.system.id, systemId),
       });
       if (existingSystem == null)
         return NextResponse.json(
@@ -87,7 +90,7 @@ export const DELETE = request()
 
       return db
         .delete(schema.system)
-        .where(eq(schema.system.id, params.systemId))
+        .where(eq(schema.system.id, systemId))
         .returning()
         .then(takeFirst)
         .then((system) =>

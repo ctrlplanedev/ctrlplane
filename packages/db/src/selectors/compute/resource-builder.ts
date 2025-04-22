@@ -16,13 +16,17 @@ import { WorkspacePolicyBuilder } from "./policy-builder.js";
  * All resources must belong to the same workspace.
  */
 export class ResourceBuilder {
-  private readonly workspaceId: string;
+  private readonly workspaceId: string | null;
 
   constructor(
     private readonly tx: Tx,
     private readonly resources: SCHEMA.Resource[],
   ) {
     const workspaceIds = new Set(resources.map((r) => r.workspaceId));
+    if (workspaceIds.size === 0) {
+      this.workspaceId = null;
+      return;
+    }
     if (workspaceIds.size !== 1)
       throw new Error("All resources must be in the same workspace");
     this.workspaceId = Array.from(workspaceIds)[0]!;
@@ -109,26 +113,32 @@ export class ResourceBuilder {
   }
 
   private recomputePolicyReleaseTargets(tx: Tx) {
+    if (this.workspaceId == null) return;
     const policyComputer = new WorkspacePolicyBuilder(tx, this.workspaceId);
     return policyComputer.releaseTargetSelectors();
   }
 
   async releaseTargets() {
+    if (this.workspaceId == null) return [];
     return withMutex(
       SelectorComputeType.ResourceBuilder,
       this.workspaceId,
       () =>
         this.tx.transaction(async (tx) => {
+          console.log("deleting release targets");
           await this.deleteExistingReleaseTargets(tx);
+          console.log("finding matching environment deployment pairs");
           const vals = await this.findMatchingEnvironmentDeploymentPairs(tx);
           if (vals.length === 0) return [];
 
+          console.log("inserting release targets");
           const results = await tx
             .insert(SCHEMA.releaseTarget)
             .values(vals)
             .onConflictDoNothing()
             .returning();
 
+          console.log("recomputing policy release targets");
           await this.recomputePolicyReleaseTargets(tx);
 
           return results;

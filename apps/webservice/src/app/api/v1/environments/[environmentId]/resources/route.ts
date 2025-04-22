@@ -20,6 +20,24 @@ export const GET = request()
   .handle<unknown, { params: Promise<{ environmentId: string }> }>(
     async (ctx, { params }) => {
       const { environmentId } = await params;
+
+      const environment = await ctx.db.query.environment.findFirst({
+        where: eq(schema.environment.id, environmentId),
+        with: { system: true },
+      });
+
+      if (environment == null)
+        return NextResponse.json(
+          { error: "Environment not found" },
+          { status: 404 },
+        );
+
+      if (environment.resourceSelector == null)
+        return NextResponse.json(
+          { error: "Environment has no resource selector" },
+          { status: 400 },
+        );
+
       const resources = await ctx.db
         .select()
         .from(schema.resource)
