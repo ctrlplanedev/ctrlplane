@@ -46,7 +46,7 @@ export const TerminalSessionsProvider: React.FC<{
   const createTabSession = useCallback(
     (resourceId: string) => {
       const session = createSession(resourceId);
-      console.log("session", session);
+
       window.requestAnimationFrame(() => {
         setSessionIds((prev) => [
           ...prev,

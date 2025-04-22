@@ -59,8 +59,6 @@ test.describe("Resource API", () => {
       },
     );
 
-    console.log("response", response);
-
     expect(response.response.status).toBe(200);
     const { data } = response;
     expect(data?.identifier).toBe(resourceName);
@@ -86,8 +84,6 @@ test.describe("Resource API", () => {
     const response = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: { path: { workspaceId: workspace.id } },
     });
-
-    console.log("response", response);
 
     expect(response.response.status).toBe(200);
     const { data } = response;

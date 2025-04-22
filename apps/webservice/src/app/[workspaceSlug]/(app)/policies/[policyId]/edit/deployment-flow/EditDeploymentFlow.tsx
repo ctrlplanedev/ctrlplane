@@ -241,7 +241,6 @@ export const EditDeploymentFlow: React.FC<{
   const versions = versionsQ.data?.items ?? [];
 
   const errors = form.formState.errors;
-  console.log(errors);
 
   return (
     <Form {...form}>

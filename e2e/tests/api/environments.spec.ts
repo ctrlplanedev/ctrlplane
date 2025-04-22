@@ -31,7 +31,6 @@ test.describe("Environments API", () => {
       },
     });
 
-    console.log("environment", JSON.stringify(environment, null, 2));
     expect(environment.response.status).toBe(200);
     expect(environment.data?.id).toBeDefined();
     expect(environment.data?.name).toBe(environmentName);
