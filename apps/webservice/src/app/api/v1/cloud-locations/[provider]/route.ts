@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 
 import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
-export function GET(_: Request, { params }: { params: { provider: string } }) {
-  const { provider } = params;
+export async function GET(
+  _: Request,
+  { params }: { params: Promise<{ provider: string }> },
+) {
+  const { provider } = await params;
 
   // Check if provider exists
   if (cloudRegionsGeo[provider] == null)

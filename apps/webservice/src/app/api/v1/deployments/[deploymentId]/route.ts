@@ -13,18 +13,19 @@ import { request } from "../../middleware";
 export const GET = request()
   .use(authn)
   .use(
-    authz(({ can, extra: { params } }) =>
+    authz(({ can, params }) =>
       can
         .perform(Permission.DeploymentGet)
-        .on({ type: "deployment", id: params.deploymentId }),
+        .on({ type: "deployment", id: params.deploymentId ?? "" }),
     ),
   )
-  .handle<{ db: Tx }, { params: { deploymentId: string } }>(
+  .handle<{ db: Tx }, { params: Promise<{ deploymentId: string }> }>(
     async ({ db }, { params }) => {
+      const { deploymentId } = await params;
       const deployment = await db
         .select()
         .from(SCHEMA.deployment)
-        .where(eq(SCHEMA.deployment.id, params.deploymentId))
+        .where(eq(SCHEMA.deployment.id, deploymentId))
         .then(takeFirstOrNull);
 
       if (deployment == null)
@@ -40,19 +41,20 @@ export const GET = request()
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(({ can, extra: { params } }) =>
+    authz(({ can, params }) =>
       can
         .perform(Permission.DeploymentDelete)
-        .on({ type: "deployment", id: params.deploymentId }),
+        .on({ type: "deployment", id: params.deploymentId ?? "" }),
     ),
   )
-  .handle<{ db: Tx }, { params: { deploymentId: string } }>(
+  .handle<{ db: Tx }, { params: Promise<{ deploymentId: string }> }>(
     async ({ db }, { params }) => {
       try {
+        const { deploymentId } = await params;
         const deployment = await db
           .select()
           .from(SCHEMA.deployment)
-          .where(eq(SCHEMA.deployment.id, params.deploymentId))
+          .where(eq(SCHEMA.deployment.id, deploymentId))
           .then(takeFirstOrNull);
 
         if (deployment == null)
@@ -63,7 +65,7 @@ export const DELETE = request()
 
         await db
           .delete(SCHEMA.deployment)
-          .where(eq(SCHEMA.deployment.id, params.deploymentId));
+          .where(eq(SCHEMA.deployment.id, deploymentId));
 
         return NextResponse.json({ deployment, message: "Deployment deleted" });
       } catch (error) {
@@ -79,10 +81,10 @@ export const DELETE = request()
 export const PATCH = request()
   .use(authn)
   .use(
-    authz(async ({ can, extra: { params } }) => {
+    authz(({ can, params }) => {
       return can
         .perform(Permission.DeploymentUpdate)
-        .on({ type: "deployment", id: (await params).deploymentId });
+        .on({ type: "deployment", id: params.deploymentId ?? "" });
     }),
   )
   .handle<{ db: Tx }, { params: Promise<{ deploymentId: string }> }>(
