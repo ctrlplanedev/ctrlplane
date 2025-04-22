@@ -268,7 +268,11 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(createEnvironment)
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((db) => upsertEnv(db, input)),
+      ctx.db.transaction(async (db) => {
+        const env = await upsertEnv(db, input);
+        await getQueue(Channel.NewEnvironment).add(env.id, env);
+        return env;
+      }),
     ),
 
   update: protectedProcedure

@@ -37,7 +37,7 @@ export const POST = request()
           const releaseChannels = body.releaseChannels?.length ?? 0;
           const deploymentVersionChannels =
             body.deploymentVersionChannels?.length ?? 0;
-          const channels =
+          const versionChannels =
             releaseChannels + deploymentVersionChannels > 0
               ? await tx
                   .select()
@@ -62,15 +62,19 @@ export const POST = request()
             .where(eq(schema.environment.name, body.name))
             .then(takeFirstOrNull);
 
-          const environment = await upsertEnv(tx, {
-            ...body,
-            versionChannels: channels,
-          });
+          const environment = await upsertEnv(tx, { ...body, versionChannels });
 
-          getQueue(Channel.UpdateEnvironment).add(environment.id, {
-            ...environment,
-            oldSelector: existingEnv?.resourceSelector ?? null,
-          });
+          if (existingEnv != null)
+            await getQueue(Channel.UpdateEnvironment).add(environment.id, {
+              ...environment,
+              oldSelector: existingEnv.resourceSelector,
+            });
+
+          if (existingEnv == null)
+            await getQueue(Channel.NewEnvironment).add(
+              environment.id,
+              environment,
+            );
 
           await createJobsForNewEnvironment(tx, environment);
           const { metadata } = body;
