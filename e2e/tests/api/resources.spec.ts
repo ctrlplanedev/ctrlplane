@@ -10,30 +10,25 @@ test.describe("Resource API", () => {
     const resource = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        resources: [
-          {
-            name: resourceName1,
-            kind: "ResourceAPI",
-            identifier: resourceName1,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-          {
-            name: resourceName2,
-            kind: "ResourceAPI",
-            identifier: resourceName2,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-        ],
+        name: resourceName1,
+        kind: "ResourceAPI",
+        identifier: resourceName1,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
       },
     });
 
     expect(resource.response.status).toBe(200);
-    expect(resource.data?.count).toBe(2);
+    expect(resource.data?.id).toBeDefined();
     expect(resource.error).toBeUndefined();
+    expect(resource.data?.workspaceId).toBe(workspace.id);
+    expect(resource.data?.name).toBe(resourceName1);
+    expect(resource.data?.kind).toBe("ResourceAPI");
+    expect(resource.data?.identifier).toBe(resourceName1);
+    expect(resource.data?.version).toBe("test-version/v1");
+    expect(resource.data?.config).toEqual({ "e2e-test": true });
+    expect(resource.data?.metadata).toEqual({ "e2e-test": "true" });
   });
 
   test("get a resource by identifier", async ({ api, workspace }) => {
@@ -42,16 +37,12 @@ test.describe("Resource API", () => {
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        resources: [
-          {
-            name: resourceName,
-            kind: "ResourceAPI",
-            identifier: resourceName,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-        ],
+        name: resourceName,
+        kind: "ResourceAPI",
+        identifier: resourceName,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
       },
     });
 
@@ -82,16 +73,12 @@ test.describe("Resource API", () => {
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        resources: [
-          {
-            name: resourceName,
-            kind: "ResourceAPI",
-            identifier: resourceName,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-        ],
+        name: resourceName,
+        kind: "ResourceAPI",
+        identifier: resourceName,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
       },
     });
 
@@ -116,16 +103,12 @@ test.describe("Resource API", () => {
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        resources: [
-          {
-            name: resourceName,
-            kind: "ResourceAPI",
-            identifier: resourceName,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-        ],
+        name: resourceName,
+        kind: "ResourceAPI",
+        identifier: resourceName,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
       },
     });
 
@@ -170,16 +153,12 @@ test.describe("Resource API", () => {
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        resources: [
-          {
-            name: resourceName,
-            kind: "ResourceAPI",
-            identifier: resourceIdentifer,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-        ],
+        name: resourceName,
+        kind: "ResourceAPI",
+        identifier: resourceName,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
       },
     });
 
@@ -218,27 +197,28 @@ test.describe("Resource API", () => {
     // Create two resources
     const resource1Name = faker.string.alphanumeric(10);
     const resource2Name = faker.string.alphanumeric(10);
+
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        resources: [
-          {
-            name: resource1Name,
-            kind: "ResourceAPI",
-            identifier: resource1Name,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-          {
-            name: resource2Name,
-            kind: "ResourceAPI",
-            identifier: resource2Name,
-            version: "test-version/v1",
-            config: { "e2e-test": true } as any,
-            metadata: { "e2e-test": "true" },
-          },
-        ],
+        name: resource1Name,
+        kind: "ResourceAPI",
+        identifier: resource1Name,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
+      },
+    });
+
+    await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: resource2Name,
+        kind: "ResourceAPI",
+        identifier: resource2Name,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
       },
     });
 

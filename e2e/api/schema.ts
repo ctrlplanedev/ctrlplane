@@ -535,8 +535,8 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Create or update multiple resources */
-    post: operations["upsertResources"];
+    /** Create or update a resource */
+    post: operations["upsertResource"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2983,7 +2983,7 @@ export interface operations {
       };
     };
   };
-  upsertResources: {
+  upsertResource: {
     parameters: {
       query?: never;
       header?: never;
@@ -2995,30 +2995,26 @@ export interface operations {
         "application/json": {
           /** Format: uuid */
           workspaceId: string;
-          resources: {
-            name: string;
-            kind: string;
-            identifier: string;
-            version: string;
-            config: Record<string, never>;
-            metadata?: {
-              [key: string]: string;
-            };
-            variables?: components["schemas"]["Variable"][];
-          }[];
+          name: string;
+          kind: string;
+          identifier: string;
+          version: string;
+          config: Record<string, never>;
+          metadata?: {
+            [key: string]: string;
+          };
+          variables?: components["schemas"]["Variable"][];
         };
       };
     };
     responses: {
-      /** @description All of the cats */
+      /** @description The created or updated resource */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            count?: number;
-          };
+          "application/json": components["schemas"]["Resource"];
         };
       };
     };
