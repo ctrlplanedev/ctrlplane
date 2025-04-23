@@ -30,7 +30,7 @@ export const newResourceWorker = createWorker(
       await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
         environment.id,
         environment,
-        { jobId: environment.id },
+        { deduplication: { id: environment.id, ttl: 500 } },
       );
     }
 
@@ -39,7 +39,7 @@ export const newResourceWorker = createWorker(
       await getQueue(Channel.ComputeDeploymentResourceSelector).add(
         deployment.id,
         deployment,
-        { jobId: deployment.id },
+        { deduplication: { id: deployment.id, ttl: 500 } },
       );
     }
   },

@@ -40,7 +40,7 @@ test.describe("Environments API", () => {
     expect(environment.data?.name).toBe(environmentName);
   });
 
-  test("should match resources to new environment", async ({ api, page }) => {
+  test("should match resources to new environment", async ({ api }) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
@@ -71,7 +71,7 @@ test.describe("Environments API", () => {
 
     const environment = environmentResponse.data!;
 
-    await page.waitForTimeout(10_000);
+    await new Promise((resolve) => setTimeout(resolve, 10000));
 
     const resourcesResponse = await api.GET(
       "/v1/environments/{environmentId}/resources",
@@ -88,7 +88,6 @@ test.describe("Environments API", () => {
 
   test("should update environment selector and match new resources", async ({
     api,
-    page,
   }) => {
     // First create an environment with a selector for QA resources
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -122,7 +121,7 @@ test.describe("Environments API", () => {
     const environment = environmentResponse.data!;
 
     // Verify initial resources (should only be the QA resource)
-    await page.waitForTimeout(10_000);
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const initialResourcesResponse = await api.GET(
       "/v1/environments/{environmentId}/resources",
@@ -168,8 +167,7 @@ test.describe("Environments API", () => {
     const updatedEnvironmentId = updateResponse.data!.id;
     expect(updatedEnvironmentId).toBeDefined();
 
-    // Wait longer for selector compute to complete (30 seconds)
-    await page.waitForTimeout(30_000);
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     // Check if the updated environment has the correct resources
     const updatedResourcesResponse = await api.GET(
@@ -275,7 +273,6 @@ test.describe("Environments API", () => {
 
   test("should match not match deleted resources", async ({
     api,
-    page,
     workspace,
   }) => {
     for (const resource of importedEntities.resources) {
@@ -324,8 +321,7 @@ test.describe("Environments API", () => {
       throw new Error("Failed to create environment");
 
     const environment = environmentResponse.data;
-
-    await page.waitForTimeout(10_000);
+    await new Promise((resolve) => setTimeout(resolve, 10000));
 
     const resourcesResponse = await api.GET(
       "/v1/environments/{environmentId}/resources",

@@ -1,5 +1,3 @@
-import ms from "ms";
-
 import { and, eq, isNull, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
@@ -60,7 +58,7 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
       await getQueue(Channel.ComputeDeploymentResourceSelector).add(
         job.name,
         job.data,
-        { delay: ms("1s"), jobId: job.id },
+        { deduplication: { id: job.data.id, ttl: 500 } },
       );
       return;
     }
@@ -68,7 +66,7 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
     getQueue(Channel.ComputeSystemsReleaseTargets).add(
       deployment.system.id,
       deployment.system,
-      { delay: ms("1s"), jobId: deployment.system.id },
+      { deduplication: { id: job.data.id, ttl: 500 } },
     );
   },
 );

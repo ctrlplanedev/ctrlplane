@@ -37,11 +37,7 @@ export const updateDeploymentWorker = createWorker(
       const { oldSelector, resourceSelector } = data;
       if (_.isEqual(oldSelector, resourceSelector)) return;
 
-      log.info("Adding compute deployment resource selector job");
-      await getQueue(Channel.ComputeDeploymentResourceSelector).add(
-        data.id,
-        data,
-      );
+      getQueue(Channel.ComputeDeploymentResourceSelector).add(data.id, data);
 
       const exitedResources = await db.query.resource.findMany({
         where: and(
