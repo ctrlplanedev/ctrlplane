@@ -40,15 +40,27 @@ test.describe("Environments API", () => {
   });
 
   test("should match resources to new environment", async ({ api, page }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
         systemId: importedEntities.system.id,
         resourceSelector: {
-          type: "metadata",
-          operator: "equals",
-          key: "env",
-          value: "qa",
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "qa",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
         },
       },
     });
@@ -71,7 +83,8 @@ test.describe("Environments API", () => {
     expect(resourcesResponse.response.status).toBe(200);
     expect(resourcesResponse.data?.resources?.length).toBe(1);
     expect(resourcesResponse.data?.resources?.[0]?.identifier).toBe(
-      importedEntities.resources[0].identifier,
+      importedEntities.resources.find((r) => r.metadata?.env === "qa")
+        ?.identifier,
     );
   });
 });
