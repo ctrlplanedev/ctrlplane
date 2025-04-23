@@ -1,0 +1,23 @@
+system:
+  name: "{{ prefix }}-deployments"
+  slug: "{{ prefix }}-deployments"
+  description: System for testing deployments
+
+resources:
+  - name: qa-resource
+    kind: service
+    identifier: "{{ prefix }}-qa-resource"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa
+
+  - name: prod-resource
+    kind: service
+    identifier: "{{ prefix }}-prod-resource"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod

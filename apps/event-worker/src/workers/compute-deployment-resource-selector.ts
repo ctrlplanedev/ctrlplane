@@ -24,7 +24,7 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
     const [acquired] = await withMutex(key, () =>
       db.transaction(async (tx) => {
         await tx
-          .delete(schema.computedEnvironmentResource)
+          .delete(schema.computedDeploymentResource)
           .where(
             eq(schema.computedDeploymentResource.deploymentId, deployment.id),
           );
