@@ -1506,7 +1506,7 @@ export interface operations {
           timeout?: number | null;
           resourceSelector?: {
             [key: string]: unknown;
-          };
+          } | null;
         };
       };
     };

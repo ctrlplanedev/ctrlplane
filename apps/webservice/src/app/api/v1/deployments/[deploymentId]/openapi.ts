@@ -124,6 +124,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   resourceSelector: {
                     type: "object",
                     additionalProperties: true,
+                    nullable: true,
                   },
                 },
               },

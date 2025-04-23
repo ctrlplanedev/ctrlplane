@@ -647,7 +647,8 @@
                   },
                   "resourceSelector": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": true,
+                    "nullable": true
                   }
                 }
               }

@@ -3,6 +3,16 @@ system:
   slug: "{{ prefix }}-deployments"
   description: System for testing deployments
 
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing deployments
+    systemId: "{{ prefix }}-deployments"
+    resourceSelector:
+      type: identifier
+      operator: "contains"
+      value: "{{ prefix }}"
+
 resources:
   - name: qa-resource
     kind: service

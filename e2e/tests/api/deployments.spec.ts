@@ -195,10 +195,29 @@ test.describe("Deployments API", () => {
 
     expect(resources.response.status).toBe(200);
     expect(resources.data?.resources?.length).toBe(1);
-    expect(resources.data?.resources?.[0]?.identifier).toBe(
+    const receivedResource = resources.data?.resources?.[0];
+    expect(receivedResource).toBeDefined();
+    if (!receivedResource) throw new Error("Resource is undefined");
+    expect(receivedResource.identifier).toBe(
       importedEntities.resources.find((r) => r.metadata?.env === "qa")
         ?.identifier,
     );
+
+    const releaseTargets = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      { params: { path: { resourceId: receivedResource.id } } },
+    );
+
+    expect(releaseTargets.response.status).toBe(200);
+    expect(releaseTargets.data?.length).toBe(1);
+    const releaseTarget = releaseTargets.data?.[0];
+    expect(releaseTarget).toBeDefined();
+    if (!releaseTarget) throw new Error("Release target is undefined");
+    expect(releaseTarget.deployment.id).toBe(deploymentId);
+    const matchedEnvironment = importedEntities.environments.find(
+      (e) => e.id === releaseTarget.environment.id,
+    );
+    expect(matchedEnvironment).toBeDefined();
   });
 
   test("should update a deployment's resource selector and update matched resources", async ({
@@ -280,10 +299,29 @@ test.describe("Deployments API", () => {
 
     expect(resources.response.status).toBe(200);
     expect(resources.data?.resources?.length).toBe(1);
-    expect(resources.data?.resources?.[0]?.identifier).toBe(
+    const receivedResource = resources.data?.resources?.[0];
+    expect(receivedResource).toBeDefined();
+    if (!receivedResource) throw new Error("Resource is undefined");
+    expect(receivedResource.identifier).toBe(
       importedEntities.resources.find((r) => r.metadata?.env === "prod")
         ?.identifier,
     );
+
+    const releaseTargets = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      { params: { path: { resourceId: receivedResource.id } } },
+    );
+
+    expect(releaseTargets.response.status).toBe(200);
+    expect(releaseTargets.data?.length).toBe(1);
+    const releaseTarget = releaseTargets.data?.[0];
+    expect(releaseTarget).toBeDefined();
+    if (!releaseTarget) throw new Error("Release target is undefined");
+    expect(releaseTarget.deployment.id).toBe(deploymentId);
+    const matchedEnvironment = importedEntities.environments.find(
+      (e) => e.id === releaseTarget.environment.id,
+    );
+    expect(matchedEnvironment).toBeDefined();
   });
 
   test("should not match deleted resources", async ({
@@ -291,20 +329,32 @@ test.describe("Deployments API", () => {
     page,
     workspace,
   }) => {
-    for (const resource of importedEntities.resources)
-      await api.DELETE(
-        "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-        {
-          params: {
-            path: {
-              workspaceId: workspace.id,
-              identifier: resource.identifier,
-            },
-          },
-        },
-      );
-
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const newResourceIdentifier = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const newResource = await api.POST("/v1/resources", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        kind: "service",
+        identifier: newResourceIdentifier,
+        version: "1.0.0",
+        config: {},
+        workspaceId: workspace.id,
+        metadata: { env: "qa" },
+      },
+    });
+
+    expect(newResource.response.status).toBe(200);
+    expect(newResource.data?.id).toBeDefined();
+    if (!newResource.data?.id) throw new Error("Resource ID is undefined");
+
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: {
+        path: {
+          resourceId: newResource.data.id,
+        },
+      },
+    });
+
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
@@ -323,8 +373,8 @@ test.describe("Deployments API", () => {
             },
             {
               type: "identifier",
-              operator: "starts-with",
-              value: systemPrefix,
+              operator: "equals",
+              value: newResourceIdentifier,
             },
           ],
         },
@@ -355,6 +405,7 @@ test.describe("Deployments API", () => {
   test("should unmatch resources if resource selector is set to null", async ({
     api,
     page,
+    workspace,
   }) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
@@ -391,7 +442,7 @@ test.describe("Deployments API", () => {
 
     await api.PATCH("/v1/deployments/{deploymentId}", {
       params: { path: { deploymentId } },
-      body: { resourceSelector: undefined },
+      body: { resourceSelector: null },
     });
 
     await page.waitForTimeout(10_000);
@@ -401,7 +452,45 @@ test.describe("Deployments API", () => {
       { params: { path: { deploymentId } } },
     );
 
-    expect(resources.response.status).toBe(200);
-    expect(resources.data?.resources?.length).toBe(0);
+    expect(resources.response.status).toBe(400);
+
+    /**
+     * Since the deployment selector is set to null
+     * all resources should actually have release targets now
+     * since the deployment no longer has a specific scope
+     */
+    for (const resource of importedEntities.resources) {
+      console.log(resource);
+      const fetchedResourceResponse = await api.GET(
+        "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+        {
+          params: {
+            path: {
+              workspaceId: workspace.id,
+              identifier: resource.identifier,
+            },
+          },
+        },
+      );
+      expect(fetchedResourceResponse.response.status).toBe(200);
+      const fetchedResource = fetchedResourceResponse.data;
+      expect(fetchedResource).toBeDefined();
+      if (!fetchedResource) throw new Error("Resource is undefined");
+
+      const releaseTargets = await api.GET(
+        "/v1/resources/{resourceId}/release-targets",
+        { params: { path: { resourceId: fetchedResource.id } } },
+      );
+      expect(releaseTargets.response.status).toBe(200);
+      expect(releaseTargets.data?.length).toBe(1);
+      const releaseTarget = releaseTargets.data?.[0];
+      expect(releaseTarget).toBeDefined();
+      if (!releaseTarget) throw new Error("Release target is undefined");
+      expect(releaseTarget.deployment.id).toBe(deploymentId);
+      const matchedEnvironment = importedEntities.environments.find(
+        (e) => e.id === releaseTarget.environment.id,
+      );
+      expect(matchedEnvironment).toBeDefined();
+    }
   });
 });
