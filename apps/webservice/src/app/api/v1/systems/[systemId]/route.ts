@@ -70,10 +70,10 @@ export const PATCH = request()
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(({ can, extra: { params } }) =>
+    authz(({ can, params }) =>
       can
         .perform(Permission.SystemDelete)
-        .on({ type: "system", id: params.systemId }),
+        .on({ type: "system", id: params.systemId ?? "" }),
     ),
   )
   .handle<unknown, { params: Promise<{ systemId: string }> }>(
