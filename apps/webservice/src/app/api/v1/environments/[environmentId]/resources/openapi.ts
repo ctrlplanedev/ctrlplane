@@ -32,16 +32,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   properties: {
                     resources: {
                       type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          name: { type: "string" },
-                          identifier: { type: "string" },
-                          kind: { type: "string" },
-                          version: { type: "string" },
-                        },
-                      },
+                      items: { $ref: "#/components/schemas/Resource" },
                     },
                     count: { type: "number" },
                   },

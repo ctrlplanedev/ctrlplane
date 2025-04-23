@@ -828,24 +828,7 @@
                     "resources": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "identifier": {
-                            "type": "string"
-                          },
-                          "kind": {
-                            "type": "string"
-                          },
-                          "version": {
-                            "type": "string"
-                          }
-                        }
+                        "$ref": "#/components/schemas/Resource"
                       }
                     },
                     "count": {
@@ -1095,24 +1078,7 @@
                     "resources": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "identifier": {
-                            "type": "string"
-                          },
-                          "kind": {
-                            "type": "string"
-                          },
-                          "version": {
-                            "type": "string"
-                          }
-                        }
+                        "$ref": "#/components/schemas/Resource"
                       }
                     },
                     "count": {

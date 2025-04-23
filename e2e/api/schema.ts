@@ -1621,13 +1621,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            resources?: {
-              id?: string;
-              name?: string;
-              identifier?: string;
-              kind?: string;
-              version?: string;
-            }[];
+            resources?: components["schemas"]["Resource"][];
             count?: number;
           };
         };
@@ -1822,13 +1816,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            resources?: {
-              id?: string;
-              name?: string;
-              identifier?: string;
-              kind?: string;
-              version?: string;
-            }[];
+            resources?: components["schemas"]["Resource"][];
             count?: number;
           };
         };
