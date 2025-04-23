@@ -163,7 +163,7 @@ test.describe("Environments API", () => {
     });
 
     expect(updateResponse.response.status).toBe(200);
-    
+
     // Note: The API creates a new environment rather than updating the existing one
     const updatedEnvironmentId = updateResponse.data!.id;
     expect(updatedEnvironmentId).toBeDefined();
@@ -219,7 +219,7 @@ test.describe("Environments API", () => {
     });
 
     expect(updateResponse.response.status).toBe(200);
-    
+
     // Note: It appears that the POST endpoint creates a new environment rather than updating the existing one
     const updatedEnvironmentId = updateResponse.data!.id;
     expect(updatedEnvironmentId).toBeDefined();

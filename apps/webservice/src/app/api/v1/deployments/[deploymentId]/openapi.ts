@@ -103,7 +103,30 @@ export const openapi: Swagger.SwaggerV3 = {
           required: true,
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/UpdateDeployment" },
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  slug: { type: "string" },
+                  description: { type: "string" },
+                  systemId: { type: "string", format: "uuid" },
+                  jobAgentId: {
+                    type: "string",
+                    format: "uuid",
+                    nullable: true,
+                  },
+                  jobAgentConfig: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
+                  retryCount: { type: "integer" },
+                  timeout: { type: "integer", nullable: true },
+                  resourceSelector: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
+                },
+              },
             },
           },
         },

@@ -41,4 +41,69 @@ test.describe("Deployments API", () => {
     expect(deployment.data?.name).toBe(deploymentName);
     expect(deployment.data?.slug).toBe(deploymentName);
   });
+
+  test("should get a deployment", async ({ api }) => {
+    const deploymentName = faker.string.alphanumeric(10);
+    const deployment = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+
+    const deploymentId = deployment.data?.id;
+    if (!deploymentId) throw new Error("Deployment ID is undefined");
+
+    const getDeployment = await api.GET("/v1/deployments/{deploymentId}", {
+      params: {
+        path: {
+          deploymentId,
+        },
+      },
+    });
+
+    expect(getDeployment.response.status).toBe(200);
+    expect(getDeployment.data?.id).toBe(deploymentId);
+    expect(getDeployment.data?.name).toBe(deploymentName);
+    expect(getDeployment.data?.slug).toBe(deploymentName);
+  });
+
+  test("should update a deployment's basic fields", async ({ api }) => {
+    const deploymentName = faker.string.alphanumeric(10);
+    const deployment = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+
+    const deploymentId = deployment.data?.id;
+    if (!deploymentId) throw new Error("Deployment ID is undefined");
+
+    const newDeploymentName = faker.string.alphanumeric(10);
+    const newDescription = faker.lorem.sentence();
+    const updateDeployment = await api.PATCH("/v1/deployments/{deploymentId}", {
+      params: {
+        path: {
+          deploymentId,
+        },
+      },
+      body: {
+        name: newDeploymentName,
+        slug: newDeploymentName,
+        description: newDescription,
+        retryCount: 1,
+        timeout: 1000,
+      },
+    });
+
+    expect(updateDeployment.response.status).toBe(200);
+    expect(updateDeployment.data?.id).toBe(deploymentId);
+    expect(updateDeployment.data?.name).toBe(newDeploymentName);
+    expect(updateDeployment.data?.description).toBe(newDescription);
+    expect(updateDeployment.data?.retryCount).toBe(1);
+    expect(updateDeployment.data?.timeout).toBe(1000);
+  });
 });

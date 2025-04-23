@@ -1467,7 +1467,23 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UpdateDeployment"];
+        "application/json": {
+          name?: string;
+          slug?: string;
+          description?: string;
+          /** Format: uuid */
+          systemId?: string;
+          /** Format: uuid */
+          jobAgentId?: string | null;
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          retryCount?: number;
+          timeout?: number | null;
+          resourceSelector?: {
+            [key: string]: unknown;
+          };
+        };
       };
     };
     responses: {

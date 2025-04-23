@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import type { z } from "zod";
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
 
@@ -8,6 +9,7 @@ import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
+import { parseBody } from "../../body-parser";
 import { request } from "../../middleware";
 
 export const GET = request()
@@ -87,49 +89,39 @@ export const PATCH = request()
         .on({ type: "deployment", id: params.deploymentId ?? "" });
     }),
   )
-  .handle<{ db: Tx }, { params: Promise<{ deploymentId: string }> }>(
-    async ({ db, req }, { params }) => {
-      try {
-        const { deploymentId } = await params;
+  .use(parseBody(SCHEMA.updateDeployment))
+  .handle<
+    { db: Tx; body: z.infer<typeof SCHEMA.updateDeployment> },
+    { params: Promise<{ deploymentId: string }> }
+  >(async ({ db, body }, { params }) => {
+    try {
+      const { deploymentId } = await params;
 
-        const body = await req.json();
+      const deployment = await db
+        .select()
+        .from(SCHEMA.deployment)
+        .where(eq(SCHEMA.deployment.id, deploymentId))
+        .then(takeFirstOrNull);
 
-        const result = SCHEMA.updateDeployment.safeParse(body);
-        if (!result.success)
-          return NextResponse.json(
-            {
-              error: "Invalid request data",
-              details: result.error.format(),
-            },
-            { status: httpStatus.BAD_REQUEST },
-          );
-
-        const deployment = await db
-          .select()
-          .from(SCHEMA.deployment)
-          .where(eq(SCHEMA.deployment.id, deploymentId))
-          .then(takeFirstOrNull);
-
-        if (deployment == null)
-          return NextResponse.json(
-            { error: "Deployment not found" },
-            { status: httpStatus.NOT_FOUND },
-          );
-
-        const updatedDeployment = await db
-          .update(SCHEMA.deployment)
-          .set(body)
-          .where(eq(SCHEMA.deployment.id, deploymentId))
-          .returning()
-          .then(takeFirstOrNull);
-
-        return NextResponse.json(updatedDeployment);
-      } catch (error) {
-        logger.error("Failed to update deployment", { error: error });
+      if (deployment == null)
         return NextResponse.json(
-          { error: "Failed to update deployment" },
-          { status: httpStatus.INTERNAL_SERVER_ERROR },
+          { error: "Deployment not found" },
+          { status: httpStatus.NOT_FOUND },
         );
-      }
-    },
-  );
+
+      const updatedDeployment = await db
+        .update(SCHEMA.deployment)
+        .set(body)
+        .where(eq(SCHEMA.deployment.id, deploymentId))
+        .returning()
+        .then(takeFirstOrNull);
+
+      return NextResponse.json(updatedDeployment);
+    } catch (error) {
+      logger.error("Failed to update deployment", { error: error });
+      return NextResponse.json(
+        { error: "Failed to update deployment" },
+        { status: httpStatus.INTERNAL_SERVER_ERROR },
+      );
+    }
+  });
