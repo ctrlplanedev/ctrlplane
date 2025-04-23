@@ -8,7 +8,6 @@ import { eq, inArray, takeFirstOrNull, upsertEnv } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { createJobsForNewEnvironment } from "@ctrlplane/job-dispatch";
-import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -32,63 +31,51 @@ export const POST = request()
   )
   .handle<{ user: User; can: PermissionChecker; body: z.infer<typeof body> }>(
     async ({ db, body }) => {
-      try {
-        const existingEnv = await db
-          .select()
-          .from(schema.environment)
-          .where(eq(schema.environment.name, body.name))
-          .then(takeFirstOrNull);
+      const existingEnv = await db
+        .select()
+        .from(schema.environment)
+        .where(eq(schema.environment.name, body.name))
+        .then(takeFirstOrNull);
 
-        const environment = await db.transaction(async (tx) => {
-          const releaseChannels = body.releaseChannels?.length ?? 0;
-          const deploymentVersionChannels =
-            body.deploymentVersionChannels?.length ?? 0;
-          const versionChannels =
-            releaseChannels + deploymentVersionChannels > 0
-              ? await tx
-                  .select()
-                  .from(schema.deploymentVersionChannel)
-                  .where(
-                    inArray(schema.deploymentVersionChannel.id, [
-                      ...(body.releaseChannels ?? []),
-                      ...(body.deploymentVersionChannels ?? []),
-                    ]),
-                  )
-                  .then((rows) =>
-                    _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
-                      channelId: r.id,
-                      deploymentId: r.deploymentId,
-                    })),
-                  )
-              : [];
+      const environment = await db.transaction(async (tx) => {
+        const releaseChannels = body.releaseChannels?.length ?? 0;
+        const deploymentVersionChannels =
+          body.deploymentVersionChannels?.length ?? 0;
+        const versionChannels =
+          releaseChannels + deploymentVersionChannels > 0
+            ? await tx
+                .select()
+                .from(schema.deploymentVersionChannel)
+                .where(
+                  inArray(schema.deploymentVersionChannel.id, [
+                    ...(body.releaseChannels ?? []),
+                    ...(body.deploymentVersionChannels ?? []),
+                  ]),
+                )
+                .then((rows) =>
+                  _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
+                    channelId: r.id,
+                    deploymentId: r.deploymentId,
+                  })),
+                )
+            : [];
 
-          const environment = await upsertEnv(tx, { ...body, versionChannels });
+        const environment = await upsertEnv(tx, { ...body, versionChannels });
 
-          await createJobsForNewEnvironment(tx, environment);
-          const { metadata } = body;
-          return { ...environment, metadata };
+        await createJobsForNewEnvironment(tx, environment);
+        const { metadata } = body;
+        return { ...environment, metadata };
+      });
+
+      if (existingEnv != null)
+        await getQueue(Channel.UpdateEnvironment).add(environment.id, {
+          ...environment,
+          oldSelector: existingEnv.resourceSelector,
         });
 
-        if (existingEnv != null)
-          await getQueue(Channel.UpdateEnvironment).add(environment.id, {
-            ...environment,
-            oldSelector: existingEnv.resourceSelector,
-          });
+      if (existingEnv == null)
+        await getQueue(Channel.NewEnvironment).add(environment.id, environment);
 
-        if (existingEnv == null)
-          await getQueue(Channel.NewEnvironment).add(
-            environment.id,
-            environment,
-          );
-
-        return NextResponse.json(environment);
-      } catch (e) {
-        const error = e instanceof Error ? e.message : e;
-        logger.error("Failed to create environment", { error });
-        return NextResponse.json(
-          { error: "Failed to create environment" },
-          { status: 500 },
-        );
-      }
+      return NextResponse.json(environment);
     },
   );

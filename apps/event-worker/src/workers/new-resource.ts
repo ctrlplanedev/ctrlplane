@@ -1,7 +1,7 @@
-import { selector } from "@ctrlplane/db";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import { eq } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
+import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
 /**
  * Worker that processes new resource events.
@@ -19,13 +19,28 @@ export const newResourceWorker = createWorker(
   Channel.NewResource,
   async ({ data: resource }) => {
     const { workspaceId } = resource;
-    await selector().compute().allResourceSelectors(workspaceId);
 
-    const releaseTargets = await selector()
-      .compute()
-      .resources([resource])
-      .releaseTargets();
+    const systems = await db.query.system.findMany({
+      where: eq(schema.system.workspaceId, workspaceId),
+      with: { environments: true, deployments: true },
+    });
+    const environments = systems.flatMap((s) => s.environments);
 
-    await dispatchEvaluateJobs(releaseTargets);
+    for (const environment of environments) {
+      await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
+        environment.id,
+        environment,
+        { jobId: environment.id },
+      );
+    }
+
+    const deployments = systems.flatMap((s) => s.deployments);
+    for (const deployment of deployments) {
+      await getQueue(Channel.ComputeDeploymentResourceSelector).add(
+        deployment.id,
+        deployment,
+        { jobId: deployment.id },
+      );
+    }
   },
 );

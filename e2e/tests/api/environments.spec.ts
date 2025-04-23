@@ -9,11 +9,12 @@ import {
 } from "../../api";
 import { test } from "../fixtures";
 
+const yamlPath = path.join(__dirname, "environments.spec.yaml");
+
 test.describe("Environments API", () => {
   let importedEntities: ImportedEntities;
 
   test.beforeAll(async ({ api, workspace }) => {
-    const yamlPath = path.join(__dirname, "environments.spec.yaml");
     importedEntities = await importEntitiesFromYaml(
       api,
       workspace.id,
@@ -65,13 +66,10 @@ test.describe("Environments API", () => {
       },
     });
 
-    if (
-      environmentResponse.response.status !== 200 ||
-      environmentResponse.data == null
-    )
-      throw new Error("Failed to create environment");
+    expect(environmentResponse.response.status).toBe(200);
+    expect(environmentResponse.data?.id).toBeDefined();
 
-    const environment = environmentResponse.data;
+    const environment = environmentResponse.data!;
 
     await page.waitForTimeout(10_000);
 

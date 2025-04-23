@@ -15,6 +15,7 @@ test.describe("Resource Selectors API", () => {
       workspace.id,
       yamlPath,
     );
+
     // wait for resources to be processed
     await new Promise((resolve) => setTimeout(resolve, 20_000));
   });
