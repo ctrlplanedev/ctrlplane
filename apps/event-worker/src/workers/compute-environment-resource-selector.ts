@@ -27,6 +27,7 @@ import { withMutex } from "../utils/with-mutex.js";
 export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
   Channel.ComputeEnvironmentResourceSelector,
   async (job) => {
+    console.log("computeEnvironmentResourceSelectorWorkerEvent", job.data);
     const { id } = job.data;
 
     const environment = await db.query.environment.findFirst({
@@ -68,9 +69,11 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           resourceId: r.id,
         }));
 
+        if (computedEnvironmentResources.length === 0) return;
         await tx
           .insert(schema.computedEnvironmentResource)
-          .values(computedEnvironmentResources);
+          .values(computedEnvironmentResources)
+          .onConflictDoNothing();
       });
     });
 
