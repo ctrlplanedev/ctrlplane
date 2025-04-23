@@ -917,8 +917,10 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       metadata?: {
-        [key: string]: unknown;
+        [key: string]: string;
       };
+      /** @enum {string} */
+      status?: "building" | "ready" | "failed";
     };
     Policy: {
       /**
@@ -1289,6 +1291,28 @@ export interface operations {
           "application/json": components["schemas"]["DeploymentVersion"];
         };
       };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
   };
   upsertDeploymentVersion: {
@@ -1323,7 +1347,7 @@ export interface operations {
     };
     responses: {
       /** @description OK */
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
@@ -1331,15 +1355,14 @@ export interface operations {
           "application/json": components["schemas"]["DeploymentVersion"];
         };
       };
-      /** @description Deployment version already exists */
-      409: {
+      /** @description Internal server error */
+      500: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
             error?: string;
-            id?: string;
           };
         };
       };

@@ -129,7 +129,11 @@ export const openapi: Swagger.SwaggerV3 = {
           jobAgentConfig: { type: "object", additionalProperties: true },
           deploymentId: { type: "string", format: "uuid" },
           createdAt: { type: "string", format: "date-time" },
-          metadata: { type: "object", additionalProperties: true },
+          metadata: {
+            type: "object",
+            additionalProperties: { type: "string" },
+          },
+          status: { type: "string", enum: ["building", "ready", "failed"] },
         },
         required: [
           "id",
