@@ -87,4 +87,67 @@ test.describe("Environments API", () => {
         ?.identifier,
     );
   });
+
+  test("should match not match deleted resources", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    for (const resource of importedEntities.resources) {
+      await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+        {
+          params: {
+            path: {
+              workspaceId: workspace.id,
+              identifier: resource.identifier,
+            },
+          },
+        },
+      );
+    }
+
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const environmentResponse = await api.POST("/v1/environments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "qa",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    if (
+      environmentResponse.response.status !== 200 ||
+      environmentResponse.data == null
+    )
+      throw new Error("Failed to create environment");
+
+    const environment = environmentResponse.data;
+
+    await page.waitForTimeout(10_000);
+
+    const resourcesResponse = await api.GET(
+      "/v1/environments/{environmentId}/resources",
+      { params: { path: { environmentId: environment.id } } },
+    );
+
+    expect(resourcesResponse.response.status).toBe(200);
+    expect(resourcesResponse.data?.resources?.length).toBe(0);
+  });
 });
