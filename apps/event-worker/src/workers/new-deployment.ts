@@ -6,7 +6,7 @@ export const newDeploymentWorker = createWorker(
     await getQueue(Channel.ComputeDeploymentResourceSelector).add(
       job.data.id,
       job.data,
-      { jobId: job.data.id },
+      { deduplication: { id: job.data.id, ttl: 500 } },
     );
   },
 );

@@ -1,5 +1,3 @@
-import ms from "ms";
-
 import { and, eq, inArray, isNull, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
@@ -85,7 +83,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
       await getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
         job.name,
         job.data,
-        { delay: ms("1s"), jobId: job.id },
+        { deduplication: { id: job.data.id, ttl: 500 } },
       );
       return;
     }
@@ -103,7 +101,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
     const jobs = releaseTargets.map((rt) => ({
       name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
       data: rt,
-      opts: { delay: ms("1s"), jobId: rt.id },
+      opts: { deduplication: { id: rt.id, ttl: 500 } },
     }));
     await getQueue(Channel.EvaluateReleaseTarget).addBulk(jobs);
   },

@@ -55,11 +55,11 @@ export const updateEnvironmentWorker = createWorker(
     try {
       const { oldSelector, resourceSelector } = job.data;
       if (_.isEqual(oldSelector, resourceSelector)) return;
-
-      getQueue(Channel.ComputeEnvironmentResourceSelector).add(
+      console.log("updateEnvironmentWorker");
+      await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
         job.data.id,
         job.data,
-        { jobId: job.data.id },
+        { deduplication: { id: job.data.id, ttl: 500 } },
       );
 
       const exitedResources = await db.query.resource.findMany({

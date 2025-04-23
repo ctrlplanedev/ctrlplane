@@ -1,5 +1,3 @@
-import ms from "ms";
-
 import { and, eq, isNull, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
@@ -27,7 +25,10 @@ import { withMutex } from "../utils/with-mutex.js";
 export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
   Channel.ComputeEnvironmentResourceSelector,
   async (job) => {
-    console.log("computeEnvironmentResourceSelectorWorkerEvent", job.data);
+    console.log(
+      "computeEnvironmentResourceSelectorWorkerEvent",
+      JSON.stringify(job.data, null, 2),
+    );
     const { id } = job.data;
 
     const environment = await db.query.environment.findFirst({
@@ -81,7 +82,7 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
       await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
         job.name,
         job.data,
-        { delay: ms("1s"), jobId: job.id },
+        { deduplication: { id: job.data.id, ttl: 500 } },
       );
       return;
     }
@@ -89,7 +90,7 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
     getQueue(Channel.ComputeSystemsReleaseTargets).add(
       environment.system.id,
       environment.system,
-      { delay: ms("1s"), jobId: environment.system.id },
+      { deduplication: { id: job.data.id, ttl: 500 } },
     );
   },
 );

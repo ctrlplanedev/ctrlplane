@@ -27,7 +27,7 @@ export const updatedResourceWorker = createWorker(
     await getQueue(Channel.ComputeDeploymentResourceSelector).add(
       resource.id,
       resource,
-      { jobId: resource.id },
+      { deduplication: { id: resource.id, ttl: 500 } },
     );
 
     // const currentReleaseTargets = await db.query.releaseTarget.findMany({

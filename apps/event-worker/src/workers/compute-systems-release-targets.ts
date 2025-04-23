@@ -1,5 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import ms from "ms";
 
 import { and, eq, inArray, isNull, or } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -122,7 +121,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
       await getQueue(Channel.ComputeSystemsReleaseTargets).add(
         job.name,
         job.data,
-        { delay: ms("1s"), jobId: job.id },
+        { deduplication: { id: job.data.id, ttl: 500 } },
       );
       return;
     }
@@ -143,7 +142,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
       getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
         policyTarget.id,
         policyTarget,
-        { delay: ms("500ms"), jobId: policyTarget.id },
+        { deduplication: { id: policyTarget.id, ttl: 500 } },
       );
     }
   },
