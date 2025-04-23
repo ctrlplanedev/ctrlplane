@@ -86,6 +86,99 @@ test.describe("Environments API", () => {
     );
   });
 
+  test("should update environment selector and match new resources", async ({ api, page }) => {
+    // First create an environment with a selector for QA resources
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const environmentResponse = await api.POST("/v1/environments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "qa",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(environmentResponse.response.status).toBe(200);
+    expect(environmentResponse.data?.id).toBeDefined();
+
+    const environment = environmentResponse.data!;
+
+    // Verify initial resources (should only be the QA resource)
+    await page.waitForTimeout(10_000);
+
+    const initialResourcesResponse = await api.GET(
+      "/v1/environments/{environmentId}/resources",
+      { params: { path: { environmentId: environment.id } } },
+    );
+
+    expect(initialResourcesResponse.response.status).toBe(200);
+    expect(initialResourcesResponse.data?.resources?.length).toBe(1);
+    expect(initialResourcesResponse.data?.resources?.[0]?.identifier).toBe(
+      importedEntities.resources.find((r) => r.metadata?.env === "qa")
+        ?.identifier,
+    );
+
+    // Now update the environment to select prod resources instead
+    const updateResponse = await api.POST("/v1/environments", {
+      body: {
+        id: environment.id,
+        name: environment.name,
+        systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "prod",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(updateResponse.response.status).toBe(200);
+    expect(updateResponse.data?.id).toBeDefined();
+
+    // Wait longer for selector compute to complete (30 seconds)
+    await page.waitForTimeout(30_000);
+
+    // Check if the resources have been updated
+    const updatedResourcesResponse = await api.GET(
+      "/v1/environments/{environmentId}/resources",
+      { params: { path: { environmentId: environment.id } } },
+    );
+
+    expect(updatedResourcesResponse.response.status).toBe(200);
+    expect(updatedResourcesResponse.data?.resources?.length).toBe(1);
+    expect(updatedResourcesResponse.data?.resources?.[0]?.identifier).toBe(
+      importedEntities.resources.find((r) => r.metadata?.env === "prod")
+        ?.identifier,
+    );
+  });
+
   test("should match not match deleted resources", async ({
     api,
     page,
