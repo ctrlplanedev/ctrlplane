@@ -526,6 +526,23 @@ export interface paths {
     patch: operations["updateResource"];
     trace?: never;
   };
+  "/v1/resources/{resourceId}/release-targets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get release targets for a resource */
+    get: operations["getReleaseTargets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/resources": {
     parameters: {
       query?: never;
@@ -1089,6 +1106,13 @@ export interface components {
       versionAnyApprovals?: components["schemas"]["VersionAnyApproval"][];
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
+    };
+    ReleaseTarget: {
+      /** Format: uuid */
+      id: string;
+      resource: components["schemas"]["Resource"];
+      environment: components["schemas"]["Environment"];
+      deployment: components["schemas"]["Deployment"];
     };
   };
   responses: never;
@@ -3040,6 +3064,29 @@ export interface operations {
           "application/json": {
             error: string;
           };
+        };
+      };
+    };
+  };
+  getReleaseTargets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource ID */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTarget"][];
         };
       };
     };
