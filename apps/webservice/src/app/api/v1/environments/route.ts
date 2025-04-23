@@ -31,9 +31,15 @@ export const POST = request()
     ),
   )
   .handle<{ user: User; can: PermissionChecker; body: z.infer<typeof body> }>(
-    ({ db, body }) =>
-      db.transaction(async (tx) => {
-        try {
+    async ({ db, body }) => {
+      try {
+        const existingEnv = await db
+          .select()
+          .from(schema.environment)
+          .where(eq(schema.environment.name, body.name))
+          .then(takeFirstOrNull);
+
+        const environment = await db.transaction(async (tx) => {
           const releaseChannels = body.releaseChannels?.length ?? 0;
           const deploymentVersionChannels =
             body.deploymentVersionChannels?.length ?? 0;
@@ -56,36 +62,33 @@ export const POST = request()
                   )
               : [];
 
-          const existingEnv = await db
-            .select()
-            .from(schema.environment)
-            .where(eq(schema.environment.name, body.name))
-            .then(takeFirstOrNull);
-
           const environment = await upsertEnv(tx, { ...body, versionChannels });
-
-          if (existingEnv != null)
-            await getQueue(Channel.UpdateEnvironment).add(environment.id, {
-              ...environment,
-              oldSelector: existingEnv.resourceSelector,
-            });
-
-          if (existingEnv == null)
-            await getQueue(Channel.NewEnvironment).add(
-              environment.id,
-              environment,
-            );
 
           await createJobsForNewEnvironment(tx, environment);
           const { metadata } = body;
-          return NextResponse.json({ ...environment, metadata });
-        } catch (e) {
-          const error = e instanceof Error ? e.message : e;
-          logger.error("Failed to create environment", { error });
-          return NextResponse.json(
-            { error: "Failed to create environment" },
-            { status: 500 },
+          return { ...environment, metadata };
+        });
+
+        if (existingEnv != null)
+          await getQueue(Channel.UpdateEnvironment).add(environment.id, {
+            ...environment,
+            oldSelector: existingEnv.resourceSelector,
+          });
+
+        if (existingEnv == null)
+          await getQueue(Channel.NewEnvironment).add(
+            environment.id,
+            environment,
           );
-        }
-      }),
+
+        return NextResponse.json(environment);
+      } catch (e) {
+        const error = e instanceof Error ? e.message : e;
+        logger.error("Failed to create environment", { error });
+        return NextResponse.json(
+          { error: "Failed to create environment" },
+          { status: 500 },
+        );
+      }
+    },
   );
