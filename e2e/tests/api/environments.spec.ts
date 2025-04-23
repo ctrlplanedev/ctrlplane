@@ -80,10 +80,31 @@ test.describe("Environments API", () => {
 
     expect(resourcesResponse.response.status).toBe(200);
     expect(resourcesResponse.data?.resources?.length).toBe(1);
-    expect(resourcesResponse.data?.resources?.[0]?.identifier).toBe(
+    const receivedResource = resourcesResponse.data?.resources?.[0];
+    expect(receivedResource).toBeDefined();
+    if (!receivedResource) throw new Error("No resource found");
+    expect(receivedResource.identifier).toBe(
       importedEntities.resources.find((r) => r.metadata?.env === "qa")
         ?.identifier,
     );
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      { params: { path: { resourceId: receivedResource.id } } },
+    );
+
+    expect(releaseTargetsResponse.response.status).toBe(200);
+    expect(releaseTargetsResponse.data?.length).toBe(1);
+    const releaseTarget = releaseTargetsResponse.data?.[0];
+    expect(releaseTarget).toBeDefined();
+    if (!releaseTarget) throw new Error("No release target found");
+    expect(releaseTarget.environment.id).toBe(environment.id);
+    const deploymentMatch = importedEntities.deployments.find(
+      (d) => d.id === releaseTarget.deployment.id,
+    );
+    expect(deploymentMatch).toBeDefined();
+    if (!deploymentMatch) throw new Error("No deployment match found");
+    expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
   });
 
   test("should update environment selector and match new resources", async ({
@@ -177,10 +198,91 @@ test.describe("Environments API", () => {
 
     expect(updatedResourcesResponse.response.status).toBe(200);
     expect(updatedResourcesResponse.data?.resources?.length).toBe(1);
-    expect(updatedResourcesResponse.data?.resources?.[0]?.identifier).toBe(
+    const receivedResource = updatedResourcesResponse.data?.resources?.[0];
+    expect(receivedResource).toBeDefined();
+    if (!receivedResource) throw new Error("No resource found");
+    expect(receivedResource.identifier).toBe(
       importedEntities.resources.find((r) => r.metadata?.env === "prod")
         ?.identifier,
     );
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      { params: { path: { resourceId: receivedResource.id } } },
+    );
+
+    expect(releaseTargetsResponse.response.status).toBe(200);
+    expect(releaseTargetsResponse.data?.length).toBe(1);
+    const releaseTarget = releaseTargetsResponse.data?.[0];
+    expect(releaseTarget).toBeDefined();
+    if (!releaseTarget) throw new Error("No release target found");
+    expect(releaseTarget.environment.id).toBe(updatedEnvironmentId);
+    const deploymentMatch = importedEntities.deployments.find(
+      (d) => d.id === releaseTarget.deployment.id,
+    );
+    expect(deploymentMatch).toBeDefined();
+    if (!deploymentMatch) throw new Error("No deployment match found");
+    expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
+  });
+
+  test("should unmatch resources if environment selector is set to null", async ({
+    api,
+  }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const environmentResponse = await api.POST("/v1/environments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "qa",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(environmentResponse.response.status).toBe(200);
+    expect(environmentResponse.data?.id).toBeDefined();
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    const environment = environmentResponse.data!;
+
+    const updateResponse = await api.POST("/v1/environments", {
+      body: {
+        id: environment.id,
+        name: environment.name,
+        systemId: importedEntities.system.id,
+        resourceSelector: undefined,
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    expect(updateResponse.response.status).toBe(200);
+
+    const updatedEnvironment = updateResponse.data!;
+    expect(updatedEnvironment.resourceSelector).toBeNull();
+
+    const resourcesResponse = await api.GET(
+      "/v1/environments/{environmentId}/resources",
+      { params: { path: { environmentId: updatedEnvironment.id } } },
+    );
+
+    // api returns 400 if environment has no resource selector
+    expect(resourcesResponse.response.status).toBe(400);
   });
 
   test("should edit environment name and description", async ({ api }) => {
