@@ -1,10 +1,9 @@
 import type { Tx } from "@ctrlplane/db";
 import type { z } from "zod";
 
-import { buildConflictUpdateColumns, selector, takeFirst } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import { logger } from "@ctrlplane/logger";
 
 function getDatePartsInTimeZone(date: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -46,8 +45,6 @@ const getLocalDateAsUTC = (date: Date, timeZone: string) => {
 };
 
 type CreatePolicyInput = z.infer<typeof SCHEMA.createPolicy>;
-
-const log = logger.child({ module: "policies/create" });
 
 const insertDenyWindows = async (
   tx: Tx,
@@ -180,17 +177,6 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
           "requiredApprovalsCount",
         ]),
       });
-
-  selector()
-    .compute()
-    .policies([policyId])
-    .releaseTargetSelectors()
-    .catch((e) =>
-      log.error(
-        e,
-        `Error replacing release target selectors for policy ${policyId}`,
-      ),
-    );
 
   getQueue(Channel.NewPolicy).add(policy.id, policy);
 

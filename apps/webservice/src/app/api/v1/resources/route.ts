@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
 import { z } from "zod";
 
-import { and, eq, selector, upsertResources } from "@ctrlplane/db";
+import { and, eq, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -72,11 +72,10 @@ export const POST = request()
           existingResource != null
             ? Channel.UpdatedResource
             : Channel.NewResource;
-        const queue = getQueue(queueChannel);
-        selector()
-          .compute()
-          .allResourceSelectors(ctx.body.workspaceId)
-          .then(() => queue.add(insertedResource.id, insertedResource));
+
+        getQueue(queueChannel).add(insertedResource.id, insertedResource, {
+          jobId: insertedResource.id,
+        });
 
         const resourceWithMeta = {
           ...insertedResource,

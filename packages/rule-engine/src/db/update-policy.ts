@@ -1,13 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
 import { eq } from "drizzle-orm";
 
-import { buildConflictUpdateColumns, selector, takeFirst } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import { getLocalDateAsUTC } from "../utils/time-utils.js";
-
-const log = logger.child({ module: "policies/update" });
 
 const updateTargets = async (
   tx: Tx,
@@ -190,17 +187,6 @@ export const updatePolicyInTx = async (
   });
 
   if (updatedPolicy == null) throw new Error("Policy not found");
-
-  selector()
-    .compute()
-    .policies([policy.id])
-    .releaseTargetSelectors()
-    .catch((e) =>
-      log.error(
-        e,
-        `Error replacing release target selectors for policy ${policy.id}`,
-      ),
-    );
 
   return updatedPolicy;
 };
