@@ -348,11 +348,7 @@ test.describe("Deployments API", () => {
     if (!newResource.data?.id) throw new Error("Resource ID is undefined");
 
     await api.DELETE("/v1/resources/{resourceId}", {
-      params: {
-        path: {
-          resourceId: newResource.data.id,
-        },
-      },
+      params: { path: { resourceId: newResource.data.id } },
     });
 
     const deploymentName = faker.string.alphanumeric(10);

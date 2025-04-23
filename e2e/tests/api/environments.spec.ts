@@ -377,21 +377,28 @@ test.describe("Environments API", () => {
     api,
     workspace,
   }) => {
-    for (const resource of importedEntities.resources) {
-      await api.DELETE(
-        "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-        {
-          params: {
-            path: {
-              workspaceId: workspace.id,
-              identifier: resource.identifier,
-            },
-          },
-        },
-      );
-    }
-
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const newResourceIdentifier = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const newResource = await api.POST("/v1/resources", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        kind: "service",
+        identifier: newResourceIdentifier,
+        version: "1.0.0",
+        config: {},
+        workspaceId: workspace.id,
+        metadata: { env: "qa" },
+      },
+    });
+
+    expect(newResource.response.status).toBe(200);
+    expect(newResource.data?.id).toBeDefined();
+    if (!newResource.data?.id) throw new Error("Resource ID is undefined");
+
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: newResource.data.id } },
+    });
+
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
@@ -408,8 +415,8 @@ test.describe("Environments API", () => {
             },
             {
               type: "identifier",
-              operator: "starts-with",
-              value: systemPrefix,
+              operator: "equals",
+              value: newResourceIdentifier,
             },
           ],
         },
