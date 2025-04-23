@@ -1681,7 +1681,9 @@ export interface operations {
            *       "key": "value"
            *     }
            */
-          resourceSelector?: Record<string, never>;
+          resourceSelector?: {
+            [key: string]: unknown;
+          };
         };
       };
     };

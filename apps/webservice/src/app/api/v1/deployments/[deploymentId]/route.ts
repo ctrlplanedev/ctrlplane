@@ -3,8 +3,9 @@ import type { z } from "zod";
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
 
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -114,7 +115,12 @@ export const PATCH = request()
         .set(body)
         .where(eq(SCHEMA.deployment.id, deploymentId))
         .returning()
-        .then(takeFirstOrNull);
+        .then(takeFirst);
+
+      await getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
+        ...updatedDeployment,
+        oldSelector: deployment.resourceSelector,
+      });
 
       return NextResponse.json(updatedDeployment);
     } catch (error) {

@@ -53,6 +53,7 @@ test.describe("Deployments API", () => {
     });
 
     const deploymentId = deployment.data?.id;
+    expect(deploymentId).toBeDefined();
     if (!deploymentId) throw new Error("Deployment ID is undefined");
 
     const getDeployment = await api.GET("/v1/deployments/{deploymentId}", {
@@ -80,6 +81,7 @@ test.describe("Deployments API", () => {
     });
 
     const deploymentId = deployment.data?.id;
+    expect(deploymentId).toBeDefined();
     if (!deploymentId) throw new Error("Deployment ID is undefined");
 
     const newDeploymentName = faker.string.alphanumeric(10);
@@ -118,6 +120,7 @@ test.describe("Deployments API", () => {
     });
 
     const deploymentId = deployment.data?.id;
+    expect(deploymentId).toBeDefined();
     if (!deploymentId) throw new Error("Deployment ID is undefined");
 
     const deleteDeployment = await api.DELETE(
@@ -143,5 +146,143 @@ test.describe("Deployments API", () => {
     });
 
     expect(getDeployment.data).toBeUndefined();
+  });
+
+  test("should match resources to a deployment", async ({ api, page }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = faker.string.alphanumeric(10);
+    const deployment = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "qa",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    await page.waitForTimeout(10_000);
+
+    const deploymentId = deployment.data?.id;
+    expect(deploymentId).toBeDefined();
+    if (!deploymentId) throw new Error("Deployment ID is undefined");
+
+    const resources = await api.GET(
+      "/v1/deployments/{deploymentId}/resources",
+      {
+        params: {
+          path: {
+            deploymentId,
+          },
+        },
+      },
+    );
+
+    expect(resources.response.status).toBe(200);
+    expect(resources.data?.resources?.length).toBe(1);
+    expect(resources.data?.resources?.[0]?.identifier).toBe(
+      importedEntities.resources.find((r) => r.metadata?.env === "qa")
+        ?.identifier,
+    );
+  });
+
+  test("should update a deployment's resource selector and update matched resources", async ({
+    api,
+    page,
+  }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = faker.string.alphanumeric(10);
+    const deployment = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "qa",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    await page.waitForTimeout(5_000);
+
+    const deploymentId = deployment.data?.id;
+    expect(deploymentId).toBeDefined();
+    if (!deploymentId) throw new Error("Deployment ID is undefined");
+
+    await api.PATCH("/v1/deployments/{deploymentId}", {
+      params: {
+        path: {
+          deploymentId,
+        },
+      },
+      body: {
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "prod",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    await page.waitForTimeout(10_000);
+
+    const resources = await api.GET(
+      "/v1/deployments/{deploymentId}/resources",
+      {
+        params: {
+          path: {
+            deploymentId,
+          },
+        },
+      },
+    );
+
+    expect(resources.response.status).toBe(200);
+    expect(resources.data?.resources?.length).toBe(1);
+    expect(resources.data?.resources?.[0]?.identifier).toBe(
+      importedEntities.resources.find((r) => r.metadata?.env === "prod")
+        ?.identifier,
+    );
   });
 });

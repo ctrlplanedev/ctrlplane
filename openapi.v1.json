@@ -933,7 +933,8 @@
                     "description": "The resource selector for the deployment",
                     "example": {
                       "key": "value"
-                    }
+                    },
+                    "additionalProperties": true
                   }
                 },
                 "required": [

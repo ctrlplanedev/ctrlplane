@@ -65,6 +65,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     type: "object",
                     description: "The resource selector for the deployment",
                     example: { key: "value" },
+                    additionalProperties: true,
                   },
                 },
                 required: ["systemId", "slug", "name"],
