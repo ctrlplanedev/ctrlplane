@@ -62,14 +62,17 @@ export const updateEnvironmentWorker = createWorker(
         { deduplication: { id: job.data.id, ttl: 500 } },
       );
 
+      const resourceQueryBuilder = selector().query().resources();
+      const oldCondition = resourceQueryBuilder.where(oldSelector).sql();
+      const newCondition = resourceQueryBuilder.where(resourceSelector).sql();
+      const notNewCondition =
+        newCondition != null ? not(newCondition) : undefined;
+
       const exitedResources = await db.query.resource.findMany({
-        where: and(
-          selector().query().resources().where(oldSelector).sql(),
-          not(selector().query().resources().where(resourceSelector).sql()!),
-        ),
+        where: and(oldCondition, notNewCondition),
       });
 
-      await dispatchExitHooks(db, job.data.id, exitedResources);
+      await dispatchExitHooks(db, job.data.systemId, exitedResources);
     } catch (error) {
       log.error("Error updating environment", { error });
       throw error;

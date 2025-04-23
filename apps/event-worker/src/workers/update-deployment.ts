@@ -39,11 +39,14 @@ export const updateDeploymentWorker = createWorker(
 
       getQueue(Channel.ComputeDeploymentResourceSelector).add(data.id, data);
 
+      const resourceQueryBuilder = selector().query().resources();
+      const oldCondition = resourceQueryBuilder.where(oldSelector).sql();
+      const newCondition = resourceQueryBuilder.where(resourceSelector).sql();
+      const notNewCondition =
+        newCondition != null ? not(newCondition) : undefined;
+
       const exitedResources = await db.query.resource.findMany({
-        where: and(
-          selector().query().resources().where(oldSelector).sql(),
-          not(selector().query().resources().where(resourceSelector).sql()!),
-        ),
+        where: and(oldCondition, notNewCondition),
       });
 
       await dispatchExitHooks(data, exitedResources);
