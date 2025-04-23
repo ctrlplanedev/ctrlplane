@@ -75,7 +75,7 @@ export const deployment = pgTable(
     description: text("description").notNull(),
     systemId: uuid("system_id")
       .notNull()
-      .references(() => system.id),
+      .references(() => system.id, { onDelete: "cascade" }),
     jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
       onDelete: "set null",
     }),
