@@ -90,7 +90,11 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           workspaceId,
         );
 
-        await tx.insert(schema.releaseTarget).values(releaseTargets);
+        if (releaseTargets.length > 0)
+          await tx
+            .insert(schema.releaseTarget)
+            .values(releaseTargets)
+            .onConflictDoNothing();
 
         const deleted = previousReleaseTargets.filter(
           (rt) =>

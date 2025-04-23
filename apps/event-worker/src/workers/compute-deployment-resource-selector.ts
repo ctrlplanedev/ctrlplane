@@ -48,9 +48,11 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
           resourceId: r.id,
         }));
 
-        await tx
-          .insert(schema.computedDeploymentResource)
-          .values(computedDeploymentResources);
+        if (computedDeploymentResources.length > 0)
+          await tx
+            .insert(schema.computedDeploymentResource)
+            .values(computedDeploymentResources)
+            .onConflictDoNothing();
       }),
     );
 

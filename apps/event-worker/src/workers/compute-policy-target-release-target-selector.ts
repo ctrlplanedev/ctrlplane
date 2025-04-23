@@ -72,6 +72,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
             })),
           );
 
+        if (releaseTargets.length === 0) return [];
         return tx
           .insert(schema.computedPolicyTargetReleaseTarget)
           .values(releaseTargets)
