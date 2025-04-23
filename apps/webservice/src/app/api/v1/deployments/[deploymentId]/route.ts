@@ -69,7 +69,7 @@ export const DELETE = request()
           .delete(SCHEMA.deployment)
           .where(eq(SCHEMA.deployment.id, deploymentId));
 
-        return NextResponse.json({ deployment, message: "Deployment deleted" });
+        return NextResponse.json(deployment);
       } catch (error) {
         logger.error("Failed to delete deployment", { error });
         return NextResponse.json(

@@ -106,4 +106,42 @@ test.describe("Deployments API", () => {
     expect(updateDeployment.data?.retryCount).toBe(1);
     expect(updateDeployment.data?.timeout).toBe(1000);
   });
+
+  test("should delete a deployment", async ({ api }) => {
+    const deploymentName = faker.string.alphanumeric(10);
+    const deployment = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+
+    const deploymentId = deployment.data?.id;
+    if (!deploymentId) throw new Error("Deployment ID is undefined");
+
+    const deleteDeployment = await api.DELETE(
+      "/v1/deployments/{deploymentId}",
+      {
+        params: {
+          path: {
+            deploymentId,
+          },
+        },
+      },
+    );
+
+    expect(deleteDeployment.response.status).toBe(200);
+    expect(deleteDeployment.data?.id).toBe(deploymentId);
+
+    const getDeployment = await api.GET("/v1/deployments/{deploymentId}", {
+      params: {
+        path: {
+          deploymentId,
+        },
+      },
+    });
+
+    expect(getDeployment.data).toBeUndefined();
+  });
 });
