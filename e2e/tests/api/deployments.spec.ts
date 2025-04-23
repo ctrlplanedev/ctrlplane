@@ -351,4 +351,57 @@ test.describe("Deployments API", () => {
     expect(resources.response.status).toBe(200);
     expect(resources.data?.resources?.length).toBe(0);
   });
+
+  test("should unmatch resources if resource selector is set to null", async ({
+    api,
+    page,
+  }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = faker.string.alphanumeric(10);
+    const deployment = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            {
+              type: "metadata",
+              operator: "equals",
+              key: "env",
+              value: "qa",
+            },
+            {
+              type: "identifier",
+              operator: "starts-with",
+              value: systemPrefix,
+            },
+          ],
+        },
+      },
+    });
+
+    await page.waitForTimeout(10_000);
+
+    const deploymentId = deployment.data?.id;
+    expect(deploymentId).toBeDefined();
+    if (!deploymentId) throw new Error("Deployment ID is undefined");
+
+    await api.PATCH("/v1/deployments/{deploymentId}", {
+      params: { path: { deploymentId } },
+      body: { resourceSelector: undefined },
+    });
+
+    await page.waitForTimeout(10_000);
+
+    const resources = await api.GET(
+      "/v1/deployments/{deploymentId}/resources",
+      { params: { path: { deploymentId } } },
+    );
+
+    expect(resources.response.status).toBe(200);
+    expect(resources.data?.resources?.length).toBe(0);
+  });
 });
