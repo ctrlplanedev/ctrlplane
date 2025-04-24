@@ -20,8 +20,8 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
       await db.transaction(async (tx) => {
         await tx.execute(
           sql`
-           SELECT * from deployment
-           WHERE id = ${id}
+           SELECT * from ${schema.deployment}
+           WHERE ${schema.deployment.id} = ${id}
            FOR UPDATE NOWAIT
           `,
         );
@@ -58,7 +58,8 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             .onConflictDoNothing();
       });
     } catch (e: any) {
-      if (e.code === "55P03") {
+      const isRowLocked = e.code === "55P03";
+      if (isRowLocked) {
         await getQueue(Channel.ComputeDeploymentResourceSelector).add(
           job.name,
           job.data,
