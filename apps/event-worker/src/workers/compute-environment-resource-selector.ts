@@ -1,9 +1,7 @@
-import { and, eq, isNull, selector } from "@ctrlplane/db";
+import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-
-import { withMutex } from "../utils/with-mutex.js";
 
 /**
  * Worker that computes and updates the resources associated with an environment
@@ -15,12 +13,12 @@ import { withMutex } from "../utils/with-mutex.js";
  * stay in sync with the selector criteria.
  *
  * The worker:
- * 1. Acquires a mutex lock to prevent concurrent updates to the same
+ * 1. Acquires a db lock to prevent concurrent updates to the same
  *    environment
  * 2. Deletes existing computed resource associations
  * 3. Finds all resources matching the environment's selector
  * 4. Inserts new computed resource associations
- * 5. If lock acquisition fails, retries after 1 second
+ * 5. If lock acquisition fails, retries after 500ms
  */
 export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
   Channel.ComputeEnvironmentResourceSelector,
@@ -39,9 +37,17 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
     if (environment == null) throw new Error("Environment not found");
 
     const { workspaceId } = environment.system;
-    const key = `${Channel.ComputeEnvironmentResourceSelector}:${environment.id}`;
-    const [acquired] = await withMutex(key, () => {
-      db.transaction(async (tx) => {
+    try {
+      await db.transaction(async (tx) => {
+        // acquire a lock on the environment
+        await tx.execute(
+          sql`
+           SELECT * from ${schema.environment}
+           WHERE ${schema.environment.id} = ${id}
+           FOR UPDATE NOWAIT
+          `,
+        );
+
         await tx
           .delete(schema.computedEnvironmentResource)
           .where(
@@ -76,21 +82,24 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           .values(computedEnvironmentResources)
           .onConflictDoNothing();
       });
-    });
 
-    if (!acquired) {
-      await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
-        job.name,
-        job.data,
+      getQueue(Channel.ComputeSystemsReleaseTargets).add(
+        environment.system.id,
+        environment.system,
         { deduplication: { id: job.data.id, ttl: 500 } },
       );
-      return;
-    }
+    } catch (e: any) {
+      const isRowLocked = e.code === "55P03";
+      if (isRowLocked) {
+        await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
+          job.name,
+          job.data,
+          { deduplication: { id: job.data.id, ttl: 500 } },
+        );
+        return;
+      }
 
-    getQueue(Channel.ComputeSystemsReleaseTargets).add(
-      environment.system.id,
-      environment.system,
-      { deduplication: { id: job.data.id, ttl: 500 } },
-    );
+      throw e;
+    }
   },
 );
