@@ -1,5 +1,16 @@
-import type { ResourceToUpsert } from "@ctrlplane/db/schema";
 import _ from "lodash";
+import type { ResourceToUpsert } from "@ctrlplane/db/schema";
+
+/**
+ * Converts a string value to its appropriate type (boolean, number, or string)
+ */
+const convertToTypedValue = (stringValue: string): string | number | boolean => {
+  if (stringValue === "true") return true;
+  if (stringValue === "false") return false;
+  const numValue = Number(stringValue);
+  if (!isNaN(numValue) && stringValue.trim() !== "") return numValue;
+  return stringValue;
+};
 
 /**
  * Extracts resource variables from metadata keys prefixed with "variable-"
@@ -13,6 +24,7 @@ export const extractVariablesFromMetadata = (
   return _.chain(resources)
     .map((resource) => {
       if (!resource.metadata) return resource;
+
       const variables = _.chain(resource.metadata)
         .pickBy(
           (_value, key) =>
@@ -22,20 +34,15 @@ export const extractVariablesFromMetadata = (
         .map((rawValue, key) => {
           const variableKey = key.replace("variable-", "");
           const stringValue = String(rawValue);
-
-          let typedValue: string | number | boolean = stringValue;
-          if (stringValue === "true") typedValue = true;
-          else if (stringValue === "false") typedValue = false;
-          else if (!isNaN(Number(stringValue)) && stringValue.trim() !== "")
-            typedValue = Number(stringValue);
-
+          
           return {
             key: variableKey,
-            value: typedValue,
+            value: convertToTypedValue(stringValue),
             sensitive: false,
           };
         })
         .value();
+
       return variables.length > 0 ? { ...resource, variables } : resource;
     })
     .value();
