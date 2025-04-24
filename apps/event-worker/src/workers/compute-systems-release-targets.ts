@@ -72,8 +72,8 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
     const { workspaceId } = system;
 
     const key = `${Channel.ComputeSystemsReleaseTargets}:${system.id}`;
-    const [acquired, createdReleaseTargets] = await withMutex(key, () =>
-      db.transaction(async (tx) => {
+    const [acquired, createdReleaseTargets] = await db.transaction(
+      async (tx) => {
         const previousReleaseTargets = await tx
           .delete(schema.releaseTarget)
           .where(
@@ -84,37 +84,49 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           )
           .returning();
 
-        const releaseTargets = await findMatchingEnvironmentDeploymentPairs(
-          tx,
-          workspaceId,
+        return withMutex(
+          key,
+          async () => {
+            const releaseTargets = await findMatchingEnvironmentDeploymentPairs(
+              tx,
+              workspaceId,
+            );
+
+            if (releaseTargets.length > 0)
+              await tx
+                .insert(schema.releaseTarget)
+                .values(releaseTargets)
+                .onConflictDoNothing();
+
+            const deleted = previousReleaseTargets.filter(
+              (rt) =>
+                !releaseTargets.some(
+                  (newRt) =>
+                    newRt.deploymentId === rt.deploymentId &&
+                    newRt.resourceId === rt.resourceId,
+                ),
+            );
+
+            const created = releaseTargets.filter(
+              (rt) =>
+                !previousReleaseTargets.some(
+                  (prevRt) =>
+                    prevRt.deploymentId === rt.deploymentId &&
+                    prevRt.resourceId === rt.resourceId,
+                ),
+            );
+
+            return { deleted, created };
+          },
+          {
+            getDependentLockKeys: () =>
+              previousReleaseTargets.map(
+                (rt) =>
+                  `release-target-mutex-${rt.deploymentId}-${rt.resourceId}-${rt.environmentId}`,
+              ),
+          },
         );
-
-        if (releaseTargets.length > 0)
-          await tx
-            .insert(schema.releaseTarget)
-            .values(releaseTargets)
-            .onConflictDoNothing();
-
-        const deleted = previousReleaseTargets.filter(
-          (rt) =>
-            !releaseTargets.some(
-              (newRt) =>
-                newRt.deploymentId === rt.deploymentId &&
-                newRt.resourceId === rt.resourceId,
-            ),
-        );
-
-        const created = releaseTargets.filter(
-          (rt) =>
-            !previousReleaseTargets.some(
-              (prevRt) =>
-                prevRt.deploymentId === rt.deploymentId &&
-                prevRt.resourceId === rt.resourceId,
-            ),
-        );
-
-        return { deleted, created };
-      }),
+      },
     );
 
     if (!acquired) {

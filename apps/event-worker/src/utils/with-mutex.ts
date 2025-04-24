@@ -11,7 +11,7 @@ type MutexOptions = {
    * be acquired after the primary lock. This enables atomic operations across
    * multiple related resources.
    */
-  getDependentLockKeys?: () => Promise<string[]>;
+  getDependentLockKeys?: () => Promise<string[]> | string[];
 };
 
 /**
