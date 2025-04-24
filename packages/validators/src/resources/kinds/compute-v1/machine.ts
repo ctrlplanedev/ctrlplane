@@ -8,9 +8,9 @@ const portForwardingConfig = z.object({
   remoteHost: z.string().optional(), // defaults to localhost
 });
 
-const connectionMethodConfig = z.discriminatedUnion("type", [
+const authConfig = z.discriminatedUnion("method", [
   z.object({
-    type: z.literal("aws"),
+    method: z.literal("aws"),
     region: z.string(),
     instanceId: z.string(),
     accountId: z.string(),
@@ -20,7 +20,7 @@ const connectionMethodConfig = z.discriminatedUnion("type", [
 
   // GCP Connection Methods
   z.object({
-    type: z.literal("google"),
+    method: z.literal("google"),
     project: z.string(),
     instanceName: z.string(),
     zone: z.string(),
@@ -29,7 +29,7 @@ const connectionMethodConfig = z.discriminatedUnion("type", [
 
   // Azure
   z.object({
-    type: z.literal("azure"),
+    method: z.literal("azure"),
     resourceGroup: z.string(),
     vmName: z.string(),
     subscriptionId: z.string(),
@@ -38,7 +38,7 @@ const connectionMethodConfig = z.discriminatedUnion("type", [
 
   // On-Prem / Generic Connection Methods
   z.object({
-    type: z.literal("ssh"),
+    method: z.literal("ssh"),
     host: z.string(),
     port: z.number().default(22),
     username: z.string(),
@@ -66,7 +66,7 @@ export const machine = createKind({
   config: z.object({
     id: z.string(),
     name: z.string(),
-    connectionMethod: connectionMethodConfig,
+    auth: authConfig,
   }),
 
   metadata: z

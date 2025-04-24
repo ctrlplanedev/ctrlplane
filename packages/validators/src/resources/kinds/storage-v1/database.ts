@@ -11,10 +11,10 @@ export const database = createKind({
     name: z.string(),
     engine: z.string(),
     version: z.string(),
-    authMethod: z.discriminatedUnion("type", [
-      z.object({ type: z.literal("token"), token: z.string() }),
+    auth: z.discriminatedUnion("method", [
+      z.object({ method: z.literal("token"), token: z.string() }),
       z.object({
-        type: z.literal("aws"),
+        method: z.literal("aws"),
         region: z.string(),
         clusterIdentifier: z.string(),
         accountId: z.string(),
@@ -22,7 +22,7 @@ export const database = createKind({
         password: z.string().optional(),
       }),
       z.object({
-        type: z.literal("google"),
+        method: z.literal("google"),
         project: z.string(),
         instanceName: z.string(),
         region: z.string(),
@@ -30,7 +30,7 @@ export const database = createKind({
         password: z.string().optional(),
       }),
       z.object({
-        type: z.literal("azure"),
+        method: z.literal("azure"),
         resourceGroup: z.string(),
         serverName: z.string(),
         subscriptionId: z.string(),
@@ -38,7 +38,7 @@ export const database = createKind({
         password: z.string().optional(),
       }),
       z.object({
-        type: z.literal("direct"),
+        method: z.literal("direct"),
         host: z.string(),
         port: z.number(),
         username: z.string(),

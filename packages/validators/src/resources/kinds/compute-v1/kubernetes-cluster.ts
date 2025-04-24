@@ -9,32 +9,32 @@ export const clusterConfig = z.object({
     endpoint: z.string().url(),
   }),
   vcluster: z.string().optional(),
-  connectionMethod: z.discriminatedUnion("type", [
+  auth: z.discriminatedUnion("method", [
     z.object({
-      type: z.literal("token"),
+      method: z.literal("token"),
       token: z.string(),
     }),
     z.object({
-      type: z.literal("google"),
+      method: z.literal("google"),
       project: z.string(),
       location: z.string(),
       clusterName: z.string(),
     }),
     z.object({
-      type: z.literal("aws"),
+      method: z.literal("aws"),
       region: z.string(),
       clusterName: z.string(),
       accountId: z.string(),
     }),
     z.object({
-      type: z.literal("azure"),
+      method: z.literal("azure"),
       resourceGroup: z.string(),
       clusterName: z.string(),
       tenantId: z.string(),
       subscriptionId: z.string(),
     }),
     z.object({
-      type: z.literal("exec"),
+      method: z.literal("exec"),
       command: z.string(),
       args: z.array(z.string()).optional(),
       env: z
@@ -47,7 +47,7 @@ export const clusterConfig = z.object({
         .optional(),
     }),
     z.object({
-      type: z.literal("kubeconfig"),
+      method: z.literal("kubeconfig"),
       path: z.string(),
       context: z.string().optional(),
     }),
