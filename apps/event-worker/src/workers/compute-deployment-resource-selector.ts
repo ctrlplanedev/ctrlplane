@@ -57,6 +57,12 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             .values(computedDeploymentResources)
             .onConflictDoNothing();
       });
+
+      getQueue(Channel.ComputeSystemsReleaseTargets).add(
+        deployment.system.id,
+        deployment.system,
+        { deduplication: { id: job.data.id, ttl: 500 } },
+      );
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
