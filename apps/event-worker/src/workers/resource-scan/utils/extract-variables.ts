@@ -6,7 +6,7 @@ const convertToTypedValue = (
   if (stringValue === "true") return true;
   if (stringValue === "false") return false;
   const numValue = Number(stringValue);
-  if (!isNaN(numValue) && stringValue.trim() !== "") return numValue;
+  if (stringValue.trim() !== "" && !isNaN(numValue)) return numValue;
   return stringValue;
 };
 
@@ -39,5 +39,3 @@ export const extractVariablesFromMetadata = (
     };
   });
 };
-
-export const extractVariablesFromLabels = extractVariablesFromMetadata;
