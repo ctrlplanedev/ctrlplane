@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { and, eq, inArray, isNull, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, selector, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { resourceMetadata } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { condition } from "@ctrlplane/validators/resources";
 
 import { authn, authz } from "~/app/api/v1/auth";
 import { parseBody } from "~/app/api/v1/body-parser";
 import { request } from "~/app/api/v1/middleware";
 
 const bodySchema = z.object({
+  filter: condition.optional(),
   metadataKeys: z.array(z.string()),
   allowNullCombinations: z.boolean(),
 });
@@ -52,6 +54,9 @@ export const POST = request()
       )
       .where(
         and(
+          body.filter != null
+            ? selector().query().resources().where(body.filter).sql()
+            : undefined,
           eq(schema.resource.workspaceId, workspaceId),
           isNull(schema.resource.deletedAt),
         ),

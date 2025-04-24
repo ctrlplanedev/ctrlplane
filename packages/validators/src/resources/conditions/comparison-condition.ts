@@ -62,3 +62,16 @@ export type ComparisonCondition = {
     | IdCondition
   >;
 };
+
+export const condition = z.union([
+  metadataCondition,
+  comparisonCondition,
+  kindCondition,
+  nameCondition,
+  providerCondition,
+  identifierCondition,
+  createdAtCondition,
+  lastSyncCondition,
+  versionCondition,
+  idCondition,
+]);
