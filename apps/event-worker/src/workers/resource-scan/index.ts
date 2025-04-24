@@ -1,3 +1,4 @@
+import type { ResourceToUpsert } from "@ctrlplane/db/schema";
 import type { Job } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -19,6 +20,7 @@ import { getAksResources } from "./azure/aks.js";
 import { getGkeResources } from "./google/gke.js";
 import { getGoogleVMResources } from "./google/vm.js";
 import { getVpcResources as getGoogleVpcResources } from "./google/vpc.js";
+import { extractVariablesFromMetadata } from "./utils/extract-variables.js";
 
 const log = logger.child({ label: "resource-scan" });
 
@@ -27,7 +29,7 @@ const removeResourceJob = (job: Job) =>
     ? getQueue(Channel.ResourceScan).removeRepeatableByKey(job.repeatJobKey)
     : null;
 
-const getResources = async (rp: any) => {
+const getResources = async (rp: any): Promise<ResourceToUpsert[]> => {
   if (rp.resource_provider_google != null) {
     const [gkeResources, vpcResources, vmResources] = await Promise.all([
       getGkeResources(rp.workspace, rp.resource_provider_google),
@@ -93,14 +95,16 @@ export const resourceScanWorker = createWorker(
         return;
       }
 
+      const resourcesWithVariables = extractVariablesFromMetadata(resources);
+
       log.info(
-        `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
+        `Upserting ${resourcesWithVariables.length} resources for provider ${rp.resource_provider.id}`,
       );
       await handleResourceProviderScan(
         db,
         rp.workspace.id,
         rp.resource_provider.id,
-        resources,
+        resourcesWithVariables,
       );
     } catch (error: any) {
       log.error(
