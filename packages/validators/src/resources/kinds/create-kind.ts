@@ -1,15 +1,22 @@
 import { z } from "zod";
 
-export const createKind = (obj: {
+export const createKind = <
+  Config extends z.ZodObject<any>,
+  Metadata extends z.ZodObject<any>,
+>(obj: {
   version: string;
   kind: string;
-  config: z.ZodObject<any, any, any, any, any>;
-  metadata: z.ZodObject<any, any, any, any, any>;
+  config: Config;
+  metadata: Metadata;
 }) => {
   return z.object({
+    identifier: z.string(),
+    name: z.string(),
+
     version: z.literal(obj.version),
     kind: z.literal(obj.kind),
-    config: obj.config.passthrough(),
-    metadata: obj.metadata.passthrough(),
+
+    config: obj.config,
+    metadata: obj.metadata,
   });
 };

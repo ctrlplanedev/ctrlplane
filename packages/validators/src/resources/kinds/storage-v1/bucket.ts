@@ -50,12 +50,14 @@ export const bucket = createKind({
       })
       .optional(),
   }),
-  metadata: z.object({
-    "bucket/version": z.string(),
-    "bucket/status": z.string(),
-    "bucket/type": z.string(),
-    "bucket/region": z.string(),
-    "bucket/access-key": z.string(),
-    "bucket/secret-key": z.string(),
-  }),
+  metadata: z
+    .object({
+      "bucket/version": z.string(),
+      "bucket/status": z.string(),
+      "bucket/type": z.string(),
+      "bucket/region": z.string(),
+      "bucket/encryption": z.string(),
+    })
+    .partial()
+    .passthrough(),
 });

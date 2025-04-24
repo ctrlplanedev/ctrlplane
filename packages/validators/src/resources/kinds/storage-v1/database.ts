@@ -47,9 +47,12 @@ export const database = createKind({
       }),
     ]),
   }),
-  metadata: z.object({
-    "database/engine": z.string(),
-    "database/version": z.string(),
-    "database/status": z.string(),
-  }),
+  metadata: z
+    .object({
+      "database/engine": z.string(),
+      "database/version": z.string(),
+      "database/status": z.string(),
+    })
+    .partial()
+    .passthrough(),
 });

@@ -30,10 +30,13 @@ export const network = createKind({
     ]),
   }),
 
-  metadata: z.object({
-    "network/version": z.string(),
-    "network/status": z.string(),
-    "network/type": z.string(),
-    "network/region": z.string(),
-  }),
+  metadata: z
+    .object({
+      "network/version": z.string(),
+      "network/status": z.string(),
+      "network/type": z.string(),
+      "network/region": z.string(),
+    })
+    .partial()
+    .passthrough(),
 });

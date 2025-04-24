@@ -11,7 +11,10 @@ export const fileSystem = createKind({
     accessKey: z.string(),
     secretKey: z.string(),
   }),
-  metadata: z.object({
-    "file-system/version": z.string(),
-  }),
+  metadata: z
+    .object({
+      "file-system/version": z.string(),
+    })
+    .partial()
+    .passthrough(),
 });

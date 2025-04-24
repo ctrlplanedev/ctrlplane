@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { createKind } from "../create-kind.js";
+
 const portForwardingConfig = z.object({
   localPort: z.number(),
   remotePort: z.number(),
@@ -58,39 +60,33 @@ const connectionMethodConfig = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const machine = z.object({
-  version: z.literal("compute.ctrlplane.dev/v1"),
-  kind: z.literal("Machine"),
-  identifier: z.string(),
-  name: z.string(),
+export const machine = createKind({
+  version: "compute.ctrlplane.dev/v1",
+  kind: "Machine",
+  config: z.object({
+    id: z.string(),
+    name: z.string(),
+    connectionMethod: connectionMethodConfig,
+  }),
 
-  config: z
+  metadata: z
     .object({
-      id: z.string(),
-      name: z.string(),
-      connectionMethod: connectionMethodConfig,
+      "machine/boot-mode": z.enum(["uefi", "bios"]),
+      "machine/architecture": z.enum(["i386", "x86_64", "arm64"]),
+      "machine/type": z.string(),
+      "machine/class": z.enum([
+        "standard", // Balanced performance
+        "compute", // CPU optimized
+        "memory", // Memory optimized
+        "storage", // Storage optimized
+        "accelerated", // GPU/FPGA optimized
+      ]),
+      "machine/cpu-cores": z.string(),
+      "machine/cpu-threads-per-core": z.string(),
+      "machine/cpu-threads": z.string(),
     })
+    .partial()
     .passthrough(),
-
-  metadata: z.record(z.string()).and(
-    z.object({
-      "machine/boot-mode": z.enum(["uefi", "bios"]).optional(),
-      "machine/architecture": z.enum(["i386", "x86_64", "arm64"]).optional(),
-      "machine/type": z.string().optional(),
-      "machine/class": z
-        .enum([
-          "standard", // Balanced performance
-          "compute", // CPU optimized
-          "memory", // Memory optimized
-          "storage", // Storage optimized
-          "accelerated", // GPU/FPGA optimized
-        ])
-        .optional(),
-      "machine/cpu-cores": z.string().optional(),
-      "machine/cpu-threads-per-core": z.string().optional(),
-      "machine/cpu-threads": z.string().optional(),
-    }),
-  ),
 });
 
 export type MachineV1 = z.infer<typeof machine>;

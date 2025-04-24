@@ -73,7 +73,8 @@ export const kubernetesClusterV1 = createKind({
       "kubernetes/master-version-patch": z.string(),
       "kubernetes/autoscaling-enabled": z.string(),
     })
-    .partial(),
+    .partial()
+    .passthrough(),
 });
 
 export type KubernetesClusterV1 = z.infer<typeof kubernetesClusterV1>;
