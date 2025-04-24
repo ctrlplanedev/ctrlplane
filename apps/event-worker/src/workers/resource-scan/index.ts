@@ -19,6 +19,7 @@ import { getAksResources } from "./azure/aks.js";
 import { getGkeResources } from "./google/gke.js";
 import { getGoogleVMResources } from "./google/vm.js";
 import { getVpcResources as getGoogleVpcResources } from "./google/vpc.js";
+import { extractVariablesFromMetadata } from "./utils/extract-variables.js";
 
 const log = logger.child({ label: "resource-scan" });
 
@@ -93,14 +94,16 @@ export const resourceScanWorker = createWorker(
         return;
       }
 
+      const resourcesWithVariables = extractVariablesFromMetadata(resources);
+
       log.info(
-        `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
+        `Upserting ${resourcesWithVariables.length} resources for provider ${rp.resource_provider.id}`,
       );
       await handleResourceProviderScan(
         db,
         rp.workspace.id,
         rp.resource_provider.id,
-        resources,
+        resourcesWithVariables,
       );
     } catch (error: any) {
       log.error(
