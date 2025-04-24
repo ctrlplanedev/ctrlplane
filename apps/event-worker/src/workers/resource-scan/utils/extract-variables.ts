@@ -1,9 +1,6 @@
 import type { ResourceToUpsert } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-/**
- * Converts a string value to its appropriate type (boolean, number, or string)
- */
 const convertToTypedValue = (
   stringValue: string,
 ): string | number | boolean => {
