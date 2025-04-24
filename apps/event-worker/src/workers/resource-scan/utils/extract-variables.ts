@@ -20,24 +20,17 @@ export const extractVariablesFromMetadata = (
   resources: ResourceToUpsert[],
 ): ResourceToUpsert[] => {
   return resources.map((resource) => {
-    if (!resource.metadata) return resource;
+    const variables = Object.entries(resource.metadata ?? {})
+      .filter(
+        ([key]) =>
+          key.startsWith("variable-") && key.length > "variable-".length,
+      )
+      .map(([key, rawValue]) => ({
+        key: key.slice("variable-".length),
+        value: convertToTypedValue(String(rawValue)),
+        sensitive: false,
+      }));
 
-    const variableEntries = Object.entries(resource.metadata).filter(
-      ([key]) =>
-        key.startsWith("variable-") && key.replace("variable-", "").length > 0,
-    );
-
-    if (variableEntries.length === 0) return resource;
-
-    const variables = variableEntries.map(([key, rawValue]) => ({
-      key: key.replace("variable-", ""),
-      value: convertToTypedValue(String(rawValue)),
-      sensitive: false,
-    }));
-
-    return {
-      ...resource,
-      variables,
-    };
+    return { ...resource, variables };
   });
 };
