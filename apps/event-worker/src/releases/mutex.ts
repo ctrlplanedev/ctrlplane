@@ -6,6 +6,7 @@ import { Mutex as RedisMutex } from "redis-semaphore";
 import { logger, makeWithSpan } from "@ctrlplane/logger";
 
 import { redis } from "../redis.js";
+import { getReleaseTargetLockKey } from "../utils/lock-key.js";
 
 const log = logger.child({ module: "release-target-mutex" });
 const tracer = trace.getTracer("release-target-mutex");
@@ -35,7 +36,7 @@ class ReleaseTargetMutex {
   private mutex: RedisMutex;
 
   constructor(releaseTargetIdentifier: ReleaseTargetIdentifier) {
-    this.key = `release-target-mutex-${releaseTargetIdentifier.deploymentId}-${releaseTargetIdentifier.resourceId}-${releaseTargetIdentifier.environmentId}`;
+    this.key = getReleaseTargetLockKey(releaseTargetIdentifier);
     this.mutex = new RedisMutex(redis, this.key, {
       lockTimeout: ms("30s"),
       onLockLost: (e) => {

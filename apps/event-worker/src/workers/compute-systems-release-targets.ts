@@ -5,6 +5,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
+import { getReleaseTargetLockKey } from "../utils/lock-key.js";
 import { withMutex } from "../utils/with-mutex.js";
 
 const findMatchingEnvironmentDeploymentPairs = (
@@ -120,10 +121,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           },
           {
             getDependentLockKeys: () =>
-              previousReleaseTargets.map(
-                (rt) =>
-                  `release-target-mutex-${rt.deploymentId}-${rt.resourceId}-${rt.environmentId}`,
-              ),
+              previousReleaseTargets.map(getReleaseTargetLockKey),
           },
         );
       },
