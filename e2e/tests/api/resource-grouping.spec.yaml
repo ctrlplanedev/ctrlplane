@@ -1,0 +1,85 @@
+system:
+  name: "{{ prefix }}-selectors"
+  slug: "{{ prefix }}-selectors"
+  description: System for testing resource selectors
+
+environments: []
+
+resources:
+  - name: Group A Resource 1
+    kind: TestResource
+    identifier: group-a-resource-1
+    version: test/v1
+    config:
+      enabled: true
+    metadata:
+      group: a
+      subgroup: a1
+      priority: high
+
+  - name: Group A Resource 2
+    kind: TestResource
+    identifier: group-a-resource-2
+    version: test/v1
+    config:
+      enabled: true
+    metadata:
+      group: a
+      subgroup: a1
+      priority: low
+
+  - name: Group A Resource 3
+    kind: TestResource
+    identifier: group-a-resource-3
+    version: test/v1
+    config:
+      enabled: true
+    metadata:
+      group: a
+      subgroup: a2
+      priority: high
+
+  - name: Group B Resource 1
+    kind: TestResource
+    identifier: group-b-resource-1
+    version: test/v1
+    config:
+      enabled: true
+    metadata:
+      group: b
+      subgroup: b1
+      priority: high
+
+  - name: Group B Resource 2
+    kind: TestResource
+    identifier: group-b-resource-2
+    version: test/v1
+    config:
+      enabled: true
+    metadata:
+      group: b
+      subgroup: b1
+      priority: low
+
+  - name: Group C Resource 1
+    kind: TestResource
+    identifier: group-c-resource-1
+    version: test/v1
+    config:
+      enabled: true
+    metadata:
+      group: c
+      priority: high
+
+  - name: Group C Resource 2
+    kind: TestResource
+    identifier: group-c-resource-2
+    version: test/v1
+    config:
+      enabled: true
+    metadata:
+      group: c
+      priority: low
+
+deployments: []
+policies: []
