@@ -1,9 +1,7 @@
-import { and, eq, isNull, selector } from "@ctrlplane/db";
+import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-
-import { withMutex } from "../utils/with-mutex.js";
 
 export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
   Channel.ComputeDeploymentResourceSelector,
@@ -18,9 +16,16 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
     if (deployment == null) throw new Error("Deployment not found");
 
     const { workspaceId } = deployment.system;
-    const key = `${Channel.ComputeDeploymentResourceSelector}:${deployment.id}`;
-    const [acquired] = await withMutex(key, () =>
-      db.transaction(async (tx) => {
+    try {
+      await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`
+           SELECT * from ${schema.deployment}
+           WHERE ${schema.deployment.id} = ${id}
+           FOR UPDATE NOWAIT
+          `,
+        );
+
         await tx
           .delete(schema.computedDeploymentResource)
           .where(
@@ -51,22 +56,22 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             .insert(schema.computedDeploymentResource)
             .values(computedDeploymentResources)
             .onConflictDoNothing();
-      }),
-    );
+      });
+    } catch (e: any) {
+      const isRowLocked = e.code === "55P03";
+      if (isRowLocked) {
+        await getQueue(Channel.ComputeDeploymentResourceSelector).add(
+          job.name,
+          job.data,
+          {
+            deduplication: { id: job.data.id, ttl: 500 },
+            delay: 500,
+          },
+        );
+        return;
+      }
 
-    if (!acquired) {
-      await getQueue(Channel.ComputeDeploymentResourceSelector).add(
-        job.name,
-        job.data,
-        { deduplication: { id: job.data.id, ttl: 500 } },
-      );
-      return;
+      throw e;
     }
-
-    getQueue(Channel.ComputeSystemsReleaseTargets).add(
-      deployment.system.id,
-      deployment.system,
-      { deduplication: { id: job.data.id, ttl: 500 } },
-    );
   },
 );
