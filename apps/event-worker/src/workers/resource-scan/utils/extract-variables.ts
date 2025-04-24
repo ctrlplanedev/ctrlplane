@@ -1,10 +1,12 @@
-import _ from "lodash";
 import type { ResourceToUpsert } from "@ctrlplane/db/schema";
+import _ from "lodash";
 
 /**
  * Converts a string value to its appropriate type (boolean, number, or string)
  */
-const convertToTypedValue = (stringValue: string): string | number | boolean => {
+const convertToTypedValue = (
+  stringValue: string,
+): string | number | boolean => {
   if (stringValue === "true") return true;
   if (stringValue === "false") return false;
   const numValue = Number(stringValue);
@@ -34,7 +36,7 @@ export const extractVariablesFromMetadata = (
         .map((rawValue, key) => {
           const variableKey = key.replace("variable-", "");
           const stringValue = String(rawValue);
-          
+
           return {
             key: variableKey,
             value: convertToTypedValue(stringValue),
