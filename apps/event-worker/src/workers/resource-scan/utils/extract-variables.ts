@@ -1,5 +1,4 @@
 import type { ResourceToUpsert } from "@ctrlplane/db/schema";
-import _ from "lodash";
 
 const convertToTypedValue = (
   stringValue: string,
@@ -20,31 +19,25 @@ const convertToTypedValue = (
 export const extractVariablesFromMetadata = (
   resources: ResourceToUpsert[],
 ): ResourceToUpsert[] => {
-  return _.chain(resources)
-    .map((resource) => {
-      if (!resource.metadata) return resource;
+  return resources.map((resource) => {
+    if (!resource.metadata) return resource;
 
-      const variables = _.chain(resource.metadata)
-        .pickBy(
-          (_value, key) =>
-            key.startsWith("variable-") &&
-            key.replace("variable-", "").length > 0,
-        )
-        .map((rawValue, key) => {
-          const variableKey = key.replace("variable-", "");
-          const stringValue = String(rawValue);
+    const variableEntries = Object.entries(resource.metadata)
+      .filter(([key]) => key.startsWith("variable-") && key.replace("variable-", "").length > 0);
+    
+    if (variableEntries.length === 0) return resource;
+    
+    const variables = variableEntries.map(([key, rawValue]) => ({
+      key: key.replace("variable-", ""),
+      value: convertToTypedValue(String(rawValue)),
+      sensitive: false,
+    }));
 
-          return {
-            key: variableKey,
-            value: convertToTypedValue(stringValue),
-            sensitive: false,
-          };
-        })
-        .value();
-
-      return variables.length > 0 ? { ...resource, variables } : resource;
-    })
-    .value();
+    return {
+      ...resource,
+      variables,
+    };
+  });
 };
 
 export const extractVariablesFromLabels = extractVariablesFromMetadata;
