@@ -136,7 +136,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
           policyTarget.id,
           policyTarget,
-          { deduplication: { id: policyTarget.id, ttl: 500 } },
         );
       }
     } catch (e: any) {
@@ -145,7 +144,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         await getQueue(Channel.ComputeSystemsReleaseTargets).add(
           job.name,
           job.data,
-          { deduplication: { id: job.data.id, ttl: 500 } },
         );
         return;
       }

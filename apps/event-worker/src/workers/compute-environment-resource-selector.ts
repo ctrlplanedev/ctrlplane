@@ -86,7 +86,6 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
       getQueue(Channel.ComputeSystemsReleaseTargets).add(
         environment.system.id,
         environment.system,
-        { deduplication: { id: job.data.id, ttl: 500 } },
       );
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
@@ -94,7 +93,6 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
         await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
           job.name,
           job.data,
-          { deduplication: { id: job.data.id, ttl: 500 } },
         );
         return;
       }

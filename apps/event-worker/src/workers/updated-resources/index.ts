@@ -27,13 +27,11 @@ export const updatedResourceWorker = createWorker(
     await getQueue(Channel.ComputeDeploymentResourceSelector).add(
       resource.id,
       resource,
-      { deduplication: { id: resource.id, ttl: 500 } },
     );
 
     await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
       resource.id,
       resource,
-      { deduplication: { id: resource.id, ttl: 500 } },
     );
   }),
 );

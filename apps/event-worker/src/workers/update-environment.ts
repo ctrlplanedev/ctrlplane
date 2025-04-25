@@ -59,7 +59,6 @@ export const updateEnvironmentWorker = createWorker(
       await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
         job.data.id,
         job.data,
-        { deduplication: { id: job.data.id, ttl: 500 } },
       );
 
       const resourceQueryBuilder = selector().query().resources();

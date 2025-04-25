@@ -61,7 +61,6 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
       getQueue(Channel.ComputeSystemsReleaseTargets).add(
         deployment.system.id,
         deployment.system,
-        { deduplication: { id: job.data.id, ttl: 500 } },
       );
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
@@ -69,10 +68,7 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
         await getQueue(Channel.ComputeDeploymentResourceSelector).add(
           job.name,
           job.data,
-          {
-            deduplication: { id: job.data.id, ttl: 500 },
-            delay: 500,
-          },
+          { delay: 500 },
         );
         return;
       }

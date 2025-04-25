@@ -113,7 +113,6 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
       const jobs = releaseTargets.map((rt) => ({
         name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
         data: rt,
-        opts: { deduplication: { id: rt.id, ttl: 500 } },
       }));
       await getQueue(Channel.EvaluateReleaseTarget).addBulk(jobs);
     } catch (e: any) {
@@ -122,7 +121,6 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
         await getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
           job.name,
           job.data,
-          { deduplication: { id: job.data.id, ttl: 500 } },
         );
         return;
       }
