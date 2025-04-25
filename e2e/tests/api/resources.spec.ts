@@ -1,12 +1,34 @@
+import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
+import {
+  cleanupImportedEntities,
+  ImportedEntities,
+  importEntitiesFromYaml,
+} from "../../api";
 import { test } from "../fixtures";
 
+const yamlPath = path.join(__dirname, "resources.spec.yaml");
+
 test.describe("Resource API", () => {
+  let importedEntities: ImportedEntities;
+
+  test.beforeAll(async ({ api, workspace }) => {
+    importedEntities = await importEntitiesFromYaml(
+      api,
+      workspace.id,
+      yamlPath,
+    );
+  });
+
+  test.afterAll(async ({ api, workspace }) => {
+    await cleanupImportedEntities(api, importedEntities, workspace.id);
+  });
+
   test("create a resource", async ({ api, workspace }) => {
-    const resourceName1 = faker.string.alphanumeric(10);
-    const resourceName2 = faker.string.alphanumeric(10);
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const resourceName1 = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resource = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
@@ -29,11 +51,62 @@ test.describe("Resource API", () => {
     expect(resource.data?.version).toBe("test-version/v1");
     expect(resource.data?.config).toEqual({ "e2e-test": true });
     expect(resource.data?.metadata).toEqual({ "e2e-test": "true" });
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    const environment = importedEntities.environments[0]!;
+    const deployment = importedEntities.deployments[0]!;
+
+    const environmentResourcesResponse = await api.GET(
+      "/v1/environments/{environmentId}/resources",
+      { params: { path: { environmentId: environment.id } } },
+    );
+
+    expect(environmentResourcesResponse.response.status).toBe(200);
+    const environmentResources = environmentResourcesResponse.data?.resources;
+    const environmentResourceMatch = environmentResources?.find(
+      (r) => r.identifier === resourceName1,
+    );
+    expect(environmentResourceMatch).toBeDefined();
+
+    const deploymentResourcesResponse = await api.GET(
+      "/v1/deployments/{deploymentId}/resources",
+      { params: { path: { deploymentId: deployment.id } } },
+    );
+
+    expect(deploymentResourcesResponse.response.status).toBe(200);
+    const deploymentResources = deploymentResourcesResponse.data?.resources;
+    const deploymentResourceMatch = deploymentResources?.find(
+      (r) => r.identifier === resourceName1,
+    );
+    expect(deploymentResourceMatch).toBeDefined();
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: { resourceId: resource.data?.id ?? "" },
+        },
+      },
+    );
+
+    expect(releaseTargetsResponse.response.status).toBe(200);
+
+    const releaseTarget = releaseTargetsResponse.data?.find(
+      (rt) =>
+        rt.environment.id === environment.id &&
+        rt.deployment.id === deployment.id,
+    );
+    expect(releaseTarget).toBeDefined();
+
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: resource.data?.id ?? "" } },
+    });
   });
 
   test("get a resource by identifier", async ({ api, workspace }) => {
-    // First create a resource
-    const resourceName = faker.string.alphanumeric(10);
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
@@ -66,8 +139,8 @@ test.describe("Resource API", () => {
   });
 
   test("list resources", async ({ api, workspace }) => {
-    // First create some resources
-    const resourceName = faker.string.alphanumeric(10);
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
@@ -95,7 +168,8 @@ test.describe("Resource API", () => {
 
   test("update a resource", async ({ api, workspace }) => {
     // First create a resource
-    const resourceName = faker.string.alphanumeric(10);
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
@@ -125,7 +199,7 @@ test.describe("Resource API", () => {
     const resourceId = data?.id ?? "";
 
     // Update the resource
-    const newName = faker.string.alphanumeric(10);
+    const newName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const updateResponse = await api.PATCH("/v1/resources/{resourceId}", {
       params: {
         path: { resourceId },
@@ -140,13 +214,33 @@ test.describe("Resource API", () => {
     const { data: updatedData } = updateResponse;
     expect(updatedData?.name).toBe(newName);
     expect(updatedData?.metadata?.["e2e-test"]).toBe("updated");
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    const environment = importedEntities.environments[0]!;
+    const deployment = importedEntities.deployments[0]!;
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: { path: { resourceId } },
+      },
+    );
+
+    expect(releaseTargetsResponse.response.status).toBe(200);
+    const releaseTarget = releaseTargetsResponse.data?.find(
+      (rt) =>
+        rt.environment.id === environment.id &&
+        rt.deployment.id === deployment.id,
+    );
+    expect(releaseTarget).toBeDefined();
   });
 
   test("delete a resource", async ({ api, workspace }) => {
     // First create a resource
-    const resourceName = faker.string.alphanumeric(10);
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resourceIdentifer = `${resourceName}/${faker.string.alphanumeric(10)}`;
-    await api.POST("/v1/resources", {
+    const resourceResponse = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
         name: resourceName,
@@ -157,6 +251,10 @@ test.describe("Resource API", () => {
         metadata: { "e2e-test": "true" },
       },
     });
+
+    expect(resourceResponse.response.status).toBe(200);
+    const resourceId = resourceResponse.data?.id;
+    expect(resourceId).toBeDefined();
 
     // Delete by identifier
     const deleteResponse = await api.DELETE(
@@ -187,12 +285,42 @@ test.describe("Resource API", () => {
       },
     );
     expect(getResponse.response.status).toBe(404);
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    const environment = importedEntities.environments[0]!;
+    const deployment = importedEntities.deployments[0]!;
+
+    const environmentResourcesResponse = await api.GET(
+      "/v1/environments/{environmentId}/resources",
+      { params: { path: { environmentId: environment.id } } },
+    );
+
+    expect(environmentResourcesResponse.response.status).toBe(200);
+    const environmentResources = environmentResourcesResponse.data?.resources;
+    const environmentResourceMatch = environmentResources?.find(
+      (r) => r.identifier === resourceIdentifer,
+    );
+    expect(environmentResourceMatch).toBeUndefined();
+
+    const deploymentResourcesResponse = await api.GET(
+      "/v1/deployments/{deploymentId}/resources",
+      { params: { path: { deploymentId: deployment.id } } },
+    );
+
+    expect(deploymentResourcesResponse.response.status).toBe(200);
+    const deploymentResources = deploymentResourcesResponse.data?.resources;
+    const deploymentResourceMatch = deploymentResources?.find(
+      (r) => r.identifier === resourceIdentifer,
+    );
+    expect(deploymentResourceMatch).toBeUndefined();
   });
 
   test("create resource relationship", async ({ api, workspace }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     // Create two resources
-    const resource1Name = faker.string.alphanumeric(10);
-    const resource2Name = faker.string.alphanumeric(10);
+    const resource1Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const resource2Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
 
     await api.POST("/v1/resources", {
       body: {

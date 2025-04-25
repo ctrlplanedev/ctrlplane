@@ -1,0 +1,23 @@
+system:
+  name: "{{ prefix }}-resource"
+  slug: "{{ prefix }}-resource"
+  description: System for testing resources
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing resources
+    systemId: "{{ prefix }}-resource"
+    resourceSelector:
+      type: identifier
+      operator: "contains"
+      value: "{{ prefix }}"
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: Deployment for testing resources
+    resourceSelector:
+      type: identifier
+      operator: "contains"
+      value: "{{ prefix }}"
