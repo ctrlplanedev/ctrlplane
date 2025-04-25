@@ -58,6 +58,32 @@ export const openapi: Swagger.SwaggerV3 = {
               },
             },
           },
+          "404": {
+            description: "Deployment version not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal server error",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },

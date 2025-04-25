@@ -3,6 +3,10 @@ import type { Worker } from "bullmq";
 
 import { Channel } from "@ctrlplane/events";
 
+import { computeDeploymentResourceSelectorWorkerEvent } from "./compute-deployment-resource-selector.js";
+import { computeEnvironmentResourceSelectorWorkerEvent } from "./compute-environment-resource-selector.js";
+import { computePolicyTargetReleaseTargetSelectorWorkerEvent } from "./compute-policy-target-release-target-selector.js";
+import { computeSystemsReleaseTargetsWorker } from "./compute-systems-release-targets.js";
 import { deleteResourceWorker } from "./delete-resource.js";
 import { evaluateReleaseTargetWorker } from "./evaluate-release-target.js";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
@@ -26,15 +30,26 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.NewDeployment]: newDeploymentWorker,
   [Channel.NewDeploymentVersion]: newDeploymentVersionWorker,
   [Channel.NewEnvironment]: newEnvironmentWorker,
+  [Channel.NewResource]: newResourceWorker,
+  [Channel.NewPolicy]: newPolicyWorker,
+
   [Channel.UpdateEnvironment]: updateEnvironmentWorker,
   [Channel.UpdateDeployment]: updateDeploymentWorker,
+  [Channel.UpdatedResource]: updatedResourceWorker,
   [Channel.UpdateDeploymentVariable]: updateDeploymentVariableWorker,
   [Channel.UpdateResourceVariable]: updateResourceVariableWorker,
   [Channel.EvaluateReleaseTarget]: evaluateReleaseTargetWorker,
   [Channel.DispatchJob]: dispatchJobWorker,
   [Channel.ResourceScan]: resourceScanWorker,
-  [Channel.UpdatedResource]: updatedResourceWorker,
-  [Channel.NewResource]: newResourceWorker,
-  [Channel.NewPolicy]: newPolicyWorker,
+
   [Channel.DeleteResource]: deleteResourceWorker,
+
+  [Channel.ComputeEnvironmentResourceSelector]:
+    computeEnvironmentResourceSelectorWorkerEvent,
+  [Channel.ComputeDeploymentResourceSelector]:
+    computeDeploymentResourceSelectorWorkerEvent,
+  [Channel.ComputePolicyTargetReleaseTargetSelector]:
+    computePolicyTargetReleaseTargetSelectorWorkerEvent,
+
+  [Channel.ComputeSystemsReleaseTargets]: computeSystemsReleaseTargetsWorker,
 };

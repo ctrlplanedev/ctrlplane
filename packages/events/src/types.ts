@@ -28,6 +28,11 @@ export enum Channel {
   DeleteResource = "delete-resource",
 
   EvaluateReleaseTarget = "evaluate-release-target",
+
+  ComputeSystemsReleaseTargets = "compute-systems-release-targets",
+  ComputeEnvironmentResourceSelector = "compute-environment-resource-selector",
+  ComputeDeploymentResourceSelector = "compute-deployment-resource-selector",
+  ComputePolicyTargetReleaseTargetSelector = "compute-policy-target-release-target-selector",
 }
 
 export type EvaluateReleaseTargetJob = {
@@ -58,4 +63,9 @@ export type ChannelMap = {
   [Channel.EvaluateReleaseTarget]: EvaluateReleaseTargetJob;
   [Channel.DispatchJob]: { jobId: string };
   [Channel.ResourceScan]: { resourceProviderId: string };
+
+  [Channel.ComputeEnvironmentResourceSelector]: { id: string };
+  [Channel.ComputeDeploymentResourceSelector]: { id: string };
+  [Channel.ComputePolicyTargetReleaseTargetSelector]: { id: string };
+  [Channel.ComputeSystemsReleaseTargets]: { id: string };
 };

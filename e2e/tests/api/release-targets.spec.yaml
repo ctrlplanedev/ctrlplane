@@ -1,0 +1,29 @@
+system:
+  name: "{{ prefix }}-release-targets"
+  slug: "{{ prefix }}-release-targets"
+  description: System for testing release targets
+
+resources:
+  - name: "{{ prefix }}-resource"
+    kind: "service"
+    identifier: "{{ prefix }}-resource"
+    version: "1.0.0"
+    config:
+      enabled: true
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing release targets
+    resourceSelector:
+      type: "comparison"
+      operator: "and"
+      conditions:
+        - type: "identifier"
+          operator: "equals"
+          value: "{{ prefix }}-resource"
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: Deployment for testing release targets

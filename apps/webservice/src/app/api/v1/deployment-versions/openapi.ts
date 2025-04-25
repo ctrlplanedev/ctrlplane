@@ -45,7 +45,7 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
         responses: {
-          "200": {
+          "201": {
             description: "OK",
             content: {
               "application/json": {
@@ -53,15 +53,14 @@ export const openapi: Swagger.SwaggerV3 = {
               },
             },
           },
-          "409": {
-            description: "Deployment version already exists",
+          "500": {
+            description: "Internal server error",
             content: {
               "application/json": {
                 schema: {
                   type: "object",
                   properties: {
                     error: { type: "string" },
-                    id: { type: "string" },
                   },
                 },
               },

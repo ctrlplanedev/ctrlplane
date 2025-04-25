@@ -1,0 +1,29 @@
+system:
+  name: "{{ prefix }}-deployment-version"
+  slug: "{{ prefix }}-deployment-version"
+  description: System for testing deployment versions
+
+resources:
+  - name: "{{ prefix }}-resource"
+    kind: "service"
+    identifier: "{{ prefix }}-resource"
+    version: "1.0.0"
+    config:
+      enabled: true
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: Deployment for testing deployment versions
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing deployment versions
+    resourceSelector:
+      type: "comparison"
+      operator: "and"
+      conditions:
+        - type: "identifier"
+          operator: "equals"
+          value: "{{ prefix }}-resource"

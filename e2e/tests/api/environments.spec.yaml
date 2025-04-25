@@ -21,3 +21,8 @@ resources:
       enabled: true
     metadata:
       env: prod
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: Deployment for testing environments

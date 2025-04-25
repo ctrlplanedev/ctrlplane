@@ -1,26 +1,21 @@
 import _ from "lodash";
 
-import { eq, selector } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-import { handleEvent } from "@ctrlplane/job-dispatch";
+import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
-import { dispatchEvaluateJobs } from "../../utils/dispatch-evaluate-jobs.js";
 import { withSpan } from "./span.js";
 
-const dispatchExitHooks = async (
-  deployments: SCHEMA.Deployment[],
-  exitedResource: SCHEMA.Resource,
-) => {
-  const events = deployments.map((deployment) => ({
-    action: "deployment.resource.removed" as const,
-    payload: { deployment, resource: exitedResource },
-  }));
+// const dispatchExitHooks = async (
+//   deployments: SCHEMA.Deployment[],
+//   exitedResource: SCHEMA.Resource,
+// ) => {
+//   const events = deployments.map((deployment) => ({
+//     action: "deployment.resource.removed" as const,
+//     payload: { deployment, resource: exitedResource },
+//   }));
 
-  const handleEventPromises = events.map(handleEvent);
-  await Promise.allSettled(handleEventPromises);
-};
+//   const handleEventPromises = events.map(handleEvent);
+//   await Promise.allSettled(handleEventPromises);
+// };
 
 export const updatedResourceWorker = createWorker(
   Channel.UpdatedResource,
@@ -29,23 +24,22 @@ export const updatedResourceWorker = createWorker(
     span.setAttribute("resource.name", resource.name);
     span.setAttribute("workspace.id", resource.workspaceId);
 
-    const currentReleaseTargets = await db.query.releaseTarget.findMany({
-      where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
-      with: { deployment: true },
-    });
-    const currentDeployments = currentReleaseTargets.map((rt) => rt.deployment);
+    await getQueue(Channel.ComputeDeploymentResourceSelector).add(
+      resource.id,
+      resource,
+      { deduplication: { id: resource.id, ttl: 500 } },
+    );
 
-    const rts = await selector()
-      .compute()
-      .resources([resource])
-      .releaseTargets();
+    // const currentReleaseTargets = await db.query.releaseTarget.findMany({
+    //   where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
+    //   with: { deployment: true },
+    // });
+    // const currentDeployments = currentReleaseTargets.map((rt) => rt.deployment);
 
-    await dispatchEvaluateJobs(rts);
-
-    const exitedDeployments = _.chain(currentDeployments)
-      .filter((d) => !rts.some((nrt) => nrt.deploymentId === d.id))
-      .uniqBy((d) => d.id)
-      .value();
-    await dispatchExitHooks(exitedDeployments, resource);
+    // const exitedDeployments = _.chain(currentDeployments)
+    //   .filter((d) => !rts.some((nrt) => nrt.deploymentId === d.id))
+    //   .uniqBy((d) => d.id)
+    //   .value();
+    // await dispatchExitHooks(exitedDeployments, resource);
   }),
 );

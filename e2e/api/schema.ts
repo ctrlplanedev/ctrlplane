@@ -526,6 +526,23 @@ export interface paths {
     patch: operations["updateResource"];
     trace?: never;
   };
+  "/v1/resources/{resourceId}/release-targets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get release targets for a resource */
+    get: operations["getReleaseTargets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/resources": {
     parameters: {
       query?: never;
@@ -917,8 +934,10 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       metadata?: {
-        [key: string]: unknown;
+        [key: string]: string;
       };
+      /** @enum {string} */
+      status?: "building" | "ready" | "failed";
     };
     Policy: {
       /**
@@ -1107,6 +1126,13 @@ export interface components {
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
     };
+    ReleaseTarget: {
+      /** Format: uuid */
+      id: string;
+      resource: components["schemas"]["Resource"];
+      environment: components["schemas"]["Environment"];
+      deployment: components["schemas"]["Deployment"];
+    };
   };
   responses: never;
   parameters: never;
@@ -1282,6 +1308,28 @@ export interface operations {
           "application/json": components["schemas"]["DeploymentVersion"];
         };
       };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
   };
   upsertDeploymentVersion: {
@@ -1316,7 +1364,7 @@ export interface operations {
     };
     responses: {
       /** @description OK */
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
@@ -1324,15 +1372,14 @@ export interface operations {
           "application/json": components["schemas"]["DeploymentVersion"];
         };
       };
-      /** @description Deployment version already exists */
-      409: {
+      /** @description Internal server error */
+      500: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
             error?: string;
-            id?: string;
           };
         };
       };
@@ -1484,7 +1531,23 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UpdateDeployment"];
+        "application/json": {
+          name?: string;
+          slug?: string;
+          description?: string;
+          /** Format: uuid */
+          systemId?: string;
+          /** Format: uuid */
+          jobAgentId?: string | null;
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          retryCount?: number;
+          timeout?: number | null;
+          resourceSelector?: {
+            [key: string]: unknown;
+          } | null;
+        };
       };
     };
     responses: {
@@ -1598,13 +1661,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            resources?: {
-              id?: string;
-              name?: string;
-              identifier?: string;
-              kind?: string;
-              version?: string;
-            }[];
+            resources?: components["schemas"]["Resource"][];
             count?: number;
           };
         };
@@ -1682,7 +1739,9 @@ export interface operations {
            *       "key": "value"
            *     }
            */
-          resourceSelector?: Record<string, never>;
+          resourceSelector?: {
+            [key: string]: unknown;
+          };
         };
       };
     };
@@ -1797,13 +1856,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            resources?: {
-              id?: string;
-              name?: string;
-              identifier?: string;
-              kind?: string;
-              version?: string;
-            }[];
+            resources?: components["schemas"]["Resource"][];
             count?: number;
           };
         };
@@ -3039,6 +3092,29 @@ export interface operations {
           "application/json": {
             error: string;
           };
+        };
+      };
+    };
+  };
+  getReleaseTargets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource ID */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTarget"][];
         };
       };
     };

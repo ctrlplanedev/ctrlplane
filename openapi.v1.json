@@ -294,6 +294,36 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Deployment version not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -357,7 +387,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "OK",
             "content": {
               "application/json": {
@@ -367,17 +397,14 @@
               }
             }
           },
-          "409": {
-            "description": "Deployment version already exists",
+          "500": {
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "error": {
-                      "type": "string"
-                    },
-                    "id": {
                       "type": "string"
                     }
                   }
@@ -614,7 +641,43 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateDeployment"
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "systemId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "jobAgentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "jobAgentConfig": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "retryCount": {
+                    "type": "integer"
+                  },
+                  "timeout": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "resourceSelector": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "nullable": true
+                  }
+                }
               }
             }
           }
@@ -793,24 +856,7 @@
                     "resources": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "identifier": {
-                            "type": "string"
-                          },
-                          "kind": {
-                            "type": "string"
-                          },
-                          "version": {
-                            "type": "string"
-                          }
-                        }
+                        "$ref": "#/components/schemas/Resource"
                       }
                     },
                     "count": {
@@ -898,7 +944,8 @@
                     "description": "The resource selector for the deployment",
                     "example": {
                       "key": "value"
-                    }
+                    },
+                    "additionalProperties": true
                   }
                 },
                 "required": [
@@ -1059,24 +1106,7 @@
                     "resources": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "identifier": {
-                            "type": "string"
-                          },
-                          "kind": {
-                            "type": "string"
-                          },
-                          "version": {
-                            "type": "string"
-                          }
-                        }
+                        "$ref": "#/components/schemas/Resource"
                       }
                     },
                     "count": {
@@ -3104,6 +3134,39 @@
         }
       }
     },
+    "/v1/resources/{resourceId}/release-targets": {
+      "get": {
+        "summary": "Get release targets for a resource",
+        "operationId": "getReleaseTargets",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The resource ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReleaseTarget"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/resources": {
       "post": {
         "summary": "Create or update a resource",
@@ -4543,7 +4606,17 @@
           },
           "metadata": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "building",
+              "ready",
+              "failed"
+            ]
           }
         },
         "required": [
@@ -5036,6 +5109,30 @@
           "denyWindows",
           "versionUserApprovals",
           "versionRoleApprovals"
+        ]
+      },
+      "ReleaseTarget": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "environment": {
+            "$ref": "#/components/schemas/Environment"
+          },
+          "deployment": {
+            "$ref": "#/components/schemas/Deployment"
+          }
+        },
+        "required": [
+          "id",
+          "resource",
+          "environment",
+          "deployment"
         ]
       }
     },
