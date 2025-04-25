@@ -109,7 +109,9 @@ test.describe("Deployments API", () => {
     expect(updateDeployment.data?.timeout).toBe(1000);
   });
 
-  test("should delete a deployment", async ({ api }) => {
+  test("should delete a deployment", async ({ api, workspace }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
@@ -122,6 +124,41 @@ test.describe("Deployments API", () => {
     const deploymentId = deployment.data?.id;
     expect(deploymentId).toBeDefined();
     if (!deploymentId) throw new Error("Deployment ID is undefined");
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    const resourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: `${systemPrefix}-qa-resource`,
+          },
+        },
+      },
+    );
+
+    expect(resourceResponse.response.status).toBe(200);
+    const resourceId = resourceResponse.data?.id;
+    expect(resourceId).toBeDefined();
+    if (!resourceId) throw new Error("Resource ID is undefined");
+
+    const releaseTargetsBeforeDeleteResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: { path: { resourceId } },
+      },
+    );
+
+    expect(releaseTargetsBeforeDeleteResponse.response.status).toBe(200);
+    const deploymentMatchBeforeDelete =
+      releaseTargetsBeforeDeleteResponse.data?.find(
+        (rt) => rt.deployment.id === deploymentId,
+      );
+    expect(deploymentMatchBeforeDelete).toBeDefined();
+    if (!deploymentMatchBeforeDelete)
+      throw new Error("No deployment match found");
 
     const deleteDeployment = await api.DELETE(
       "/v1/deployments/{deploymentId}",
@@ -146,6 +183,20 @@ test.describe("Deployments API", () => {
     });
 
     expect(getDeployment.data).toBeUndefined();
+
+    const releaseTargetsAfterDeleteResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: { path: { resourceId } },
+      },
+    );
+
+    expect(releaseTargetsAfterDeleteResponse.response.status).toBe(200);
+    const deploymentMatchAfterDelete =
+      releaseTargetsAfterDeleteResponse.data?.find(
+        (rt) => rt.deployment.id === deploymentId,
+      );
+    expect(deploymentMatchAfterDelete).toBeUndefined();
   });
 
   test("should match resources to a deployment", async ({ api, page }) => {
