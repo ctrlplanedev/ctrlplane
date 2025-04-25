@@ -337,20 +337,60 @@ test.describe("Environments API", () => {
     expect(getResponse.data?.description).toBe(updatedDescription);
   });
 
-  test("should delete an environment", async ({ api }) => {
+  test("should delete an environment", async ({ api, workspace }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+
     // First create an environment
     const environmentName = faker.string.alphanumeric(10);
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: environmentName,
         systemId: importedEntities.system.id,
+        resourceSelector: {
+          type: "identifier",
+          operator: "equals",
+          value: `${systemPrefix}-qa-resource`,
+        },
       },
     });
 
     expect(environmentResponse.response.status).toBe(200);
     expect(environmentResponse.data?.id).toBeDefined();
-
     const environmentId = environmentResponse.data!.id;
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+    const resourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: `${systemPrefix}-qa-resource`,
+          },
+        },
+      },
+    );
+
+    expect(resourceResponse.response.status).toBe(200);
+    const resourceId = resourceResponse.data!.id;
+    expect(resourceId).toBeDefined();
+
+    const releaseTargetsBeforeDeleteResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: { path: { resourceId } },
+      },
+    );
+
+    expect(releaseTargetsBeforeDeleteResponse.response.status).toBe(200);
+    const environmentMatchBeforeDelete =
+      releaseTargetsBeforeDeleteResponse.data?.find(
+        (rt) => rt.environment.id === environmentId,
+      );
+    expect(environmentMatchBeforeDelete).toBeDefined();
+    if (!environmentMatchBeforeDelete)
+      throw new Error("No environment match found");
 
     // Delete the environment
     const deleteResponse = await api.DELETE(
@@ -371,6 +411,20 @@ test.describe("Environments API", () => {
     // Accept either 404 (not found) or 500 (internal server error) as valid responses
     // since the API implementation may be returning 500 for deleted resources
     expect([404, 500]).toContain(getResponse.response.status);
+
+    const releaseTargetsAfterDeleteResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: { path: { resourceId } },
+      },
+    );
+
+    expect(releaseTargetsAfterDeleteResponse.response.status).toBe(200);
+    const environmentMatchAfterDelete =
+      releaseTargetsAfterDeleteResponse.data?.find(
+        (rt) => rt.environment.id === environmentId,
+      );
+    expect(environmentMatchAfterDelete).toBeUndefined();
   });
 
   test("should match not match deleted resources", async ({
