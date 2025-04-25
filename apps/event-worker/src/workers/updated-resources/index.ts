@@ -30,16 +30,10 @@ export const updatedResourceWorker = createWorker(
       { deduplication: { id: resource.id, ttl: 500 } },
     );
 
-    // const currentReleaseTargets = await db.query.releaseTarget.findMany({
-    //   where: eq(SCHEMA.releaseTarget.resourceId, resource.id),
-    //   with: { deployment: true },
-    // });
-    // const currentDeployments = currentReleaseTargets.map((rt) => rt.deployment);
-
-    // const exitedDeployments = _.chain(currentDeployments)
-    //   .filter((d) => !rts.some((nrt) => nrt.deploymentId === d.id))
-    //   .uniqBy((d) => d.id)
-    //   .value();
-    // await dispatchExitHooks(exitedDeployments, resource);
+    await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
+      resource.id,
+      resource,
+      { deduplication: { id: resource.id, ttl: 500 } },
+    );
   }),
 );
