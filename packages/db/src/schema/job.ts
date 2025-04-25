@@ -155,7 +155,7 @@ export const jobVariable = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     jobId: uuid("job_id")
       .notNull()
-      .references(() => job.id),
+      .references(() => job.id, { onDelete: "cascade" }),
     key: text("key").notNull(),
     value: json("value").notNull(),
     sensitive: boolean("sensitive").notNull().default(false),
