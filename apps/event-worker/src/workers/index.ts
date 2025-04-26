@@ -19,6 +19,7 @@ import { resourceScanWorker } from "./resource-scan/index.js";
 import { updateDeploymentVariableWorker } from "./update-deployment-variable.js";
 import { updateDeploymentWorker } from "./update-deployment.js";
 import { updateEnvironmentWorker } from "./update-environment.js";
+import { updatePolicyWorker } from "./update-policy.js";
 import { updateResourceVariableWorker } from "./update-resource-variable.js";
 import { updatedResourceWorker } from "./updated-resources/index.js";
 
@@ -38,6 +39,8 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.UpdatedResource]: updatedResourceWorker,
   [Channel.UpdateDeploymentVariable]: updateDeploymentVariableWorker,
   [Channel.UpdateResourceVariable]: updateResourceVariableWorker,
+  [Channel.UpdatePolicy]: updatePolicyWorker,
+
   [Channel.EvaluateReleaseTarget]: evaluateReleaseTargetWorker,
   [Channel.DispatchJob]: dispatchJobWorker,
   [Channel.ResourceScan]: resourceScanWorker,

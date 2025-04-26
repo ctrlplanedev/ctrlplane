@@ -334,7 +334,8 @@ export interface paths {
     delete: operations["deletePolicy"];
     options?: never;
     head?: never;
-    patch?: never;
+    /** Update a policy */
+    patch: operations["updatePolicy"];
     trace?: never;
   };
   "/v1/policies/{policyId}/release-targets": {
@@ -2205,7 +2206,83 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  updatePolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name?: string;
+          description?: string;
+          priority?: number;
+          enabled?: boolean;
+          workspaceId?: string;
+          targets?: components["schemas"]["PolicyTarget"][];
+          denyWindows?: {
+            timeZone: string;
+            rrule?: {
+              [key: string]: unknown;
+            };
+            /** Format: date-time */
+            dtend?: string;
+          }[];
+          deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
+          versionAnyApprovals?: {
+            requiredApprovalsCount?: number;
+          }[];
+          versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
+          versionRoleApprovals?: {
+            roleId: string;
+            requiredApprovalsCount?: number;
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Policy"];
+        };
+      };
+      /** @description Policy not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
       };
     };
   };
@@ -2228,28 +2305,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            releaseTargets?: {
-              id?: string;
-              name?: string;
-              description?: string;
-              policyTarget?: {
-                id?: string;
-                name?: string;
-                policyId?: string;
-                description?: string;
-              };
-              resource?: {
-                id?: string;
-                name?: string;
-                identifier?: string;
-                kind?: string;
-                version?: string;
-              };
-              environment?: {
-                id?: string;
-                name?: string;
-              };
-            }[];
+            releaseTargets?: components["schemas"]["ReleaseTarget"][];
             count?: number;
           };
         };

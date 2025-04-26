@@ -1,0 +1,49 @@
+system:
+  name: "{{ prefix }}-systems"
+  slug: "{{ prefix }}-systems"
+  description: Systems for testing matched release targets
+
+resources:
+  - name: "{{ prefix }}-prod"
+    kind: service
+    identifier: "{{ prefix }}-prod"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+    description: Prod resource
+  - name: "{{ prefix }}-qa"
+    kind: service
+    identifier: "{{ prefix }}-qa"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa
+    description: QA resource
+
+environments:
+  - name: "{{ prefix }}-a"
+    description: Prod environment
+    systemId: "{{ prefix }}-systems"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+  - name: "{{ prefix }}-b"
+    description: QA environment
+    systemId: "{{ prefix }}-systems"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+deployments:
+  - name: "{{ prefix }}-deployment-a"
+    slug: "{{ prefix }}-deployment-a"
+    description: Deployment for testing matched release targets
+  - name: "{{ prefix }}-deployment-b"
+    slug: "{{ prefix }}-deployment-b"
+    description: Deployment for testing matched release targets
