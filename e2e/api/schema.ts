@@ -474,6 +474,23 @@ export interface paths {
     patch: operations["setResourceProvidersResources"];
     trace?: never;
   };
+  "/v1/resource-relationship-rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a resource relationship rule */
+    post: operations["createResourceRelationshipRule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/resource-schemas": {
     parameters: {
       query?: never;
@@ -2849,6 +2866,63 @@ export interface operations {
       };
     };
   };
+  createResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          workspaceId: string;
+          name: string;
+          reference: string;
+          relationshipType: string;
+          description?: string;
+          sourceKind: string;
+          sourceVersion: string;
+          targetKind: string;
+          targetVersion: string;
+          metadataKeysMatch?: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Resource relationship rule created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id?: string;
+            workspaceId?: string;
+            name?: string;
+            reference?: string;
+            relationshipType?: string;
+            description?: string;
+            sourceKind?: string;
+            sourceVersion?: string;
+            targetKind?: string;
+            targetVersion?: string;
+          };
+        };
+      };
+      /** @description Failed to create resource relationship rule */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   createResourceSchema: {
     parameters: {
       query?: never;
@@ -3668,22 +3742,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            id: string;
-            name: string;
-            workspaceId: string;
-            kind: string;
-            identifier: string;
-            version: string;
-            providerId: string;
-            config?: {
-              [key: string]: unknown;
-            };
-            provider?: {
-              id?: string;
-              name?: string;
-              workspaceId?: string;
-            };
+          "application/json": components["schemas"]["Resource"] & {
             variables?: {
               id?: string;
               key?: string;
@@ -3691,6 +3750,14 @@ export interface operations {
             }[];
             metadata?: {
               [key: string]: string;
+            };
+            relationships?: {
+              [key: string]: {
+                ruleId: string;
+                type: string;
+                reference: string;
+                target: components["schemas"]["Resource"];
+              };
             };
           };
         };

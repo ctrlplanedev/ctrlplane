@@ -30,3 +30,4 @@ export * from "./environment-relations.js";
 export * from "./environment-policy-relations.js";
 export * from "./release-channel-relations.js";
 export * from "./policy-relations.js";
+export * from "./resource-relationship-rule.js";

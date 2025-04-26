@@ -37,67 +37,43 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  properties: {
-                    id: {
-                      type: "string",
-                    },
-                    name: {
-                      type: "string",
-                    },
-                    workspaceId: {
-                      type: "string",
-                    },
-                    kind: {
-                      type: "string",
-                    },
-                    identifier: {
-                      type: "string",
-                    },
-                    version: {
-                      type: "string",
-                    },
-                    providerId: {
-                      type: "string",
-                    },
-                    config: {
-                      type: "object",
-                      additionalProperties: true,
-                    },
-                    provider: {
+                  allOf: [
+                    { $ref: "#/components/schemas/Resource" },
+                    {
                       type: "object",
                       properties: {
-                        id: { type: "string" },
-                        name: { type: "string" },
-                        workspaceId: { type: "string" },
-                      },
-                    },
-                    variables: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          key: { type: "string" },
-                          value: { type: "string" },
+                        variables: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              id: { type: "string" },
+                              key: { type: "string" },
+                              value: { type: "string" },
+                            },
+                          },
+                        },
+                        metadata: {
+                          type: "object",
+                          additionalProperties: {
+                            type: "string",
+                          },
+                        },
+                        relationships: {
+                          type: "object",
+                          additionalProperties: {
+                            type: "object",
+                            properties: {
+                              ruleId: { type: "string" },
+                              type: { type: "string" },
+                              reference: { type: "string" },
+                              target: { $ref: "#/components/schemas/Resource" },
+                            },
+                            required: ["ruleId", "type", "reference", "target"],
+                          },
                         },
                       },
                     },
-                    metadata: {
-                      type: "object",
-                      additionalProperties: {
-                        type: "string",
-                      },
-                    },
-                  },
-                  required: [
-                    "id",
-                    "name",
-                    "kind",
-                    "version",
-                    "identifier",
-                    "workspaceId",
-                    "providerId",
                   ],
                 },
               },

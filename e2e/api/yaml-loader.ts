@@ -52,6 +52,7 @@ export interface TestYamlFile {
 
 // Define return type for imported entities
 export interface ImportedEntities {
+  prefix: string;
   system: {
     id: string;
     name: string;
@@ -103,13 +104,13 @@ export async function importEntitiesFromYaml(
 
   const fileContent = fs.readFileSync(resolvedPath, "utf8");
   const template = compile(fileContent);
-  const fileTemplated = template({
-    prefix: faker.string.alphanumeric(6),
-  });
+  const prefix = faker.string.alphanumeric(6);
+  const fileTemplated = template({ prefix });
   let data = yaml.load(fileTemplated) as TestYamlFile;
 
   // Initialize result object
   const result: ImportedEntities = {
+    prefix,
     system: { id: "", name: "", slug: "" },
     environments: [],
     resources: [],
