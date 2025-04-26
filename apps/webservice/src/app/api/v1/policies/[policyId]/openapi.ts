@@ -9,6 +9,117 @@ export const openapi: Swagger.SwaggerV3 = {
 
   paths: {
     "/v1/policies/{policyId}": {
+      patch: {
+        summary: "Update a policy",
+        operationId: "updatePolicy",
+        parameters: [
+          {
+            name: "policyId",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  description: { type: "string" },
+                  priority: { type: "number" },
+                  enabled: { type: "boolean" },
+                  workspaceId: { type: "string" },
+                  targets: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/PolicyTarget" },
+                  },
+                  denyWindows: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        timeZone: { type: "string" },
+                        rrule: { type: "object", additionalProperties: true },
+                        dtend: { type: "string", format: "date-time" },
+                      },
+                      required: ["timeZone"],
+                    },
+                  },
+                  deploymentVersionSelector: {
+                    $ref: "#/components/schemas/DeploymentVersionSelector",
+                  },
+                  versionAnyApprovals: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        requiredApprovalsCount: { type: "number" },
+                      },
+                    },
+                  },
+                  versionUserApprovals: {
+                    type: "array",
+                    items: {
+                      $ref: "#/components/schemas/VersionUserApproval",
+                    },
+                  },
+                  versionRoleApprovals: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        roleId: { type: "string" },
+                        requiredApprovalsCount: { type: "number" },
+                      },
+                      required: ["roleId"],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Policy" },
+              },
+            },
+          },
+          404: {
+            description: "Policy not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+
       delete: {
         summary: "Delete a policy",
         operationId: "deletePolicy",
@@ -36,6 +147,16 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           500: {
             description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
           },
         },
       },

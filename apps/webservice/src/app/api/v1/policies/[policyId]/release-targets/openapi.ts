@@ -32,40 +32,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   properties: {
                     releaseTargets: {
                       type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          name: { type: "string" },
-                          description: { type: "string" },
-                          policyTarget: {
-                            type: "object",
-                            properties: {
-                              id: { type: "string" },
-                              name: { type: "string" },
-                              policyId: { type: "string" },
-                              description: { type: "string" },
-                            },
-                          },
-                          resource: {
-                            type: "object",
-                            properties: {
-                              id: { type: "string" },
-                              name: { type: "string" },
-                              identifier: { type: "string" },
-                              kind: { type: "string" },
-                              version: { type: "string" },
-                            },
-                          },
-                          environment: {
-                            type: "object",
-                            properties: {
-                              id: { type: "string" },
-                              name: { type: "string" },
-                            },
-                          },
-                        },
-                      },
+                      items: { $ref: "#/components/schemas/ReleaseTarget" },
                     },
                     count: { type: "number" },
                   },
