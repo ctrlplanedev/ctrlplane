@@ -673,6 +673,13 @@
       "when": 1745686647878,
       "tag": "0095_wandering_wendell_vaughn",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1745777871806,
+      "tag": "0096_loose_champions",
+      "breakpoints": true
     }
   ]
 }

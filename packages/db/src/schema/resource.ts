@@ -391,12 +391,28 @@ export const resourceVariable = pgTable(
     resourceId: uuid("resource_id")
       .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
-
     key: text("key").notNull(),
-    value: jsonb("value").$type<string | number | boolean>().notNull(),
+
+    // Direct value fields
+    value: jsonb("value").$type<string | number | boolean | object>(),
     sensitive: boolean("sensitive").notNull().default(false),
+
+    // Reference fields
+    reference: text("reference"),
+    path: text("path").array(),
+    defaultValue: jsonb("default_value").$type<string | number | boolean>(),
+
+    // Ensure either value OR (reference AND path) are set
+    valueType: text("value_type").notNull().default("direct"), // 'direct' | 'reference'
   },
-  (t) => ({ uniq: uniqueIndex().on(t.resourceId, t.key) }),
+  (t) => [
+    uniqueIndex().on(t.resourceId, t.key),
+    // Add a check constraint to ensure proper field combinations
+    sql`CONSTRAINT valid_value_type CHECK (
+      (value_type = 'direct' AND value IS NOT NULL AND reference IS NULL AND path IS NULL) OR
+      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL)
+    )`,
+  ],
 );
 
 export const resourceVariableRelations = relations(
@@ -410,8 +426,51 @@ export const resourceVariableRelations = relations(
 );
 
 export const createResourceVariable = createInsertSchema(resourceVariable, {
-  value: z.union([z.string(), z.number(), z.boolean()]),
-}).omit({ id: true });
+  value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  reference: z.string().optional(),
+  path: z.array(z.string()).optional(),
+  defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  valueType: z.enum(["direct", "reference"]),
+})
+  .omit({ id: true })
+  .refine(
+    (data) => {
+      if (data.valueType === "direct") {
+        return (
+          data.value != null && data.reference == null && data.path == null
+        );
+      } else {
+        return (
+          data.value == null && data.reference != null && data.path != null
+        );
+      }
+    },
+    { message: "Invalid combination of fields for the specified value type" },
+  );
 
-export const updateResourceVariable = createResourceVariable.partial();
+// For updates, we'll create a new schema that makes all fields optional
+export const updateResourceVariable = z
+  .object({
+    value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    reference: z.string().optional(),
+    path: z.array(z.string()).optional(),
+    defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    valueType: z.enum(["direct", "reference"]).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.valueType === "direct") {
+        return (
+          data.value != null && data.reference == null && data.path == null
+        );
+      } else if (data.valueType === "reference") {
+        return (
+          data.value == null && data.reference != null && data.path != null
+        );
+      }
+      return true; // If valueType not provided, no validation needed
+    },
+    { message: "Invalid combination of fields for the specified value type" },
+  );
+
 export type ResourceVariable = InferSelectModel<typeof resourceVariable>;

@@ -16,10 +16,8 @@ import {
 import type { ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, Variable, VariableProvider } from "./types.js";
 
-export type DatabaseResourceVariableOptions = Pick<
-  ReleaseTargetIdentifier,
-  "resourceId"
-> & {
+export type DatabaseResourceVariableOptions = {
+  resourceId: string;
   db?: Tx;
 };
 
@@ -53,10 +51,9 @@ export class DatabaseResourceVariableProvider implements VariableProvider {
   }
 }
 
-export type DatabaseDeploymentVariableOptions = Pick<
-  ReleaseTargetIdentifier,
-  "resourceId" | "deploymentId"
-> & {
+export type DatabaseDeploymentVariableOptions = {
+  deploymentId: string;
+  resourceId: string;
   db?: Tx;
 };
 
