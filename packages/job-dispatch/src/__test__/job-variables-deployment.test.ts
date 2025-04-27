@@ -595,6 +595,10 @@ describe("job-variables-deployment", () => {
       key: "test",
       value: "test6",
       sensitive: false,
+      reference: null,
+      valueType: "direct",
+      path: null,
+      defaultValue: null,
     };
 
     const variables: variable[] = [
@@ -694,6 +698,10 @@ describe("job-variables-deployment", () => {
       key: "test",
       value: "test6",
       sensitive: true,
+      valueType: "direct",
+      reference: null,
+      path: null,
+      defaultValue: null,
     };
 
     const variables: variable[] = [

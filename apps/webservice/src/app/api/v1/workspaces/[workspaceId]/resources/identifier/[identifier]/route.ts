@@ -47,7 +47,7 @@ const getResourceParents = async (resourceId: string) => {
       id: schema.resourceRelationshipRule.id,
       workspaceId: schema.resourceRelationshipRule.workspaceId,
       reference: schema.resourceRelationshipRule.reference,
-      relationshipType: schema.resourceRelationshipRule.relationshipType,
+      dependencyType: schema.resourceRelationshipRule.dependencyType,
       metadataKeys: count(schema.resourceRelationshipRuleMetadataMatch).as(
         "metadataKeys",
       ),
@@ -83,7 +83,7 @@ const getResourceParents = async (resourceId: string) => {
   const relationships = await db
     .selectDistinctOn([sourceResource.id, rulesWithCount.id], {
       ruleId: rulesWithCount.id,
-      type: rulesWithCount.relationshipType,
+      type: rulesWithCount.dependencyType,
       target: targetResource,
       reference: rulesWithCount.reference,
     })
@@ -133,7 +133,7 @@ const getResourceParents = async (resourceId: string) => {
       targetResource.id,
       rulesWithCount.id,
       rulesWithCount.reference,
-      rulesWithCount.relationshipType,
+      rulesWithCount.dependencyType,
       rulesWithCount.metadataKeys,
     )
     // Only return relationships where the number of matching metadata keys

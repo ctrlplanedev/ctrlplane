@@ -456,6 +456,7 @@ export const updateResourceVariable = z
     path: z.array(z.string()).optional(),
     defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
     valueType: z.enum(["direct", "reference"]).optional(),
+    sensitive: z.boolean().optional(),
   })
   .refine(
     (data) => {
