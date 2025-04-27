@@ -19,6 +19,19 @@ export const GET = request()
   .handle<unknown, { params: Promise<{ policyId: string }> }>(
     async (ctx, { params }) => {
       const { policyId } = await params;
+      const policy = await ctx.db.query.policy.findFirst({
+        where: eq(schema.policy.id, policyId),
+      });
+
+      if (policy == null) {
+        return NextResponse.json(
+          { error: "Policy not found" },
+          { status: 404 },
+        );
+      }
+
+      console.log("querying release targets for policy: ", policy.name);
+
       const releaseTargetsQuery = ctx.db
         .select()
         .from(schema.releaseTarget)

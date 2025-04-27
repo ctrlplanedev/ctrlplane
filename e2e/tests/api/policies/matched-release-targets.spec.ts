@@ -21,6 +21,8 @@ test.describe("Release Targets API", () => {
       workspace.id,
       yamlPath,
     );
+
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
@@ -35,6 +37,7 @@ test.describe("Release Targets API", () => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -57,7 +60,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -68,6 +71,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
+    console.log("releaseTargets", releaseTargets);
 
     expect(count).toBe(4);
 
@@ -97,6 +101,7 @@ test.describe("Release Targets API", () => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -138,7 +143,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -149,6 +154,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
+    console.log("releaseTargets", releaseTargets);
 
     expect(count).toBe(4);
 
@@ -201,6 +207,7 @@ test.describe("Release Targets API", () => {
     expect(deleteResourceResponse.response.status).toBe(200);
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -234,7 +241,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(0);
 
     const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
@@ -252,6 +259,7 @@ test.describe("Release Targets API", () => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -274,7 +282,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -285,7 +293,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(4);
 
     const aEnvironmentMatch =
@@ -314,6 +322,7 @@ test.describe("Release Targets API", () => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -355,7 +364,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -423,6 +432,7 @@ test.describe("Release Targets API", () => {
     expect(deleteEnvironmentResponse.response.status).toBe(200);
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -456,7 +466,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(0);
 
     const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
@@ -474,6 +484,7 @@ test.describe("Release Targets API", () => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -496,7 +507,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -507,7 +518,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(4);
 
     const aDeploymentMatch =
@@ -536,6 +547,7 @@ test.describe("Release Targets API", () => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -577,7 +589,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -588,7 +600,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(4);
 
     const bDeploymentMatch =
@@ -646,6 +658,7 @@ test.describe("Release Targets API", () => {
     expect(deleteDeploymentResponse.response.status).toBe(200);
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -679,7 +692,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(0);
 
     const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
@@ -697,6 +710,7 @@ test.describe("Release Targets API", () => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -724,7 +738,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -735,7 +749,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(2);
 
     const deploymentAEnvironmentAMatch =
@@ -784,6 +798,7 @@ test.describe("Release Targets API", () => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -835,7 +850,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -846,7 +861,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(2);
 
     const deploymentAEnvironmentAMatch =
@@ -896,6 +911,7 @@ test.describe("Release Targets API", () => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -923,7 +939,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -934,7 +950,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(2);
 
     const prodEnvironmentAMatch =
@@ -983,6 +999,7 @@ test.describe("Release Targets API", () => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -1012,6 +1029,7 @@ test.describe("Release Targets API", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 1_000));
 
+    console.log("policyName", policyName);
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
       body: {
@@ -1034,7 +1052,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1045,7 +1063,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(2);
 
     const prodEnvironmentAMatch =
@@ -1095,6 +1113,7 @@ test.describe("Release Targets API", () => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -1122,7 +1141,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1133,7 +1152,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(2);
 
     const prodDeploymentAMatch =
@@ -1182,6 +1201,7 @@ test.describe("Release Targets API", () => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -1233,7 +1253,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1244,7 +1264,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(2);
 
     const prodDeploymentAMatch =
@@ -1294,6 +1314,7 @@ test.describe("Release Targets API", () => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -1326,7 +1347,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1337,7 +1358,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
-
+    console.log("releaseTargets", releaseTargets);
     expect(count).toBe(1);
 
     const prodDeploymentAEnvironmentAMatch =
@@ -1426,6 +1447,7 @@ test.describe("Release Targets API", () => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
+    console.log("policyName", policyName);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
@@ -1487,7 +1509,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1498,6 +1520,7 @@ test.describe("Release Targets API", () => {
     const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
     const count = releaseTargetsResponse.data?.count;
     expect(releaseTargets).toBeDefined();
+    console.log("releaseTargets", releaseTargets);
 
     expect(count).toBe(1);
 

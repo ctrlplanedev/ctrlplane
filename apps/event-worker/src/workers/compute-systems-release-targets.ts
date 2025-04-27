@@ -77,16 +77,35 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
 
     try {
       const createdReleaseTargets = await db.transaction(async (tx) => {
-        await tx.execute(
+        const releaseTargetLocksPromise = tx.execute(
           sql`
-            SELECT * FROM ${schema.system}
-            INNER JOIN ${schema.environment} ON ${eq(schema.environment.systemId, schema.system.id)}
-            INNER JOIN ${schema.deployment} ON ${eq(schema.deployment.systemId, schema.system.id)}
-            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.environmentId, schema.environment.id)}
-            WHERE ${eq(schema.system.id, systemId)}
-            FOR UPDATE NOWAIT
+            SELECT ${schema.releaseTarget.id} FROM ${schema.releaseTarget}
+            WHERE ${or(
+              inArray(schema.releaseTarget.deploymentId, deploymentIds),
+              inArray(schema.releaseTarget.environmentId, environmentIds),
+            )}
           `,
         );
+
+        const computedEnvironmentResourceLocksPromise = tx.execute(
+          sql`
+            SELECT * FROM ${schema.computedEnvironmentResource}
+            WHERE ${inArray(schema.computedEnvironmentResource.environmentId, environmentIds)}
+          `,
+        );
+
+        const computedDeploymentResourceLocksPromise = tx.execute(
+          sql`
+            SELECT * FROM ${schema.computedDeploymentResource}
+            WHERE ${inArray(schema.computedDeploymentResource.deploymentId, deploymentIds)}
+          `,
+        );
+
+        await Promise.all([
+          releaseTargetLocksPromise,
+          computedEnvironmentResourceLocksPromise,
+          computedDeploymentResourceLocksPromise,
+        ]);
 
         const previousReleaseTargets = await tx
           .delete(schema.releaseTarget)

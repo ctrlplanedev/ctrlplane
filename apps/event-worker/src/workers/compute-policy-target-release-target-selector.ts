@@ -58,27 +58,27 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
 
     const policyTarget = await db.query.policyTarget.findFirst({
       where: eq(schema.policyTarget.id, id),
-      with: { policy: true },
     });
 
     if (policyTarget == null) throw new Error("Policy target not found");
 
-    const { policy } = policyTarget;
-    const { workspaceId } = policy;
-
     try {
       const rts = await db.transaction(async (tx) => {
+        const releaseTargets = await findMatchingReleaseTargets(
+          tx,
+          policyTarget,
+        );
+
         await tx.execute(
           sql`
-            SELECT * FROM ${schema.system}
-            INNER JOIN ${schema.environment} ON ${eq(schema.environment.systemId, schema.system.id)}
-            INNER JOIN ${schema.deployment} ON ${eq(schema.deployment.systemId, schema.system.id)}
-            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.environmentId, schema.environment.id)}
-            WHERE ${eq(schema.system.workspaceId, workspaceId)}
+            SELECT * from ${schema.computedPolicyTargetReleaseTarget}
+            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.id, schema.computedPolicyTargetReleaseTarget.releaseTargetId)}
+            WHERE ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, policyTarget.id)}
             FOR UPDATE NOWAIT
           `,
         );
 
+        // Delete existing computed targets
         await tx
           .delete(schema.computedPolicyTargetReleaseTarget)
           .where(
@@ -88,20 +88,15 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
             ),
           );
 
-        const releaseTargets = await findMatchingReleaseTargets(
-          tx,
-          policyTarget,
-        );
-
         if (releaseTargets.length === 0) return [];
+
+        // Insert new computed targets
         return tx
           .insert(schema.computedPolicyTargetReleaseTarget)
           .values(releaseTargets)
           .onConflictDoNothing()
           .returning();
       });
-
-      if (rts.length === 0) return;
 
       const releaseTargets = await db.query.releaseTarget.findMany({
         where: inArray(

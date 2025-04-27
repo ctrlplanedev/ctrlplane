@@ -20,8 +20,8 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
       await db.transaction(async (tx) => {
         await tx.execute(
           sql`
-           SELECT * from ${schema.deployment}
-           WHERE ${schema.deployment.id} = ${id}
+           SELECT * from ${schema.computedDeploymentResource}
+           WHERE ${eq(schema.computedDeploymentResource.deploymentId, deployment.id)}
            FOR UPDATE NOWAIT
           `,
         );
