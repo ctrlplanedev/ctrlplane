@@ -1,0 +1,23 @@
+system:
+  name: "{{ prefix }}-resource-variables"
+  slug: "{{ prefix }}-resource-variables"
+  description: System for testing resource variables
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing resource variables
+    systemId: "{{ prefix }}-resource-variables"
+    resourceSelector:
+      type: identifier
+      operator: "contains"
+      value: "{{ prefix }}"
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: Deployment for testing resource variables
+    resourceSelector:
+      type: identifier
+      operator: "contains"
+      value: "{{ prefix }}"

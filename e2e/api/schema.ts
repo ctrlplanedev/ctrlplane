@@ -844,7 +844,7 @@ export interface components {
       runbook?: components["schemas"]["Runbook"];
       resource?: components["schemas"]["Resource"];
       environment?: components["schemas"]["Environment"];
-      variables: Record<string, never>;
+      variables: components["schemas"]["VariableMap"];
       approval?: {
         id: string;
         /** @enum {string} */
@@ -1050,6 +1050,14 @@ export interface components {
       /** Format: uuid */
       workspaceId: string;
     };
+    ResourceWithVariables: components["schemas"]["Resource"] & {
+      variables?: components["schemas"]["VariableMap"];
+    };
+    ResourceWithMetadata: components["schemas"]["Resource"] & {
+      metadata?: components["schemas"]["MetadataMap"];
+    };
+    ResourceWithVariablesAndMetadata: components["schemas"]["ResourceWithVariables"] &
+      components["schemas"]["ResourceWithMetadata"];
     /** @enum {string} */
     JobStatus:
       | "successful"
@@ -1085,9 +1093,19 @@ export interface components {
       message?: string;
       reason?: string;
     };
+    MetadataMap: {
+      [key: string]: string;
+    };
+    VariableMap: {
+      [key: string]:
+        | (string | boolean | number | Record<string, never> | unknown[])
+        | null;
+    };
     Variable: {
       key: string;
-      value: string | number | boolean;
+      value:
+        | (string | number | boolean | Record<string, never> | unknown[])
+        | null;
       sensitive?: boolean;
     };
     PolicyTarget: {
@@ -3047,31 +3065,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            id: string;
-            name: string;
-            workspaceId: string;
-            kind: string;
-            identifier: string;
-            version: string;
-            config: {
-              [key: string]: unknown;
-            };
-            /** Format: date-time */
-            lockedAt?: string | null;
-            /** Format: date-time */
-            updatedAt: string;
-            provider?: {
-              id?: string;
-              name?: string;
-            } | null;
-            metadata: {
-              [key: string]: string;
-            };
-            variable: {
-              [key: string]: string;
-            };
-          };
+          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
         };
       };
       /** @description Unauthorized */
@@ -3169,9 +3163,7 @@ export interface operations {
           kind?: string;
           identifier?: string;
           workspaceId?: string;
-          metadata?: {
-            [key: string]: string;
-          };
+          metadata?: components["schemas"]["MetadataMap"];
           variables?: components["schemas"]["Variable"][];
         };
       };
@@ -3183,20 +3175,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            id: string;
-            name: string;
-            workspaceId: string;
-            kind: string;
-            identifier: string;
-            version: string;
-            config: {
-              [key: string]: unknown;
-            };
-            metadata: {
-              [key: string]: string;
-            };
-          };
+          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
         };
       };
       /** @description Unauthorized */
@@ -3742,15 +3721,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Resource"] & {
-            variables?: {
-              id?: string;
-              key?: string;
-              value?: string;
-            }[];
-            metadata?: {
-              [key: string]: string;
-            };
+          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"] & {
             relationships?: {
               [key: string]: {
                 ruleId: string;

@@ -28,72 +28,7 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  properties: {
-                    id: {
-                      type: "string",
-                    },
-                    name: {
-                      type: "string",
-                    },
-                    workspaceId: {
-                      type: "string",
-                    },
-                    kind: {
-                      type: "string",
-                    },
-                    identifier: {
-                      type: "string",
-                    },
-                    version: {
-                      type: "string",
-                    },
-                    config: {
-                      type: "object",
-                      additionalProperties: true,
-                    },
-                    lockedAt: {
-                      type: "string",
-                      format: "date-time",
-                      nullable: true,
-                    },
-                    updatedAt: {
-                      type: "string",
-                      format: "date-time",
-                    },
-                    provider: {
-                      type: "object",
-                      nullable: true,
-                      properties: {
-                        id: { type: "string" },
-                        name: { type: "string" },
-                      },
-                    },
-                    metadata: {
-                      type: "object",
-                      additionalProperties: {
-                        type: "string",
-                      },
-                    },
-                    variable: {
-                      type: "object",
-                      additionalProperties: {
-                        type: "string",
-                      },
-                    },
-                  },
-                  required: [
-                    "id",
-                    "name",
-                    "kind",
-                    "identifier",
-                    "version",
-                    "config",
-                    "workspaceId",
-                    "updatedAt",
-                    "metadata",
-                    "variable",
-                  ],
+                  $ref: "#/components/schemas/ResourceWithVariablesAndMetadata",
                 },
               },
             },
@@ -158,12 +93,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   workspaceId: {
                     type: "string",
                   },
-                  metadata: {
-                    type: "object",
-                    additionalProperties: {
-                      type: "string",
-                    },
-                  },
+                  metadata: { $ref: "#/components/schemas/MetadataMap" },
                   variables: {
                     type: "array",
                     items: {
@@ -181,47 +111,7 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  properties: {
-                    id: {
-                      type: "string",
-                    },
-                    name: {
-                      type: "string",
-                    },
-                    workspaceId: {
-                      type: "string",
-                    },
-                    kind: {
-                      type: "string",
-                    },
-                    identifier: {
-                      type: "string",
-                    },
-                    version: {
-                      type: "string",
-                    },
-                    config: {
-                      type: "object",
-                      additionalProperties: true,
-                    },
-                    metadata: {
-                      type: "object",
-                      additionalProperties: {
-                        type: "string",
-                      },
-                    },
-                  },
-                  required: [
-                    "id",
-                    "name",
-                    "kind",
-                    "identifier",
-                    "version",
-                    "config",
-                    "workspaceId",
-                    "metadata",
-                  ],
+                  $ref: "#/components/schemas/ResourceWithVariablesAndMetadata",
                 },
               },
             },

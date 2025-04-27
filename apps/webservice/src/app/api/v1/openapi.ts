@@ -275,6 +275,32 @@ export const openapi: Swagger.SwaggerV3 = {
           "metadata",
         ],
       },
+      ResourceWithVariables: {
+        allOf: [
+          { $ref: "#/components/schemas/Resource" },
+          {
+            properties: {
+              variables: { $ref: "#/components/schemas/VariableMap" },
+            },
+          },
+        ],
+      },
+      ResourceWithMetadata: {
+        allOf: [
+          { $ref: "#/components/schemas/Resource" },
+          {
+            properties: {
+              metadata: { $ref: "#/components/schemas/MetadataMap" },
+            },
+          },
+        ],
+      },
+      ResourceWithVariablesAndMetadata: {
+        allOf: [
+          { $ref: "#/components/schemas/ResourceWithVariables" },
+          { $ref: "#/components/schemas/ResourceWithMetadata" },
+        ],
+      },
       JobStatus: {
         type: "string",
         enum: [
@@ -316,6 +342,25 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         required: ["id", "status", "createdAt", "updatedAt", "jobAgentConfig"],
       },
+      MetadataMap: {
+        type: "object",
+        additionalProperties: {
+          type: "string",
+        },
+      },
+      VariableMap: {
+        type: "object",
+        additionalProperties: {
+          nullable: true,
+          oneOf: [
+            { type: "string" },
+            { type: "boolean" },
+            { type: "number" },
+            { type: "object" },
+            { type: "array" },
+          ],
+        },
+      },
       Variable: {
         type: "object",
         required: ["key", "value"],
@@ -328,6 +373,8 @@ export const openapi: Swagger.SwaggerV3 = {
               { type: "string" },
               { type: "number" },
               { type: "boolean" },
+              { type: "object" },
+              { type: "array" },
             ],
           },
           sensitive: {

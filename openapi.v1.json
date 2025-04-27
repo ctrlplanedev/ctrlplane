@@ -3066,76 +3066,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "workspaceId": {
-                      "type": "string"
-                    },
-                    "kind": {
-                      "type": "string"
-                    },
-                    "identifier": {
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "string"
-                    },
-                    "config": {
-                      "type": "object",
-                      "additionalProperties": true
-                    },
-                    "lockedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "provider": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "metadata": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      }
-                    },
-                    "variable": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "kind",
-                    "identifier",
-                    "version",
-                    "config",
-                    "workspaceId",
-                    "updatedAt",
-                    "metadata",
-                    "variable"
-                  ]
+                  "$ref": "#/components/schemas/ResourceWithVariablesAndMetadata"
                 }
               }
             }
@@ -3203,10 +3134,7 @@
                     "type": "string"
                   },
                   "metadata": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
+                    "$ref": "#/components/schemas/MetadataMap"
                   },
                   "variables": {
                     "type": "array",
@@ -3225,47 +3153,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "workspaceId": {
-                      "type": "string"
-                    },
-                    "kind": {
-                      "type": "string"
-                    },
-                    "identifier": {
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "string"
-                    },
-                    "config": {
-                      "type": "object",
-                      "additionalProperties": true
-                    },
-                    "metadata": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "kind",
-                    "identifier",
-                    "version",
-                    "config",
-                    "workspaceId",
-                    "metadata"
-                  ]
+                  "$ref": "#/components/schemas/ResourceWithVariablesAndMetadata"
                 }
               }
             }
@@ -4127,34 +4015,11 @@
                 "schema": {
                   "allOf": [
                     {
-                      "$ref": "#/components/schemas/Resource"
+                      "$ref": "#/components/schemas/ResourceWithVariablesAndMetadata"
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "variables": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "key": {
-                                "type": "string"
-                              },
-                              "value": {
-                                "type": "string"
-                              }
-                            }
-                          }
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "string"
-                          }
-                        },
                         "relationships": {
                           "type": "object",
                           "additionalProperties": {
@@ -4560,7 +4425,7 @@
                 "$ref": "#/components/schemas/Environment"
               },
               "variables": {
-                "type": "object"
+                "$ref": "#/components/schemas/VariableMap"
               },
               "approval": {
                 "type": "object",
@@ -5048,6 +4913,44 @@
           "metadata"
         ]
       },
+      "ResourceWithVariables": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Resource"
+          },
+          {
+            "properties": {
+              "variables": {
+                "$ref": "#/components/schemas/VariableMap"
+              }
+            }
+          }
+        ]
+      },
+      "ResourceWithMetadata": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Resource"
+          },
+          {
+            "properties": {
+              "metadata": {
+                "$ref": "#/components/schemas/MetadataMap"
+              }
+            }
+          }
+        ]
+      },
+      "ResourceWithVariablesAndMetadata": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResourceWithVariables"
+          },
+          {
+            "$ref": "#/components/schemas/ResourceWithMetadata"
+          }
+        ]
+      },
       "JobStatus": {
         "type": "string",
         "enum": [
@@ -5120,6 +5023,35 @@
           "jobAgentConfig"
         ]
       },
+      "MetadataMap": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "VariableMap": {
+        "type": "object",
+        "additionalProperties": {
+          "nullable": true,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "object"
+            },
+            {
+              "type": "array"
+            }
+          ]
+        }
+      },
       "Variable": {
         "type": "object",
         "required": [
@@ -5131,6 +5063,7 @@
             "type": "string"
           },
           "value": {
+            "nullable": true,
             "oneOf": [
               {
                 "type": "string"
@@ -5140,6 +5073,12 @@
               },
               {
                 "type": "boolean"
+              },
+              {
+                "type": "object"
+              },
+              {
+                "type": "array"
               }
             ]
           },

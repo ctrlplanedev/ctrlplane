@@ -23,8 +23,14 @@ const patchBodySchema = schema.createResource
       .array(
         z.object({
           key: z.string(),
-          value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
-          sensitive: z.boolean(),
+          value: z.union([
+            z.string(),
+            z.number(),
+            z.boolean(),
+            z.record(z.any()),
+            z.array(z.any()),
+          ]),
+          sensitive: z.boolean().default(false),
         }),
       )
       .optional()

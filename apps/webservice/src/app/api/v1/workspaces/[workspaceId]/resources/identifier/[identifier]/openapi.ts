@@ -25,9 +25,7 @@ export const openapi: Swagger.SwaggerV3 = {
             name: "identifier",
             in: "path",
             required: true,
-            schema: {
-              type: "string",
-            },
+            schema: { type: "string" },
             description: "Identifier of the resource",
           },
         ],
@@ -38,27 +36,12 @@ export const openapi: Swagger.SwaggerV3 = {
               "application/json": {
                 schema: {
                   allOf: [
-                    { $ref: "#/components/schemas/Resource" },
+                    {
+                      $ref: "#/components/schemas/ResourceWithVariablesAndMetadata",
+                    },
                     {
                       type: "object",
                       properties: {
-                        variables: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              id: { type: "string" },
-                              key: { type: "string" },
-                              value: { type: "string" },
-                            },
-                          },
-                        },
-                        metadata: {
-                          type: "object",
-                          additionalProperties: {
-                            type: "string",
-                          },
-                        },
                         relationships: {
                           type: "object",
                           additionalProperties: {

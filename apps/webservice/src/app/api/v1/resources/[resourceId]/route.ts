@@ -3,6 +3,7 @@ import _ from "lodash";
 import { z } from "zod";
 
 import { and, eq, isNull, upsertResources } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
@@ -15,6 +16,25 @@ import { request } from "../../middleware";
 
 const log = logger.child({ module: "v1/resources/[resourceId]" });
 
+/**
+ * Retrieves a resource by workspace ID and identifier
+ * @param resourceId - The ID of the resource
+ * @returns The resource with its metadata, variables and provider
+ */
+const getResourceById = (resourceId: string) => {
+  return db.query.resource.findFirst({
+    where: and(
+      eq(schema.resource.id, resourceId),
+      isNull(schema.resource.deletedAt),
+    ),
+    with: {
+      metadata: true,
+      variables: true,
+      provider: true,
+    },
+  });
+};
+
 export const GET = request()
   .use(authn)
   .use(
@@ -24,14 +44,11 @@ export const GET = request()
         .on({ type: "resource", id: params.resourceId ?? "" });
     }),
   )
-  .handle(
-    async ({ db }, { params }: { params: Promise<{ resourceId: string }> }) => {
+  .handle<unknown, { params: Promise<{ resourceId: string }> }>(
+    async (_, { params }) => {
       // we don't check deletedAt as we may be querying for soft-deleted resources
       const { resourceId } = await params;
-      const data = await db.query.resource.findFirst({
-        where: eq(schema.resource.id, resourceId),
-        with: { metadata: true, variables: true, provider: true },
-      });
+      const data = await getResourceById(resourceId);
 
       if (data == null)
         return NextResponse.json(
@@ -39,20 +56,20 @@ export const GET = request()
           { status: 404 },
         );
 
-      const { variables, metadata, ...resource } = data;
-      const variable = Object.fromEntries(
-        variables.map((v) => {
+      const { variables: vars, metadata, ...resource } = data;
+      const variables = Object.fromEntries(
+        vars.map((v) => {
           const strval = String(v.value);
           const value = v.sensitive
             ? variablesAES256().decrypt(strval)
-            : strval;
+            : v.value;
           return [v.key, value];
         }),
       );
 
       return NextResponse.json({
         ...resource,
-        variable,
+        variables,
         metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
       });
     },

@@ -23,10 +23,6 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
   Channel.ComputeEnvironmentResourceSelector,
   async (job) => {
-    console.log(
-      "computeEnvironmentResourceSelectorWorkerEvent",
-      JSON.stringify(job.data, null, 2),
-    );
     const { id } = job.data;
 
     const environment = await db.query.environment.findFirst({
