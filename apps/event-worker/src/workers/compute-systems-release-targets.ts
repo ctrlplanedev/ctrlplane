@@ -5,6 +5,8 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+
 const findMatchingEnvironmentDeploymentPairs = (
   tx: Tx,
   system: { id: string; workspaceId: string },
@@ -75,50 +77,60 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
     const environmentIds = environments.map((e) => e.id);
     const { workspaceId } = system;
 
+    if (deploymentIds.length === 0 && environmentIds.length === 0) return;
+
     try {
       const createdReleaseTargets = await db.transaction(async (tx) => {
         await tx.execute(
           sql`
-            SELECT * FROM ${schema.system}
-            INNER JOIN ${schema.environment} ON ${eq(schema.environment.systemId, schema.system.id)}
-            INNER JOIN ${schema.deployment} ON ${eq(schema.deployment.systemId, schema.system.id)}
-            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.environmentId, schema.environment.id)}
-            WHERE ${eq(schema.system.id, systemId)}
+            SELECT ${schema.releaseTarget.id} FROM ${schema.releaseTarget}
+            WHERE ${or(
+              inArray(schema.releaseTarget.deploymentId, deploymentIds),
+              inArray(schema.releaseTarget.environmentId, environmentIds),
+            )}
             FOR UPDATE NOWAIT
           `,
         );
 
-        const previousReleaseTargets = await tx
-          .delete(schema.releaseTarget)
-          .where(
-            or(
-              inArray(schema.releaseTarget.deploymentId, deploymentIds),
-              inArray(schema.releaseTarget.environmentId, environmentIds),
-            ),
-          )
-          .returning();
+        await tx.execute(
+          sql`
+            SELECT * FROM ${schema.computedEnvironmentResource}
+            WHERE ${inArray(schema.computedEnvironmentResource.environmentId, environmentIds)}
+            FOR UPDATE NOWAIT
+          `,
+        );
+
+        await tx.execute(
+          sql`
+            SELECT * FROM ${schema.computedDeploymentResource}
+            WHERE ${inArray(schema.computedDeploymentResource.deploymentId, deploymentIds)}
+            FOR UPDATE NOWAIT
+          `,
+        );
+
+        const previousReleaseTargets = await tx.query.releaseTarget.findMany({
+          where: or(
+            inArray(schema.releaseTarget.deploymentId, deploymentIds),
+            inArray(schema.releaseTarget.environmentId, environmentIds),
+          ),
+        });
 
         const releaseTargets = await findMatchingEnvironmentDeploymentPairs(
           tx,
           system,
         );
 
-        if (releaseTargets.length > 0)
-          await tx
-            .insert(schema.releaseTarget)
-            .values(releaseTargets)
-            .onConflictDoNothing();
-
         const created = releaseTargets.filter(
           (rt) =>
             !previousReleaseTargets.some(
               (prevRt) =>
                 prevRt.deploymentId === rt.deploymentId &&
-                prevRt.resourceId === rt.resourceId,
+                prevRt.resourceId === rt.resourceId &&
+                prevRt.environmentId === rt.environmentId,
             ),
         );
 
-        return created;
+        return tx.insert(schema.releaseTarget).values(created).returning();
       });
 
       if (createdReleaseTargets.length === 0) return;
@@ -132,18 +144,24 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         )
         .where(eq(schema.policy.workspaceId, workspaceId));
 
-      for (const { policy_target: policyTarget } of policyTargets) {
-        getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
-          policyTarget.id,
-          policyTarget,
-        );
+      if (policyTargets.length > 0) {
+        for (const { policy_target: policyTarget } of policyTargets) {
+          getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
+            policyTarget.id,
+            policyTarget,
+          );
+        }
+        return;
       }
+
+      await dispatchEvaluateJobs(createdReleaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
         await getQueue(Channel.ComputeSystemsReleaseTargets).add(
           job.name,
           job.data,
+          { delay: 500 },
         );
         return;
       }

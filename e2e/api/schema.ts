@@ -423,6 +423,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/release-targets/{releaseTargetId}/releases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the latest 100 releases for a release target */
+    get: operations["getReleaseTargetReleases"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/releases/{releaseId}": {
     parameters: {
       query?: never;
@@ -1103,9 +1120,7 @@ export interface components {
     };
     Variable: {
       key: string;
-      value:
-        | (string | number | boolean | Record<string, never> | unknown[])
-        | null;
+      value: string | number | boolean | Record<string, never> | unknown[];
       sensitive?: boolean;
     };
     PolicyTarget: {
@@ -2679,6 +2694,35 @@ export interface operations {
           "application/json": {
             error: string;
           };
+        };
+      };
+    };
+  };
+  getReleaseTargetReleases: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The latest 100 releases for the release target */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            deployment: components["schemas"]["Deployment"];
+            version: components["schemas"]["DeploymentVersion"];
+            variables: {
+              key: string;
+              value: string;
+            }[];
+          }[];
         };
       };
     };

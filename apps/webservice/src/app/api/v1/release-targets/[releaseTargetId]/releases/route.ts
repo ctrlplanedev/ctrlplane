@@ -23,8 +23,8 @@ export const GET = request()
         .on({ type: "releaseTarget", id: params.releaseTargetId ?? "" }),
     ),
   )
-  .handle<{ params: Promise<{ releaseTargetId: string }> }>(
-    async ({ db, params }) => {
+  .handle<object, { params: Promise<{ releaseTargetId: string }> }>(
+    async ({ db }, { params }) => {
       try {
         const { releaseTargetId } = await params;
 
@@ -64,6 +64,7 @@ export const GET = request()
               schema.variableValueSnapshot.id,
             ),
           )
+          .groupBy(schema.variableSetRelease.id)
           .as("variableSetReleaseSubquery");
 
         const releaseResult = await db

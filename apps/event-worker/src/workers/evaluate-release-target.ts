@@ -11,8 +11,6 @@ import {
   VersionReleaseManager,
 } from "@ctrlplane/rule-engine";
 
-import { createAndAcquireMutex } from "../releases/mutex.js";
-
 const log = logger.child({ worker: "evaluate-release-target" });
 const tracer = trace.getTracer("evaluate-release-target");
 const withSpan = makeWithSpan(tracer);
@@ -172,91 +170,84 @@ export const evaluateReleaseTargetWorker = createWorker(
     span.setAttribute("environment.id", job.data.environmentId);
     span.setAttribute("deployment.id", job.data.deploymentId);
 
-    const [mutex, isAcquired] = await createAndAcquireMutex(job.data, {
-      tryLock: true,
-    });
-
-    if (!isAcquired) {
-      log.info("Failed to acquire mutex for release target", {
-        releaseTarget: job.data,
-      });
-
-      await getQueue(Channel.EvaluateReleaseTarget).add(job.name, job.data, {
-        jobId: job.id,
-        delay: 1000,
-      });
-
-      throw new Error("Failed to acquire mutex for release target");
-    }
-
     try {
-      // Get release target
-      const releaseTarget = await db.query.releaseTarget.findFirst({
-        where: and(
-          eq(schema.releaseTarget.resourceId, job.data.resourceId),
-          eq(schema.releaseTarget.environmentId, job.data.environmentId),
-          eq(schema.releaseTarget.deploymentId, job.data.deploymentId),
-        ),
-        with: {
-          resource: true,
-          environment: true,
-          deployment: true,
-        },
-      });
-      if (!releaseTarget) throw new Error("Failed to get release target");
-
-      const existingVersionRelease = await db.query.versionRelease.findFirst({
-        where: eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
-        orderBy: desc(schema.versionRelease.createdAt),
-      });
-
-      const existingVariableRelease =
-        await db.query.variableSetRelease.findFirst({
-          where: eq(
-            schema.variableSetRelease.releaseTargetId,
-            releaseTarget.id,
+      const release = await db.transaction(async (tx) => {
+        const releaseTarget = await tx.query.releaseTarget.findFirst({
+          where: and(
+            eq(schema.releaseTarget.resourceId, job.data.resourceId),
+            eq(schema.releaseTarget.environmentId, job.data.environmentId),
+            eq(schema.releaseTarget.deploymentId, job.data.deploymentId),
           ),
-          orderBy: desc(schema.variableSetRelease.createdAt),
+          with: {
+            resource: true,
+            environment: true,
+            deployment: true,
+          },
+        });
+        if (!releaseTarget) throw new Error("Failed to get release target");
+
+        const existingVersionRelease = await tx.query.versionRelease.findFirst({
+          where: eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
+          orderBy: desc(schema.versionRelease.createdAt),
         });
 
-      const [versionRelease, variableRelease] = await Promise.all([
-        handleVersionRelease(releaseTarget),
-        handleVariableRelease(releaseTarget),
-      ]);
+        const existingVariableRelease =
+          await tx.query.variableSetRelease.findFirst({
+            where: eq(
+              schema.variableSetRelease.releaseTargetId,
+              releaseTarget.id,
+            ),
+            orderBy: desc(schema.variableSetRelease.createdAt),
+          });
 
-      if (versionRelease == null) {
-        return;
-      }
+        const [versionRelease, variableRelease] = await Promise.all([
+          handleVersionRelease(releaseTarget),
+          handleVariableRelease(releaseTarget),
+        ]);
 
-      const isSameVersionRelease =
-        existingVersionRelease?.id === versionRelease.id;
-      const isSameVariableRelease =
-        existingVariableRelease?.id === variableRelease.id;
-      if (isSameVersionRelease && isSameVariableRelease) return;
+        if (versionRelease == null) return;
 
-      log.info("Creating new release for target", {
-        releaseTarget,
-        existingVersionRelease,
-        versionRelease,
-        existingVariableRelease,
-        variableRelease,
+        const isSameVersionRelease =
+          existingVersionRelease?.id === versionRelease.id;
+        const isSameVariableRelease =
+          existingVariableRelease?.id === variableRelease.id;
+        if (isSameVersionRelease && isSameVariableRelease) return;
+
+        log.info("Creating new release for target", {
+          releaseTarget,
+          existingVersionRelease,
+          versionRelease,
+          existingVariableRelease,
+          variableRelease,
+        });
+
+        return tx
+          .insert(schema.release)
+          .values({
+            versionReleaseId: versionRelease.id,
+            variableReleaseId: variableRelease.id,
+          })
+          .returning()
+          .then(takeFirst);
       });
 
-      const release = await db
-        .insert(schema.release)
-        .values({
-          versionReleaseId: versionRelease.id,
-          variableReleaseId: variableRelease.id,
-        })
-        .returning()
-        .then(takeFirst);
-
-      if (process.env.ENABLE_NEW_POLICY_ENGINE === "true") {
-        const job = await db.transaction((tx) => createRelease(tx, release));
+      if (process.env.ENABLE_NEW_POLICY_ENGINE === "true" && release != null) {
+        const job = await db.transaction(async (tx) =>
+          createRelease(tx, release),
+        );
         getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
       }
-    } finally {
-      await mutex.unlock();
+    } catch (e: any) {
+      const isRowLocked = e.code === "55P03";
+      const isReleaseTargetNotCommittedYet = e.code === "23503";
+      if (isRowLocked || isReleaseTargetNotCommittedYet) {
+        await getQueue(Channel.EvaluateReleaseTarget).add(job.name, job.data, {
+          delay: 500,
+        });
+        return;
+      }
+      log.error("Error in evaluateReleaseTarget", { error: e });
+      throw e;
     }
   }),
   // Member intensive work, attemp to reduce crashing
