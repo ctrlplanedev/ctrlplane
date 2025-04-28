@@ -62,6 +62,10 @@ export const deploymentVariableValue = pgTable(
     variableId: uuid("variable_id").notNull(),
     valueType: text("value_type").notNull().default("direct"), // 'direct' | 'reference'
 
+    resourceSelector: jsonb("resource_selector")
+      .$type<ResourceCondition | null>()
+      .default(sql`NULL`),
+
     // Direct value fields
     value: jsonb("value").$type<any>(),
     sensitive: boolean("sensitive").notNull().default(false),
@@ -69,10 +73,6 @@ export const deploymentVariableValue = pgTable(
     // Reference fields
     reference: text("reference"),
     path: text("path").array(),
-
-    resourceSelector: jsonb("resource_selector")
-      .$type<ResourceCondition | null>()
-      .default(sql`NULL`),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.variableId, t.value),
