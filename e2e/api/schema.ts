@@ -3261,7 +3261,7 @@ export interface operations {
           metadata?: {
             [key: string]: string;
           };
-          variables?: components["schemas"]["Variable"];
+          variables?: components["schemas"]["Variable"][];
         };
       };
     };

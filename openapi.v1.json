@@ -3325,7 +3325,10 @@
                     }
                   },
                   "variables": {
-                    "$ref": "#/components/schemas/Variable"
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Variable"
+                    }
                   }
                 }
               }
