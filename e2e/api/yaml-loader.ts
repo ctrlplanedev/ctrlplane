@@ -40,6 +40,17 @@ export interface TestYamlFile {
       status?: "building" | "ready" | "failed";
       message?: string;
     }>;
+    variables?: Array<{
+      key: string;
+      description?: string;
+      config: Record<string, any>;
+      values?: Array<{
+        value: any;
+        sensitive?: boolean;
+        resourceSelector?: any;
+        default?: boolean;
+      }>;
+    }>;
   }>;
   policies?: Array<{
     name: string;
@@ -89,6 +100,19 @@ export interface ImportedEntities {
       name: string;
       tag: string;
       status: "building" | "ready" | "failed";
+    }>;
+    variables?: Array<{
+      id: string;
+      key: string;
+      description?: string;
+      config: Record<string, any>;
+      values?: Array<{
+        id: string;
+        value: any;
+        sensitive?: boolean;
+        resourceSelector?: any;
+        default?: boolean;
+      }>;
     }>;
   }>;
   policies: Array<{
@@ -260,12 +284,56 @@ export async function importEntitiesFromYaml(
         }
       }
 
+      const variables: Array<{
+        id: string;
+        key: string;
+        description?: string;
+        config: Record<string, any>;
+        values?: Array<{
+          id: string;
+          value: any;
+          sensitive?: boolean;
+          resourceSelector?: any;
+          default?: boolean;
+        }>;
+      }> = [];
+
+      if (deployment.variables && deployment.variables.length > 0) {
+        for (const variable of deployment.variables) {
+          const variableResponse = await api.POST(
+            "/v1/deployments/{deploymentId}/variables",
+            {
+              params: { path: { deploymentId: deploymentResponse.data!.id } },
+              body: {
+                ...variable,
+              },
+            },
+          );
+
+          if (variableResponse.response.status !== 201) {
+            throw new Error(
+              `Failed to create deployment variable: ${JSON.stringify(variableResponse.error)}`,
+            );
+          }
+
+          const variableData = variableResponse.data!;
+          variables.push({
+            id: variableData.id,
+            key: variableData.key,
+            description: variableData.description,
+            config: variableData.config,
+            values: variableData.values,
+          });
+        }
+      }
+
       result.deployments.push({
         id: deploymentResponse.data!.id,
         name: deploymentResponse.data!.name,
         slug: deploymentResponse.data!.slug,
         originalName: deployment.name,
         versions,
+        variables,
       });
     }
   }
