@@ -2410,42 +2410,6 @@
         ],
         "responses": {
           "200": {
-            "404": {
-              "description": "The release target was not found",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "error": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "error"
-                    ]
-                  }
-                }
-              }
-            },
-            "500": {
-              "description": "An internal server error occurred",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "error": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "error"
-                    ]
-                  }
-                }
-              }
-            },
             "description": "The latest 100 releases for the release target",
             "content": {
               "application/json": {
@@ -2485,6 +2449,42 @@
                       "variables"
                     ]
                   }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The release target was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }

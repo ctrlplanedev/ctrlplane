@@ -129,7 +129,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
                 prevRt.environmentId === rt.environmentId,
             ),
         );
-
+        if (created.length === 0) return [];
         return tx.insert(schema.releaseTarget).values(created).returning();
       });
 

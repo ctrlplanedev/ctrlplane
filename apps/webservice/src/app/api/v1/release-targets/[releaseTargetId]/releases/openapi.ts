@@ -50,31 +50,31 @@ export const openapi: Swagger.SwaggerV3 = {
                 },
               },
             },
-            404: {
-              description: "The release target was not found",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      error: { type: "string" },
-                    },
-                    required: ["error"],
+          },
+          404: {
+            description: "The release target was not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
                   },
+                  required: ["error"],
                 },
               },
             },
-            500: {
-              description: "An internal server error occurred",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      error: { type: "string" },
-                    },
-                    required: ["error"],
+          },
+          500: {
+            description: "An internal server error occurred",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
                   },
+                  required: ["error"],
                 },
               },
             },

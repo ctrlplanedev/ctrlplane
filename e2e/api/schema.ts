@@ -2739,6 +2739,28 @@ export interface operations {
           }[];
         };
       };
+      /** @description The release target was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An internal server error occurred */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
   };
   updateRelease: {

@@ -102,7 +102,7 @@ const createRelease = withSpan(
  */
 const handleVersionRelease = withSpan(
   "handleVersionRelease",
-  async (span, releaseTarget: any) => {
+  async (span, tx: Tx, releaseTarget: any) => {
     const workspaceId = releaseTarget.resource.workspaceId;
 
     span.setAttribute("releaseTarget.id", String(releaseTarget.id));
@@ -138,7 +138,7 @@ const handleVersionRelease = withSpan(
  */
 const handleVariableRelease = withSpan(
   "handleVariableRelease",
-  async (span, releaseTarget: any) => {
+  async (span, tx: Tx, releaseTarget: any) => {
     const workspaceId = releaseTarget.resource.workspaceId;
 
     span.setAttribute("releaseTarget.id", String(releaseTarget.id));
@@ -201,8 +201,8 @@ export const evaluateReleaseTargetWorker = createWorker(
           });
 
         const [versionRelease, variableRelease] = await Promise.all([
-          handleVersionRelease(releaseTarget),
-          handleVariableRelease(releaseTarget),
+          handleVersionRelease(tx, releaseTarget),
+          handleVariableRelease(tx, releaseTarget),
         ]);
 
         if (versionRelease == null) return;
