@@ -398,6 +398,12 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
       },
+      Variable: {
+        oneOf: [
+          { $ref: "#/components/schemas/DirectVariable" },
+          { $ref: "#/components/schemas/ReferenceVariable" },
+        ],
+      },
     },
   },
 };

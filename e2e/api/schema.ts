@@ -1117,6 +1117,9 @@ export interface components {
       value: string | number | boolean | Record<string, never> | unknown[];
       sensitive?: boolean;
     };
+    Variable:
+      | components["schemas"]["DirectVariable"]
+      | components["schemas"]["ReferenceVariable"];
     PolicyTarget: {
       deploymentSelector?: {
         [key: string]: unknown;
@@ -3258,10 +3261,7 @@ export interface operations {
           metadata?: {
             [key: string]: string;
           };
-          variables?: (
-            | components["schemas"]["DirectVariable"]
-            | components["schemas"]["ReferenceVariable"]
-          )[];
+          variables?: components["schemas"]["Variable"];
         };
       };
     };

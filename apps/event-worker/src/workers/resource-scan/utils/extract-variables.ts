@@ -30,7 +30,7 @@ export const extractVariablesFromMetadata = (
         value: convertToTypedValue(String(rawValue)),
         sensitive: false,
       }));
-      
+
     return { ...resource, variables };
   });
 };

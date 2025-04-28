@@ -1,5 +1,5 @@
-import type { Job } from "bullmq";
 import type { ResourceToInsert } from "@ctrlplane/job-dispatch";
+import type { Job } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
