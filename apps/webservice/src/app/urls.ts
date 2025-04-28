@@ -90,6 +90,8 @@ const resources = (workspaceSlug: string) => ({
   groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
   schemas: () => buildUrl(workspaceSlug, "resources", "schemas"),
   views: () => buildUrl(workspaceSlug, "resources", "views"),
+  relationshipRules: () =>
+    buildUrl(workspaceSlug, "resources", "relationship-rules"),
 });
 
 const resource = (workspaceSlug: string, resourceId: string) => {
