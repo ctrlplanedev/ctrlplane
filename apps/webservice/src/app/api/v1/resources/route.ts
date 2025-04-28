@@ -21,17 +21,33 @@ const patchBodySchema = schema.createResource
     metadata: z.record(z.string()).optional(),
     variables: z
       .array(
-        z.object({
-          key: z.string(),
-          value: z.union([
-            z.string(),
-            z.number(),
-            z.boolean(),
-            z.record(z.any()),
-            z.array(z.any()),
-          ]),
-          sensitive: z.boolean().default(false),
-        }),
+        z.union([
+          z.object({
+            key: z.string(),
+            value: z.union([
+              z.string(),
+              z.number(),
+              z.boolean(),
+              z.record(z.any()),
+              z.array(z.any()),
+            ]),
+            sensitive: z.boolean().default(false),
+          }),
+          z.object({
+            key: z.string(),
+            defaultValue: z
+              .union([
+                z.string(),
+                z.number(),
+                z.boolean(),
+                z.record(z.any()),
+                z.array(z.any()),
+              ])
+              .optional(),
+            reference: z.string(),
+            path: z.array(z.string()),
+          }),
+        ]),
       )
       .optional()
       .refine(

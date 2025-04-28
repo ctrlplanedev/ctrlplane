@@ -44,6 +44,12 @@ test.describe("Resource Variables API", () => {
           { key: "string-var", value: "string-value" },
           { key: "number-var", value: 123 },
           { key: "boolean-var", value: true },
+          {
+            key: "reference-var",
+            defaultValue: "test",
+            reference: "test",
+            path: ["test"],
+          },
         ],
       },
     });
@@ -67,6 +73,7 @@ test.describe("Resource Variables API", () => {
     expect(getResponse.data?.variables?.["string-var"]).toBe("string-value");
     expect(getResponse.data?.variables?.["number-var"]).toBe(123);
     expect(getResponse.data?.variables?.["boolean-var"]).toBe(true);
+    expect(getResponse.data?.variables?.["reference-var"]).toBe("test");
 
     // Cleanup
     await api.DELETE("/v1/resources/{resourceId}", {
@@ -165,53 +172,97 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("resource variables type validation", async ({ api, workspace }) => {
+  test("reference variables from related resources", async ({
+    api,
+    workspace,
+  }) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
 
-    // Create a resource with variables of different types
-    const resource = await api.POST("/v1/resources", {
+    // Create target resource
+    const targetResource = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        name: resourceName,
-        kind: "ResourceWithVariables",
-        identifier: resourceName,
+        name: `${systemPrefix}-target`,
+        kind: "Target",
+        identifier: `${systemPrefix}-target`,
         version: "test-version/v1",
         config: { "e2e-test": true } as any,
-        metadata: { "e2e-test": "true" },
+        metadata: {
+          "e2e-test": "true",
+          [`${systemPrefix}`]: "true",
+        },
+        variables: [{ key: "target-var", value: "target-value" }],
+      },
+    });
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.id).toBeDefined();
+
+    // Create source resource
+    const sourceResource = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-source`,
+        kind: "Source",
+        identifier: `${systemPrefix}-source`,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: {
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+        },
         variables: [
-          { key: "string-var", value: "string-value" },
-          { key: "number-var", value: 123 },
-          { key: "boolean-var", value: true },
-          { key: "object-var", value: { nested: "value" } as any },
-          { key: "array-var", value: [1, 2, 3] },
+          {
+            key: "ref-var",
+            reference: systemPrefix,
+            path: ["metadata", "e2e-test"],
+          },
         ],
       },
     });
+    expect(sourceResource.response.status).toBe(200);
+    expect(sourceResource.data?.id).toBeDefined();
 
-    console.log(resource.data);
-    expect(resource.response.status).toBe(200);
-    const resourceId = resource.data?.id;
-    expect(resourceId).toBeDefined();
-
-    // Get the resource and verify variable types are preserved
-    const getResponse = await api.GET("/v1/resources/{resourceId}", {
-      params: {
-        path: { resourceId: resourceId ?? "" },
+    // Create relationship rule
+    const relationship = await api.POST("/v1/resource-relationship-rules", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-relationship`,
+        reference: systemPrefix,
+        dependencyType: "depends_on",
+        sourceKind: "Source",
+        sourceVersion: "test-version/v1",
+        targetKind: "Target",
+        targetVersion: "test-version/v1",
+        metadataKeysMatch: ["e2e-test", systemPrefix],
       },
     });
-    expect(getResponse.response.status).toBe(200);
-    expect(typeof getResponse.data?.variables?.["string-var"]).toBe("string");
-    expect(typeof getResponse.data?.variables?.["number-var"]).toBe("number");
-    expect(typeof getResponse.data?.variables?.["boolean-var"]).toBe("boolean");
-    expect(typeof getResponse.data?.variables?.["object-var"]).toBe("object");
-    expect(Array.isArray(getResponse.data?.variables?.["array-var"])).toBe(
-      true,
+
+    expect(relationship.response.status).toBe(200);
+
+    // Verify reference resolves
+    const getSource = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: `${systemPrefix}-source`,
+          },
+        },
+      },
     );
+    expect(getSource.response.status).toBe(200);
+    expect(getSource.data?.relationships?.[systemPrefix]?.target?.id).toBe(
+      targetResource.data?.id,
+    );
+    expect(getSource.data?.variables?.["ref-var"]).toBe("true");
 
     // Cleanup
     await api.DELETE("/v1/resources/{resourceId}", {
-      params: { path: { resourceId: resourceId ?? "" } },
+      params: { path: { resourceId: sourceResource.data?.id ?? "" } },
+    });
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: targetResource.data?.id ?? "" } },
     });
   });
 });

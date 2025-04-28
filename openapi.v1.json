@@ -2781,7 +2781,7 @@
                   "workspaceId",
                   "name",
                   "reference",
-                  "relationshipType",
+                  "dependencyType",
                   "sourceKind",
                   "sourceVersion",
                   "targetKind",
@@ -2797,7 +2797,10 @@
                   "reference": {
                     "type": "string"
                   },
-                  "relationshipType": {
+                  "dependencyType": {
+                    "type": "string"
+                  },
+                  "dependencyDescription": {
                     "type": "string"
                   },
                   "description": {
@@ -3139,7 +3142,7 @@
                   "variables": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/Variable"
+                      "$ref": "#/components/schemas/DirectVariable"
                     }
                   }
                 }
@@ -3324,7 +3327,14 @@
                   "variables": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/Variable"
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/DirectVariable"
+                        },
+                        {
+                          "$ref": "#/components/schemas/ReferenceVariable"
+                        }
+                      ]
                     }
                   }
                 }
@@ -5052,7 +5062,48 @@
           ]
         }
       },
-      "Variable": {
+      "ReferenceVariable": {
+        "type": "object",
+        "required": [
+          "key",
+          "reference",
+          "path"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultValue": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object"
+              },
+              {
+                "type": "array"
+              }
+            ]
+          }
+        }
+      },
+      "DirectVariable": {
         "type": "object",
         "required": [
           "key",
@@ -5063,7 +5114,6 @@
             "type": "string"
           },
           "value": {
-            "nullable": true,
             "oneOf": [
               {
                 "type": "string"

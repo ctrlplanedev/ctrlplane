@@ -115,7 +115,10 @@ export const createResource = createInsertSchema(resource, {
 export type InsertResource = InferInsertModel<typeof resource>;
 export type ResourceToUpsert = InsertResource & {
   metadata?: Record<string, string>;
-  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+  variables?: Array<
+    | { key: string; value: any; sensitive: boolean }
+    | { key: string; defaultValue?: any; reference: string; path: string[] }
+  >;
 };
 
 export const updateResource = createResource.partial();
@@ -400,7 +403,9 @@ export const resourceVariable = pgTable(
     // Reference fields
     reference: text("reference"),
     path: text("path").array(),
-    defaultValue: jsonb("default_value").$type<string | number | boolean>(),
+    defaultValue: jsonb("default_value").$type<
+      string | number | boolean | object
+    >(),
 
     // Ensure either value OR (reference AND path) are set
     valueType: text("value_type").notNull().default("direct"), // 'direct' | 'reference'
@@ -426,10 +431,14 @@ export const resourceVariableRelations = relations(
 );
 
 export const createResourceVariable = createInsertSchema(resourceVariable, {
-  value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  value: z
+    .union([z.string(), z.number(), z.boolean(), z.record(z.any())])
+    .optional(),
   reference: z.string().optional(),
   path: z.array(z.string()).optional(),
-  defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  defaultValue: z
+    .union([z.string(), z.number(), z.boolean(), z.record(z.any())])
+    .optional(),
   valueType: z.enum(["direct", "reference"]),
 })
   .omit({ id: true })

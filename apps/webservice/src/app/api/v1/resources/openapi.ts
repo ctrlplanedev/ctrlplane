@@ -38,7 +38,12 @@ export const openapi: Swagger.SwaggerV3 = {
                   },
                   variables: {
                     type: "array",
-                    items: { $ref: "#/components/schemas/Variable" },
+                    items: {
+                      oneOf: [
+                        { $ref: "#/components/schemas/DirectVariable" },
+                        { $ref: "#/components/schemas/ReferenceVariable" },
+                      ],
+                    },
                   },
                 },
               },

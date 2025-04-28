@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { get } from "lodash";
 
-import { alias, and, count, eq, isNull } from "@ctrlplane/db";
+import { alias, and, count, eq, inArray, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -181,19 +182,61 @@ export const GET = request()
       );
     }
 
-    const { metadata, variables: vars, ...resourceData } = resource;
     const relationships = await getResourceParents(resource.id);
+    const relatipnshipTargets = await db.query.resource
+      .findMany({
+        where: inArray(
+          schema.resource.id,
+          Object.values(relationships).map((r) => r.target.id),
+        ),
+        with: {
+          metadata: true,
+        },
+      })
+      .then((r) =>
+        Object.fromEntries(
+          r.map((t) => [
+            t.id,
+            {
+              ...t,
+              metadata: Object.fromEntries(
+                t.metadata.map((m) => [m.key, m.value]),
+              ),
+            },
+          ]),
+        ),
+      );
+
     const variables = Object.fromEntries(
-      vars.map((v) => {
-        const strval = String(v.value);
-        const value = v.sensitive ? variablesAES256().decrypt(strval) : v.value;
-        return [v.key, value];
+      resource.variables.map((v) => {
+        if (v.valueType === "direct") {
+          const strval = String(v.value);
+          const value = v.sensitive
+            ? variablesAES256().decrypt(strval)
+            : v.value;
+          return [v.key, value];
+        }
+
+        if (v.valueType === "reference") {
+          if (v.path == null) return [v.key, v.defaultValue];
+          if (v.reference == null) return [v.key, v.defaultValue];
+          const target = relationships[v.reference]?.target.id;
+          const targetResource = relatipnshipTargets[target ?? ""];
+          if (targetResource == null) return [v.key, v.defaultValue];
+          return [v.key, get(targetResource, v.path, v.defaultValue)];
+        }
+
+        throw new Error(`Unknown variable value type: ${v.valueType}`);
       }),
     );
+
+    const metadata = Object.fromEntries(
+      resource.metadata.map((t) => [t.key, t.value]),
+    );
     const output = {
-      ...resourceData,
+      ...resource,
       variables,
-      metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
+      metadata,
       relationships,
     };
 
