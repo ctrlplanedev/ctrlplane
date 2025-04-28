@@ -77,7 +77,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
     const environmentIds = environments.map((e) => e.id);
     const { workspaceId } = system;
 
-    if (deploymentIds.length === 0 && environmentIds.length === 0) return;
+    if (deploymentIds.length === 0 || environmentIds.length === 0) return;
 
     try {
       const createdReleaseTargets = await db.transaction(async (tx) => {

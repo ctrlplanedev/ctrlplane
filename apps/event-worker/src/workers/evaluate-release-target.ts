@@ -108,7 +108,7 @@ const handleVersionRelease = withSpan(
     span.setAttribute("releaseTarget.id", String(releaseTarget.id));
     span.setAttribute("workspace.id", workspaceId);
 
-    const vrm = new VersionReleaseManager(db, {
+    const vrm = new VersionReleaseManager(tx, {
       ...releaseTarget,
       workspaceId,
     });
@@ -144,7 +144,7 @@ const handleVariableRelease = withSpan(
     span.setAttribute("releaseTarget.id", String(releaseTarget.id));
     span.setAttribute("workspace.id", workspaceId);
 
-    const varrm = new VariableReleaseManager(db, {
+    const varrm = new VariableReleaseManager(tx, {
       ...releaseTarget,
       workspaceId,
     });
