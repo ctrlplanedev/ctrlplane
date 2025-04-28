@@ -1,4 +1,6 @@
+import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 
 import { workspace } from "./workspace.js";
 
@@ -59,7 +61,7 @@ export const resourceRelationshipRule = pgTable(
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
 
-    name: text("name").notNull(),
+    name: text("name"),
     reference: text("reference").notNull(),
 
     dependencyType: resourceDependencyType("dependency_type").notNull(),
@@ -102,63 +104,25 @@ export const resourceRelationshipRuleMetadataMatch = pgTable(
   ],
 );
 
-// export const getAllWorkspaceRelationships = (tx: Tx, workspaceId: string) => {
-// const sourceResources = tx.select().from(resource).as("sourceResources");
-// const targetResources = tx
-//   .select({
-//     id: resource.id,
-//     workspaceId: resource.workspaceId,
-//     kind: resource.kind,
-//     version: resource.version,
-//     key: resourceMetadata.key,
-//     value: resourceMetadata.value,
-//   })
-//   .from(resource)
-//   .innerJoin(resourceMetadata, eq(resource.id, resourceMetadata.resourceId))
-//   .as("targetResources");
-// const relationships = tx
-//   .select({
-//     ruleId: resourceRelationshipRule.id,
-//     workspaceId: resourceRelationshipRule.workspaceId,
-//     reference: resourceRelationshipRule.reference,
-//     relationshipType: resourceRelationshipRule.relationshipType,
-//     sourceResourceId: sourceResources.id,
-//     targetResourceId: targetResources.id,
-//   })
-//   .from(resourceRelationshipRule)
-//   .innerJoin(
-//     resourceRelationshipRuleMetadataMatch,
-//     eq(
-//       resourceRelationshipRule.id,
-//       resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
-//     ),
-//   )
-//   .innerJoin(
-//     sourceResources,
-//     and(
-//       eq(resourceRelationshipRule.sourceKind, sourceResources.kind),
-//       eq(resourceRelationshipRule.sourceVersion, sourceResources.version),
-//       eq(resourceRelationshipRule.workspaceId, sourceResources.workspaceId),
-//     ),
-//   )
-//   .innerJoin(
-//     targetResources,
-//     and(
-//       eq(resourceRelationshipRule.targetKind, targetResources.kind),
-//       eq(resourceRelationshipRule.targetVersion, targetResources.version),
-//       eq(resourceRelationshipRule.workspaceId, targetResources.workspaceId),
-//     ),
-//   )
-//   .where(and(eq(resourceRelationshipRule.workspaceId, workspaceId)))
-//   .groupBy(
-//     resourceRelationshipRule.id,
-//     resourceRelationshipRule.workspaceId,
-//     resourceRelationshipRule.name,
-//     resourceRelationshipRule.reference,
-//     resourceRelationshipRule.relationshipType,
-//     sourceResources.id,
-//     targetResources.id,
-//   );
-// // .having(eq(count(sourceResources.key)));
-// return relationships;
-// };
+export const resourceRelationshipRuleRelations = relations(
+  resourceRelationshipRule,
+  ({ many }) => ({
+    metadataMatches: many(resourceRelationshipRuleMetadataMatch),
+  }),
+);
+
+export const resourceRelationshipRuleMetadataMatchRelations = relations(
+  resourceRelationshipRuleMetadataMatch,
+  ({ one }) => ({
+    rule: one(resourceRelationshipRule, {
+      fields: [
+        resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
+      ],
+      references: [resourceRelationshipRule.id],
+    }),
+  }),
+);
+
+export const createResourceRelationshipRule = createInsertSchema(
+  resourceRelationshipRule,
+);

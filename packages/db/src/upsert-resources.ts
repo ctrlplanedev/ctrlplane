@@ -49,7 +49,10 @@ export const updateResourceMetadata = async (
 };
 
 type ResourceWithVariables = SCHEMA.Resource & {
-  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+  variables?: Array<
+    | { key: string; value: any; sensitive: boolean }
+    | { key: string; defaultValue?: any; reference: string; path: string[] }
+  >;
 };
 
 export const updateResourceVariables = async (
@@ -63,14 +66,21 @@ export const updateResourceVariables = async (
     .where(inArray(SCHEMA.resourceVariable.resourceId, resourceIds));
 
   const resourceVariablesValues = resources.flatMap(({ id, variables = [] }) =>
-    variables.map(({ key, value, sensitive }) => ({
-      resourceId: id,
-      key,
-      value: sensitive
-        ? variablesAES256().encrypt(JSON.stringify(value))
-        : value,
-      sensitive,
-    })),
+    variables.map((variable) => {
+      if ("value" in variable) {
+        const { value, sensitive } = variable;
+        return {
+          valueType: "direct",
+          resourceId: id,
+          ...variable,
+          value: sensitive
+            ? variablesAES256().encrypt(JSON.stringify(value))
+            : value,
+        };
+      }
+
+      return { valueType: "reference", resourceId: id, ...variable };
+    }),
   );
 
   if (resourceVariablesValues.length === 0) return new Set();

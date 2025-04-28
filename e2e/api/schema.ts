@@ -1118,11 +1118,25 @@ export interface components {
         | (string | boolean | number | Record<string, never> | unknown[])
         | null;
     };
-    Variable: {
+    ReferenceVariable: {
+      key: string;
+      reference: string;
+      path: string[];
+      defaultValue?:
+        | string
+        | number
+        | boolean
+        | Record<string, never>
+        | unknown[];
+    };
+    DirectVariable: {
       key: string;
       value: string | number | boolean | Record<string, never> | unknown[];
       sensitive?: boolean;
     };
+    Variable:
+      | components["schemas"]["DirectVariable"]
+      | components["schemas"]["ReferenceVariable"];
     PolicyTarget: {
       deploymentSelector?: {
         [key: string]: unknown;
@@ -2941,7 +2955,8 @@ export interface operations {
           workspaceId: string;
           name: string;
           reference: string;
-          relationshipType: string;
+          dependencyType: string;
+          dependencyDescription?: string;
           description?: string;
           sourceKind: string;
           sourceVersion: string;
@@ -3208,7 +3223,7 @@ export interface operations {
           identifier?: string;
           workspaceId?: string;
           metadata?: components["schemas"]["MetadataMap"];
-          variables?: components["schemas"]["Variable"][];
+          variables?: components["schemas"]["DirectVariable"][];
         };
       };
     };

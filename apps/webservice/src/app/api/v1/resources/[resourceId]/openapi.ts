@@ -97,7 +97,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   variables: {
                     type: "array",
                     items: {
-                      $ref: "#/components/schemas/Variable",
+                      $ref: "#/components/schemas/DirectVariable",
                     },
                   },
                 },

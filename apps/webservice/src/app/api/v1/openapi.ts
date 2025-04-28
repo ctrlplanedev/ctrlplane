@@ -361,13 +361,29 @@ export const openapi: Swagger.SwaggerV3 = {
           ],
         },
       },
-      Variable: {
+      ReferenceVariable: {
+        type: "object",
+        required: ["key", "reference", "path"],
+        properties: {
+          key: { type: "string" },
+          reference: { type: "string" },
+          path: { type: "array", items: { type: "string" } },
+          defaultValue: {
+            oneOf: [
+              { type: "string" },
+              { type: "number" },
+              { type: "boolean" },
+              { type: "object" },
+              { type: "array" },
+            ],
+          },
+        },
+      },
+      DirectVariable: {
         type: "object",
         required: ["key", "value"],
         properties: {
-          key: {
-            type: "string",
-          },
+          key: { type: "string" },
           value: {
             oneOf: [
               { type: "string" },
@@ -381,6 +397,12 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "boolean",
           },
         },
+      },
+      Variable: {
+        oneOf: [
+          { $ref: "#/components/schemas/DirectVariable" },
+          { $ref: "#/components/schemas/ReferenceVariable" },
+        ],
       },
     },
   },

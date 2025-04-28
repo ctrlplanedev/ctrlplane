@@ -21,7 +21,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   "workspaceId",
                   "name",
                   "reference",
-                  "relationshipType",
+                  "dependencyType",
                   "sourceKind",
                   "sourceVersion",
                   "targetKind",
@@ -37,7 +37,10 @@ export const openapi: Swagger.SwaggerV3 = {
                   reference: {
                     type: "string",
                   },
-                  relationshipType: {
+                  dependencyType: {
+                    type: "string",
+                  },
+                  dependencyDescription: {
                     type: "string",
                   },
                   description: {

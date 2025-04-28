@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import {
+  IconHierarchy3,
   IconList,
   IconPlug,
   IconSchema,
@@ -64,6 +65,15 @@ export default async function Layout(props: {
                   href={urls.workspace(workspace.slug).resources().schemas()}
                 >
                   Schemas
+                </SidebarLink>
+                <SidebarLink
+                  icon={<IconHierarchy3 />}
+                  href={urls
+                    .workspace(workspace.slug)
+                    .resources()
+                    .relationshipRules()}
+                >
+                  Relationship Rules
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconView360Arrow />}

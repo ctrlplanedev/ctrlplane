@@ -56,14 +56,18 @@ export const GET = request()
           { status: 404 },
         );
 
-      const { variables: vars, metadata, ...resource } = data;
+      const { metadata, ...resource } = data;
       const variables = Object.fromEntries(
-        vars.map((v) => {
-          const strval = String(v.value);
-          const value = v.sensitive
-            ? variablesAES256().decrypt(strval)
-            : v.value;
-          return [v.key, value];
+        data.variables.map((v) => {
+          if (v.valueType === "direct") {
+            const strval = String(v.value);
+            const value = v.sensitive
+              ? variablesAES256().decrypt(strval)
+              : v.value;
+            return [v.key, value];
+          }
+
+          return [v.key, v.defaultValue];
         }),
       );
 
