@@ -111,7 +111,7 @@ export const POST = request()
       const variable = await db.transaction(async (tx) => {
         const variable = await tx
           .insert(schema.deploymentVariable)
-          .values(rest)
+          .values({ ...rest, deploymentId })
           .returning()
           .then(takeFirst);
 
@@ -133,8 +133,13 @@ export const POST = request()
               .set({ defaultValueId: inserted.id })
               .where(eq(schema.deploymentVariable.id, variable.id));
 
+          const strVal = String(inserted.value);
+          const resolvedValue = inserted.sensitive
+            ? variablesAES256().decrypt(strVal)
+            : strVal;
+
           const { variableId: _, ...variableValue } = inserted;
-          return variableValue;
+          return { ...variableValue, value: resolvedValue };
         });
 
         const insertedValues = await Promise.all(insertPromises);
@@ -148,12 +153,22 @@ export const POST = request()
 
       const defaultValue =
         variable.defaultValueId != null
-          ? await db.query.deploymentVariableValue.findFirst({
-              where: eq(
-                schema.deploymentVariableValue.id,
-                variable.defaultValueId,
-              ),
-            })
+          ? await db.query.deploymentVariableValue
+              .findFirst({
+                where: eq(
+                  schema.deploymentVariableValue.id,
+                  variable.defaultValueId,
+                ),
+              })
+              .then((v) => {
+                if (v == null) return undefined;
+                const { value, ...rest } = v;
+                const strVal = String(value);
+                const resolvedValue = v.sensitive
+                  ? variablesAES256().decrypt(strVal)
+                  : strVal;
+                return { ...rest, value: resolvedValue };
+              })
           : undefined;
 
       return NextResponse.json(
