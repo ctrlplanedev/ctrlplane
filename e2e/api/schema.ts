@@ -1066,6 +1066,8 @@ export interface components {
       updatedAt: string;
       /** Format: uuid */
       workspaceId: string;
+      /** Format: uuid */
+      providerId?: string;
     };
     ResourceWithVariables: components["schemas"]["Resource"] & {
       variables?: components["schemas"]["VariableMap"];
