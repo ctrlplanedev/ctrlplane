@@ -484,7 +484,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create a resource relationship rule */
-    post: operations["createResourceRelationshipRule"];
+    post: operations["upsertResourceRelationshipRule"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2896,7 +2896,7 @@ export interface operations {
       };
     };
   };
-  createResourceRelationshipRule: {
+  upsertResourceRelationshipRule: {
     parameters: {
       query?: never;
       header?: never;

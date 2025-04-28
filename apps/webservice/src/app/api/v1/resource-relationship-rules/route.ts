@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 import _ from "lodash";
 import { z } from "zod";
 
@@ -36,47 +37,99 @@ export const POST = request()
     ),
   )
   .handle<{ body: z.infer<typeof body> }>(async ({ db, body }) => {
-    const newResourceRelationshipRule = await db.transaction(async (tx) => {
-      const rule = await tx
-        .insert(schema.resourceRelationshipRule)
-        .values({
-          workspaceId: body.workspaceId,
-          name: body.name,
-          reference: body.reference,
-          dependencyType: body.dependencyType as any,
-          dependencyDescription: body.dependencyDescription,
-          description: body.description,
-          sourceKind: body.sourceKind,
-          sourceVersion: body.sourceVersion,
-          targetKind: body.targetKind,
-          targetVersion: body.targetVersion,
-        })
-        .returning()
-        .then(takeFirstOrNull);
+    const upsertedResourceRelationshipRule = await db.transaction(
+      async (tx) => {
+        // Check if rule already exists based on workspace, reference, and dependency type
+        const existingRule = await tx
+          .select()
+          .from(schema.resourceRelationshipRule)
+          .where(
+            and(
+              eq(schema.resourceRelationshipRule.workspaceId, body.workspaceId),
+              eq(schema.resourceRelationshipRule.reference, body.reference),
+              eq(
+                schema.resourceRelationshipRule.dependencyType,
+                body.dependencyType as any,
+              ),
+            ),
+          )
+          .then(takeFirstOrNull);
 
-      if (rule == null) return null;
+        let rule;
+        if (existingRule != null) {
+          // Update existing rule
+          rule = await tx
+            .update(schema.resourceRelationshipRule)
+            .set({
+              name: body.name,
+              dependencyDescription: body.dependencyDescription,
+              description: body.description,
+              sourceKind: body.sourceKind,
+              sourceVersion: body.sourceVersion,
+              targetKind: body.targetKind,
+              targetVersion: body.targetVersion,
+            })
+            .where(eq(schema.resourceRelationshipRule.id, existingRule.id))
+            .returning()
+            .then(takeFirstOrNull);
+        } else {
+          // Insert new rule
+          rule = await tx
+            .insert(schema.resourceRelationshipRule)
+            .values({
+              workspaceId: body.workspaceId,
+              name: body.name,
+              reference: body.reference,
+              dependencyType: body.dependencyType as any,
+              dependencyDescription: body.dependencyDescription,
+              description: body.description,
+              sourceKind: body.sourceKind,
+              sourceVersion: body.sourceVersion,
+              targetKind: body.targetKind,
+              targetVersion: body.targetVersion,
+            })
+            .returning()
+            .then(takeFirstOrNull);
+        }
 
-      const metadataKeys = _.uniq(body.metadataKeysMatch ?? []);
-      if (metadataKeys.length > 0)
-        await tx.insert(schema.resourceRelationshipRuleMetadataMatch).values(
-          metadataKeys.map((key) => ({
-            resourceRelationshipRuleId: rule.id,
-            key,
-          })),
-        );
+        if (rule == null) return null;
 
-      return rule;
-    });
+        // Handle metadata keys - first delete existing ones if updating
+        if (existingRule) {
+          await tx
+            .delete(schema.resourceRelationshipRuleMetadataMatch)
+            .where(
+              eq(
+                schema.resourceRelationshipRuleMetadataMatch
+                  .resourceRelationshipRuleId,
+                rule.id,
+              ),
+            );
+        }
 
-    if (newResourceRelationshipRule == null) {
+        // Insert new metadata keys
+        const metadataKeys = _.uniq(body.metadataKeysMatch ?? []);
+        if (metadataKeys.length > 0) {
+          await tx.insert(schema.resourceRelationshipRuleMetadataMatch).values(
+            metadataKeys.map((key) => ({
+              resourceRelationshipRuleId: rule.id,
+              key,
+            })),
+          );
+        }
+
+        return rule;
+      },
+    );
+
+    if (upsertedResourceRelationshipRule == null) {
       return NextResponse.json(
         {
-          error:
-            "Failed to create resource relationship rule. Relationship with rules may already exist.",
+          error: "Failed to upsert resource relationship rule.",
         },
         { status: 400 },
       );
     }
 
-    return NextResponse.json(newResourceRelationshipRule);
+    return NextResponse.json(upsertedResourceRelationshipRule);
   });

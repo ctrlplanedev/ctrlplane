@@ -10,7 +10,7 @@ export const openapi: Swagger.SwaggerV3 = {
     "/v1/resource-relationship-rules": {
       post: {
         summary: "Create a resource relationship rule",
-        operationId: "createResourceRelationshipRule",
+        operationId: "upsertResourceRelationshipRule",
         requestBody: {
           required: true,
           content: {
