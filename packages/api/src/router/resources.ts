@@ -1,6 +1,6 @@
 import type { SQL, Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import _ from "lodash";
+import _, { get } from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -17,6 +17,10 @@ import {
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
+import {
+  getResourceParents,
+  getResourceRelationshipRules,
+} from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import {
@@ -383,11 +387,41 @@ export const resourceRouter = createTRPCRouter({
           where: and(eq(schema.resource.id, input), isNotDeleted),
           with: { metadata: true, variables: true, provider: true },
         })
-        .then((t) => {
+        .then(async (t) => {
           if (t == null) return null;
-          const pairs = t.metadata.map((m) => [m.key, m.value]);
-          const metadata = Object.fromEntries(pairs);
-          return { ...t, metadata };
+
+          const { relationships, getTargetsWithMetadata } =
+            await getResourceParents(ctx.db, t.id);
+          const relatipnshipTargets = await getTargetsWithMetadata();
+
+          const variables = t.variables.map((v) => {
+            if (v.valueType === "direct") return v;
+
+            if (v.valueType === "reference") {
+              const target = relationships[v.reference!]?.target.id;
+              const targetResource = relatipnshipTargets[target ?? ""];
+
+              return {
+                ...v,
+                value: targetResource
+                  ? get(targetResource, v.path ?? [], v.defaultValue)
+                  : v.defaultValue,
+              };
+            }
+
+            throw new Error(`Unknown variable value type: ${v.valueType}`);
+          });
+
+          const metadata = Object.fromEntries(
+            t.metadata.map((m) => [m.key, m.value]),
+          );
+          return {
+            ...t,
+            relationships,
+            variables,
+            metadata,
+            rules: await getResourceRelationshipRules(ctx.db, t.id),
+          };
         }),
     ),
 

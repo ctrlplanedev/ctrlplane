@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconDots, IconLock, IconPlus } from "@tabler/icons-react";
+import { IconDots, IconLink, IconLock, IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
@@ -28,16 +28,18 @@ export default async function VariablesPage(props: {
   const deploymentVariables =
     await api.deployment.variable.byResourceId(resourceId);
 
-  const { variables } = resource;
+  const { variables, rules } = resource;
+  const references = rules.map((r) => r.reference);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 p-8">
+    <div className="max-w-5xl space-y-8 p-8">
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2>Resource Variables</h2>
           <CreateResourceVariableDialog
             resourceId={resourceId}
             existingKeys={variables.map((v) => v.key)}
+            references={references}
           >
             <Button
               variant="outline"
@@ -66,9 +68,18 @@ export default async function VariablesPage(props: {
                     {v.sensitive && (
                       <IconLock className="h-4 w-4 text-muted-foreground" />
                     )}
+                    {v.valueType === "reference" && (
+                      <IconLink className="h-4 w-4 text-muted-foreground" />
+                    )}
                   </TableCell>
                   <TableCell>
-                    {v.sensitive ? "*****" : String(v.value)}
+                    {v.sensitive ? (
+                      "*****"
+                    ) : (
+                      <span className="rounded-md p-0.5 px-1 font-mono text-red-400">
+                        {String(v.value)}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end">

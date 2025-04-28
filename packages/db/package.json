@@ -16,9 +16,9 @@
       "types": "./src/schema/index.ts",
       "default": "./dist/src/schema/index.js"
     },
-    "./utils": {
-      "types": "./src/utils/index.ts",
-      "default": "./dist/src/utils/index.js"
+    "./queries": {
+      "types": "./src/queries/index.ts",
+      "default": "./dist/src/queries/index.js"
     }
   },
   "license": "MIT",
