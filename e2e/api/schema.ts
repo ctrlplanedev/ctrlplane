@@ -145,6 +145,24 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployments/{deploymentId}/variables": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get all variables for a deployment */
+    get: operations["getDeploymentVariables"];
+    put?: never;
+    /** Create a new variable for a deployment */
+    post: operations["createDeploymentVariable"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployments": {
     parameters: {
       query?: never;
@@ -853,6 +871,26 @@ export interface components {
        * @example 8.6821
        */
       longitude: number;
+    };
+    DeploymentVariableValue: {
+      /** Format: uuid */
+      id: string;
+      value: unknown;
+      sensitive: boolean;
+      resourceSelector: {
+        [key: string]: unknown;
+      } | null;
+    };
+    DeploymentVariable: {
+      /** Format: uuid */
+      id: string;
+      key: string;
+      description: string;
+      values: components["schemas"]["DeploymentVariableValue"][];
+      defaultValue?: components["schemas"]["DeploymentVariableValue"];
+      config: {
+        [key: string]: unknown;
+      };
     };
     JobWithTrigger: components["schemas"]["Job"] & {
       release?: components["schemas"]["Release"];
@@ -1773,6 +1811,125 @@ export interface operations {
         content: {
           "application/json": {
             error?: string;
+          };
+        };
+      };
+    };
+  };
+  getDeploymentVariables: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Variables fetched successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVariable"][];
+        };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to fetch variables */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  createDeploymentVariable: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          /** Format: uuid */
+          deploymentId: string;
+          key: string;
+          description?: string;
+          config: {
+            [key: string]: unknown;
+          };
+          values?: {
+            value: unknown;
+            sensitive?: boolean;
+            resourceSelector?: {
+              [key: string]: unknown;
+            } | null;
+            default?: boolean;
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description Variable created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVariable"];
+        };
+      };
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to create variable */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
           };
         };
       };

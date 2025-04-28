@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import type { z } from "zod";
 import { NextResponse } from "next/server";
-import { INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
+import { CREATED, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
@@ -146,7 +146,20 @@ export const POST = request()
         variable,
       );
 
-      return NextResponse.json(variable);
+      const defaultValue =
+        variable.defaultValueId != null
+          ? await db.query.deploymentVariableValue.findFirst({
+              where: eq(
+                schema.deploymentVariableValue.id,
+                variable.defaultValueId,
+              ),
+            })
+          : undefined;
+
+      return NextResponse.json(
+        { ...variable, defaultValue },
+        { status: CREATED },
+      );
     } catch (e) {
       log.error("Failed to create deployment variable", { error: e });
       return NextResponse.json(

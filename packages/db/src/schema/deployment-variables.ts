@@ -127,9 +127,9 @@ export const createDeploymentVariable = createInsertSchema(deploymentVariable, {
         (v) => {
           if (v == null) return true;
           const numDefault = v.filter((val) => val.default === true).length;
-          return numDefault === 1;
+          return numDefault <= 1;
         },
-        { message: "Exactly one default value is required" },
+        { message: "Only one default value is allowed" },
       ),
   });
 export const updateDeploymentVariable = createDeploymentVariable.partial();
