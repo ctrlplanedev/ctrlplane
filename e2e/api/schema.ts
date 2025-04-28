@@ -501,7 +501,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create a resource relationship rule */
-    post: operations["createResourceRelationshipRule"];
+    post: operations["upsertResourceRelationshipRule"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1190,6 +1190,40 @@ export interface components {
       versionAnyApprovals?: components["schemas"]["VersionAnyApproval"][];
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
+    };
+    /** @enum {string} */
+    ResourceRelationshipRuleDependencyType:
+      | "depends_on"
+      | "depends_indirectly_on"
+      | "uses_at_runtime"
+      | "created_after"
+      | "provisioned_in"
+      | "inherits_from";
+    ResourceRelationshipRule: {
+      id: string;
+      workspaceId: string;
+      name: string;
+      reference: string;
+      dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyDescription?: string;
+      description?: string;
+      sourceKind: string;
+      sourceVersion: string;
+      targetKind: string;
+      targetVersion: string;
+    };
+    CreateResourceRelationshipRule: {
+      workspaceId: string;
+      name: string;
+      reference: string;
+      dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyDescription?: string;
+      description?: string;
+      sourceKind: string;
+      sourceVersion: string;
+      targetKind: string;
+      targetVersion: string;
+      metadataKeysMatch: string[];
     };
     ReleaseTarget: {
       /** Format: uuid */
@@ -2964,7 +2998,7 @@ export interface operations {
       };
     };
   };
-  createResourceRelationshipRule: {
+  upsertResourceRelationshipRule: {
     parameters: {
       query?: never;
       header?: never;
@@ -2973,19 +3007,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": {
-          workspaceId: string;
-          name: string;
-          reference: string;
-          dependencyType: string;
-          dependencyDescription?: string;
-          description?: string;
-          sourceKind: string;
-          sourceVersion: string;
-          targetKind: string;
-          targetVersion: string;
-          metadataKeysMatch?: string[];
-        };
+        "application/json": components["schemas"]["CreateResourceRelationshipRule"];
       };
     };
     responses: {
@@ -2995,18 +3017,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            id?: string;
-            workspaceId?: string;
-            name?: string;
-            reference?: string;
-            relationshipType?: string;
-            description?: string;
-            sourceKind?: string;
-            sourceVersion?: string;
-            targetKind?: string;
-            targetVersion?: string;
-          };
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
         };
       };
       /** @description Failed to create resource relationship rule */
