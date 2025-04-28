@@ -17,14 +17,15 @@ import { PageHeader } from "../../../_components/PageHeader";
 import { RelationshipRulesTable } from "./components/RelationshipRulesTable";
 
 interface PageProps {
-  params: { workspaceSlug: string };
+  params: Promise<{ workspaceSlug: string }>;
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const workspace = await api.workspace.bySlug(params.workspaceSlug);
-  if (!workspace) return {};
+  const { workspaceSlug } = await params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return {};
 
   return {
     title: `Relationship Rules - ${workspace.name}`,
@@ -33,8 +34,9 @@ export async function generateMetadata({
 }
 
 export default async function RelationshipRulesPage({ params }: PageProps) {
-  const workspace = await api.workspace.bySlug(params.workspaceSlug);
-  if (!workspace) return notFound();
+  const { workspaceSlug } = await params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
 
   return (
     <div className="flex h-full flex-col">

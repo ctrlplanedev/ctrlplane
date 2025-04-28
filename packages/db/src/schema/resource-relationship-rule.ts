@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 
 import { workspace } from "./workspace.js";
 
@@ -60,7 +61,7 @@ export const resourceRelationshipRule = pgTable(
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
 
-    name: text("name").notNull(),
+    name: text("name"),
     reference: text("reference").notNull(),
 
     dependencyType: resourceDependencyType("dependency_type").notNull(),
@@ -120,4 +121,8 @@ export const resourceRelationshipRuleMetadataMatchRelations = relations(
       references: [resourceRelationshipRule.id],
     }),
   }),
+);
+
+export const createResourceRelationshipRule = createInsertSchema(
+  resourceRelationshipRule,
 );

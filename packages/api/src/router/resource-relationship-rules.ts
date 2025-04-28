@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { eq } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -44,5 +44,37 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         .delete(schema.resourceRelationshipRule)
         .where(eq(schema.resourceRelationshipRule.id, input))
         .returning();
+    }),
+
+  create: protectedProcedure
+    .input(
+      schema.createResourceRelationshipRule.and(
+        z.object({
+          metadataKeys: z.string().array().optional(),
+        }),
+      ),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceCreate)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const { metadataKeys, ...rest } = input;
+      const rule = await ctx.db
+        .insert(schema.resourceRelationshipRule)
+        .values(rest)
+        .returning()
+        .then(takeFirst);
+
+      await ctx.db.insert(schema.resourceRelationshipRuleMetadataMatch).values(
+        metadataKeys?.map((key) => ({
+          resourceRelationshipRuleId: rule.id,
+          key,
+        })) ?? [],
+      );
+
+      return rule;
     }),
 });

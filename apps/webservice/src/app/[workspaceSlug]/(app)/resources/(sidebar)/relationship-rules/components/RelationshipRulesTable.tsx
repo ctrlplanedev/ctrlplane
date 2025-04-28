@@ -49,14 +49,11 @@ export const RelationshipRulesTable: React.FC<RelationshipRulesTableProps> = ({
               <TableRow key={rule.id}>
                 <TableCell>{rule.reference}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    {rule.sourceKind}{" "}
-                    <span className="text-muted-foreground">
-                      {rule.dependencyDescription ||
-                        noCase(rule.dependencyType)}
-                    </span>{" "}
-                    {rule.targetKind}
-                  </div>
+                  {rule.sourceKind}{" "}
+                  <span className="text-muted-foreground">
+                    {rule.dependencyDescription || noCase(rule.dependencyType)}
+                  </span>{" "}
+                  {rule.targetKind}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-2">
