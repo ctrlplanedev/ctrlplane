@@ -38,8 +38,8 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
         // acquire a lock on the environment
         await tx.execute(
           sql`
-           SELECT * from ${schema.environment}
-           WHERE ${schema.environment.id} = ${id}
+           SELECT * from ${schema.computedEnvironmentResource}
+           WHERE ${eq(schema.computedEnvironmentResource.environmentId, environment.id)}
            FOR UPDATE NOWAIT
           `,
         );
@@ -79,7 +79,7 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           .onConflictDoNothing();
       });
 
-      getQueue(Channel.ComputeSystemsReleaseTargets).add(
+      await getQueue(Channel.ComputeSystemsReleaseTargets).add(
         environment.system.id,
         environment.system,
       );

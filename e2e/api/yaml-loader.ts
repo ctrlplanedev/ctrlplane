@@ -32,6 +32,14 @@ export interface TestYamlFile {
     slug: string;
     description?: string;
     resourceSelector?: any;
+    versions?: Array<{
+      tag: string;
+      name?: string;
+      config?: Record<string, any>;
+      metadata?: Record<string, string>;
+      status?: "building" | "ready" | "failed";
+      message?: string;
+    }>;
   }>;
   policies?: Array<{
     name: string;
@@ -76,6 +84,12 @@ export interface ImportedEntities {
     name: string;
     slug: string;
     originalName?: string;
+    versions?: Array<{
+      id: string;
+      name: string;
+      tag: string;
+      status: "building" | "ready" | "failed";
+    }>;
   }>;
   policies: Array<{
     id: string;
@@ -214,11 +228,44 @@ export async function importEntitiesFromYaml(
         );
       }
 
+      const versions: Array<{
+        id: string;
+        name: string;
+        tag: string;
+        status: "building" | "ready" | "failed";
+      }> = [];
+
+      if (deployment.versions && deployment.versions.length > 0) {
+        for (const version of deployment.versions) {
+          const versionResponse = await api.POST("/v1/deployment-versions", {
+            body: {
+              ...version,
+              deploymentId: deploymentResponse.data!.id,
+            },
+          });
+
+          if (versionResponse.response.status !== 201) {
+            throw new Error(
+              `Failed to create deployment version: ${JSON.stringify(versionResponse.error)}`,
+            );
+          }
+
+          const versionData = versionResponse.data!;
+          versions.push({
+            id: versionData.id,
+            name: versionData.name,
+            tag: versionData.tag,
+            status: versionData.status ?? "ready",
+          });
+        }
+      }
+
       result.deployments.push({
         id: deploymentResponse.data!.id,
         name: deploymentResponse.data!.name,
         slug: deploymentResponse.data!.slug,
         originalName: deployment.name,
+        versions,
       });
     }
   }
