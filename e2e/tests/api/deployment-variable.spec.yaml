@@ -7,4 +7,3 @@ deployments:
   - name: "{{ prefix }}-deployment"
     slug: "{{ prefix }}-deployment"
     description: "Deployment for testing deployment variables"
-

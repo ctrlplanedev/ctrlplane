@@ -1872,8 +1872,6 @@ export interface operations {
     requestBody?: {
       content: {
         "application/json": {
-          /** Format: uuid */
-          deploymentId: string;
           key: string;
           description?: string;
           config: {

@@ -45,7 +45,6 @@ test.describe("Deployment Variables API", () => {
             type: "string",
             inputType: "text",
           },
-          deploymentId: importedDeployment.id,
         },
       },
     );
@@ -96,7 +95,6 @@ test.describe("Deployment Variables API", () => {
             type: "string",
             inputType: "text",
           },
-          deploymentId: importedDeployment.id,
           values: [{ value: valueA }, { value: valueB }],
         },
       },
@@ -157,7 +155,6 @@ test.describe("Deployment Variables API", () => {
             type: "string",
             inputType: "text",
           },
-          deploymentId: importedDeployment.id,
           values: [{ value: valueA }, { value: valueB, default: true }],
         },
       },
@@ -221,7 +218,6 @@ test.describe("Deployment Variables API", () => {
             type: "string",
             inputType: "text",
           },
-          deploymentId: importedDeployment.id,
           values: [
             { value: valueA, default: true },
             { value: valueB, default: true },

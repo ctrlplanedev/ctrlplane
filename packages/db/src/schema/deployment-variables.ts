@@ -118,7 +118,7 @@ export const createDeploymentVariable = createInsertSchema(deploymentVariable, {
   key: z.string().min(1),
   config: VariableConfig,
 })
-  .omit({ id: true, defaultValueId: true })
+  .omit({ id: true, defaultValueId: true, deploymentId: true })
   .extend({
     values: z
       .array(createDeploymentVariableValue)

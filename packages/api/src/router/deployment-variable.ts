@@ -302,20 +302,25 @@ export const deploymentVariableRouter = createTRPCRouter({
           .perform(Permission.DeploymentUpdate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
-    .input(createDeploymentVariable)
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        data: createDeploymentVariable,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const variable = await ctx.db
         .insert(deploymentVariable)
-        .values(input)
+        .values({ ...input.data, deploymentId: input.deploymentId })
         .returning()
         .then(takeFirst);
 
-      if (input.config?.default) {
+      if (input.data.config?.default) {
         const value = await ctx.db
           .insert(deploymentVariableValue)
           .values({
             variableId: variable.id,
-            value: input.config.default,
+            value: input.data.config.default,
           })
           .returning()
           .then(takeFirst);

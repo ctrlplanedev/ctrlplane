@@ -112,7 +112,6 @@ export const openapi: Swagger.SwaggerV3 = {
               schema: {
                 type: "object",
                 properties: {
-                  deploymentId: { type: "string", format: "uuid" },
                   key: { type: "string" },
                   description: { type: "string" },
                   config: {
@@ -137,7 +136,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     },
                   },
                 },
-                required: ["key", "config", "deploymentId"],
+                required: ["key", "config"],
               },
             },
           },
