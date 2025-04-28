@@ -59,7 +59,7 @@ export const CreateVariableDialog: React.FC<{
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
-    await create.mutateAsync({ ...values, deploymentId });
+    await create.mutateAsync({ deploymentId, data: values });
     router.refresh();
     setOpen(false);
   });

@@ -25,6 +25,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Switch } from "@ctrlplane/ui/switch";
+import { toast } from "@ctrlplane/ui/toast";
 import {
   Tooltip,
   TooltipContent,
@@ -57,7 +58,9 @@ export const AddVariableValueDialog: React.FC<{
     defaultValues: { value: "", default: false },
   });
   const onSubmit = form.handleSubmit(async (values) => {
-    await create.mutateAsync({ ...values, variableId: variable.id });
+    await create
+      .mutateAsync({ variableId: variable.id, data: values })
+      .catch(() => toast.error("Failed to add value"));
     router.refresh();
     setOpen(false);
   });

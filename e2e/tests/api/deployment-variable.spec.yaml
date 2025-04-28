@@ -1,0 +1,9 @@
+system:
+  name: "{{ prefix }}-deployment-variable"
+  slug: "{{ prefix }}-deployment-variable"
+  description: "Deployment variable system"
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: "Deployment for testing deployment variables"

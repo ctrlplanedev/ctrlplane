@@ -47,16 +47,21 @@ const valueRouter = createTRPCRouter({
           .on({ type: "deployment", id: variable.deploymentId });
       },
     })
-    .input(createDeploymentVariableValue)
+    .input(
+      z.object({
+        variableId: z.string().uuid(),
+        data: createDeploymentVariableValue,
+      }),
+    )
     .mutation(({ ctx, input }) =>
       ctx.db.transaction((tx) =>
         tx
           .insert(deploymentVariableValue)
-          .values(input)
+          .values({ ...input.data, variableId: input.variableId })
           .returning()
           .then(takeFirst)
           .then(async (value) => {
-            if (input.default)
+            if (input.data.default)
               await tx
                 .update(deploymentVariable)
                 .set({ defaultValueId: value.id })
@@ -297,20 +302,25 @@ export const deploymentVariableRouter = createTRPCRouter({
           .perform(Permission.DeploymentUpdate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
-    .input(createDeploymentVariable)
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        data: createDeploymentVariable,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const variable = await ctx.db
         .insert(deploymentVariable)
-        .values(input)
+        .values({ ...input.data, deploymentId: input.deploymentId })
         .returning()
         .then(takeFirst);
 
-      if (input.config?.default) {
+      if (input.data.config?.default) {
         const value = await ctx.db
           .insert(deploymentVariableValue)
           .values({
             variableId: variable.id,
-            value: input.config.default,
+            value: input.data.config.default,
           })
           .returning()
           .then(takeFirst);
