@@ -95,7 +95,7 @@ export const POST = request()
         if (rule == null) return null;
 
         // Handle metadata keys - first delete existing ones if updating
-        if (existingRule) {
+        if (existingRule != null) {
           await tx
             .delete(schema.resourceRelationshipRuleMetadataMatch)
             .where(
