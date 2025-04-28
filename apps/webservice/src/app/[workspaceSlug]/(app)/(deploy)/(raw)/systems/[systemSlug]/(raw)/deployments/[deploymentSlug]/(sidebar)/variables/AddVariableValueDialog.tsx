@@ -57,7 +57,7 @@ export const AddVariableValueDialog: React.FC<{
     defaultValues: { value: "", default: false },
   });
   const onSubmit = form.handleSubmit(async (values) => {
-    await create.mutateAsync({ ...values, variableId: variable.id });
+    await create.mutateAsync({ variableId: variable.id, data: values });
     router.refresh();
     setOpen(false);
   });
