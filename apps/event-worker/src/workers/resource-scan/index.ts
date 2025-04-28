@@ -1,5 +1,5 @@
-import type { ResourceToUpsert } from "@ctrlplane/db/schema";
 import type { Job } from "bullmq";
+import type { ResourceToInsert } from "@ctrlplane/job-dispatch";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -29,7 +29,7 @@ const removeResourceJob = (job: Job) =>
     ? getQueue(Channel.ResourceScan).removeRepeatableByKey(job.repeatJobKey)
     : null;
 
-const getResources = async (rp: any): Promise<ResourceToUpsert[]> => {
+const getResources = async (rp: any): Promise<ResourceToInsert[]> => {
   if (rp.resource_provider_google != null) {
     const [gkeResources, vpcResources, vmResources] = await Promise.all([
       getGkeResources(rp.workspace, rp.resource_provider_google),
