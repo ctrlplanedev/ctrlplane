@@ -212,7 +212,13 @@ export const evaluateReleaseTargetWorker = createWorker(
           existingVersionRelease?.id === versionRelease.id;
         const isSameVariableRelease =
           existingVariableRelease?.id === variableRelease.id;
-        if (isSameVersionRelease && isSameVariableRelease) return;
+        if (isSameVersionRelease && isSameVariableRelease)
+          return tx.query.release.findFirst({
+            where: and(
+              eq(schema.release.versionReleaseId, versionRelease.id),
+              eq(schema.release.variableReleaseId, variableRelease.id),
+            ),
+          });
 
         log.info("Creating new release for target", {
           releaseTarget,
@@ -232,12 +238,26 @@ export const evaluateReleaseTargetWorker = createWorker(
           .then(takeFirst);
       });
 
-      if (process.env.ENABLE_NEW_POLICY_ENGINE === "true" && release != null) {
-        const job = await db.transaction(async (tx) =>
-          createRelease(tx, release),
-        );
-        getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
+      if (release == null) return;
+      if (process.env.ENABLE_NEW_POLICY_ENGINE !== "true") {
+        log.info("New policy engine disabled, skipping job creation");
+        return;
       }
+
+      // Check if a job already exists for this release
+      const existingReleaseJob = await db.query.releaseJob.findFirst({
+        where: eq(schema.releaseJob.releaseId, release.id),
+      });
+
+      if (existingReleaseJob != null) return;
+
+      // If no job exists yet, create one and dispatch it
+      const newReleaseJob = await db.transaction(async (tx) =>
+        createRelease(tx, release),
+      );
+      getQueue(Channel.DispatchJob).add(newReleaseJob.id, {
+        jobId: newReleaseJob.id,
+      });
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       const isReleaseTargetNotCommittedYet = e.code === "23503";
