@@ -34,22 +34,25 @@ export const updatedResourceWorker = createWorker(
 
     if (workspace == null) throw new Error("Workspace not found");
 
-    for (const system of workspace.systems) {
-      for (const deployment of system.deployments) {
-        getQueue(Channel.ComputeDeploymentResourceSelector).add(
-          deployment.id,
-          deployment,
-          { deduplication: { id: deployment.id, ttl: 100 } },
-        );
-      }
+    const deploymentJobs = workspace.systems.flatMap((system) =>
+      system.deployments.map((deployment) => ({
+        name: deployment.id,
+        data: deployment,
+      })),
+    );
 
-      for (const environment of system.environments) {
-        getQueue(Channel.ComputeEnvironmentResourceSelector).add(
-          environment.id,
-          environment,
-          { deduplication: { id: environment.id, ttl: 100 } },
-        );
-      }
-    }
+    const environmentJobs = workspace.systems.flatMap((system) =>
+      system.environments.map((environment) => ({
+        name: environment.id,
+        data: environment,
+      })),
+    );
+
+    await getQueue(Channel.ComputeDeploymentResourceSelector).addBulk(
+      deploymentJobs,
+    );
+    await getQueue(Channel.ComputeEnvironmentResourceSelector).addBulk(
+      environmentJobs,
+    );
   }),
 );
