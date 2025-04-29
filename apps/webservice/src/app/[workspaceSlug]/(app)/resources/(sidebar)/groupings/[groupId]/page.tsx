@@ -19,6 +19,23 @@ import { api } from "~/trpc/server";
 import { CreateMetadataGroupDialog } from "../CreateMetadataGroupDialog";
 import { CombinationsTable } from "./CombincationsTable";
 
+export async function generateMetadata(props: {
+  params: Promise<{ workspaceSlug: string; groupId: string }>;
+}) {
+  const params = await props.params;
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (!workspace) return { title: "Resource Metadata Group" };
+
+  const metadataGroup = await api.resource.metadataGroup
+    .byId(params.groupId)
+    .catch(notFound);
+
+  return {
+    title: `${metadataGroup.name} - Resource Metadata Group - ${workspace.name}`,
+    description: `View and manage the ${metadataGroup.name} resource metadata group in the ${workspace.name} workspace`,
+  };
+}
+
 export default async function ResourceMetadataGroupPages(props: {
   params: Promise<{ workspaceSlug: string; groupId: string }>;
 }) {
