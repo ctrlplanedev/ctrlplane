@@ -24,6 +24,7 @@ test.describe("Release Creation", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
     await cleanupImportedEntities(api, importedEntities, workspace.id);
   });
 

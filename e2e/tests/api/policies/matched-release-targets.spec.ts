@@ -21,9 +21,12 @@ test.describe("Release Targets API", () => {
       workspace.id,
       yamlPath,
     );
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
     await cleanupImportedEntities(api, importedEntities, workspace.id);
   });
 
@@ -57,7 +60,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -82,12 +85,6 @@ test.describe("Release Targets API", () => {
         (rt) => rt.resource.identifier === `${systemPrefix}-qa`,
       ) ?? [];
     expect(qaResourceMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should update release targets when resource selector is updated", async ({
@@ -119,7 +116,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -138,7 +135,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -163,12 +160,6 @@ test.describe("Release Targets API", () => {
         (rt) => rt.resource.identifier === `${systemPrefix}-prod`,
       ) ?? [];
     expect(prodResourceMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should not match a resource that is deleted", async ({
@@ -191,6 +182,8 @@ test.describe("Release Targets API", () => {
 
     expect(sampleResourceResponse.response.status).toBe(200);
 
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+
     const deleteResourceResponse = await api.DELETE(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
@@ -199,6 +192,8 @@ test.describe("Release Targets API", () => {
     );
 
     expect(deleteResourceResponse.response.status).toBe(200);
+
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -223,7 +218,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -236,12 +231,6 @@ test.describe("Release Targets API", () => {
     expect(releaseTargets).toBeDefined();
 
     expect(count).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should match a policy to a specific environment", async ({
@@ -274,7 +263,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -299,12 +288,6 @@ test.describe("Release Targets API", () => {
         (rt) => rt.environment.name === `${systemPrefix}-b`,
       ) ?? [];
     expect(bEnvironmentMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should update release targets when environment selector is updated", async ({
@@ -336,7 +319,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -355,7 +338,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -380,12 +363,6 @@ test.describe("Release Targets API", () => {
         (rt) => rt.environment.name === `${systemPrefix}-a`,
       ) ?? [];
     expect(aEnvironmentMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should not match an environment that is deleted", async ({
@@ -413,6 +390,8 @@ test.describe("Release Targets API", () => {
     expect(environmentIdResponse).toBeDefined();
     const environmentId = environmentIdResponse ?? "";
 
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+
     const deleteEnvironmentResponse = await api.DELETE(
       "/v1/environments/{environmentId}",
       {
@@ -421,6 +400,8 @@ test.describe("Release Targets API", () => {
     );
 
     expect(deleteEnvironmentResponse.response.status).toBe(200);
+
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -445,7 +426,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -458,12 +439,6 @@ test.describe("Release Targets API", () => {
     expect(releaseTargets).toBeDefined();
 
     expect(count).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should match a policy to a specific deployment", async ({
@@ -496,7 +471,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -521,12 +496,6 @@ test.describe("Release Targets API", () => {
         (rt) => rt.deployment.slug === `${systemPrefix}-deployment-b`,
       ) ?? [];
     expect(bDeploymentMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should update release targets when deployment selector is updated", async ({
@@ -558,7 +527,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -577,7 +546,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -602,12 +571,6 @@ test.describe("Release Targets API", () => {
         (rt) => rt.deployment.slug === `${systemPrefix}-deployment-a`,
       ) ?? [];
     expect(aDeploymentMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should not match a deployment that is deleted", async ({
@@ -636,6 +599,8 @@ test.describe("Release Targets API", () => {
     expect(deploymentIdResponse).toBeDefined();
     const deploymentId = deploymentIdResponse ?? "";
 
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+
     const deleteDeploymentResponse = await api.DELETE(
       "/v1/deployments/{deploymentId}",
       {
@@ -644,6 +609,8 @@ test.describe("Release Targets API", () => {
     );
 
     expect(deleteDeploymentResponse.response.status).toBe(200);
+
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -668,7 +635,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -681,12 +648,6 @@ test.describe("Release Targets API", () => {
     expect(releaseTargets).toBeDefined();
 
     expect(count).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should match a policy to a specific deployment and environment", async ({
@@ -724,7 +685,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -769,12 +730,6 @@ test.describe("Release Targets API", () => {
           rt.environment.name === `${systemPrefix}-b`,
       ) ?? [];
     expect(deploymentBEnvironmentBMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should update release targets when deployment and environment selectors are updated", async ({
@@ -811,7 +766,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -835,7 +790,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -880,12 +835,6 @@ test.describe("Release Targets API", () => {
           rt.environment.name === `${systemPrefix}-b`,
       ) ?? [];
     expect(deploymentBEnvironmentBMatch.length).toBe(2);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should match a policy to a specific resource and environment", async ({
@@ -923,7 +872,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -968,12 +917,6 @@ test.describe("Release Targets API", () => {
           rt.resource.identifier === `${systemPrefix}-qa`,
       ) ?? [];
     expect(qaEnvironmentBMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should update release targets when resource and environment selectors are updated", async ({
@@ -1010,7 +953,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -1034,7 +977,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1079,12 +1022,6 @@ test.describe("Release Targets API", () => {
           rt.resource.identifier === `${systemPrefix}-qa`,
       ) ?? [];
     expect(qaEnvironmentBMatch.length).toBe(2);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should match a policy to a specific resource and deployment", async ({
@@ -1122,7 +1059,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1167,12 +1104,6 @@ test.describe("Release Targets API", () => {
           rt.resource.identifier === `${systemPrefix}-qa`,
       ) ?? [];
     expect(qaDeploymentBMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should update release targets when resource and deployment selectors are updated", async ({
@@ -1209,7 +1140,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -1233,7 +1164,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1278,12 +1209,6 @@ test.describe("Release Targets API", () => {
           rt.resource.identifier === `${systemPrefix}-qa`,
       ) ?? [];
     expect(qaDeploymentBMatch.length).toBe(2);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should match a policy to a specific resource and deployment and environment", async ({
@@ -1326,7 +1251,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 25_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1411,12 +1336,6 @@ test.describe("Release Targets API", () => {
           rt.resource.identifier === `${systemPrefix}-qa`,
       ) ?? [];
     expect(qaDeploymentBEnvironmentBMatch.length).toBe(0);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 
   test("should update release targets when resource and deployment and environment selectors are updated", async ({
@@ -1458,7 +1377,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -1487,7 +1406,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 24_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1572,11 +1491,5 @@ test.describe("Release Targets API", () => {
           rt.resource.identifier === `${systemPrefix}-qa`,
       ) ?? [];
     expect(qaDeploymentBEnvironmentBMatch.length).toBe(1);
-
-    const deletePolicyResponse = await api.DELETE("/v1/policies/{policyId}", {
-      params: { path: { policyId } },
-    });
-
-    expect(deletePolicyResponse.response.status).toBe(200);
   });
 });
