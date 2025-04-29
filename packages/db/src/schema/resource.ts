@@ -503,7 +503,6 @@ export const referenceVariableSchema = baseVariableSchema.extend({
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
 });
 
-// Discriminated union for creation/validation where type is known
 export const resourceVariableSchema = z.discriminatedUnion("valueType", [
   directVariableSchema,
   referenceVariableSchema,
