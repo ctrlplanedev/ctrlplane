@@ -120,6 +120,24 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           system,
         );
 
+        const deleted = previousReleaseTargets.filter(
+          (prevRt) =>
+            !releaseTargets.some(
+              (rt) =>
+                rt.deploymentId === prevRt.deploymentId &&
+                rt.resourceId === prevRt.resourceId &&
+                rt.environmentId === prevRt.environmentId,
+            ),
+        );
+
+        if (deleted.length > 0)
+          await tx.delete(schema.releaseTarget).where(
+            inArray(
+              schema.releaseTarget.id,
+              deleted.map((rt) => rt.id),
+            ),
+          );
+
         const created = releaseTargets.filter(
           (rt) =>
             !previousReleaseTargets.some(
