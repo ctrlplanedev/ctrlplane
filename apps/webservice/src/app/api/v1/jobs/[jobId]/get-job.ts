@@ -10,7 +10,7 @@ const log = logger.child({
   function: "getNewEngineJob",
 });
 
-export const getNewEngineJob = async (db: Tx, jobId: string) => {
+export const getJob = async (db: Tx, jobId: string) => {
   try {
     const jobResult = await db.query.job.findFirst({
       where: eq(schema.job.id, jobId),
@@ -80,8 +80,8 @@ export const getNewEngineJob = async (db: Tx, jobId: string) => {
       resource: resourceWithMetadata,
       environment,
       deployment,
-      deploymentVersion: version,
-      release: { ...release, version: version.tag },
+      version,
+      release,
     };
   } catch (error) {
     log.error("Error getting new engine job", { error });
