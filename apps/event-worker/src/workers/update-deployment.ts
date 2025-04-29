@@ -1,8 +1,8 @@
-import type * as schema from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { and, not, selector } from "@ctrlplane/db";
+import { and, eq, not, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
@@ -34,14 +34,42 @@ export const updateDeploymentWorker = createWorker(
   Channel.UpdateDeployment,
   async ({ data }) => {
     try {
-      const { oldSelector, resourceSelector } = data;
-      if (_.isEqual(oldSelector, resourceSelector)) return;
+      const jobAgentChanged = !_.isEqual(
+        data.old.jobAgentId,
+        data.new.jobAgentId,
+      );
+      const jobAgentConfigChanged = !_.isEqual(
+        data.old.jobAgentConfig,
+        data.new.jobAgentConfig,
+      );
+      if (jobAgentChanged || jobAgentConfigChanged) {
+        const releaseTargets = await db.query.releaseTarget.findMany({
+          where: eq(schema.releaseTarget.deploymentId, data.new.id),
+        });
 
-      getQueue(Channel.ComputeDeploymentResourceSelector).add(data.id, data);
+        for (const rt of releaseTargets) {
+          getQueue(Channel.EvaluateReleaseTarget).add(
+            `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+            rt,
+          );
+        }
+      }
+
+      if (_.isEqual(data.old.resourceSelector, data.new.resourceSelector))
+        return;
+
+      getQueue(Channel.ComputeDeploymentResourceSelector).add(
+        data.new.id,
+        data.new,
+      );
 
       const resourceQueryBuilder = selector().query().resources();
-      const oldCondition = resourceQueryBuilder.where(oldSelector).sql();
-      const newCondition = resourceQueryBuilder.where(resourceSelector).sql();
+      const oldCondition = resourceQueryBuilder
+        .where(data.old.resourceSelector)
+        .sql();
+      const newCondition = resourceQueryBuilder
+        .where(data.new.resourceSelector)
+        .sql();
       const notNewCondition =
         newCondition != null ? not(newCondition) : undefined;
 
@@ -49,7 +77,7 @@ export const updateDeploymentWorker = createWorker(
         where: and(oldCondition, notNewCondition),
       });
 
-      await dispatchExitHooks(data, exitedResources);
+      await dispatchExitHooks(data.new, exitedResources);
     } catch (error) {
       log.error("Error updating deployment", { error });
       throw error;

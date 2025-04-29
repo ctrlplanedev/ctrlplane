@@ -115,14 +115,7 @@ const handleVersionRelease = withSpan(
 
     const { chosenCandidate } = await vrm.evaluate();
 
-    if (!chosenCandidate) {
-      return null;
-    }
-
-    log.info("Evaluated version release", {
-      releaseTarget,
-      chosenCandidate,
-    });
+    if (!chosenCandidate) return null;
 
     const { release: versionRelease } = await vrm.upsertRelease(
       chosenCandidate.id,
