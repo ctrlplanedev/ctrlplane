@@ -5,6 +5,8 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+
 const findMatchingReleaseTargets = (
   tx: Tx,
   policyTarget: schema.PolicyTarget,
@@ -113,19 +115,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
         )
         .then((rows) => rows.map((row) => row.release_target));
 
-      const queueInsertionPromises = releaseTargets.map((rt) =>
-        getQueue(Channel.EvaluateReleaseTarget).add(
-          `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-          rt,
-          {
-            deduplication: {
-              id: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-              ttl: 500,
-            },
-          },
-        ),
-      );
-      await Promise.all(queueInsertionPromises);
+      await dispatchEvaluateJobs(releaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {

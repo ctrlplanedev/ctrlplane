@@ -7,6 +7,8 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+
 const log = logger.child({ module: "update-deployment" });
 
 const dispatchExitHooks = async (
@@ -47,12 +49,7 @@ export const updateDeploymentWorker = createWorker(
           where: eq(schema.releaseTarget.deploymentId, data.new.id),
         });
 
-        for (const rt of releaseTargets) {
-          getQueue(Channel.EvaluateReleaseTarget).add(
-            `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-            rt,
-          );
-        }
+        await dispatchEvaluateJobs(releaseTargets);
       }
 
       if (_.isEqual(data.old.resourceSelector, data.new.resourceSelector))

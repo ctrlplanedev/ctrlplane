@@ -172,7 +172,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         await getQueue(Channel.ComputeSystemsReleaseTargets).add(
           job.name,
           job.data,
-          { delay: 500 },
         );
         return;
       }
