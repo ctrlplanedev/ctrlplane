@@ -22,17 +22,17 @@ test.describe("Release Targets API", () => {
       yamlPath,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
     await cleanupImportedEntities(api, importedEntities, workspace.id);
   });
 
   test("should match a policy to a specific resource", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -60,7 +60,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(28_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -90,6 +90,7 @@ test.describe("Release Targets API", () => {
   test("should update release targets when resource selector is updated", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -116,7 +117,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -135,7 +136,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(27_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -165,6 +166,7 @@ test.describe("Release Targets API", () => {
   test("should not match a resource that is deleted", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -182,7 +184,7 @@ test.describe("Release Targets API", () => {
 
     expect(sampleResourceResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await page.waitForTimeout(1_000);
 
     const deleteResourceResponse = await api.DELETE(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
@@ -193,7 +195,7 @@ test.describe("Release Targets API", () => {
 
     expect(deleteResourceResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await page.waitForTimeout(1_000);
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -218,7 +220,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(26_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -236,6 +238,7 @@ test.describe("Release Targets API", () => {
   test("should match a policy to a specific environment", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -263,7 +266,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(28_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -293,6 +296,7 @@ test.describe("Release Targets API", () => {
   test("should update release targets when environment selector is updated", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -319,7 +323,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -338,7 +342,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(27_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -368,6 +372,7 @@ test.describe("Release Targets API", () => {
   test("should not match an environment that is deleted", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -390,7 +395,7 @@ test.describe("Release Targets API", () => {
     expect(environmentIdResponse).toBeDefined();
     const environmentId = environmentIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await page.waitForTimeout(1_000);
 
     const deleteEnvironmentResponse = await api.DELETE(
       "/v1/environments/{environmentId}",
@@ -401,7 +406,7 @@ test.describe("Release Targets API", () => {
 
     expect(deleteEnvironmentResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await page.waitForTimeout(1_000);
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -426,7 +431,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(26_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -444,6 +449,7 @@ test.describe("Release Targets API", () => {
   test("should match a policy to a specific deployment", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -471,7 +477,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(28_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -501,6 +507,7 @@ test.describe("Release Targets API", () => {
   test("should update release targets when deployment selector is updated", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -527,7 +534,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -546,7 +553,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(27_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -576,6 +583,7 @@ test.describe("Release Targets API", () => {
   test("should not match a deployment that is deleted", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -599,7 +607,7 @@ test.describe("Release Targets API", () => {
     expect(deploymentIdResponse).toBeDefined();
     const deploymentId = deploymentIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await page.waitForTimeout(1_000);
 
     const deleteDeploymentResponse = await api.DELETE(
       "/v1/deployments/{deploymentId}",
@@ -610,7 +618,7 @@ test.describe("Release Targets API", () => {
 
     expect(deleteDeploymentResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await page.waitForTimeout(1_000);
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -635,7 +643,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(26_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -653,6 +661,7 @@ test.describe("Release Targets API", () => {
   test("should match a policy to a specific deployment and environment", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -685,7 +694,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(28_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -735,6 +744,7 @@ test.describe("Release Targets API", () => {
   test("should update release targets when deployment and environment selectors are updated", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -766,7 +776,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -790,7 +800,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(27_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -840,6 +850,7 @@ test.describe("Release Targets API", () => {
   test("should match a policy to a specific resource and environment", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -872,7 +883,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(28_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -922,6 +933,7 @@ test.describe("Release Targets API", () => {
   test("should update release targets when resource and environment selectors are updated", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -953,7 +965,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -977,7 +989,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(27_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1027,6 +1039,7 @@ test.describe("Release Targets API", () => {
   test("should match a policy to a specific resource and deployment", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -1059,7 +1072,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(28_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1109,6 +1122,7 @@ test.describe("Release Targets API", () => {
   test("should update release targets when resource and deployment selectors are updated", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -1140,7 +1154,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -1164,7 +1178,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(27_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1214,6 +1228,7 @@ test.describe("Release Targets API", () => {
   test("should match a policy to a specific resource and deployment and environment", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -1251,7 +1266,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(28_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1341,6 +1356,7 @@ test.describe("Release Targets API", () => {
   test("should update release targets when resource and deployment and environment selectors are updated", async ({
     api,
     workspace,
+    page,
   }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
@@ -1377,7 +1393,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -1406,7 +1422,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(27_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
