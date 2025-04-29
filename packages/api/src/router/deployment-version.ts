@@ -14,6 +14,7 @@ import {
   like,
   notExists,
   or,
+  selector,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -221,10 +222,11 @@ export const versionRouter = createTRPCRouter({
         input.deploymentId,
       );
 
-      const filterCheck = SCHEMA.deploymentVersionMatchesCondition(
-        ctx.db,
-        input.filter,
-      );
+      const filterCheck = selector()
+        .query()
+        .deploymentVersions()
+        .where(input.filter)
+        .sql();
 
       const checks = and(deploymentIdCheck, filterCheck);
 
@@ -519,29 +521,6 @@ export const versionRouter = createTRPCRouter({
           }),
       })
       .query(({ input: { versionId, environmentId } }) =>
-        // db
-        //   .selectDistinctOn([SCHEMA.releaseJobTrigger.resourceId])
-        //   .from(SCHEMA.job)
-        //   .innerJoin(
-        //     SCHEMA.releaseJobTrigger,
-        //     eq(SCHEMA.job.id, SCHEMA.releaseJobTrigger.jobId),
-        //   )
-        //   .innerJoin(
-        //     SCHEMA.resource,
-        //     eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
-        //   )
-        //   .orderBy(
-        //     SCHEMA.releaseJobTrigger.resourceId,
-        //     desc(SCHEMA.job.createdAt),
-        //   )
-        //   .where(
-        //     and(
-        //       eq(SCHEMA.releaseJobTrigger.versionId, versionId),
-        //       eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
-        //       isNull(SCHEMA.resource.deletedAt),
-        //     ),
-        //   ),
-
         db
           .selectDistinctOn([SCHEMA.releaseTarget.resourceId])
           .from(SCHEMA.job)

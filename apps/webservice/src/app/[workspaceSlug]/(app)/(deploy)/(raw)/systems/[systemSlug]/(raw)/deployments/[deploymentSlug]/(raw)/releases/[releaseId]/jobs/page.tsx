@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
-import { ResourceReleaseTable } from "./release-table/ResourceReleaseTable";
+import { DeploymentVersionJobsTable } from "./_components/DeploymentVersionJobsTable";
 
 type PageProps = {
   params: Promise<{
@@ -30,16 +30,12 @@ export default async function ReleasePage(props: PageProps) {
   const params = await props.params;
   const deploymentVersion = await api.deployment.version.byId(params.releaseId);
   const deployment = await api.deployment.bySlug(params);
-  if (deploymentVersion == null || deployment == null) notFound();
-
-  const { system } = deployment;
-  const environments = await api.environment.bySystemId(system.id);
+  if (deploymentVersion == null || deployment == null) return notFound();
 
   return (
-    <ResourceReleaseTable
+    <DeploymentVersionJobsTable
       deploymentVersion={deploymentVersion}
       deployment={deployment}
-      environments={environments}
     />
   );
 }
