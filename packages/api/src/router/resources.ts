@@ -396,23 +396,34 @@ export const resourceRouter = createTRPCRouter({
             await getResourceParents(ctx.db, t.id);
           const relatipnshipTargets = await getTargetsWithMetadata();
 
-          const variables = t.variables.map((v) => {
-            if (v.valueType === "direct") return v;
-
-            if (v.valueType === "reference") {
-              const target = relationships[v.reference!]?.target.id;
-              const targetResource = relatipnshipTargets[target ?? ""];
-
-              return {
-                ...v,
-                value: targetResource
-                  ? get(targetResource, v.path ?? [], v.defaultValue)
-                  : v.defaultValue,
-              };
-            }
-
-            throw new Error(`Unknown variable value type: ${v.valueType}`);
-          });
+          const processedVariables = t.variables
+            .map((v) => {
+              if (v.valueType === "direct") return v;
+              if (v.valueType === "reference") {
+                const target = relationships[v.reference!]?.target.id;
+                const targetResource = relatipnshipTargets[target ?? ""];
+                const resolvedValue =
+                  targetResource == null
+                    ? v.defaultValue
+                    : get(targetResource, v.path ?? [], v.defaultValue);
+                return { ...v, value: resolvedValue };
+              }
+              console.warn(`Unknown variable value type: ${v.valueType}`);
+              return null;
+            })
+            .filter(isPresent)
+            .map((v) => {
+              try {
+                return schema.resourceVariableSchema.parse(v);
+              } catch (error) {
+                console.error(
+                  `Failed to parse variable ${v.key} for resource ${t.id}:`,
+                  error,
+                );
+                return null;
+              }
+            })
+            .filter(isPresent);
 
           const metadata = Object.fromEntries(
             t.metadata.map((m) => [m.key, m.value]),
@@ -420,7 +431,7 @@ export const resourceRouter = createTRPCRouter({
           return {
             ...t,
             relationships,
-            variables,
+            variables: processedVariables,
             metadata,
             rules: await getResourceRelationshipRules(ctx.db, t.id),
           };

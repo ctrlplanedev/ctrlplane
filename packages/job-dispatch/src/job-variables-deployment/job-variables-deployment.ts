@@ -120,18 +120,30 @@ export const determineReleaseVariableValue = async (
   directMatch: boolean;
   sensitive: boolean;
 } | null> => {
-  const resourceVariableValue = await utils.getResourceVariableValue(
+  const resourceVariableValueRaw = await utils.getResourceVariableValue(
     tx,
     jobResource.id,
     variableKey,
   );
 
-  if (resourceVariableValue != null)
-    return {
-      value: resourceVariableValue,
-      directMatch: true,
-      sensitive: resourceVariableValue.sensitive,
-    };
+  if (resourceVariableValueRaw != null) {
+    try {
+      const parsedResourceVariable = schema.resourceVariableSchema.parse(
+        resourceVariableValueRaw,
+      );
+      return {
+        value: parsedResourceVariable,
+        directMatch: true,
+        sensitive: parsedResourceVariable.sensitive ?? false,
+      };
+    } catch (error) {
+      console.error(
+        `Error parsing resource variable ${variableKey} for resource ${jobResource.id}:`,
+        error,
+      );
+      return null;
+    }
+  }
 
   const deploymentVariableValues = await utils.getVariableValues(
     tx,
@@ -164,7 +176,7 @@ export const determineReleaseVariableValue = async (
   if (defaultValue != null)
     return {
       value: defaultValue,
-      directMatch: true,
+      directMatch: false,
       sensitive: false,
     };
 

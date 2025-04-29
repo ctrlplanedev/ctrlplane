@@ -427,7 +427,7 @@ describe("job-variables-deployment", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0]!.value).toEqual(variableValues[0]!.value);
+    expect(result[0]!.value).toEqual("test4");
   });
 
   it("should override value with variable set value if key matches and no direct match or default value exists", async () => {
@@ -589,14 +589,14 @@ describe("job-variables-deployment", () => {
   it("should prioritize resource variable if it exists", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const resourceVariable: SCHEMA.ResourceVariable = {
-      id: "0",
-      resourceId: "0",
+    const resourceVariable = {
+      id: "11111111-1111-1111-1111-111111111111",
+      resourceId: "22222222-2222-2222-2222-222222222222",
       key: "test",
       value: "test6",
       sensitive: false,
-      reference: null,
       valueType: "direct",
+      reference: null,
       path: null,
       defaultValue: null,
     };
@@ -692,9 +692,9 @@ describe("job-variables-deployment", () => {
   it("should prioritize resource variable if it exists and return sensitive value if it is", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const resourceVariable: SCHEMA.ResourceVariable = {
-      id: "0",
-      resourceId: "0",
+    const resourceVariable = {
+      id: "33333333-3333-3333-3333-333333333333",
+      resourceId: "44444444-4444-4444-4444-444444444444",
       key: "test",
       value: "test6",
       sensitive: true,
