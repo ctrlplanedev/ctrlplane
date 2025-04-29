@@ -131,7 +131,10 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         );
 
         if (created.length > 0)
-          await tx.insert(schema.releaseTarget).values(created);
+          await tx
+            .insert(schema.releaseTarget)
+            .values(created)
+            .onConflictDoNothing();
 
         return tx.query.releaseTarget.findMany({
           where: or(
