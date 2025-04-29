@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, desc, eq, takeFirst } from "@ctrlplane/db";
+import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
@@ -186,6 +186,14 @@ export const evaluateReleaseTargetWorker = createWorker(
         });
         if (!releaseTarget) throw new Error("Failed to get release target");
 
+        await tx.execute(
+          sql`
+            SELECT id FROM ${schema.releaseTarget}
+            WHERE ${eq(schema.releaseTarget.id, releaseTarget.id)}
+            FOR UPDATE NOWAIT
+          `,
+        );
+
         const existingVersionRelease = await tx.query.versionRelease.findFirst({
           where: eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
           orderBy: desc(schema.versionRelease.createdAt),
@@ -246,7 +254,6 @@ export const evaluateReleaseTargetWorker = createWorker(
         });
         return;
       }
-      log.error("Error in evaluateReleaseTarget", { error: e });
       throw e;
     }
   }),

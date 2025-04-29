@@ -32,6 +32,18 @@ test.describe("Release Creation", () => {
     page,
     workspace,
   }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
     const importedResource = importedEntities.resources.at(0)!;
     const resourceResponse = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
@@ -61,21 +73,16 @@ test.describe("Release Creation", () => {
     );
     expect(releaseTargetResponse.response.status).toBe(200);
     const releaseTargets = releaseTargetResponse.data ?? [];
-    expect(releaseTargets.length).toBe(1);
-    const releaseTarget = releaseTargets[0]!;
-
-    const importedDeployment = importedEntities.deployments[0]!;
-    const importedEnvironment = importedEntities.environments[0]!;
-
-    expect(releaseTarget.resource.id).toBe(resourceId);
-    expect(releaseTarget.environment.id).toBe(importedEnvironment.id);
-    expect(releaseTarget.deployment.id).toBe(importedDeployment.id);
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
 
     const versionTag = faker.string.alphanumeric(10);
 
     const versionResponse = await api.POST("/v1/deployment-versions", {
       body: {
-        deploymentId: importedDeployment.id,
+        deploymentId,
         tag: versionTag,
       },
     });
@@ -88,7 +95,7 @@ test.describe("Release Creation", () => {
       {
         params: {
           path: {
-            releaseTargetId: releaseTarget.id,
+            releaseTargetId: releaseTarget?.id ?? "",
           },
         },
       },
@@ -96,19 +103,178 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    const matchedRelease = releases.find(
-      (release) => release.version.tag === versionTag,
+    expect(releases.length).toBe(1);
+
+    const release = releases[0]!;
+    expect(release.version.tag).toBe(versionTag);
+  });
+
+  test("should create a release when a new deployment variable is added", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    await page.waitForTimeout(1_000);
+
+    const importedResource = importedEntities.resources.at(0)!;
+    const resourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: importedResource.identifier,
+          },
+        },
+      },
     );
-    expect(matchedRelease).toBeDefined();
+    expect(resourceResponse.response.status).toBe(200);
+    const resource = resourceResponse.data;
+    expect(resource).toBeDefined();
+    const resourceId = resource?.id ?? "";
+
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: {
+            resourceId,
+          },
+        },
+      },
+    );
+    expect(releaseTargetResponse.response.status).toBe(200);
+    const releaseTargets = releaseTargetResponse.data ?? [];
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: { deploymentId },
+        },
+        body: {
+          key: "test",
+          description: "test",
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          values: [
+            {
+              value: "test-a",
+              default: true,
+            },
+            { value: "test-b" },
+          ],
+        },
+      },
+    );
+    expect(variableCreateResponse.response.status).toBe(201);
+    await page.waitForTimeout(5_000);
+
+    const releaseResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: {
+            releaseTargetId: releaseTarget?.id ?? "",
+          },
+        },
+      },
+    );
+
+    expect(releaseResponse.response.status).toBe(200);
+    const releases = releaseResponse.data ?? [];
+    expect(releases.length).toBe(2);
+
+    const latestRelease = releases.at(0)!;
+    const variables = latestRelease.variables ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("test");
+    expect(variable.value).toBe("test-a");
   });
 
   test("should create a release when a new resource is created", async ({
     api,
+    page,
     workspace,
   }) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-resource-2`;
-    const resourceResponse = await api.POST("/v1/resources", {
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: { deploymentId },
+        },
+        body: {
+          key: "test",
+          description: "test",
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          values: [
+            {
+              value: "test-a",
+              default: true,
+            },
+            { value: "test-b" },
+          ],
+        },
+      },
+    );
+    expect(variableCreateResponse.response.status).toBe(201);
+
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const resourceCreateResponse = await api.POST("/v1/resources", {
       body: {
         name: resourceName,
         kind: "service",
@@ -120,57 +286,109 @@ test.describe("Release Creation", () => {
         workspaceId: workspace.id,
       },
     });
-    expect(resourceResponse.response.status).toBe(200);
-    const resource = resourceResponse.data;
-    expect(resource).toBeDefined();
-    const resourceId = resource?.id ?? "";
-
-    await new Promise((resolve) => setTimeout(resolve, 10_000));
+    expect(resourceCreateResponse.response.status).toBe(200);
+    const resourceId = resourceCreateResponse.data?.id ?? "";
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
       {
         params: {
-          path: {
-            resourceId,
-          },
+          path: { resourceId },
         },
       },
     );
     expect(releaseTargetResponse.response.status).toBe(200);
     const releaseTargets = releaseTargetResponse.data ?? [];
-    expect(releaseTargets.length).toBe(1);
-    const releaseTarget = releaseTargets[0]!;
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
 
-    expect(releaseTarget.resource.id).toBe(resourceId);
+    await page.waitForTimeout(5_000);
 
     const releaseResponse = await api.GET(
       "/v1/release-targets/{releaseTargetId}/releases",
       {
         params: {
           path: {
-            releaseTargetId: releaseTarget.id,
+            releaseTargetId: releaseTarget?.id ?? "",
           },
         },
       },
     );
+
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    console.log(releases);
-    const versionTag = importedEntities.deployments.at(0)!.versions!.at(0)!.tag;
-    const matchedRelease = releases.find(
-      (release) => release.version.tag === versionTag,
-    );
-    expect(matchedRelease).toBeDefined();
+    for (const release of releases) {
+      console.log(release);
+    }
+    expect(releases.length).toBe(1);
+
+    const latestRelease = releases.at(0)!;
+    expect(latestRelease.version.tag).toBe(versionTag);
+    const variables = latestRelease.variables ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("test");
+    expect(variable.value).toBe("test-a");
   });
 
   test("should not create a release when an existing resource is updated", async ({
     api,
+    page,
     workspace,
   }) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
-    const resourceName = `${systemPrefix}-resource-2`;
-    const resourceResponse = await api.POST("/v1/resources", {
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: { deploymentId },
+        },
+        body: {
+          key: "test",
+          description: "test",
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          values: [
+            {
+              value: "test-a",
+              default: true,
+            },
+            { value: "test-b" },
+          ],
+        },
+      },
+    );
+    expect(variableCreateResponse.response.status).toBe(201);
+
+    await page.waitForTimeout(1_000);
+
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const resourceCreateResponse = await api.POST("/v1/resources", {
       body: {
         name: resourceName,
         kind: "service",
@@ -182,89 +400,311 @@ test.describe("Release Creation", () => {
         workspaceId: workspace.id,
       },
     });
-    expect(resourceResponse.response.status).toBe(200);
-    const resource = resourceResponse.data;
-    expect(resource).toBeDefined();
-    const resourceId = resource?.id ?? "";
+    expect(resourceCreateResponse.response.status).toBe(200);
+    const resourceId = resourceCreateResponse.data?.id ?? "";
 
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await page.waitForTimeout(1_000);
+
+    const resourceUpdateResponse = await api.PATCH(
+      "/v1/resources/{resourceId}",
+      {
+        params: { path: { resourceId } },
+        body: { version: "1.0.1" },
+      },
+    );
+    expect(resourceUpdateResponse.response.status).toBe(200);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
       {
         params: {
-          path: {
-            resourceId,
-          },
+          path: { resourceId },
         },
       },
     );
     expect(releaseTargetResponse.response.status).toBe(200);
     const releaseTargets = releaseTargetResponse.data ?? [];
-    expect(releaseTargets.length).toBe(1);
-    const releaseTarget = releaseTargets[0]!;
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
 
-    expect(releaseTarget.resource.id).toBe(resourceId);
+    await page.waitForTimeout(5_000);
 
     const releaseResponse = await api.GET(
       "/v1/release-targets/{releaseTargetId}/releases",
       {
         params: {
           path: {
-            releaseTargetId: releaseTarget.id,
+            releaseTargetId: releaseTarget?.id ?? "",
           },
         },
       },
     );
+
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    console.log(releases);
-    const versionTag = importedEntities.deployments.at(0)!.versions!.at(0)!.tag;
-    const matchedRelease = releases.find(
-      (release) => release.version.tag === versionTag,
-    );
-    expect(matchedRelease).toBeDefined();
+    for (const release of releases) {
+      console.log(release);
+    }
+    expect(releases.length).toBe(1);
 
-    const updatedResourceResponse = await api.PATCH(
+    const latestRelease = releases.at(0)!;
+    expect(latestRelease.version.tag).toBe(versionTag);
+    const variables = latestRelease.variables ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("test");
+    expect(variable.value).toBe("test-a");
+  });
+
+  test("should create a release when a resource variable is added and matches a deployment variable", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: { deploymentId },
+        },
+        body: {
+          key: "test",
+          description: "test",
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          values: [
+            {
+              value: "test-a",
+              default: true,
+            },
+            { value: "test-b" },
+          ],
+        },
+      },
+    );
+    expect(variableCreateResponse.response.status).toBe(201);
+
+    await page.waitForTimeout(1_000);
+
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const resourceCreateResponse = await api.POST("/v1/resources", {
+      body: {
+        name: resourceName,
+        kind: "service",
+        identifier: resourceName,
+        version: "1.0.0",
+        config: {},
+        metadata: {},
+        variables: [],
+        workspaceId: workspace.id,
+      },
+    });
+    expect(resourceCreateResponse.response.status).toBe(200);
+    const resourceId = resourceCreateResponse.data?.id ?? "";
+
+    await page.waitForTimeout(5_000);
+
+    const resourceUpdateResponse = await api.PATCH(
       "/v1/resources/{resourceId}",
+      {
+        params: { path: { resourceId } },
+        body: { variables: [{ key: "test", value: "test-c" }] },
+      },
+    );
+    expect(resourceUpdateResponse.response.status).toBe(200);
+
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: { resourceId },
+        },
+      },
+    );
+    expect(releaseTargetResponse.response.status).toBe(200);
+    const releaseTargets = releaseTargetResponse.data ?? [];
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
+
+    await page.waitForTimeout(5_000);
+
+    const releaseResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
       {
         params: {
           path: {
-            resourceId,
+            releaseTargetId: releaseTarget?.id ?? "",
           },
         },
+      },
+    );
+
+    expect(releaseResponse.response.status).toBe(200);
+    const releases = releaseResponse.data ?? [];
+    for (const release of releases) {
+      console.log(release);
+    }
+    expect(releases.length).toBe(2);
+
+    const latestRelease = releases.at(0)!;
+    expect(latestRelease.version.tag).toBe(versionTag);
+    const variables = latestRelease.variables ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("test");
+    expect(variable.value).toBe("test-c");
+  });
+
+  test("should not create a release when a resource variable is added and does not match a deployment variable", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: { deploymentId },
+        },
         body: {
-          version: "1.0.1",
+          key: "test",
+          description: "test",
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          values: [
+            {
+              value: "test-a",
+              default: true,
+            },
+            { value: "test-b" },
+          ],
         },
       },
     );
-    expect(updatedResourceResponse.response.status).toBe(200);
+    expect(variableCreateResponse.response.status).toBe(201);
 
-    const releaseTargetResponseAfterUpdate = await api.GET(
-      "/v1/resources/{resourceId}/release-targets",
+    await page.waitForTimeout(1_000);
+
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const resourceCreateResponse = await api.POST("/v1/resources", {
+      body: {
+        name: resourceName,
+        kind: "service",
+        identifier: resourceName,
+        version: "1.0.0",
+        config: {},
+        metadata: {},
+        variables: [],
+        workspaceId: workspace.id,
+      },
+    });
+    expect(resourceCreateResponse.response.status).toBe(200);
+    const resourceId = resourceCreateResponse.data?.id ?? "";
+
+    await page.waitForTimeout(5_000);
+
+    const resourceUpdateResponse = await api.PATCH(
+      "/v1/resources/{resourceId}",
       {
         params: { path: { resourceId } },
+        body: { variables: [{ key: "test-2", value: "test-c" }] },
       },
     );
-    expect(releaseTargetResponseAfterUpdate.response.status).toBe(200);
-    const releaseTargetsAfterUpdate =
-      releaseTargetResponseAfterUpdate.data ?? [];
-    expect(releaseTargetsAfterUpdate.length).toBe(1);
-    const releaseTargetAfterUpdate = releaseTargetsAfterUpdate[0]!;
-    expect(releaseTargetAfterUpdate.resource.id).toBe(resourceId);
+    expect(resourceUpdateResponse.response.status).toBe(200);
 
-    const releaseResponseAfterUpdate = await api.GET(
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: { resourceId },
+        },
+      },
+    );
+    expect(releaseTargetResponse.response.status).toBe(200);
+    const releaseTargets = releaseTargetResponse.data ?? [];
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
+
+    await page.waitForTimeout(5_000);
+
+    const releaseResponse = await api.GET(
       "/v1/release-targets/{releaseTargetId}/releases",
       {
-        params: { path: { releaseTargetId: releaseTargetAfterUpdate.id } },
+        params: {
+          path: {
+            releaseTargetId: releaseTarget?.id ?? "",
+          },
+        },
       },
     );
-    expect(releaseResponseAfterUpdate.response.status).toBe(200);
-    const releasesAfterUpdate = releaseResponseAfterUpdate.data ?? [];
-    expect(releasesAfterUpdate.length).toBe(1);
-    const matchedReleaseAfterUpdate = releasesAfterUpdate.find(
-      (release) => release.version.tag === versionTag,
-    );
-    expect(matchedReleaseAfterUpdate).toBeDefined();
+
+    expect(releaseResponse.response.status).toBe(200);
+    const releases = releaseResponse.data ?? [];
+    for (const release of releases) {
+      console.log(release);
+    }
+    expect(releases.length).toBe(1);
+
+    const latestRelease = releases.at(0)!;
+    expect(latestRelease.version.tag).toBe(versionTag);
+    const variables = latestRelease.variables ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("test");
+    expect(variable.value).toBe("test-a");
   });
 });

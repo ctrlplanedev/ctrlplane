@@ -20,12 +20,5 @@ environments:
     systemId: "{{ prefix }}-releases"
     resourceSelector:
       type: identifier
-      operator: "contains"
+      operator: contains
       value: "{{ prefix }}"
-
-deployments:
-  - name: "{{ prefix }}-deployment"
-    slug: "{{ prefix }}-deployment"
-    description: Deployment for testing releases
-    versions:
-      - tag: "1.0.0"

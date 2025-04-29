@@ -1,5 +1,8 @@
 import _ from "lodash";
 
+import { eq } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
 import { withSpan } from "./span.js";
@@ -24,14 +27,29 @@ export const updatedResourceWorker = createWorker(
     span.setAttribute("resource.name", resource.name);
     span.setAttribute("workspace.id", resource.workspaceId);
 
-    await getQueue(Channel.ComputeDeploymentResourceSelector).add(
-      resource.id,
-      resource,
-    );
+    const workspace = await db.query.workspace.findFirst({
+      where: eq(schema.workspace.id, resource.workspaceId),
+      with: { systems: { with: { environments: true, deployments: true } } },
+    });
 
-    await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
-      resource.id,
-      resource,
-    );
+    if (workspace == null) throw new Error("Workspace not found");
+
+    for (const system of workspace.systems) {
+      for (const deployment of system.deployments) {
+        getQueue(Channel.ComputeDeploymentResourceSelector).add(
+          deployment.id,
+          deployment,
+          { deduplication: { id: deployment.id, ttl: 100 } },
+        );
+      }
+
+      for (const environment of system.environments) {
+        getQueue(Channel.ComputeEnvironmentResourceSelector).add(
+          environment.id,
+          environment,
+          { deduplication: { id: environment.id, ttl: 100 } },
+        );
+      }
+    }
   }),
 );

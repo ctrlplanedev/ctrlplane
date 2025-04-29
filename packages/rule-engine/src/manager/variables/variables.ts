@@ -3,7 +3,6 @@ import type { Tx } from "@ctrlplane/db";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, VariableProvider } from "./types.js";
@@ -62,10 +61,6 @@ export class VariableManager {
   async getVariable(key: string): Promise<MaybeVariable> {
     for (const provider of this.variableProviders) {
       const variable = await provider.getVariable(key);
-      logger.info("Got variable", {
-        key,
-        variable,
-      });
       if (variable) return variable;
     }
     return null;
