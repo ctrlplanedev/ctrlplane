@@ -43,7 +43,9 @@ export const PATCH = request()
           { status: NOT_FOUND },
         );
 
-      const policy = await updatePolicyInTx(db, policyId, body);
+      const policy = await db.transaction(async (tx) =>
+        updatePolicyInTx(tx, policyId, body),
+      );
       await getQueue(Channel.UpdatePolicy).add(policy.id, policy);
 
       return NextResponse.json(policy);
