@@ -59,7 +59,7 @@ export const determineVariablesForReleaseJob = async (
         jobVariables.push({
           jobId: job.id,
           key: variable.deployment_variable.key,
-          value: value.value.value,
+          value: value.value,
           sensitive: value.sensitive,
         });
 
@@ -116,7 +116,7 @@ export const determineReleaseVariableValue = async (
   defaultValueId: string | null,
   jobResource: schema.Resource,
 ): Promise<{
-  value: schema.DeploymentVariableValue | schema.ResourceVariable;
+  value: any;
   directMatch: boolean;
   sensitive: boolean;
 } | null> => {
@@ -126,12 +126,35 @@ export const determineReleaseVariableValue = async (
     variableKey,
   );
 
-  if (resourceVariableValue != null)
+  if (resourceVariableValue != null) {
+    // Check if resource variable is a reference type
+    if (
+      resourceVariableValue.valueType === "reference" &&
+      resourceVariableValue.reference &&
+      resourceVariableValue.path
+    ) {
+      // Resolve reference type resource variable
+      const resolvedValue = await utils.resolveDeploymentVariableReference<
+        typeof resourceVariableValue.value
+      >(tx, resourceVariableValue.reference, resourceVariableValue.path);
+
+      // If resolution fails, use defaultValue if available
+      const value = resolvedValue ?? resourceVariableValue.defaultValue;
+
+      return {
+        value,
+        directMatch: true,
+        sensitive: resourceVariableValue.sensitive,
+      };
+    }
+
+    // Direct value type
     return {
-      value: resourceVariableValue,
+      value: resourceVariableValue.value,
       directMatch: true,
       sensitive: resourceVariableValue.sensitive,
     };
+  }
 
   const deploymentVariableValues = await utils.getVariableValues(
     tx,
@@ -154,19 +177,63 @@ export const determineReleaseVariableValue = async (
     valuesWithFilter,
   );
 
-  if (firstMatchedValue != null)
-    return {
-      value: firstMatchedValue,
-      directMatch: true,
-      sensitive: false,
-    };
+  if (firstMatchedValue) {
+    // Check if matched value is a reference type
+    if (
+      firstMatchedValue.valueType === "reference" &&
+      firstMatchedValue.reference &&
+      firstMatchedValue.path
+    ) {
+      // Resolve reference value
+      const resolvedValue = await utils.resolveDeploymentVariableReference(
+        tx,
+        firstMatchedValue.reference,
+        firstMatchedValue.path,
+      );
 
-  if (defaultValue != null)
+      return {
+        value: resolvedValue !== null ? resolvedValue : null,
+        directMatch: true,
+        sensitive: firstMatchedValue.sensitive,
+      };
+    }
+
+    // Direct value type
     return {
-      value: defaultValue,
+      value: firstMatchedValue.value,
       directMatch: true,
-      sensitive: false,
+      sensitive: firstMatchedValue.sensitive,
     };
+  }
+
+  if (defaultValue != null) {
+    // Check if default value is a reference type
+    if (
+      defaultValue.valueType === "reference" &&
+      defaultValue.reference &&
+      defaultValue.path
+    ) {
+      // Resolve reference value
+      const resolvedValue = await utils.resolveDeploymentVariableReference(
+        tx,
+        defaultValue.reference,
+        defaultValue.path,
+      );
+
+      return {
+        value: resolvedValue !== null ? resolvedValue : null,
+        directMatch: true,
+        sensitive: defaultValue.sensitive,
+      };
+    }
+
+    // Direct value type
+    return {
+      value: defaultValue.value,
+      directMatch: true,
+      sensitive: defaultValue.sensitive,
+    };
+  }
 
   return null;
 };

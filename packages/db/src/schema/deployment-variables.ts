@@ -103,6 +103,7 @@ export const createDeploymentVariableValue = createInsertSchema(
   })
   .extend({
     default: z.boolean().optional(),
+    path: z.array(z.string()).nullable().optional(),
   });
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();

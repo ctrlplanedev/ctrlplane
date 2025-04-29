@@ -49,10 +49,29 @@ const valueRouter = createTRPCRouter({
     })
     .input(createDeploymentVariableValue)
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) =>
-        tx
+      ctx.db.transaction((tx) => {
+        // Prepare the insert values based on input type
+        const insertValues: Partial<DeploymentVariableValue> = {
+          variableId: input.variableId,
+          resourceSelector: input.resourceSelector ?? null,
+          sensitive: input.sensitive ?? false,
+        };
+
+        // Handle reference type variables
+        if (input.reference && input.path) {
+          insertValues.valueType = "reference";
+          insertValues.reference = input.reference;
+          insertValues.path = input.path;
+          insertValues.value = null; // Value will be resolved during access
+        } else {
+          // Direct value type
+          insertValues.valueType = "direct";
+          insertValues.value = input.value;
+        }
+
+        return tx
           .insert(deploymentVariableValue)
-          .values(input)
+          .values(insertValues as any) // Type assertion needed due to schema complexity
           .returning()
           .then(takeFirst)
           .then(async (value) => {
@@ -68,8 +87,8 @@ const valueRouter = createTRPCRouter({
               .then(takeFirst);
             await updateDeploymentVariableQueue.add(variable.id, variable);
             return value;
-          }),
-      ),
+          });
+      }),
     ),
 
   update: protectedProcedure
@@ -306,12 +325,47 @@ export const deploymentVariableRouter = createTRPCRouter({
         .then(takeFirst);
 
       if (input.config?.default) {
+        const defaultValue = input.config.default as any;
+        const isReference =
+          typeof defaultValue === "object" &&
+          defaultValue &&
+          "reference" in defaultValue &&
+          "path" in defaultValue;
+
+        const valueData: Partial<DeploymentVariableValue> = {
+          variableId: variable.id,
+          sensitive: false,
+        };
+
+        if (isReference) {
+          if (!defaultValue.reference || !Array.isArray(defaultValue.path)) {
+            throw new Error(
+              "Invalid reference configuration: both reference and path are required",
+            );
+          }
+
+          const referencedResource = await ctx.db.query.resource.findFirst({
+            where: eq(resource.identifier, defaultValue.reference),
+          });
+
+          if (!referencedResource) {
+            throw new Error(
+              `Referenced resource not found: ${defaultValue.reference}`,
+            );
+          }
+
+          valueData.valueType = "reference";
+          valueData.reference = defaultValue.reference;
+          valueData.path = defaultValue.path;
+          valueData.value = null;
+        } else {
+          valueData.valueType = "direct";
+          valueData.value = defaultValue;
+        }
+
         const value = await ctx.db
           .insert(deploymentVariableValue)
-          .values({
-            variableId: variable.id,
-            value: input.config.default,
-          })
+          .values(valueData as any)
           .returning()
           .then(takeFirst);
 

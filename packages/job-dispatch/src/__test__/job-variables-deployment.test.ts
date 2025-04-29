@@ -88,6 +88,9 @@ const variableValues: SCHEMA.DeploymentVariableValue[] = [
     value: "test1",
     resourceSelector: null,
     sensitive: false,
+    path: null,
+    valueType: "direct",
+    reference: null,
   },
   {
     id: "1",
@@ -95,6 +98,9 @@ const variableValues: SCHEMA.DeploymentVariableValue[] = [
     value: "test2",
     resourceSelector: null,
     sensitive: false,
+    path: null,
+    valueType: "direct",
+    reference: null,
   },
   {
     id: "2",
@@ -102,6 +108,9 @@ const variableValues: SCHEMA.DeploymentVariableValue[] = [
     value: "test3",
     resourceSelector: null,
     sensitive: false,
+    path: null,
+    valueType: "direct",
+    reference: null,
   },
 ];
 
