@@ -58,8 +58,8 @@ catalogs:
       specifier: ^2.1.3
       version: 2.1.3
     next:
-      specifier: 15.2.1
-      version: 15.2.1
+      specifier: 15.2.4
+      version: 15.2.4
     next-auth:
       specifier: 5.0.0-beta.25
       version: 5.0.0-beta.25
@@ -395,7 +395,7 @@ importers:
         version: 2.1.3
       next-auth:
         specifier: 'catalog:'
-        version: 5.0.0-beta.25(next@15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0)
+        version: 5.0.0-beta.25(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0)
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
@@ -603,7 +603,7 @@ importers:
         version: 3.6.0
       geist:
         specifier: ^1.3.0
-        version: 1.3.1(next@15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
+        version: 1.3.1(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
       http-status:
         specifier: ^1.7.4
         version: 1.8.1
@@ -624,10 +624,10 @@ importers:
         version: 2.0.1
       next:
         specifier: 'catalog:'
-        version: 15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        version: 15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       next-auth:
         specifier: 'catalog:'
-        version: 5.0.0-beta.25(next@15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0)
+        version: 5.0.0-beta.25(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0)
       next-themes:
         specifier: ^0.3.0
         version: 0.3.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1058,10 +1058,10 @@ importers:
         version: 4.17.21
       next:
         specifier: 'catalog:'
-        version: 15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        version: 15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       next-auth:
         specifier: 'catalog:'
-        version: 5.0.0-beta.25(next@15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0)
+        version: 5.0.0-beta.25(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0)
       react:
         specifier: catalog:react19
         version: 19.0.0
@@ -3613,8 +3613,8 @@ packages:
   '@next/env@15.1.2':
     resolution: {integrity: sha512-Hm3jIGsoUl6RLB1vzY+dZeqb+/kWPZ+h34yiWxW0dV87l8Im/eMOwpOA+a0L78U0HM04syEjXuRlCozqpwuojQ==}
 
-  '@next/env@15.2.1':
-    resolution: {integrity: sha512-JmY0qvnPuS2NCWOz2bbby3Pe0VzdAQ7XpEB6uLIHmtXNfAsAO0KLQLkuAoc42Bxbo3/jMC3dcn9cdf+piCcG2Q==}
+  '@next/env@15.2.4':
+    resolution: {integrity: sha512-+SFtMgoiYP3WoSswuNmxJOCwi06TdWE733D+WPjpXIe4LXGULwEaofiiAy6kbS0+XjM5xF5n3lKuBwN2SnqD9g==}
 
   '@next/eslint-plugin-next@15.2.2':
     resolution: {integrity: sha512-1+BzokFuFQIfLaRxUKf2u5In4xhPV7tUgKcK53ywvFl6+LXHWHpFkcV7VNeKlyQKUotwiq4fy/aDNF9EiUp4RQ==}
@@ -3625,8 +3625,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@next/swc-darwin-arm64@15.2.1':
-    resolution: {integrity: sha512-aWXT+5KEREoy3K5AKtiKwioeblmOvFFjd+F3dVleLvvLiQ/mD//jOOuUcx5hzcO9ISSw4lrqtUPntTpK32uXXQ==}
+  '@next/swc-darwin-arm64@15.2.4':
+    resolution: {integrity: sha512-1AnMfs655ipJEDC/FHkSr0r3lXBgpqKo4K1kiwfUf3iE68rDFXZ1TtHdMvf7D0hMItgDZ7Vuq3JgNMbt/+3bYw==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
@@ -3637,8 +3637,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@next/swc-darwin-x64@15.2.1':
-    resolution: {integrity: sha512-E/w8ervu4fcG5SkLhvn1NE/2POuDCDEy5gFbfhmnYXkyONZR68qbUlJlZwuN82o7BrBVAw+tkR8nTIjGiMW1jQ==}
+  '@next/swc-darwin-x64@15.2.4':
+    resolution: {integrity: sha512-3qK2zb5EwCwxnO2HeO+TRqCubeI/NgCe+kL5dTJlPldV/uwCnUgC7VbEzgmxbfrkbjehL4H9BPztWOEtsoMwew==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
@@ -3649,8 +3649,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-arm64-gnu@15.2.1':
-    resolution: {integrity: sha512-gXDX5lIboebbjhiMT6kFgu4svQyjoSed6dHyjx5uZsjlvTwOAnZpn13w9XDaIMFFHw7K8CpBK7HfDKw0VZvUXQ==}
+  '@next/swc-linux-arm64-gnu@15.2.4':
+    resolution: {integrity: sha512-HFN6GKUcrTWvem8AZN7tT95zPb0GUGv9v0d0iyuTb303vbXkkbHDp/DxufB04jNVD+IN9yHy7y/6Mqq0h0YVaQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
@@ -3661,8 +3661,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-arm64-musl@15.2.1':
-    resolution: {integrity: sha512-3v0pF/adKZkBWfUffmB/ROa+QcNTrnmYG4/SS+r52HPwAK479XcWoES2I+7F7lcbqc7mTeVXrIvb4h6rR/iDKg==}
+  '@next/swc-linux-arm64-musl@15.2.4':
+    resolution: {integrity: sha512-Oioa0SORWLwi35/kVB8aCk5Uq+5/ZIumMK1kJV+jSdazFm2NzPDztsefzdmzzpx5oGCJ6FkUC7vkaUseNTStNA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
@@ -3673,8 +3673,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-linux-x64-gnu@15.2.1':
-    resolution: {integrity: sha512-RbsVq2iB6KFJRZ2cHrU67jLVLKeuOIhnQB05ygu5fCNgg8oTewxweJE8XlLV+Ii6Y6u4EHwETdUiRNXIAfpBww==}
+  '@next/swc-linux-x64-gnu@15.2.4':
+    resolution: {integrity: sha512-yb5WTRaHdkgOqFOZiu6rHV1fAEK0flVpaIN2HB6kxHVSy/dIajWbThS7qON3W9/SNOH2JWkVCyulgGYekMePuw==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
@@ -3685,8 +3685,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-linux-x64-musl@15.2.1':
-    resolution: {integrity: sha512-QHsMLAyAIu6/fWjHmkN/F78EFPKmhQlyX5C8pRIS2RwVA7z+t9cTb0IaYWC3EHLOTjsU7MNQW+n2xGXr11QPpg==}
+  '@next/swc-linux-x64-musl@15.2.4':
+    resolution: {integrity: sha512-Dcdv/ix6srhkM25fgXiyOieFUkz+fOYkHlydWCtB0xMST6X9XYI3yPDKBZt1xuhOytONsIFJFB08xXYsxUwJLw==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
@@ -3697,8 +3697,8 @@ packages:
     cpu: [arm64]
     os: [win32]
 
-  '@next/swc-win32-arm64-msvc@15.2.1':
-    resolution: {integrity: sha512-Gk42XZXo1cE89i3hPLa/9KZ8OuupTjkDmhLaMKFohjf9brOeZVEa3BQy1J9s9TWUqPhgAEbwv6B2+ciGfe54Vw==}
+  '@next/swc-win32-arm64-msvc@15.2.4':
+    resolution: {integrity: sha512-dW0i7eukvDxtIhCYkMrZNQfNicPDExt2jPb9AZPpL7cfyUo7QSNl1DjsHjmmKp6qNAqUESyT8YFl/Aw91cNJJg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
@@ -3709,8 +3709,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@next/swc-win32-x64-msvc@15.2.1':
-    resolution: {integrity: sha512-YjqXCl8QGhVlMR8uBftWk0iTmvtntr41PhG1kvzGp0sUP/5ehTM+cwx25hKE54J0CRnHYjSGjSH3gkHEaHIN9g==}
+  '@next/swc-win32-x64-msvc@15.2.4':
+    resolution: {integrity: sha512-SbnWkJmkS7Xl3kre8SdMF6F/XDh1DTFEhp0jRTj/uB8iPKoU2bb2NDfcu+iifv1+mxQEd1g2vvSxcZbXSKyWiQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
@@ -6194,9 +6194,6 @@ packages:
 
   '@swc/counter@0.1.3':
     resolution: {integrity: sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ==}
-
-  '@swc/helpers@0.5.13':
-    resolution: {integrity: sha512-UoKGxQ3r5kYI9dALKJapMmuK+1zWM/H17Z1+iwnNmzcJRnfFuevZs375TA5rW31pu4BS4NoSy1fRsexDXfWn5w==}
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -9481,8 +9478,8 @@ packages:
       sass:
         optional: true
 
-  next@15.2.1:
-    resolution: {integrity: sha512-zxbsdQv3OqWXybK5tMkPCBKyhIz63RstJ+NvlfkaLMc/m5MwXgz2e92k+hSKcyBpyADhMk2C31RIiaDjUZae7g==}
+  next@15.2.4:
+    resolution: {integrity: sha512-VwL+LAaPSxEkd3lU2xWbgEOtrM8oedmyhBqaVNmgKB+GvZlCy9rgaEc+y2on0wv+l0oSFqLtYD6dcC1eAedUaQ==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
     hasBin: true
     peerDependencies:
@@ -9515,6 +9512,7 @@ packages:
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
     engines: {node: '>=10.5.0'}
+    deprecated: Use your platform's native DOMException instead
 
   node-fetch-commonjs@3.3.2:
     resolution: {integrity: sha512-VBlAiynj3VMLrotgwOS3OyECFxas5y7ltLcK4t41lMUZeaK15Ym4QRkqN0EQKAFL42q9i21EPKjzLUPfltR72A==}
@@ -13594,7 +13592,7 @@ snapshots:
 
   '@internationalized/string@3.2.4':
     dependencies:
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
 
   '@ioredis/commands@1.2.0': {}
 
@@ -13758,7 +13756,7 @@ snapshots:
 
   '@next/env@15.1.2': {}
 
-  '@next/env@15.2.1': {}
+  '@next/env@15.2.4': {}
 
   '@next/eslint-plugin-next@15.2.2':
     dependencies:
@@ -13767,49 +13765,49 @@ snapshots:
   '@next/swc-darwin-arm64@15.1.2':
     optional: true
 
-  '@next/swc-darwin-arm64@15.2.1':
+  '@next/swc-darwin-arm64@15.2.4':
     optional: true
 
   '@next/swc-darwin-x64@15.1.2':
     optional: true
 
-  '@next/swc-darwin-x64@15.2.1':
+  '@next/swc-darwin-x64@15.2.4':
     optional: true
 
   '@next/swc-linux-arm64-gnu@15.1.2':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@15.2.1':
+  '@next/swc-linux-arm64-gnu@15.2.4':
     optional: true
 
   '@next/swc-linux-arm64-musl@15.1.2':
     optional: true
 
-  '@next/swc-linux-arm64-musl@15.2.1':
+  '@next/swc-linux-arm64-musl@15.2.4':
     optional: true
 
   '@next/swc-linux-x64-gnu@15.1.2':
     optional: true
 
-  '@next/swc-linux-x64-gnu@15.2.1':
+  '@next/swc-linux-x64-gnu@15.2.4':
     optional: true
 
   '@next/swc-linux-x64-musl@15.1.2':
     optional: true
 
-  '@next/swc-linux-x64-musl@15.2.1':
+  '@next/swc-linux-x64-musl@15.2.4':
     optional: true
 
   '@next/swc-win32-arm64-msvc@15.1.2':
     optional: true
 
-  '@next/swc-win32-arm64-msvc@15.2.1':
+  '@next/swc-win32-arm64-msvc@15.2.4':
     optional: true
 
   '@next/swc-win32-x64-msvc@15.1.2':
     optional: true
 
-  '@next/swc-win32-x64-msvc@15.2.1':
+  '@next/swc-win32-x64-msvc@15.2.4':
     optional: true
 
   '@nodelib/fs.scandir@2.1.5':
@@ -15547,7 +15545,7 @@ snapshots:
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/breadcrumbs': 3.7.8(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/button@3.10.1(react@19.0.0)':
@@ -15558,7 +15556,7 @@ snapshots:
       '@react-stately/toggle': 3.7.8(react@19.0.0)
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/calendar@3.5.13(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
@@ -15572,7 +15570,7 @@ snapshots:
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/calendar': 3.4.10(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15588,7 +15586,7 @@ snapshots:
       '@react-stately/toggle': 3.7.8(react@19.0.0)
       '@react-types/checkbox': 3.8.4(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/color@3.0.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
@@ -15605,7 +15603,7 @@ snapshots:
       '@react-stately/form': 3.0.6(react@19.0.0)
       '@react-types/color': 3.0.0(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15625,7 +15623,7 @@ snapshots:
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/combobox': 3.13.0(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15648,7 +15646,7 @@ snapshots:
       '@react-types/datepicker': 3.8.3(react@19.0.0)
       '@react-types/dialog': 3.5.13(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15659,7 +15657,7 @@ snapshots:
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/dialog': 3.5.13(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15674,7 +15672,7 @@ snapshots:
       '@react-stately/dnd': 3.4.3(react@19.0.0)
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15683,7 +15681,7 @@ snapshots:
       '@react-aria/interactions': 3.22.4(react@19.0.0)
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       clsx: 2.1.1
       react: 19.0.0
 
@@ -15726,7 +15724,7 @@ snapshots:
       '@react-stately/list': 3.11.0(react@19.0.0)
       '@react-stately/tree': 3.8.5(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15739,7 +15737,7 @@ snapshots:
       '@react-aria/ssr': 3.9.6(react@19.0.0)
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/interactions@3.22.4(react@19.0.0)':
@@ -15747,14 +15745,14 @@ snapshots:
       '@react-aria/ssr': 3.9.6(react@19.0.0)
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/label@3.7.12(react@19.0.0)':
     dependencies:
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/link@3.7.6(react@19.0.0)':
@@ -15764,7 +15762,7 @@ snapshots:
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/link': 3.5.8(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/listbox@3.13.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
@@ -15777,7 +15775,7 @@ snapshots:
       '@react-stately/list': 3.11.0(react@19.0.0)
       '@react-types/listbox': 3.5.2(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15799,7 +15797,7 @@ snapshots:
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/menu': 3.9.12(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15808,7 +15806,7 @@ snapshots:
       '@react-aria/progress': 3.4.17(react@19.0.0)
       '@react-types/meter': 3.4.4(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/numberfield@3.11.8(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
@@ -15823,7 +15821,7 @@ snapshots:
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/numberfield': 3.8.6(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15839,7 +15837,7 @@ snapshots:
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/overlays': 3.8.10(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15850,7 +15848,7 @@ snapshots:
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/progress': 3.5.7(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/radio@3.10.9(react@19.0.0)':
@@ -15864,7 +15862,7 @@ snapshots:
       '@react-stately/radio': 3.10.8(react@19.0.0)
       '@react-types/radio': 3.8.4(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/searchfield@3.7.10(react@19.0.0)':
@@ -15876,7 +15874,7 @@ snapshots:
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/searchfield': 3.5.9(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/select@3.14.11(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
@@ -15894,7 +15892,7 @@ snapshots:
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/select': 3.9.7(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15906,7 +15904,7 @@ snapshots:
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-stately/selection': 3.17.0(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15914,7 +15912,7 @@ snapshots:
     dependencies:
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/slider@3.7.13(react@19.0.0)':
@@ -15927,7 +15925,7 @@ snapshots:
       '@react-stately/slider': 3.5.8(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
       '@react-types/slider': 3.7.6(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/spinbutton@3.6.9(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
@@ -15943,7 +15941,7 @@ snapshots:
 
   '@react-aria/ssr@3.9.6(react@19.0.0)':
     dependencies:
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/switch@3.6.9(react@19.0.0)':
@@ -15952,7 +15950,7 @@ snapshots:
       '@react-stately/toggle': 3.7.8(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
       '@react-types/switch': 3.5.6(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/table@3.15.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
@@ -15971,7 +15969,7 @@ snapshots:
       '@react-types/grid': 3.2.9(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
       '@react-types/table': 3.10.2(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15984,7 +15982,7 @@ snapshots:
       '@react-stately/tabs': 3.6.10(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
       '@react-types/tabs': 3.3.10(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -15999,7 +15997,7 @@ snapshots:
       '@react-stately/list': 3.11.0(react@19.0.0)
       '@react-types/button': 3.10.0(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 
@@ -16013,7 +16011,7 @@ snapshots:
       '@react-stately/utils': 3.10.4(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
       '@react-types/textfield': 3.9.7(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/toggle@3.10.9(react@19.0.0)':
@@ -16035,7 +16033,7 @@ snapshots:
       '@react-stately/tooltip': 3.4.13(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
       '@react-types/tooltip': 3.4.12(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-aria/utils@3.25.3(react@19.0.0)':
@@ -16043,7 +16041,7 @@ snapshots:
       '@react-aria/ssr': 3.9.6(react@19.0.0)
       '@react-stately/utils': 3.10.4(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       clsx: 2.1.1
       react: 19.0.0
 
@@ -16052,7 +16050,7 @@ snapshots:
       '@react-aria/interactions': 3.22.4(react@19.0.0)
       '@react-aria/utils': 3.25.3(react@19.0.0)
       '@react-types/shared': 3.25.0(react@19.0.0)
-      '@swc/helpers': 0.5.13
+      '@swc/helpers': 0.5.15
       react: 19.0.0
 
   '@react-email/body@0.0.11(react@19.0.0)':
@@ -17302,10 +17300,6 @@ snapshots:
       apg-lite: 1.0.4
 
   '@swc/counter@0.1.3': {}
-
-  '@swc/helpers@0.5.13':
-    dependencies:
-      tslib: 2.8.1
 
   '@swc/helpers@0.5.15':
     dependencies:
@@ -19858,9 +19852,9 @@ snapshots:
       - encoding
       - supports-color
 
-  geist@1.3.1(next@15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)):
+  geist@1.3.1(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)):
     dependencies:
-      next: 15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      next: 15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
 
   gel@2.0.2:
     dependencies:
@@ -21025,10 +21019,10 @@ snapshots:
 
   netmask@2.0.2: {}
 
-  next-auth@5.0.0-beta.25(next@15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0):
+  next-auth@5.0.0-beta.25(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(nodemailer@6.10.0)(react@19.0.0):
     dependencies:
       '@auth/core': 0.37.2(nodemailer@6.10.0)
-      next: 15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      next: 15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       react: 19.0.0
     optionalDependencies:
       nodemailer: 6.10.0
@@ -21065,9 +21059,9 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@15.2.1(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+  next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:
-      '@next/env': 15.2.1
+      '@next/env': 15.2.4
       '@swc/counter': 0.1.3
       '@swc/helpers': 0.5.15
       busboy: 1.6.0
@@ -21077,14 +21071,14 @@ snapshots:
       react-dom: 19.0.0(react@19.0.0)
       styled-jsx: 5.1.6(@babel/core@7.24.5)(react@19.0.0)
     optionalDependencies:
-      '@next/swc-darwin-arm64': 15.2.1
-      '@next/swc-darwin-x64': 15.2.1
-      '@next/swc-linux-arm64-gnu': 15.2.1
-      '@next/swc-linux-arm64-musl': 15.2.1
-      '@next/swc-linux-x64-gnu': 15.2.1
-      '@next/swc-linux-x64-musl': 15.2.1
-      '@next/swc-win32-arm64-msvc': 15.2.1
-      '@next/swc-win32-x64-msvc': 15.2.1
+      '@next/swc-darwin-arm64': 15.2.4
+      '@next/swc-darwin-x64': 15.2.4
+      '@next/swc-linux-arm64-gnu': 15.2.4
+      '@next/swc-linux-arm64-musl': 15.2.4
+      '@next/swc-linux-x64-gnu': 15.2.4
+      '@next/swc-linux-x64-musl': 15.2.4
+      '@next/swc-win32-arm64-msvc': 15.2.4
+      '@next/swc-win32-x64-msvc': 15.2.4
       '@opentelemetry/api': 1.9.0
       '@playwright/test': 1.51.0
       sharp: 0.33.5
