@@ -84,7 +84,7 @@ export const approvalRouter = createTRPCRouter({
       const { deploymentVersionId, environmentId, status, reason } = input;
 
       const record = await ctx.db
-        .insert(SCHEMA.policyRuleAnyApprovalRecord)
+        .insert(SCHEMA.deploymentVersionApprovalRecord)
         .values({
           deploymentVersionId,
           userId: ctx.session.user.id,

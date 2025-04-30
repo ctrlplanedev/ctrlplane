@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { inArray } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -12,7 +12,7 @@ import type {
 } from "../types.js";
 
 type Record = {
-  versionId: string;
+  deploymentVersionId: string;
   status: "approved" | "rejected";
   userId: string;
   reason: string | null;
@@ -20,7 +20,7 @@ type Record = {
 
 export type GetApprovalRecordsFunc = (
   context: RuleEngineContext,
-  versionIds: string[],
+  deploymentVersionIds: string[],
 ) => Promise<Record[]>;
 
 type VersionApprovalRuleOptions = {
@@ -39,17 +39,19 @@ export class VersionApprovalRule implements FilterRule<Version> {
     candidates: Version[],
   ): Promise<RuleEngineRuleResult<Version>> {
     const rejectionReasons = new Map<string, string>();
-    const versionIds = _(candidates)
+    const deploymentVersionIds = _(candidates)
       .map((r) => r.id)
       .uniq()
       .value();
     const approvalRecords = await this.options.getApprovalRecords(
       context,
-      versionIds,
+      deploymentVersionIds,
     );
 
     const allowedCandidates = candidates.filter((release) => {
-      const records = approvalRecords.filter((r) => r.versionId === release.id);
+      const records = approvalRecords.filter(
+        (r) => r.deploymentVersionId === release.id,
+      );
 
       const approvals = records.filter((r) => r.status === "approved");
       const rejections = records.filter((r) => r.status === "rejected");
@@ -71,48 +73,53 @@ export class VersionApprovalRule implements FilterRule<Version> {
 
 export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
   _: RuleEngineContext,
-  versionIds: string[],
-) => {
-  const records = await db.query.policyRuleAnyApprovalRecord.findMany({
+  deploymentVersionIds: string[],
+) =>
+  db.query.deploymentVersionApprovalRecord.findMany({
     where: inArray(
-      schema.policyRuleAnyApprovalRecord.deploymentVersionId,
-      versionIds,
+      schema.deploymentVersionApprovalRecord.deploymentVersionId,
+      deploymentVersionIds,
     ),
   });
-  return records.map((record) => ({
-    ...record,
-    versionId: record.deploymentVersionId,
-  }));
-};
 
-export const getRoleApprovalRecords: GetApprovalRecordsFunc = async (
-  _: RuleEngineContext,
-  versionIds: string[],
-) => {
-  const records = await db.query.policyRuleRoleApprovalRecord.findMany({
-    where: inArray(
-      schema.policyRuleRoleApprovalRecord.deploymentVersionId,
-      versionIds,
-    ),
-  });
-  return records.map((record) => ({
-    ...record,
-    versionId: record.deploymentVersionId,
-  }));
-};
+export const getRoleApprovalRecordsFunc =
+  (roleId: string): GetApprovalRecordsFunc =>
+  async (_, versionIds) => {
+    const recordResults = await db
+      .select()
+      .from(schema.deploymentVersionApprovalRecord)
+      .innerJoin(
+        schema.entityRole,
+        eq(
+          schema.entityRole.entityId,
+          schema.deploymentVersionApprovalRecord.userId,
+        ),
+      )
+      .where(
+        and(
+          inArray(
+            schema.deploymentVersionApprovalRecord.deploymentVersionId,
+            versionIds,
+          ),
+          eq(schema.entityRole.entityType, schema.EntityTypeEnum.User),
+          eq(schema.entityRole.roleId, roleId),
+        ),
+      );
 
-export const getUserApprovalRecords: GetApprovalRecordsFunc = async (
-  _: RuleEngineContext,
-  versionIds: string[],
-) => {
-  const records = await db.query.policyRuleUserApprovalRecord.findMany({
-    where: inArray(
-      schema.policyRuleUserApprovalRecord.deploymentVersionId,
-      versionIds,
-    ),
-  });
-  return records.map((record) => ({
-    ...record,
-    versionId: record.deploymentVersionId,
-  }));
-};
+    return recordResults.map(
+      (record) => record.deployment_version_approval_record,
+    );
+  };
+
+export const getUserApprovalRecordsFunc =
+  (userId: string): GetApprovalRecordsFunc =>
+  async (_, versionIds) =>
+    db.query.deploymentVersionApprovalRecord.findMany({
+      where: and(
+        inArray(
+          schema.deploymentVersionApprovalRecord.deploymentVersionId,
+          versionIds,
+        ),
+        eq(schema.deploymentVersionApprovalRecord.userId, userId),
+      ),
+    });

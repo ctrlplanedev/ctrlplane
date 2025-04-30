@@ -31,6 +31,10 @@ export const rolePermission = pgTable(
 export const entityType = pgEnum("entity_type", ["user", "team"]);
 export const entityTypeSchema = z.enum(entityType.enumValues);
 export type EntityType = z.infer<typeof entityTypeSchema>;
+export enum EntityTypeEnum {
+  User = "user",
+  Team = "team",
+}
 
 export const scopeType = pgEnum("scope_type", [
   "deploymentVersion",

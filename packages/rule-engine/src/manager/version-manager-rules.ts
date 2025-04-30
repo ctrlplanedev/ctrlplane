@@ -3,8 +3,8 @@ import type { Version } from "./version-rule-engine";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
 import {
   getAnyApprovalRecords,
-  getRoleApprovalRecords,
-  getUserApprovalRecords,
+  getRoleApprovalRecordsFunc,
+  getUserApprovalRecordsFunc,
   VersionApprovalRule,
 } from "../rules/version-approval-rule.js";
 
@@ -37,10 +37,10 @@ const versionRoleApprovalRule = (
 ) => {
   if (approvalRules == null) return [];
   return approvalRules.map(
-    (approval) =>
+    ({ roleId, requiredApprovalsCount }) =>
       new VersionApprovalRule({
-        minApprovals: approval.requiredApprovalsCount,
-        getApprovalRecords: getRoleApprovalRecords,
+        minApprovals: requiredApprovalsCount,
+        getApprovalRecords: getRoleApprovalRecordsFunc(roleId),
       }),
   );
 };
@@ -50,10 +50,10 @@ const versionUserApprovalRule = (
 ) => {
   if (approvalRules == null) return [];
   return approvalRules.map(
-    () =>
+    ({ userId }) =>
       new VersionApprovalRule({
         minApprovals: 1,
-        getApprovalRecords: getUserApprovalRecords,
+        getApprovalRecords: getUserApprovalRecordsFunc(userId),
       }),
   );
 };
