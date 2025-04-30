@@ -10,11 +10,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
-import {
-  format,
-  formatDistanceToNow,
-  formatDistanceToNowStrict,
-} from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { useDebounce } from "react-use";
 

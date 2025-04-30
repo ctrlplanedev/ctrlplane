@@ -1,9 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import _ from "lodash";
-import { isPresent } from "ts-is-present";
 
-import { and, eq, isNull, notInArray } from "@ctrlplane/db";
+import { and, eq, notInArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";

@@ -63,31 +63,11 @@ export const getJob = async (db: Tx, jobId: string) => {
 
     const { releaseJob, ...job } = jobResult;
 
-    if (releaseJob == null) {
-      log.warn("Job has no associated release job", { jobId });
-      return jobResult;
-    }
-
     const { release } = releaseJob;
-    if (release == null) {
-      log.warn("Job has no associated release", { jobId });
-      return null;
-    }
 
     const { versionRelease, variableSetRelease } = release;
-    if (versionRelease == null || variableSetRelease == null) {
-      log.warn(
-        "Job has no associated version release or variable set release",
-        { jobId },
-      );
-      return null;
-    }
 
     const { version, releaseTarget } = versionRelease;
-    if (version == null || releaseTarget == null) {
-      log.warn("Job has no associated version or release target", { jobId });
-      return null;
-    }
 
     const { values } = variableSetRelease;
     const jobVariables = Object.fromEntries(
@@ -102,12 +82,6 @@ export const getJob = async (db: Tx, jobId: string) => {
     );
 
     const { environment, resource, deployment } = releaseTarget;
-    if (environment == null || resource == null || deployment == null) {
-      log.warn("Job has no associated environment, resource, or deployment", {
-        jobId,
-      });
-      return null;
-    }
 
     const metadata = Object.fromEntries(
       resource.metadata.map(({ key, value }) => [key, value]),

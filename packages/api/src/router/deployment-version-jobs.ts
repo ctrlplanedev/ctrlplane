@@ -111,22 +111,19 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
                 environment,
                 deployment,
                 resource,
-                jobs:
-                  jobs == null
-                    ? []
-                    : jobs
-                        .map(({ job, job_metadata }) => ({
-                          ...job,
-                          links:
-                            job_metadata?.value != null
-                              ? (JSON.parse(job_metadata.value) as Record<
-                                  string,
-                                  string
-                                >)
-                              : {},
-                        }))
-                        .sort(sortJobsByStatus)
-                        .reverse(),
+                jobs: jobs
+                  .map(({ job, job_metadata }) => ({
+                    ...job,
+                    links:
+                      job_metadata?.value != null
+                        ? (JSON.parse(job_metadata.value) as Record<
+                            string,
+                            string
+                          >)
+                        : {},
+                  }))
+                  .sort(sortJobsByStatus)
+                  .reverse(),
               };
             })
             .value();
