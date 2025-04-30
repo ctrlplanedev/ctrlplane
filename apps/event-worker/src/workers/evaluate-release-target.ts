@@ -137,10 +137,8 @@ export const evaluateReleaseTargetWorker = createWorker(
         const hasSameVersion = existingVersionRelease?.id === versionRelease.id;
         const hasSameVariables =
           existingVariableRelease?.id === variableRelease.id;
-        const isDuplicate =
-          hasSameVersion && hasSameVariables && !skipDuplicateCheck;
 
-        if (isDuplicate) {
+        if (hasSameVersion && hasSameVariables) {
           return tx.query.release.findFirst({
             where: and(
               eq(schema.release.versionReleaseId, versionRelease.id),

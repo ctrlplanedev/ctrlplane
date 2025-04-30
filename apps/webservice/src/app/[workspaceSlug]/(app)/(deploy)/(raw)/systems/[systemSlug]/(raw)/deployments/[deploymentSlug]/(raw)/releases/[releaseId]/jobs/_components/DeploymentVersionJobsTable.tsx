@@ -15,16 +15,10 @@ import { useDebounce } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
-import { buttonVariants } from "@ctrlplane/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@ctrlplane/ui/collapsible";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
-import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
@@ -127,6 +121,120 @@ const EnvironmentTableRow: React.FC<{
   );
 };
 
+const JobStatusCell: React.FC<{
+  status: SCHEMA.JobStatus;
+}> = ({ status }) => (
+  <TableCell>
+    <div className="flex items-center gap-1">
+      <JobTableStatusIcon status={status} />
+      {capitalCase(status)}
+    </div>
+  </TableCell>
+);
+
+const ExternalIdCell: React.FC<{
+  externalId: string | null;
+}> = ({ externalId }) => (
+  <TableCell>
+    {externalId != null ? (
+      <code className="font-mono text-xs">{externalId}</code>
+    ) : (
+      <span className="text-sm text-muted-foreground">No external ID</span>
+    )}
+  </TableCell>
+);
+
+const LinksCell: React.FC<{
+  links: Record<string, string>;
+}> = ({ links }) => (
+  <TableCell onClick={(e) => e.stopPropagation()} className="py-0">
+    <div className="flex items-center gap-1">
+      {Object.entries(links).map(([label, url]) => (
+        <Link
+          key={label}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants({
+            variant: "secondary",
+            size: "xs",
+            className: "gap-1",
+          })}
+        >
+          <IconExternalLink className="h-4 w-4" />
+          {label}
+        </Link>
+      ))}
+    </div>
+  </TableCell>
+);
+
+const ReleaseTargetRow: React.FC<{
+  id: string;
+  resource: { name: string };
+  jobs: Array<{
+    id: string;
+    status: SCHEMA.JobStatus;
+    externalId: string | null;
+    links: Record<string, string>;
+  }>;
+}> = ({ id, resource, jobs }) => {
+  const latestJob = jobs.at(0)!;
+
+  return (
+    <CollapsibleRow
+      key={id}
+      Heading={({ isExpanded }) => (
+        <>
+          <TableCell className="h-10">
+            {jobs.length > 1 && (
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <IconChevronRight
+                    className={cn(
+                      "h-3 w-3 text-muted-foreground transition-all",
+                      isExpanded && "rotate-90",
+                      "rotate-90",
+                    )}
+                  />
+                </Button>
+                {resource.name}
+              </div>
+            )}
+
+            {jobs.length === 1 && (
+              <div className="pl-[29px]">{resource.name}</div>
+            )}
+          </TableCell>
+          <JobStatusCell status={latestJob.status} />
+          <ExternalIdCell externalId={latestJob.externalId} />
+          <LinksCell links={latestJob.links} />
+          <TableCell></TableCell>
+          <TableCell></TableCell>
+        </>
+      )}
+    >
+      {jobs.map((job, idx) => {
+        if (idx === 0) return null;
+        return (
+          <TableRow key={job.id}>
+            <TableCell className="p-0">
+              <div className="pl-5">
+                <div className="h-10 border-l border-neutral-700/50" />
+              </div>
+            </TableCell>
+            <JobStatusCell status={job.status} />
+            <ExternalIdCell externalId={job.externalId} />
+            <LinksCell links={job.links} />
+            <TableCell></TableCell>
+            <TableCell></TableCell>
+          </TableRow>
+        );
+      })}
+    </CollapsibleRow>
+  );
+};
+
 export const DeploymentVersionJobsTable: React.FC<
   DeploymentVersionJobsTableProps
 > = ({ deploymentVersion, deployment }) => {
@@ -140,7 +248,6 @@ export const DeploymentVersionJobsTable: React.FC<
     { refetchInterval: 5_000 },
   );
   const environmentsWithJobs = jobsQuery.data ?? [];
-  console.log(environmentsWithJobs);
 
   return (
     <>
@@ -188,56 +295,13 @@ export const DeploymentVersionJobsTable: React.FC<
                 )}
               >
                 {releaseTargets.map(({ id, resource, jobs }) => {
-                  const latestJob = jobs.at(0)!;
-
                   return (
-                    <TableRow key={id}>
-                      <TableCell>{resource.name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <JobTableStatusIcon status={latestJob.status} />
-                          {capitalCase(latestJob.status)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {latestJob.externalId != null ? (
-                          <code className="font-mono text-xs">
-                            {latestJob.externalId}
-                          </code>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            No external ID
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        onClick={(e) => e.stopPropagation()}
-                        className="py-0"
-                      >
-                        <div className="flex items-center gap-1">
-                          {Object.entries(latestJob.links).map(
-                            ([label, url]) => (
-                              <Link
-                                key={label}
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={buttonVariants({
-                                  variant: "secondary",
-                                  size: "xs",
-                                  className: "gap-1",
-                                })}
-                              >
-                                <IconExternalLink className="h-4 w-4" />
-                                {label}
-                              </Link>
-                            ),
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell></TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
+                    <ReleaseTargetRow
+                      key={id}
+                      id={id}
+                      resource={resource}
+                      jobs={jobs}
+                    />
                   );
                 })}
               </CollapsibleRow>

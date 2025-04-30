@@ -52,7 +52,7 @@ const Message: React.FC<{
   );
 };
 
-export const Release: React.FC<{
+type ReleaseProps = {
   tag: string;
   versionId: string;
   environment: { id: string; name: string };
@@ -62,7 +62,9 @@ export const Release: React.FC<{
   deploymentSlug: string;
   statuses: JobStatusType[];
   deployment: { id: string; name: string };
-}> = (props) => {
+};
+
+export const Release: React.FC<ReleaseProps> = (props) => {
   const {
     deployment,
     deployedAt,
