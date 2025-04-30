@@ -283,9 +283,13 @@ export const policyRouter = createTRPCRouter({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(createPolicy)
-    .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) => createPolicyInTx(tx, input)),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const policy = await ctx.db.transaction((tx) =>
+        createPolicyInTx(tx, input),
+      );
+      await getQueue(Channel.NewPolicy).add(policy.id, policy);
+      return policy;
+    }),
 
   update: protectedProcedure
     .meta({
