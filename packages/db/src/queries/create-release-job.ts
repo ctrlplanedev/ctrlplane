@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { merge } from "lodash";
+import _ from "lodash";
 
 import type { Tx } from "../common.js";
 import { takeFirstOrNull } from "../common.js";
@@ -34,7 +34,7 @@ export const createReleaseJob = async (
     versionRelease.version.deployment;
   if (!jobAgent) throw new Error("Deployment has no Job Agent");
 
-  const jobAgentConfig = merge(jobAgent.config, deploymentJobAgentConfig);
+  const jobAgentConfig = _.merge(jobAgent.config, deploymentJobAgentConfig);
 
   // Get variable release data
   const variableRelease = await tx.query.variableSetRelease.findFirst({

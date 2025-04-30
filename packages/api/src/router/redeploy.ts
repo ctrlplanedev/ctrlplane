@@ -15,7 +15,7 @@ const createForceDeployment = async (
   db: Tx,
   releaseTarget: typeof schema.releaseTarget.$inferSelect,
 ) => {
-  const _release = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const existingRelease = await tx
       .select()
       .from(schema.release)

@@ -53,7 +53,6 @@ const Message: React.FC<{
 };
 
 export const Release: React.FC<{
-  name: string;
   tag: string;
   versionId: string;
   environment: { id: string; name: string };
@@ -62,9 +61,10 @@ export const Release: React.FC<{
   systemSlug: string;
   deploymentSlug: string;
   statuses: JobStatusType[];
+  deployment: { id: string; name: string };
 }> = (props) => {
   const {
-    name,
+    deployment,
     deployedAt,
     versionId,
     tag,
@@ -159,7 +159,7 @@ export const Release: React.FC<{
       </HoverCard>
 
       <DeploymentVersionDropdownMenu
-        deploymentVersion={{ id: versionId, name }}
+        deployment={deployment}
         environment={environment}
         isVersionBeingDeployed={statuses.some((s) =>
           activeStatusType.includes(s),

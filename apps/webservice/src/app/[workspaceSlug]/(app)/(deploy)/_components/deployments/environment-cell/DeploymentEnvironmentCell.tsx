@@ -106,13 +106,13 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
     return (
       <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
         <Release
+          deployment={deployment}
           workspaceSlug={workspace.slug}
           systemSlug={systemSlug}
           deploymentSlug={deployment.slug}
           versionId={deploymentVersion.id}
           tag={deploymentVersion.tag}
           environment={environment}
-          name={deploymentVersion.tag}
           deployedAt={deploymentVersion.createdAt}
           statuses={statuses.map((s) => s.job.status)}
         />
@@ -151,7 +151,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           </div>
 
           <DeploymentVersionDropdownMenu
-            deploymentVersion={deploymentVersion}
+            deployment={deployment}
             environment={environment}
             isVersionBeingDeployed={false}
           />
@@ -186,7 +186,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
         </div>
 
         <DeploymentVersionDropdownMenu
-          deploymentVersion={deploymentVersion}
+          deployment={deployment}
           environment={environment}
           isVersionBeingDeployed={false}
         />

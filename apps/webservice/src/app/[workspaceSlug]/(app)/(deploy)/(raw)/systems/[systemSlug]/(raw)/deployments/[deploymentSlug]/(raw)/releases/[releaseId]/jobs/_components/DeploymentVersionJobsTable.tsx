@@ -2,16 +2,33 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
-import { IconMenu2, IconSearch } from "@tabler/icons-react";
+import Link from "next/link";
+import {
+  IconChevronRight,
+  IconExternalLink,
+  IconMenu2,
+  IconSearch,
+} from "@tabler/icons-react";
+import { capitalCase } from "change-case";
+import _ from "lodash";
 import { useDebounce } from "react-use";
 
+import { cn } from "@ctrlplane/ui";
+import { Badge } from "@ctrlplane/ui/badge";
+import { buttonVariants } from "@ctrlplane/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@ctrlplane/ui/collapsible";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import { Table, TableBody } from "@ctrlplane/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
+import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
-import { CollapsibleRow } from "./CollapsibleRow";
 
 type DeploymentVersionJobsTableProps = {
   deploymentVersion: {
@@ -42,6 +59,74 @@ const SearchInput: React.FC<{
   </div>
 );
 
+const CollapsibleRow: React.FC<{
+  Heading: React.FC<{ isExpanded: boolean }>;
+  children: React.ReactNode;
+}> = ({ Heading, children }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <>
+      <TableRow
+        className={cn("sticky")}
+        onClick={() => setIsExpanded((t) => !t)}
+      >
+        <Heading isExpanded={isExpanded} />
+      </TableRow>
+      {isExpanded && children}
+    </>
+  );
+};
+
+const JobStatusBadge: React.FC<{
+  status: SCHEMA.JobStatus;
+  count?: number;
+}> = ({ status, count = 0 }) => (
+  <Badge variant="outline" className="rounded-full px-1.5 py-0.5">
+    <JobTableStatusIcon status={status} />
+    <span className="pl-1">{count}</span>
+  </Badge>
+);
+
+const EnvironmentTableRow: React.FC<{
+  isExpanded: boolean;
+  deployment: { id: string };
+  environment: { name: string };
+  releaseTargets: Array<{
+    jobs: { status: SCHEMA.JobStatus; id: string }[];
+  }>;
+}> = ({ isExpanded, environment, releaseTargets }) => {
+  const statusCounts = _.countBy(
+    releaseTargets.flatMap((target) => target.jobs),
+    (job) => job.status,
+  );
+
+  return (
+    <TableCell colSpan={7} className="bg-neutral-800/40">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <IconChevronRight
+            className={cn(
+              "h-3 w-3 text-muted-foreground transition-all",
+              isExpanded && "rotate-90",
+            )}
+          />
+          {environment.name}
+          <div className="flex items-center gap-1.5">
+            {Object.entries(statusCounts).map(([status, count]) => (
+              <JobStatusBadge
+                key={status}
+                status={status as SCHEMA.JobStatus}
+                count={count}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </TableCell>
+  );
+};
+
 export const DeploymentVersionJobsTable: React.FC<
   DeploymentVersionJobsTableProps
 > = ({ deploymentVersion, deployment }) => {
@@ -51,10 +136,11 @@ export const DeploymentVersionJobsTable: React.FC<
   useDebounce(() => setDebouncedSearch(search), 500, [search]);
 
   const jobsQuery = api.deployment.version.job.list.useQuery(
-    { versionId: deploymentVersion.id, query: debouncedSearch },
+    { versionId: deploymentVersion.id, search: debouncedSearch },
     { refetchInterval: 5_000 },
   );
   const environmentsWithJobs = jobsQuery.data ?? [];
+  console.log(environmentsWithJobs);
 
   return (
     <>
@@ -89,13 +175,72 @@ export const DeploymentVersionJobsTable: React.FC<
       {environmentsWithJobs.length > 0 && (
         <Table>
           <TableBody>
-            {environmentsWithJobs.map((environment) => (
+            {environmentsWithJobs.map(({ environment, releaseTargets }) => (
               <CollapsibleRow
                 key={environment.id}
-                environment={environment}
-                deployment={deployment}
-                deploymentVersion={deploymentVersion}
-              />
+                Heading={({ isExpanded }) => (
+                  <EnvironmentTableRow
+                    isExpanded={isExpanded}
+                    environment={environment}
+                    deployment={deployment}
+                    releaseTargets={releaseTargets}
+                  />
+                )}
+              >
+                {releaseTargets.map(({ id, resource, jobs }) => {
+                  const latestJob = jobs.at(0)!;
+
+                  return (
+                    <TableRow key={id}>
+                      <TableCell>{resource.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <JobTableStatusIcon status={latestJob.status} />
+                          {capitalCase(latestJob.status)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {latestJob.externalId != null ? (
+                          <code className="font-mono text-xs">
+                            {latestJob.externalId}
+                          </code>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            No external ID
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        onClick={(e) => e.stopPropagation()}
+                        className="py-0"
+                      >
+                        <div className="flex items-center gap-1">
+                          {Object.entries(latestJob.links).map(
+                            ([label, url]) => (
+                              <Link
+                                key={label}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={buttonVariants({
+                                  variant: "secondary",
+                                  size: "xs",
+                                  className: "gap-1",
+                                })}
+                              >
+                                <IconExternalLink className="h-4 w-4" />
+                                {label}
+                              </Link>
+                            ),
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  );
+                })}
+              </CollapsibleRow>
             ))}
           </TableBody>
         </Table>

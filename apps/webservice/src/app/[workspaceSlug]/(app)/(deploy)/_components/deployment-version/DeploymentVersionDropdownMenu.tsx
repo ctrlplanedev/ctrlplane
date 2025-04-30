@@ -44,15 +44,34 @@ import {
 
 import { api } from "~/trpc/react";
 
-const RedeployVersionDialog: React.FC<{
-  deploymentVersion: { id: string; name: string };
+// Common type for deployment and environment props
+type DeployProps = {
+  deployment: { id: string; name: string };
   environment: { id: string; name: string };
   children: React.ReactNode;
-}> = ({ deploymentVersion, environment, children }) => {
-  const router = useRouter();
-  const redeploy = api.deployment.version.deploy.toEnvironment.useMutation();
+};
 
+const RedeployVersionDialog: React.FC<DeployProps> = ({
+  deployment,
+  environment,
+  children,
+}) => {
+  const router = useRouter();
+  const redeploy = api.redeploy.useMutation();
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleRedeploy = () => {
+    redeploy
+      .mutateAsync({
+        environmentId: environment.id,
+        deploymentId: deployment.id,
+      })
+      .then(() => {
+        setIsOpen(false);
+        router.refresh();
+      });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -61,7 +80,7 @@ const RedeployVersionDialog: React.FC<{
           <DialogTitle>
             Redeploy{" "}
             <Badge variant="secondary" className="h-7 text-lg">
-              {deploymentVersion.name}
+              {deployment.name}
             </Badge>{" "}
             to {environment.name}?
           </DialogTitle>
@@ -71,20 +90,7 @@ const RedeployVersionDialog: React.FC<{
         </DialogHeader>
 
         <DialogFooter>
-          <Button
-            disabled={redeploy.isPending}
-            onClick={() =>
-              redeploy
-                .mutateAsync({
-                  environmentId: environment.id,
-                  versionId: deploymentVersion.id,
-                })
-                .then(() => {
-                  setIsOpen(false);
-                  router.refresh();
-                })
-            }
-          >
+          <Button disabled={redeploy.isPending} onClick={handleRedeploy}>
             Redeploy
           </Button>
         </DialogFooter>
@@ -93,20 +99,31 @@ const RedeployVersionDialog: React.FC<{
   );
 };
 
-const ForceDeployVersionDialog: React.FC<{
-  deploymentVersion: { id: string; name: string };
-  environment: { id: string; name: string };
-  children: React.ReactNode;
-}> = ({ deploymentVersion, environment, children }) => {
-  const forceDeploy = api.deployment.version.deploy.toEnvironment.useMutation();
+const ForceDeployVersionDialog: React.FC<DeployProps> = ({
+  deployment,
+  environment,
+  children,
+}) => {
+  const redeploy = api.redeploy.useMutation();
   const router = useRouter();
+
+  const handleForceDeploy = () => {
+    redeploy
+      .mutateAsync({
+        environmentId: environment.id,
+        deploymentId: deployment.id,
+        force: true,
+      })
+      .then(() => router.refresh());
+  };
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Force deploy {deploymentVersion.name} to {environment.name}?
+            Force deploy {deployment.name} to {environment.name}?
           </AlertDialogTitle>
           <AlertDialogDescription>
             This will force the version to be deployed to all resources in the
@@ -118,15 +135,7 @@ const ForceDeployVersionDialog: React.FC<{
           <div className="flex-grow" />
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
-            onClick={() =>
-              forceDeploy
-                .mutateAsync({
-                  environmentId: environment.id,
-                  versionId: deploymentVersion.id,
-                  isForcedRelease: true,
-                })
-                .then(() => router.refresh())
-            }
+            onClick={handleForceDeploy}
           >
             Force deploy
           </AlertDialogAction>
@@ -136,46 +145,66 @@ const ForceDeployVersionDialog: React.FC<{
   );
 };
 
-const RedeployVersionButton: React.FC<{
-  deploymentVersion: { id: string; name: string };
+type DropdownActionProps = {
+  deployment: { id: string; name: string };
   environment: { id: string; name: string };
-  isVersionBeingDeployed: boolean;
-}> = ({ deploymentVersion, environment, isVersionBeingDeployed }) =>
-  isVersionBeingDeployed ? (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()}
-          className="space-x-2 text-muted-foreground hover:cursor-not-allowed focus:bg-transparent focus:text-muted-foreground"
-        >
-          <IconReload className="h-4 w-4" />
-          <span>Redeploy</span>
-        </DropdownMenuItem>
-      </HoverCardTrigger>
-      <HoverCardContent className="p-1 text-sm">
-        Cannot redeploy a version that is actively being deployed
-      </HoverCardContent>
-    </HoverCard>
-  ) : (
-    <RedeployVersionDialog
-      deploymentVersion={deploymentVersion}
-      environment={environment}
-    >
+  icon: React.ReactNode;
+  label: string;
+  disabled?: boolean;
+  disabledMessage?: string;
+  Dialog: React.FC<DeployProps>;
+};
+
+const DropdownAction: React.FC<DropdownActionProps> = ({
+  deployment,
+  environment,
+  icon,
+  label,
+  disabled,
+  disabledMessage,
+  Dialog,
+}) => {
+  if (disabled) {
+    return (
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="space-x-2 text-muted-foreground hover:cursor-not-allowed focus:bg-transparent focus:text-muted-foreground"
+          >
+            {icon}
+            <span>{label}</span>
+          </DropdownMenuItem>
+        </HoverCardTrigger>
+        <HoverCardContent className="p-1 text-sm">
+          {disabledMessage}
+        </HoverCardContent>
+      </HoverCard>
+    );
+  }
+
+  return (
+    <Dialog deployment={deployment} environment={environment}>
       <DropdownMenuItem
         onSelect={(e) => e.preventDefault()}
         className="space-x-2"
       >
-        <IconReload className="h-4 w-4" />
-        <span>Redeploy</span>
+        {icon}
+        <span>{label}</span>
       </DropdownMenuItem>
-    </RedeployVersionDialog>
+    </Dialog>
   );
+};
 
-export const DeploymentVersionDropdownMenu: React.FC<{
-  deploymentVersion: { id: string; name: string };
+type DeploymentVersionDropdownMenuProps = {
+  deployment: { id: string; name: string };
   environment: { id: string; name: string };
   isVersionBeingDeployed: boolean;
-}> = ({ deploymentVersion, environment, isVersionBeingDeployed }) => (
+};
+
+export const DeploymentVersionDropdownMenu: React.FC<
+  DeploymentVersionDropdownMenuProps
+> = ({ deployment, environment, isVersionBeingDeployed }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button
@@ -187,23 +216,22 @@ export const DeploymentVersionDropdownMenu: React.FC<{
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-      <RedeployVersionButton
-        deploymentVersion={deploymentVersion}
+      <DropdownAction
+        deployment={deployment}
         environment={environment}
-        isVersionBeingDeployed={isVersionBeingDeployed}
+        icon={<IconReload className="h-4 w-4" />}
+        label="Redeploy"
+        disabled={isVersionBeingDeployed}
+        disabledMessage="Cannot redeploy a version that is actively being deployed"
+        Dialog={RedeployVersionDialog}
       />
-      <ForceDeployVersionDialog
-        deploymentVersion={deploymentVersion}
+      <DropdownAction
+        deployment={deployment}
         environment={environment}
-      >
-        <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()}
-          className="space-x-2"
-        >
-          <IconAlertTriangle className="h-4 w-4" />
-          <span>Force deploy</span>
-        </DropdownMenuItem>
-      </ForceDeployVersionDialog>
+        icon={<IconAlertTriangle className="h-4 w-4" />}
+        label="Force deploy"
+        Dialog={ForceDeployVersionDialog}
+      />
     </DropdownMenuContent>
   </DropdownMenu>
 );

@@ -1,154 +1,34 @@
-import type { Tx } from "@ctrlplane/db";
 import { TRPCError } from "@trpc/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, desc, eq, or, sql } from "@ctrlplane/db";
+import { and, eq, ilike, or } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-const DEFAULT_JOB = {
-  metadata: {} as Record<string, string>,
-  type: "",
-  status: JobStatus.Pending,
-  externalId: undefined as string | undefined,
-  createdAt: undefined as Date | undefined,
-};
-
-const getReleaseTargetRows = async (
-  db: Tx,
-  deploymentId: string,
-  versionId: string,
-  query: string,
+const sortJobsByStatus = (
+  a: { status: SCHEMA.JobStatus },
+  b: { status: SCHEMA.JobStatus },
 ) => {
-  const queryCheck =
-    query === ""
-      ? undefined
-      : or(
-          sql`"releaseTarget_environment"."data" ->> 2 ilike ${"%" + query + "%"}`,
-          sql`"releaseTarget_resource"."data" ->> 2 ilike ${"%" + query + "%"}`,
-        );
+  const statusA = a.status;
+  const statusB = b.status;
 
-  return db.query.releaseTarget.findMany({
-    where: and(eq(SCHEMA.releaseTarget.deploymentId, deploymentId), queryCheck),
-    with: {
-      environment: true,
-      resource: true,
-      versionReleases: {
-        where: eq(SCHEMA.versionRelease.versionId, versionId),
-        limit: 1,
-        orderBy: desc(SCHEMA.versionRelease.createdAt),
-        with: {
-          release: {
-            with: {
-              releaseJobs: {
-                with: { job: { with: { metadata: true, agent: true } } },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
+  if (statusA === JobStatus.Failure && statusB !== JobStatus.Failure) return -1;
+  if (statusA !== JobStatus.Failure && statusB === JobStatus.Failure) return 1;
+
+  return statusA.localeCompare(statusB);
 };
-
-const getReleaseTargets = async (
-  db: Tx,
-  version: SCHEMA.DeploymentVersion,
-  query: string,
-) => {
-  const releaseTargetRows = await getReleaseTargetRows(
-    db,
-    version.deploymentId,
-    version.id,
-    query,
-  );
-
-  return releaseTargetRows.map((rt) => {
-    const { versionReleases, ...rest } = rt;
-    const versionRelease = versionReleases.at(0);
-    if (versionRelease == null)
-      return {
-        ...rest,
-        jobs: [{ ...DEFAULT_JOB, id: rest.resource.id }],
-      };
-
-    const releaseJobs = versionRelease.release
-      .flatMap((rel) =>
-        rel.releaseJobs.map(({ job }) => ({
-          id: job.id,
-          metadata: Object.fromEntries(
-            job.metadata.map((m) => [m.key, m.value]),
-          ),
-          type: job.agent?.type ?? "custom",
-          status: job.status as JobStatus,
-          externalId: job.externalId ?? undefined,
-          createdAt: job.createdAt,
-        })),
-      )
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    const jobs =
-      releaseJobs.length > 0
-        ? releaseJobs
-        : [{ ...DEFAULT_JOB, id: rest.resource.id }];
-
-    return { ...rest, jobs };
-  });
-};
-
-const groupReleaseTargetsByEnvironment = (
-  releaseTargets: Awaited<ReturnType<typeof getReleaseTargets>>,
-) =>
-  _.chain(releaseTargets)
-    .groupBy((rt) => rt.environment.id)
-    .map((envReleaseTargets) => {
-      const first = envReleaseTargets[0]!;
-      const { environment } = first;
-
-      const sortedByLatestJobStatus = envReleaseTargets
-        .sort((a, b) => {
-          const statusA = a.jobs[0]?.status ?? JobStatus.Pending;
-          const statusB = b.jobs[0]?.status ?? JobStatus.Pending;
-
-          if (statusA === JobStatus.Failure && statusB !== JobStatus.Failure)
-            return -1;
-          if (statusA !== JobStatus.Failure && statusB === JobStatus.Failure)
-            return 1;
-
-          return statusA.localeCompare(statusB);
-        })
-        .map((rt) => {
-          const { environment: _, ...releaseTarget } = rt;
-          return releaseTarget;
-        });
-
-      const statusCounts = _.chain(envReleaseTargets)
-        .groupBy((rt) => rt.jobs[0]!.status)
-        .map((groupedStatuses) => ({
-          status: groupedStatuses[0]!.jobs[0]!.status,
-          count: groupedStatuses.length,
-        }))
-        .value();
-
-      return {
-        ...environment,
-        releaseTargets: sortedByLatestJobStatus,
-        statusCounts,
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .value();
 
 export const deploymentVersionJobsRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
         versionId: z.string().uuid(),
-        query: z.string().default(""),
+        search: z.string().default(""),
       }),
     )
     .meta({
@@ -158,7 +38,7 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           id: input.versionId,
         }),
     })
-    .query(async ({ ctx, input: { versionId, query } }) => {
+    .query(async ({ ctx, input: { versionId, search } }) => {
       const version = await ctx.db.query.deploymentVersion.findFirst({
         where: eq(SCHEMA.deploymentVersion.id, versionId),
       });
@@ -168,7 +48,94 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           message: `Version not found: ${versionId}`,
         });
 
-      const releaseTargets = await getReleaseTargets(ctx.db, version, query);
-      return groupReleaseTargetsByEnvironment(releaseTargets);
+      const jobs = await ctx.db
+        .select()
+        .from(SCHEMA.releaseTarget)
+        .innerJoin(
+          SCHEMA.environment,
+          eq(SCHEMA.releaseTarget.environmentId, SCHEMA.environment.id),
+        )
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.releaseTarget.deploymentId, SCHEMA.deployment.id),
+        )
+        .innerJoin(
+          SCHEMA.resource,
+          eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
+        )
+        .innerJoin(
+          SCHEMA.versionRelease,
+          eq(SCHEMA.releaseTarget.id, SCHEMA.versionRelease.releaseTargetId),
+        )
+        .innerJoin(
+          SCHEMA.release,
+          eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+        )
+        .leftJoin(
+          SCHEMA.releaseJob,
+          eq(SCHEMA.release.id, SCHEMA.releaseJob.releaseId),
+        )
+        .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
+        .leftJoin(
+          SCHEMA.jobMetadata,
+          and(
+            eq(SCHEMA.job.id, SCHEMA.jobMetadata.jobId),
+            eq(SCHEMA.jobMetadata.key, ReservedMetadataKey.Links),
+          ),
+        )
+        .where(
+          and(
+            eq(SCHEMA.versionRelease.versionId, version.id),
+            or(
+              ilike(SCHEMA.deployment.name, `%${search}%`),
+              ilike(SCHEMA.environment.name, `%${search}%`),
+              ilike(SCHEMA.resource.name, `%${search}%`),
+            ),
+          ),
+        );
+
+      return _.chain(jobs)
+        .groupBy((job) => job.environment.id)
+        .map((jobs) => {
+          const first = jobs[0]!;
+          const { environment } = first;
+
+          const releaseTargets = _.chain(jobs)
+            .groupBy((job) => job.release_target.id)
+            .map((jobs) => {
+              const first = jobs[0]!;
+              const { release_target, environment, deployment, resource } =
+                first;
+              return {
+                ...release_target,
+                environment,
+                deployment,
+                resource,
+                jobs:
+                  jobs == null
+                    ? []
+                    : jobs
+                        .map(({ job, job_metadata }) => ({
+                          ...job,
+                          links:
+                            job_metadata?.value != null
+                              ? (JSON.parse(job_metadata.value) as Record<
+                                  string,
+                                  string
+                                >)
+                              : {},
+                        }))
+                        .sort(sortJobsByStatus),
+              };
+            })
+            .value();
+
+          return {
+            environment,
+            releaseTargets,
+          };
+        })
+        .sortBy(({ environment }) => environment.name)
+        .value();
     }),
 });
