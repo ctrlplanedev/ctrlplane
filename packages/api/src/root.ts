@@ -4,6 +4,7 @@ import { environmentRouter } from "./router/environment";
 import { githubRouter } from "./router/github";
 import { jobRouter } from "./router/job";
 import { policyRouter } from "./router/policy";
+import { redeployProcedure } from "./router/redeploy";
 import { resourceSchemaRouter } from "./router/resource-schema";
 import { resourceRouter } from "./router/resources";
 import { runbookRouter } from "./router/runbook";
@@ -33,6 +34,8 @@ export const appRouter = createTRPCRouter({
   policy: policyRouter,
 
   search: searchRouter,
+
+  redeploy: redeployProcedure,
 });
 
 // export type definition of API
