@@ -19,53 +19,6 @@ import { jobCondition } from "@ctrlplane/validators/jobs";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const versionDeployRouter = createTRPCRouter({
-  toEnvironment: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentGet, Permission.DeploymentVersionGet)
-          .on(
-            { type: "deploymentVersion", id: input.versionId },
-            { type: "environment", id: input.environmentId },
-          ),
-    })
-    .input(
-      z.object({
-        environmentId: z.string(),
-        versionId: z.string(),
-        isForcedRelease: z.boolean().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const releaseJobTriggers = await createReleaseJobTriggers(
-        ctx.db,
-        "force_deploy",
-      )
-        .causedById(ctx.session.user.id)
-        .environments([input.environmentId])
-        .versions([input.versionId])
-        .filter(
-          input.isForcedRelease
-            ? (_, releaseJobTriggers) => releaseJobTriggers
-            : isPassingChannelSelectorPolicy,
-        )
-        .then(cancelPreviousJobsForRedeployedTriggers)
-        .then(input.isForcedRelease ? () => {} : createJobApprovals)
-        .insert();
-
-      await dispatchReleaseJobTriggers(ctx.db)
-        .releaseTriggers(releaseJobTriggers)
-        .filter(
-          input.isForcedRelease
-            ? isPassingLockingPolicy
-            : isPassingAllPoliciesExceptNewerThanLastActive,
-        )
-        .then(cancelOldReleaseJobTriggersOnJobDispatch)
-        .dispatch();
-
-      return releaseJobTriggers;
-    }),
-
   toResource: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

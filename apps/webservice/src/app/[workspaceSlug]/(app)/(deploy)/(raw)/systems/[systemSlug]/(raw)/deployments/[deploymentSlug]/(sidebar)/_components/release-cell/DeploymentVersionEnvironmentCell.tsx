@@ -228,7 +228,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
           </div>
 
           <DeploymentVersionDropdownMenu
-            deploymentVersion={deploymentVersion}
+            deployment={deployment}
             environment={environment}
             isVersionBeingDeployed={false}
           />
@@ -237,10 +237,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
     );
 
   return (
-    <DeployButton
-      deploymentVersionId={deploymentVersion.id}
-      environmentId={environment.id}
-    />
+    <DeployButton deploymentId={deployment.id} environmentId={environment.id} />
   );
 };
 
