@@ -84,7 +84,7 @@ export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
 
 export const getRoleApprovalRecordsFunc =
   (roleId: string): GetApprovalRecordsFunc =>
-  async (_, versionIds) => {
+  async (_, deploymentVersionIds) => {
     const recordResults = await db
       .select()
       .from(schema.deploymentVersionApprovalRecord)
@@ -99,7 +99,7 @@ export const getRoleApprovalRecordsFunc =
         and(
           inArray(
             schema.deploymentVersionApprovalRecord.deploymentVersionId,
-            versionIds,
+            deploymentVersionIds,
           ),
           eq(schema.entityRole.entityType, schema.EntityTypeEnum.User),
           eq(schema.entityRole.roleId, roleId),
@@ -113,12 +113,12 @@ export const getRoleApprovalRecordsFunc =
 
 export const getUserApprovalRecordsFunc =
   (userId: string): GetApprovalRecordsFunc =>
-  async (_, versionIds) =>
+  async (_, deploymentVersionIds) =>
     db.query.deploymentVersionApprovalRecord.findMany({
       where: and(
         inArray(
           schema.deploymentVersionApprovalRecord.deploymentVersionId,
-          versionIds,
+          deploymentVersionIds,
         ),
         eq(schema.deploymentVersionApprovalRecord.userId, userId),
       ),
