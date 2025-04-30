@@ -1463,11 +1463,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "$ref": "#/components/schemas/Job"
-                  }
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Job"
+                      }
+                    }
+                  },
+                  "required": [
+                    "jobs"
+                  ]
                 }
               }
             }
@@ -4687,7 +4694,7 @@
               "release": {
                 "$ref": "#/components/schemas/Release"
               },
-              "deploymentVersion": {
+              "version": {
                 "$ref": "#/components/schemas/DeploymentVersion"
               },
               "deployment": {
