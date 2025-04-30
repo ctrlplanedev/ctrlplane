@@ -10,6 +10,11 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
+import {
+  format,
+  formatDistanceToNow,
+  formatDistanceToNowStrict,
+} from "date-fns";
 import _ from "lodash";
 import { useDebounce } from "react-use";
 
@@ -124,7 +129,7 @@ const EnvironmentTableRow: React.FC<{
 const JobStatusCell: React.FC<{
   status: SCHEMA.JobStatus;
 }> = ({ status }) => (
-  <TableCell>
+  <TableCell className="w-26">
     <div className="flex items-center gap-1">
       <JobTableStatusIcon status={status} />
       {capitalCase(status)}
@@ -169,6 +174,14 @@ const LinksCell: React.FC<{
   </TableCell>
 );
 
+const CreatedAtCell: React.FC<{
+  createdAt: Date;
+}> = ({ createdAt }) => (
+  <TableCell>
+    {formatDistanceToNowStrict(createdAt, { addSuffix: true })}
+  </TableCell>
+);
+
 const ReleaseTargetRow: React.FC<{
   id: string;
   resource: { name: string };
@@ -177,6 +190,7 @@ const ReleaseTargetRow: React.FC<{
     status: SCHEMA.JobStatus;
     externalId: string | null;
     links: Record<string, string>;
+    createdAt: Date;
   }>;
 }> = ({ id, resource, jobs }) => {
   const latestJob = jobs.at(0)!;
@@ -194,7 +208,6 @@ const ReleaseTargetRow: React.FC<{
                     className={cn(
                       "h-3 w-3 text-muted-foreground transition-all",
                       isExpanded && "rotate-90",
-                      "rotate-90",
                     )}
                   />
                 </Button>
@@ -209,7 +222,7 @@ const ReleaseTargetRow: React.FC<{
           <JobStatusCell status={latestJob.status} />
           <ExternalIdCell externalId={latestJob.externalId} />
           <LinksCell links={latestJob.links} />
-          <TableCell></TableCell>
+          <CreatedAtCell createdAt={latestJob.createdAt} />
           <TableCell></TableCell>
         </>
       )}
@@ -226,7 +239,7 @@ const ReleaseTargetRow: React.FC<{
             <JobStatusCell status={job.status} />
             <ExternalIdCell externalId={job.externalId} />
             <LinksCell links={job.links} />
-            <TableCell></TableCell>
+            <CreatedAtCell createdAt={job.createdAt} />
             <TableCell></TableCell>
           </TableRow>
         );

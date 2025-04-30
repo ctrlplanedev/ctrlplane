@@ -125,7 +125,8 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
                                 >)
                               : {},
                         }))
-                        .sort(sortJobsByStatus),
+                        .sort(sortJobsByStatus)
+                        .reverse(),
               };
             })
             .value();
