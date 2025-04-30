@@ -54,3 +54,11 @@ export const baseApprovalRecordValidationFields = {
   status: z.enum(approvalStatus.enumValues),
   reason: z.string().optional(),
 };
+
+export type BaseApprovalRecordInsert = {
+  deploymentVersionId: string;
+  userId: string;
+  status: ApprovalStatus;
+  reason?: string;
+  approvedAt?: Date;
+};

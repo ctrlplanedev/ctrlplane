@@ -11,7 +11,7 @@ export const updatePolicyWorker = createWorker(
     });
 
     for (const policyTarget of policyTargets)
-      getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
+      getQueue(Channel.ComputePolicyTargetAllSelectors).add(
         policyTarget.id,
         policyTarget,
       );

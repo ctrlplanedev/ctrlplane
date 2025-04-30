@@ -9,7 +9,7 @@ export const newPolicyWorker = createWorker(Channel.NewPolicy, async (job) => {
   });
 
   for (const policyTarget of policyTargets) {
-    getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
+    getQueue(Channel.ComputePolicyTargetAllSelectors).add(
       policyTarget.id,
       policyTarget,
     );

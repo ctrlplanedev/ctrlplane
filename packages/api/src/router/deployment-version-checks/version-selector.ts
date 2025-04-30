@@ -1,17 +1,13 @@
-import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { and, eq, selector } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { mergePolicies } from "@ctrlplane/rule-engine";
+import { getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../../trpc";
-import {
-  getAnyReleaseTargetForDeploymentAndEnvironment,
-  getApplicablePoliciesWithoutResourceScope,
-  getVersionWithMetadata,
-} from "./utils";
+import { getVersionWithMetadata } from "./utils";
 
 export const versionSelector = protectedProcedure
   .input(
@@ -32,29 +28,9 @@ export const versionSelector = protectedProcedure
     const version = await getVersionWithMetadata(ctx.db, versionId);
     const { deploymentId } = version;
 
-    const environment = await ctx.db.query.environment.findFirst({
-      where: eq(SCHEMA.environment.id, environmentId),
-      with: { system: true },
-    });
-    if (environment == null)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `Environment not found: ${environmentId}`,
-      });
-
-    const { system } = environment;
-    const { workspaceId } = system;
-
-    const releaseTarget = await getAnyReleaseTargetForDeploymentAndEnvironment(
-      ctx.db,
-      deploymentId,
-      environmentId,
-      workspaceId,
-    );
-    const policies = await getApplicablePoliciesWithoutResourceScope(
-      ctx.db,
-      releaseTarget.id,
-    );
+    const policies = await getApplicablePolicies()
+      .environmentAndDeployment({ environmentId, deploymentId })
+      .withoutResourceScope();
     const mergedPolicy = mergePolicies(policies);
     const versionSelector =
       mergedPolicy?.deploymentVersionSelector?.deploymentVersionSelector;

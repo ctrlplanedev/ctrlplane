@@ -160,8 +160,7 @@ export class VersionReleaseManager implements ReleaseManager {
   async getPolicy(forceRefresh = false): Promise<Policy | null> {
     if (!forceRefresh && this.cachedPolicy != null) return this.cachedPolicy;
 
-    const policies = await getApplicablePolicies(
-      this.db,
+    const policies = await getApplicablePolicies(this.db).releaseTarget(
       this.releaseTarget.id,
     );
 

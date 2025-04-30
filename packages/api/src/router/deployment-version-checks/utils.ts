@@ -1,45 +1,8 @@
 import type { Tx } from "@ctrlplane/db";
 import { TRPCError } from "@trpc/server";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-
-export const getApplicablePoliciesWithoutResourceScope = async (
-  db: Tx,
-  releaseTargetId: string,
-) => {
-  const rows = await db
-    .select()
-    .from(SCHEMA.computedPolicyTargetReleaseTarget)
-    .innerJoin(
-      SCHEMA.policyTarget,
-      eq(
-        SCHEMA.computedPolicyTargetReleaseTarget.policyTargetId,
-        SCHEMA.policyTarget.id,
-      ),
-    )
-    .where(
-      and(
-        eq(
-          SCHEMA.computedPolicyTargetReleaseTarget.releaseTargetId,
-          releaseTargetId,
-        ),
-        isNull(SCHEMA.policyTarget.resourceSelector),
-      ),
-    );
-
-  const policyIds = rows.map((r) => r.policy_target.policyId);
-  return db.query.policy.findMany({
-    where: inArray(SCHEMA.policy.id, policyIds),
-    with: {
-      denyWindows: true,
-      deploymentVersionSelector: true,
-      versionAnyApprovals: true,
-      versionRoleApprovals: true,
-      versionUserApprovals: true,
-    },
-  });
-};
 
 export const getVersionWithMetadata = async (db: Tx, versionId: string) => {
   const v = await db.query.deploymentVersion.findFirst({

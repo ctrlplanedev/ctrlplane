@@ -31,6 +31,8 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import type { policyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
+import { deployment } from "./deployment.js";
+import { environment } from "./environment.js";
 import { releaseTarget } from "./release.js";
 import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
 import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
@@ -89,6 +91,36 @@ export const computedPolicyTargetReleaseTarget = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.policyTargetId, t.releaseTargetId] }),
+  }),
+);
+
+export const computedPolicyTargetEnvironment = pgTable(
+  "computed_policy_target_environment",
+  {
+    policyTargetId: uuid("policy_target_id")
+      .notNull()
+      .references(() => policyTarget.id, { onDelete: "cascade" }),
+    environmentId: uuid("environment_id")
+      .notNull()
+      .references(() => environment.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.policyTargetId, t.environmentId] }),
+  }),
+);
+
+export const computedPolicyTargetDeployment = pgTable(
+  "computed_policy_target_deployment",
+  {
+    policyTargetId: uuid("policy_target_id")
+      .notNull()
+      .references(() => policyTarget.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.policyTargetId, t.deploymentId] }),
   }),
 );
 

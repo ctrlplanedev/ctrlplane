@@ -175,7 +175,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
 
       if (policyTargets.length > 0) {
         for (const { policy_target: policyTarget } of policyTargets) {
-          getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
+          getQueue(Channel.ComputePolicyTargetAllSelectors).add(
             policyTarget.id,
             policyTarget,
           );

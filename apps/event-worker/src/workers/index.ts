@@ -5,6 +5,9 @@ import { Channel } from "@ctrlplane/events";
 
 import { computeDeploymentResourceSelectorWorkerEvent } from "./compute-deployment-resource-selector.js";
 import { computeEnvironmentResourceSelectorWorkerEvent } from "./compute-environment-resource-selector.js";
+import { computePolicyTargetAllSelectorsWorker } from "./compute-policy-taret-all-selectors.js";
+import { computePolicyTargetDeploymentSelectorWorker } from "./compute-policy-target-deployment-selector.js";
+import { computePolicyTargetEnvironmentSelectorWorker } from "./compute-policy-target-environment-selector.js";
 import { computePolicyTargetReleaseTargetSelectorWorkerEvent } from "./compute-policy-target-release-target-selector.js";
 import { computeSystemsReleaseTargetsWorker } from "./compute-systems-release-targets.js";
 import { deleteResourceWorker } from "./delete-resource.js";
@@ -53,6 +56,12 @@ export const workers: Workers<keyof ChannelMap> = {
     computeDeploymentResourceSelectorWorkerEvent,
   [Channel.ComputePolicyTargetReleaseTargetSelector]:
     computePolicyTargetReleaseTargetSelectorWorkerEvent,
+  [Channel.ComputePolicyTargetEnvironmentSelector]:
+    computePolicyTargetEnvironmentSelectorWorker,
+  [Channel.ComputePolicyTargetDeploymentSelector]:
+    computePolicyTargetDeploymentSelectorWorker,
+  [Channel.ComputePolicyTargetAllSelectors]:
+    computePolicyTargetAllSelectorsWorker,
 
   [Channel.ComputeSystemsReleaseTargets]: computeSystemsReleaseTargetsWorker,
 };

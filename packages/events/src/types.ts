@@ -34,6 +34,9 @@ export enum Channel {
   ComputeEnvironmentResourceSelector = "compute-environment-resource-selector",
   ComputeDeploymentResourceSelector = "compute-deployment-resource-selector",
   ComputePolicyTargetReleaseTargetSelector = "compute-policy-target-release-target-selector",
+  ComputePolicyTargetEnvironmentSelector = "compute-policy-target-environment-selector",
+  ComputePolicyTargetDeploymentSelector = "compute-policy-target-deployment-selector",
+  ComputePolicyTargetAllSelectors = "compute-policy-target-all-selectors",
 }
 
 export type EvaluateReleaseTargetJob = {
@@ -71,5 +74,8 @@ export type ChannelMap = {
   [Channel.ComputeEnvironmentResourceSelector]: { id: string };
   [Channel.ComputeDeploymentResourceSelector]: { id: string };
   [Channel.ComputePolicyTargetReleaseTargetSelector]: { id: string };
+  [Channel.ComputePolicyTargetEnvironmentSelector]: { id: string };
+  [Channel.ComputePolicyTargetDeploymentSelector]: { id: string };
+  [Channel.ComputePolicyTargetAllSelectors]: { id: string };
   [Channel.ComputeSystemsReleaseTargets]: { id: string };
 };
