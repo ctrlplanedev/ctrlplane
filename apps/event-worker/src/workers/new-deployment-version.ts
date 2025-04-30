@@ -1,9 +1,11 @@
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import {
+  Channel,
+  createWorker,
+  dispatchEvaluateReleaseTargetJobs,
+} from "@ctrlplane/events";
 
 /**
  * Worker that processes new deployment version events.
@@ -20,6 +22,6 @@ export const newDeploymentVersionWorker = createWorker(
     const releaseTargets = await db.query.releaseTarget.findMany({
       where: eq(schema.releaseTarget.deploymentId, version.deploymentId),
     });
-    await dispatchEvaluateJobs(releaseTargets);
+    await dispatchEvaluateReleaseTargetJobs(releaseTargets);
   },
 );

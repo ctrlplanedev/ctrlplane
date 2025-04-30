@@ -3,9 +3,12 @@ import type { Tx } from "@ctrlplane/db";
 import { and, eq, inArray, isNull, or, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import {
+  Channel,
+  createWorker,
+  dispatchEvaluateReleaseTargetJobs,
+  getQueue,
+} from "@ctrlplane/events";
 
 const findMatchingEnvironmentDeploymentPairs = (
   tx: Tx,
@@ -183,7 +186,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         return;
       }
 
-      await dispatchEvaluateJobs(releaseTargets);
+      await dispatchEvaluateReleaseTargetJobs(releaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {

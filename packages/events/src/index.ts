@@ -35,3 +35,4 @@ export const getQueue = <T extends keyof ChannelMap>(name: T) => {
 
 export * from "./types.js";
 export * from "./redis.js";
+export * from "./dispatch-queue-jobs.js";

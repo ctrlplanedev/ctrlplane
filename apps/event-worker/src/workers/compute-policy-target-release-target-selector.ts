@@ -3,9 +3,12 @@ import type { Tx } from "@ctrlplane/db";
 import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import {
+  Channel,
+  createWorker,
+  dispatchEvaluateReleaseTargetJobs,
+  getQueue,
+} from "@ctrlplane/events";
 
 const findMatchingReleaseTargets = (
   tx: Tx,
@@ -115,7 +118,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
         )
         .then((rows) => rows.map((row) => row.release_target));
 
-      await dispatchEvaluateJobs(releaseTargets);
+      await dispatchEvaluateReleaseTargetJobs(releaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {

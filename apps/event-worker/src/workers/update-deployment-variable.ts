@@ -1,9 +1,11 @@
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import {
+  Channel,
+  createWorker,
+  dispatchEvaluateReleaseTargetJobs,
+} from "@ctrlplane/events";
 
 /**
  * Worker that handles deployment variable changes
@@ -29,6 +31,6 @@ export const updateDeploymentVariableWorker = createWorker(
       where: eq(schema.releaseTarget.deploymentId, variable.deploymentId),
     });
 
-    await dispatchEvaluateJobs(releaseTargets);
+    await dispatchEvaluateReleaseTargetJobs(releaseTargets);
   },
 );

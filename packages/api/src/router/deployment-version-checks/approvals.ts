@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { dispatchEvaluateReleaseTargetJobs } from "@ctrlplane/events";
 import {
   getVersionApprovalRules,
   mergePolicies,
@@ -113,13 +113,7 @@ export const approvalRouter = createTRPCRouter({
         );
 
       const targets = rows.map((row) => row.release_target);
-      if (targets.length > 0)
-        await getQueue(Channel.EvaluateReleaseTarget).addBulk(
-          targets.map((rt) => ({
-            name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-            data: rt,
-          })),
-        );
+      if (targets.length > 0) await dispatchEvaluateReleaseTargetJobs(targets);
 
       return record;
     }),

@@ -3,11 +3,14 @@ import _ from "lodash";
 import { and, eq, not, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import {
+  Channel,
+  createWorker,
+  dispatchEvaluateReleaseTargetJobs,
+  getQueue,
+} from "@ctrlplane/events";
 import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "update-deployment" });
 
@@ -49,7 +52,7 @@ export const updateDeploymentWorker = createWorker(
           where: eq(schema.releaseTarget.deploymentId, data.new.id),
         });
 
-        await dispatchEvaluateJobs(releaseTargets);
+        await dispatchEvaluateReleaseTargetJobs(releaseTargets);
       }
 
       if (_.isEqual(data.old.resourceSelector, data.new.resourceSelector))

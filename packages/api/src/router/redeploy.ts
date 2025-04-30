@@ -6,7 +6,11 @@ import { z } from "zod";
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import {
+  Channel,
+  dispatchEvaluateReleaseTargetJobs,
+  getQueue,
+} from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../trpc";
@@ -51,18 +55,15 @@ const handleDeployment = async (
   force: boolean,
 ) => {
   if (force) {
-    for (const releaseTarget of releaseTargets) {
-      await createForceDeployment(ctx, releaseTarget);
-    }
+    await Promise.all(
+      releaseTargets.map((rt) => createForceDeployment(ctx, rt)),
+    );
     return;
   }
 
-  for (const releaseTarget of releaseTargets) {
-    getQueue(Channel.EvaluateReleaseTarget).add(releaseTarget.id, {
-      ...releaseTarget,
-      skipDuplicateCheck: true,
-    });
-  }
+  await dispatchEvaluateReleaseTargetJobs(releaseTargets, {
+    skipDuplicateCheck: true,
+  });
 };
 
 export const redeployProcedure = protectedProcedure
