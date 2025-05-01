@@ -33,7 +33,6 @@ import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(app)/_components/
 import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(app)/_components/system/DeleteSystemDialog";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { SystemDeploymentSkeleton } from "./SystemDeploymentSkeleton";
 import DeploymentTable from "./TableDeployments";
 
 type System = SCHEMA.System & {
@@ -164,15 +163,7 @@ export const SystemDeploymentTable: React.FC<{
   workspace: SCHEMA.Workspace;
   system: System;
 }> = ({ workspace, system }) => {
-  const { data: rootDirsResult, isLoading } =
-    api.system.directory.listRoots.useQuery(system.id);
-  if (isLoading) return <SystemDeploymentSkeleton />;
-
-  const rootDirs = rootDirsResult?.directories ?? [];
-  const rootEnvironments = rootDirsResult?.rootEnvironments ?? [];
-
   const systemUrls = urls.workspace(workspace.slug).system(system.slug);
-
   return (
     <div key={system.id} className="space-y-4">
       <div className="flex w-full items-center justify-between">
@@ -190,13 +181,7 @@ export const SystemDeploymentTable: React.FC<{
       </div>
 
       <div className="overflow-hidden rounded-md border">
-        <DeploymentTable
-          workspace={workspace}
-          systemSlug={system.slug}
-          environments={rootEnvironments}
-          deployments={system.deployments}
-          directories={rootDirs}
-        />
+        <DeploymentTable workspace={workspace} system={system} />
       </div>
     </div>
   );
