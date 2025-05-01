@@ -20,8 +20,8 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
       await db.transaction(async (tx) => {
         await tx.execute(
           sql`
-           SELECT * from ${schema.deployment}
-           WHERE ${schema.deployment.id} = ${id}
+           SELECT * from ${schema.computedDeploymentResource}
+           WHERE ${eq(schema.computedDeploymentResource.deploymentId, deployment.id)}
            FOR UPDATE NOWAIT
           `,
         );
@@ -58,7 +58,7 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             .onConflictDoNothing();
       });
 
-      getQueue(Channel.ComputeSystemsReleaseTargets).add(
+      await getQueue(Channel.ComputeSystemsReleaseTargets).add(
         deployment.system.id,
         deployment.system,
       );
@@ -68,7 +68,6 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
         await getQueue(Channel.ComputeDeploymentResourceSelector).add(
           job.name,
           job.data,
-          { delay: 500 },
         );
         return;
       }

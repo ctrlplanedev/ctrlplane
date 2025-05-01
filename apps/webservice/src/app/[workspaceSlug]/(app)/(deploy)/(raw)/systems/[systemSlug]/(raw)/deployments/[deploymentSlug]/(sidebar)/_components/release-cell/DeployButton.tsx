@@ -8,11 +8,11 @@ import { Button } from "@ctrlplane/ui/button";
 import { api } from "~/trpc/react";
 
 export const DeployButton: React.FC<{
-  deploymentVersionId: string;
+  deploymentId: string;
   environmentId: string;
   className?: string;
-}> = ({ deploymentVersionId, environmentId, className }) => {
-  const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
+}> = ({ deploymentId, environmentId, className }) => {
+  const deploy = api.redeploy.useMutation();
   const router = useRouter();
 
   return (
@@ -25,10 +25,7 @@ export const DeployButton: React.FC<{
       size="sm"
       onClick={() =>
         deploy
-          .mutateAsync({
-            environmentId,
-            versionId: deploymentVersionId,
-          })
+          .mutateAsync({ environmentId, deploymentId })
           .then(() => router.refresh())
       }
       disabled={deploy.isPending}

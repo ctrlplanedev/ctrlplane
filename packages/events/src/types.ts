@@ -40,6 +40,7 @@ export type EvaluateReleaseTargetJob = {
   environmentId: string;
   resourceId: string;
   deploymentId: string;
+  skipDuplicateCheck?: boolean;
 };
 
 export type ChannelMap = {
@@ -54,8 +55,9 @@ export type ChannelMap = {
   [Channel.UpdateEnvironment]: schema.Environment & {
     oldSelector: ResourceCondition | null;
   };
-  [Channel.UpdateDeployment]: schema.Deployment & {
-    oldSelector: ResourceCondition | null;
+  [Channel.UpdateDeployment]: {
+    new: schema.Deployment;
+    old: schema.Deployment;
   };
   [Channel.UpdatedResource]: schema.Resource;
   [Channel.UpdatePolicy]: schema.Policy;

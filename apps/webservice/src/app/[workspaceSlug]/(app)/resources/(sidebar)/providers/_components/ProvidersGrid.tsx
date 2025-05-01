@@ -16,7 +16,7 @@ import { usePagination } from "~/app/[workspaceSlug]/(app)/_hooks/usePagination"
 import { api } from "~/trpc/react";
 import { ProviderCard } from "./ProviderCard";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 3 * 10;
 
 export const ProvidersGrid: React.FC<{
   workspaceId: string;

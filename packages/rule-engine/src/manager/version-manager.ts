@@ -12,7 +12,6 @@ import {
 } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { Version } from "../manager/version-rule-engine.js";
@@ -29,10 +28,6 @@ import { ConstantMap, isFilterRule, isPreValidationRule } from "../types.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getRules } from "./version-manager-rules.js";
 
-const log = logger.child({
-  module: "version-manager",
-});
-
 type VersionEvaluateOptions = {
   rules?: (p: Policy | null) => Array<FilterRule<Version> | PreValidationRule>;
   versions?: Version[];
@@ -48,17 +43,9 @@ export class VersionReleaseManager implements ReleaseManager {
 
   async upsertRelease(versionId: string) {
     const latestRelease = await this.findLatestRelease();
-    log.info("found latest release", {
-      latestRelease,
-      versionId,
-    });
     if (latestRelease?.versionId === versionId)
       return { created: false, release: latestRelease };
 
-    log.info("inserting release", {
-      releaseTargetId: this.releaseTarget.id,
-      versionId,
-    });
     const release = await this.db
       .insert(schema.versionRelease)
       .values({ releaseTargetId: this.releaseTarget.id, versionId })
@@ -206,10 +193,6 @@ export class VersionReleaseManager implements ReleaseManager {
       const result = rule.passing(ctx);
 
       if (!result.passing) {
-        log.info("Pre-validation rule failed", {
-          rule: rule.constructor.name,
-          rejectionReason: result.rejectionReason,
-        });
         return {
           chosenCandidate: null,
           rejectionReasons: new ConstantMap<string, string>(

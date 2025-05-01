@@ -14,6 +14,7 @@ import {
   like,
   notExists,
   or,
+  selector,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -44,9 +45,8 @@ import {
 } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { deploymentVersionChecksRouter } from "./deployment-version-checks";
+import { deploymentVersionChecksRouter } from "./deployment-version-checks/router";
 import { deploymentVersionJobsRouter } from "./deployment-version-jobs";
-import { versionDeployRouter } from "./version-deploy";
 import { deploymentVersionMetadataKeysRouter } from "./version-metadata-keys";
 
 const versionChannelRouter = createTRPCRouter({
@@ -221,10 +221,11 @@ export const versionRouter = createTRPCRouter({
         input.deploymentId,
       );
 
-      const filterCheck = SCHEMA.deploymentVersionMatchesCondition(
-        ctx.db,
-        input.filter,
-      );
+      const filterCheck = selector()
+        .query()
+        .deploymentVersions()
+        .where(input.filter)
+        .sql();
 
       const checks = and(deploymentIdCheck, filterCheck);
 
@@ -314,8 +315,6 @@ export const versionRouter = createTRPCRouter({
           };
         }),
     ),
-
-  deploy: versionDeployRouter,
 
   create: protectedProcedure
     .meta({
@@ -520,25 +519,28 @@ export const versionRouter = createTRPCRouter({
       })
       .query(({ input: { versionId, environmentId } }) =>
         db
-          .selectDistinctOn([SCHEMA.releaseJobTrigger.resourceId])
+          .selectDistinctOn([SCHEMA.releaseTarget.resourceId])
           .from(SCHEMA.job)
           .innerJoin(
-            SCHEMA.releaseJobTrigger,
-            eq(SCHEMA.job.id, SCHEMA.releaseJobTrigger.jobId),
+            SCHEMA.releaseJob,
+            eq(SCHEMA.job.id, SCHEMA.releaseJob.jobId),
           )
           .innerJoin(
-            SCHEMA.resource,
-            eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
+            SCHEMA.release,
+            eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
           )
-          .orderBy(
-            SCHEMA.releaseJobTrigger.resourceId,
-            desc(SCHEMA.job.createdAt),
+          .innerJoin(
+            SCHEMA.versionRelease,
+            eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+          )
+          .innerJoin(
+            SCHEMA.releaseTarget,
+            eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
           )
           .where(
             and(
-              eq(SCHEMA.releaseJobTrigger.versionId, versionId),
-              eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
-              isNull(SCHEMA.resource.deletedAt),
+              eq(SCHEMA.releaseTarget.environmentId, environmentId),
+              eq(SCHEMA.versionRelease.versionId, versionId),
             ),
           ),
       ),

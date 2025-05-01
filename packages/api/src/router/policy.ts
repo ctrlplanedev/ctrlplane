@@ -16,6 +16,7 @@ import {
   updatePolicyTarget,
 } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { createPolicyInTx, updatePolicyInTx } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -282,9 +283,13 @@ export const policyRouter = createTRPCRouter({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(createPolicy)
-    .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) => createPolicyInTx(tx, input)),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const policy = await ctx.db.transaction((tx) =>
+        createPolicyInTx(tx, input),
+      );
+      await getQueue(Channel.NewPolicy).add(policy.id, policy);
+      return policy;
+    }),
 
   update: protectedProcedure
     .meta({
@@ -294,9 +299,13 @@ export const policyRouter = createTRPCRouter({
           .on({ type: "policy", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updatePolicy }))
-    .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) => updatePolicyInTx(tx, input.id, input.data)),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const policy = await ctx.db.transaction((tx) =>
+        updatePolicyInTx(tx, input.id, input.data),
+      );
+      await getQueue(Channel.UpdatePolicy).add(policy.id, policy);
+      return policy;
+    }),
 
   delete: protectedProcedure
     .meta({

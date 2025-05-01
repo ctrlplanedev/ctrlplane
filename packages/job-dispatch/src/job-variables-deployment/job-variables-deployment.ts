@@ -120,40 +120,29 @@ export const determineReleaseVariableValue = async (
   directMatch: boolean;
   sensitive: boolean;
 } | null> => {
-  const resourceVariableValue = await utils.getResourceVariableValue(
+  const resourceVariableValueRaw = await utils.getResourceVariableValue(
     tx,
     jobResource.id,
     variableKey,
   );
 
-  if (resourceVariableValue != null) {
-    // Check if resource variable is a reference type
-    if (
-      resourceVariableValue.valueType === "reference" &&
-      resourceVariableValue.reference &&
-      resourceVariableValue.path
-    ) {
-      // Resolve reference type resource variable
-      const resolvedValue = await utils.resolveDeploymentVariableReference<
-        typeof resourceVariableValue.value
-      >(tx, resourceVariableValue.reference, resourceVariableValue.path);
-
-      // If resolution fails, use defaultValue if available
-      const value = resolvedValue ?? resourceVariableValue.defaultValue;
-
+  if (resourceVariableValueRaw != null) {
+    try {
+      const parsedResourceVariable = schema.resourceVariableSchema.parse(
+        resourceVariableValueRaw,
+      );
       return {
-        value,
+        value: parsedResourceVariable,
         directMatch: true,
-        sensitive: resourceVariableValue.sensitive,
+        sensitive: parsedResourceVariable.sensitive ?? false,
       };
+    } catch (error) {
+      console.error(
+        `Error parsing resource variable ${variableKey} for resource ${jobResource.id}:`,
+        error,
+      );
+      return null;
     }
-
-    // Direct value type
-    return {
-      value: resourceVariableValue.value,
-      directMatch: true,
-      sensitive: resourceVariableValue.sensitive,
-    };
   }
 
   const deploymentVariableValues = await utils.getVariableValues(

@@ -21,55 +21,71 @@ import { ResourceVariableDropdown } from "./ResourceVariableDropdown";
 const ResourceVariableSection: React.FC<{
   resourceId: string;
   resourceVariables: SCHEMA.ResourceVariable[];
-}> = ({ resourceId, resourceVariables }) => (
-  <div className="space-y-6 py-1">
-    <div className="flex items-center gap-2 text-lg font-semibold">
-      Resource Variables
-      <CreateResourceVariableDialog
-        resourceId={resourceId}
-        existingKeys={resourceVariables.map((v) => v.key)}
-      >
-        <Button variant="outline" size="icon" className="h-8 w-8">
-          <IconPlus className="h-4 w-4" />
-        </Button>
-      </CreateResourceVariableDialog>
-    </div>
-    <Table className="w-full">
-      <TableHeader className="text-left">
-        <TableRow className="text-sm">
-          <TableHead>Key</TableHead>
-          <TableHead>Value</TableHead>
-          <TableHead />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {resourceVariables.map((v) => (
-          <TableRow key={v.key}>
-            <TableCell className="flex items-center gap-2">
-              <span>{v.key}</span>
-              {v.sensitive && (
-                <IconLock className="h-4 w-4 text-muted-foreground" />
-              )}
-            </TableCell>
-            <TableCell>{v.sensitive ? "*****" : String(v.value)}</TableCell>
-            <TableCell>
-              <div className="flex justify-end">
-                <ResourceVariableDropdown
-                  resourceVariable={v}
-                  existingKeys={resourceVariables.map((v) => v.key)}
-                >
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <IconDots className="h-4 w-4" />
-                  </Button>
-                </ResourceVariableDropdown>
-              </div>
-            </TableCell>
+}> = ({ resourceId, resourceVariables }) => {
+  const directVariables = resourceVariables.filter(
+    (v): v is SCHEMA.DirectResourceVariable => v.valueType === "direct",
+  );
+  const directVariableKeys = directVariables.map((v) => v.key);
+
+  return (
+    <div className="space-y-6 py-1">
+      <div className="flex items-center gap-2 text-lg font-semibold">
+        Resource Variables
+        <CreateResourceVariableDialog
+          resourceId={resourceId}
+          existingKeys={directVariableKeys}
+        >
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <IconPlus className="h-4 w-4" />
+          </Button>
+        </CreateResourceVariableDialog>
+      </div>
+      <Table className="w-full">
+        <TableHeader className="text-left">
+          <TableRow className="text-sm">
+            <TableHead>Key</TableHead>
+            <TableHead>Value</TableHead>
+            <TableHead />
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </div>
-);
+        </TableHeader>
+        <TableBody>
+          {resourceVariables.map((v) => (
+            <TableRow key={v.key}>
+              <TableCell className="flex items-center gap-2">
+                <span>{v.key}</span>
+                {v.sensitive && (
+                  <IconLock className="h-4 w-4 text-muted-foreground" />
+                )}
+                {v.valueType === "reference" && (
+                  <span className="text-xs text-muted-foreground">(ref)</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {v.sensitive
+                  ? "*****"
+                  : v.value != null
+                    ? String(v.value)
+                    : "<unset>"}
+              </TableCell>
+              <TableCell>
+                <div className="flex justify-end">
+                  <ResourceVariableDropdown
+                    resourceVariable={v}
+                    existingKeys={directVariableKeys}
+                  >
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <IconDots className="h-4 w-4" />
+                    </Button>
+                  </ResourceVariableDropdown>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
 
 const VariableRow: React.FC<{
   varKey: string;
@@ -106,6 +122,7 @@ export const VariableContent: React.FC<{
 }> = ({ resourceId, resourceVariables }) => {
   const deployments = api.deployment.byResourceId.useQuery(resourceId);
   const variables = api.deployment.variable.byResourceId.useQuery(resourceId);
+
   return (
     <div className="space-y-8 overflow-y-auto">
       <ResourceVariableSection
@@ -136,14 +153,17 @@ export const VariableContent: React.FC<{
                       const resourceVar = resourceVariables.find(
                         (rv) => rv.key === v.key,
                       );
+                      const displayValue = resourceVar?.value ?? v.value.value;
+                      const displaySensitive = resourceVar?.sensitive ?? false;
+
                       return (
                         <VariableRow
                           key={v.id}
                           varKey={v.key}
-                          value={resourceVar?.value ?? v.value.value}
+                          value={displayValue as string | null | undefined}
                           description={v.description}
                           isResourceVar={resourceVar != null}
-                          sensitive={resourceVar?.sensitive ?? false}
+                          sensitive={displaySensitive}
                         />
                       );
                     })}

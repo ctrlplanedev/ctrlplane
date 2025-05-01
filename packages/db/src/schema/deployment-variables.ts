@@ -15,7 +15,10 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { resourceCondition } from "@ctrlplane/validators/resources";
+import {
+  isValidResourceCondition,
+  resourceCondition,
+} from "@ctrlplane/validators/resources";
 import { VariableConfig } from "@ctrlplane/validators/variables";
 
 import { deployment } from "./deployment.js";
@@ -49,11 +52,6 @@ export type DeploymentVariable = InferSelectModel<typeof deploymentVariable>;
 export type InsertDeploymentVariable = InferInsertModel<
   typeof deploymentVariable
 >;
-export const createDeploymentVariable = createInsertSchema(deploymentVariable, {
-  key: z.string().min(1),
-  config: VariableConfig,
-}).omit({ id: true });
-export const updateDeploymentVariable = createDeploymentVariable.partial();
 
 export const deploymentVariableValue = pgTable(
   "deployment_variable_value",
@@ -96,15 +94,17 @@ export type DeploymentVariableValue = InferSelectModel<
 >;
 export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
-  { resourceSelector: resourceCondition },
+  { resourceSelector: resourceCondition.refine(isValidResourceCondition) },
 )
   .omit({
     id: true,
+    variableId: true,
   })
   .extend({
     default: z.boolean().optional(),
     path: z.array(z.string()).nullable().optional(),
   });
+
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
 
@@ -134,6 +134,26 @@ export const deploymentVariableSet = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.variableSetId) }),
 );
+
+export const createDeploymentVariable = createInsertSchema(deploymentVariable, {
+  key: z.string().min(1),
+  config: VariableConfig,
+})
+  .omit({ id: true, defaultValueId: true, deploymentId: true })
+  .extend({
+    values: z
+      .array(createDeploymentVariableValue)
+      .optional()
+      .refine(
+        (v) => {
+          if (v == null) return true;
+          const numDefault = v.filter((val) => val.default === true).length;
+          return numDefault <= 1;
+        },
+        { message: "Only one default value is allowed" },
+      ),
+  });
+export const updateDeploymentVariable = createDeploymentVariable.partial();
 
 export const deploymentVariableRelationships = relations(
   deploymentVariable,

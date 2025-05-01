@@ -135,6 +135,9 @@ export const PATCH = request()
         ...res,
         metadata: Object.fromEntries(res.metadata.map((m) => [m.key, m.value])),
       };
+
+      await getQueue(Channel.UpdatedResource).add(resource.id, resource);
+
       return NextResponse.json(resourceWithMeta);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));

@@ -166,21 +166,13 @@ export const OverrideJobStatusDialog: React.FC<{
 };
 
 const ForceDeployToResourceDialog: React.FC<{
-  deploymentVersion: { id: string; tag: string };
+  deployment: { id: string; name: string };
   resource: { id: string; name: string };
-  deploymentName: string;
   environmentId: string;
   onClose: () => void;
   children: React.ReactNode;
-}> = ({
-  deploymentVersion,
-  deploymentName,
-  resource,
-  environmentId,
-  onClose,
-  children,
-}) => {
-  const forceDeploy = api.deployment.version.deploy.toResource.useMutation();
+}> = ({ deployment, resource, environmentId, onClose, children }) => {
+  const redeploy = api.redeploy.useMutation();
   const utils = api.useUtils();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -195,11 +187,9 @@ const ForceDeployToResourceDialog: React.FC<{
           </AlertDialogTitle>
           <AlertDialogDescription>
             <span>
-              This will force <Badge variant="secondary">{resource.name}</Badge>{" "}
-              onto{" "}
-              <strong>
-                {deploymentName} {deploymentVersion.tag}
-              </strong>
+              This will force the last comptiable version to{" "}
+              <Badge variant="secondary">{resource.name}</Badge> for
+              <strong>{deployment.name}</strong>
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -208,14 +198,14 @@ const ForceDeployToResourceDialog: React.FC<{
           <div className="flex-grow" />
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
-            disabled={forceDeploy.isPending}
+            disabled={redeploy.isPending}
             onClick={() =>
-              forceDeploy
+              redeploy
                 .mutateAsync({
-                  versionId: deploymentVersion.id,
                   resourceId: resource.id,
+                  deploymentId: deployment.id,
                   environmentId: environmentId,
-                  isForcedRelease: true,
+                  force: true,
                 })
                 .then(() => utils.deployment.version.list.invalidate())
                 .then(() => router.refresh())
@@ -232,29 +222,23 @@ const ForceDeployToResourceDialog: React.FC<{
 };
 
 const RedeployVersionDialog: React.FC<{
-  deploymentVersion: { id: string; tag: string; name: string };
+  deployment: { id: string; name: string };
   environmentId: string;
   resource: { id: string; name: string };
   children: React.ReactNode;
-}> = ({ deploymentVersion, environmentId, resource, children }) => {
+}> = ({ deployment, environmentId, resource, children }) => {
   const router = useRouter();
   const utils = api.useUtils();
-  const redeploy = api.deployment.version.deploy.toResource.useMutation();
+  const redeploy = api.redeploy.useMutation();
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>
-            Redeploy{" "}
-            <Badge variant="secondary" className="h-7 text-lg">
-              {deploymentVersion.name}
-            </Badge>{" "}
-            to {resource.name}?
-          </DialogTitle>
+          <DialogTitle>Redeploy latest version to {resource.name}?</DialogTitle>
           <DialogDescription>
-            This will redeploy the version to {resource.name}.
+            This will redeploy the latest version to {resource.name}.
           </DialogDescription>
         </DialogHeader>
 
@@ -264,9 +248,9 @@ const RedeployVersionDialog: React.FC<{
             onClick={() =>
               redeploy
                 .mutateAsync({
+                  deploymentId: deployment.id,
                   environmentId,
                   resourceId: resource.id,
-                  versionId: deploymentVersion.id,
                 })
                 .then(() => utils.deployment.version.list.invalidate())
                 .then(() => router.refresh())
@@ -282,7 +266,6 @@ const RedeployVersionDialog: React.FC<{
 };
 
 export const JobDropdownMenu: React.FC<{
-  deploymentVersion: { id: string; tag: string; name: string };
   environmentId: string;
   resource: { id: string; name: string; lockedAt: Date | null } | null;
   deployment: SCHEMA.Deployment;
@@ -290,7 +273,6 @@ export const JobDropdownMenu: React.FC<{
   isPassingDeploymentVersionChannel: boolean;
   children: React.ReactNode;
 }> = ({
-  deploymentVersion,
   deployment,
   resource,
   environmentId,
@@ -345,7 +327,7 @@ export const JobDropdownMenu: React.FC<{
 
           {!isActive && isPassingDeploymentVersionChannel && (
             <RedeployVersionDialog
-              deploymentVersion={deploymentVersion}
+              deployment={deployment}
               environmentId={environmentId}
               resource={resource}
             >
@@ -373,8 +355,7 @@ export const JobDropdownMenu: React.FC<{
           </OverrideJobStatusDialog>
 
           <ForceDeployToResourceDialog
-            deploymentVersion={deploymentVersion}
-            deploymentName={deployment.name}
+            deployment={deployment}
             resource={resource}
             environmentId={environmentId}
             onClose={() => setOpen(false)}

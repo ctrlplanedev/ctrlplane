@@ -43,7 +43,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       { refetchInterval: 2_000, enabled: deploymentVersion != null },
     );
 
-  const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
+  const deploy = api.redeploy.useMutation();
   const router = useRouter();
 
   const isLoading = isStatusesLoading || isReleaseLoading;
@@ -106,13 +106,13 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
     return (
       <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
         <Release
+          deployment={deployment}
           workspaceSlug={workspace.slug}
           systemSlug={systemSlug}
           deploymentSlug={deployment.slug}
           versionId={deploymentVersion.id}
           tag={deploymentVersion.tag}
           environment={environment}
-          name={deploymentVersion.tag}
           deployedAt={deploymentVersion.createdAt}
           statuses={statuses.map((s) => s.job.status)}
         />
@@ -151,7 +151,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           </div>
 
           <DeploymentVersionDropdownMenu
-            deploymentVersion={deploymentVersion}
+            deployment={deployment}
             environment={environment}
             isVersionBeingDeployed={false}
           />
@@ -167,11 +167,10 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           deploy
             .mutateAsync({
               environmentId: environment.id,
-              versionId: deploymentVersion.id,
+              deploymentId: deployment.id,
             })
             .then(() => router.refresh())
         }
-        // disabled={deploy.isPending}
       >
         <div className="flex items-center gap-2">
           <div className="rounded-full bg-blue-400 p-1 dark:text-black">
@@ -186,7 +185,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
         </div>
 
         <DeploymentVersionDropdownMenu
-          deploymentVersion={deploymentVersion}
+          deployment={deployment}
           environment={environment}
           isVersionBeingDeployed={false}
         />

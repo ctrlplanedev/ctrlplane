@@ -483,4 +483,33 @@ export const updateResourceVariable = z
     { message: "Invalid combination of fields for the specified value type" },
   );
 
-export type ResourceVariable = InferSelectModel<typeof resourceVariable>;
+const baseVariableSchema = createInsertSchema(resourceVariable);
+
+export const directVariableSchema = baseVariableSchema.extend({
+  id: z.string().uuid(),
+  valueType: z.literal("direct"),
+  value: z.union([z.string(), z.number(), z.boolean()]),
+  reference: z.null().or(z.undefined()),
+  path: z.null().or(z.undefined()),
+  defaultValue: z.any().optional(),
+});
+
+export const referenceVariableSchema = baseVariableSchema.extend({
+  id: z.string().uuid(),
+  valueType: z.literal("reference"),
+  value: z.null().or(z.undefined()),
+  reference: z.string(),
+  path: z.array(z.string()),
+  defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+});
+
+export const resourceVariableSchema = z.discriminatedUnion("valueType", [
+  directVariableSchema,
+  referenceVariableSchema,
+]);
+
+export type DirectResourceVariable = z.infer<typeof directVariableSchema>;
+export type ReferenceResourceVariable = z.infer<typeof referenceVariableSchema>;
+export type ResourceVariable =
+  | DirectResourceVariable
+  | ReferenceResourceVariable;

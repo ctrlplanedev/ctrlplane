@@ -29,19 +29,21 @@ export const ResourceVariableDropdown: React.FC<
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <EditResourceVariableDialog
-          resourceVariable={resourceVariable}
-          existingKeys={existingKeys}
-          onClose={() => setOpen(false)}
-        >
-          <DropdownMenuItem
-            className="flex cursor-pointer items-center gap-2"
-            onSelect={(e) => e.preventDefault()}
+        {resourceVariable.valueType === "direct" && (
+          <EditResourceVariableDialog
+            resourceVariable={resourceVariable}
+            existingKeys={existingKeys}
+            onClose={() => setOpen(false)}
           >
-            <IconPencil className="h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-        </EditResourceVariableDialog>
+            <DropdownMenuItem
+              className="flex cursor-pointer items-center gap-2"
+              onSelect={(e) => e.preventDefault()}
+            >
+              <IconPencil className="h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          </EditResourceVariableDialog>
+        )}
         <DeleteResourceVariableDialog
           variableId={resourceVariable.id}
           resourceId={resourceVariable.resourceId}

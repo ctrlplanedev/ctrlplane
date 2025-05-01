@@ -1,0 +1,24 @@
+system:
+  name: "{{ prefix }}-releases"
+  slug: "{{ prefix }}-releases"
+  description: System for testing releases
+
+resources:
+  - name: "{{ prefix }}-resource"
+    kind: service
+    identifier: "{{ prefix }}-resource"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing releases
+    systemId: "{{ prefix }}-releases"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"

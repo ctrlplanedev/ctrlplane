@@ -1,9 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, inArray, isNull, selector, sql } from "@ctrlplane/db";
+import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const findMatchingReleaseTargets = (
   tx: Tx,
@@ -67,14 +69,12 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
     const { workspaceId } = policy;
 
     try {
-      const rts = await db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         await tx.execute(
           sql`
-            SELECT * FROM ${schema.system}
-            INNER JOIN ${schema.environment} ON ${eq(schema.environment.systemId, schema.system.id)}
-            INNER JOIN ${schema.deployment} ON ${eq(schema.deployment.systemId, schema.system.id)}
-            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.environmentId, schema.environment.id)}
-            WHERE ${eq(schema.system.workspaceId, workspaceId)}
+            SELECT * from ${schema.computedPolicyTargetReleaseTarget}
+            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.id, schema.computedPolicyTargetReleaseTarget.releaseTargetId)}
+            WHERE ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, policyTarget.id)}
             FOR UPDATE NOWAIT
           `,
         );
@@ -93,28 +93,29 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
           policyTarget,
         );
 
-        if (releaseTargets.length === 0) return [];
-        return tx
+        if (releaseTargets.length === 0) return;
+        await tx
           .insert(schema.computedPolicyTargetReleaseTarget)
           .values(releaseTargets)
-          .onConflictDoNothing()
-          .returning();
+          .onConflictDoNothing();
       });
 
-      if (rts.length === 0) return;
+      const releaseTargets = await db
+        .select()
+        .from(schema.releaseTarget)
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseTarget.resourceId, schema.resource.id),
+        )
+        .where(
+          and(
+            isNull(schema.resource.deletedAt),
+            eq(schema.resource.workspaceId, workspaceId),
+          ),
+        )
+        .then((rows) => rows.map((row) => row.release_target));
 
-      const releaseTargets = await db.query.releaseTarget.findMany({
-        where: inArray(
-          schema.releaseTarget.id,
-          rts.map((rt) => rt.releaseTargetId),
-        ),
-      });
-
-      const jobs = releaseTargets.map((rt) => ({
-        name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-        data: rt,
-      }));
-      await getQueue(Channel.EvaluateReleaseTarget).addBulk(jobs);
+      await dispatchEvaluateJobs(releaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {

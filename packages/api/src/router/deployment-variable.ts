@@ -47,7 +47,12 @@ const valueRouter = createTRPCRouter({
           .on({ type: "deployment", id: variable.deploymentId });
       },
     })
-    .input(createDeploymentVariableValue)
+    .input(
+      z.object({
+        variableId: z.string().uuid(),
+        data: createDeploymentVariableValue,
+      }),
+    )
     .mutation(({ ctx, input }) =>
       ctx.db.transaction((tx) => {
         // Prepare the insert values based on input type
@@ -71,11 +76,15 @@ const valueRouter = createTRPCRouter({
 
         return tx
           .insert(deploymentVariableValue)
+<<<<<<< HEAD
           .values(insertValues as any) // Type assertion needed due to schema complexity
+=======
+          .values({ ...input.data, variableId: input.variableId })
+>>>>>>> origin
           .returning()
           .then(takeFirst)
           .then(async (value) => {
-            if (input.default)
+            if (input.data.default)
               await tx
                 .update(deploymentVariable)
                 .set({ defaultValueId: value.id })
@@ -316,16 +325,21 @@ export const deploymentVariableRouter = createTRPCRouter({
           .perform(Permission.DeploymentUpdate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
-    .input(createDeploymentVariable)
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        data: createDeploymentVariable,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const variable = await ctx.db
         .insert(deploymentVariable)
-        .values(input)
+        .values({ ...input.data, deploymentId: input.deploymentId })
         .returning()
         .then(takeFirst);
 
-      if (input.config?.default) {
-        const defaultValue = input.config.default as any;
+      if (input.data.config?.default) {
+        const defaultValue = input.data.config.default as any;
         const isReference =
           typeof defaultValue === "object" &&
           defaultValue &&
@@ -365,7 +379,10 @@ export const deploymentVariableRouter = createTRPCRouter({
 
         const value = await ctx.db
           .insert(deploymentVariableValue)
-          .values(valueData as any)
+          .values({
+            variableId: variable.id,
+            value: input.data.config.default,
+          })
           .returning()
           .then(takeFirst);
 

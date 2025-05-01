@@ -32,6 +32,25 @@ export interface TestYamlFile {
     slug: string;
     description?: string;
     resourceSelector?: any;
+    versions?: Array<{
+      tag: string;
+      name?: string;
+      config?: Record<string, any>;
+      metadata?: Record<string, string>;
+      status?: "building" | "ready" | "failed";
+      message?: string;
+    }>;
+    variables?: Array<{
+      key: string;
+      description?: string;
+      config: Record<string, any>;
+      values?: Array<{
+        value: any;
+        sensitive?: boolean;
+        resourceSelector?: any;
+        default?: boolean;
+      }>;
+    }>;
   }>;
   policies?: Array<{
     name: string;
@@ -76,6 +95,25 @@ export interface ImportedEntities {
     name: string;
     slug: string;
     originalName?: string;
+    versions?: Array<{
+      id: string;
+      name: string;
+      tag: string;
+      status: "building" | "ready" | "failed";
+    }>;
+    variables?: Array<{
+      id: string;
+      key: string;
+      description?: string;
+      config: Record<string, any>;
+      values?: Array<{
+        id: string;
+        value: any;
+        sensitive?: boolean;
+        resourceSelector?: any;
+        default?: boolean;
+      }>;
+    }>;
   }>;
   policies: Array<{
     id: string;
@@ -214,11 +252,88 @@ export async function importEntitiesFromYaml(
         );
       }
 
+      const versions: Array<{
+        id: string;
+        name: string;
+        tag: string;
+        status: "building" | "ready" | "failed";
+      }> = [];
+
+      if (deployment.versions && deployment.versions.length > 0) {
+        for (const version of deployment.versions) {
+          const versionResponse = await api.POST("/v1/deployment-versions", {
+            body: {
+              ...version,
+              deploymentId: deploymentResponse.data!.id,
+            },
+          });
+
+          if (versionResponse.response.status !== 201) {
+            throw new Error(
+              `Failed to create deployment version: ${JSON.stringify(versionResponse.error)}`,
+            );
+          }
+
+          const versionData = versionResponse.data!;
+          versions.push({
+            id: versionData.id,
+            name: versionData.name,
+            tag: versionData.tag,
+            status: versionData.status ?? "ready",
+          });
+        }
+      }
+
+      const variables: Array<{
+        id: string;
+        key: string;
+        description?: string;
+        config: Record<string, any>;
+        values?: Array<{
+          id: string;
+          value: any;
+          sensitive?: boolean;
+          resourceSelector?: any;
+          default?: boolean;
+        }>;
+      }> = [];
+
+      if (deployment.variables && deployment.variables.length > 0) {
+        for (const variable of deployment.variables) {
+          const variableResponse = await api.POST(
+            "/v1/deployments/{deploymentId}/variables",
+            {
+              params: { path: { deploymentId: deploymentResponse.data!.id } },
+              body: {
+                ...variable,
+              },
+            },
+          );
+
+          if (variableResponse.response.status !== 201) {
+            throw new Error(
+              `Failed to create deployment variable: ${JSON.stringify(variableResponse.error)}`,
+            );
+          }
+
+          const variableData = variableResponse.data!;
+          variables.push({
+            id: variableData.id,
+            key: variableData.key,
+            description: variableData.description,
+            config: variableData.config,
+            values: variableData.values,
+          });
+        }
+      }
+
       result.deployments.push({
         id: deploymentResponse.data!.id,
         name: deploymentResponse.data!.name,
         slug: deploymentResponse.data!.slug,
         originalName: deployment.name,
+        versions,
+        variables,
       });
     }
   }
