@@ -47,7 +47,6 @@ import {
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVersionChecksRouter } from "./deployment-version-checks/router";
 import { deploymentVersionJobsRouter } from "./deployment-version-jobs";
-import { versionDeployRouter } from "./version-deploy";
 import { deploymentVersionMetadataKeysRouter } from "./version-metadata-keys";
 
 const versionChannelRouter = createTRPCRouter({
@@ -316,8 +315,6 @@ export const versionRouter = createTRPCRouter({
           };
         }),
     ),
-
-  deploy: versionDeployRouter,
 
   create: protectedProcedure
     .meta({

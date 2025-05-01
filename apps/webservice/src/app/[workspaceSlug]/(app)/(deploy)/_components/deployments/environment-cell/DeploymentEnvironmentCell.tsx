@@ -43,7 +43,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       { refetchInterval: 2_000, enabled: deploymentVersion != null },
     );
 
-  const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
+  const deploy = api.redeploy.useMutation();
   const router = useRouter();
 
   const isLoading = isStatusesLoading || isReleaseLoading;
@@ -167,11 +167,10 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           deploy
             .mutateAsync({
               environmentId: environment.id,
-              versionId: deploymentVersion.id,
+              deploymentId: deployment.id,
             })
             .then(() => router.refresh())
         }
-        // disabled={deploy.isPending}
       >
         <div className="flex items-center gap-2">
           <div className="rounded-full bg-blue-400 p-1 dark:text-black">

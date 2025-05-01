@@ -7,7 +7,6 @@ import {
   IconShip,
   IconTimelineEvent,
   IconVariable,
-  IconVersions,
 } from "@tabler/icons-react";
 
 import {
@@ -117,12 +116,6 @@ export default async function DeploymentLayout(props: {
                   exact
                 >
                   Versions
-                </SidebarLink>
-                <SidebarLink
-                  icon={<IconVersions />}
-                  href={deploymentUrl.channels()}
-                >
-                  Channels
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconVariable />}
