@@ -5,6 +5,7 @@ import type { RunbookVariable } from "./runbook-variable";
 const deployment = z.object({ id: z.string().uuid(), name: z.string() });
 const resource = z.object({
   id: z.string().uuid(),
+  workspaceId: z.string().uuid(),
   name: z.string(),
   config: z.record(z.any()),
 });
