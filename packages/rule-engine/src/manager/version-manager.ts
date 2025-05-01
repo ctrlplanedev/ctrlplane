@@ -24,7 +24,6 @@ import type {
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
-import { ConstantMap, isFilterRule, isPreValidationRule } from "../types.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getRules } from "./version-manager-rules.js";
 
@@ -190,7 +189,7 @@ export class VersionReleaseManager implements ReleaseManager {
     const versions =
       options?.versions ?? (await this.findVersionsForEvaluate());
 
-    const result = await engine.evaluate(ctx, versions);
+    const result = await engine.evaluate(versions);
     return result;
   }
 }

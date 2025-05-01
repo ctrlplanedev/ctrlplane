@@ -91,7 +91,7 @@ export class DeploymentDenyRule implements PreValidationRule {
     return new Date();
   }
 
-  passing(_: RuleEngineContext): PreValidationResult {
+  passing(): PreValidationResult {
     const now = this.getCurrentTime();
 
     // Check if current time matches one of the rrules

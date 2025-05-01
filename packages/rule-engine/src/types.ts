@@ -38,7 +38,6 @@ export type RuleEngineRuleResult<T> = {
 export interface FilterRule<T> {
   name: string;
   filter(
-    context: RuleEngineContext,
     candidates: T[],
   ): RuleEngineRuleResult<T> | Promise<RuleEngineRuleResult<T>>;
 }
@@ -50,7 +49,7 @@ export type PreValidationResult = {
 
 export interface PreValidationRule {
   name: string;
-  passing(context: RuleEngineContext): PreValidationResult;
+  passing(): PreValidationResult;
 }
 
 /**
@@ -91,10 +90,7 @@ export type RuleSelectionResult<T> = {
 };
 
 export type RuleEngine<T> = {
-  evaluate: (
-    context: RuleEngineContext,
-    candidates: T[],
-  ) => Promise<RuleSelectionResult<T>>;
+  evaluate: (candidates: T[]) => Promise<RuleSelectionResult<T>>;
 };
 
 export class ConstantMap<K, V> extends Map<K, V> {

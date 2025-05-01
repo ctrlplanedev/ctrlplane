@@ -61,13 +61,10 @@ export class VersionRuleEngine implements RuleEngine<Version> {
    * @returns A promise resolving to the evaluation result, including chosen version
    * and any rejection reasons
    */
-  async evaluate(
-    context: RuleEngineContext,
-    candidates: Version[],
-  ): Promise<RuleSelectionResult<Version>> {
+  async evaluate(candidates: Version[]): Promise<RuleSelectionResult<Version>> {
     const preValidationRules = this.rules.filter(isPreValidationRule);
     for (const rule of preValidationRules) {
-      const result = rule.passing(context);
+      const result = rule.passing();
 
       if (!result.passing) {
         return {
@@ -83,7 +80,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
     const filterRules = this.rules.filter(isFilterRule);
 
     for (const rule of filterRules) {
-      const result = await rule.filter(context, candidates);
+      const result = await rule.filter(candidates);
 
       // If the rule yields no candidates, we must stop.
       if (result.allowedCandidates.length === 0) {
@@ -105,7 +102,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
     }
 
     // Once all rules pass, select the final version
-    const chosen = this.selectFinalRelease(context, candidates);
+    const chosen = this.selectFinalRelease(candidates);
     return chosen == null
       ? {
           chosenCandidate: null,
@@ -133,10 +130,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
    * @param candidates - The list of version candidates that passed all rules
    * @returns The selected version, or undefined if no suitable version can be chosen
    */
-  private selectFinalRelease(
-    __: RuleEngineContext,
-    candidates: Version[],
-  ): Version | undefined {
+  private selectFinalRelease(candidates: Version[]): Version | undefined {
     if (candidates.length === 0) {
       return undefined;
     }
