@@ -18,19 +18,24 @@ const CONDITION_PARAM = "condition";
 
 export const CombinationsTable: React.FC<{
   workspaceSlug: string;
+  keys: string[];
   combinations: Array<{
     resources: number;
     metadata: Record<string, string | null>;
   }>;
-}> = ({ workspaceSlug, combinations }) => {
+}> = ({ keys, workspaceSlug, combinations }) => {
   const router = useRouter();
   const resourceListUrl = urls.workspace(workspaceSlug).resources().list();
   return (
-    <Table className="w-full">
-      <TableHeader>
-        <TableRow className="text-xs">
-          <TableHead>Combinations</TableHead>
-          <TableHead>Resources</TableHead>
+    <Table className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 relative h-full w-full flex-1 overflow-y-auto">
+      <TableHeader className="sticky top-0 z-10 bg-neutral-900">
+        <TableRow>
+          {keys.map((key, idx) => (
+            <TableHead key={idx}>
+              <span className="text-md font-mono text-white">{key}</span>
+            </TableHead>
+          ))}
+          <TableHead className="text-right text-white">Resources</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -61,20 +66,27 @@ export const CombinationsTable: React.FC<{
                 return router.push(`${resourceListUrl}?${query.toString()}`);
               }}
             >
-              <TableCell>
-                {Object.entries(metadata).map(([key, value]) => (
-                  <div key={key} className="text-nowrap font-mono text-xs">
-                    <span className="text-red-400">{key}:</span>{" "}
-                    {value != null && (
-                      <span className="text-green-300">{value}</span>
-                    )}
-                    {value == null && (
-                      <span className="text-neutral-400">null</span>
-                    )}
-                  </div>
-                ))}
+              {keys.map((key, idx) => {
+                const value = metadata[key];
+                const isBoolean = value === "true" || value === "false";
+                return (
+                  <TableCell key={idx} className="text-nowrap">
+                    <div className="text-nowrap font-mono text-xs">
+                      {isBoolean ? (
+                        <span className="text-blue-300">{value}</span>
+                      ) : (
+                        <span className="text-green-400">{value}</span>
+                      )}
+                      {value == null && (
+                        <span className="text-neutral-500">null</span>
+                      )}
+                    </div>
+                  </TableCell>
+                );
+              })}
+              <TableCell className="text-right">
+                {resources.toLocaleString()}
               </TableCell>
-              <TableCell>{resources}</TableCell>
             </TableRow>
           );
         })}

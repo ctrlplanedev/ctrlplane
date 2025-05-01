@@ -1,8 +1,6 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import { useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { IconLoader2, IconPlus, IconSelector } from "@tabler/icons-react";
+import { IconLoader2, IconSelector } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -12,8 +10,6 @@ import {
   CommandList,
 } from "@ctrlplane/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
-
-import { urls } from "~/app/urls";
 
 type Deployment = SCHEMA.Deployment & {
   versionChannels: SCHEMA.DeploymentVersionChannel[];
@@ -45,17 +41,9 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   const onChange = (channelId: string | null) =>
     updateDeploymentVersionChannel(deployment.id, channelId);
 
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-
   const sortedDeploymentVersionChannels = deployment.versionChannels.sort(
     (a, b) => a.name.localeCompare(b.name),
   );
-
-  const versionChannelsUrl = urls
-    .workspace(workspaceSlug)
-    .system(deployment.system.slug)
-    .deployment(deployment.slug)
-    .channels();
 
   return (
     <div className="flex items-center gap-2">
@@ -78,16 +66,6 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
           <Command>
             <CommandInput placeholder="Search version channels..." />
             <CommandList>
-              {sortedDeploymentVersionChannels.length === 0 && (
-                <CommandItem>
-                  <Link
-                    href={versionChannelsUrl}
-                    className="flex w-full items-center gap-2 hover:text-blue-300"
-                  >
-                    <IconPlus className="h-4 w-4" /> Create channel
-                  </Link>
-                </CommandItem>
-              )}
               {sortedDeploymentVersionChannels.length > 0 &&
                 sortedDeploymentVersionChannels.map((rc) => (
                   <CommandItem

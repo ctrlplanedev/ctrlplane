@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { z } from "zod";
@@ -74,6 +75,8 @@ const schema = z.object({
 export const CreateRelationshipDialog: React.FC<
   CreateRelationshipDialogProps
 > = ({ workspaceId }) => {
+  const [currentMetadataKey, setCurrentMetadataKey] = useState("");
+
   const form = useForm({
     schema,
     defaultValues: {
@@ -313,48 +316,68 @@ export const CreateRelationshipDialog: React.FC<
               <FormField
                 control={form.control}
                 name="metadataKeys"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="flex flex-wrap gap-2">
-                        {field.value.map((key, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1"
-                          >
-                            <span>{key}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newKeys = [...field.value];
-                                newKeys.splice(index, 1);
-                                field.onChange(newKeys);
-                              }}
-                              className="ml-1 text-muted-foreground hover:text-foreground"
+                render={({ field }) => {
+                  const addKey = () => {
+                    const value = currentMetadataKey.trim();
+                    if (value && !field.value.includes(value)) {
+                      field.onChange([...field.value, value]);
+                      setCurrentMetadataKey("");
+                    }
+                  };
+
+                  return (
+                    <FormItem>
+                      <FormControl>
+                        <div className="flex flex-wrap items-start gap-2">
+                          {field.value.map((key, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1"
                             >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                        <Input
-                          className="!mt-0 flex-1"
-                          placeholder="Type and press Enter to add metadata key"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              const value = e.currentTarget.value.trim();
-                              if (value && !field.value.includes(value)) {
-                                field.onChange([...field.value, value]);
-                                e.currentTarget.value = "";
+                              <span>{key}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newKeys = [...field.value];
+                                  newKeys.splice(index, 1);
+                                  field.onChange(newKeys);
+                                }}
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                          <div className="flex min-w-[200px] flex-1 items-center gap-2">
+                            <Input
+                              className="!mt-0 flex-1"
+                              placeholder="Enter metadata key"
+                              value={currentMetadataKey}
+                              onChange={(e) =>
+                                setCurrentMetadataKey(e.target.value)
                               }
-                            }
-                          }}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  addKey();
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={addKey}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
 

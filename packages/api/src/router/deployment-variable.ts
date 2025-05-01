@@ -47,16 +47,40 @@ const valueRouter = createTRPCRouter({
           .on({ type: "deployment", id: variable.deploymentId });
       },
     })
-    .input(createDeploymentVariableValue)
+    .input(
+      z.object({
+        variableId: z.string().uuid(),
+        data: createDeploymentVariableValue,
+      }),
+    )
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) =>
-        tx
+      ctx.db.transaction((tx) => {
+        // Prepare the insert values based on input type
+        const insertValues: Partial<DeploymentVariableValue> = {
+          variableId: input.variableId,
+          resourceSelector: input.data.resourceSelector ?? null,
+          sensitive: input.data.sensitive ?? false,
+        };
+
+        // Handle reference type variables
+        if (input.data.reference && input.data.path) {
+          insertValues.valueType = "reference";
+          insertValues.reference = input.data.reference;
+          insertValues.path = input.data.path;
+          insertValues.value = null; // Value will be resolved during access
+        } else {
+          // Direct value type
+          insertValues.valueType = "direct";
+          insertValues.value = input.data.value;
+        }
+
+        return tx
           .insert(deploymentVariableValue)
-          .values(input)
+          .values({ ...input.data, variableId: input.variableId })
           .returning()
           .then(takeFirst)
           .then(async (value) => {
-            if (input.default)
+            if (input.data.default)
               await tx
                 .update(deploymentVariable)
                 .set({ defaultValueId: value.id })
@@ -68,8 +92,8 @@ const valueRouter = createTRPCRouter({
               .then(takeFirst);
             await updateDeploymentVariableQueue.add(variable.id, variable);
             return value;
-          }),
-      ),
+          });
+      }),
     ),
 
   update: protectedProcedure
@@ -297,20 +321,63 @@ export const deploymentVariableRouter = createTRPCRouter({
           .perform(Permission.DeploymentUpdate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
-    .input(createDeploymentVariable)
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        data: createDeploymentVariable,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const variable = await ctx.db
         .insert(deploymentVariable)
-        .values(input)
+        .values({ ...input.data, deploymentId: input.deploymentId })
         .returning()
         .then(takeFirst);
 
-      if (input.config?.default) {
+      if (input.data.config?.default) {
+        const defaultValue = input.data.config.default as any;
+        const isReference =
+          typeof defaultValue === "object" &&
+          defaultValue &&
+          "reference" in defaultValue &&
+          "path" in defaultValue;
+
+        const valueData: Partial<DeploymentVariableValue> = {
+          variableId: variable.id,
+          sensitive: false,
+        };
+
+        if (isReference) {
+          if (!defaultValue.reference || !Array.isArray(defaultValue.path)) {
+            throw new Error(
+              "Invalid reference configuration: both reference and path are required",
+            );
+          }
+
+          const referencedResource = await ctx.db.query.resource.findFirst({
+            where: eq(resource.identifier, defaultValue.reference),
+          });
+
+          if (!referencedResource) {
+            throw new Error(
+              `Referenced resource not found: ${defaultValue.reference}`,
+            );
+          }
+
+          valueData.valueType = "reference";
+          valueData.reference = defaultValue.reference;
+          valueData.path = defaultValue.path;
+          valueData.value = null;
+        } else {
+          valueData.valueType = "direct";
+          valueData.value = defaultValue;
+        }
+
         const value = await ctx.db
           .insert(deploymentVariableValue)
           .values({
             variableId: variable.id,
-            value: input.config.default,
+            value: input.data.config.default,
           })
           .returning()
           .then(takeFirst);

@@ -74,12 +74,6 @@ export const groupResourcesByHook = async (
       !resourcesToInsert.some((r) => r.identifier === existing.identifier),
   );
 
-  console.log("toIgnore", toIgnore);
-  console.log("existingResources", existingResources);
-  console.log("actionableExistingResources", actionableExistingResources);
-  console.log("toDelete", toDelete);
-  console.log("resourcesToInsert", resourcesToInsert);
-
   // Resources in the new set that don't exist in DB should be inserted
   const toInsert = resourcesToInsert.filter(
     (r) =>

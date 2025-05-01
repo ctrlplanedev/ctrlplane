@@ -96,8 +96,6 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
             <ResourceDeploymentMenu
               deploymentId={stats.id}
               deploymentName={stats.name}
-              versionId={data[0].version.id}
-              versionTag={data[0].version.tag}
               environmentId={data[0].environment.id}
               jobStatus={data[0].job.status as JobStatus}
             />

@@ -3,7 +3,6 @@ import type { z } from "zod";
 
 import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
 
 function getDatePartsInTimeZone(date: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -177,8 +176,6 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
           "requiredApprovalsCount",
         ]),
       });
-
-  getQueue(Channel.NewPolicy).add(policy.id, policy);
 
   return {
     ...policy,

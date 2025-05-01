@@ -15,6 +15,23 @@ import { api } from "~/trpc/server";
 import { PageHeader } from "../../../_components/PageHeader";
 import { ResourcePageContent } from "./ResourcePageContent";
 
+export async function generateMetadata(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
+  const params = await props.params;
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (!workspace) return { title: "Resources" };
+
+  return {
+    title: `Resources - ${workspace.name}`,
+    description: `View and manage resources in the ${workspace.name} workspace`,
+    openGraph: {
+      title: `Resources - ${workspace.name}`,
+      description: `View and manage resources in the ${workspace.name} workspace`,
+    },
+  };
+}
+
 export default async function ResourcesPage(props: {
   params: Promise<{ workspaceSlug: string }>;
   searchParams: Promise<{ view?: string }>;

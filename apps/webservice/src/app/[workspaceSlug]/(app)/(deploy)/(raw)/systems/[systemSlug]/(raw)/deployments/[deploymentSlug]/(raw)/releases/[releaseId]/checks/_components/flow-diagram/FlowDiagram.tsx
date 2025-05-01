@@ -2,32 +2,29 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { NodeTypes } from "reactflow";
-import ReactFlow, { useEdgesState, useNodesState } from "reactflow";
+import ReactFlow, { MarkerType, useEdgesState, useNodesState } from "reactflow";
+import colors from "tailwindcss/colors";
 
 import { ArrowEdge } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ArrowEdge";
-import {
-  createEdgesFromPolicyDeployment,
-  createEdgesFromPolicyToEnvironment,
-  createEdgesWherePolicyHasNoEnvironment,
-} from "~/app/[workspaceSlug]/(app)/_components/reactflow/edges";
 import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
-import { EnvironmentNode } from "./EnvironmentNode";
-import { PolicyNode } from "./FlowPolicyNode";
-import { TriggerNode } from "./TriggerNode";
+import { EnvironmentNode } from "./nodes/EnvironmentNode";
+import { TriggerNode } from "./nodes/TriggerNode";
 
 const nodeTypes: NodeTypes = {
   environment: EnvironmentNode,
-  policy: PolicyNode,
   trigger: TriggerNode,
 };
+
+const markerEnd = {
+  type: MarkerType.Arrow,
+  color: colors.neutral[700],
+};
+
 export const FlowDiagram: React.FC<{
   workspace: SCHEMA.Workspace;
-  systemId: string;
   deploymentVersion: SCHEMA.DeploymentVersion;
   envs: Array<SCHEMA.Environment>;
-  policies: Array<SCHEMA.EnvironmentPolicy>;
-  policyDeployments: Array<SCHEMA.EnvironmentPolicyDeployment>;
-}> = ({ workspace, deploymentVersion, envs, policies, policyDeployments }) => {
+}> = ({ workspace, deploymentVersion, envs }) => {
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>([
     {
       id: "trigger",
@@ -35,21 +32,7 @@ export const FlowDiagram: React.FC<{
       position: { x: 0, y: 0 },
       data: { ...deploymentVersion, label: deploymentVersion.name },
     },
-    ...policies.map((policy) => ({
-      id: policy.id,
-      type: "policy",
-      position: { x: 0, y: 0 },
-      data: {
-        ...policy,
-        policyDeployments: policyDeployments.filter(
-          (p) => p.policyId === policy.id,
-        ),
-        label: policy.name,
-        deploymentVersion,
-      },
-    })),
     ...envs.map((env) => {
-      const policy = policies.find((p) => p.id === env.policyId);
       return {
         id: env.id,
         type: "environment",
@@ -61,7 +44,6 @@ export const FlowDiagram: React.FC<{
           deploymentId: deploymentVersion.deploymentId,
           environmentId: env.id,
           environmentName: env.name,
-          policy,
           label: env.name,
         },
       };
@@ -69,9 +51,12 @@ export const FlowDiagram: React.FC<{
   ]);
 
   const [edges, __, onEdgesChange] = useEdgesState([
-    ...createEdgesFromPolicyToEnvironment(envs),
-    ...createEdgesWherePolicyHasNoEnvironment(policies, policyDeployments),
-    ...createEdgesFromPolicyDeployment(policyDeployments),
+    ...envs.map((env) => ({
+      id: env.id,
+      source: "trigger",
+      target: env.id,
+      markerEnd,
+    })),
   ]);
 
   const { setReactFlowInstance } = useLayoutAndFitView(nodes, {

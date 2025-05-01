@@ -22,7 +22,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
     "with-env": "dotenv -e ../../.env --",
-    "test": "vitest"
+    "test": "pnpm with-env vitest"
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",

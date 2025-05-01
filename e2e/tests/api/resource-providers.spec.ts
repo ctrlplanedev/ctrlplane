@@ -109,8 +109,7 @@ test.describe("Resource Provider API", () => {
     expect(resource2Response.response.status).toBe(200);
     expect(resource2Response.data?.name).toBe(resourceName2);
     expect(resource2Response.data?.variables).toBeDefined();
-    expect(resource2Response.data?.variables?.[0]?.key).toBe("test-var");
-    expect(resource2Response.data?.variables?.[0]?.value).toBe("test-value");
+    expect(resource2Response.data?.variables?.["test-var"]).toBe("test-value");
   });
 
   test("delete resources by omitting them from set payload", async ({

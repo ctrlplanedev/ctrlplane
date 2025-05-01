@@ -118,8 +118,8 @@ export const PATCH = request()
         .then(takeFirst);
 
       await getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
-        ...updatedDeployment,
-        oldSelector: deployment.resourceSelector,
+        new: updatedDeployment,
+        old: deployment,
       });
 
       return NextResponse.json(updatedDeployment);

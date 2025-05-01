@@ -7,7 +7,7 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { ReactFlowProvider } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ReactFlowProvider";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
-import { FlowDiagram } from "./_components/flow-diagram/FlowDiagram";
+import { FlowDiagram } from "../checks/_components/flow-diagram/FlowDiagram";
 
 type PageProps = {
   params: Promise<{
@@ -44,16 +44,9 @@ export default async function ChecksPage(props: PageProps) {
   if (deploymentVersion == null || deployment == null) return notFound();
 
   const { system } = deployment;
-  const environmentsPromise = api.environment.bySystemId(system.id);
-  const policiesPromise = api.environment.policy.bySystemId(system.id);
-  const policyDeploymentsPromise = api.environment.policy.deployment.bySystemId(
-    system.id,
+  const environments = await api.deployment.version.checks.environmentsToCheck(
+    deployment.id,
   );
-  const [environments, policies, policyDeployments] = await Promise.all([
-    environmentsPromise,
-    policiesPromise,
-    policyDeploymentsPromise,
-  ]);
   return (
     <div className="relative h-full">
       <SidebarTrigger
@@ -67,9 +60,6 @@ export default async function ChecksPage(props: PageProps) {
           workspace={system.workspace}
           deploymentVersion={deploymentVersion}
           envs={environments}
-          systemId={system.id}
-          policies={policies}
-          policyDeployments={policyDeployments}
         />
       </ReactFlowProvider>
     </div>

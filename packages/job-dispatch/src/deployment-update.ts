@@ -194,8 +194,8 @@ export const updateDeployment = async (
     );
 
   getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
-    ...updatedDeployment,
-    oldSelector: prevDeployment.resourceSelector,
+    new: updatedDeployment,
+    old: prevDeployment,
   });
 
   if (

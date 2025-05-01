@@ -196,7 +196,6 @@ const deployment = (params: DeploymentParams) => {
     workflow: () => buildUrl(...base, "workflow"),
     releases: () => buildUrl(...base),
     release: (releaseId: string) => release({ ...params, releaseId }),
-    channels: () => buildUrl(...base, "channels"),
     variables: () => buildUrl(...base, "variables"),
     hooks: () => buildUrl(...base, "hooks"),
   };

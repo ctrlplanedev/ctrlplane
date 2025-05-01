@@ -18,9 +18,18 @@ import { CreateMetadataGroupDialog } from "./CreateMetadataGroupDialog";
 import { ResourceGroupsTable } from "./ResourceGroupTable";
 import { ResourceMetadataGroupsGettingStarted } from "./ResourceMetadataGroupsGettingStarted";
 
-export const metadata = {
-  title: "Resource Groupings - Ctrlplane",
-};
+export async function generateMetadata(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
+  const params = await props.params;
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (!workspace) return { title: "Resource Groupings" };
+
+  return {
+    title: `Resource Groupings - ${workspace.name}`,
+    description: `View and manage resource groupings in the ${workspace.name} workspace`,
+  };
+}
 
 export default async function GroupingsPage(props: {
   params: Promise<{ workspaceSlug: string }>;

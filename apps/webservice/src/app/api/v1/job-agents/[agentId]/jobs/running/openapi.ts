@@ -28,8 +28,14 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  type: "array",
-                  items: { type: "object", $ref: "#/components/schemas/Job" },
+                  type: "object",
+                  properties: {
+                    jobs: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Job" },
+                    },
+                  },
+                  required: ["jobs"],
                 },
               },
             },

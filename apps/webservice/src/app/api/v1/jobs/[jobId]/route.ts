@@ -9,8 +9,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
 import { request } from "~/app/api/v1/middleware";
-import { getLegacyJob } from "./legacy-job";
-import { getNewEngineJob } from "./new-engine-job";
+import { getJob } from "./get-job";
 
 export const GET = request()
   .use(authn)
@@ -24,12 +23,7 @@ export const GET = request()
     async ({ db }, { params }) => {
       const { jobId } = await params;
 
-      const [newEngine, legacy] = await Promise.all([
-        getNewEngineJob(db, jobId),
-        getLegacyJob(db, jobId),
-      ]);
-
-      const job = newEngine ?? legacy;
+      const job = await getJob(db, jobId);
       if (job == null)
         return NextResponse.json(
           { error: "Job not found" },

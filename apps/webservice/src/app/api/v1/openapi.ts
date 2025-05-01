@@ -261,6 +261,7 @@ export const openapi: Swagger.SwaggerV3 = {
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
           workspaceId: { type: "string", format: "uuid" },
+          providerId: { type: "string", format: "uuid" },
         },
         required: [
           "id",

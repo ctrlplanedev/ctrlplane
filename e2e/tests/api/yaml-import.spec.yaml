@@ -78,6 +78,15 @@ deployments:
           operator: equals
           key: service
           value: api
+    variables:
+      - key: API_KEY
+        description: API key
+        config:
+          type: string
+          inputType: text
+        values:
+          - value: "sample-api-key"
+            default: true
 
   - name: Worker Deployment
     slug: worker-deployment

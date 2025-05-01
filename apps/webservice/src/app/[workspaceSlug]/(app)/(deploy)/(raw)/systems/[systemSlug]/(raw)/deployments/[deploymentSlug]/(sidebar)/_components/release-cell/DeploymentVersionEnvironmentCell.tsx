@@ -152,11 +152,9 @@ const DeploymentVersionEnvironmentCell: React.FC<
         <DepVersion
           workspaceSlug={workspaceSlug}
           systemSlug={systemSlug}
-          deploymentSlug={deployment.slug}
-          versionId={deploymentVersion.id}
-          tag={deploymentVersion.tag}
+          deployment={deployment}
+          version={deploymentVersion}
           environment={environment}
-          name={deploymentVersion.name}
           deployedAt={deploymentVersion.createdAt}
           statuses={statuses.map((s) => s.job.status)}
         />
@@ -228,7 +226,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
           </div>
 
           <DeploymentVersionDropdownMenu
-            deploymentVersion={deploymentVersion}
+            deployment={deployment}
             environment={environment}
             isVersionBeingDeployed={false}
           />
@@ -237,10 +235,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
     );
 
   return (
-    <DeployButton
-      deploymentVersionId={deploymentVersion.id}
-      environmentId={environment.id}
-    />
+    <DeployButton deploymentId={deployment.id} environmentId={environment.id} />
   );
 };
 

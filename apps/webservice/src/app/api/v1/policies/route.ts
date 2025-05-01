@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
 
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { createPolicyInTx } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -25,16 +26,16 @@ export const POST = request()
   )
   .handle<{ body: z.infer<typeof SCHEMA.createPolicy> }>(
     async ({ db, body }) => {
-      const policy = await db
-        .transaction((tx) => createPolicyInTx(tx, body))
-        .catch((error) => {
-          log.error("Failed to create policy", { error });
-          return NextResponse.json(
-            { error: "Failed to create policy" },
-            { status: INTERNAL_SERVER_ERROR },
-          );
-        });
-
-      return NextResponse.json(policy);
+      try {
+        const policy = await db.transaction((tx) => createPolicyInTx(tx, body));
+        await getQueue(Channel.NewPolicy).add(policy.id, policy);
+        return NextResponse.json(policy);
+      } catch (error) {
+        log.error("Failed to create policy", { error });
+        return NextResponse.json(
+          { error: "Failed to create policy" },
+          { status: INTERNAL_SERVER_ERROR },
+        );
+      }
     },
   );

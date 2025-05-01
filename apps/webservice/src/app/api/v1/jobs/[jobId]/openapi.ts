@@ -15,7 +15,7 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "object",
             properties: {
               release: { $ref: "#/components/schemas/Release" },
-              deploymentVersion: {
+              version: {
                 $ref: "#/components/schemas/DeploymentVersion",
               },
               deployment: { $ref: "#/components/schemas/Deployment" },
@@ -27,9 +27,7 @@ export const openapi: Swagger.SwaggerV3 = {
                 type: "object",
                 nullable: true,
                 properties: {
-                  id: {
-                    type: "string",
-                  },
+                  id: { type: "string" },
                   status: {
                     type: "string",
                     enum: ["pending", "approved", "rejected"],
@@ -40,12 +38,8 @@ export const openapi: Swagger.SwaggerV3 = {
                     description:
                       "Null when status is pending, contains approver details when approved or rejected",
                     properties: {
-                      id: {
-                        type: "string",
-                      },
-                      name: {
-                        type: "string",
-                      },
+                      id: { type: "string" },
+                      name: { type: "string" },
                     },
                     required: ["id", "name"],
                   },

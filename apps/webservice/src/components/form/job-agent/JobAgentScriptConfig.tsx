@@ -38,7 +38,7 @@ export const JobAgentScriptConfig: React.FC<{
   }, [type, value, onChange]);
 
   return (
-    <div className="space-y-4 p-2">
+    <div className="w-full space-y-4 p-2">
       <Editor
         height="500px"
         defaultLanguage={type}

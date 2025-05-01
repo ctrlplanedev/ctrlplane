@@ -101,3 +101,63 @@ export const getFirstMatchedResource = (
       ),
     ),
   ).then((res) => res.find(isPresent));
+
+/**
+ * Resolves a reference value by following a path to extract a specific value
+ * from a referenced resource or object.
+ *
+ * @param tx Database transaction
+ * @param reference The identifier of the referenced resource
+ * @param path Array of keys to traverse in the referenced object
+ * @returns The resolved value or null if the reference or path is invalid
+ */
+export const resolveDeploymentVariableReference = async <T = unknown>(
+  tx: Tx,
+  reference: string,
+  path: string[],
+): Promise<T | null> => {
+  // Get the referenced resource by its identifier
+  const resource = await tx
+    .select()
+    .from(SCHEMA.resource)
+    .where(
+      and(
+        eq(SCHEMA.resource.identifier, reference),
+        isNull(SCHEMA.resource.deletedAt),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (!resource) return null;
+
+  // Start with the resource's config
+  let currentValue: unknown = resource.config;
+
+  // Traverse the path to extract the value
+  for (const key of path) {
+    if (currentValue == null || typeof currentValue !== "object") {
+      return null; // Path traversal failed
+    }
+
+    currentValue = (currentValue as Record<string, unknown>)[key];
+  }
+
+  return currentValue as T;
+};
+
+/**
+ * Gets a deployment variable value by its ID and checks if it's a reference type
+ *
+ * @param tx Database transaction
+ * @param variableValueId The ID of the variable value to retrieve
+ * @returns The variable value object
+ */
+export const getDeploymentVariableValueById = (
+  tx: Tx,
+  variableValueId: string,
+) =>
+  tx
+    .select()
+    .from(SCHEMA.deploymentVariableValue)
+    .where(eq(SCHEMA.deploymentVariableValue.id, variableValueId))
+    .then(takeFirstOrNull);

@@ -118,7 +118,7 @@ export const JobAgentSection: React.FC<{
   deploymentId: string;
 }> = (props) => {
   return (
-    <div className="container m-8 mx-auto flex max-w-3xl justify-center">
+    <div className="m-8 max-w-3xl justify-center">
       <div className="space-y-4">
         <div id="job-agent">
           <h2 className="">Job Agent</h2>

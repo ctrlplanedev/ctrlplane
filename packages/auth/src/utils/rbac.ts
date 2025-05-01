@@ -431,6 +431,28 @@ const getPolicyScopes = async (id: string) => {
   ];
 };
 
+const getReleaseTargetScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(releaseTarget)
+    .innerJoin(resource, eq(releaseTarget.resourceId, resource.id))
+    .innerJoin(deployment, eq(releaseTarget.deploymentId, deployment.id))
+    .innerJoin(environment, eq(releaseTarget.environmentId, environment.id))
+    .innerJoin(system, eq(deployment.systemId, system.id))
+    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+    .where(eq(releaseTarget.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "releaseTarget" as const, id: result.release_target.id },
+    { type: "resource" as const, id: result.resource.id },
+    { type: "environment" as const, id: result.environment.id },
+    { type: "deployment" as const, id: result.deployment.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 type Scope = { type: ScopeType; id: string };
 export const scopeHandlers: Record<
   ScopeType,
@@ -453,6 +475,7 @@ export const scopeHandlers: Record<
   jobAgent: getJobAgentScopes,
   job: getJobScopes,
   policy: getPolicyScopes,
+  releaseTarget: getReleaseTargetScopes,
 };
 
 const fetchScopeHierarchyForResource = async (resource: {

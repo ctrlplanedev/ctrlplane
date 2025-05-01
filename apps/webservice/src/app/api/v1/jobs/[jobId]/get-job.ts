@@ -7,10 +7,12 @@ import { variablesAES256 } from "@ctrlplane/secrets";
 
 const log = logger.child({
   module: "v1/jobs/[jobId]",
-  function: "getNewEngineJob",
+  function: "getJob",
 });
 
-export const getNewEngineJob = async (db: Tx, jobId: string) => {
+export const getJob = async (db: Tx, jobId: string) => {
+  log.info("Getting job", { jobId });
+
   try {
     const jobResult = await db.query.job.findFirst({
       where: eq(schema.job.id, jobId),
@@ -49,11 +51,22 @@ export const getNewEngineJob = async (db: Tx, jobId: string) => {
       },
     });
 
-    if (jobResult == null) return null;
+    if (jobResult == null) {
+      log.warn("Job not found", { jobId });
+      return null;
+    }
+
+    log.debug("Found job", {
+      jobId,
+      status: jobResult.status,
+    });
 
     const { releaseJob, ...job } = jobResult;
+
     const { release } = releaseJob;
+
     const { versionRelease, variableSetRelease } = release;
+
     const { version, releaseTarget } = versionRelease;
 
     const { values } = variableSetRelease;
@@ -63,16 +76,26 @@ export const getNewEngineJob = async (db: Tx, jobId: string) => {
         const strval = String(value);
         const resolvedValue = sensitive
           ? variablesAES256().decrypt(strval)
-          : strval;
+          : value;
         return [key, resolvedValue];
       }),
     );
 
     const { environment, resource, deployment } = releaseTarget;
+
     const metadata = Object.fromEntries(
       resource.metadata.map(({ key, value }) => [key, value]),
     );
     const resourceWithMetadata = { ...resource, metadata };
+
+    log.debug("Successfully processed job data", {
+      jobId,
+      variableCount: values.length,
+      resourceId: resource.id,
+      environmentId: environment.id,
+      deploymentId: deployment.id,
+      versionId: version.id,
+    });
 
     return {
       ...job,
@@ -80,11 +103,15 @@ export const getNewEngineJob = async (db: Tx, jobId: string) => {
       resource: resourceWithMetadata,
       environment,
       deployment,
-      deploymentVersion: version,
-      release: { ...release, version: version.tag },
+      version,
+      release,
     };
   } catch (error) {
-    log.error("Error getting new engine job", { error });
+    log.error("Error getting job", {
+      error,
+      jobId,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    });
     return null;
   }
 };

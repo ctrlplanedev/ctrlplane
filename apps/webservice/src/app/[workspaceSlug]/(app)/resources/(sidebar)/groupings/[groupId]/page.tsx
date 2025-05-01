@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { IconMenu2 } from "@tabler/icons-react";
 
-import { Badge } from "@ctrlplane/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
 import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
@@ -17,6 +18,23 @@ import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { CreateMetadataGroupDialog } from "../CreateMetadataGroupDialog";
 import { CombinationsTable } from "./CombincationsTable";
+
+export async function generateMetadata(props: {
+  params: Promise<{ workspaceSlug: string; groupId: string }>;
+}) {
+  const params = await props.params;
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (!workspace) return { title: "Resource Metadata Group" };
+
+  const metadataGroup = await api.resource.metadataGroup
+    .byId(params.groupId)
+    .catch(notFound);
+
+  return {
+    title: `${metadataGroup.name} - Resource Metadata Group - ${workspace.name}`,
+    description: `View and manage the ${metadataGroup.name} resource metadata group in the ${workspace.name} workspace`,
+  };
+}
 
 export default async function ResourceMetadataGroupPages(props: {
   params: Promise<{ workspaceSlug: string; groupId: string }>;
@@ -29,7 +47,7 @@ export default async function ResourceMetadataGroupPages(props: {
     .byId(groupId)
     .catch(notFound);
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <PageHeader className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger name={Sidebars.Resources}>
@@ -38,6 +56,14 @@ export default async function ResourceMetadataGroupPages(props: {
           <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink
+                  href={`/${params.workspaceSlug}/resources/groupings`}
+                >
+                  Groupings
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
               <BreadcrumbItem className="hidden md:block">
                 <BreadcrumbPage>Groupings</BreadcrumbPage>
               </BreadcrumbItem>
@@ -50,24 +76,12 @@ export default async function ResourceMetadataGroupPages(props: {
           </Button>
         </CreateMetadataGroupDialog>
       </PageHeader>
-      <div>
-        <div className="flex items-center gap-3 border-b p-4 px-8 text-xl">
-          <span className="">{metadataGroup.name}</span>
-          <Badge
-            className="rounded-full text-muted-foreground"
-            variant="outline"
-          >
-            {metadataGroup.combinations.length}
-          </Badge>
-        </div>
 
-        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-110px)] w-full overflow-auto">
-          <CombinationsTable
-            workspaceSlug={workspaceSlug}
-            combinations={metadataGroup.combinations}
-          />
-        </div>
-      </div>
+      <CombinationsTable
+        workspaceSlug={workspaceSlug}
+        keys={metadataGroup.keys}
+        combinations={metadataGroup.combinations}
+      />
     </div>
   );
 }

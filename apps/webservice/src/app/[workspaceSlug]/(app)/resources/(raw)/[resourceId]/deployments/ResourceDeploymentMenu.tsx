@@ -33,16 +33,13 @@ import { api } from "~/trpc/react";
 type ResourceDeploymentMenuProps = {
   deploymentId: string;
   deploymentName: string;
-  versionId?: string;
-  versionTag?: string;
   environmentId: string;
   jobStatus?: JobStatus | null;
 };
 
 export const ResourceDeploymentMenu: React.FC<ResourceDeploymentMenuProps> = ({
+  deploymentId,
   deploymentName,
-  versionId,
-  versionTag,
   environmentId,
   jobStatus,
 }) => {
@@ -51,7 +48,7 @@ export const ResourceDeploymentMenu: React.FC<ResourceDeploymentMenuProps> = ({
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const redeploy = api.deployment.version.deploy.toResource.useMutation({
+  const redeploy = api.redeploy.useMutation({
     onSuccess: () => {
       router.refresh();
       setDialogOpen(false);
@@ -59,9 +56,6 @@ export const ResourceDeploymentMenu: React.FC<ResourceDeploymentMenuProps> = ({
   });
 
   const isActive = jobStatus ? activeStatus.includes(jobStatus) : false;
-
-  // No actions available without a version
-  if (versionId == null) return null;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -105,10 +99,10 @@ export const ResourceDeploymentMenu: React.FC<ResourceDeploymentMenuProps> = ({
             <DialogContent onClick={(e) => e.stopPropagation()}>
               <DialogHeader>
                 <DialogTitle>
-                  Redeploy {deploymentName} {versionTag}
+                  Redeploy latest version of {deploymentName}
                 </DialogTitle>
                 <DialogDescription>
-                  This will redeploy the version to this resource.
+                  This will redeploy the latest version to this resource.
                 </DialogDescription>
               </DialogHeader>
 
@@ -117,7 +111,7 @@ export const ResourceDeploymentMenu: React.FC<ResourceDeploymentMenuProps> = ({
                   disabled={redeploy.isPending}
                   onClick={() =>
                     redeploy.mutate({
-                      versionId,
+                      deploymentId,
                       resourceId,
                       environmentId,
                     })

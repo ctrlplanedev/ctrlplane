@@ -2,90 +2,61 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
-  IconChevronDown,
-  IconFilter,
-  IconMenu2,
   IconPlant,
-  IconPlus,
   IconSearch,
   IconShip,
-  IconSortAscending,
-  IconSortDescending,
   IconTopologyComplex,
 } from "@tabler/icons-react";
 import { useDebounce } from "react-use";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from "@ctrlplane/ui/breadcrumb";
-import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
 import { Input } from "@ctrlplane/ui/input";
-import { Separator } from "@ctrlplane/ui/separator";
-import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
-import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(app)/_components/deployments/CreateDeployment";
-import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { api } from "~/trpc/react";
-import { Sidebars } from "../../../../sidebars";
-import { SystemDeploymentSkeleton } from "./_components/system-deployment-table/SystemDeploymentSkeleton";
+import { EmptySystemsInfo } from "./_components/EmptySystemsInfo";
+import { SortDropdown } from "./_components/SortDropdown";
+import {
+  SystemDeploymentSkeleton,
+  SystemHeaderSkeleton,
+  SystemTableSkeleton,
+} from "./_components/system-deployment-table/SystemDeploymentSkeleton";
 import { SystemDeploymentTable } from "./_components/system-deployment-table/SystemDeploymentTable";
-import { CreateSystemDialog } from "./CreateSystem";
+import { SystemPageHeader } from "./_components/SystemPageHeader";
+import { useSystemCondition } from "./_hooks/useSystemCondition";
 
-type SortOrder = "name-asc" | "name-desc" | "envs-asc" | "envs-desc";
+const HeaderStatCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+}> = ({ icon, label, value }) => (
+  <Card>
+    <div className="flex items-center gap-4 p-6">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+        {icon}
+      </div>
+      <div className="flex flex-col">
+        <span className="text-2xl font-bold">{value}</span>
+        <span className="text-sm text-muted-foreground">{label}</span>
+      </div>
+    </div>
+  </Card>
+);
 
-const CONDITION_PARAM = "condition";
-
-const useSystemCondition = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const condition = searchParams.get(CONDITION_PARAM);
-  const sort = searchParams.get("sort") as SortOrder | null;
-
-  const setParams = (params: { condition?: string; sort?: SortOrder | "" }) => {
-    const url = new URL(window.location.href);
-    const urlParams = new URLSearchParams(url.search);
-
-    if (params.condition !== undefined) {
-      if (params.condition === "") {
-        urlParams.delete(CONDITION_PARAM);
-      } else {
-        urlParams.set(CONDITION_PARAM, params.condition);
-      }
-    }
-
-    if (params.sort == null || params.sort === "") {
-      urlParams.delete("sort");
-    } else {
-      urlParams.set("sort", params.sort);
-    }
-
-    router.replace(`${url.pathname}?${urlParams.toString()}`);
-  };
-
-  return {
-    condition,
-    sort,
-    setCondition: (condition: string) => setParams({ condition: condition }),
-    setSort: (sort: SortOrder) => setParams({ sort }),
-    setParams,
-  };
-};
+const SearchInput: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ value, onChange }) => (
+  <div className="relative w-full md:w-1/2 lg:w-1/3">
+    <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Search systems and deployments..."
+      className="pl-9"
+    />
+  </div>
+);
 
 export const SystemsPageContent: React.FC<{
   workspace: SCHEMA.Workspace;
@@ -141,47 +112,7 @@ export const SystemsPageContent: React.FC<{
 
   return (
     <div className="flex flex-col">
-      <PageHeader className="z-20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger name={Sidebars.Deployments}>
-            <IconMenu2 className="h-4 w-4" />
-          </SidebarTrigger>
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbPage className="flex items-center gap-1.5">
-                  <IconTopologyComplex className="h-4 w-4" />
-                  Systems
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <CreateSystemDialog workspace={workspace}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1.5"
-            >
-              <IconPlus className="h-3.5 w-3.5" />
-              New System
-            </Button>
-          </CreateSystemDialog>
-          <CreateDeploymentDialog>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1.5"
-            >
-              <IconPlus className="h-3.5 w-3.5" />
-              New Deployment
-            </Button>
-          </CreateDeploymentDialog>
-        </div>
-      </PageHeader>
+      <SystemPageHeader workspace={workspace} />
 
       <div className="space-y-8 p-8">
         {/* Only show stats and filters if there are systems */}
@@ -189,122 +120,29 @@ export const SystemsPageContent: React.FC<{
           <>
             {/* Summary Cards */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Card>
-                <div className="flex items-center gap-4 p-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <IconTopologyComplex className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold">{totalSystems}</span>
-                    <span className="text-sm text-muted-foreground">
-                      Systems
-                    </span>
-                  </div>
-                </div>
-              </Card>
+              <HeaderStatCard
+                icon={<IconTopologyComplex className="h-6 w-6 text-primary" />}
+                label="Systems"
+                value={totalSystems}
+              />
 
-              <Card>
-                <div className="flex items-center gap-4 p-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <IconShip className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold">
-                      {totalDeployments}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Deployments
-                    </span>
-                  </div>
-                </div>
-              </Card>
+              <HeaderStatCard
+                icon={<IconShip className="h-6 w-6 text-primary" />}
+                label="Deployments"
+                value={totalDeployments}
+              />
 
-              <Card>
-                <div className="flex items-center gap-4 p-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <IconPlant className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold">
-                      {totalEnvironments}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Environments
-                    </span>
-                  </div>
-                </div>
-              </Card>
+              <HeaderStatCard
+                icon={<IconPlant className="h-6 w-6 text-primary" />}
+                label="Environments"
+                value={totalEnvironments}
+              />
             </div>
 
             {/* Search and Filters */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="relative w-full md:w-1/2 lg:w-1/3">
-                <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search systems and deployments..."
-                  className="pl-9"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1.5"
-                    >
-                      <IconFilter className="h-3.5 w-3.5" />
-                      Sort
-                      <IconChevronDown className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[200px]">
-                    <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem
-                        onClick={() => setSort("name-asc")}
-                        className="flex items-center justify-between"
-                      >
-                        Name (A-Z)
-                        {sort === "name-asc" && (
-                          <IconSortAscending className="h-4 w-4" />
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setSort("name-desc")}
-                        className="flex items-center justify-between"
-                      >
-                        Name (Z-A)
-                        {sort === "name-desc" && (
-                          <IconSortDescending className="h-4 w-4" />
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setSort("envs-desc")}
-                        className="flex items-center justify-between"
-                      >
-                        Environments (Most)
-                        {sort === "envs-desc" && (
-                          <IconSortDescending className="h-4 w-4" />
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setSort("envs-asc")}
-                        className="flex items-center justify-between"
-                      >
-                        Environments (Least)
-                        {sort === "envs-asc" && (
-                          <IconSortAscending className="h-4 w-4" />
-                        )}
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <SearchInput value={search} onChange={setSearch} />
+              <SortDropdown value={sort} onChange={setSort} />
             </div>
           </>
         )}
@@ -344,47 +182,17 @@ export const SystemsPageContent: React.FC<{
               </Card>
             </>
           ) : (
-            <div className="h-full w-full p-20">
-              <div className="container m-auto max-w-xl space-y-6 p-20">
-                <div className="relative -ml-1 text-neutral-500">
-                  <IconTopologyComplex
-                    className="h-10 w-10"
-                    strokeWidth={0.5}
-                  />
-                </div>
-                <div className="font-semibold">Systems</div>
-                <div className="prose prose-invert text-sm text-muted-foreground">
-                  <p>
-                    Systems serve as a high-level category or grouping for your
-                    deployments. A system encompasses a set of related
-                    deployments that share common characteristics, such as the
-                    same environments and environment policies.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CreateSystemDialog workspace={workspace}>
-                    <Button size="sm">Create System</Button>
-                  </CreateSystemDialog>
-                  <Link
-                    href="https://docs.ctrlplane.dev/core-concepts/systems"
-                    target="_blank"
-                    passHref
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "sm",
-                    })}
-                  >
-                    Documentation
-                  </Link>
-                </div>
-              </div>
-            </div>
+            <EmptySystemsInfo workspace={workspace} />
           ))}
 
         {/* System List */}
         {isLoading &&
           Array.from({ length: 2 }).map((_, i) => (
-            <SystemDeploymentSkeleton key={i} />
+            <SystemDeploymentSkeleton
+              key={i}
+              header={<SystemHeaderSkeleton />}
+              table={<SystemTableSkeleton />}
+            />
           ))}
 
         {!isLoading && sortedSystems.length > 0 && (

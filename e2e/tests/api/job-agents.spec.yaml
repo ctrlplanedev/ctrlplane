@@ -1,0 +1,15 @@
+system:
+  name: "{{ prefix }}-job-agent"
+  slug: "{{ prefix }}-job-agent"
+  description: System for testing job agents
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing job agents
+    systemId: "{{ prefix }}-job-agent"
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: Deployment for testing job agents

@@ -105,5 +105,31 @@ test.describe("YAML Entity Import", () => {
     expect(deploymentResponse.response.status).toBe(200);
     expect(deploymentResponse.data?.name).toBe("API Deployment");
     expect(deploymentResponse.data?.slug).toBe("api-deployment");
+
+    // Verify variables
+    const variablesResponse = await api.GET(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: { path: { deploymentId: apiDeploymentId! } },
+      },
+    );
+
+    expect(variablesResponse.response.status).toBe(200);
+    const variables = variablesResponse.data ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("API_KEY");
+    expect(variable.description).toBe("API key");
+    expect(variable.config.type).toBe("string");
+    expect(variable.config.inputType).toBe("text");
+
+    const { values } = variable;
+    expect(values.length).toBe(1);
+    const value = values[0]!;
+    expect(value.value).toBe("sample-api-key");
+
+    const defaultValue = variable.defaultValue;
+    expect(defaultValue).toBeDefined();
+    expect(defaultValue?.value).toBe("sample-api-key");
   });
 });
