@@ -51,6 +51,33 @@ import { VersionDistributionGraphPopover } from "./_components/release-cell/Vers
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
+type TotalBadgeProps = {
+  total: number | undefined;
+  label?: string;
+  className?: string;
+};
+
+const TotalBadge: React.FC<TotalBadgeProps> = ({
+  total,
+  label = "Total:",
+  className,
+}) => (
+  <div
+    className={cn(
+      "flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground",
+      className,
+    )}
+  >
+    {label}
+    <Badge
+      variant="outline"
+      className="rounded-full border-neutral-800 text-inherit"
+    >
+      {total ?? "-"}
+    </Badge>
+  </div>
+);
+
 type EnvHeaderProps = {
   environment: schema.Environment;
   deployment: Deployment;
@@ -151,7 +178,6 @@ type DeploymentPageContentProps = {
   deployment: Deployment;
   environments: schema.Environment[];
   directories: { path: string; environments: schema.Environment[] }[];
-  deploymentVersionChannel: schema.DeploymentVersionChannel | null;
 };
 
 export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
@@ -159,7 +185,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   deployment,
   environments,
   directories,
-  deploymentVersionChannel,
 }) => {
   const { selector, setSelector } = useDeploymentVersionSelector();
 
@@ -198,22 +223,14 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                 <IconFilter className="h-4 w-4" />
               </Button>
 
-              {selector != null && deploymentVersionChannel == null && (
+              {selector != null && (
                 <DeploymentVersionConditionBadge condition={selector} />
               )}
             </div>
           </DeploymentVersionConditionDialog>
         </div>
 
-        <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
-          Total:
-          <Badge
-            variant="outline"
-            className="rounded-full border-neutral-800 text-inherit"
-          >
-            {versions.data?.total ?? "-"}
-          </Badge>
-        </div>
+        <TotalBadge total={versions.data?.total} />
 
         <div className="flex items-center gap-2">
           <VersionDistributionGraphPopover deployment={deployment}>

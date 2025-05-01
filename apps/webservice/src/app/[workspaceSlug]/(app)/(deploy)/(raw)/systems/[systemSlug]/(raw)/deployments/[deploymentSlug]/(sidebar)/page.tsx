@@ -1,5 +1,3 @@
-"use server";
-
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -12,13 +10,12 @@ type PageProps = {
     systemSlug: string;
     deploymentSlug: string;
   }>;
-  searchParams: Promise<{ "deployment-version-channel-id"?: string }>;
 };
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
-  const params = await props.params;
-  const deployment = await api.deployment.bySlug(params);
-  if (deployment == null) return notFound();
+  const { params } = props;
+  const deployment = await api.deployment.bySlug(await params);
+  if (!deployment) return notFound();
 
   return {
     title: `Releases | ${deployment.name}`,
@@ -26,20 +23,21 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 }
 
 export default async function DeploymentPage(props: PageProps) {
-  const searchParams = await props.searchParams;
-  const params = await props.params;
-  const workspace = await api.workspace.bySlug(params.workspaceSlug);
-  if (workspace == null) return notFound();
-  const deployment = await api.deployment.bySlug(params);
-  if (deployment == null) return notFound();
+  const { params } = props;
+  const resolvedParams = await params;
+
+  // Fetch workspace and validate
+  const workspace = await api.workspace.bySlug(resolvedParams.workspaceSlug);
+  if (!workspace) return notFound();
+
+  // Fetch deployment and validate
+  const deployment = await api.deployment.bySlug(resolvedParams);
+  if (!deployment) return notFound();
+
+  // Fetch system roots
   const { system } = deployment;
   const roots = await api.system.directory.listRoots(system.id);
   const { rootEnvironments: environments, directories } = roots;
-  const deploymentVersionChannel = searchParams["deployment-version-channel-id"]
-    ? await api.deployment.version.channel.byId(
-        searchParams["deployment-version-channel-id"],
-      )
-    : null;
 
   return (
     <DeploymentPageContent
@@ -47,7 +45,6 @@ export default async function DeploymentPage(props: PageProps) {
       deployment={deployment}
       environments={environments}
       directories={directories}
-      deploymentVersionChannel={deploymentVersionChannel}
     />
   );
 }

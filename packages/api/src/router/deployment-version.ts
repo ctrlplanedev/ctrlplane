@@ -365,7 +365,7 @@ export const versionRouter = createTRPCRouter({
     .input(
       z.object({ id: z.string().uuid(), data: SCHEMA.updateDeploymentVersion }),
     )
-    .mutation(async ({ ctx, input: { id, data } }) =>
+    .mutation(async ({ input: { id, data } }) =>
       db
         .update(SCHEMA.deploymentVersion)
         .set(data)
@@ -373,133 +373,132 @@ export const versionRouter = createTRPCRouter({
         .returning()
         .then(takeFirst)
         .then((rel) =>
-          createReleaseJobTriggers(db, "version_updated")
-            .causedById(ctx.session.user.id)
-            .filter(isPassingChannelSelectorPolicy)
-            .versions([rel.id])
-            .then(createJobApprovals)
-            .insert()
-            .then((triggers) =>
-              dispatchReleaseJobTriggers(db)
-                .releaseTriggers(triggers)
-                .filter(isPassingAllPolicies)
-                .then(cancelOldReleaseJobTriggersOnJobDispatch)
-                .dispatch()
-                .then(() => rel),
-            ),
+          getQueue(Channel.NewDeploymentVersion)
+            .add(rel.id, rel)
+            .then(() => rel),
         ),
     ),
 
-  blocked: protectedProcedure
+  /**
+   * Lists all environments where a deployment version can be deployed based on policy rules.
+   * This is crucial for determining where a version can be released while respecting
+   * environment-specific policies and deployment rules.
+   *
+   * @param input - The UUID of the deployment version to check
+   * @returns An array of environments where the version can be deployed
+   */
+  listDeployableEnvironments: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.DeploymentVersionGet).on(
-          ...(input as string[]).map((t) => ({
-            type: "deploymentVersion" as const,
-            id: t,
-          })),
-        ),
+        canUser.perform(Permission.DeploymentVersionGet).on({
+          type: "deploymentVersion",
+          id: input,
+        }),
     })
-    .input(z.array(z.string().uuid()))
+    .input(z.string().uuid())
     .query(async ({ input }) => {
-      const policyRCSubquery = db
-        .select({
-          deploymentVersionChannelId: SCHEMA.deploymentVersionChannel.id,
-          deploymentVersionChannelPolicyId:
-            SCHEMA.environmentPolicyDeploymentVersionChannel.policyId,
-          deploymentVersionChannelDeploymentId:
-            SCHEMA.deploymentVersionChannel.deploymentId,
-          deploymentVersionChannelVersionSelector:
-            SCHEMA.deploymentVersionChannel.versionSelector,
+      // First, fetch the deployment version with its associated deployment and system environments
+      // This gives us the context needed to check which environments are available
+      const version = await db.query.deploymentVersion.findFirst({
+        where: eq(SCHEMA.deploymentVersion.id, input),
+        with: {
+          deployment: {
+            with: {
+              system: { with: { environments: true } },
+            },
+          },
+        },
+      });
+
+      if (version == null) return [];
+
+      const workspaceId = version.deployment.system.workspaceId;
+      const environments = version.deployment.system.environments;
+      const environmentIds = environments.map((e) => e.id);
+      const isEnvironmentLevelPolicy = and(
+        isNull(SCHEMA.policyTarget.deploymentSelector),
+        isNull(SCHEMA.policyTarget.resourceSelector),
+      );
+
+      // Query all applicable policies that could affect deployment to environments
+      // This includes:
+      // - Policies with version selectors (rules about which versions can be deployed)
+      // - Policies targeting specific environments
+      // - Only enabled policies in the same workspace
+      const applicablePolicies = await db
+        .selectDistinct({
+          policyId: SCHEMA.policy.id,
+          versionSelector:
+            SCHEMA.policyRuleDeploymentVersionSelector
+              .deploymentVersionSelector,
+          environmentId: SCHEMA.releaseTarget.environmentId,
         })
-        .from(SCHEMA.environmentPolicyDeploymentVersionChannel)
+        .from(SCHEMA.policy)
         .innerJoin(
-          SCHEMA.deploymentVersionChannel,
+          SCHEMA.policyRuleDeploymentVersionSelector,
           eq(
-            SCHEMA.environmentPolicyDeploymentVersionChannel.channelId,
-            SCHEMA.deploymentVersionChannel.id,
+            SCHEMA.policy.id,
+            SCHEMA.policyRuleDeploymentVersionSelector.policyId,
           ),
         )
-        .as("policyRCSubquery");
-
-      const envs = await db
-        .select()
-        .from(SCHEMA.deploymentVersion)
         .innerJoin(
-          SCHEMA.deployment,
-          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+          SCHEMA.policyTarget,
+          eq(SCHEMA.policy.id, SCHEMA.policyTarget.policyId),
         )
         .innerJoin(
-          SCHEMA.environment,
-          eq(SCHEMA.deployment.systemId, SCHEMA.environment.systemId),
-        )
-        .leftJoin(
-          SCHEMA.environmentPolicy,
-          eq(SCHEMA.environment.policyId, SCHEMA.environmentPolicy.id),
-        )
-        .leftJoin(
-          policyRCSubquery,
+          SCHEMA.computedPolicyTargetReleaseTarget,
           eq(
-            policyRCSubquery.deploymentVersionChannelPolicyId,
-            SCHEMA.environmentPolicy.id,
+            SCHEMA.policyTarget.id,
+            SCHEMA.computedPolicyTargetReleaseTarget.policyTargetId,
           ),
         )
-        .where(inArray(SCHEMA.deploymentVersion.id, input))
-        .then((rows) =>
-          _.chain(rows)
-            .groupBy((e) => [e.environment.id, e.deployment_version.id])
-            .map((v) => ({
-              version: v[0]!.deployment_version,
-              environment: v[0]!.environment,
-              environmentPolicy: v[0]!.environment_policy
-                ? {
-                    ...v[0]!.environment_policy,
-                    versionChannels: v
-                      .map((e) => e.policyRCSubquery)
-                      .filter(isPresent),
-                  }
-                : null,
-            }))
-            .value(),
+        .innerJoin(
+          SCHEMA.releaseTarget,
+          eq(
+            SCHEMA.computedPolicyTargetReleaseTarget.releaseTargetId,
+            SCHEMA.releaseTarget.id,
+          ),
+        )
+        .where(
+          and(
+            isEnvironmentLevelPolicy,
+            inArray(SCHEMA.releaseTarget.environmentId, environmentIds),
+            eq(SCHEMA.policy.workspaceId, workspaceId),
+            eq(SCHEMA.policy.enabled, true),
+          ),
         );
-
-      const blockedEnvsPromises = envs.map(async (env) => {
-        const { version: rel, environment, environmentPolicy } = env;
-
-        const policyVersionChannel = environmentPolicy?.versionChannels.find(
-          (rc) => rc.deploymentVersionChannelDeploymentId === rel.deploymentId,
+      const checkEnvironmentPolicy = async (env: SCHEMA.Environment) => {
+        const policies = applicablePolicies.filter(
+          (p) => p.environmentId === env.id,
         );
+        if (policies.length === 0) return env;
 
-        const {
-          deploymentVersionChannelId,
-          deploymentVersionChannelVersionSelector,
-        } = policyVersionChannel ?? {};
-        if (deploymentVersionChannelVersionSelector == null) return null;
-
-        const matchingVersion = await db
+        const exists = await db
           .select()
           .from(SCHEMA.deploymentVersion)
           .where(
             and(
-              eq(SCHEMA.deploymentVersion.id, rel.id),
-              SCHEMA.deploymentVersionMatchesCondition(
-                db,
-                deploymentVersionChannelVersionSelector,
+              eq(SCHEMA.deploymentVersion.id, version.id),
+              and(
+                ...policies.map((p) =>
+                  SCHEMA.deploymentVersionMatchesCondition(
+                    db,
+                    p.versionSelector,
+                  ),
+                ),
               ),
             ),
           )
           .then(takeFirstOrNull);
 
-        return matchingVersion == null
-          ? {
-              versionId: rel.id,
-              environmentId: environment.id,
-              deploymentVersionChannelId,
-            }
-          : null;
-      });
+        return exists != null ? env : null;
+      };
 
-      return Promise.all(blockedEnvsPromises).then((r) => r.filter(isPresent));
+      const results = await Promise.all(
+        environments.map(checkEnvironmentPolicy),
+      );
+
+      return results.filter((env): env is SCHEMA.Environment => env != null);
     }),
 
   status: createTRPCRouter({

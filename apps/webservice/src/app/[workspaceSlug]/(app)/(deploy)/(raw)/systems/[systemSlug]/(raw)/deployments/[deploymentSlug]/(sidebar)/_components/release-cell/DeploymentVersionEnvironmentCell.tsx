@@ -8,7 +8,6 @@ import { IconAlertCircle } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 import { isPresent } from "ts-is-present";
 
-import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ComparisonOperator,
@@ -17,7 +16,6 @@ import {
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
-import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
 import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { api } from "~/trpc/react";
@@ -85,8 +83,10 @@ const DeploymentVersionEnvironmentCell: React.FC<
     deployment,
   );
 
-  const { data: blockedEnvsResult, isLoading: isBlockedEnvsLoading } =
-    api.deployment.version.blocked.useQuery([deploymentVersion.id]);
+  const { data: deployableEnvs, isLoading: isDeployableEnvsLoading } =
+    api.deployment.version.listDeployableEnvironments.useQuery(
+      deploymentVersion.id,
+    );
 
   const { data: approval, isLoading: isApprovalLoading } =
     api.environment.policy.approval.statusByVersionPolicyId.useQuery({
@@ -94,21 +94,15 @@ const DeploymentVersionEnvironmentCell: React.FC<
       policyId: environment.policyId,
     });
 
-  const blockedEnv = blockedEnvsResult?.find(
-    (b) => b.environmentId === environment.id,
-  );
-
   const { data: statuses, isLoading: isStatusesLoading } =
     api.deployment.version.status.byEnvironmentId.useQuery(
       { versionId: deploymentVersion.id, environmentId: environment.id },
       { refetchInterval: 2_000 },
     );
 
-  const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
-
   const isLoading =
     isStatusesLoading ||
-    isBlockedEnvsLoading ||
+    isDeployableEnvsLoading ||
     isApprovalLoading ||
     isResourceCountLoading;
 
@@ -133,18 +127,18 @@ const DeploymentVersionEnvironmentCell: React.FC<
   const isAlreadyDeployed = statuses != null && statuses.length > 0;
 
   const hasJobAgent = deployment.jobAgentId != null;
-  const isBlockedByDeploymentVersionChannel = blockedEnv != null;
+
+  const isBlockedByPolicy = !deployableEnvs?.some(
+    (env) => env.id === environment.id,
+  );
 
   const isPendingApproval = approval?.status === "pending";
-
-  const showBlockedByDeploymentVersionChannel =
-    isBlockedByDeploymentVersionChannel &&
+  const showBlockedByPolicy =
+    isBlockedByPolicy &&
     !statuses?.some((s) => s.job.status === JobStatus.InProgress);
 
   const showVersion =
-    isAlreadyDeployed &&
-    !showBlockedByDeploymentVersionChannel &&
-    !isPendingApproval;
+    isAlreadyDeployed && !showBlockedByPolicy && !isPendingApproval;
 
   if (showVersion)
     return (
@@ -175,22 +169,10 @@ const DeploymentVersionEnvironmentCell: React.FC<
       </div>
     );
 
-  if (showBlockedByDeploymentVersionChannel)
+  if (showBlockedByPolicy)
     return (
       <div className="text-center text-xs text-muted-foreground/70">
-        Blocked by{" "}
-        <Button
-          variant="link"
-          size="sm"
-          onClick={() =>
-            setDeploymentVersionChannelId(
-              blockedEnv.deploymentVersionChannelId ?? null,
-            )
-          }
-          className="px-0 text-muted-foreground/70"
-        >
-          channel
-        </Button>
+        Blocked by policy.
       </div>
     );
 
