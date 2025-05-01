@@ -1,196 +1,81 @@
 "use client";
 
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  IconAlertCircle,
-  IconCube,
-  IconProgressCheck,
-} from "@tabler/icons-react";
+import { useParams } from "next/navigation";
+import { format } from "date-fns";
 import { useInView } from "react-intersection-observer";
 
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
-import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { Release } from "./ReleaseInfo";
+import { StatusIcon } from "./StatusIcon";
+
+const CellSkeleton: React.FC = () => (
+  <div className="flex h-full w-full items-center gap-2">
+    <Skeleton className="h-6 w-6 rounded-full" />
+    <div className="flex flex-col gap-2">
+      <Skeleton className="h-[16px] w-20 rounded-full" />
+      <Skeleton className="h-3 w-20 rounded-full" />
+    </div>
+  </div>
+);
 
 type DeploymentEnvironmentCellProps = {
-  environment: SCHEMA.Environment;
-  deployment: SCHEMA.Deployment;
-  workspace: SCHEMA.Workspace;
+  environmentId: string;
+  deployment: { id: string; slug: string };
   systemSlug: string;
 };
 
 const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
-  environment,
+  environmentId,
   deployment,
-  workspace,
   systemSlug,
 }) => {
-  const { data: deploymentVersion, isLoading: isReleaseLoading } =
-    api.deployment.version.latest.byDeploymentAndEnvironment.useQuery({
-      deploymentId: deployment.id,
-      environmentId: environment.id,
-    });
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
-  const { data: statuses, isLoading: isStatusesLoading } =
-    api.deployment.version.status.byEnvironmentId.useQuery(
-      { versionId: deploymentVersion?.id ?? "", environmentId: environment.id },
-      { refetchInterval: 2_000, enabled: deploymentVersion != null },
-    );
+  console.log(environmentId, deployment, systemSlug);
 
-  const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
-  const router = useRouter();
+  const { data, isLoading } = api.system.table.cell.useQuery({
+    environmentId,
+    deploymentId: deployment.id,
+  });
 
-  const isLoading = isStatusesLoading || isReleaseLoading;
-
-  if (isLoading)
-    return (
-      <div className="flex h-full w-full items-center gap-2">
-        <Skeleton className="h-6 w-6 rounded-full" />
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-[16px] w-20 rounded-full" />
-          <Skeleton className="h-3 w-20 rounded-full" />
-        </div>
-      </div>
-    );
-
-  if (deploymentVersion == null)
-    return (
-      <p className="text-xs text-muted-foreground/70">No versions released</p>
-    );
-
-  const envResourcesUrl = urls
-    .workspace(workspace.slug)
+  const deploymentUrls = urls
+    .workspace(workspaceSlug)
     .system(systemSlug)
-    .environment(environment.id)
-    .resources();
+    .deployment(deployment.slug);
 
-  if (deploymentVersion.resourceCount === 0)
+  if (isLoading) return <CellSkeleton />;
+
+  if (data == null)
     return (
       <Link
-        href={envResourcesUrl}
-        className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50"
-        target="_blank"
-        rel="noopener noreferrer"
+        href={deploymentUrls.releases()}
+        className="flex h-full w-full items-center justify-center text-muted-foreground"
       >
-        <div className="flex items-center gap-2">
-          <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-            <IconCube className="h-4 w-4" strokeWidth={2} />
-          </div>
-          <div>
-            <div className="max-w-36 truncate font-semibold">
-              <span className="whitespace-nowrap">{deploymentVersion.tag}</span>
-            </div>
-            <div className="text-xs text-muted-foreground">No resources</div>
-          </div>
-        </div>
+        No jobs
       </Link>
     );
 
-  const isAlreadyDeployed = statuses != null && statuses.length > 0;
-
-  const hasJobAgent = deployment.jobAgentId != null;
-
-  const isPendingApproval =
-    deploymentVersion.approval != null &&
-    deploymentVersion.approval.status === "pending";
-
-  const showRelease = isAlreadyDeployed && !isPendingApproval;
-
-  if (showRelease)
-    return (
-      <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
-        <Release
-          deployment={deployment}
-          workspaceSlug={workspace.slug}
-          systemSlug={systemSlug}
-          deploymentSlug={deployment.slug}
-          versionId={deploymentVersion.id}
-          tag={deploymentVersion.tag}
-          environment={environment}
-          deployedAt={deploymentVersion.createdAt}
-          statuses={statuses.map((s) => s.job.status)}
-        />
-      </div>
-    );
-
-  if (!hasJobAgent)
-    return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        No job agent
-      </div>
-    );
-
-  if (deploymentVersion.approval != null && isPendingApproval)
-    return (
-      <ApprovalDialog
-        policyId={deploymentVersion.approval.policyId}
-        deploymentVersion={deploymentVersion}
-        environmentId={environment.id}
-      >
-        <div className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50">
-          <div className="flex items-center gap-2">
-            <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
-              <IconAlertCircle className="h-4 w-4" strokeWidth={2} />
-            </div>
-            <div>
-              <div className="max-w-36 truncate font-semibold">
-                <span className="whitespace-nowrap">
-                  {deploymentVersion.tag}
-                </span>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Approval required
-              </div>
-            </div>
-          </div>
-
-          <DeploymentVersionDropdownMenu
-            deployment={deployment}
-            environment={environment}
-            isVersionBeingDeployed={false}
-          />
-        </div>
-      </ApprovalDialog>
-    );
+  const versionUrl = deploymentUrls.release(data.versionId).baseUrl();
 
   return (
-    <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
-      <div
-        className="flex w-full cursor-pointer items-center justify-between gap-2 bg-transparent p-0 hover:bg-transparent"
-        onClick={() =>
-          deploy
-            .mutateAsync({
-              environmentId: environment.id,
-              versionId: deploymentVersion.id,
-            })
-            .then(() => router.refresh())
-        }
-        // disabled={deploy.isPending}
+    <div className="flex h-full w-full items-center justify-center p-1">
+      <Link
+        href={versionUrl}
+        className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
       >
-        <div className="flex items-center gap-2">
-          <div className="rounded-full bg-blue-400 p-1 dark:text-black">
-            <IconProgressCheck className="h-4 w-4" strokeWidth={2} />
+        <StatusIcon statuses={data.statuses} />
+        <div className="flex flex-col">
+          <div className="max-w-36 truncate font-semibold">
+            {data.versionTag}
           </div>
-          <div className="flex flex-col items-start">
-            <div className="max-w-36 truncate font-semibold text-neutral-200">
-              <span className="whitespace-nowrap">{deploymentVersion.tag}</span>
-            </div>
-            <div className="text-xs text-muted-foreground">Click to deploy</div>
+          <div className="text-xs text-muted-foreground">
+            {format(data.versionCreatedAt, "MMM d, hh:mm aa")}
           </div>
         </div>
-
-        <DeploymentVersionDropdownMenu
-          deployment={deployment}
-          environment={environment}
-          isVersionBeingDeployed={false}
-        />
-      </div>
+      </Link>
     </div>
   );
 };
@@ -201,16 +86,11 @@ export const LazyDeploymentEnvironmentCell: React.FC<
   const { ref, inView } = useInView();
 
   return (
-    <div className="flex w-full items-center justify-center" ref={ref}>
-      {!inView && (
-        <div className="flex h-full w-full items-center gap-2">
-          <Skeleton className="h-6 w-6 rounded-full" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-[16px] w-20 rounded-full" />
-            <Skeleton className="h-3 w-20 rounded-full" />
-          </div>
-        </div>
-      )}
+    <div
+      className="flex h-[70px] w-[220px] items-center justify-center"
+      ref={ref}
+    >
+      {!inView && <CellSkeleton />}
       {inView && <DeploymentEnvironmentCell {...props} />}
     </div>
   );
