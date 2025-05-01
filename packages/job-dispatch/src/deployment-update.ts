@@ -1,6 +1,4 @@
-import type { HookEvent } from "@ctrlplane/validators/events";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNotNull, takeFirst } from "@ctrlplane/db";
@@ -100,74 +98,6 @@ export const handleDeploymentSystemChanged = async (
     );
 };
 
-const handleDeploymentFilterChanged = async (
-  deployment: SCHEMA.Deployment,
-  prevFilter: ResourceCondition | null,
-  userId?: string,
-) => {
-  const environments = await db.query.environment.findMany({
-    where: eq(SCHEMA.environment.systemId, deployment.systemId),
-  });
-
-  const isInSystem: ResourceCondition = {
-    type: ConditionType.Comparison,
-    operator: ComparisonOperator.Or,
-    conditions: environments.map((e) => e.resourceSelector).filter(isPresent),
-  };
-
-  const oldResourcesFilter: ResourceCondition = {
-    type: ConditionType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [prevFilter, isInSystem].filter(isPresent),
-  };
-
-  const newResourcesFilter: ResourceCondition = {
-    type: ConditionType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [deployment.resourceSelector, isInSystem].filter(isPresent),
-  };
-
-  const oldResources = await db.query.resource.findMany({
-    where: SCHEMA.resourceMatchesMetadata(db, oldResourcesFilter),
-  });
-
-  const newResources = await db.query.resource.findMany({
-    where: SCHEMA.resourceMatchesMetadata(db, newResourcesFilter),
-  });
-
-  const resourcesToRemove = oldResources.filter(
-    (r) => !newResources.some((nr) => nr.id === r.id),
-  );
-  const resourcesToAdd = newResources.filter(
-    (r) => !oldResources.some((nr) => nr.id === r.id),
-  );
-
-  const events: HookEvent[] = resourcesToRemove.map((resource) => ({
-    action: "deployment.resource.removed",
-    payload: { deployment, resource },
-  }));
-
-  await Promise.allSettled(events.map(handleEvent));
-
-  const createTriggers =
-    userId != null
-      ? createReleaseJobTriggers(db, "new_version").causedById(userId)
-      : createReleaseJobTriggers(db, "new_version");
-
-  await createTriggers
-    .deployments([deployment.id])
-    .resources(resourcesToAdd.map((r) => r.id))
-    .filter(isPassingChannelSelectorPolicy)
-    .then(createJobApprovals)
-    .insert()
-    .then((triggers) =>
-      dispatchReleaseJobTriggers(db)
-        .releaseTriggers(triggers)
-        .filter(isPassingAllPolicies)
-        .dispatch(),
-    );
-};
-
 export const updateDeployment = async (
   deploymentId: string,
   data: SCHEMA.UpdateDeployment,
@@ -197,18 +127,6 @@ export const updateDeployment = async (
     new: updatedDeployment,
     old: prevDeployment,
   });
-
-  if (
-    !_.isEqual(
-      prevDeployment.resourceSelector,
-      updatedDeployment.resourceSelector,
-    )
-  )
-    await handleDeploymentFilterChanged(
-      updatedDeployment,
-      prevDeployment.resourceSelector,
-      userId,
-    );
 
   const sys = await db
     .select()

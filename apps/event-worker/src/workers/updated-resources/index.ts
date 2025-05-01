@@ -7,19 +7,6 @@ import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
 import { withSpan } from "./span.js";
 
-// const dispatchExitHooks = async (
-//   deployments: SCHEMA.Deployment[],
-//   exitedResource: SCHEMA.Resource,
-// ) => {
-//   const events = deployments.map((deployment) => ({
-//     action: "deployment.resource.removed" as const,
-//     payload: { deployment, resource: exitedResource },
-//   }));
-
-//   const handleEventPromises = events.map(handleEvent);
-//   await Promise.allSettled(handleEventPromises);
-// };
-
 export const updatedResourceWorker = createWorker(
   Channel.UpdatedResource,
   withSpan("updatedResourceWorker", async (span, { data: resource }) => {

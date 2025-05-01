@@ -1,28 +1,14 @@
 import _ from "lodash";
 
-import { and, eq, not, selector } from "@ctrlplane/db";
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "update-deployment" });
-
-const dispatchExitHooks = async (
-  deployment: schema.Deployment,
-  exitedResources: schema.Resource[],
-) => {
-  const events = exitedResources.map((resource) => ({
-    action: "deployment.resource.removed" as const,
-    payload: { deployment, resource },
-  }));
-
-  const handleEventPromises = events.map(handleEvent);
-  await Promise.allSettled(handleEventPromises);
-};
 
 /**
  * Worker that does the post-processing after a deployment is updated
@@ -59,22 +45,6 @@ export const updateDeploymentWorker = createWorker(
         data.new.id,
         data.new,
       );
-
-      const resourceQueryBuilder = selector().query().resources();
-      const oldCondition = resourceQueryBuilder
-        .where(data.old.resourceSelector)
-        .sql();
-      const newCondition = resourceQueryBuilder
-        .where(data.new.resourceSelector)
-        .sql();
-      const notNewCondition =
-        newCondition != null ? not(newCondition) : undefined;
-
-      const exitedResources = await db.query.resource.findMany({
-        where: and(oldCondition, notNewCondition),
-      });
-
-      await dispatchExitHooks(data.new, exitedResources);
     } catch (error) {
       log.error("Error updating deployment", { error });
       throw error;

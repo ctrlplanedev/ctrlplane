@@ -1,12 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { eq, inArray } from "@ctrlplane/db";
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-import { handleEvent } from "@ctrlplane/job-dispatch";
-import { HookAction } from "@ctrlplane/validators/events";
+import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 
 const softDeleteResource = async (tx: Tx, resource: SCHEMA.Resource) =>
   tx
@@ -30,36 +28,6 @@ const deleteComputedResources = async (tx: Tx, resource: SCHEMA.Resource) =>
       .where(eq(SCHEMA.computedEnvironmentResource.resourceId, resource.id)),
   ]);
 
-const deleteComputedReleaseTargets = async (
-  tx: Tx,
-  releaseTargets: SCHEMA.ReleaseTarget[],
-) =>
-  tx.delete(SCHEMA.computedPolicyTargetReleaseTarget).where(
-    inArray(
-      SCHEMA.computedPolicyTargetReleaseTarget.releaseTargetId,
-      releaseTargets.map((rt) => rt.id),
-    ),
-  );
-
-const dispatchExitHooks = async (
-  tx: Tx,
-  resource: SCHEMA.Resource,
-  deletedReleaseTargets: SCHEMA.ReleaseTarget[],
-) => {
-  const deploymentIds = _.uniq(
-    deletedReleaseTargets.map((rt) => rt.deploymentId),
-  );
-  const deployments = await tx.query.deployment.findMany({
-    where: inArray(SCHEMA.deployment.id, deploymentIds),
-  });
-  const events = deployments.map((deployment) => ({
-    action: HookAction.DeploymentResourceRemoved,
-    payload: { deployment, resource },
-  }));
-  const handleEventPromises = events.map(handleEvent);
-  await Promise.allSettled(handleEventPromises);
-};
-
 export const deleteResourceWorker = createWorker(
   Channel.DeleteResource,
   async ({ data: resource }) => {
@@ -67,8 +35,10 @@ export const deleteResourceWorker = createWorker(
       await softDeleteResource(tx, resource);
       await deleteComputedResources(tx, resource);
       const rts = await deleteReleaseTargets(tx, resource);
-      await deleteComputedReleaseTargets(tx, rts);
-      await dispatchExitHooks(tx, resource, rts);
+      for (const rt of rts)
+        getQueue(Channel.DeletedReleaseTarget).add(rt.id, rt, {
+          deduplication: { id: rt.id },
+        });
     });
   },
 );

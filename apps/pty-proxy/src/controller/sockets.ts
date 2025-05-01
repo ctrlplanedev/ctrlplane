@@ -3,7 +3,7 @@ import ms from "ms";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { deleteResources } from "@ctrlplane/job-dispatch";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 import type { AgentSocket } from "./agent-socket.js";
@@ -30,7 +30,13 @@ setInterval(() => {
       agents.delete(agentId);
       db.query.resource
         .findFirst({ where: eq(SCHEMA.resource.id, agentId) })
-        .then((resource) => resource && deleteResources(db, [resource]))
+        .then(
+          (resource) =>
+            resource &&
+            getQueue(Channel.DeleteResource).add(resource.id, resource, {
+              deduplication: { id: resource.id },
+            }),
+        )
         .then(() => logger.info("Deleted stale agent resource", { agentId }));
     }
   }

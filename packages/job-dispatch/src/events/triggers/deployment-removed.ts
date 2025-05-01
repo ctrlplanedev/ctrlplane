@@ -6,6 +6,7 @@ import { and, eq, isNotNull, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
+import { HookAction } from "@ctrlplane/validators/events";
 import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 export const getEventsForDeploymentRemoved = async (
@@ -38,7 +39,7 @@ export const getEventsForDeploymentRemoved = async (
   });
 
   return resources.map((resource) => ({
-    action: "deployment.resource.removed",
+    action: HookAction.DeploymentResourceRemoved,
     payload: { deployment, resource },
   }));
 };
