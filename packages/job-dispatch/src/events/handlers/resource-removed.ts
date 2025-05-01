@@ -8,6 +8,7 @@ import { dispatchRunbook } from "../../job-dispatch.js";
 
 export const handleResourceRemoved = async (event: ResourceRemoved) => {
   const { resource, deployment } = event.payload;
+  const { workspaceId } = resource;
 
   const isSubscribedToResourceRemoved = and(
     eq(SCHEMA.hook.scopeId, deployment.id),
@@ -21,7 +22,7 @@ export const handleResourceRemoved = async (event: ResourceRemoved) => {
     .where(isSubscribedToResourceRemoved);
 
   if (runhooks.length === 0) return;
-  await db.insert(SCHEMA.event).values(event);
+  await db.insert(SCHEMA.event).values({ ...event, workspaceId });
 
   const resourceId = resource.id;
   const deploymentId = deployment.id;

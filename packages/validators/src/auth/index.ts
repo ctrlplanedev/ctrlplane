@@ -113,6 +113,8 @@ export enum Permission {
   PolicyDelete = "policy.delete",
 
   ReleaseTargetGet = "releaseTarget.get",
+
+  EventList = "event.list",
 }
 
 export const permission = z.nativeEnum(Permission);
