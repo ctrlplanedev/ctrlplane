@@ -27,6 +27,10 @@ import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(app)/(deploy)/
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import {
+  SystemDeploymentSkeleton,
+  SystemTableSkeleton,
+} from "./SystemDeploymentSkeleton";
 
 const EnvHeader: React.FC<{
   systemSlug: string;
@@ -61,13 +65,15 @@ const EnvHeader: React.FC<{
   );
 };
 
+type Directory = {
+  path: string;
+  environments: SCHEMA.Environment[];
+};
+
 const DirectoryHeader: React.FC<{
-  directory: {
-    path: string;
-    environments: SCHEMA.Environment[];
-  };
-  workspace: SCHEMA.Workspace;
-}> = ({ directory, workspace }) => {
+  directory: Directory;
+  workspaceId: string;
+}> = ({ directory, workspaceId }) => {
   const resourceSelectors = directory.environments
     .map((env) => env.resourceSelector)
     .filter(isPresent);
@@ -82,7 +88,7 @@ const DirectoryHeader: React.FC<{
 
   const { data: resourcesResult, isLoading } =
     api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId: workspace.id, filter, limit: 0 },
+      { workspaceId, filter, limit: 0 },
       { enabled: filter != null },
     );
 
@@ -108,16 +114,58 @@ const DirectoryHeader: React.FC<{
   );
 };
 
+const DeploymentNameCell: React.FC<{
+  deployment: SCHEMA.Deployment;
+  workspaceSlug: string;
+  systemSlug: string;
+  className?: string;
+}> = ({ deployment, workspaceSlug, systemSlug, className }) => {
+  return (
+    <TableCell
+      className={cn(
+        "sticky left-0 z-10 h-[70px] w-[350px] max-w-[300px] backdrop-blur-lg",
+        className,
+      )}
+    >
+      <div className="flex min-w-0 items-center justify-between gap-2 px-2 text-lg">
+        <Link
+          href={urls
+            .workspace(workspaceSlug)
+            .system(systemSlug)
+            .deployment(deployment.slug)
+            .baseUrl()}
+          className="truncate hover:text-blue-300"
+          title={deployment.name}
+        >
+          {deployment.name}
+        </Link>
+        <DeploymentOptionsDropdown {...deployment}>
+          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0">
+            <IconDotsVertical className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </DeploymentOptionsDropdown>
+      </div>
+    </TableCell>
+  );
+};
+
+type System = SCHEMA.System & { deployments: SCHEMA.Deployment[] };
+
 const DeploymentTable: React.FC<{
   workspace: SCHEMA.Workspace;
-  systemSlug: string;
-  environments: SCHEMA.Environment[];
-  deployments: SCHEMA.Deployment[];
-  directories: {
-    path: string;
-    environments: SCHEMA.Environment[];
-  }[];
-}> = ({ systemSlug, deployments, environments, workspace, directories }) => {
+  system: System;
+}> = ({ workspace, system }) => {
+  const { data: rootDirsResult, isLoading } =
+    api.system.directory.listRoots.useQuery(system.id);
+
+  const directories = rootDirsResult?.directories ?? [];
+  const environments = rootDirsResult?.rootEnvironments ?? [];
+
+  const { deployments } = system;
+
+  if (isLoading)
+    return <SystemDeploymentSkeleton table={<SystemTableSkeleton />} />;
+
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-x-auto">
       <Table className="w-full min-w-max bg-background">
@@ -129,7 +177,7 @@ const DeploymentTable: React.FC<{
             {environments.map((env) => (
               <EnvHeader
                 key={env.id}
-                systemSlug={systemSlug}
+                systemSlug={system.slug}
                 environment={env}
                 workspace={workspace}
               />
@@ -138,7 +186,7 @@ const DeploymentTable: React.FC<{
               <DirectoryHeader
                 key={dir.path}
                 directory={dir}
-                workspace={workspace}
+                workspaceId={workspace.id}
               />
             ))}
             <TableCell className="flex-grow" />
@@ -150,35 +198,14 @@ const DeploymentTable: React.FC<{
               key={r.id}
               className="w-full border-0 bg-background hover:bg-transparent"
             >
-              <TableCell
-                className={cn(
-                  "sticky left-0 z-10 h-[70px] w-[350px] max-w-[300px] backdrop-blur-lg",
-                  idx === deployments.length - 1 && "rounded-b-md",
-                )}
-              >
-                <div className="flex min-w-0 items-center justify-between gap-2 px-2 text-lg">
-                  <Link
-                    href={urls
-                      .workspace(workspace.slug)
-                      .system(systemSlug)
-                      .deployment(r.slug)
-                      .baseUrl()}
-                    className="truncate hover:text-blue-300"
-                    title={r.name}
-                  >
-                    {r.name}
-                  </Link>
-                  <DeploymentOptionsDropdown {...r}>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 shrink-0"
-                    >
-                      <IconDotsVertical className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </DeploymentOptionsDropdown>
-                </div>
-              </TableCell>
+              <DeploymentNameCell
+                deployment={r}
+                workspaceSlug={workspace.slug}
+                systemSlug={system.slug}
+                className={
+                  idx === deployments.length - 1 ? "rounded-b-md" : undefined
+                }
+              />
               {environments.map((env) => (
                 <TableCell key={env.id} className="h-[70px] w-[220px]">
                   <div className="flex h-full w-full justify-center">
@@ -186,7 +213,7 @@ const DeploymentTable: React.FC<{
                       environment={env}
                       deployment={r}
                       workspace={workspace}
-                      systemSlug={systemSlug}
+                      systemSlug={system.slug}
                     />
                   </div>
                 </TableCell>
@@ -197,7 +224,7 @@ const DeploymentTable: React.FC<{
                     <DeploymentDirectoryCell
                       directory={dir}
                       deployment={r}
-                      systemSlug={systemSlug}
+                      systemSlug={system.slug}
                     />
                   </div>
                 </TableCell>
