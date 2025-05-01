@@ -215,7 +215,7 @@ describe("deployment-variable-reference tests", () => {
 
   it("should handle resource variable with reference type", async () => {
     // Create a reference type resource variable
-    const refResourceVariable: SCHEMA.ResourceVariable = {
+    const refResourceVariable = {
       id: "0",
       resourceId: "0",
       key: "api_version",

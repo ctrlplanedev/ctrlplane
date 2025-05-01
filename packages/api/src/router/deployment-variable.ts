@@ -58,29 +58,25 @@ const valueRouter = createTRPCRouter({
         // Prepare the insert values based on input type
         const insertValues: Partial<DeploymentVariableValue> = {
           variableId: input.variableId,
-          resourceSelector: input.resourceSelector ?? null,
-          sensitive: input.sensitive ?? false,
+          resourceSelector: input.data.resourceSelector ?? null,
+          sensitive: input.data.sensitive ?? false,
         };
 
         // Handle reference type variables
-        if (input.reference && input.path) {
+        if (input.data.reference && input.data.path) {
           insertValues.valueType = "reference";
-          insertValues.reference = input.reference;
-          insertValues.path = input.path;
+          insertValues.reference = input.data.reference;
+          insertValues.path = input.data.path;
           insertValues.value = null; // Value will be resolved during access
         } else {
           // Direct value type
           insertValues.valueType = "direct";
-          insertValues.value = input.value;
+          insertValues.value = input.data.value;
         }
 
         return tx
           .insert(deploymentVariableValue)
-<<<<<<< HEAD
-          .values(insertValues as any) // Type assertion needed due to schema complexity
-=======
           .values({ ...input.data, variableId: input.variableId })
->>>>>>> origin
           .returning()
           .then(takeFirst)
           .then(async (value) => {
