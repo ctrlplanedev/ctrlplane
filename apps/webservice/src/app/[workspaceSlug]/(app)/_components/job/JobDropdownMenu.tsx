@@ -266,7 +266,6 @@ const RedeployVersionDialog: React.FC<{
 };
 
 export const JobDropdownMenu: React.FC<{
-  deploymentVersion: { id: string; tag: string; name: string };
   environmentId: string;
   resource: { id: string; name: string; lockedAt: Date | null } | null;
   deployment: SCHEMA.Deployment;
@@ -274,7 +273,6 @@ export const JobDropdownMenu: React.FC<{
   isPassingDeploymentVersionChannel: boolean;
   children: React.ReactNode;
 }> = ({
-  deploymentVersion,
   deployment,
   resource,
   environmentId,
