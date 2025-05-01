@@ -186,23 +186,7 @@ export class VersionReleaseManager implements ReleaseManager {
     const policy = options?.policy ?? (await this.getPolicy());
     const rules = (options?.rules ?? getRules)(policy);
 
-    const filterRules = rules.filter(isFilterRule);
-    const preValidationRules = rules.filter(isPreValidationRule);
-
-    for (const rule of preValidationRules) {
-      const result = rule.passing(ctx);
-
-      if (!result.passing) {
-        return {
-          chosenCandidate: null,
-          rejectionReasons: new ConstantMap<string, string>(
-            result.rejectionReason ?? "",
-          ),
-        };
-      }
-    }
-
-    const engine = new VersionRuleEngine(filterRules);
+    const engine = new VersionRuleEngine(rules);
     const versions =
       options?.versions ?? (await this.findVersionsForEvaluate());
 

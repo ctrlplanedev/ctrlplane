@@ -2,10 +2,12 @@ import _ from "lodash";
 
 import type {
   FilterRule,
+  PreValidationRule,
   RuleEngine,
   RuleEngineContext,
   RuleSelectionResult,
 } from "../types.js";
+import { ConstantMap, isFilterRule, isPreValidationRule } from "../types.js";
 
 export type Version = {
   id: string;
@@ -33,7 +35,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
    *                evaluation. Rules can be provided directly or as functions that
    *                return a rule or promise of a rule.
    */
-  constructor(private rules: Array<FilterRule<Version>>) {}
+  constructor(private rules: Array<FilterRule<Version> | PreValidationRule>) {}
 
   /**
    * Evaluates a context against all configured rules to determine which version
@@ -63,11 +65,24 @@ export class VersionRuleEngine implements RuleEngine<Version> {
     context: RuleEngineContext,
     candidates: Version[],
   ): Promise<RuleSelectionResult<Version>> {
-    // Track rejection reasons for each version across all rules
-    let rejectionReasons = new Map<string, string>();
+    const preValidationRules = this.rules.filter(isPreValidationRule);
+    for (const rule of preValidationRules) {
+      const result = rule.passing(context);
 
-    // Apply each rule in sequence to filter candidate versions
-    for (const rule of this.rules) {
+      if (!result.passing) {
+        return {
+          chosenCandidate: null,
+          rejectionReasons: new ConstantMap<string, string>(
+            result.rejectionReason ?? "",
+          ),
+        };
+      }
+    }
+
+    let rejectionReasons = new Map<string, string>();
+    const filterRules = this.rules.filter(isFilterRule);
+
+    for (const rule of filterRules) {
       const result = await rule.filter(context, candidates);
 
       // If the rule yields no candidates, we must stop.
@@ -119,7 +134,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
    * @returns The selected version, or undefined if no suitable version can be chosen
    */
   private selectFinalRelease(
-    context: RuleEngineContext,
+    __: RuleEngineContext,
     candidates: Version[],
   ): Version | undefined {
     if (candidates.length === 0) {

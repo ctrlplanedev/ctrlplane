@@ -8,12 +8,6 @@ import { IconAlertCircle } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 import { isPresent } from "ts-is-present";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
@@ -178,7 +172,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
     );
 
   if (showBlockedByPolicy) {
-    const policyNames = blockedEnv?.policies.map((p) => p.policyName) ?? [];
+    const policyNames = blockedEnv.policies.map((p) => p.policyName) ?? [];
     const firstPolicy = policyNames[0];
 
     return (
