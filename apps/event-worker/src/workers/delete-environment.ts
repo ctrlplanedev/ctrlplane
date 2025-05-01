@@ -14,6 +14,7 @@ export const deleteEnvironmentWorker = createWorker(
           sql`
             SELECT * from ${schema.environment}
             INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.environmentId, schema.environment.id)}
+            WHERE ${eq(schema.environment.id, environmentId)}
             FOR UPDATE NOWAIT
           `,
         );

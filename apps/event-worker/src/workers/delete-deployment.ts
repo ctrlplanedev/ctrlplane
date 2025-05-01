@@ -14,6 +14,7 @@ export const deleteDeploymentWorker = createWorker(
           sql`
             SELECT * from ${schema.deployment}
             INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.deploymentId, schema.deployment.id)}
+            WHERE ${eq(schema.deployment.id, deploymentId)}
             FOR UPDATE NOWAIT
           `,
         );
