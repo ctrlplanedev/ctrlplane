@@ -680,6 +680,13 @@
       "when": 1745777871806,
       "tag": "0096_loose_champions",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1746124328588,
+      "tag": "0097_violet_ultimo",
+      "breakpoints": true
     }
   ]
 }
