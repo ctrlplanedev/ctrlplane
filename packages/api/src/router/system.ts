@@ -36,6 +36,7 @@ import {
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { directoryRouter } from "./directory";
+import { systemTableRouter } from "./system-table";
 
 export const systemRouter = createTRPCRouter({
   list: protectedProcedure
@@ -315,4 +316,5 @@ export const systemRouter = createTRPCRouter({
     }),
 
   directory: directoryRouter,
+  table: systemTableRouter,
 });

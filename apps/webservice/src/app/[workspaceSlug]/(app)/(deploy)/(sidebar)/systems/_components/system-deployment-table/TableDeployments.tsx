@@ -208,14 +208,11 @@ const DeploymentTable: React.FC<{
               />
               {environments.map((env) => (
                 <TableCell key={env.id} className="h-[70px] w-[220px]">
-                  <div className="flex h-full w-full justify-center">
-                    <LazyDeploymentEnvironmentCell
-                      environment={env}
-                      deployment={r}
-                      workspace={workspace}
-                      systemSlug={system.slug}
-                    />
-                  </div>
+                  <LazyDeploymentEnvironmentCell
+                    environmentId={env.id}
+                    deployment={r}
+                    systemSlug={system.slug}
+                  />
                 </TableCell>
               ))}
               {directories.map((dir) => (
