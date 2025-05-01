@@ -34,8 +34,6 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
-  console.log(environmentId, deployment, systemSlug);
-
   const { data, isLoading } = api.system.table.cell.useQuery({
     environmentId,
     deploymentId: deployment.id,
@@ -52,9 +50,11 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
     return (
       <Link
         href={deploymentUrls.releases()}
-        className="flex h-full w-full items-center justify-center text-muted-foreground"
+        className="flex h-full w-full items-center justify-center p-2 text-muted-foreground"
       >
-        No jobs
+        <div className="flex h-full w-full items-center justify-center hover:bg-accent">
+          No jobs
+        </div>
       </Link>
     );
 

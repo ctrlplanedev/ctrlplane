@@ -8,7 +8,13 @@ import { IconAlertCircle } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 import { isPresent } from "ts-is-present";
 
-import { Button } from "@ctrlplane/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ctrlplane/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ComparisonOperator,
@@ -17,7 +23,6 @@ import {
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
-import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
 import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { api } from "~/trpc/react";
@@ -85,8 +90,10 @@ const DeploymentVersionEnvironmentCell: React.FC<
     deployment,
   );
 
-  const { data: blockedEnvsResult, isLoading: isBlockedEnvsLoading } =
-    api.deployment.version.blocked.useQuery([deploymentVersion.id]);
+  const { data: blockedEnvs, isLoading: isBlockedEnvsLoading } =
+    api.deployment.version.listBlockedEnvironments.useQuery(
+      deploymentVersion.id,
+    );
 
   const { data: approval, isLoading: isApprovalLoading } =
     api.environment.policy.approval.statusByVersionPolicyId.useQuery({
@@ -94,17 +101,11 @@ const DeploymentVersionEnvironmentCell: React.FC<
       policyId: environment.policyId,
     });
 
-  const blockedEnv = blockedEnvsResult?.find(
-    (b) => b.environmentId === environment.id,
-  );
-
   const { data: statuses, isLoading: isStatusesLoading } =
     api.deployment.version.status.byEnvironmentId.useQuery(
       { versionId: deploymentVersion.id, environmentId: environment.id },
       { refetchInterval: 2_000 },
     );
-
-  const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
 
   const isLoading =
     isStatusesLoading ||
@@ -133,18 +134,19 @@ const DeploymentVersionEnvironmentCell: React.FC<
   const isAlreadyDeployed = statuses != null && statuses.length > 0;
 
   const hasJobAgent = deployment.jobAgentId != null;
-  const isBlockedByDeploymentVersionChannel = blockedEnv != null;
+
+  const blockedEnv = blockedEnvs?.find(
+    (i) => i.environmentId === environment.id,
+  );
+  const isBlockedByPolicy = blockedEnv != null;
 
   const isPendingApproval = approval?.status === "pending";
-
-  const showBlockedByDeploymentVersionChannel =
-    isBlockedByDeploymentVersionChannel &&
+  const showBlockedByPolicy =
+    isBlockedByPolicy &&
     !statuses?.some((s) => s.job.status === JobStatus.InProgress);
 
   const showVersion =
-    isAlreadyDeployed &&
-    !showBlockedByDeploymentVersionChannel &&
-    !isPendingApproval;
+    isAlreadyDeployed && !showBlockedByPolicy && !isPendingApproval;
 
   if (showVersion)
     return (
@@ -152,11 +154,9 @@ const DeploymentVersionEnvironmentCell: React.FC<
         <DepVersion
           workspaceSlug={workspaceSlug}
           systemSlug={systemSlug}
-          deploymentSlug={deployment.slug}
-          versionId={deploymentVersion.id}
-          tag={deploymentVersion.tag}
+          deployment={deployment}
+          version={deploymentVersion}
           environment={environment}
-          name={deploymentVersion.name}
           deployedAt={deploymentVersion.createdAt}
           statuses={statuses.map((s) => s.job.status)}
         />
@@ -177,24 +177,34 @@ const DeploymentVersionEnvironmentCell: React.FC<
       </div>
     );
 
-  if (showBlockedByDeploymentVersionChannel)
+  if (showBlockedByPolicy) {
+    const policyNames = blockedEnv?.policies.map((p) => p.policyName) ?? [];
+    const firstPolicy = policyNames[0];
+
     return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        Blocked by{" "}
-        <Button
-          variant="link"
-          size="sm"
-          onClick={() =>
-            setDeploymentVersionChannelId(
-              blockedEnv.deploymentVersionChannelId ?? null,
-            )
-          }
-          className="px-0 text-muted-foreground/70"
-        >
-          channel
-        </Button>
-      </div>
+      <Popover>
+        <PopoverTrigger className="text-center text-xs text-muted-foreground/70">
+          {policyNames.length === 1
+            ? `Blocked by: ${firstPolicy}`
+            : `Blocked by: ${policyNames.length} policies`}
+        </PopoverTrigger>
+        <PopoverContent className="w-80 text-sm">
+          <div className="space-y-2">
+            <h4 className="text-muted-foreground">
+              Environment Blocking Policies
+            </h4>
+            <div className="space-y-1">
+              {policyNames.map((policyName) => (
+                <div key={policyName} className="flex items-center gap-2">
+                  {policyName}
+                </div>
+              ))}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     );
+  }
 
   if (!hasJobAgent)
     return (

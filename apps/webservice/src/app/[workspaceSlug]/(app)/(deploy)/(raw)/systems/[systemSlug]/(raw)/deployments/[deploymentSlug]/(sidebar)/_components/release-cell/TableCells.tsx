@@ -121,32 +121,28 @@ const ReleaseIcon: React.FC<{
 };
 
 export const DeploymentVersion: React.FC<{
-  name: string;
-  tag: string;
-  versionId: string;
+  version: { id: string; tag: string };
+  deployment: { id: string; name: string; slug: string };
   environment: { id: string; name: string };
   deployedAt: Date;
   workspaceSlug: string;
   systemSlug: string;
-  deploymentSlug: string;
   statuses: JobStatusType[];
 }> = (props) => {
   const {
-    name,
     deployedAt,
-    versionId,
-    tag,
+    version,
     environment,
     workspaceSlug,
     systemSlug,
-    deploymentSlug,
+    deployment,
     statuses,
   } = props;
 
   const isSameVersion: JobCondition = {
     type: JobConditionType.Release,
     operator: ColumnOperator.Equals,
-    value: versionId,
+    value: version.id,
   };
 
   const isSameEnvironment: JobCondition = {
@@ -195,8 +191,8 @@ export const DeploymentVersion: React.FC<{
   const versionUrl = urls
     .workspace(workspaceSlug)
     .system(systemSlug)
-    .deployment(deploymentSlug)
-    .release(versionId)
+    .deployment(deployment.slug)
+    .release(version.id)
     .baseUrl();
 
   return (
@@ -211,11 +207,11 @@ export const DeploymentVersion: React.FC<{
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="max-w-36 overflow-hidden text-ellipsis">
-                        <span className="whitespace-nowrap">{tag}</span>
+                        <span className="whitespace-nowrap">{version.tag}</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px]">
-                      {tag}
+                      {version.tag}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -261,7 +257,7 @@ export const DeploymentVersion: React.FC<{
       </HoverCard>
 
       <DeploymentVersionDropdownMenu
-        deploymentVersion={{ id: versionId, name }}
+        deployment={deployment}
         environment={environment}
         isVersionBeingDeployed={statuses.some((s) =>
           activeStatusType.includes(s),
