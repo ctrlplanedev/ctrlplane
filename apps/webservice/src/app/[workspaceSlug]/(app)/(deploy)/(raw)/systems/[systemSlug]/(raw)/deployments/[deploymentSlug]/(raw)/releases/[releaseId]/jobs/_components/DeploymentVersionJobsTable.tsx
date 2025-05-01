@@ -88,13 +88,15 @@ const EnvironmentTableRow: React.FC<{
   deployment: { id: string };
   environment: { name: string };
   releaseTargets: Array<{
+    id: string;
+    resourceId: string;
     jobs: { status: SCHEMA.JobStatus; id: string }[];
   }>;
 }> = ({ isExpanded, environment, releaseTargets }) => {
-  const statusCounts = _.countBy(
-    releaseTargets.flatMap((target) => target.jobs),
-    (job) => job.status,
-  );
+  const statusCounts = _.chain(releaseTargets)
+    .map((target) => target.jobs[0]!)
+    .countBy((job) => job.status)
+    .value();
 
   return (
     <TableCell colSpan={7} className="bg-neutral-800/40">
@@ -180,7 +182,7 @@ const CreatedAtCell: React.FC<{
 
 const ReleaseTargetRow: React.FC<{
   id: string;
-  resource: { name: string };
+  resource: { id: string; name: string };
   jobs: Array<{
     id: string;
     status: SCHEMA.JobStatus;
