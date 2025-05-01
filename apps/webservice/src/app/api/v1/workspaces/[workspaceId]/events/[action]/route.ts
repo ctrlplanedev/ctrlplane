@@ -12,10 +12,10 @@ import { request } from "~/app/api/v1/middleware";
 export const GET = request()
   .use(authn)
   .use(
-    authz(async ({ can, extra: { params } }) =>
+    authz(async ({ can, params }) =>
       can
-        .perform(Permission.EnvironmentList)
-        .on({ type: "workspace", id: (await params).workspaceId }),
+        .perform(Permission.EventList)
+        .on({ type: "workspace", id: params.workspaceId ?? "" }),
     ),
   )
   .handle<
