@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { NOT_FOUND } from "http-status";
 
 import { eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
@@ -26,7 +28,7 @@ export const GET = request()
       if (environment == null)
         return NextResponse.json(
           { error: "Environment not found" },
-          { status: 404 },
+          { status: NOT_FOUND },
         );
 
       const metadata = Object.fromEntries(
@@ -54,14 +56,15 @@ export const DELETE = request()
       if (findEnv == null)
         return NextResponse.json(
           { error: "Environment not found" },
-          { status: 404 },
+          { status: NOT_FOUND },
         );
 
-      const environment = await ctx.db
-        .delete(schema.environment)
-        .where(eq(schema.environment.id, environmentId))
-        .returning();
+      await getQueue(Channel.DeleteEnvironment).add(
+        environmentId,
+        { id: environmentId },
+        { deduplication: { id: environmentId } },
+      );
 
-      return NextResponse.json(environment, { status: 200 });
+      return NextResponse.json(findEnv);
     },
   );

@@ -400,6 +400,8 @@ test.describe("Environments API", () => {
       },
     );
 
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
     expect(deleteResponse.response.status).toBe(200);
 
     // Try to get the deleted environment - should fail (either 404 or 500)

@@ -1,4 +1,4 @@
-import { eq, takeFirst } from "@ctrlplane/db";
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
@@ -25,13 +25,21 @@ export const deletedReleaseTargetWorker = createWorker(
           .select()
           .from(schema.deployment)
           .where(eq(schema.deployment.id, deploymentId))
-          .then(takeFirst),
+          .then(takeFirstOrNull),
         db
           .select()
           .from(schema.resource)
           .where(eq(schema.resource.id, resourceId))
           .then(takeFirst),
       ]);
+
+      if (deployment == null) {
+        log.warn(
+          "Deployment not found, skipping creating deployment.resource.removed event",
+          { deploymentId },
+        );
+        return;
+      }
 
       const event = {
         action: HookAction.DeploymentResourceRemoved,
@@ -40,7 +48,7 @@ export const deletedReleaseTargetWorker = createWorker(
 
       await handleEvent(event);
     } catch (error) {
-      log.error("Error deleting release target", { error });
+      log.error("Error processing deleted release target", error);
     }
   },
 );
