@@ -8,6 +8,13 @@ import { IconAlertCircle } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 import { isPresent } from "ts-is-present";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ctrlplane/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ComparisonOperator,
@@ -83,8 +90,8 @@ const DeploymentVersionEnvironmentCell: React.FC<
     deployment,
   );
 
-  const { data: deployableEnvs, isLoading: isDeployableEnvsLoading } =
-    api.deployment.version.listDeployableEnvironments.useQuery(
+  const { data: blockedEnvs, isLoading: isBlockedEnvsLoading } =
+    api.deployment.version.listBlockedEnvironments.useQuery(
       deploymentVersion.id,
     );
 
@@ -102,7 +109,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
 
   const isLoading =
     isStatusesLoading ||
-    isDeployableEnvsLoading ||
+    isBlockedEnvsLoading ||
     isApprovalLoading ||
     isResourceCountLoading;
 
@@ -128,9 +135,10 @@ const DeploymentVersionEnvironmentCell: React.FC<
 
   const hasJobAgent = deployment.jobAgentId != null;
 
-  const isBlockedByPolicy = !deployableEnvs?.some(
-    (env) => env.id === environment.id,
+  const blockedEnv = blockedEnvs?.find(
+    (i) => i.environmentId === environment.id,
   );
+  const isBlockedByPolicy = blockedEnv != null;
 
   const isPendingApproval = approval?.status === "pending";
   const showBlockedByPolicy =
@@ -169,12 +177,34 @@ const DeploymentVersionEnvironmentCell: React.FC<
       </div>
     );
 
-  if (showBlockedByPolicy)
+  if (showBlockedByPolicy) {
+    const policyNames = blockedEnv?.policies.map((p) => p.policyName) ?? [];
+    const firstPolicy = policyNames[0];
+
     return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        Blocked by policy.
-      </div>
+      <Popover>
+        <PopoverTrigger className="text-center text-xs text-muted-foreground/70">
+          {policyNames.length === 1
+            ? `Blocked by: ${firstPolicy}`
+            : `Blocked by: ${policyNames.length} policies`}
+        </PopoverTrigger>
+        <PopoverContent className="w-80 text-sm">
+          <div className="space-y-2">
+            <h4 className="text-muted-foreground">
+              Environment Blocking Policies
+            </h4>
+            <div className="space-y-1">
+              {policyNames.map((policyName) => (
+                <div key={policyName} className="flex items-center gap-2">
+                  {policyName}
+                </div>
+              ))}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     );
+  }
 
   if (!hasJobAgent)
     return (

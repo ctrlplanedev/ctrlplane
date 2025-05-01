@@ -380,14 +380,13 @@ export const versionRouter = createTRPCRouter({
     ),
 
   /**
-   * Lists all environments where a deployment version can be deployed based on policy rules.
-   * This is crucial for determining where a version can be released while respecting
-   * environment-specific policies and deployment rules.
+   * Lists all environments where a deployment version is blocked from being deployed based on policy rules.
+   * This is crucial for determining where a version cannot be released due to environment-specific policies and deployment rules.
    *
    * @param input - The UUID of the deployment version to check
-   * @returns An array of environments where the version can be deployed
+   * @returns An array of blocked environments with their blocking reasons
    */
-  listDeployableEnvironments: protectedProcedure
+  listBlockedEnvironments: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.DeploymentVersionGet).on({
@@ -397,8 +396,6 @@ export const versionRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ input }) => {
-      // First, fetch the deployment version with its associated deployment and system environments
-      // This gives us the context needed to check which environments are available
       const version = await db.query.deploymentVersion.findFirst({
         where: eq(SCHEMA.deploymentVersion.id, input),
         with: {
@@ -420,14 +417,10 @@ export const versionRouter = createTRPCRouter({
         isNull(SCHEMA.policyTarget.resourceSelector),
       );
 
-      // Query all applicable policies that could affect deployment to environments
-      // This includes:
-      // - Policies with version selectors (rules about which versions can be deployed)
-      // - Policies targeting specific environments
-      // - Only enabled policies in the same workspace
       const applicablePolicies = await db
         .selectDistinct({
           policyId: SCHEMA.policy.id,
+          policyName: SCHEMA.policy.name,
           versionSelector:
             SCHEMA.policyRuleDeploymentVersionSelector
               .deploymentVersionSelector,
@@ -467,11 +460,12 @@ export const versionRouter = createTRPCRouter({
             eq(SCHEMA.policy.enabled, true),
           ),
         );
+
       const checkEnvironmentPolicy = async (env: SCHEMA.Environment) => {
         const policies = applicablePolicies.filter(
           (p) => p.environmentId === env.id,
         );
-        if (policies.length === 0) return env;
+        if (policies.length === 0) return null;
 
         const exists = await db
           .select()
@@ -491,14 +485,21 @@ export const versionRouter = createTRPCRouter({
           )
           .then(takeFirstOrNull);
 
-        return exists != null ? env : null;
+        if (exists == null) {
+          return {
+            environmentId: env.id,
+            policies,
+          };
+        }
+
+        return null;
       };
 
       const results = await Promise.all(
         environments.map(checkEnvironmentPolicy),
       );
 
-      return results.filter((env): env is SCHEMA.Environment => env != null);
+      return results.filter(isPresent);
     }),
 
   status: createTRPCRouter({
