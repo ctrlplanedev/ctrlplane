@@ -706,6 +706,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/events/{action}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+        action: string;
+      };
+      cookie?: never;
+    };
+    /** Get events by action */
+    get: operations["getEventsByAction"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}": {
     parameters: {
       query?: never;
@@ -894,7 +915,7 @@ export interface components {
     };
     JobWithTrigger: components["schemas"]["Job"] & {
       release?: components["schemas"]["Release"];
-      deploymentVersion?: components["schemas"]["DeploymentVersion"];
+      version?: components["schemas"]["DeploymentVersion"];
       deployment?: components["schemas"]["Deployment"];
       runbook?: components["schemas"]["Runbook"];
       resource?: components["schemas"]["Resource"];
@@ -1271,6 +1292,16 @@ export interface components {
       resource: components["schemas"]["Resource"];
       environment: components["schemas"]["Environment"];
       deployment: components["schemas"]["Deployment"];
+    };
+    Event: {
+      /** Format: uuid */
+      id: string;
+      action: string;
+      payload: {
+        [key: string]: unknown;
+      };
+      /** Format: date-time */
+      createdAt: string;
     };
   };
   responses: never;
@@ -2214,7 +2245,9 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Job"][];
+          "application/json": {
+            jobs: components["schemas"]["Job"][];
+          };
         };
       };
     };
@@ -3783,6 +3816,52 @@ export interface operations {
         content: {
           "application/json": {
             data?: components["schemas"]["Environment"][];
+          };
+        };
+      };
+    };
+  };
+  getEventsByAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+        action: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Events */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Event"][];
+        };
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
           };
         };
       };

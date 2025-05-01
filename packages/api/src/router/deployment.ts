@@ -14,11 +14,7 @@ import {
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import {
-  getEventsForDeploymentRemoved,
-  handleEvent,
-  updateDeployment,
-} from "@ctrlplane/job-dispatch";
+import { updateDeployment } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -323,20 +319,13 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "deployment", id: input }),
     })
     .input(z.string().uuid())
-    .mutation(async ({ ctx, input }) => {
-      const dep = await ctx.db
-        .select()
-        .from(SCHEMA.deployment)
-        .where(eq(SCHEMA.deployment.id, input))
-        .then(takeFirst);
-      const events = await getEventsForDeploymentRemoved(dep, dep.systemId);
-      await Promise.allSettled(events.map(handleEvent));
-      return ctx.db
-        .delete(SCHEMA.deployment)
-        .where(eq(SCHEMA.deployment.id, input))
-        .returning()
-        .then(takeFirst);
-    }),
+    .mutation(({ input }) =>
+      getQueue(Channel.DeleteDeployment).add(
+        input,
+        { id: input },
+        { deduplication: { id: input } },
+      ),
+    ),
 
   byId: protectedProcedure
     .input(z.string().uuid())

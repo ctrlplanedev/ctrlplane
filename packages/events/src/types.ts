@@ -27,6 +27,7 @@ export enum Channel {
   DeleteDeployment = "delete-deployment",
   DeleteEnvironment = "delete-environment",
   DeleteResource = "delete-resource",
+  DeletedReleaseTarget = "deleted-release-target", // NOTE: handles post-processing for already deleted release targets
 
   EvaluateReleaseTarget = "evaluate-release-target",
 
@@ -62,7 +63,10 @@ export type ChannelMap = {
   [Channel.UpdatedResource]: schema.Resource;
   [Channel.UpdatePolicy]: schema.Policy;
 
+  [Channel.DeleteDeployment]: { id: string };
+  [Channel.DeleteEnvironment]: { id: string };
   [Channel.DeleteResource]: schema.Resource;
+  [Channel.DeletedReleaseTarget]: schema.ReleaseTarget;
 
   [Channel.EvaluateReleaseTarget]: EvaluateReleaseTargetJob;
   [Channel.DispatchJob]: { jobId: string };

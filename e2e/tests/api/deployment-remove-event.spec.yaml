@@ -1,0 +1,4 @@
+system:
+  name: "{{ prefix }}-release-target-deletion"
+  slug: "{{ prefix }}-release-target-deletion"
+  description: System for testing release target deletion

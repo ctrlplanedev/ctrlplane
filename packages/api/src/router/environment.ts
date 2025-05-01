@@ -1,21 +1,8 @@
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import {
-  and,
-  count,
-  eq,
-  ilike,
-  inArray,
-  isNotNull,
-  isNull,
-  ne,
-  not,
-  takeFirst,
-  upsertEnv,
-} from "@ctrlplane/db";
+import { and, count, eq, ilike, takeFirst, upsertEnv } from "@ctrlplane/db";
 import {
   createEnvironment,
   deploymentVersionChannel,
@@ -24,22 +11,11 @@ import {
   environmentPolicy,
   environmentPolicyDeploymentVersionChannel,
   environmentPolicyReleaseWindow,
-  resource,
-  resourceMatchesMetadata,
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import {
-  dispatchJobsForAddedResources,
-  getEventsForEnvironmentDeleted,
-  handleEvent,
-} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
-import {
-  ComparisonOperator,
-  ConditionType,
-} from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { environmentPageRouter } from "./environment-page/router";
@@ -291,19 +267,7 @@ export const environmentRouter = createTRPCRouter({
         .where(eq(environment.id, input.id))
         .then(takeFirst);
 
-      const overridePolicy = await ctx.db
-        .select()
-        .from(environmentPolicy)
-        .where(eq(environmentPolicy.environmentId, input.id))
-        .then(takeFirst);
-
-      const getPolicyId = () => {
-        if (input.data.policyId != null) return input.data.policyId;
-        if (input.data.policyId === null) return overridePolicy.id;
-        return oldEnv.environment.policyId;
-      };
-
-      const policyId = getPolicyId();
+      const policyId = oldEnv.environment.policyId;
 
       const updatedEnv = await ctx.db
         .update(environment)
@@ -312,119 +276,10 @@ export const environmentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const { resourceSelector } = input.data;
-      const isUpdatingResourceSelector =
-        resourceSelector != null || oldEnv.environment.resourceSelector != null;
-
       getQueue(Channel.UpdateEnvironment).add(input.id, {
         ...updatedEnv,
         oldSelector: oldEnv.environment.resourceSelector,
       });
-
-      if (isUpdatingResourceSelector) {
-        const hasResourceSelectorsChanged = !_.isEqual(
-          oldEnv.environment.resourceSelector,
-          resourceSelector,
-        );
-
-        if (hasResourceSelectorsChanged) {
-          const isOtherEnv = and(
-            isNotNull(environment.resourceSelector),
-            ne(environment.id, input.id),
-          );
-          const sys = await ctx.db.query.system.findFirst({
-            where: eq(system.id, oldEnv.system.id),
-            with: {
-              environments: { where: isOtherEnv },
-              deployments: true,
-            },
-          });
-
-          const otherEnvFilters =
-            sys?.environments
-              .map((e) => e.resourceSelector)
-              .filter(isPresent) ?? [];
-
-          const oldQuery = resourceMatchesMetadata(
-            ctx.db,
-            oldEnv.environment.resourceSelector,
-          );
-          const newQuery = resourceMatchesMetadata(ctx.db, resourceSelector);
-
-          const newResources =
-            newQuery != null
-              ? await ctx.db
-                  .select({ id: resource.id })
-                  .from(resource)
-                  .where(
-                    and(
-                      eq(resource.workspaceId, oldEnv.system.workspaceId),
-                      isNull(resource.deletedAt),
-                      newQuery,
-                      oldQuery && not(oldQuery),
-                    ),
-                  )
-              : [];
-
-          const removedResources =
-            oldQuery != null
-              ? await ctx.db.query.resource.findMany({
-                  where: and(
-                    eq(resource.workspaceId, oldEnv.system.workspaceId),
-                    isNull(resource.deletedAt),
-                    oldQuery,
-                    newQuery && not(newQuery),
-                  ),
-                })
-              : [];
-
-          if (removedResources.length > 0) {
-            const sysFilter: ResourceCondition = {
-              type: ConditionType.Comparison,
-              operator: ComparisonOperator.Or,
-              not: true,
-              conditions: otherEnvFilters,
-            };
-
-            const isRemovedFromEnv = inArray(
-              resource.id,
-              removedResources.map((r) => r.id),
-            );
-
-            const isRemovedFromSystem =
-              otherEnvFilters.length > 0
-                ? resourceMatchesMetadata(ctx.db, sysFilter)
-                : undefined;
-            const isNotDeleted = isNull(resource.deletedAt);
-
-            const removedFromSystemResources =
-              await ctx.db.query.resource.findMany({
-                where: and(isRemovedFromEnv, isRemovedFromSystem, isNotDeleted),
-              });
-
-            const events = removedFromSystemResources.flatMap((resource) =>
-              (sys?.deployments ?? []).map((deployment) => ({
-                action: "deployment.resource.removed" as const,
-                payload: { deployment, resource },
-              })),
-            );
-
-            const handleEventPromises = events.map(handleEvent);
-            await Promise.allSettled(handleEventPromises);
-          }
-
-          if (newResources.length > 0) {
-            await dispatchJobsForAddedResources(
-              ctx.db,
-              newResources.map((r) => r.id),
-              input.id,
-            );
-            console.log(
-              `Found ${newResources.length} new resources for environment ${input.id}`,
-            );
-          }
-        }
-      }
 
       return updatedEnv;
     }),
@@ -437,17 +292,11 @@ export const environmentRouter = createTRPCRouter({
           .on({ type: "environment", id: input }),
     })
     .input(z.string().uuid())
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .delete(environment)
-        .where(eq(environment.id, input))
-        .returning()
-        .then(takeFirst)
-        .then(async (env) => {
-          const events = await getEventsForEnvironmentDeleted(env);
-          const handleEventPromises = events.map(handleEvent);
-          await Promise.allSettled(handleEventPromises);
-          return env;
-        }),
+    .mutation(({ input }) =>
+      getQueue(Channel.DeleteEnvironment).add(
+        input,
+        { id: input },
+        { deduplication: { id: input } },
+      ),
     ),
 });

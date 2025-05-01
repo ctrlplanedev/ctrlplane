@@ -171,6 +171,8 @@ test.describe("Deployments API", () => {
       },
     );
 
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+
     expect(deleteDeployment.response.status).toBe(200);
     expect(deleteDeployment.data?.id).toBe(deploymentId);
 

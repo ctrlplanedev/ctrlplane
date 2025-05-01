@@ -7,7 +7,10 @@ import { computeDeploymentResourceSelectorWorkerEvent } from "./compute-deployme
 import { computeEnvironmentResourceSelectorWorkerEvent } from "./compute-environment-resource-selector.js";
 import { computePolicyTargetReleaseTargetSelectorWorkerEvent } from "./compute-policy-target-release-target-selector.js";
 import { computeSystemsReleaseTargetsWorker } from "./compute-systems-release-targets.js";
+import { deleteDeploymentWorker } from "./delete-deployment.js";
+import { deleteEnvironmentWorker } from "./delete-environment.js";
 import { deleteResourceWorker } from "./delete-resource.js";
+import { deletedReleaseTargetWorker } from "./deleted-release-target.js";
 import { evaluateReleaseTargetWorker } from "./evaluate-release-target.js";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
 import { newDeploymentVersionWorker } from "./new-deployment-version.js";
@@ -46,6 +49,9 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.ResourceScan]: resourceScanWorker,
 
   [Channel.DeleteResource]: deleteResourceWorker,
+  [Channel.DeleteDeployment]: deleteDeploymentWorker,
+  [Channel.DeleteEnvironment]: deleteEnvironmentWorker,
+  [Channel.DeletedReleaseTarget]: deletedReleaseTargetWorker,
 
   [Channel.ComputeEnvironmentResourceSelector]:
     computeEnvironmentResourceSelectorWorkerEvent,

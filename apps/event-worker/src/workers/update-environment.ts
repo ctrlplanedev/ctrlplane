@@ -1,38 +1,12 @@
-import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, eq, not, selector } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { handleEvent } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
 const log = logger.child({
   module: "env-selector-update",
   function: "envSelectorUpdateWorker",
 });
-
-const dispatchExitHooks = async (
-  db: Tx,
-  systemId: string,
-  exitedResources: schema.Resource[],
-) => {
-  const deployments = await db
-    .select()
-    .from(schema.deployment)
-    .where(eq(schema.deployment.systemId, systemId));
-
-  const events = exitedResources.flatMap((resource) =>
-    deployments.map((deployment) => ({
-      action: "deployment.resource.removed" as const,
-      payload: { deployment, resource },
-    })),
-  );
-
-  const handleEventPromises = events.map(handleEvent);
-  await Promise.allSettled(handleEventPromises);
-};
 
 /**
  * Worker that handles environment updates.
@@ -60,18 +34,6 @@ export const updateEnvironmentWorker = createWorker(
         job.data.id,
         job.data,
       );
-
-      const resourceQueryBuilder = selector().query().resources();
-      const oldCondition = resourceQueryBuilder.where(oldSelector).sql();
-      const newCondition = resourceQueryBuilder.where(resourceSelector).sql();
-      const notNewCondition =
-        newCondition != null ? not(newCondition) : undefined;
-
-      const exitedResources = await db.query.resource.findMany({
-        where: and(oldCondition, notNewCondition),
-      });
-
-      await dispatchExitHooks(db, job.data.systemId, exitedResources);
     } catch (error) {
       log.error("Error updating environment", { error });
       throw error;
