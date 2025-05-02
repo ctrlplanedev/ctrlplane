@@ -1,248 +1,391 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { DeploymentVersionStatusType } from "@ctrlplane/validators/releases";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
+import React from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconAlertCircle } from "@tabler/icons-react";
+import {
+  IconBoltOff,
+  IconCubeOff,
+  IconFilterX,
+  IconShield,
+} from "@tabler/icons-react";
+import { format } from "date-fns";
+import _ from "lodash";
 import { useInView } from "react-intersection-observer";
 import { isPresent } from "ts-is-present";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
-import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
-  ComparisonOperator,
-  ConditionType,
-} from "@ctrlplane/validators/conditions";
-import { JobStatus } from "@ctrlplane/validators/jobs";
-import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@ctrlplane/ui/hover-card";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
-import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { StatusIcon } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/StatusIcon";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { DeployButton } from "./DeployButton";
-import { DeploymentVersion as DepVersion } from "./TableCells";
 
-type DepVersion = {
-  id: string;
+const SkeletonCell: React.FC = () => (
+  <div className="flex h-full w-full items-center gap-2">
+    <Skeleton className="h-6 w-6 rounded-full" />
+    <div className="flex flex-col gap-2">
+      <Skeleton className="h-[16px] w-20 rounded-full" />
+      <Skeleton className="h-3 w-20 rounded-full" />
+    </div>
+  </div>
+);
+
+const ActiveJobsCell: React.FC<{
+  statuses: SCHEMA.JobStatus[];
+  deploymentVersion: { id: string; tag: string; createdAt: Date };
+}> = ({ statuses, deploymentVersion }) => {
+  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>();
+
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .release(deploymentVersion.id)
+    .jobs();
+
+  return (
+    <div className="flex h-full w-full items-center justify-center p-1">
+      <Link
+        href={versionUrl}
+        className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
+      >
+        <StatusIcon statuses={statuses} />
+        <div className="flex flex-col">
+          <div className="max-w-36 truncate font-semibold">
+            {deploymentVersion.tag}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {format(deploymentVersion.createdAt, "MMM d, hh:mm aa")}
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+};
+
+const NoReleaseTargetsCell: React.FC<{
   tag: string;
-  name: string;
-  createdAt: Date;
-  status: DeploymentVersionStatusType;
-  deploymentId: string;
+}> = ({ tag }) => (
+  <div className="flex h-full w-full items-center justify-center p-1">
+    <div className="flex w-full items-center gap-2 rounded-md p-2">
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+        <IconCubeOff className="h-4 w-4" strokeWidth={2} />
+      </div>
+      <div className="flex flex-col">
+        <div className="max-w-36 truncate font-semibold">{tag}</div>
+        <div className="text-xs text-muted-foreground">No resources</div>
+      </div>
+    </div>
+  </div>
+);
+
+const NoJobAgentCell: React.FC<{
+  tag: string;
+}> = ({ tag }) => {
+  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>();
+
+  const workflowConfigUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .workflow();
+
+  return (
+    <div className="flex h-full w-full items-center justify-center p-1">
+      <Link
+        href={workflowConfigUrl}
+        className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
+      >
+        <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+          <IconBoltOff className="h-4 w-4" strokeWidth={2} />
+        </div>
+        <div className="flex flex-col">
+          <div className="max-w-36 truncate font-semibold">{tag}</div>
+          <div className="text-xs text-muted-foreground">No job agent</div>
+        </div>
+      </Link>
+    </div>
+  );
 };
 
-type DeploymentVersionEnvironmentCellProps = {
-  environment: SCHEMA.Environment;
-  deployment: SCHEMA.Deployment;
-  deploymentVersion: DepVersion;
-};
-
-const useGetResourceCount = (
-  environment: SCHEMA.Environment,
-  deployment: SCHEMA.Deployment,
-) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-
-  const { data: workspace, isLoading: isWorkspaceLoading } =
-    api.workspace.bySlug.useQuery(workspaceSlug);
-
-  const condition: ResourceCondition | undefined =
-    environment.resourceSelector != null
-      ? {
-          type: ConditionType.Comparison,
-          operator: ComparisonOperator.And,
-          conditions: [
-            environment.resourceSelector,
-            deployment.resourceSelector,
-          ].filter(isPresent),
-        }
-      : undefined;
-
-  const { data: resources, isLoading: isResourcesLoading } =
-    api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId: workspace?.id ?? "", filter: condition, limit: 0 },
-      { enabled: workspace != null && condition != null },
-    );
-
-  return {
-    resourceCount: resources?.total ?? 0,
-    isResourceCountLoading: isResourcesLoading || isWorkspaceLoading,
+type PolicyEvaluationResult = {
+  policies: { id: string; name: string }[];
+  rules: {
+    anyApprovals: Record<string, string[]>;
+    roleApprovals: Record<string, string[]>;
+    userApprovals: Record<string, string[]>;
+    versionSelector: Record<string, boolean>;
   };
 };
 
-const DeploymentVersionEnvironmentCell: React.FC<
-  DeploymentVersionEnvironmentCellProps
-> = ({ environment, deployment, deploymentVersion }) => {
-  const { workspaceSlug, systemSlug } = useParams<{
+const getPoliciesBlockingByVersionSelector = (
+  policyEvaluations: PolicyEvaluationResult,
+) =>
+  Object.entries(policyEvaluations.rules.versionSelector)
+    .filter(([_, isPassing]) => !isPassing)
+    .map(([policyId]) =>
+      policyEvaluations.policies.find((p) => p.id === policyId),
+    )
+    .filter(isPresent);
+
+const BlockedByVersionSelectorCell: React.FC<{
+  policies: { id: string; name: string }[];
+  deploymentVersion: { id: string; tag: string };
+}> = ({ policies, deploymentVersion }) => {
+  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
     workspaceSlug: string;
     systemSlug: string;
+    deploymentSlug: string;
   }>();
 
-  const { resourceCount, isResourceCountLoading } = useGetResourceCount(
-    environment,
-    deployment,
-  );
-
-  const { data: blockedEnvs, isLoading: isBlockedEnvsLoading } =
-    api.deployment.version.listBlockedEnvironments.useQuery(
-      deploymentVersion.id,
-    );
-
-  const { data: approval, isLoading: isApprovalLoading } =
-    api.environment.policy.approval.statusByVersionPolicyId.useQuery({
-      versionId: deploymentVersion.id,
-      policyId: environment.policyId,
-    });
-
-  const { data: statuses, isLoading: isStatusesLoading } =
-    api.deployment.version.status.byEnvironmentId.useQuery(
-      { versionId: deploymentVersion.id, environmentId: environment.id },
-      { refetchInterval: 2_000 },
-    );
-
-  const isLoading =
-    isStatusesLoading ||
-    isBlockedEnvsLoading ||
-    isApprovalLoading ||
-    isResourceCountLoading;
-
-  if (isLoading)
-    return (
-      <div className="flex h-full w-full items-center gap-2">
-        <Skeleton className="h-6 w-6 rounded-full" />
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-[16px] w-20 rounded-full" />
-          <Skeleton className="h-3 w-20 rounded-full" />
-        </div>
-      </div>
-    );
-
-  if (resourceCount === 0)
-    return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        No resources
-      </div>
-    );
-
-  const isAlreadyDeployed = statuses != null && statuses.length > 0;
-
-  const hasJobAgent = deployment.jobAgentId != null;
-
-  const blockedEnv = blockedEnvs?.find(
-    (i) => i.environmentId === environment.id,
-  );
-  const isBlockedByPolicy = blockedEnv != null;
-
-  const isPendingApproval = approval?.status === "pending";
-  const showBlockedByPolicy =
-    isBlockedByPolicy &&
-    !statuses?.some((s) => s.job.status === JobStatus.InProgress);
-
-  const showVersion =
-    isAlreadyDeployed && !showBlockedByPolicy && !isPendingApproval;
-
-  if (showVersion)
-    return (
-      <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
-        <DepVersion
-          workspaceSlug={workspaceSlug}
-          systemSlug={systemSlug}
-          deployment={deployment}
-          version={deploymentVersion}
-          environment={environment}
-          deployedAt={deploymentVersion.createdAt}
-          statuses={statuses.map((s) => s.job.status)}
-        />
-      </div>
-    );
-
-  if (deploymentVersion.status === DeploymentVersionStatus.Building)
-    return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        Version is building
-      </div>
-    );
-
-  if (deploymentVersion.status === DeploymentVersionStatus.Failed)
-    return (
-      <div className="text-center text-xs text-red-500">
-        Version build failed
-      </div>
-    );
-
-  if (showBlockedByPolicy) {
-    const policyNames = blockedEnv.policies.map((p) => p.policyName) ?? [];
-    const firstPolicy = policyNames[0];
-
-    return (
-      <Popover>
-        <PopoverTrigger className="text-center text-xs text-muted-foreground/70">
-          {policyNames.length === 1
-            ? `Blocked by: ${firstPolicy}`
-            : `Blocked by: ${policyNames.length} policies`}
-        </PopoverTrigger>
-        <PopoverContent className="w-80 text-sm">
-          <div className="space-y-2">
-            <h4 className="text-muted-foreground">
-              Environment Blocking Policies
-            </h4>
-            <div className="space-y-1">
-              {policyNames.map((policyName) => (
-                <div key={policyName} className="flex items-center gap-2">
-                  {policyName}
-                </div>
-              ))}
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .release(deploymentVersion.id)
+    .checks();
+  return (
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <div className="flex h-full w-full items-center justify-center p-1">
+          <Link
+            href={versionUrl}
+            className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
+          >
+            <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+              <IconFilterX className="h-4 w-4" strokeWidth={2} />
             </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    );
-  }
-
-  if (!hasJobAgent)
-    return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        No job agent
-      </div>
-    );
-
-  if (isPendingApproval)
-    return (
-      <ApprovalDialog
-        policyId={approval.policyId}
-        deploymentVersion={deploymentVersion}
-        environmentId={environment.id}
-      >
-        <div className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50">
-          <div className="flex items-center gap-2">
-            <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
-              <IconAlertCircle className="h-4 w-4" strokeWidth={2} />
-            </div>
-            <div>
+            <div className="flex flex-col">
               <div className="max-w-36 truncate font-semibold">
-                <span className="whitespace-nowrap">
-                  {deploymentVersion.tag}
-                </span>
+                {deploymentVersion.tag}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Blocked by version selector
+              </div>
+            </div>
+          </Link>
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-80">
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <IconFilterX className="h-3 w-3" strokeWidth={2} />
+            Policies blocking version
+          </div>
+          {policies.map((p) => (
+            <Link
+              href={urls
+                .workspace(workspaceSlug)
+                .policies()
+                .edit(p.id)
+                .deploymentFlow()}
+              key={p.id}
+              className="max-w-72 truncate underline-offset-1 hover:underline"
+            >
+              {p.name}
+            </Link>
+          ))}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+};
+
+const getPoliciesWithApprovalRequired = (
+  policyEvaluations: PolicyEvaluationResult,
+) => {
+  const policiesWithAnyApprovalRequired = Object.entries(
+    policyEvaluations.rules.anyApprovals,
+  )
+    .filter(([_, reasons]) => reasons.length > 0)
+    .map(([policyId]) =>
+      policyEvaluations.policies.find((p) => p.id === policyId),
+    )
+    .filter(isPresent);
+
+  const policiesWithRoleApprovalRequired = Object.entries(
+    policyEvaluations.rules.roleApprovals,
+  )
+    .filter(([_, reasons]) => reasons.length > 0)
+    .map(([policyId]) =>
+      policyEvaluations.policies.find((p) => p.id === policyId),
+    )
+    .filter(isPresent);
+
+  const policiesWithUserApprovalRequired = Object.entries(
+    policyEvaluations.rules.userApprovals,
+  )
+    .filter(([_, reasons]) => reasons.length > 0)
+    .map(([policyId]) =>
+      policyEvaluations.policies.find((p) => p.id === policyId),
+    )
+    .filter(isPresent);
+
+  return _.uniqBy(
+    [
+      ...policiesWithAnyApprovalRequired,
+      ...policiesWithRoleApprovalRequired,
+      ...policiesWithUserApprovalRequired,
+    ],
+    (p) => p.id,
+  );
+};
+
+const ApprovalRequiredCell: React.FC<{
+  policies: { id: string; name: string }[];
+  deploymentVersion: { id: string; tag: string };
+}> = ({ policies, deploymentVersion }) => {
+  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>();
+
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .release(deploymentVersion.id)
+    .checks();
+  return (
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <div className="flex h-full w-full items-center justify-center p-1">
+          <Link
+            href={versionUrl}
+            className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
+          >
+            <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
+              <IconShield className="h-4 w-4" strokeWidth={2} />
+            </div>
+            <div className="flex flex-col">
+              <div className="max-w-36 truncate font-semibold">
+                {deploymentVersion.tag}
               </div>
               <div className="text-xs text-muted-foreground">
                 Approval required
               </div>
             </div>
-          </div>
-
-          <DeploymentVersionDropdownMenu
-            deployment={deployment}
-            environment={environment}
-            isVersionBeingDeployed={false}
-          />
+          </Link>
         </div>
-      </ApprovalDialog>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-80">
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <IconShield className="h-3 w-3" strokeWidth={2} />
+            Policies missing approval
+          </div>
+          {policies.map((p) => (
+            <Link
+              href={urls
+                .workspace(workspaceSlug)
+                .policies()
+                .edit(p.id)
+                .qualitySecurity()}
+              key={p.id}
+              className="max-w-72 truncate underline-offset-1 hover:underline"
+            >
+              {p.name}
+            </Link>
+          ))}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+};
+
+type DeploymentVersionEnvironmentCellProps = {
+  environment: SCHEMA.Environment;
+  deployment: SCHEMA.Deployment;
+  deploymentVersion: SCHEMA.DeploymentVersion;
+};
+
+const DeploymentVersionEnvironmentCell: React.FC<
+  DeploymentVersionEnvironmentCellProps
+> = ({ environment, deployment, deploymentVersion }) => {
+  const { data: releaseTargets, isLoading: isReleaseTargetsLoading } =
+    api.releaseTarget.list.useQuery({
+      environmentId: environment.id,
+      deploymentId: deployment.id,
+    });
+
+  const { data: policyEvaluations, isLoading: isPolicyEvaluationsLoading } =
+    api.policy.evaluate.useQuery({
+      environmentId: environment.id,
+      versionId: deploymentVersion.id,
+    });
+
+  const { data: jobs, isLoading: isJobsLoading } =
+    api.deployment.version.job.byEnvironment.useQuery({
+      versionId: deploymentVersion.id,
+      environmentId: environment.id,
+    });
+
+  const isLoading =
+    isReleaseTargetsLoading || isPolicyEvaluationsLoading || isJobsLoading;
+  if (isLoading) return <SkeletonCell />;
+
+  const hasJobs = jobs != null && jobs.length > 0;
+  if (hasJobs)
+    return (
+      <ActiveJobsCell
+        statuses={jobs.map((j) => j.status)}
+        deploymentVersion={deploymentVersion}
+      />
     );
 
-  return (
-    <DeployButton deploymentId={deployment.id} environmentId={environment.id} />
-  );
+  const hasNoReleaseTargets =
+    releaseTargets == null || releaseTargets.length === 0;
+  if (hasNoReleaseTargets)
+    return <NoReleaseTargetsCell tag={deploymentVersion.tag} />;
+
+  const policiesWithBlockingVersionSelector =
+    policyEvaluations != null
+      ? getPoliciesBlockingByVersionSelector(policyEvaluations)
+      : [];
+
+  const isBlockedByVersionSelector =
+    policiesWithBlockingVersionSelector.length > 0;
+  if (isBlockedByVersionSelector)
+    return (
+      <BlockedByVersionSelectorCell
+        policies={policiesWithBlockingVersionSelector}
+        deploymentVersion={deploymentVersion}
+      />
+    );
+
+  const policiesWithApprovalRequired =
+    policyEvaluations != null
+      ? getPoliciesWithApprovalRequired(policyEvaluations)
+      : [];
+
+  const isApprovalRequired = policiesWithApprovalRequired.length > 0;
+  if (isApprovalRequired)
+    return (
+      <ApprovalRequiredCell
+        policies={policiesWithApprovalRequired}
+        deploymentVersion={deploymentVersion}
+      />
+    );
+
+  const hasNoJobAgent = deployment.jobAgentId == null;
+  if (hasNoJobAgent) return <NoJobAgentCell tag={deploymentVersion.tag} />;
+
+  return <NoReleaseTargetsCell tag={deploymentVersion.tag} />;
 };
 
 export const LazyDeploymentVersionEnvironmentCell: React.FC<
@@ -251,7 +394,7 @@ export const LazyDeploymentVersionEnvironmentCell: React.FC<
   const { ref, inView } = useInView();
 
   return (
-    <div className="flex w-full items-center justify-center" ref={ref}>
+    <div className="flex h-full w-full items-center justify-center" ref={ref}>
       {!inView && <p className="text-xs text-muted-foreground">Loading...</p>}
       {inView && <DeploymentVersionEnvironmentCell {...props} />}
     </div>

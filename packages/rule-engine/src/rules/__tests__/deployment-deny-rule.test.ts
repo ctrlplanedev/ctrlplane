@@ -1,7 +1,6 @@
 import { Frequency, RRule } from "rrule";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import type { RuleEngineContext } from "../../types.js";
 import { DeploymentDenyRule } from "../deployment-deny-rule.js";
 
 export type ResolvedRelease = {
@@ -17,26 +16,6 @@ export type ResolvedRelease = {
 };
 
 describe("DeploymentDenyRule", () => {
-  let context: RuleEngineContext;
-
-  beforeEach(() => {
-    context = {
-      desiredReleaseId: null,
-      deployment: {
-        id: "deploy-1",
-        name: "Test Deployment",
-      },
-      environment: {
-        id: "env-1",
-        name: "Test Environment",
-      },
-      resource: {
-        id: "res-1",
-        name: "Test Resource",
-      },
-    };
-  });
-
   it("should allow deployments when not in a denied period", () => {
     // Create a rule that denies deployments on Mondays
     const rule = new DeploymentDenyRule({
@@ -50,7 +29,7 @@ describe("DeploymentDenyRule", () => {
       new Date("2023-01-08T12:00:00Z"), // Sunday
     );
 
-    const result = rule.passing(context);
+    const result = rule.passing();
 
     // Expect all releases to be allowed
     expect(result.passing).toBe(true);
@@ -71,7 +50,7 @@ describe("DeploymentDenyRule", () => {
       new Date("2023-01-02T12:00:00Z"), // Monday, Jan 2, 2023
     );
 
-    const result = rule.passing(context);
+    const result = rule.passing();
 
     // Expect no releases to be allowed
     expect(result.passing).toBe(false);
@@ -92,7 +71,7 @@ describe("DeploymentDenyRule", () => {
       new Date("2023-01-02T12:00:00Z"), // Monday, Jan 2, 2023
     );
 
-    const result = rule.passing(context);
+    const result = rule.passing();
 
     // Expect the custom reason to be returned
     expect(result.rejectionReason).toBeDefined();
@@ -113,7 +92,7 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-01-04T10:00:00Z"),
     );
-    let result = rule.passing(context);
+    let result = rule.passing();
     expect(result.passing).toBe(false);
     expect(result.rejectionReason).toBeDefined();
 
@@ -121,7 +100,7 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-01-04T08:00:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(true);
     expect(result.rejectionReason).toBeUndefined();
 
@@ -129,7 +108,7 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-01-04T18:00:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(true);
     expect(result.rejectionReason).toBeUndefined();
   });
@@ -148,7 +127,7 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-01-05T15:00:00Z"), // 10:00 AM EST
     );
-    let result = rule.passing(context);
+    let result = rule.passing();
     expect(result.passing).toBe(false);
     expect(result.rejectionReason).toBeDefined();
 
@@ -156,7 +135,7 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-01-04T13:00:00Z"), // 8:00 AM EST
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(true);
     expect(result.rejectionReason).toBeUndefined();
   });
@@ -179,14 +158,14 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-11T21:30:00Z"),
     );
-    let result = rule.passing(context);
+    let result = rule.passing();
     expect(result.passing).toBe(false);
     expect(result.rejectionReason).toBeDefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-12T21:30:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(true);
     expect(result.rejectionReason).toBeUndefined();
 
@@ -200,14 +179,14 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-11T13:30:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(false);
     expect(result.rejectionReason).toBeDefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-12T13:30:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(true);
     expect(result.rejectionReason).toBeUndefined();
   });
@@ -230,14 +209,14 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-11-04T13:30:00Z"),
     );
-    let result = rule.passing(context);
+    let result = rule.passing();
     expect(result.passing).toBe(false); // Should be DENIED
     expect(result.rejectionReason).toBeDefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-11-05T13:30:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(true); // Should be ALLOWED
     expect(result.rejectionReason).toBeUndefined();
 
@@ -251,14 +230,14 @@ describe("DeploymentDenyRule", () => {
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-11-04T21:30:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(true); // Should be ALLOWED
     expect(result.rejectionReason).toBeUndefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-11-05T21:30:00Z"),
     );
-    result = rule.passing(context);
+    result = rule.passing();
     expect(result.passing).toBe(false); // Should be DENIED
     expect(result.rejectionReason).toBeDefined();
   });

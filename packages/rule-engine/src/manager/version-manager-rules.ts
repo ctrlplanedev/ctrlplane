@@ -20,7 +20,7 @@ export const denyWindows = (policy: Policy | null) =>
           }),
       );
 
-const versionAnyApprovalRule = (
+export const versionAnyApprovalRule = (
   approvalRules?: Policy["versionAnyApprovals"] | null,
 ) => {
   if (approvalRules == null) return [];
@@ -32,7 +32,7 @@ const versionAnyApprovalRule = (
   ];
 };
 
-const versionRoleApprovalRule = (
+export const versionRoleApprovalRule = (
   approvalRules?: Policy["versionRoleApprovals"] | null,
 ) => {
   if (approvalRules == null) return [];
@@ -45,7 +45,7 @@ const versionRoleApprovalRule = (
   );
 };
 
-const versionUserApprovalRule = (
+export const versionUserApprovalRule = (
   approvalRules?: Policy["versionUserApprovals"] | null,
 ) => {
   if (approvalRules == null) return [];

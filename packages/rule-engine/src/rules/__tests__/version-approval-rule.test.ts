@@ -1,29 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import type { RuleEngineContext } from "../../types.js";
 import { VersionApprovalRule } from "../version-approval-rule.js";
 
 describe("VersionApprovalRule", () => {
-  let context: RuleEngineContext;
-
-  beforeEach(() => {
-    // Create a sample context
-    context = {
-      desiredReleaseId: null,
-      deployment: {
-        id: "deploy-1",
-        name: "Test Deployment",
-      },
-      environment: {
-        id: "env-1",
-        name: "Test Environment",
-      },
-      resource: {
-        id: "res-1",
-        name: "Test Resource",
-      },
-    };
-  });
   it("should filter out versions with no approvals when minApprovals > 0", async () => {
     const mockGetApprovalRecords = vi.fn().mockResolvedValue([]);
 
@@ -49,14 +28,11 @@ describe("VersionApprovalRule", () => {
       },
     ];
 
-    const result = await rule.filter(context, candidates);
+    const result = await rule.filter(candidates);
 
     expect(result.allowedCandidates.length).toBe(0);
     expect(result.rejectionReasons).toBeDefined();
-    expect(mockGetApprovalRecords).toHaveBeenCalledWith(context, [
-      "ver-1",
-      "ver-2",
-    ]);
+    expect(mockGetApprovalRecords).toHaveBeenCalledWith(["ver-1", "ver-2"]);
   });
 
   it("should filter out rejected versions regardless of approval count", async () => {
@@ -109,7 +85,7 @@ describe("VersionApprovalRule", () => {
       },
     ];
 
-    const result = await rule.filter(context, candidates);
+    const result = await rule.filter(candidates);
 
     expect(result.allowedCandidates.length).toBe(1);
     expect(result.allowedCandidates[0]?.id).toBe("ver-2");
@@ -163,7 +139,7 @@ describe("VersionApprovalRule", () => {
       },
     ];
 
-    const result = await rule.filter(context, candidates);
+    const result = await rule.filter(candidates);
 
     expect(result.allowedCandidates.length).toBe(1);
     expect(result.allowedCandidates[0]?.id).toBe("ver-1");
@@ -195,7 +171,7 @@ describe("VersionApprovalRule", () => {
       },
     ];
 
-    const result = await rule.filter(context, candidates);
+    const result = await rule.filter(candidates);
 
     expect(result.allowedCandidates.length).toBe(2);
     expect(result.rejectionReasons).toBeDefined();
@@ -247,7 +223,7 @@ describe("VersionApprovalRule", () => {
       },
     ];
 
-    const result = await rule.filter(context, candidates);
+    const result = await rule.filter(candidates);
 
     expect(result.allowedCandidates.length).toBe(0);
     expect(result.rejectionReasons).toBeDefined();

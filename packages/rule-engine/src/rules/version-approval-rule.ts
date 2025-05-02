@@ -5,11 +5,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Version } from "../manager/version-rule-engine.js";
-import type {
-  FilterRule,
-  RuleEngineContext,
-  RuleEngineRuleResult,
-} from "../types.js";
+import type { FilterRule, RuleEngineRuleResult } from "../types.js";
 
 type Record = {
   versionId: string;
@@ -19,7 +15,6 @@ type Record = {
 };
 
 export type GetApprovalRecordsFunc = (
-  context: RuleEngineContext,
   versionIds: string[],
 ) => Promise<Record[]>;
 
@@ -34,19 +29,13 @@ export class VersionApprovalRule implements FilterRule<Version> {
 
   constructor(private readonly options: VersionApprovalRuleOptions) {}
 
-  async filter(
-    context: RuleEngineContext,
-    candidates: Version[],
-  ): Promise<RuleEngineRuleResult<Version>> {
+  async filter(candidates: Version[]): Promise<RuleEngineRuleResult<Version>> {
     const rejectionReasons = new Map<string, string>();
     const versionIds = _(candidates)
       .map((r) => r.id)
       .uniq()
       .value();
-    const approvalRecords = await this.options.getApprovalRecords(
-      context,
-      versionIds,
-    );
+    const approvalRecords = await this.options.getApprovalRecords(versionIds);
 
     const allowedCandidates = candidates.filter((release) => {
       const records = approvalRecords.filter((r) => r.versionId === release.id);
@@ -62,7 +51,13 @@ export class VersionApprovalRule implements FilterRule<Version> {
         return false;
       }
 
-      return approvals.length >= this.options.minApprovals;
+      const meetsMinApprovals = approvals.length >= this.options.minApprovals;
+      if (!meetsMinApprovals)
+        rejectionReasons.set(
+          release.id,
+          `Missing ${this.options.minApprovals - approvals.length} approvals.`,
+        );
+      return meetsMinApprovals;
     });
 
     return { allowedCandidates, rejectionReasons };
@@ -70,7 +65,6 @@ export class VersionApprovalRule implements FilterRule<Version> {
 }
 
 export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
-  _: RuleEngineContext,
   versionIds: string[],
 ) => {
   const records = await db.query.policyRuleAnyApprovalRecord.findMany({
@@ -86,7 +80,6 @@ export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
 };
 
 export const getRoleApprovalRecords: GetApprovalRecordsFunc = async (
-  _: RuleEngineContext,
   versionIds: string[],
 ) => {
   const records = await db.query.policyRuleRoleApprovalRecord.findMany({
@@ -102,7 +95,6 @@ export const getRoleApprovalRecords: GetApprovalRecordsFunc = async (
 };
 
 export const getUserApprovalRecords: GetApprovalRecordsFunc = async (
-  _: RuleEngineContext,
   versionIds: string[],
 ) => {
   const records = await db.query.policyRuleUserApprovalRecord.findMany({
