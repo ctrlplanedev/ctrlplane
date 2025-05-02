@@ -1,11 +1,13 @@
 import type { Job, WorkerOptions } from "bullmq";
 import { Queue, Worker } from "bullmq";
 import { BullMQOtel } from "bullmq-otel";
+import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
 
 import type { ChannelMap } from "./types.js";
 import { bullmqRedis } from "./redis.js";
+import { Channel } from "./types.js";
 
 export const createWorker = <T extends keyof ChannelMap>(
   name: T,
@@ -35,3 +37,33 @@ export const getQueue = <T extends keyof ChannelMap>(name: T) => {
 
 export * from "./types.js";
 export * from "./redis.js";
+
+export const queueEvaluateReleaseTarget = async (
+  value: ChannelMap[Channel.EvaluateReleaseTarget],
+) => {
+  const q = getQueue(Channel.EvaluateReleaseTarget);
+  const exists =
+    (await q.getWaiting()).filter((t) =>
+      _.isEqual(
+        _.pick(value, [
+          "environmentId",
+          "resourceId",
+          "deploymentId",
+          "skipDuplicateCheck",
+        ]),
+        _.pick(t.data, [
+          "environmentId",
+          "resourceId",
+          "deploymentId",
+          "skipDuplicateCheck",
+        ]),
+      ),
+    ).length > 0;
+
+  if (exists) return;
+
+  return q.add(
+    `${value.environmentId}-${value.resourceId}-${value.deploymentId}`,
+    value,
+  );
+};

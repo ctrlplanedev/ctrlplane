@@ -5,7 +5,12 @@ import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import {
+  Channel,
+  createWorker,
+  getQueue,
+  queueEvaluateReleaseTarget,
+} from "@ctrlplane/events";
 import { makeWithSpan, trace } from "@ctrlplane/logger";
 import {
   VariableReleaseManager,
@@ -177,9 +182,7 @@ export const evaluateReleaseTargetWorker = createWorker(
       const isRowLocked = e.code === "55P03";
       const isReleaseTargetNotCommittedYet = e.code === "23503";
       if (isRowLocked || isReleaseTargetNotCommittedYet) {
-        await getQueue(Channel.EvaluateReleaseTarget).add(job.name, job.data, {
-          delay: 500,
-        });
+        await queueEvaluateReleaseTarget(job.data);
         return;
       }
       throw e;

@@ -34,14 +34,6 @@ const triggerPolicyEvaluation = async () => {
       );
       totalProcessed += releaseTargets.length;
 
-      // await getQueue(Channel.EvaluateReleaseTarget).addBulk(
-      //   releaseTargets.map((rt) => ({
-      //     name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-      //     data: rt,
-      //     priority: 10,
-      //   })),
-      // );
-
       offset += PAGE_SIZE;
     } catch (error) {
       logger.error("Error during policy evaluation:", error);
