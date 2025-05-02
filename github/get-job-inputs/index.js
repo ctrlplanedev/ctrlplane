@@ -27992,130 +27992,129 @@ function removeTrailingSlash(url) {
 }
 
 ;// CONCATENATED MODULE: ../../packages/node-sdk/dist/index.js
+// src/index.ts
 
 function dist_createClient(options) {
-    return createClient({
-        baseUrl: options.baseUrl ?? "https://app.ctrlplane.com",
-        ...options,
-        fetch: (input) => {
-            const url = new URL(input.url);
-            url.pathname = `/api${url.pathname}`;
-            return fetch(new Request(url.toString(), input));
-        },
-        headers: { "x-api-key": options?.apiKey },
+  return createClient({
+    baseUrl: options.baseUrl ?? "https://app.ctrlplane.com",
+    ...options,
+    fetch: (input) => {
+      const url = new URL(input.url);
+      url.pathname = `/api${url.pathname}`;
+      return fetch(new Request(url.toString(), input));
+    },
+    headers: { "x-api-key": options?.apiKey }
+  });
+}
+var ResourceProvider = class {
+  /**
+   * Creates a new TargetProvider instance
+   * @param options - Configuration options
+   * @param options.workspaceId - ID of the workspace
+   * @param options.name - Name of the target provider
+   * @param client - API client instance
+   */
+  constructor(options, client) {
+    this.options = options;
+    this.client = client;
+  }
+  provider = null;
+  /**
+   * Gets the resource provider details, caching the result
+   * @returns The resource provider details
+   */
+  async get() {
+    if (this.provider != null) {
+      return this.provider;
+    }
+    const { data } = await this.client.GET(
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+      { params: { path: this.options } }
+    );
+    this.provider = data;
+    return this.provider;
+  }
+  /**
+   * Sets the resources for this provider
+   * @param resources - Array of resources to set
+   * @returns The API response
+   * @throws Error if the scanner is not found
+   */
+  async set(resources) {
+    const scanner = await this.get();
+    if (scanner == null) throw new Error("Scanner not found");
+    return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
+      params: { path: { providerId: scanner.id } },
+      body: { resources: uniqBy(resources, (t) => t.identifier) }
     });
-}
-/**
- * Class for managing target providers in the Ctrlplane API
- */
-class ResourceProvider {
-    options;
-    client;
-    /**
-     * Creates a new TargetProvider instance
-     * @param options - Configuration options
-     * @param options.workspaceId - ID of the workspace
-     * @param options.name - Name of the target provider
-     * @param client - API client instance
-     */
-    constructor(options, client) {
-        this.options = options;
-        this.client = client;
+  }
+};
+var JobAgent = class {
+  constructor(options, client) {
+    this.options = options;
+    this.client = client;
+  }
+  agent = null;
+  async get() {
+    if (this.agent != null) {
+      return this.agent;
     }
-    provider = null;
-    /**
-     * Gets the resource provider details, caching the result
-     * @returns The resource provider details
-     */
-    async get() {
-        if (this.provider != null) {
-            return this.provider;
-        }
-        const { data } = await this.client.GET("/v1/workspaces/{workspaceId}/resource-providers/name/{name}", { params: { path: this.options } });
-        this.provider = data;
-        return this.provider;
-    }
-    /**
-     * Sets the resources for this provider
-     * @param resources - Array of resources to set
-     * @returns The API response
-     * @throws Error if the scanner is not found
-     */
-    async set(resources) {
-        const scanner = await this.get();
-        if (scanner == null)
-            throw new Error("Scanner not found");
-        return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
-            params: { path: { providerId: scanner.id } },
-            body: { resources: uniqBy(resources, (t) => t.identifier) },
-        });
-    }
-}
-class JobAgent {
-    options;
-    client;
-    constructor(options, client) {
-        this.options = options;
-        this.client = client;
-    }
-    agent = null;
-    async get() {
-        if (this.agent != null) {
-            return this.agent;
-        }
-        const { data } = await this.client.PATCH("/v1/job-agents/name", {
-            body: this.options,
-        });
-        this.agent = data;
-        return this.agent;
-    }
-    async next() {
-        const { data } = await this.client.GET("/v1/job-agents/{agentId}/queue/next", { params: { path: { agentId: this.agent.id } } });
-        return data.jobs.map((job) => new Job(job, this.client)) ?? [];
-    }
-    async running() {
-        const { data } = await this.client.GET("/v1/job-agents/{agentId}/jobs/running", { params: { path: { agentId: this.agent.id } } });
-        return data.map((job) => new Job(job, this.client)) ?? [];
-    }
-}
-class Job {
-    job;
-    client;
-    constructor(job, client) {
-        this.job = job;
-        this.client = client;
-    }
-    acknowledge() {
-        return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
-            params: { path: { jobId: this.job.id } },
-        });
-    }
-    get() {
-        return this.client
-            .GET("/v1/jobs/{jobId}", {
-            params: { path: { jobId: this.job.id } },
-        })
-            .then(({ data }) => data);
-    }
-    update(update) {
-        return this.client.PATCH("/v1/jobs/{jobId}", {
-            params: { path: { jobId: this.job.id } },
-            body: update,
-        });
-    }
-}
+    const { data } = await this.client.PATCH("/v1/job-agents/name", {
+      body: this.options
+    });
+    this.agent = data;
+    return this.agent;
+  }
+  async next() {
+    const { data } = await this.client.GET(
+      "/v1/job-agents/{agentId}/queue/next",
+      { params: { path: { agentId: this.agent.id } } }
+    );
+    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+  }
+  async running() {
+    const { data } = await this.client.GET(
+      "/v1/job-agents/{agentId}/jobs/running",
+      { params: { path: { agentId: this.agent.id } } }
+    );
+    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+  }
+};
+var Job = class {
+  constructor(job, client) {
+    this.job = job;
+    this.client = client;
+  }
+  acknowledge() {
+    return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
+      params: { path: { jobId: this.job.id } }
+    });
+  }
+  get() {
+    return this.client.GET("/v1/jobs/{jobId}", {
+      params: { path: { jobId: this.job.id } }
+    }).then(({ data }) => data);
+  }
+  update(update) {
+    return this.client.PATCH("/v1/jobs/{jobId}", {
+      params: { path: { jobId: this.job.id } },
+      body: update
+    });
+  }
+};
 function uniqBy(arr, iteratee) {
-    const seen = new Map();
-    return arr.filter((item) => {
-        const key = iteratee(item);
-        if (seen.has(key)) {
-            return false;
-        }
-        seen.set(key, true);
-        return true;
-    });
+  const seen = /* @__PURE__ */ new Map();
+  return arr.filter((item) => {
+    const key = iteratee(item);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.set(key, true);
+    return true;
+  });
 }
 
+//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./src/sdk.ts
 
 
@@ -28169,7 +28168,7 @@ async function run() {
             core.error(`Invalid Job data`);
             return;
         }
-        const { variables, resource, release, deploymentVersion, environment, runbook, deployment, approval, } = data;
+        const { variables, resource, release, version, environment, runbook, deployment, approval, } = data;
         setOutputAndLog("base_url", baseUrl);
         setOutputAndLog("resource", resource);
         setOutputAndLog("resource_id", resource?.id);
@@ -28182,10 +28181,10 @@ async function run() {
         setOutputAndLog("workspace_id", resource?.workspaceId);
         setOutputAndLog("environment_id", environment?.id);
         setOutputAndLog("environment_name", environment?.name);
-        setOutputAndLog("version_id", deploymentVersion?.id);
-        setOutputAndLog("version_tag", deploymentVersion?.tag);
-        setOutputsRecursively("version_config", deploymentVersion?.config);
-        setOutputsRecursively("version_metadata", deploymentVersion?.metadata);
+        setOutputAndLog("version_id", version?.id);
+        setOutputAndLog("version_tag", version?.tag);
+        setOutputsRecursively("version_config", version?.config);
+        setOutputsRecursively("version_metadata", version?.metadata);
         setOutputAndLog("release_id", release?.id);
         setOutputAndLog("release_version", release?.version);
         setOutputsRecursively("release_config", release?.config);

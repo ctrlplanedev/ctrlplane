@@ -107,7 +107,7 @@ export class JobAgent {
       "/v1/job-agents/{agentId}/jobs/running",
       { params: { path: { agentId: this.agent.id } } },
     );
-    return data.map((job) => new Job(job, this.client)) ?? [];
+    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
   }
 }
 
