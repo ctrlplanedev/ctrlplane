@@ -131,7 +131,6 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
         await getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
           job.name,
           job.data,
-          { delay: 500 },
         );
         return;
       }

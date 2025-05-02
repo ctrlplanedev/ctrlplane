@@ -75,7 +75,6 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
         await getQueue(Channel.ComputeDeploymentResourceSelector).add(
           job.name,
           job.data,
-          { delay: 500 },
         );
         return;
       }

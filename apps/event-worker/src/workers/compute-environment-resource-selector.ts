@@ -96,7 +96,6 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
         await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
           job.name,
           job.data,
-          { delay: 500 },
         );
         return;
       }
