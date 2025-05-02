@@ -2,6 +2,9 @@ import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
+
+const log = logger.child({ worker: "compute-environment-resource-selector" });
 
 /**
  * Worker that computes and updates the resources associated with an environment
@@ -86,6 +89,10 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
+        log.info(
+          "Row locked in compute-environment-resource-selector, requeueing...",
+          { job },
+        );
         await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
           job.name,
           job.data,
