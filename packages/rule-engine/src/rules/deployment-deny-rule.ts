@@ -7,11 +7,7 @@ import {
 } from "date-fns";
 import * as rrule from "rrule";
 
-import type {
-  PreValidationResult,
-  PreValidationRule,
-  RuleEngineContext,
-} from "../types.js";
+import type { PreValidationResult, PreValidationRule } from "../types.js";
 
 // https://github.com/jkbrzt/rrule/issues/478
 // common js bs
@@ -91,7 +87,7 @@ export class DeploymentDenyRule implements PreValidationRule {
     return new Date();
   }
 
-  passing(_: RuleEngineContext): PreValidationResult {
+  passing(): PreValidationResult {
     const now = this.getCurrentTime();
 
     // Check if current time matches one of the rrules

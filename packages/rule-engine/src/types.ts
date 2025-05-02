@@ -20,13 +20,6 @@ export type Environment = {
   resourceSelector?: ResourceCondition | null;
 };
 
-export type RuleEngineContext = {
-  desiredReleaseId: string | null;
-  deployment: Deployment;
-  environment: Environment;
-  resource: Resource;
-};
-
 export type RuleEngineRuleResult<T> = {
   allowedCandidates: T[];
   rejectionReasons?: Map<string, string>;
@@ -38,7 +31,6 @@ export type RuleEngineRuleResult<T> = {
 export interface FilterRule<T> {
   name: string;
   filter(
-    context: RuleEngineContext,
     candidates: T[],
   ): RuleEngineRuleResult<T> | Promise<RuleEngineRuleResult<T>>;
 }
@@ -50,7 +42,7 @@ export type PreValidationResult = {
 
 export interface PreValidationRule {
   name: string;
-  passing(context: RuleEngineContext): PreValidationResult;
+  passing(): PreValidationResult;
 }
 
 /**
@@ -91,10 +83,7 @@ export type RuleSelectionResult<T> = {
 };
 
 export type RuleEngine<T> = {
-  evaluate: (
-    context: RuleEngineContext,
-    candidates: T[],
-  ) => Promise<RuleSelectionResult<T>>;
+  evaluate: (candidates: T[]) => Promise<RuleSelectionResult<T>>;
 };
 
 export class ConstantMap<K, V> extends Map<K, V> {

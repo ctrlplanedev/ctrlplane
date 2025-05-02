@@ -11,12 +11,14 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { policyAiRouter } from "./ai";
 import { policyDenyWindowRouter } from "./deny-window";
+import { evaluate } from "./evaluate";
 import { policyTargetRouter } from "./target";
 
 export const policyRouter = createTRPCRouter({
   ai: policyAiRouter,
   target: policyTargetRouter,
   denyWindow: policyDenyWindowRouter,
+  evaluate,
 
   list: protectedProcedure
     .meta({

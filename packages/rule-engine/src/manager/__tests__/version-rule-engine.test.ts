@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type {
-  FilterRule,
-  RuleEngineContext,
-  RuleEngineRuleResult,
-} from "../../types.js";
+import type { FilterRule, RuleEngineRuleResult } from "../../types.js";
 import type { Version } from "../version-rule-engine.js";
 import { VersionRuleEngine } from "../version-rule-engine.js";
 
@@ -13,10 +9,7 @@ class MockRule implements FilterRule<Version> {
   public readonly name = "MockRule";
   constructor(private readonly allowedIds: string[]) {}
 
-  filter(
-    _: RuleEngineContext,
-    candidates: Version[],
-  ): RuleEngineRuleResult<Version> {
+  filter(candidates: Version[]): RuleEngineRuleResult<Version> {
     const rejectionReasons = new Map<string, string>();
     const allowedCandidates = candidates.filter((candidate) => {
       if (this.allowedIds.includes(candidate.id)) {
@@ -31,27 +24,9 @@ class MockRule implements FilterRule<Version> {
 }
 
 describe("VersionRuleEngine", () => {
-  let context: RuleEngineContext;
   let candidates: Version[];
 
   beforeEach(() => {
-    // Create a sample context
-    context = {
-      desiredReleaseId: null,
-      deployment: {
-        id: "deploy-1",
-        name: "Test Deployment",
-      },
-      environment: {
-        id: "env-1",
-        name: "Test Environment",
-      },
-      resource: {
-        id: "res-1",
-        name: "Test Resource",
-      },
-    };
-
     // Create sample versions
     candidates = [
       {
@@ -91,7 +66,7 @@ describe("VersionRuleEngine", () => {
     const rule2 = new MockRule(["ver-2", "ver-3"]);
 
     const engine = new VersionRuleEngine([rule1, rule2]);
-    const result = await engine.evaluate(context, candidates);
+    const result = await engine.evaluate(candidates);
 
     expect(result.chosenCandidate).not.toBeNull();
     expect(result.chosenCandidate?.id).toBe("ver-3");
@@ -104,7 +79,7 @@ describe("VersionRuleEngine", () => {
     const rule1 = new MockRule([]);
 
     const engine = new VersionRuleEngine([rule1]);
-    const result = await engine.evaluate(context, candidates);
+    const result = await engine.evaluate(candidates);
 
     expect(result.chosenCandidate).toBeNull();
     expect(result.rejectionReasons.size).toBe(4);
@@ -115,7 +90,7 @@ describe("VersionRuleEngine", () => {
     const rule1 = new MockRule(["ver-1", "ver-2", "ver-3", "ver-4"]);
 
     const engine = new VersionRuleEngine([rule1]);
-    const result = await engine.evaluate(context, candidates);
+    const result = await engine.evaluate(candidates);
 
     expect(result.chosenCandidate).not.toBeNull();
     expect(result.chosenCandidate?.id).toBe("ver-3"); // Should pick ver-3 as it's the oldest sequential upgrade
@@ -126,7 +101,7 @@ describe("VersionRuleEngine", () => {
     const rule1 = new MockRule(["ver-1", "ver-2"]);
 
     const engine = new VersionRuleEngine([rule1]);
-    const result = await engine.evaluate(context, candidates);
+    const result = await engine.evaluate(candidates);
 
     expect(result.chosenCandidate).not.toBeNull();
     expect(result.chosenCandidate?.id).toBe("ver-2"); // Should pick ver-2 as it's the newest non-sequential
@@ -134,7 +109,7 @@ describe("VersionRuleEngine", () => {
 
   it("should handle empty candidates array", async () => {
     const engine = new VersionRuleEngine([]);
-    const result = await engine.evaluate(context, []);
+    const result = await engine.evaluate([]);
 
     expect(result.chosenCandidate).toBeNull();
   });
@@ -148,7 +123,7 @@ describe("VersionRuleEngine", () => {
     const rule3 = new MockRule(["ver-3"]);
 
     const engine = new VersionRuleEngine([rule1, rule2, rule3]);
-    const result = await engine.evaluate(context, candidates);
+    const result = await engine.evaluate(candidates);
 
     expect(result.chosenCandidate?.id).toBe("ver-3");
     expect(result.rejectionReasons.size).toBe(3);

@@ -35,8 +35,15 @@ export const mergePolicies = (policies: Policy[]): Policy | null => {
     policies[0],
     ...policies.slice(1),
     (objValue: any, sourceValue: any) => {
-      if (Array.isArray(objValue) && Array.isArray(sourceValue))
+      if (objValue !== null && sourceValue === null) {
+        return objValue;
+      }
+      if (objValue === null && sourceValue !== null) {
+        return sourceValue;
+      }
+      if (Array.isArray(objValue) && Array.isArray(sourceValue)) {
         return objValue.concat(sourceValue);
+      }
     },
   );
 
