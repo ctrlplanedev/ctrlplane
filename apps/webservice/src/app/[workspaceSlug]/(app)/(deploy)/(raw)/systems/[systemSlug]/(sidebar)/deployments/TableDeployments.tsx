@@ -228,7 +228,7 @@ const DeploymentTable: React.FC<{
                     })}
                   >
                     <LazyDeploymentEnvironmentCell
-                      environmentId={env.id}
+                      environment={env}
                       deployment={r}
                       systemSlug={systemSlug}
                     />

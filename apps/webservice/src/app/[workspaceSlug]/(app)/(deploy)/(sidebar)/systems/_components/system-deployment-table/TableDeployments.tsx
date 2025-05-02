@@ -209,7 +209,7 @@ const DeploymentTable: React.FC<{
               {environments.map((env) => (
                 <TableCell key={env.id} className="h-[70px] w-[220px]">
                   <LazyDeploymentEnvironmentCell
-                    environmentId={env.id}
+                    environment={env}
                     deployment={r}
                     systemSlug={system.slug}
                   />
