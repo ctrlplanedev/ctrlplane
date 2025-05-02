@@ -1,5 +1,6 @@
 "use client";
 
+import type { DirectResourceVariable } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -31,6 +32,18 @@ import { OverviewContent } from "./OverviewContent";
 import { ResourceActionsDropdown } from "./ResourceActionsDropdown";
 import { useResourceDrawer } from "./useResourceDrawer";
 import { VariableContent } from "./VariablesContent";
+
+const getDirectVariables = (vars: any[]): DirectResourceVariable[] =>
+  vars
+    .filter((v) => v.valueType === "direct" && v.value !== null)
+    .map((v) => ({
+      id: v.id,
+      resourceId: v.resourceId,
+      key: v.key,
+      valueType: "direct" as const,
+      value: typeof v.value === "object" ? JSON.stringify(v.value) : v.value,
+      sensitive: Boolean(v.sensitive),
+    }));
 
 export const ResourceDrawer: React.FC = () => {
   const { resourceId, removeResourceId } = useResourceDrawer();
@@ -213,7 +226,7 @@ export const ResourceDrawer: React.FC = () => {
               {activeTab === "variables" && (
                 <VariableContent
                   resourceId={resource.id}
-                  resourceVariables={resource.variables}
+                  resourceVariables={getDirectVariables(resource.variables)}
                 />
               )}
             </div>

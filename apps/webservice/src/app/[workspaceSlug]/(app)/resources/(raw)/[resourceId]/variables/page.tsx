@@ -28,17 +28,21 @@ export default async function VariablesPage(props: {
   const deploymentVariables =
     await api.deployment.variable.byResourceId(resourceId);
 
-  const { variables, rules } = resource;
+  const { directVariables, referenceVariables, rules } = resource;
   const references = rules.map((r) => r.reference);
+  const allVariableKeys = [...directVariables, ...referenceVariables].map(
+    (v) => v.key,
+  );
 
   return (
     <div className="max-w-5xl space-y-8 p-8">
+      {/* Direct Variables Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h2>Resource Variables</h2>
+          <h2>Direct Variables</h2>
           <CreateResourceVariableDialog
             resourceId={resourceId}
-            existingKeys={variables.map((v) => v.key)}
+            existingKeys={allVariableKeys}
             references={references}
           >
             <Button
@@ -51,6 +55,7 @@ export default async function VariablesPage(props: {
             </Button>
           </CreateResourceVariableDialog>
         </div>
+
         <Card className="rounded-md">
           <Table className="w-full">
             <TableHeader className="text-left">
@@ -61,45 +66,163 @@ export default async function VariablesPage(props: {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {variables.map((v) => (
-                <TableRow key={v.key}>
-                  <TableCell className="flex items-center gap-2">
-                    <span>{v.key}</span>
-                    {v.sensitive && (
-                      <IconLock className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    {v.valueType === "reference" && (
-                      <IconLink className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {v.sensitive ? (
-                      "*****"
-                    ) : (
-                      <span className="rounded-md p-0.5 px-1 font-mono text-red-400">
-                        {String(v.value)}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <ResourceVariableDropdown
-                        resourceVariable={v}
-                        existingKeys={variables.map((v) => v.key)}
-                      >
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <IconDots className="h-4 w-4" />
-                        </Button>
-                      </ResourceVariableDropdown>
-                    </div>
+              {directVariables.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={3}
+                    className="text-center text-muted-foreground"
+                  >
+                    No direct variables found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                directVariables.map((v) => (
+                  <TableRow key={v.key}>
+                    <TableCell className="flex items-center gap-2">
+                      <span>{v.key}</span>
+                      {v.sensitive && (
+                        <IconLock className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {v.sensitive ? (
+                        "*****"
+                      ) : (
+                        <span className="rounded-md p-0.5 px-1 font-mono text-red-400">
+                          {String(v.value)}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        <ResourceVariableDropdown
+                          resourceVariable={v}
+                          existingKeys={allVariableKeys}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                          >
+                            <IconDots className="h-4 w-4" />
+                          </Button>
+                        </ResourceVariableDropdown>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </Card>
       </div>
 
+      {/* Reference Variables Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2>Reference Variables</h2>
+        </div>
+
+        <Card className="rounded-md">
+          <Table className="w-full">
+            <TableHeader className="text-left">
+              <TableRow className="text-sm">
+                <TableHead>Key</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>From Resource</TableHead>
+                <TableHead>Path</TableHead>
+                <TableHead>Resolved Value</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {referenceVariables.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground"
+                  >
+                    No reference variables found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                referenceVariables.map((v) => (
+                  <TableRow key={v.key}>
+                    <TableCell className="flex items-center gap-2">
+                      <span>{v.key}</span>
+                    </TableCell>
+                    <TableCell>{v.reference}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const relationship =
+                          resource.relationships[v.reference];
+                        if (!relationship?.target) {
+                          return (
+                            <span className="text-amber-500">
+                              {v.reference} (not found)
+                            </span>
+                          );
+                        }
+
+                        const target = relationship.target;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={urls
+                                .workspace(workspaceSlug)
+                                .resource(target.id)
+                                .properties()}
+                              className="text-blue-500 underline-offset-1 hover:underline"
+                            >
+                              {target.name || v.reference}
+                            </Link>
+                            <IconLink className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-xs">
+                        {v.path.join(".")}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {v.sensitive ? (
+                        "*****"
+                      ) : (
+                        <span className="rounded-md p-0.5 px-1 font-mono text-blue-400">
+                          {v.resolvedValue === null ||
+                          v.resolvedValue === undefined
+                            ? "(null)"
+                            : String(v.resolvedValue)}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        <ResourceVariableDropdown
+                          resourceVariable={v}
+                          existingKeys={allVariableKeys}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                          >
+                            <IconDots className="h-4 w-4" />
+                          </Button>
+                        </ResourceVariableDropdown>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+
+      {/* Deployment Variables Section */}
       <div className="space-y-4">
         <h2>Deployment Variables</h2>
         <Card className="rounded-md">
@@ -112,26 +235,37 @@ export default async function VariablesPage(props: {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deploymentVariables.map((v) => (
-                <TableRow key={v.key}>
-                  <TableCell>{v.key}</TableCell>
-                  <TableCell>{v.value.value}</TableCell>
-                  <TableCell>
-                    <Link
-                      href={urls
-                        .workspace(workspaceSlug)
-                        .system(v.deployment.system.slug)
-                        .deployment(v.deployment.slug)
-                        .variables()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline-offset-1 hover:underline"
-                    >
-                      {v.deployment.name}
-                    </Link>
+              {deploymentVariables.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={3}
+                    className="text-center text-muted-foreground"
+                  >
+                    No deployment variables found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                deploymentVariables.map((v) => (
+                  <TableRow key={v.key}>
+                    <TableCell>{v.key}</TableCell>
+                    <TableCell>{v.value.value}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={urls
+                          .workspace(workspaceSlug)
+                          .system(v.deployment.system.slug)
+                          .deployment(v.deployment.slug)
+                          .variables()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline-offset-1 hover:underline"
+                      >
+                        {v.deployment.name}
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </Card>

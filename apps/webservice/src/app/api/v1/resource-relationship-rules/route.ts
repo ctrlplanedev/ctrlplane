@@ -32,7 +32,7 @@ export const POST = request()
   .use(
     authz(({ ctx, can }) =>
       can
-        .perform(Permission.SystemUpdate)
+        .perform(Permission.WorkspaceUpdate)
         .on({ type: "workspace", id: ctx.body.workspaceId }),
     ),
   )

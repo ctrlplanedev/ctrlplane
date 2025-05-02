@@ -11,8 +11,17 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 const updateResourceVariableQueue = getQueue(Channel.UpdateResourceVariable);
 
 export const resourceVariables = createTRPCRouter({
+  // For direct variables only
   create: protectedProcedure
-    .input(schema.createResourceVariable)
+    .input(
+      z.object({
+        resourceId: z.string().uuid(),
+        key: z.string(),
+        value: z.union([z.string(), z.number(), z.boolean()]),
+        sensitive: z.boolean().optional().default(false),
+        valueType: z.literal("direct"),
+      }),
+    )
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -20,11 +29,51 @@ export const resourceVariables = createTRPCRouter({
           .on({ type: "resource", id: input.resourceId }),
     })
     .mutation(async ({ ctx, input }) => {
-      const { sensitive } = input;
-      const value = sensitive
+      const value = input.sensitive
         ? variablesAES256().encrypt(String(input.value))
         : input.value;
-      const data = { ...input, value };
+
+      const variable = await ctx.db
+        .insert(schema.resourceVariable)
+        .values({
+          ...input,
+          value,
+          reference: null,
+          path: null,
+        })
+        .returning()
+        .then(takeFirst);
+
+      const parsedVariable = schema.resourceVariableSchema.parse(variable);
+      await updateResourceVariableQueue.add(parsedVariable.id, parsedVariable);
+      return parsedVariable;
+    }),
+
+  createReference: protectedProcedure
+    .input(
+      z.object({
+        resourceId: z.string().uuid(),
+        key: z.string(),
+        reference: z.string(),
+        path: z.array(z.string()),
+        defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+        sensitive: z.boolean().optional().default(false),
+        valueType: z.literal("reference"),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceUpdate)
+          .on({ type: "resource", id: input.resourceId }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const data = {
+        ...input,
+        defaultValue: input.defaultValue ?? undefined,
+        value: null,
+      };
+
       const variable = await ctx.db
         .insert(schema.resourceVariable)
         .values(data)
