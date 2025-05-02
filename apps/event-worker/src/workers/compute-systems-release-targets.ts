@@ -80,7 +80,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
     if (deploymentIds.length === 0 || environmentIds.length === 0) return;
 
     try {
-      const { matched, deleted } = await db.transaction(async (tx) => {
+      const { created, deleted } = await db.transaction(async (tx) => {
         await tx.execute(
           sql`
             SELECT ${schema.releaseTarget.id} FROM ${schema.releaseTarget}
@@ -154,14 +154,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             .values(created)
             .onConflictDoNothing();
 
-        const matched = await tx.query.releaseTarget.findMany({
-          where: or(
-            inArray(schema.releaseTarget.deploymentId, deploymentIds),
-            inArray(schema.releaseTarget.environmentId, environmentIds),
-          ),
-        });
-
-        return { matched, deleted };
+        return { created, deleted };
       });
 
       if (deleted.length > 0)
@@ -170,7 +163,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             deduplication: { id: rt.id },
           });
 
-      if (matched.length === 0) return;
+      if (created.length === 0) return;
 
       const policyTargets = await db
         .select()
@@ -191,7 +184,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         return;
       }
 
-      await dispatchEvaluateJobs(matched);
+      await dispatchEvaluateJobs(created);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
