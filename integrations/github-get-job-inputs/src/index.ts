@@ -53,7 +53,7 @@ async function run() {
         variables,
         resource,
         release,
-        deploymentVersion,
+        version,
         environment,
         runbook,
         deployment,
@@ -76,10 +76,10 @@ async function run() {
       setOutputAndLog("environment_id", environment?.id);
       setOutputAndLog("environment_name", environment?.name);
 
-      setOutputAndLog("version_id", deploymentVersion?.id);
-      setOutputAndLog("version_tag", deploymentVersion?.tag);
-      setOutputsRecursively("version_config", deploymentVersion?.config);
-      setOutputsRecursively("version_metadata", deploymentVersion?.metadata);
+      setOutputAndLog("version_id", version?.id);
+      setOutputAndLog("version_tag", version?.tag);
+      setOutputsRecursively("version_config", version?.config);
+      setOutputsRecursively("version_metadata", version?.metadata);
 
       setOutputAndLog("release_id", release?.id);
       setOutputAndLog("release_version", release?.version);
