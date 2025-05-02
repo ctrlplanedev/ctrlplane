@@ -313,7 +313,6 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end">
                         <JobDropdownMenu
-                          deploymentVersion={deploymentVersion}
                           deployment={deployment}
                           resource={trigger.resource}
                           environmentId={trigger.environmentId}
@@ -420,7 +419,6 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end">
                                 <JobDropdownMenu
-                                  deploymentVersion={deploymentVersion}
                                   deployment={deployment}
                                   resource={trigger.resource}
                                   environmentId={trigger.environmentId}

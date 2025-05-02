@@ -1,4 +1,3 @@
-import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconAlertTriangle } from "@tabler/icons-react";
@@ -13,9 +12,7 @@ import {
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
 import { toast } from "@ctrlplane/ui/toast";
-import { defaultCondition } from "@ctrlplane/validators/jobs";
 
-import { JobConditionRender } from "~/app/[workspaceSlug]/(app)/_components/job/condition/JobConditionRender";
 import { api } from "~/trpc/react";
 
 export const RedeployJobsDialog: React.FC<{
@@ -24,16 +21,13 @@ export const RedeployJobsDialog: React.FC<{
   children: React.ReactNode;
 }> = ({ deploymentId, onClose, children }) => {
   const [open, setOpen] = useState(false);
-  const [jobSelector, setJobSelector] =
-    useState<JobCondition>(defaultCondition);
   const router = useRouter();
 
-  const redeployJobs =
-    api.deployment.version.deploy.allJobsInDeployment.useMutation();
+  const redeployJobs = api.redeploy.useMutation();
 
   const handleRedeploy = () =>
     redeployJobs
-      .mutateAsync({ deploymentId, jobSelector })
+      .mutateAsync({ deploymentId })
       .then(() => {
         toast.success("Jobs redeployed successfully");
         router.refresh();
@@ -70,14 +64,6 @@ export const RedeployJobsDialog: React.FC<{
           </AlertDescription>
         </Alert>
 
-        <span className="text-sm text-muted-foreground">
-          Select the jobs you want to redeploy, or leave blank to redeploy all
-          jobs.
-        </span>
-        <JobConditionRender
-          condition={jobSelector}
-          onChange={(c) => setJobSelector(c)}
-        />
         <div className="flex justify-end">
           <Button onClick={handleRedeploy} className="w-fit">
             Redeploy

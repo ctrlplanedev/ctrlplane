@@ -72,7 +72,6 @@ export const JobDrawer: React.FC = () => {
                 Job
                 {job != null && (
                   <JobDropdownMenu
-                    deploymentVersion={job.deploymentVersion}
                     environmentId={job.environment.id}
                     resource={job.resource}
                     deployment={job.deploymentVersion.deployment}
