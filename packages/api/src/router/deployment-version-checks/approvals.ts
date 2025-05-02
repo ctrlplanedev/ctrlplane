@@ -113,13 +113,7 @@ export const approvalRouter = createTRPCRouter({
         );
 
       const targets = rows.map((row) => row.release_target);
-      if (targets.length > 0)
-        await getQueue(Channel.EvaluateReleaseTarget).addBulk(
-          targets.map((rt) => ({
-            name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-            data: rt,
-          })),
-        );
+      for (const rt of targets) await queueEvaluateReleaseTarget(rt);
 
       return record;
     }),
