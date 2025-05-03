@@ -357,6 +357,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                           environment={env}
                           deployment={deployment}
                           deploymentVersion={version}
+                          system={{ slug: systemSlug }}
                         />
                       </TableCell>
                     ))}

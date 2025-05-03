@@ -24,13 +24,13 @@ const CellSkeleton: React.FC = () => (
 type DeploymentEnvironmentCellProps = {
   environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
-  systemSlug: string;
+  system: { slug: string };
 };
 
 const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   environment,
   deployment,
-  systemSlug,
+  system,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
@@ -41,7 +41,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
 
   const deploymentUrls = urls
     .workspace(workspaceSlug)
-    .system(systemSlug)
+    .system(system.slug)
     .deployment(deployment.slug);
 
   if (isLoading) return <CellSkeleton />;
@@ -64,6 +64,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       environment={environment}
       deployment={deployment}
       deploymentVersion={version}
+      system={system}
     />
   );
 };

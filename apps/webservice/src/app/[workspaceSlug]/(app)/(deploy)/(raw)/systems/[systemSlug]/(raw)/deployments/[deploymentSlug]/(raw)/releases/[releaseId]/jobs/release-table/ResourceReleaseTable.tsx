@@ -195,6 +195,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                   key={approval.id}
                   approval={approval}
                   deploymentVersion={deploymentVersion}
+                  environmentId={environment.id}
                 />
               ))}
 

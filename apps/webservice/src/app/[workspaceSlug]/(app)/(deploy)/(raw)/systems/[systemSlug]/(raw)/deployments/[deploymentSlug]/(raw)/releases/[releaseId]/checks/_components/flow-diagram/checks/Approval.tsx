@@ -1,16 +1,4 @@
-import { useState } from "react";
-
-import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTrigger,
-} from "@ctrlplane/ui/dialog";
-import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -18,75 +6,9 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
+import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
 import { api } from "~/trpc/react";
 import { Loading, Passing, Waiting } from "../StatusIcons";
-
-const ApprovalDialog: React.FC<{
-  versionId: string;
-  versionTag: string;
-  environmentId: string;
-  onSubmit: () => void;
-}> = ({ versionId, versionTag, environmentId, onSubmit }) => {
-  const [open, setOpen] = useState(false);
-  const addRecord =
-    api.deployment.version.checks.approval.addRecord.useMutation();
-
-  const [reason, setReason] = useState("");
-
-  const handleSubmit = (status: SCHEMA.ApprovalStatus) =>
-    addRecord
-      .mutateAsync({
-        deploymentVersionId: versionId,
-        environmentId,
-        status,
-        reason,
-      })
-      .then(() => setOpen(false))
-      .then(() => onSubmit());
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="h-6">
-          Approve
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>Approve Release</DialogHeader>
-        <DialogDescription>
-          Are you sure you want to approve version {versionTag}?
-        </DialogDescription>
-
-        <Textarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Reason for approval (optional)"
-        />
-
-        <DialogFooter className="flex w-full flex-row items-center justify-between sm:justify-between">
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handleSubmit(SCHEMA.ApprovalStatus.Rejected)}
-              disabled={addRecord.isPending}
-            >
-              Reject
-            </Button>
-            <Button
-              onClick={() => handleSubmit(SCHEMA.ApprovalStatus.Approved)}
-              disabled={addRecord.isPending}
-            >
-              Approve
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 export const ApprovalCheck: React.FC<{
   workspaceId: string;
@@ -128,7 +50,11 @@ export const ApprovalCheck: React.FC<{
               <div className="flex items-center gap-2">
                 <Waiting /> Not enough approvals
               </div>
-              <ApprovalDialog {...props} onSubmit={invalidate} />
+              <ApprovalDialog {...props} onSubmit={invalidate}>
+                <Button size="sm" className="h-6">
+                  Approve
+                </Button>
+              </ApprovalDialog>
             </div>
           </TooltipTrigger>
           <TooltipContent>
@@ -149,7 +75,11 @@ export const ApprovalCheck: React.FC<{
       <div className="flex items-center gap-2">
         <Waiting /> Not enough approvals
       </div>
-      <ApprovalDialog {...props} onSubmit={invalidate} />
+      <ApprovalDialog {...props} onSubmit={invalidate}>
+        <Button size="sm" className="h-6">
+          Approve
+        </Button>
+      </ApprovalDialog>
     </div>
   );
 };

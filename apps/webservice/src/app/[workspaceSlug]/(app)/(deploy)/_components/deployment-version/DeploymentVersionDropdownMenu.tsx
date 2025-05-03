@@ -36,11 +36,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@ctrlplane/ui/hover-card";
 
 import { api } from "~/trpc/react";
 
@@ -51,7 +46,7 @@ type DeployProps = {
   children: React.ReactNode;
 };
 
-const RedeployVersionDialog: React.FC<DeployProps> = ({
+export const RedeployVersionDialog: React.FC<DeployProps> = ({
   deployment,
   environment,
   children,
@@ -60,7 +55,7 @@ const RedeployVersionDialog: React.FC<DeployProps> = ({
   const redeploy = api.redeploy.useMutation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleRedeploy = () => {
+  const handleRedeploy = () =>
     redeploy
       .mutateAsync({
         environmentId: environment.id,
@@ -70,7 +65,6 @@ const RedeployVersionDialog: React.FC<DeployProps> = ({
         setIsOpen(false);
         router.refresh();
       });
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -99,7 +93,7 @@ const RedeployVersionDialog: React.FC<DeployProps> = ({
   );
 };
 
-const ForceDeployVersionDialog: React.FC<DeployProps> = ({
+export const ForceDeployVersionDialog: React.FC<DeployProps> = ({
   deployment,
   environment,
   children,
@@ -150,39 +144,16 @@ type DropdownActionProps = {
   environment: { id: string; name: string };
   icon: React.ReactNode;
   label: string;
-  disabled?: boolean;
-  disabledMessage?: string;
   Dialog: React.FC<DeployProps>;
 };
 
-const DropdownAction: React.FC<DropdownActionProps> = ({
+export const DropdownAction: React.FC<DropdownActionProps> = ({
   deployment,
   environment,
   icon,
   label,
-  disabled,
-  disabledMessage,
   Dialog,
 }) => {
-  if (disabled) {
-    return (
-      <HoverCard>
-        <HoverCardTrigger asChild>
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="space-x-2 text-muted-foreground hover:cursor-not-allowed focus:bg-transparent focus:text-muted-foreground"
-          >
-            {icon}
-            <span>{label}</span>
-          </DropdownMenuItem>
-        </HoverCardTrigger>
-        <HoverCardContent className="p-1 text-sm">
-          {disabledMessage}
-        </HoverCardContent>
-      </HoverCard>
-    );
-  }
-
   return (
     <Dialog deployment={deployment} environment={environment}>
       <DropdownMenuItem
@@ -199,18 +170,17 @@ const DropdownAction: React.FC<DropdownActionProps> = ({
 type DeploymentVersionDropdownMenuProps = {
   deployment: { id: string; name: string };
   environment: { id: string; name: string };
-  isVersionBeingDeployed: boolean;
 };
 
 export const DeploymentVersionDropdownMenu: React.FC<
   DeploymentVersionDropdownMenuProps
-> = ({ deployment, environment, isVersionBeingDeployed }) => (
+> = ({ deployment, environment }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7 text-muted-foreground"
+        className="h-7 w-7 shrink-0 text-muted-foreground"
       >
         <IconDotsVertical className="h-4 w-4" />
       </Button>
@@ -221,8 +191,6 @@ export const DeploymentVersionDropdownMenu: React.FC<
         environment={environment}
         icon={<IconReload className="h-4 w-4" />}
         label="Redeploy"
-        disabled={isVersionBeingDeployed}
-        disabledMessage="Cannot redeploy a version that is actively being deployed"
         Dialog={RedeployVersionDialog}
       />
       <DropdownAction
