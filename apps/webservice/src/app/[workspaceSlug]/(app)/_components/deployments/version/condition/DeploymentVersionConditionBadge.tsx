@@ -6,6 +6,7 @@ import type {
 import type {
   ComparisonCondition,
   DeploymentVersionCondition,
+  TagCondition,
 } from "@ctrlplane/validators/releases";
 import React from "react";
 import { format } from "date-fns";
@@ -24,6 +25,7 @@ import {
   isComparisonCondition,
   isCreatedAtCondition,
   isMetadataCondition,
+  isTagCondition,
   isVersionCondition,
 } from "@ctrlplane/validators/releases";
 
@@ -169,8 +171,20 @@ const StringifiedCreatedAtCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedTagCondition: React.FC<{
+const StringifiedVersionCondition: React.FC<{
   condition: VersionCondition;
+}> = ({ condition }) => (
+  <ConditionBadge>
+    <span className="text-white">tag</span>
+    <span className="text-muted-foreground">
+      {operatorVerbs[condition.operator]}
+    </span>
+    <span className="text-white">{condition.value.replace(/%/g, "")}</span>
+  </ConditionBadge>
+);
+
+const StringifiedTagCondition: React.FC<{
+  condition: TagCondition;
 }> = ({ condition }) => (
   <ConditionBadge>
     <span className="text-white">tag</span>
@@ -208,6 +222,9 @@ const StringifiedDeploymentVersionCondition: React.FC<{
     return <StringifiedCreatedAtCondition condition={condition} />;
 
   if (isVersionCondition(condition))
+    return <StringifiedVersionCondition condition={condition} />;
+
+  if (isTagCondition(condition))
     return <StringifiedTagCondition condition={condition} />;
 };
 
