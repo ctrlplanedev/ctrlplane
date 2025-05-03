@@ -1,3 +1,5 @@
+"use client";
+
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
