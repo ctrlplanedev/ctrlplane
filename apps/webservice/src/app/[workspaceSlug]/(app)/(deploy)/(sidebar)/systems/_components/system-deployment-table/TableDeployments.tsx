@@ -211,7 +211,7 @@ const DeploymentTable: React.FC<{
                   <LazyDeploymentEnvironmentCell
                     environment={env}
                     deployment={r}
-                    systemSlug={system.slug}
+                    system={system}
                   />
                 </TableCell>
               ))}

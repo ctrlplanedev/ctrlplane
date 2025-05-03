@@ -230,7 +230,7 @@ const DeploymentTable: React.FC<{
                     <LazyDeploymentEnvironmentCell
                       environment={env}
                       deployment={r}
-                      systemSlug={systemSlug}
+                      system={{ slug: systemSlug }}
                     />
                   </td>
                 );
