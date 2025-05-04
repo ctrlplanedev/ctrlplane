@@ -36,8 +36,6 @@ export const PolicyTabs: React.FC = () => {
     return "overview";
   };
 
-  console.log(pathname, getInitialTab());
-
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const router = useRouter();

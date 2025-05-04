@@ -17,7 +17,6 @@ export default async function Layout(props: {
   const policy = await api.policy.byId({ policyId });
   if (policy == null) return notFound();
 
-  console.log(policy);
   return (
     <PolicyFormContextProvider policy={policy}>
       {children}
