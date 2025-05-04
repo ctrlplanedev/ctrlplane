@@ -209,10 +209,6 @@ export const EditConfiguration: React.FC = () => {
               className="flex items-start gap-4 rounded-lg border p-4"
             >
               <div className="flex-1 space-y-4">
-                {/* <FormField
-                      control={form.control}
-                      name={`targets.${index}.targetScope`}
-                      render={({ field }) => ( */}
                 <div>
                   <Label>Type</Label>
                   <DropdownMenu>
@@ -424,23 +420,7 @@ export const EditConfiguration: React.FC = () => {
                       {env.charAt(0).toUpperCase() + env.slice(1)}
                     </td>
                     {DEPLOYMENTS.map((dep) => (
-                      <td key={`${env}-${dep}`} className="border-b p-2">
-                        {/* {getCoverage(env, dep) ? (
-                              <Badge
-                                variant="secondary"
-                                className="bg-purple-500/10 text-purple-300"
-                              >
-                                Included
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="text-muted-foreground"
-                              >
-                                Not Included
-                              </Badge>
-                            )} */}
-                      </td>
+                      <td key={`${env}-${dep}`} className="border-b p-2"></td>
                     ))}
                   </tr>
                 ))}
@@ -453,6 +433,7 @@ export const EditConfiguration: React.FC = () => {
       <Button
         type="submit"
         disabled={form.formState.isSubmitting || !form.formState.isDirty}
+        className="w-fit"
       >
         Save
       </Button>
