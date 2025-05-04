@@ -2,7 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { InsertResource, Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { and, eq, inArray, or } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, or } from "@ctrlplane/db";
 import { resource } from "@ctrlplane/db/schema";
 
 /**
@@ -28,6 +28,7 @@ const findExistingResources = async (
         eq(resource.providerId, providerId),
         inArray(resource.identifier, resourceIdentifiers),
       ),
+      isNull(resource.deletedAt),
     ),
   });
   return existingResources;
@@ -57,6 +58,7 @@ export const groupResourcesByHook = async (
     providerId,
     resourcesToInsert.map((r) => r.identifier),
   );
+  console.log("existingResources", existingResources);
 
   // Resources that belong to other providers should be ignored
   const toIgnore = existingResources.filter(
