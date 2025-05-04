@@ -61,7 +61,7 @@ export default async function EnvironmentLayout(props: {
         </SidebarTrigger>
       </PageHeader>
 
-      <div className="container mx-auto py-6">
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 container mx-auto h-[calc(100vh-56px-64px-2px)] overflow-y-auto py-6">
         <div className="mb-6 flex flex-col space-y-2">
           <h1 className="text-3xl font-bold text-neutral-100">
             {policy.name} Policy

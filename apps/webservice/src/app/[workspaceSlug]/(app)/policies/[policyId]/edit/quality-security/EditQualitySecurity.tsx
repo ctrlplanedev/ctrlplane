@@ -3,10 +3,8 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { Control } from "react-hook-form";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useFieldArray } from "react-hook-form";
-import { z } from "zod";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import { Button } from "@ctrlplane/ui/button";
@@ -19,19 +17,18 @@ import {
   CommandList,
 } from "@ctrlplane/ui/command";
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { Switch } from "@ctrlplane/ui/switch";
 
 import { api } from "~/trpc/react";
+import { usePolicyFormContext } from "../_components/PolicyFormContext";
 
 const UserInput: React.FC<{
   workspaceId: string;
@@ -95,14 +92,8 @@ const UserInput: React.FC<{
   );
 };
 
-type EditQualitySecurityFormData = {
-  versionAnyApprovals: SCHEMA.PolicyRuleAnyApproval | null;
-  versionUserApprovals: SCHEMA.PolicyRuleUserApproval[];
-  versionRoleApprovals: SCHEMA.PolicyRuleRoleApproval[];
-};
-
 interface UserSectionProps {
-  control: Control<EditQualitySecurityFormData>;
+  control: Control<SCHEMA.UpdatePolicy>;
   fields: Record<"id", string>[];
   onRemove: (index: number) => void;
   workspaceId: string;
@@ -166,7 +157,7 @@ const UserSection: React.FC<UserSectionProps> = ({
 };
 
 interface RoleSectionProps {
-  control: Control<EditQualitySecurityFormData>;
+  control: Control<SCHEMA.UpdatePolicy>;
   fields: Record<"id", string>[];
   onRemove: (index: number) => void;
 }
@@ -240,56 +231,10 @@ const RoleSection: React.FC<RoleSectionProps> = ({
   );
 };
 
-const editQualitySecuritySchema = z.object({
-  versionAnyApprovals: z
-    .object({
-      id: z.string(),
-      createdAt: z.date(),
-      requiredApprovalsCount: z.number(),
-      policyId: z.string(),
-    })
-    .nullable(),
-  versionUserApprovals: z.array(
-    z.object({
-      id: z.string(),
-      createdAt: z.date(),
-      policyId: z.string(),
-      userId: z.string(),
-    }),
-  ),
-  versionRoleApprovals: z.array(
-    z.object({
-      id: z.string(),
-      createdAt: z.date(),
-      policyId: z.string(),
-      roleId: z.string(),
-      requiredApprovalsCount: z.number(),
-    }),
-  ),
-});
-
-export const EditQualitySecurity: React.FC<{
-  policy: SCHEMA.Policy & {
-    versionAnyApprovals: SCHEMA.PolicyRuleAnyApproval | null;
-    versionUserApprovals: SCHEMA.PolicyRuleUserApproval[];
-    versionRoleApprovals: SCHEMA.PolicyRuleRoleApproval[];
-  };
-  workspaceId: string;
-}> = ({ policy, workspaceId }) => {
-  const form = useForm({
-    schema: editQualitySecuritySchema,
-    defaultValues: policy,
-  });
-  const router = useRouter();
-
-  const updatePolicy = api.policy.update.useMutation();
-
-  const onSubmit = form.handleSubmit((data) =>
-    updatePolicy
-      .mutateAsync({ id: policy.id, data })
-      .then((res) => form.reset(res))
-      .then(() => router.refresh()),
-  );
+export const EditQualitySecurity: React.FC<{ workspaceId: string }> = ({
+  workspaceId,
+}) => {
+  const { form } = usePolicyFormContext();
 
   const {
     fields: userFields,
@@ -306,121 +251,113 @@ export const EditQualitySecurity: React.FC<{
   });
 
   return (
-    <Form {...form}>
-      <form onSubmit={onSubmit} className="space-y-8">
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Quality & Security Rules</h2>
-          <p className="text-sm text-muted-foreground">
-            Configure approval requirements and security checks
-          </p>
-        </div>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">Quality & Security Rules</h2>
+        <p className="text-sm text-muted-foreground">
+          Configure approval requirements and security checks
+        </p>
+      </div>
 
-        <div className="max-w-xl space-y-8">
+      <div className="max-w-xl space-y-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-md font-medium">Approval Requirements</h3>
+              <p className="text-sm text-muted-foreground">
+                Define who needs to approve and how many approvals are needed
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="space-y-4">
               <div className="space-y-1">
-                <h3 className="text-md font-medium">Approval Requirements</h3>
+                <h4 className="font-medium">General Approval</h4>
                 <p className="text-sm text-muted-foreground">
-                  Define who needs to approve and how many approvals are needed
+                  Enable if any team member can approve
                 </p>
+              </div>
+              <div className="flex items-center gap-4 rounded-lg border p-4">
+                <div className="flex-1 space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="versionAnyApprovals"
+                    render={({ field }) => (
+                      <FormItem className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <FormLabel>Require General Approval</FormLabel>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value !== null}
+                              onCheckedChange={(checked) =>
+                                field.onChange(
+                                  checked
+                                    ? { requiredApprovalsCount: 1 }
+                                    : null,
+                                )
+                              }
+                            />
+                          </FormControl>
+                        </div>
+                        {field.value !== null && (
+                          <FormField
+                            control={form.control}
+                            name="versionAnyApprovals.requiredApprovalsCount"
+                            render={({ field: countField }) => (
+                              <FormItem>
+                                <FormLabel>Required Approvals</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    placeholder="1"
+                                    {...countField}
+                                    onChange={(e) =>
+                                      countField.onChange(
+                                        parseInt(e.target.value),
+                                      )
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <h4 className="font-medium">General Approval</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Enable if any team member can approve
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 rounded-lg border p-4">
-                  <div className="flex-1 space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="versionAnyApprovals"
-                      render={({ field }) => (
-                        <FormItem className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <FormLabel>Require General Approval</FormLabel>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value !== null}
-                                onCheckedChange={(checked) =>
-                                  field.onChange(
-                                    checked
-                                      ? { requiredApprovalsCount: 1 }
-                                      : null,
-                                  )
-                                }
-                              />
-                            </FormControl>
-                          </div>
-                          {field.value !== null && (
-                            <FormField
-                              control={form.control}
-                              name="versionAnyApprovals.requiredApprovalsCount"
-                              render={({ field: countField }) => (
-                                <FormItem>
-                                  <FormLabel>Required Approvals</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      placeholder="1"
-                                      {...countField}
-                                      onChange={(e) =>
-                                        countField.onChange(
-                                          parseInt(e.target.value),
-                                        )
-                                      }
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          )}
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
+            <UserSection
+              workspaceId={workspaceId}
+              control={form.control}
+              fields={userFields}
+              onRemove={removeUser}
+            />
+            <RoleSection
+              control={form.control}
+              fields={roleFields}
+              onRemove={removeRole}
+            />
 
-              <UserSection
-                workspaceId={workspaceId}
-                control={form.control}
-                fields={userFields}
-                onRemove={removeUser}
-              />
-              <RoleSection
-                control={form.control}
-                fields={roleFields}
-                onRemove={removeRole}
-              />
-
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() =>
-                    appendUser({
-                      userId: "",
-                      policyId: policy.id,
-                      id: "",
-                      createdAt: new Date(),
-                    })
-                  }
-                >
-                  <IconPlus className="mr-2 h-4 w-4" />
-                  Add User Approval
-                </Button>
-                {/* <Button
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => appendUser({ userId: "" })}
+              >
+                <IconPlus className="mr-2 h-4 w-4" />
+                Add User Approval
+              </Button>
+              {/* <Button
                   type="button"
                   variant="outline"
                   size="sm"
@@ -435,18 +372,17 @@ export const EditQualitySecurity: React.FC<{
                   <IconPlus className="mr-2 h-4 w-4" />
                   Add Role Approval
                 </Button> */}
-              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <Button
-          type="submit"
-          disabled={updatePolicy.isPending || !form.formState.isDirty}
-        >
-          Save
-        </Button>
-      </form>
-    </Form>
+      <Button
+        type="submit"
+        disabled={form.formState.isSubmitting || !form.formState.isDirty}
+      >
+        Save
+      </Button>
+    </div>
   );
 };

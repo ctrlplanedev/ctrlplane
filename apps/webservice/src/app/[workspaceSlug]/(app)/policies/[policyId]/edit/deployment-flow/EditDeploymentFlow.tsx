@@ -1,11 +1,9 @@
 "use client";
 
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { IconCheck, IconSelector } from "@tabler/icons-react";
 import { Label } from "recharts";
-import { z } from "zod";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -18,22 +16,18 @@ import {
   CommandList,
 } from "@ctrlplane/ui/command";
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  useForm,
 } from "@ctrlplane/ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
-import {
-  defaultCondition,
-  deploymentVersionCondition,
-} from "@ctrlplane/validators/releases";
+import { defaultCondition } from "@ctrlplane/validators/releases";
 
 import { DeploymentVersionConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionRender";
 import { api } from "~/trpc/react";
+import { usePolicyFormContext } from "../_components/PolicyFormContext";
 
 type HeaderProps = {
   title: string;
@@ -172,45 +166,10 @@ const VersionPreview: React.FC<VersionPreviewProps> = ({
   </div>
 );
 
-const editDeploymentFlowSchema = z.object({
-  deploymentVersionSelector: z
-    .object({
-      name: z.string(),
-      deploymentVersionSelector: deploymentVersionCondition,
-      description: z.string().nullable().optional(),
-    })
-    .nullable()
-    .optional(),
-});
-export const EditDeploymentFlow: React.FC<{
-  policy: SCHEMA.Policy & {
-    deploymentVersionSelector?: SCHEMA.PolicyDeploymentVersionSelector | null;
-  };
-}> = ({ policy }) => {
+export const EditDeploymentFlow: React.FC = () => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const router = useRouter();
 
-  const form = useForm({
-    schema: editDeploymentFlowSchema,
-    defaultValues: policy,
-  });
-
-  const updatePolicy = api.policy.update.useMutation();
-
-  const onSubmit = form.handleSubmit((data) =>
-    updatePolicy
-      .mutateAsync({
-        id: policy.id,
-        data: {
-          ...data,
-          deploymentVersionSelector: data.deploymentVersionSelector
-            ? { ...data.deploymentVersionSelector, name: "" }
-            : null,
-        },
-      })
-      .then((res) => form.reset(res))
-      .then(() => router.refresh()),
-  );
+  const { form } = usePolicyFormContext();
 
   const [selectedDeploymentId, setSelectedDeploymentId] = useState<
     string | null
@@ -241,65 +200,63 @@ export const EditDeploymentFlow: React.FC<{
   const versions = versionsQ.data?.items ?? [];
 
   return (
-    <Form {...form}>
-      <form onSubmit={onSubmit} className="space-y-8">
+    <div className="space-y-8">
+      <Header
+        title="Deployment Flow Rules"
+        description="Configure how deployments progress through your environments"
+      />
+
+      <div className="space-y-6">
         <Header
-          title="Deployment Flow Rules"
-          description="Configure how deployments progress through your environments"
+          title="Version Selection Rules"
+          description="Control which versions can be deployed to environments"
         />
 
         <div className="space-y-6">
-          <Header
-            title="Version Selection Rules"
-            description="Control which versions can be deployed to environments"
+          <FormField
+            control={form.control}
+            name="deploymentVersionSelector.deploymentVersionSelector"
+            render={({ field: { value, onChange } }) => (
+              <FormItem className="max-w-5xl space-y-2">
+                <FormLabel>Version Selector</FormLabel>
+                <FormControl>
+                  <DeploymentVersionConditionRender
+                    condition={(value as any) ?? defaultCondition}
+                    onChange={(newValue) => {
+                      onChange(newValue);
+                      form.setValue("deploymentVersionSelector.name", "");
+                      if (
+                        "conditions" in newValue &&
+                        !newValue.conditions.length
+                      ) {
+                        form.setValue("deploymentVersionSelector", null);
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
 
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="deploymentVersionSelector.deploymentVersionSelector"
-              render={({ field: { value, onChange } }) => (
-                <FormItem className="max-w-5xl space-y-2">
-                  <FormLabel>Version Selector</FormLabel>
-                  <FormControl>
-                    <DeploymentVersionConditionRender
-                      condition={(value as any) ?? defaultCondition}
-                      onChange={(newValue) => {
-                        onChange(newValue);
-                        form.setValue("deploymentVersionSelector.name", "");
-                        if (
-                          "conditions" in newValue &&
-                          !newValue.conditions.length
-                        ) {
-                          form.setValue("deploymentVersionSelector", null);
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          {hasConditions && (
+            <VersionPreview
+              deployments={deployments}
+              selectedDeploymentId={selectedDeploymentId}
+              onDeploymentSelect={setSelectedDeploymentId}
+              versions={versions}
+              totalVersions={versionsQ.data?.total}
             />
-
-            {hasConditions && (
-              <VersionPreview
-                deployments={deployments}
-                selectedDeploymentId={selectedDeploymentId}
-                onDeploymentSelect={setSelectedDeploymentId}
-                versions={versions}
-                totalVersions={versionsQ.data?.total}
-              />
-            )}
-          </div>
+          )}
         </div>
+      </div>
 
-        <Button
-          type="submit"
-          disabled={updatePolicy.isPending || !form.formState.isDirty}
-        >
-          Save
-        </Button>
-      </form>
-    </Form>
+      <Button
+        type="submit"
+        disabled={form.formState.isSubmitting || !form.formState.isDirty}
+      >
+        Save
+      </Button>
+    </div>
   );
 };
