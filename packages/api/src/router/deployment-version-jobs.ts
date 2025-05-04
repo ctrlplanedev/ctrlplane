@@ -10,12 +10,16 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-const sortJobsByStatus = (
-  a: { status: SCHEMA.JobStatus },
-  b: { status: SCHEMA.JobStatus },
+const sortReleaseTargetsByLatestJobStatus = (
+  a: { jobs: { status: SCHEMA.JobStatus }[] },
+  b: { jobs: { status: SCHEMA.JobStatus }[] },
 ) => {
-  const statusA = a.status;
-  const statusB = b.status;
+  const statusA = a.jobs.at(0)?.status;
+  const statusB = b.jobs.at(0)?.status;
+
+  if (statusA == null && statusB == null) return 0;
+  if (statusA == null) return 1;
+  if (statusB == null) return -1;
 
   if (statusA === JobStatus.Failure && statusB !== JobStatus.Failure) return -1;
   if (statusA !== JobStatus.Failure && statusB === JobStatus.Failure) return 1;
@@ -122,10 +126,12 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
                           >)
                         : {},
                   }))
-                  .sort(sortJobsByStatus)
-                  .reverse(),
+                  .sort(
+                    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+                  ),
               };
             })
+            .sort(sortReleaseTargetsByLatestJobStatus)
             .value();
 
           return {

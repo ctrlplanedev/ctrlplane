@@ -13,9 +13,9 @@ import { protectedProcedure } from "../trpc";
 
 const createForceDeployment = async (
   db: Tx,
-  releaseTarget: typeof schema.releaseTarget.$inferSelect,
-) => {
-  return db.transaction(async (tx) => {
+  releaseTarget: schema.ReleaseTarget,
+) =>
+  db.transaction(async (tx) => {
     const existingRelease = await tx
       .select()
       .from(schema.release)
@@ -43,26 +43,25 @@ const createForceDeployment = async (
 
     return existingRelease;
   });
-};
 
 const handleDeployment = async (
-  ctx: any,
-  releaseTargets: any[],
+  db: Tx,
+  releaseTargets: schema.ReleaseTarget[],
   force: boolean,
 ) => {
   if (force) {
-    for (const releaseTarget of releaseTargets) {
-      await createForceDeployment(ctx, releaseTarget);
-    }
+    const forceDeploymentPromises = releaseTargets.map((releaseTarget) =>
+      createForceDeployment(db, releaseTarget),
+    );
+    await Promise.all(forceDeploymentPromises);
     return;
   }
 
-  for (const releaseTarget of releaseTargets) {
+  for (const releaseTarget of releaseTargets)
     getQueue(Channel.EvaluateReleaseTarget).add(releaseTarget.id, {
       ...releaseTarget,
       skipDuplicateCheck: true,
     });
-  }
 };
 
 export const redeployProcedure = protectedProcedure
@@ -115,8 +114,8 @@ export const redeployProcedure = protectedProcedure
       return false;
     },
   })
-  .mutation(async ({ ctx, input }) => {
-    const releaseTargets = await ctx.db.query.releaseTarget.findMany({
+  .mutation(async ({ ctx: { db }, input }) => {
+    const releaseTargets = await db.query.releaseTarget.findMany({
       where: and(
         ...("deploymentId" in input
           ? [eq(schema.releaseTarget.deploymentId, input.deploymentId)]
@@ -131,6 +130,6 @@ export const redeployProcedure = protectedProcedure
     });
 
     if (releaseTargets.length === 0) return 0;
-    await handleDeployment(ctx, releaseTargets, input.force);
+    await handleDeployment(db, releaseTargets, input.force);
     return releaseTargets.length;
   });
