@@ -4,6 +4,8 @@ import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
+import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
+
 const log = logger.child({ worker: "compute-deployment-resource-selector" });
 
 export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
@@ -61,10 +63,7 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             .onConflictDoNothing();
       });
 
-      await getQueue(Channel.ComputeSystemsReleaseTargets).add(
-        deployment.system.id,
-        deployment.system,
-      );
+      dispatchComputeSystemReleaseTargetsJobs(deployment.system);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
