@@ -55,6 +55,8 @@ export const resourcesRouter = createTRPCRouter({
           })),
         );
 
+      if (resources.length === 0) return [];
+
       const latestJobSubquery = ctx.db
         .selectDistinctOn([SCHEMA.versionRelease.releaseTargetId], {
           jobId: SCHEMA.job.id,
