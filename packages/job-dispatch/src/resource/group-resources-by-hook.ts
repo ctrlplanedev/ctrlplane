@@ -58,7 +58,6 @@ export const groupResourcesByHook = async (
     providerId,
     resourcesToInsert.map((r) => r.identifier),
   );
-  console.log("existingResources", existingResources);
 
   // Resources that belong to other providers should be ignored
   const toIgnore = existingResources.filter(
