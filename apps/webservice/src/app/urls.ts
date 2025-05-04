@@ -56,6 +56,7 @@ const workspacePolicyEdit = (slug: string, policyId: string) => {
     timeWindows: () => buildUrl(...base, "time-windows"),
     deploymentFlow: () => buildUrl(...base, "deployment-flow"),
     qualitySecurity: () => buildUrl(...base, "quality-security"),
+    approvalGates: () => buildUrl(...base, "approval-gates"),
   };
 };
 

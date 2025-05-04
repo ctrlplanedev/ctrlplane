@@ -5,6 +5,7 @@ import {
   isComparisonCondition,
   isCreatedAtCondition,
   isMetadataCondition,
+  isTagCondition,
   isVersionCondition,
 } from "@ctrlplane/validators/releases";
 
@@ -54,7 +55,7 @@ export const DeploymentVersionConditionRender: React.FC<
       />
     );
 
-  if (isVersionCondition(condition))
+  if (isVersionCondition(condition) || isTagCondition(condition))
     return (
       <DeploymentVersionTagConditionRender
         condition={condition}
