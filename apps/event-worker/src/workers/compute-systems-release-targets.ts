@@ -6,6 +6,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
+import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ worker: "compute-systems-release-targets" });
@@ -195,10 +196,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           "Row locked in compute-systems-release-targets, requeueing...",
           { job },
         );
-        await getQueue(Channel.ComputeSystemsReleaseTargets).add(
-          job.name,
-          job.data,
-        );
+        dispatchComputeSystemReleaseTargetsJobs(system);
         return;
       }
 

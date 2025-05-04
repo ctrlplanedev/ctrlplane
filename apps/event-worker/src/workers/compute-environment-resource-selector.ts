@@ -1,9 +1,10 @@
 import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
+import { dispatchComputeEnvironmentResourceSelectorJobs } from "../utils/dispatch-compute-env-jobs.js";
 import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
 
 const log = logger.child({ worker: "compute-environment-resource-selector" });
@@ -92,10 +93,7 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           "Row locked in compute-environment-resource-selector, requeueing...",
           { job },
         );
-        await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
-          job.name,
-          job.data,
-        );
+        dispatchComputeEnvironmentResourceSelectorJobs(environment);
         return;
       }
 
