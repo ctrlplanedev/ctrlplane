@@ -167,12 +167,12 @@ export const ResourcesPageContent: React.FC<{
 
   const totalResources = allResourcesQ.resources.length;
   const healthyResources = allResourcesQ.resources.filter(
-    (r) => r.successRate === 100,
+    (r) => r.successRate > 99.9999,
   ).length;
   const healthyPercentage =
     totalResources > 0 ? (healthyResources / totalResources) * 100 : 0;
   const unhealthyResources = allResourcesQ.resources.filter(
-    (r) => r.successRate < 100,
+    (r) => r.successRate <= 99.9999,
   ).length;
   const deployingResources = allResourcesQ.resources.filter(
     (r) => r.isDeploying,
@@ -254,7 +254,7 @@ export const ResourcesPageContent: React.FC<{
 
   const formattedResources = resources.map((r) => {
     if (r.isDeploying) return { ...r, status: "deploying" as const };
-    if (r.successRate === 100) return { ...r, status: "healthy" as const };
+    if (r.successRate > 99.9999) return { ...r, status: "healthy" as const };
     return { ...r, status: "unhealthy" as const };
   });
 
