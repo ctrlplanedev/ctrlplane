@@ -918,7 +918,11 @@ export interface components {
       version?: components["schemas"]["DeploymentVersion"];
       deployment?: components["schemas"]["Deployment"];
       runbook?: components["schemas"]["Runbook"];
-      resource?: components["schemas"]["Resource"];
+      resource?: components["schemas"]["ResourceWithVariablesAndMetadata"] & {
+        relationships?: {
+          [key: string]: components["schemas"]["Resource"];
+        };
+      };
       environment?: components["schemas"]["Environment"];
       variables: components["schemas"]["VariableMap"];
       approval?: {

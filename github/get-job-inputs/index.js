@@ -27992,129 +27992,130 @@ function removeTrailingSlash(url) {
 }
 
 ;// CONCATENATED MODULE: ../../packages/node-sdk/dist/index.js
-// src/index.ts
 
 function dist_createClient(options) {
-  return createClient({
-    baseUrl: options.baseUrl ?? "https://app.ctrlplane.com",
-    ...options,
-    fetch: (input) => {
-      const url = new URL(input.url);
-      url.pathname = `/api${url.pathname}`;
-      return fetch(new Request(url.toString(), input));
-    },
-    headers: { "x-api-key": options?.apiKey }
-  });
+    return createClient({
+        baseUrl: options.baseUrl ?? "https://app.ctrlplane.com",
+        ...options,
+        fetch: (input) => {
+            const url = new URL(input.url);
+            url.pathname = `/api${url.pathname}`;
+            return fetch(new Request(url.toString(), input));
+        },
+        headers: { "x-api-key": options?.apiKey },
+    });
 }
-var ResourceProvider = class {
-  /**
-   * Creates a new TargetProvider instance
-   * @param options - Configuration options
-   * @param options.workspaceId - ID of the workspace
-   * @param options.name - Name of the target provider
-   * @param client - API client instance
-   */
-  constructor(options, client) {
-    this.options = options;
-    this.client = client;
-  }
-  provider = null;
-  /**
-   * Gets the resource provider details, caching the result
-   * @returns The resource provider details
-   */
-  async get() {
-    if (this.provider != null) {
-      return this.provider;
+/**
+ * Class for managing target providers in the Ctrlplane API
+ */
+class ResourceProvider {
+    options;
+    client;
+    /**
+     * Creates a new TargetProvider instance
+     * @param options - Configuration options
+     * @param options.workspaceId - ID of the workspace
+     * @param options.name - Name of the target provider
+     * @param client - API client instance
+     */
+    constructor(options, client) {
+        this.options = options;
+        this.client = client;
     }
-    const { data } = await this.client.GET(
-      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
-      { params: { path: this.options } }
-    );
-    this.provider = data;
-    return this.provider;
-  }
-  /**
-   * Sets the resources for this provider
-   * @param resources - Array of resources to set
-   * @returns The API response
-   * @throws Error if the scanner is not found
-   */
-  async set(resources) {
-    const scanner = await this.get();
-    if (scanner == null) throw new Error("Scanner not found");
-    return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
-      params: { path: { providerId: scanner.id } },
-      body: { resources: uniqBy(resources, (t) => t.identifier) }
-    });
-  }
-};
-var JobAgent = class {
-  constructor(options, client) {
-    this.options = options;
-    this.client = client;
-  }
-  agent = null;
-  async get() {
-    if (this.agent != null) {
-      return this.agent;
+    provider = null;
+    /**
+     * Gets the resource provider details, caching the result
+     * @returns The resource provider details
+     */
+    async get() {
+        if (this.provider != null) {
+            return this.provider;
+        }
+        const { data } = await this.client.GET("/v1/workspaces/{workspaceId}/resource-providers/name/{name}", { params: { path: this.options } });
+        this.provider = data;
+        return this.provider;
     }
-    const { data } = await this.client.PATCH("/v1/job-agents/name", {
-      body: this.options
-    });
-    this.agent = data;
-    return this.agent;
-  }
-  async next() {
-    const { data } = await this.client.GET(
-      "/v1/job-agents/{agentId}/queue/next",
-      { params: { path: { agentId: this.agent.id } } }
-    );
-    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
-  }
-  async running() {
-    const { data } = await this.client.GET(
-      "/v1/job-agents/{agentId}/jobs/running",
-      { params: { path: { agentId: this.agent.id } } }
-    );
-    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
-  }
-};
-var Job = class {
-  constructor(job, client) {
-    this.job = job;
-    this.client = client;
-  }
-  acknowledge() {
-    return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
-      params: { path: { jobId: this.job.id } }
-    });
-  }
-  get() {
-    return this.client.GET("/v1/jobs/{jobId}", {
-      params: { path: { jobId: this.job.id } }
-    }).then(({ data }) => data);
-  }
-  update(update) {
-    return this.client.PATCH("/v1/jobs/{jobId}", {
-      params: { path: { jobId: this.job.id } },
-      body: update
-    });
-  }
-};
+    /**
+     * Sets the resources for this provider
+     * @param resources - Array of resources to set
+     * @returns The API response
+     * @throws Error if the scanner is not found
+     */
+    async set(resources) {
+        const scanner = await this.get();
+        if (scanner == null)
+            throw new Error("Scanner not found");
+        return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
+            params: { path: { providerId: scanner.id } },
+            body: { resources: uniqBy(resources, (t) => t.identifier) },
+        });
+    }
+}
+class JobAgent {
+    options;
+    client;
+    constructor(options, client) {
+        this.options = options;
+        this.client = client;
+    }
+    agent = null;
+    async get() {
+        if (this.agent != null) {
+            return this.agent;
+        }
+        const { data } = await this.client.PATCH("/v1/job-agents/name", {
+            body: this.options,
+        });
+        this.agent = data;
+        return this.agent;
+    }
+    async next() {
+        const { data } = await this.client.GET("/v1/job-agents/{agentId}/queue/next", { params: { path: { agentId: this.agent.id } } });
+        return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+    }
+    async running() {
+        const { data } = await this.client.GET("/v1/job-agents/{agentId}/jobs/running", { params: { path: { agentId: this.agent.id } } });
+        return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+    }
+}
+class Job {
+    job;
+    client;
+    constructor(job, client) {
+        this.job = job;
+        this.client = client;
+    }
+    acknowledge() {
+        return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
+            params: { path: { jobId: this.job.id } },
+        });
+    }
+    get() {
+        return this.client
+            .GET("/v1/jobs/{jobId}", {
+            params: { path: { jobId: this.job.id } },
+        })
+            .then(({ data }) => data);
+    }
+    update(update) {
+        return this.client.PATCH("/v1/jobs/{jobId}", {
+            params: { path: { jobId: this.job.id } },
+            body: update,
+        });
+    }
+}
 function uniqBy(arr, iteratee) {
-  const seen = /* @__PURE__ */ new Map();
-  return arr.filter((item) => {
-    const key = iteratee(item);
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.set(key, true);
-    return true;
-  });
+    const seen = new Map();
+    return arr.filter((item) => {
+        const key = iteratee(item);
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.set(key, true);
+        return true;
+    });
 }
 
-//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./src/sdk.ts
 
 
@@ -28147,14 +28148,15 @@ const setOutputsRecursively = (prefix, obj) => {
     if (typeof obj === "object" && obj !== null) {
         for (const [key, value] of Object.entries(obj)) {
             const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
-            const newPrefix = prefix ? `${prefix}_${sanitizedKey}` : sanitizedKey;
+            const newPrefix = prefix != null ? `${prefix}_${sanitizedKey}` : sanitizedKey;
             if (typeof value === "object" && value !== null)
                 setOutputsRecursively(newPrefix, value);
             setOutputAndLog(newPrefix, value);
         }
         return;
     }
-    setOutputAndLog(prefix, obj);
+    if (prefix != null)
+        setOutputAndLog(prefix, obj);
 };
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
@@ -28169,43 +28171,22 @@ async function run() {
             return;
         }
         const { variables, resource, release, version, environment, runbook, deployment, approval, } = data;
-        setOutputAndLog("base_url", baseUrl);
-        setOutputAndLog("resource", resource);
-        setOutputAndLog("resource_id", resource?.id);
-        setOutputAndLog("resource_name", resource?.name);
-        setOutputAndLog("resource_kind", resource?.kind);
-        setOutputAndLog("resource_version", resource?.version);
-        setOutputAndLog("resource_identifier", resource?.identifier);
-        setOutputsRecursively("resource_config", resource?.config);
-        setOutputsRecursively("resource_metadata", resource?.metadata);
-        setOutputAndLog("workspace_id", resource?.workspaceId);
-        setOutputAndLog("environment_id", environment?.id);
-        setOutputAndLog("environment_name", environment?.name);
-        setOutputAndLog("version_id", version?.id);
-        setOutputAndLog("version_tag", version?.tag);
-        setOutputsRecursively("version_config", version?.config);
-        setOutputsRecursively("version_metadata", version?.metadata);
-        setOutputAndLog("release_id", release?.id);
-        setOutputAndLog("release_version", release?.version);
-        setOutputsRecursively("release_config", release?.config);
-        setOutputsRecursively("release_metadata", release?.metadata);
-        if (approval?.approver != null) {
-            setOutputAndLog("approval_approver_id", approval.approver.id);
-            setOutputAndLog("approval_approver_name", approval.approver.name);
-        }
-        setOutputAndLog("deployment_id", deployment?.id);
-        setOutputAndLog("deployment_name", deployment?.name);
-        setOutputAndLog("deployment_slug", deployment?.slug);
-        for (const [key, value] of Object.entries(variables)) {
-            const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
-            setOutputAndLog(`variable_${sanitizedKey}`, value);
-        }
-        setOutputAndLog("runbook_id", runbook?.id);
-        setOutputAndLog("runbook_name", runbook?.name);
-        const systemId = deployment?.systemId ?? runbook?.systemId ?? environment?.systemId;
-        setOutputAndLog("system_id", systemId);
-        const agentId = deployment?.jobAgentId ?? runbook?.jobAgentId;
-        setOutputAndLog("agent_id", agentId);
+        setOutputsRecursively(null, {
+            base: { url: baseUrl },
+            variable: variables,
+            resource,
+            version,
+            workspace: { id: resource?.workspaceId },
+            environment,
+            release,
+            deployment,
+            runbook,
+            approval,
+            system: {
+                id: deployment?.systemId ?? runbook?.systemId ?? environment?.systemId,
+            },
+            agent: { id: deployment?.jobAgentId ?? runbook?.jobAgentId },
+        });
     })
         .then(() => {
         if (requiredOutputs.length === 0) {
