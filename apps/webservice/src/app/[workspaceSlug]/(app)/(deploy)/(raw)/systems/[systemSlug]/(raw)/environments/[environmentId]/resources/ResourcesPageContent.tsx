@@ -244,7 +244,7 @@ export const ResourcesPageContent: React.FC<{
               Resources managed in this environment
             </CardDescription>
           </div>
-          <EditSelector environment={environment} />
+          <EditSelector environment={environment} resources={resources} />
         </CardHeader>
         <CardContent>
           <p>No resource filter set for this environment</p>
@@ -267,7 +267,7 @@ export const ResourcesPageContent: React.FC<{
             Resources managed in this environment
           </CardDescription>
         </div>
-        <EditSelector environment={environment} />
+        <EditSelector environment={environment} resources={resources} />
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
