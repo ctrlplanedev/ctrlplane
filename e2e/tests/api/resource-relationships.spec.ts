@@ -126,56 +126,6 @@ test.describe("Resource Relationships API", () => {
     expect(target?.target?.config).toBeDefined();
   });
 
-  // test("create a relationship with metadata equals", async ({
-  //   api,
-  //   workspace,
-  // }) => {
-  //   const resourceRelationship = await api.POST(
-  //     "/v1/resource-relationship-rules",
-  //     {
-  //       body: {
-  //         workspaceId: workspace.id,
-  //         name: importedEntities.prefix + "-resource-relationship-rule-equals",
-  //         reference: importedEntities.prefix,
-  //         dependencyType: "depends_on",
-  //         sourceKind: "Source",
-  //         sourceVersion: "test-version/v1",
-  //         targetKind: "Target",
-  //         targetVersion: "test-version/v1",
-  //       },
-  //     },
-  //   );
-
-  //   console.log(JSON.stringify(resourceRelationship.data, null, 2));
-  //   expect(resourceRelationship.response.status).toBe(200);
-
-  //   const sourceResource = await api.GET(
-  //     `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
-  //     {
-  //       params: {
-  //         path: {
-  //           workspaceId: workspace.id,
-  //           identifier: importedEntities.prefix + "-source-resource",
-  //         },
-  //       },
-  //     },
-  //   );
-
-  //   expect(sourceResource.response.status).toBe(200);
-  //   expect(sourceResource.data?.relationships).toBeDefined();
-  //   const target =
-  //     sourceResource.data?.relationships?.[importedEntities.prefix];
-  //   expect(target).toBeDefined();
-  //   expect(target?.type).toBe("depends_on");
-  //   expect(target?.reference).toBe(importedEntities.prefix);
-  //   expect(target?.target?.id).toBeDefined();
-  //   expect(target?.target?.name).toBeDefined();
-  //   expect(target?.target?.version).toBeDefined();
-  //   expect(target?.target?.kind).toBeDefined();
-  //   expect(target?.target?.identifier).toBeDefined();
-  //   expect(target?.target?.config).toBeDefined();
-  // });
-
   test("upsert a relationship rule", async ({ api, workspace }) => {
     // First create a new relationship rule
     const initialRule = await api.POST("/v1/resource-relationship-rules", {
