@@ -13,7 +13,7 @@ import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const log = logger.child({ module: "resource-relationship-rules" });
+const log = logger.child({ route: "/v1/resource-relationship-rules" });
 
 export const POST = request()
   .use(authn)
