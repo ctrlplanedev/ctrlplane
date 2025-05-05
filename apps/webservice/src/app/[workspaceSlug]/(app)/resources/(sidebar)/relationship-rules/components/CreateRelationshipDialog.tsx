@@ -66,8 +66,8 @@ const schema = z.object({
   dependencyDescription: z.string().nullable(),
   sourceKind: z.string(),
   sourceVersion: z.string(),
-  targetKind: z.string(),
-  targetVersion: z.string(),
+  targetKind: z.string().nullable(),
+  targetVersion: z.string().nullable(),
   dependencyType: z.enum(dependencyType),
   metadataKeys: z.string().array().min(1),
 });
@@ -86,8 +86,8 @@ export const CreateRelationshipDialog: React.FC<
       dependencyDescription: null,
       sourceKind: "",
       sourceVersion: "",
-      targetKind: "",
-      targetVersion: "",
+      targetKind: null,
+      targetVersion: null,
       dependencyType: "depends_on",
       metadataKeys: [],
     },
@@ -284,7 +284,11 @@ export const CreateRelationshipDialog: React.FC<
                         Resource Kind
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., Service" />
+                        <Input
+                          {...field}
+                          placeholder="e.g., Service"
+                          value={field.value ?? ""}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -300,7 +304,11 @@ export const CreateRelationshipDialog: React.FC<
                         Resource Version
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., v1" />
+                        <Input
+                          {...field}
+                          placeholder="e.g., v1"
+                          value={field.value ?? ""}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -87,8 +87,6 @@ export const openapi: Swagger.SwaggerV3 = {
           "dependencyType",
           "sourceKind",
           "sourceVersion",
-          "targetKind",
-          "targetVersion",
         ],
       },
       CreateResourceRelationshipRule: {

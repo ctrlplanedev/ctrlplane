@@ -71,8 +71,9 @@ export const resourceRelationshipRule = pgTable(
 
     sourceKind: text("source_kind").notNull(),
     sourceVersion: text("source_version").notNull(),
-    targetKind: text("target_kind").notNull(),
-    targetVersion: text("target_version").notNull(),
+
+    targetKind: text("target_kind"),
+    targetVersion: text("target_version"),
   },
   (t) => [
     uniqueIndex("unique_resource_relationship_rule_reference").on(

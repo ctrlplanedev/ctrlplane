@@ -20,8 +20,8 @@ const body = z.object({
   description: z.string().optional(),
   sourceKind: z.string(),
   sourceVersion: z.string(),
-  targetKind: z.string(),
-  targetVersion: z.string(),
+  targetKind: z.string().nullable().optional(),
+  targetVersion: z.string().nullable().optional(),
 
   metadataKeysMatch: z.array(z.string()).optional(),
 });

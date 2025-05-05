@@ -1,4 +1,4 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import _ from "lodash";
 
@@ -82,8 +82,14 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
         eq(rulesWithCount.workspaceId, sourceResource.workspaceId),
         eq(rulesWithCount.sourceKind, sourceResource.kind),
         eq(rulesWithCount.sourceVersion, sourceResource.version),
-        eq(rulesWithCount.targetKind, targetResource.kind),
-        eq(rulesWithCount.targetVersion, targetResource.version),
+        or(
+          eq(rulesWithCount.targetKind, targetResource.kind),
+          isNull(rulesWithCount.targetKind),
+        ),
+        or(
+          eq(rulesWithCount.targetVersion, targetResource.version),
+          isNull(rulesWithCount.targetVersion),
+        ),
       ),
     )
     .innerJoin(
