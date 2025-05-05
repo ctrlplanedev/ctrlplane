@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { and, count, eq, ilike, takeFirst, upsertEnv } from "@ctrlplane/db";
 import {
+  computedEnvironmentResource,
   createEnvironment,
   deploymentVersionChannel,
   environment,
@@ -11,6 +12,7 @@ import {
   environmentPolicy,
   environmentPolicyDeploymentVersionChannel,
   environmentPolicyReleaseWindow,
+  resource,
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
@@ -299,4 +301,33 @@ export const environmentRouter = createTRPCRouter({
         { deduplication: { id: input } },
       ),
     ),
+
+  resources: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "environment", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) => {
+      const resources = await ctx.db
+        .select()
+        .from(computedEnvironmentResource)
+        .innerJoin(
+          resource,
+          eq(computedEnvironmentResource.resourceId, resource.id),
+        )
+        .where(eq(computedEnvironmentResource.environmentId, input))
+        .limit(500)
+        .then((rows) => rows.map((r) => r.resource));
+
+      const { count: total } = await ctx.db
+        .select({ count: count() })
+        .from(computedEnvironmentResource)
+        .where(eq(computedEnvironmentResource.environmentId, input))
+        .then(takeFirst);
+
+      return { resources, total };
+    }),
 });
