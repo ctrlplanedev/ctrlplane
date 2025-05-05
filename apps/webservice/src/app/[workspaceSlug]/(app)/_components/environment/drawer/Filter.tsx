@@ -103,14 +103,7 @@ export const EditFilterForm: React.FC<{
     schema: filterForm,
     defaultValues: { resourceFilter: getFilter(environment.resourceSelector) },
   });
-
   const { resourceFilter } = form.watch();
-
-  const filter = resourceFilter ?? undefined;
-  const resources = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter, limit: 10 },
-    { enabled: workspaceId !== "" },
-  );
 
   const utils = api.useUtils();
 
@@ -182,15 +175,7 @@ export const EditFilterForm: React.FC<{
           </div>
         </div>
 
-        {resourceFilter != null &&
-          resources.data != null &&
-          resources.data.total > 0 && (
-            <ResourceList
-              resources={resources.data.items}
-              count={resources.data.total}
-              filter={resourceFilter}
-            />
-          )}
+        {resourceFilter != null && <ResourceList filter={resourceFilter} />}
       </form>
     </Form>
   );

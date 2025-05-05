@@ -27,7 +27,6 @@ import { isValidResourceCondition } from "@ctrlplane/validators/resources";
 
 import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionRender";
 import { ResourceList } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceList";
-import { api } from "~/trpc/react";
 
 type Environment = {
   id: string;
@@ -37,12 +36,11 @@ type Environment = {
 type DeploymentResourcesDialogProps = {
   environments: Environment[];
   resourceSelector: ResourceCondition;
-  workspaceId: string;
 };
 
 export const DeploymentResourcesDialog: React.FC<
   DeploymentResourcesDialogProps
-> = ({ environments, resourceSelector, workspaceId }) => {
+> = ({ environments, resourceSelector }) => {
   const [selectedEnvironment, setSelectedEnvironment] =
     useState<Environment | null>(environments[0] ?? null);
 
@@ -54,15 +52,6 @@ export const DeploymentResourcesDialog: React.FC<
       resourceSelector,
     ].filter(isPresent),
   };
-  const isFilterValid = isValidResourceCondition(condition);
-
-  const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter: condition, limit: 5 },
-    { enabled: selectedEnvironment != null && isFilterValid },
-  );
-
-  const resources = data?.items ?? [];
-  const count = data?.total ?? 0;
 
   if (environments.length === 0) return null;
   return (
@@ -111,13 +100,7 @@ export const DeploymentResourcesDialog: React.FC<
               condition={condition}
               onChange={() => {}}
             />
-            {!isLoading && (
-              <ResourceList
-                resources={resources}
-                count={count}
-                filter={condition}
-              />
-            )}
+            <ResourceList filter={condition} />
           </>
         )}
       </DialogContent>

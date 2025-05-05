@@ -25,11 +25,7 @@ export default async function DeploymentPage(props: {
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-y-auto">
       <div className="container mx-auto max-w-3xl py-8">
-        <EditDeploymentSection
-          deployment={deployment}
-          systems={systems}
-          workspaceId={workspaceId}
-        />
+        <EditDeploymentSection deployment={deployment} systems={systems} />
       </div>
     </div>
   );

@@ -79,13 +79,11 @@ type System = RouterOutputs["system"]["list"]["items"][number];
 type EditDeploymentSectionProps = {
   deployment: SCHEMA.Deployment;
   systems: System[];
-  workspaceId: string;
 };
 
 export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   deployment,
   systems,
-  workspaceId,
 }) => {
   const system = systems.find((s) => s.id === deployment.systemId);
   const [successMessages, setSuccessMessages] = useState<
@@ -423,7 +421,6 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                         <DeploymentResourcesDialog
                           environments={envsWithSelector}
                           resourceSelector={value}
-                          workspaceId={workspaceId}
                         />
                       )}
                     </div>
