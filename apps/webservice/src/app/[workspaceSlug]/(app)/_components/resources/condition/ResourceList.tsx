@@ -76,8 +76,6 @@ export const ResourceList: React.FC<ResourceListProps> = ({
       </div>
     );
 
-  console.log("is resource diff included", ResourceDiff != null);
-
   return (
     <div className="space-y-1">
       <Label>Resources ({count})</Label>
