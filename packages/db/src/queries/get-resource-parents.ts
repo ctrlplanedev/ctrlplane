@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import _ from "lodash";
 
@@ -16,140 +16,104 @@ import { resource, resourceMetadata } from "../schema/resource.js";
  * @returns Array of relationships with rule info and target resources
  */
 export const getResourceParents = async (tx: Tx, resourceId: string) => {
-  // First, get all relationship rules and count how many metadata keys each rule requires to match
-  // This creates a subquery that we'll use later to ensure resources match ALL required metadata keys
-  const rulesWithCount = tx
-    .selectDistinctOn([resourceRelationshipRule.id], {
-      id: resourceRelationshipRule.id,
-      workspaceId: resourceRelationshipRule.workspaceId,
-      reference: resourceRelationshipRule.reference,
-      dependencyType: resourceRelationshipRule.dependencyType,
-      metadataKeysMatches: count(resourceRelationshipRuleMetadataMatch).as(
-        "metadataKeysMatches",
-      ),
-      metadataKeysEquals: count(resourceRelationshipRuleMetadataEquals).as(
-        "metadataKeysEquals",
-      ),
-      targetKind: resourceRelationshipRule.targetKind,
-      targetVersion: resourceRelationshipRule.targetVersion,
-      sourceKind: resourceRelationshipRule.sourceKind,
-      sourceVersion: resourceRelationshipRule.sourceVersion,
-    })
-    .from(resourceRelationshipRule)
-    .leftJoin(
-      resourceRelationshipRuleMetadataMatch,
-      eq(
-        resourceRelationshipRule.id,
-        resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
-      ),
-    )
-    .leftJoin(
-      resourceRelationshipRuleMetadataEquals,
-      eq(
-        resourceRelationshipRule.id,
-        resourceRelationshipRuleMetadataEquals.resourceRelationshipRuleId,
-      ),
-    )
-    .groupBy(resourceRelationshipRule.id)
-    .as("rulesWithCount");
-
   // Create aliases for tables we'll join multiple times to avoid naming conflicts
   const sourceResource = alias(resource, "sourceResource");
   const sourceMetadata = alias(resourceMetadata, "sourceMetadata");
   const targetResource = alias(resource, "targetResource");
   const targetMetadata = alias(resourceMetadata, "targetMetadata");
 
-  // Main query to find relationships:
-  // 1. Start with the source resource
-  // 2. Join its metadata
-  // 3. Find target resources in same workspace with matching metadata values
-  // 4. Join with rules that match source/target kinds and versions
-  // 5. Ensure metadata keys match what the rule requires
-  // 6. Group and count matches to verify ALL required metadata keys match
+  const isMetadataMatchSatisfied = or(
+    isNull(resourceRelationshipRuleMetadataMatch.key),
+    exists(
+      tx
+        .select()
+        .from(sourceMetadata)
+        .innerJoin(targetMetadata, eq(sourceMetadata.key, targetMetadata.key))
+        .where(
+          and(
+            eq(sourceMetadata.resourceId, sourceResource.id),
+            eq(targetMetadata.resourceId, targetResource.id),
+            eq(sourceMetadata.value, targetMetadata.value),
+            eq(sourceMetadata.key, resourceRelationshipRuleMetadataMatch.key),
+          ),
+        ),
+    ),
+  );
+
+  const isMetadataEqualsSatisfied = or(
+    isNull(resourceRelationshipRuleMetadataEquals.key),
+    exists(
+      tx
+        .select()
+        .from(targetMetadata)
+        .where(
+          and(
+            eq(targetMetadata.resourceId, targetResource.id),
+            eq(targetMetadata.key, resourceRelationshipRuleMetadataEquals.key),
+            eq(
+              targetMetadata.value,
+              resourceRelationshipRuleMetadataEquals.value,
+            ),
+          ),
+        ),
+    ),
+  );
+
+  const ruleMatchesSource = [
+    eq(resourceRelationshipRule.workspaceId, sourceResource.workspaceId),
+    eq(resourceRelationshipRule.sourceKind, sourceResource.kind),
+    eq(resourceRelationshipRule.sourceVersion, sourceResource.version),
+  ];
+
+  const ruleMatchesTarget = [
+    or(
+      isNull(resourceRelationshipRule.targetKind),
+      eq(resourceRelationshipRule.targetKind, targetResource.kind),
+    ),
+    or(
+      isNull(resourceRelationshipRule.targetVersion),
+      eq(resourceRelationshipRule.targetVersion, targetResource.version),
+    ),
+  ];
+
   const relationships = await tx
-    .selectDistinctOn([sourceResource.id, rulesWithCount.id], {
-      ruleId: rulesWithCount.id,
-      type: rulesWithCount.dependencyType,
+    .selectDistinctOn([targetResource.id, resourceRelationshipRule.id], {
+      ruleId: resourceRelationshipRule.id,
+      type: resourceRelationshipRule.dependencyType,
       target: targetResource,
-      reference: rulesWithCount.reference,
+      reference: resourceRelationshipRule.reference,
     })
     .from(sourceResource)
-    .innerJoin(sourceMetadata, eq(sourceResource.id, sourceMetadata.resourceId))
     .innerJoin(
       targetResource,
-      eq(sourceResource.workspaceId, targetResource.workspaceId),
+      eq(targetResource.workspaceId, sourceResource.workspaceId),
     )
     .innerJoin(
-      targetMetadata,
-      and(
-        eq(targetResource.id, targetMetadata.resourceId),
-        eq(targetMetadata.key, sourceMetadata.key),
-        eq(targetMetadata.value, sourceMetadata.value),
-      ),
+      resourceRelationshipRule,
+      and(...ruleMatchesSource, ...ruleMatchesTarget),
     )
-    .innerJoin(
-      rulesWithCount,
-      and(
-        eq(rulesWithCount.workspaceId, sourceResource.workspaceId),
-        eq(rulesWithCount.sourceKind, sourceResource.kind),
-        eq(rulesWithCount.sourceVersion, sourceResource.version),
-        or(
-          eq(rulesWithCount.targetKind, targetResource.kind),
-          isNull(rulesWithCount.targetKind),
-        ),
-        or(
-          eq(rulesWithCount.targetVersion, targetResource.version),
-          isNull(rulesWithCount.targetVersion),
-        ),
-      ),
-    )
-    .innerJoin(
+    .leftJoin(
       resourceRelationshipRuleMetadataMatch,
       eq(
-        rulesWithCount.id,
         resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
+        resourceRelationshipRule.id,
       ),
     )
     .leftJoin(
       resourceRelationshipRuleMetadataEquals,
       eq(
-        rulesWithCount.id,
         resourceRelationshipRuleMetadataEquals.resourceRelationshipRuleId,
+        resourceRelationshipRule.id,
       ),
     )
     .where(
       and(
         eq(sourceResource.id, resourceId),
-        eq(sourceMetadata.key, resourceRelationshipRuleMetadataMatch.key),
-        or(
-          isNull(resourceRelationshipRuleMetadataEquals.key),
-          eq(targetMetadata.key, resourceRelationshipRuleMetadataEquals.key),
-        ),
-        or(
-          isNull(resourceRelationshipRuleMetadataEquals.value),
-          eq(
-            targetMetadata.value,
-            resourceRelationshipRuleMetadataEquals.value,
-          ),
-        ),
-      ),
-    )
-    .groupBy(
-      sourceResource.workspaceId,
-      sourceResource.id,
-      targetResource.id,
-      rulesWithCount.id,
-      rulesWithCount.reference,
-      rulesWithCount.dependencyType,
-      rulesWithCount.metadataKeysMatches,
-      rulesWithCount.metadataKeysEquals,
-    )
-    // Only return relationships where the number of matching metadata keys
-    // equals the number required by the rule (ensures ALL keys match)
-    .having(
-      and(
-        eq(count(sourceMetadata.key), rulesWithCount.metadataKeysMatches),
-        eq(count(sourceMetadata.key), rulesWithCount.metadataKeysEquals),
+        ne(targetResource.id, resourceId),
+        isNull(sourceResource.deletedAt),
+        isNull(targetResource.deletedAt),
+        isMetadataEqualsSatisfied,
+        isMetadataMatchSatisfied,
       ),
     );
 

@@ -1,7 +1,11 @@
 import path from "path";
 import { expect } from "@playwright/test";
 
-import { ImportedEntities, importEntitiesFromYaml } from "../../api";
+import {
+  cleanupImportedEntities,
+  ImportedEntities,
+  importEntitiesFromYaml,
+} from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "resource-relationships.spec.yaml");
@@ -15,6 +19,10 @@ test.describe("Resource Relationships API", () => {
       workspace.id,
       yamlPath,
     );
+  });
+
+  test.afterAll(async ({ api, workspace }) => {
+    await cleanupImportedEntities(api, importedEntities, workspace.id);
   });
 
   test("create a relationship", async ({ api, workspace }) => {
