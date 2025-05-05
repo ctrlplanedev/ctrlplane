@@ -85,6 +85,27 @@ export const resourceRelationshipRule = pgTable(
   ],
 );
 
+export const resourceRelationshipRuleMetadataEquals = pgTable(
+  "resource_relationship_rule_metadata_equals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceRelationshipRuleId: uuid("resource_relationship_rule_id")
+      .notNull()
+      .references(() => resourceRelationshipRule.id, {
+        onDelete: "cascade",
+      }),
+
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => [
+    uniqueIndex("unique_resource_relationship_rule_metadata_equals").on(
+      t.resourceRelationshipRuleId,
+      t.key,
+    ),
+  ],
+);
+
 export const resourceRelationshipRuleMetadataMatch = pgTable(
   "resource_relationship_rule_metadata_match",
   {

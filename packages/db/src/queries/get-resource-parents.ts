@@ -5,6 +5,7 @@ import _ from "lodash";
 import type { Tx } from "../common.js";
 import {
   resourceRelationshipRule,
+  resourceRelationshipRuleMetadataEquals,
   resourceRelationshipRuleMetadataMatch,
 } from "../schema/resource-relationship-rule.js";
 import { resource, resourceMetadata } from "../schema/resource.js";
@@ -23,8 +24,11 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
       workspaceId: resourceRelationshipRule.workspaceId,
       reference: resourceRelationshipRule.reference,
       dependencyType: resourceRelationshipRule.dependencyType,
-      metadataKeys: count(resourceRelationshipRuleMetadataMatch).as(
-        "metadataKeys",
+      metadataKeysMatches: count(resourceRelationshipRuleMetadataMatch).as(
+        "metadataKeysMatches",
+      ),
+      metadataKeysEquals: count(resourceRelationshipRuleMetadataEquals).as(
+        "metadataKeysEquals",
       ),
       targetKind: resourceRelationshipRule.targetKind,
       targetVersion: resourceRelationshipRule.targetVersion,
@@ -37,6 +41,13 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
       eq(
         resourceRelationshipRule.id,
         resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
+      ),
+    )
+    .leftJoin(
+      resourceRelationshipRuleMetadataEquals,
+      eq(
+        resourceRelationshipRule.id,
+        resourceRelationshipRuleMetadataEquals.resourceRelationshipRuleId,
       ),
     )
     .groupBy(resourceRelationshipRule.id)
@@ -99,10 +110,28 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
         resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
       ),
     )
+    .leftJoin(
+      resourceRelationshipRuleMetadataEquals,
+      eq(
+        rulesWithCount.id,
+        resourceRelationshipRuleMetadataEquals.resourceRelationshipRuleId,
+      ),
+    )
     .where(
       and(
         eq(sourceResource.id, resourceId),
         eq(sourceMetadata.key, resourceRelationshipRuleMetadataMatch.key),
+        or(
+          isNull(resourceRelationshipRuleMetadataEquals.key),
+          eq(targetMetadata.key, resourceRelationshipRuleMetadataEquals.key),
+        ),
+        or(
+          isNull(resourceRelationshipRuleMetadataEquals.value),
+          eq(
+            targetMetadata.value,
+            resourceRelationshipRuleMetadataEquals.value,
+          ),
+        ),
       ),
     )
     .groupBy(
@@ -112,11 +141,17 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
       rulesWithCount.id,
       rulesWithCount.reference,
       rulesWithCount.dependencyType,
-      rulesWithCount.metadataKeys,
+      rulesWithCount.metadataKeysMatches,
+      rulesWithCount.metadataKeysEquals,
     )
     // Only return relationships where the number of matching metadata keys
     // equals the number required by the rule (ensures ALL keys match)
-    .having(eq(count(sourceMetadata.key), rulesWithCount.metadataKeys));
+    .having(
+      and(
+        eq(count(sourceMetadata.key), rulesWithCount.metadataKeysMatches),
+        eq(count(sourceMetadata.key), rulesWithCount.metadataKeysEquals),
+      ),
+    );
 
   const relatipnshipTargets = async () =>
     await tx.query.resource
