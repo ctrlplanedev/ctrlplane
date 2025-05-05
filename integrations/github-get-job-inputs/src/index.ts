@@ -53,7 +53,6 @@ async function run() {
       const {
         variables,
         resource,
-        release,
         version,
         environment,
         runbook,
