@@ -1,6 +1,15 @@
 import { z } from "zod";
 
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  selector,
+  sql,
+} from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
@@ -44,6 +53,7 @@ export const resourcesRouter = createTRPCRouter({
               SCHEMA.computedEnvironmentResource.environmentId,
               input.environmentId,
             ),
+            selector().query().resources().where(input.filter).sql(),
           ),
         )
         .limit(input.limit)
