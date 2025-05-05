@@ -67,9 +67,14 @@ async function run() {
         resource,
         version,
         workspace: { id: resource?.workspaceId },
-        environment,
-        release,
-        deployment,
+        environment: {
+          id: environment?.id,
+          name: environment?.name,
+        },
+        deployment: {
+          id: deployment?.id,
+          name: deployment?.name,
+        },
         runbook,
         approval,
         system: {
