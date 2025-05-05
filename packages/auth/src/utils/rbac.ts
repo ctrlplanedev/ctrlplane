@@ -27,6 +27,7 @@ import {
   resource,
   resourceMetadataGroup,
   resourceProvider,
+  resourceRelationshipRule,
   resourceView,
   role,
   rolePermission,
@@ -244,6 +245,26 @@ const getResourceViewScopes = async (id: string) => {
 
   return [
     { type: "resourceView" as const, id: result.resource_view.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
+const getResourceRelationshipRuleScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(resourceRelationshipRule)
+    .innerJoin(
+      workspace,
+      eq(resourceRelationshipRule.workspaceId, workspace.id),
+    )
+    .where(eq(resourceRelationshipRule.id, id))
+    .then(takeFirst);
+
+  return [
+    {
+      type: "resourceRelationshipRule" as const,
+      id: result.resource_relationship_rule.id,
+    },
     { type: "workspace" as const, id: result.workspace.id },
   ];
 };
@@ -476,6 +497,7 @@ export const scopeHandlers: Record<
   job: getJobScopes,
   policy: getPolicyScopes,
   releaseTarget: getReleaseTargetScopes,
+  resourceRelationshipRule: getResourceRelationshipRuleScopes,
 };
 
 const fetchScopeHierarchyForResource = async (resource: {
