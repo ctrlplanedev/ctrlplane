@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { eq, sql, takeFirst } from "@ctrlplane/db";
+import { eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -111,7 +111,7 @@ const getReleaseTarget = (db: Tx, jobId: string) =>
       eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
     )
     .where(eq(schema.releaseJob.jobId, jobId))
-    .then(takeFirst);
+    .then(takeFirstOrNull);
 
 export const updateJob = async (
   db: Tx,
@@ -149,6 +149,7 @@ export const updateJob = async (
   if (!isJobJustCompleted) return updatedJob;
 
   const releaseTarget = await getReleaseTarget(db, jobId);
+  if (releaseTarget == null) return updatedJob;
   await getQueue(Channel.EvaluateReleaseTarget).add(
     `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`,
     releaseTarget,
