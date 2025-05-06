@@ -1,135 +1,95 @@
+import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
+import { CONFLICT, INTERNAL_SERVER_ERROR } from "http-status";
 import _ from "lodash";
-import { z } from "zod";
 
-import { takeFirstOrNull } from "@ctrlplane/db";
+import { takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const body = z.object({
-  workspaceId: z.string(),
-  name: z.string(),
-  reference: z.string(),
-  dependencyType: z.string(),
-  dependencyDescription: z.string().optional(),
-  description: z.string().optional(),
-  sourceKind: z.string(),
-  sourceVersion: z.string(),
-  targetKind: z.string().nullable().optional(),
-  targetVersion: z.string().nullable().optional(),
-
-  metadataKeysMatch: z.array(z.string()).optional(),
-});
+const log = logger.child({ route: "/v1/resource-relationship-rules" });
 
 export const POST = request()
   .use(authn)
-  .use(parseBody(body))
+  .use(parseBody(schema.createResourceRelationshipRule))
   .use(
     authz(({ ctx, can }) =>
       can
-        .perform(Permission.SystemUpdate)
+        .perform(Permission.ResourceRelationshipRuleCreate)
         .on({ type: "workspace", id: ctx.body.workspaceId }),
     ),
   )
-  .handle<{ body: z.infer<typeof body> }>(async ({ db, body }) => {
-    const upsertedResourceRelationshipRule = await db.transaction(
-      async (tx) => {
-        // Check if rule already exists based on workspace, reference, and dependency type
-        const existingRule = await tx
-          .select()
-          .from(schema.resourceRelationshipRule)
-          .where(
-            and(
-              eq(schema.resourceRelationshipRule.workspaceId, body.workspaceId),
-              eq(schema.resourceRelationshipRule.reference, body.reference),
-              eq(
-                schema.resourceRelationshipRule.dependencyType,
-                body.dependencyType as any,
-              ),
+  .handle<{ body: z.infer<typeof schema.createResourceRelationshipRule> }>(
+    async ({ db, body }) => {
+      try {
+        const existingRule = await db.query.resourceRelationshipRule.findFirst({
+          where: and(
+            eq(schema.resourceRelationshipRule.workspaceId, body.workspaceId),
+            eq(schema.resourceRelationshipRule.reference, body.reference),
+            eq(
+              schema.resourceRelationshipRule.dependencyType,
+              body.dependencyType,
             ),
-          )
-          .then(takeFirstOrNull);
+          ),
+        });
 
-        let rule;
-        if (existingRule != null) {
-          // Update existing rule
-          rule = await tx
-            .update(schema.resourceRelationshipRule)
-            .set({
-              name: body.name,
-              dependencyDescription: body.dependencyDescription,
-              description: body.description,
-              sourceKind: body.sourceKind,
-              sourceVersion: body.sourceVersion,
-              targetKind: body.targetKind,
-              targetVersion: body.targetVersion,
-            })
-            .where(eq(schema.resourceRelationshipRule.id, existingRule.id))
-            .returning()
-            .then(takeFirstOrNull);
-        } else {
-          // Insert new rule
-          rule = await tx
-            .insert(schema.resourceRelationshipRule)
-            .values({
-              workspaceId: body.workspaceId,
-              name: body.name,
-              reference: body.reference,
-              dependencyType: body.dependencyType as any,
-              dependencyDescription: body.dependencyDescription,
-              description: body.description,
-              sourceKind: body.sourceKind,
-              sourceVersion: body.sourceVersion,
-              targetKind: body.targetKind,
-              targetVersion: body.targetVersion,
-            })
-            .returning()
-            .then(takeFirstOrNull);
-        }
-
-        if (rule == null) return null;
-
-        // Handle metadata keys - first delete existing ones if updating
-        if (existingRule != null) {
-          await tx
-            .delete(schema.resourceRelationshipRuleMetadataMatch)
-            .where(
-              eq(
-                schema.resourceRelationshipRuleMetadataMatch
-                  .resourceRelationshipRuleId,
-                rule.id,
-              ),
-            );
-        }
-
-        // Insert new metadata keys
-        const metadataKeys = _.uniq(body.metadataKeysMatch ?? []);
-        if (metadataKeys.length > 0) {
-          await tx.insert(schema.resourceRelationshipRuleMetadataMatch).values(
-            metadataKeys.map((key) => ({
-              resourceRelationshipRuleId: rule.id,
-              key,
-            })),
+        if (existingRule != null)
+          return NextResponse.json(
+            {
+              error: `Resource relationship with reference ${body.reference} and dependency type ${body.dependencyType} already exists in workspace ${body.workspaceId}`,
+            },
+            { status: CONFLICT },
           );
-        }
 
-        return rule;
-      },
-    );
+        const rule = await db.transaction(async (tx) => {
+          const rule = await tx
+            .insert(schema.resourceRelationshipRule)
+            .values(body)
+            .returning()
+            .then(takeFirst);
 
-    if (upsertedResourceRelationshipRule == null) {
-      return NextResponse.json(
-        {
-          error: "Failed to upsert resource relationship rule.",
-        },
-        { status: 400 },
-      );
-    }
+          const metadataKeysMatch = _.uniq(body.metadataKeysMatch ?? []);
+          if (metadataKeysMatch.length > 0)
+            await tx
+              .insert(schema.resourceRelationshipRuleMetadataMatch)
+              .values(
+                metadataKeysMatch.map((key) => ({
+                  resourceRelationshipRuleId: rule.id,
+                  key,
+                })),
+              );
 
-    return NextResponse.json(upsertedResourceRelationshipRule);
-  });
+          const metadataKeysEquals = _.uniqBy(
+            body.metadataKeysEquals ?? [],
+            (m) => m.key,
+          );
+          if (metadataKeysEquals.length > 0)
+            await tx
+              .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
+              .values(
+                metadataKeysEquals.map((m) => ({
+                  resourceRelationshipRuleId: rule.id,
+                  key: m.key,
+                  value: m.value,
+                })),
+              );
+
+          return { ...rule, metadataKeysMatch, metadataKeysEquals };
+        });
+
+        return NextResponse.json(rule);
+      } catch (error) {
+        log.error(error);
+        return NextResponse.json(
+          { error: "Failed to create resource relationship rule." },
+          { status: INTERNAL_SERVER_ERROR },
+        );
+      }
+    },
+  );

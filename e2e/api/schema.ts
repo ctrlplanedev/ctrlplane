@@ -509,6 +509,23 @@ export interface paths {
     patch: operations["setResourceProvidersResources"];
     trace?: never;
   };
+  "/v1/resource-relationship-rules/{ruleId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update a resource relationship rule */
+    patch: operations["updateResourceRelationshipRule"];
+    trace?: never;
+  };
   "/v1/resource-relationship-rules": {
     parameters: {
       query?: never;
@@ -519,7 +536,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create a resource relationship rule */
-    post: operations["upsertResourceRelationshipRule"];
+    post: operations["createResourceRelationshipRule"];
     delete?: never;
     options?: never;
     head?: never;
@@ -918,7 +935,11 @@ export interface components {
       version?: components["schemas"]["DeploymentVersion"];
       deployment?: components["schemas"]["Deployment"];
       runbook?: components["schemas"]["Runbook"];
-      resource?: components["schemas"]["Resource"];
+      resource?: components["schemas"]["ResourceWithVariablesAndMetadata"] & {
+        relationships?: {
+          [key: string]: components["schemas"]["Resource"];
+        };
+      };
       environment?: components["schemas"]["Environment"];
       variables: components["schemas"]["VariableMap"];
       approval?: {
@@ -1252,6 +1273,22 @@ export interface components {
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
     };
+    UpdateResourceRelationshipRule: {
+      name?: string;
+      reference?: string;
+      dependencyType?: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyDescription?: string;
+      description?: string;
+      sourceKind?: string;
+      sourceVersion?: string;
+      targetKind?: string;
+      targetVersion?: string;
+      metadataKeysMatch?: string[];
+      metadataTargetKeysEquals?: {
+        key: string;
+        value: string;
+      }[];
+    };
     /** @enum {string} */
     ResourceRelationshipRuleDependencyType:
       | "depends_on"
@@ -1261,7 +1298,9 @@ export interface components {
       | "provisioned_in"
       | "inherits_from";
     ResourceRelationshipRule: {
+      /** Format: uuid */
       id: string;
+      /** Format: uuid */
       workspaceId: string;
       name: string;
       reference: string;
@@ -1270,8 +1309,13 @@ export interface components {
       description?: string;
       sourceKind: string;
       sourceVersion: string;
-      targetKind: string;
-      targetVersion: string;
+      targetKind?: string;
+      targetVersion?: string;
+      metadataKeysMatch?: string[];
+      metadataTargetKeysEquals?: {
+        key: string;
+        value: string;
+      }[];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;
@@ -1284,7 +1328,11 @@ export interface components {
       sourceVersion: string;
       targetKind: string;
       targetVersion: string;
-      metadataKeysMatch: string[];
+      metadataKeysMatch?: string[];
+      metadataTargetKeysEquals?: {
+        key: string;
+        value: string;
+      }[];
     };
     ReleaseTarget: {
       /** Format: uuid */
@@ -3188,7 +3236,55 @@ export interface operations {
       };
     };
   };
-  upsertResourceRelationshipRule: {
+  updateResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["UpdateResourceRelationshipRule"];
+      };
+    };
+    responses: {
+      /** @description The updated resource relationship rule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
+        };
+      };
+      /** @description The resource relationship rule was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An error occurred while updating the resource relationship rule */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  createResourceRelationshipRule: {
     parameters: {
       query?: never;
       header?: never;
@@ -3210,8 +3306,19 @@ export interface operations {
           "application/json": components["schemas"]["ResourceRelationshipRule"];
         };
       };
+      /** @description Resource relationship rule already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
       /** @description Failed to create resource relationship rule */
-      400: {
+      500: {
         headers: {
           [name: string]: unknown;
         };
