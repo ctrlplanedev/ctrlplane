@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 import { workspace } from "./workspace.js";
 
@@ -130,6 +131,7 @@ export const resourceRelationshipRuleRelations = relations(
   resourceRelationshipRule,
   ({ many }) => ({
     metadataMatches: many(resourceRelationshipRuleMetadataMatch),
+    metadataEquals: many(resourceRelationshipRuleMetadataEquals),
   }),
 );
 
@@ -145,6 +147,28 @@ export const resourceRelationshipRuleMetadataMatchRelations = relations(
   }),
 );
 
+export const resourceRelationshipRuleMetadataEqualsRelations = relations(
+  resourceRelationshipRuleMetadataEquals,
+  ({ one }) => ({
+    rule: one(resourceRelationshipRule, {
+      fields: [
+        resourceRelationshipRuleMetadataEquals.resourceRelationshipRuleId,
+      ],
+      references: [resourceRelationshipRule.id],
+    }),
+  }),
+);
+
 export const createResourceRelationshipRule = createInsertSchema(
   resourceRelationshipRule,
-);
+)
+  .omit({ id: true })
+  .extend({
+    metadataKeysMatch: z.array(z.string()).optional(),
+    metadataKeysEquals: z
+      .array(z.object({ key: z.string(), value: z.string() }))
+      .optional(),
+  });
+
+export const updateResourceRelationshipRule =
+  createResourceRelationshipRule.partial();

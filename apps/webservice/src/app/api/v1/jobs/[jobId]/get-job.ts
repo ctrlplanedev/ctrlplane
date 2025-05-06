@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
-import { getResourceParents } from "node_modules/@ctrlplane/db/src/queries/get-resource-parents";
 
 import { eq } from "@ctrlplane/db";
+import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
