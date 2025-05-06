@@ -1,14 +1,12 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { eq, sql, takeFirst } from "@ctrlplane/db";
+import { desc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
-
-import { onJobCompletion } from "./job-creation.js";
-import { onJobFailure } from "./job-failure.js";
 
 const log = logger.child({ module: "job-update" });
 
@@ -83,6 +81,52 @@ const getCompletedAt = (
   return null;
 };
 
+const getIsJobJustCompleted = (
+  previousStatus: JobStatus,
+  newStatus: JobStatus,
+) => {
+  const isPreviousStatusExited = exitedStatus.includes(previousStatus);
+  const isNewStatusExited = exitedStatus.includes(newStatus);
+  return !isPreviousStatusExited && isNewStatusExited;
+};
+
+const getReleaseTargetFromJob = (jobId: string) =>
+  db
+    .select()
+    .from(schema.releaseJob)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJob.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.versionRelease,
+      eq(schema.release.versionReleaseId, schema.versionRelease.id),
+    )
+    .innerJoin(
+      schema.releaseTarget,
+      eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
+    )
+    .where(eq(schema.job.id, jobId))
+    .then(takeFirstOrNull)
+    .then((result) => result?.release_target ?? null);
+
+const getLatestReleaseForReleaseTarget = (releaseTargetId: string) =>
+  db
+    .select()
+    .from(schema.release)
+    .innerJoin(
+      schema.versionRelease,
+      eq(schema.release.versionReleaseId, schema.versionRelease.id),
+    )
+    .leftJoin(
+      schema.releaseJob,
+      eq(schema.releaseJob.releaseId, schema.release.id),
+    )
+    .orderBy(desc(schema.release.createdAt))
+    .limit(1)
+    .where(eq(schema.versionRelease.releaseTargetId, releaseTargetId))
+    .then(takeFirstOrNull);
+
 export const updateJob = async (
   db: Tx,
   jobId: string,
@@ -112,15 +156,24 @@ export const updateJob = async (
   if (metadata != null)
     await updateJobMetadata(jobId, jobBeforeUpdate.metadata, metadata);
 
-  const isJobFailure =
-    data.status === JobStatus.Failure &&
-    jobBeforeUpdate.status !== JobStatus.Failure;
-  if (isJobFailure) await onJobFailure(updatedJob);
+  const isJobJustCompleted = getIsJobJustCompleted(
+    jobBeforeUpdate.status as JobStatus,
+    updatedJob.status as JobStatus,
+  );
+  if (!isJobJustCompleted) return updatedJob;
 
-  const isJobCompletion =
-    data.status === JobStatus.Successful &&
-    jobBeforeUpdate.status !== JobStatus.Successful;
-  if (isJobCompletion) await onJobCompletion(updatedJob);
+  const releaseTarget = await getReleaseTargetFromJob(jobId);
+  if (releaseTarget == null) {
+    log.warn(`Release target not found for job: ${jobId}`);
+    return updatedJob;
+  }
+
+  const latestRelease = await getLatestReleaseForReleaseTarget(
+    releaseTarget.id,
+  );
+  if (latestRelease == null || latestRelease.release_job != null)
+    return updatedJob;
+  await createReleaseJob(db, latestRelease.release);
 
   return updatedJob;
 };

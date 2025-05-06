@@ -1,7 +1,15 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
@@ -11,6 +19,7 @@ import {
   VariableReleaseManager,
   VersionReleaseManager,
 } from "@ctrlplane/rule-engine";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 const tracer = trace.getTracer("evaluate-release-target");
 const withSpan = makeWithSpan(tracer);
@@ -71,6 +80,40 @@ const handleVariableRelease = withSpan(
     return variableRelease;
   },
 );
+
+const getReleaseTargetIdFromRelease = async (releaseId: string) =>
+  db
+    .select({ releaseTargetId: schema.versionRelease.releaseTargetId })
+    .from(schema.release)
+    .innerJoin(
+      schema.versionRelease,
+      eq(schema.release.versionReleaseId, schema.versionRelease.id),
+    )
+    .where(eq(schema.release.id, releaseId))
+    .then(takeFirst)
+    .then(({ releaseTargetId }) => releaseTargetId);
+
+const getActiveJobForReleaseTarget = async (releaseTargetId: string) =>
+  db
+    .select()
+    .from(schema.job)
+    .innerJoin(schema.releaseJob, eq(schema.releaseJob.jobId, schema.job.id))
+    .innerJoin(
+      schema.release,
+      eq(schema.release.id, schema.releaseJob.releaseId),
+    )
+    .innerJoin(
+      schema.versionRelease,
+      eq(schema.release.versionReleaseId, schema.versionRelease.id),
+    )
+    .where(
+      and(
+        eq(schema.versionRelease.releaseTargetId, releaseTargetId),
+        inArray(schema.job.status, [JobStatus.Pending, JobStatus.InProgress]),
+      ),
+    )
+    .limit(1)
+    .then(takeFirstOrNull);
 
 /**
  * Worker that evaluates a release target and creates necessary releases and jobs
@@ -165,6 +208,12 @@ export const evaluateReleaseTargetWorker = createWorker(
       });
 
       if (existingReleaseJob != null && !skipDuplicateCheck) return;
+
+      // Check if the release target already has an active job (pending or in progress)
+      const releaseTargetId = await getReleaseTargetIdFromRelease(release.id);
+      const activeJobForReleaseTarget =
+        await getActiveJobForReleaseTarget(releaseTargetId);
+      if (activeJobForReleaseTarget != null) return;
 
       // If no job exists yet, create one and dispatch it
       const newReleaseJob = await db.transaction(async (tx) =>
