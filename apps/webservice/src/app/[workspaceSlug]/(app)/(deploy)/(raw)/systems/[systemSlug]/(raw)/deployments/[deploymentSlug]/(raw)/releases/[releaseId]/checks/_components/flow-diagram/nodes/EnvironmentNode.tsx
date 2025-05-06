@@ -8,7 +8,6 @@ import { cn } from "@ctrlplane/ui";
 import { Separator } from "@ctrlplane/ui/separator";
 
 import { ApprovalCheck } from "../checks/Approval";
-import { DenyWindowCheck } from "../checks/DenyWindow";
 import { VersionSelectorCheck } from "../checks/VersionSelector";
 
 type EnvironmentNodeProps = NodeProps<{
@@ -35,7 +34,6 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
       <Separator className="!m-0 bg-neutral-800" />
       <div className="space-y-1 px-2 pb-2">
         <ApprovalCheck {...data} />
-        <DenyWindowCheck {...data} />
         <VersionSelectorCheck {...data} />
       </div>
     </div>

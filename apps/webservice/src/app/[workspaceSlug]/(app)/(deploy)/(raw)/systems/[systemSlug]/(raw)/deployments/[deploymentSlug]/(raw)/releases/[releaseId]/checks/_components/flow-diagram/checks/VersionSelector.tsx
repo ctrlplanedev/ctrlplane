@@ -5,13 +5,14 @@ export const VersionSelectorCheck: React.FC<{
   versionId: string;
   environmentId: string;
 }> = ({ versionId, environmentId }) => {
-  const { data, isLoading } =
-    api.deployment.version.checks.versionSelector.useQuery({
-      versionId,
-      environmentId,
-    });
+  const { data, isLoading } = api.policy.evaluate.useQuery({
+    environmentId,
+    versionId,
+  });
 
-  const isPassingVersionSelector = data ?? false;
+  const isPassingVersionSelector = Object.values(
+    data?.rules.versionSelector ?? {},
+  ).every((isPassing) => isPassing);
 
   if (isLoading)
     return (
