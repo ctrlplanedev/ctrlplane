@@ -4,7 +4,7 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconBoltOff, IconCubeOff } from "@tabler/icons-react";
+import { IconBoltOff, IconClock, IconCubeOff } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 
 import { Skeleton } from "@ctrlplane/ui/skeleton";
@@ -46,6 +46,41 @@ const NoReleaseTargetsCell: React.FC<{
     </div>
   </div>
 );
+
+const BlockedByActiveJobsCell: React.FC<{
+  deploymentVersion: { id: string; tag: string };
+  deployment: { id: string; name: string; slug: string };
+  system: { slug: string };
+}> = ({ deploymentVersion, deployment, system }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+
+  const deploymentUrl = urls
+    .workspace(workspaceSlug)
+    .system(system.slug)
+    .deployment(deployment.slug)
+    .releases();
+
+  return (
+    <div className="flex h-full w-full items-center justify-center p-1">
+      <Link
+        href={deploymentUrl}
+        className="flex w-full items-center gap-2 rounded-md p-2"
+      >
+        <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+          <IconClock className="h-4 w-4" strokeWidth={2} />
+        </div>
+        <div className="flex flex-col">
+          <div className="max-w-36 truncate font-semibold">
+            {deploymentVersion.tag}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Waiting on another release
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+};
 
 const NoJobAgentCell: React.FC<{
   tag: string;
@@ -95,6 +130,14 @@ const DeploymentVersionEnvironmentCell: React.FC<
       deploymentId: deployment.id,
     });
 
+  const {
+    data: targetsWithActiveJobs,
+    isLoading: isTargetsWithActiveJobsLoading,
+  } = api.releaseTarget.activeJobs.useQuery({
+    environmentId: environment.id,
+    deploymentId: deployment.id,
+  });
+
   const { data: policyEvaluations, isLoading: isPolicyEvaluationsLoading } =
     api.policy.evaluate.useQuery({
       environmentId: environment.id,
@@ -108,7 +151,10 @@ const DeploymentVersionEnvironmentCell: React.FC<
     });
 
   const isLoading =
-    isReleaseTargetsLoading || isPolicyEvaluationsLoading || isJobsLoading;
+    isReleaseTargetsLoading ||
+    isPolicyEvaluationsLoading ||
+    isJobsLoading ||
+    isTargetsWithActiveJobsLoading;
   if (isLoading) return <SkeletonCell />;
 
   const hasJobs = jobs != null && jobs.length > 0;
@@ -148,6 +194,12 @@ const DeploymentVersionEnvironmentCell: React.FC<
         {...props}
       />
     );
+
+  const allActiveJobs = (targetsWithActiveJobs ?? []).flatMap((t) => t.jobs);
+  const isWaitingOnActiveJobs = allActiveJobs.some(
+    ({ versionId }) => versionId !== deploymentVersion.id,
+  );
+  if (isWaitingOnActiveJobs) return <BlockedByActiveJobsCell {...props} />;
 
   const hasNoJobAgent = deployment.jobAgentId == null;
   if (hasNoJobAgent)
