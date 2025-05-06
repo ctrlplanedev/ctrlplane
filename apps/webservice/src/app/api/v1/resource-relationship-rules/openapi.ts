@@ -10,7 +10,7 @@ export const openapi: Swagger.SwaggerV3 = {
     "/v1/resource-relationship-rules": {
       post: {
         summary: "Create a resource relationship rule",
-        operationId: "upsertResourceRelationshipRule",
+        operationId: "createResourceRelationshipRule",
         requestBody: {
           required: true,
           content: {
@@ -32,7 +32,20 @@ export const openapi: Swagger.SwaggerV3 = {
               },
             },
           },
-          "400": {
+          "409": {
+            description: "Resource relationship rule already exists",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "500": {
             description: "Failed to create resource relationship rule",
             content: {
               "application/json": {
@@ -65,8 +78,8 @@ export const openapi: Swagger.SwaggerV3 = {
       ResourceRelationshipRule: {
         type: "object",
         properties: {
-          id: { type: "string" },
-          workspaceId: { type: "string" },
+          id: { type: "string", format: "uuid" },
+          workspaceId: { type: "string", format: "uuid" },
           name: { type: "string" },
           reference: { type: "string" },
           dependencyType: {
@@ -78,6 +91,21 @@ export const openapi: Swagger.SwaggerV3 = {
           sourceVersion: { type: "string" },
           targetKind: { type: "string" },
           targetVersion: { type: "string" },
+          metadataKeysMatch: {
+            type: "array",
+            items: { type: "string" },
+          },
+          metadataTargetKeysEquals: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                key: { type: "string" },
+                value: { type: "string" },
+              },
+              required: ["key", "value"],
+            },
+          },
         },
         required: [
           "id",
@@ -87,8 +115,6 @@ export const openapi: Swagger.SwaggerV3 = {
           "dependencyType",
           "sourceKind",
           "sourceVersion",
-          "targetKind",
-          "targetVersion",
         ],
       },
       CreateResourceRelationshipRule: {
@@ -110,6 +136,17 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "array",
             items: { type: "string" },
           },
+          metadataTargetKeysEquals: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                key: { type: "string" },
+                value: { type: "string" },
+              },
+              required: ["key", "value"],
+            },
+          },
         },
         required: [
           "workspaceId",
@@ -120,7 +157,6 @@ export const openapi: Swagger.SwaggerV3 = {
           "sourceVersion",
           "targetKind",
           "targetVersion",
-          "metadataKeysMatch",
         ],
       },
     },

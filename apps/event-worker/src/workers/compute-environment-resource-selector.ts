@@ -1,7 +1,13 @@
 import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
+
+import { dispatchComputeEnvironmentResourceSelectorJobs } from "../utils/dispatch-compute-env-jobs.js";
+import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
+
+const log = logger.child({ worker: "compute-environment-resource-selector" });
 
 /**
  * Worker that computes and updates the resources associated with an environment
@@ -79,17 +85,15 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           .onConflictDoNothing();
       });
 
-      await getQueue(Channel.ComputeSystemsReleaseTargets).add(
-        environment.system.id,
-        environment.system,
-      );
+      dispatchComputeSystemReleaseTargetsJobs(environment.system);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
-        await getQueue(Channel.ComputeEnvironmentResourceSelector).add(
-          job.name,
-          job.data,
+        log.info(
+          "Row locked in compute-environment-resource-selector, requeueing...",
+          { job },
         );
+        dispatchComputeEnvironmentResourceSelectorJobs(environment);
         return;
       }
 

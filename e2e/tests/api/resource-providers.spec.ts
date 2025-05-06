@@ -630,4 +630,164 @@ test.describe("Resource Provider API", () => {
     );
     expect(isResourceUpdated).toBe(true);
   });
+
+  test("recreate deleted resources with different provider", async ({
+    api,
+    workspace,
+  }) => {
+    // Create first resource provider
+    const provider1Name = faker.string.alphanumeric(10);
+    const provider1Response = await api.GET(
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            name: provider1Name,
+          },
+        },
+      },
+    );
+    expect(provider1Response.response.status).toBe(200);
+    const provider1Id = provider1Response.data?.id as string;
+
+    // Create second resource provider
+    const provider2Name = faker.string.alphanumeric(10);
+    const provider2Response = await api.GET(
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            name: provider2Name,
+          },
+        },
+      },
+    );
+    expect(provider2Response.response.status).toBe(200);
+    const provider2Id = provider2Response.data?.id as string;
+
+    // Create a resource with the first provider
+    const resourceIdentifier = faker.string.alphanumeric(10);
+    const originalKind = "OriginalKind";
+    const originalVersion = "original-version/v1";
+
+    // Set resource with the first provider
+    const provider1SetResponse = await api.PATCH(
+      "/v1/resource-providers/{providerId}/set",
+      {
+        params: {
+          path: { providerId: provider1Id },
+        },
+        body: {
+          resources: [
+            {
+              name: resourceIdentifier,
+              kind: originalKind,
+              identifier: resourceIdentifier,
+              version: originalVersion,
+              config: { "e2e-test": true } as any,
+              metadata: { provider: "provider1" },
+            },
+          ],
+        },
+      },
+    );
+    expect(provider1SetResponse.response.status).toBe(200);
+    expect(provider1SetResponse.data?.resources?.inserted?.length).toBe(1);
+
+    // Verify the resource was created
+    const initialResourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: resourceIdentifier,
+          },
+        },
+      },
+    );
+    expect(initialResourceResponse.response.status).toBe(200);
+    expect(initialResourceResponse.data?.kind).toBe(originalKind);
+    expect(initialResourceResponse.data?.version).toBe(originalVersion);
+    expect(initialResourceResponse.data?.providerId).toBe(provider1Id);
+
+    // Delete all resources for provider1 (simulating provider deletion)
+    const deleteAllResponse = await api.PATCH(
+      "/v1/resource-providers/{providerId}/set",
+      {
+        params: {
+          path: { providerId: provider1Id },
+        },
+        body: {
+          resources: [],
+        },
+      },
+    );
+    expect(deleteAllResponse.response.status).toBe(200);
+    expect(deleteAllResponse.data?.resources?.deleted?.length).toBe(1);
+
+    // Verify resource is deleted
+    const deletedResourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: resourceIdentifier,
+          },
+        },
+      },
+    );
+    expect(deletedResourceResponse.response.status).toBe(404);
+
+    // Create the same resource with a different provider, kind, and version
+    const newKind = "NewKind";
+    const newVersion = "new-version/v2";
+
+    const provider2SetResponse = await api.PATCH(
+      "/v1/resource-providers/{providerId}/set",
+      {
+        params: {
+          path: { providerId: provider2Id },
+        },
+        body: {
+          resources: [
+            {
+              name: resourceIdentifier,
+              kind: newKind,
+              identifier: resourceIdentifier, // Same identifier as before
+              version: newVersion,
+              config: { "e2e-test": true } as any,
+              metadata: { provider: "provider2" },
+            },
+          ],
+        },
+      },
+    );
+    expect(provider2SetResponse.response.status).toBe(200);
+    expect(provider2SetResponse.data?.resources?.inserted?.length).toBe(1);
+    expect(provider2SetResponse.data?.resources?.ignored?.length).toBe(0);
+
+    // Verify the resource was recreated with the new properties
+    const recreatedResourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: resourceIdentifier,
+          },
+        },
+      },
+    );
+    expect(recreatedResourceResponse.response.status).toBe(200);
+    expect(recreatedResourceResponse.data?.kind).toBe(newKind);
+    expect(recreatedResourceResponse.data?.version).toBe(newVersion);
+    expect(recreatedResourceResponse.data?.providerId).toBe(provider2Id);
+    expect(recreatedResourceResponse.data?.metadata?.provider).toBe(
+      "provider2",
+    );
+  });
 });

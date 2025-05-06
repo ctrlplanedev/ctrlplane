@@ -1,6 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 
 import { eq } from "@ctrlplane/db";
+import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -82,11 +83,20 @@ export const getJob = async (db: Tx, jobId: string) => {
     );
 
     const { environment, resource, deployment } = releaseTarget;
-
+    const { relationships } = await getResourceParents(db, resource.id);
     const metadata = Object.fromEntries(
       resource.metadata.map(({ key, value }) => [key, value]),
     );
-    const resourceWithMetadata = { ...resource, metadata };
+    const resourceWithMetadata = {
+      ...resource,
+      metadata,
+      relationships: Object.fromEntries(
+        Object.entries(relationships).map(([key, { target, ...rule }]) => [
+          key,
+          { ...target, rule },
+        ]),
+      ),
+    };
 
     log.debug("Successfully processed job data", {
       jobId,

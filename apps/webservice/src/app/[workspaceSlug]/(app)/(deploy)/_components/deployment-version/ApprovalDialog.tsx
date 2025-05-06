@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { IconLoader2 } from "@tabler/icons-react";
 
-import { Badge } from "@ctrlplane/ui/badge";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -16,94 +14,73 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
+import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
 export const ApprovalDialog: React.FC<{
-  deploymentVersion: { id: string; tag: string; deploymentId: string };
-  policyId: string;
-  environmentId?: string;
+  versionId: string;
+  versionTag: string;
+  environmentId: string;
   children: React.ReactNode;
-}> = ({ deploymentVersion, policyId, environmentId, children }) => {
-  const policyQ = api.environment.policy.byId.useQuery(policyId);
-
+  onSubmit?: () => void;
+}> = ({ versionId, versionTag, environmentId, children, onSubmit }) => {
   const [open, setOpen] = useState(false);
-  const approve = api.environment.policy.approval.approve.useMutation();
-  const reject = api.environment.policy.approval.reject.useMutation();
-  const utils = api.useUtils();
-  const invalidateApproval = () => {
-    utils.environment.policy.approval.statusByVersionPolicyId.invalidate({
-      policyId,
-      versionId: deploymentVersion.id,
-    });
-    if (environmentId != null)
-      utils.deployment.version.latest.byDeploymentAndEnvironment.invalidate({
-        deploymentId: deploymentVersion.deploymentId,
-        environmentId,
-      });
-  };
-  const versionId = deploymentVersion.id;
-  const onApprove = () =>
-    approve
-      .mutateAsync({ versionId, policyId })
-      .then(() => router.refresh())
-      .then(() => invalidateApproval())
-      .then(() => setOpen(false));
-  const onReject = () =>
-    reject
-      .mutateAsync({ versionId, policyId })
-      .then(() => router.refresh())
-      .then(() => invalidateApproval())
-      .then(() => setOpen(false));
+  const addRecord = api.deployment.version.addApprovalRecord.useMutation();
+
   const router = useRouter();
+
+  const [reason, setReason] = useState("");
+
+  const handleSubmit = (status: SCHEMA.ApprovalStatus) =>
+    addRecord
+      .mutateAsync({
+        deploymentVersionId: versionId,
+        environmentId,
+        status,
+        reason,
+      })
+      .then(() => setOpen(false))
+      .then(() => onSubmit?.())
+      .then(() => router.refresh());
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            Approve version{" "}
-            <span className="truncate">{deploymentVersion.tag}</span>
-          </DialogTitle>
-          {policyQ.isLoading && (
-            <DialogDescription className="flex items-center justify-center">
-              <IconLoader2 className="animate-spin" />
-            </DialogDescription>
-          )}
-          {!policyQ.isLoading && (
-            <DialogDescription>
-              <div className="flex flex-col gap-2">
-                Approves this version for the following environments:
-                <div className="flex flex-wrap gap-2">
-                  {policyQ.data?.environments.map((env) => (
-                    <Badge
-                      key={env.id}
-                      variant="secondary"
-                      className="max-w-40"
-                    >
-                      <span className="truncate">{env.name}</span>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </DialogDescription>
-          )}
+          <DialogTitle>Approve Release</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to approve version {versionTag}?
+          </DialogDescription>
         </DialogHeader>
-        {!policyQ.isLoading && (
-          <DialogFooter className="flex w-full justify-between sm:flex-row sm:justify-between">
-            <DialogClose>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
 
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={onReject}>
-                Reject
-              </Button>
-              <Button onClick={onApprove}>Approve</Button>
-            </div>
-          </DialogFooter>
-        )}
+        <Textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Reason for approval (optional)"
+        />
+
+        <DialogFooter className="flex w-full flex-row items-center justify-between sm:justify-between">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleSubmit(SCHEMA.ApprovalStatus.Rejected)}
+              disabled={addRecord.isPending}
+            >
+              Reject
+            </Button>
+            <Button
+              onClick={() => handleSubmit(SCHEMA.ApprovalStatus.Approved)}
+              disabled={addRecord.isPending}
+            >
+              Approve
+            </Button>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

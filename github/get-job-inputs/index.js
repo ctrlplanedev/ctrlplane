@@ -28075,7 +28075,7 @@ class JobAgent {
     }
     async running() {
         const { data } = await this.client.GET("/v1/job-agents/{agentId}/jobs/running", { params: { path: { agentId: this.agent.id } } });
-        return data.map((job) => new Job(job, this.client)) ?? [];
+        return data.jobs.map((job) => new Job(job, this.client)) ?? [];
     }
 }
 class Job {
@@ -28148,14 +28148,15 @@ const setOutputsRecursively = (prefix, obj) => {
     if (typeof obj === "object" && obj !== null) {
         for (const [key, value] of Object.entries(obj)) {
             const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
-            const newPrefix = prefix ? `${prefix}_${sanitizedKey}` : sanitizedKey;
+            const newPrefix = prefix != null ? `${prefix}_${sanitizedKey}` : sanitizedKey;
             if (typeof value === "object" && value !== null)
                 setOutputsRecursively(newPrefix, value);
             setOutputAndLog(newPrefix, value);
         }
         return;
     }
-    setOutputAndLog(prefix, obj);
+    if (prefix != null)
+        setOutputAndLog(prefix, obj);
 };
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
@@ -28169,44 +28170,28 @@ async function run() {
             core.error(`Invalid Job data`);
             return;
         }
-        const { variables, resource, release, deploymentVersion, environment, runbook, deployment, approval, } = data;
-        setOutputAndLog("base_url", baseUrl);
-        setOutputAndLog("resource", resource);
-        setOutputAndLog("resource_id", resource?.id);
-        setOutputAndLog("resource_name", resource?.name);
-        setOutputAndLog("resource_kind", resource?.kind);
-        setOutputAndLog("resource_version", resource?.version);
-        setOutputAndLog("resource_identifier", resource?.identifier);
-        setOutputsRecursively("resource_config", resource?.config);
-        setOutputsRecursively("resource_metadata", resource?.metadata);
-        setOutputAndLog("workspace_id", resource?.workspaceId);
-        setOutputAndLog("environment_id", environment?.id);
-        setOutputAndLog("environment_name", environment?.name);
-        setOutputAndLog("version_id", deploymentVersion?.id);
-        setOutputAndLog("version_tag", deploymentVersion?.tag);
-        setOutputsRecursively("version_config", deploymentVersion?.config);
-        setOutputsRecursively("version_metadata", deploymentVersion?.metadata);
-        setOutputAndLog("release_id", release?.id);
-        setOutputAndLog("release_version", release?.version);
-        setOutputsRecursively("release_config", release?.config);
-        setOutputsRecursively("release_metadata", release?.metadata);
-        if (approval?.approver != null) {
-            setOutputAndLog("approval_approver_id", approval.approver.id);
-            setOutputAndLog("approval_approver_name", approval.approver.name);
-        }
-        setOutputAndLog("deployment_id", deployment?.id);
-        setOutputAndLog("deployment_name", deployment?.name);
-        setOutputAndLog("deployment_slug", deployment?.slug);
-        for (const [key, value] of Object.entries(variables)) {
-            const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
-            setOutputAndLog(`variable_${sanitizedKey}`, value);
-        }
-        setOutputAndLog("runbook_id", runbook?.id);
-        setOutputAndLog("runbook_name", runbook?.name);
-        const systemId = deployment?.systemId ?? runbook?.systemId ?? environment?.systemId;
-        setOutputAndLog("system_id", systemId);
-        const agentId = deployment?.jobAgentId ?? runbook?.jobAgentId;
-        setOutputAndLog("agent_id", agentId);
+        const { variables, resource, release, version, environment, runbook, deployment, approval, } = data;
+        setOutputsRecursively(null, {
+            base: { url: baseUrl },
+            variable: variables,
+            resource,
+            version,
+            workspace: { id: resource?.workspaceId },
+            environment: {
+                id: environment?.id,
+                name: environment?.name,
+            },
+            deployment: {
+                id: deployment?.id,
+                name: deployment?.name,
+            },
+            runbook,
+            approval,
+            system: {
+                id: deployment?.systemId ?? runbook?.systemId ?? environment?.systemId,
+            },
+            agent: { id: deployment?.jobAgentId ?? runbook?.jobAgentId },
+        });
     })
         .then(() => {
         if (requiredOutputs.length === 0) {

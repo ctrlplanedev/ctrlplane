@@ -3,9 +3,10 @@ import _ from "lodash";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
+import { dispatchComputeDeploymentResourceSelectorJobs } from "../utils/dispatch-compute-deployment-jobs.js";
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "update-deployment" });
@@ -41,10 +42,7 @@ export const updateDeploymentWorker = createWorker(
       if (_.isEqual(data.old.resourceSelector, data.new.resourceSelector))
         return;
 
-      getQueue(Channel.ComputeDeploymentResourceSelector).add(
-        data.new.id,
-        data.new,
-      );
+      await dispatchComputeDeploymentResourceSelectorJobs(data.new);
     } catch (error) {
       log.error("Error updating deployment", { error });
       throw error;

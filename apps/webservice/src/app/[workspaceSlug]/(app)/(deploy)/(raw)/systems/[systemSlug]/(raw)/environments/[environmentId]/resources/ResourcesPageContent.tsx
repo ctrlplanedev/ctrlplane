@@ -167,15 +167,15 @@ export const ResourcesPageContent: React.FC<{
 
   const totalResources = allResourcesQ.resources.length;
   const healthyResources = allResourcesQ.resources.filter(
-    (r) => r.status === "healthy",
+    (r) => r.successRate > 99.9999,
   ).length;
   const healthyPercentage =
     totalResources > 0 ? (healthyResources / totalResources) * 100 : 0;
   const unhealthyResources = allResourcesQ.resources.filter(
-    (r) => r.status === "unhealthy",
+    (r) => r.successRate <= 99.9999,
   ).length;
   const deployingResources = allResourcesQ.resources.filter(
-    (r) => r.status === "deploying",
+    (r) => r.isDeploying,
   ).length;
 
   const { page, setPage } = usePagination(totalResources, PAGE_SIZE);
@@ -244,13 +244,19 @@ export const ResourcesPageContent: React.FC<{
               Resources managed in this environment
             </CardDescription>
           </div>
-          <EditSelector environment={environment} />
+          <EditSelector environment={environment} resources={resources} />
         </CardHeader>
         <CardContent>
           <p>No resource filter set for this environment</p>
         </CardContent>
       </Card>
     );
+
+  const formattedResources = resources.map((r) => {
+    if (r.isDeploying) return { ...r, status: "deploying" as const };
+    if (r.successRate > 99.9999) return { ...r, status: "healthy" as const };
+    return { ...r, status: "unhealthy" as const };
+  });
 
   return (
     <Card>
@@ -261,7 +267,7 @@ export const ResourcesPageContent: React.FC<{
             Resources managed in this environment
           </CardDescription>
         </div>
-        <EditSelector environment={environment} />
+        <EditSelector environment={environment} resources={resources} />
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -448,7 +454,7 @@ export const ResourcesPageContent: React.FC<{
           {selectedView === "grid" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {!isLoading &&
-                resources.map((resource) => (
+                formattedResources.map((resource) => (
                   <ResourceCard key={resource.id} resource={resource} />
                 ))}
               {isLoading &&
@@ -457,7 +463,9 @@ export const ResourcesPageContent: React.FC<{
                 ))}
             </div>
           )}
-          {selectedView === "list" && <ResourceTable resources={resources} />}
+          {selectedView === "list" && (
+            <ResourceTable resources={formattedResources} />
+          )}
 
           <div className="mt-4 flex items-center justify-between text-sm text-neutral-400">
             <div>

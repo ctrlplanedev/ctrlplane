@@ -19,13 +19,20 @@ export const PolicyTabs: React.FC = () => {
 
   const editUrls = policyUrls.edit(policyId);
   const baseUrl = policyUrls.byId(policyId);
-  const editBaseUrl = editUrls.baseUrl();
+
+  const configurationUrl = editUrls.configuration();
+  const timeWindowsUrl = editUrls.timeWindows();
+  const deploymentFlowUrl = editUrls.deploymentFlow();
+  const qualitySecurityUrl = editUrls.qualitySecurity();
 
   const pathname = usePathname();
 
   const getInitialTab = () => {
     if (pathname === baseUrl) return "overview";
-    if (pathname.startsWith(editBaseUrl)) return "edit";
+    if (pathname === configurationUrl) return "configuration";
+    if (pathname === timeWindowsUrl) return "time-windows";
+    if (pathname === deploymentFlowUrl) return "deployment-flow";
+    if (pathname === qualitySecurityUrl) return "quality-security";
     return "overview";
   };
 
@@ -35,10 +42,10 @@ export const PolicyTabs: React.FC = () => {
 
   const onTabChange = (value: string) => {
     if (value === "overview") router.push(baseUrl);
-    if (value === "edit") router.push(editBaseUrl);
-    if (value === "time-windows") router.push(editUrls.timeWindows());
-    if (value === "version-conditions") router.push(editUrls.qualitySecurity());
-    if (value === "approval-gates") router.push(policyUrls.approvalGates());
+    if (value === "configuration") router.push(configurationUrl);
+    if (value === "time-windows") router.push(timeWindowsUrl);
+    if (value === "deployment-flow") router.push(deploymentFlowUrl);
+    if (value === "quality-security") router.push(qualitySecurityUrl);
     setActiveTab(value);
   };
 
@@ -46,19 +53,22 @@ export const PolicyTabs: React.FC = () => {
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="mb-4">
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="edit">Edit</TabsTrigger>
+        <TabsTrigger value="configuration">Edit</TabsTrigger>
         <TabsTrigger value="time-windows" className="flex items-center gap-1">
           <IconClock className="h-4 w-4" />
           Time Windows
         </TabsTrigger>
         <TabsTrigger
-          value="version-conditions"
+          value="deployment-flow"
           className="flex items-center gap-1"
         >
           <IconTag className="h-4 w-4" />
           Version Conditions
         </TabsTrigger>
-        <TabsTrigger value="approval-gates" className="flex items-center gap-1">
+        <TabsTrigger
+          value="quality-security"
+          className="flex items-center gap-1"
+        >
           <IconCircleCheck className="h-4 w-4" />
           Approval Gates
         </TabsTrigger>

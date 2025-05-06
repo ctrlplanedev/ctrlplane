@@ -3,7 +3,7 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React, { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -25,47 +25,22 @@ import {
 import type { ResourceViewFormSchema } from "./ResourceViewForm";
 import { api } from "~/trpc/react";
 import { ResourceConditionRender } from "./ResourceConditionRender";
-import { ResourceList } from "./ResourceList";
 import { ResourceViewForm, resourceViewFormSchema } from "./ResourceViewForm";
 
 type ResourceConditionDialogProps = {
   condition: ResourceCondition | null;
   onChange: (condition: ResourceCondition | null) => void;
   children: React.ReactNode;
-  showResourceList?: boolean;
-};
-
-const useResourceList = (enabled: boolean, filter: ResourceCondition) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const { data: workspace } = api.workspace.bySlug.useQuery(workspaceSlug, {
-    enabled,
-  });
-
-  const workspaceId = workspace?.id ?? "";
-  const { data: resourcesResult } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter, limit: 5 },
-    { enabled: enabled && workspace != null },
-  );
-
-  const { items: resources, total: count } = resourcesResult ?? {
-    items: [],
-    total: 0,
-  };
-
-  return { resources, count };
+  ResourceList?: React.FC<{ filter: ResourceCondition }>;
 };
 
 export const ResourceConditionDialog: React.FC<
   ResourceConditionDialogProps
-> = ({ condition, onChange, children, showResourceList = false }) => {
+> = ({ condition, onChange, children, ResourceList }) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cond = condition ?? defaultCondition;
   const [localCondition, setLocalCondition] = useState(cond);
-  const { resources, count } = useResourceList(
-    showResourceList,
-    localCondition,
-  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -113,13 +88,7 @@ export const ResourceConditionDialog: React.FC<
             Save
           </Button>
         </DialogFooter>
-        {showResourceList && (
-          <ResourceList
-            resources={resources}
-            count={count}
-            filter={localCondition}
-          />
-        )}
+        {ResourceList != null && <ResourceList filter={localCondition} />}
       </DialogContent>
     </Dialog>
   );

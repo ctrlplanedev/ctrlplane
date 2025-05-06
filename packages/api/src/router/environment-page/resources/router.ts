@@ -1,21 +1,18 @@
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import _ from "lodash";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, desc, eq, inArray, isNull, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  selector,
+  sql,
+} from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import {
-  ComparisonOperator,
-  ConditionType,
-} from "@ctrlplane/validators/conditions";
-import {
-  activeStatus,
-  analyticsStatuses,
-  failedStatuses,
-  JobStatus,
-} from "@ctrlplane/validators/jobs";
+import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { createTRPCRouter, protectedProcedure } from "../../../trpc";
@@ -38,32 +35,25 @@ export const resourcesRouter = createTRPCRouter({
           .on({ type: "environment", id: input.environmentId }),
     })
     .query(async ({ ctx, input }) => {
-      const environment = await ctx.db
-        .select()
-        .from(SCHEMA.environment)
-        .where(eq(SCHEMA.environment.id, input.environmentId))
-        .then(takeFirst);
-
-      const selector: ResourceCondition = {
-        type: ConditionType.Comparison,
-        operator: ComparisonOperator.And,
-        conditions: [environment.resourceSelector, input.filter].filter(
-          isPresent,
-        ),
-      };
-
       const resources = await ctx.db
         .select()
-        .from(SCHEMA.resource)
+        .from(SCHEMA.computedEnvironmentResource)
+        .innerJoin(
+          SCHEMA.resource,
+          eq(SCHEMA.computedEnvironmentResource.resourceId, SCHEMA.resource.id),
+        )
         .leftJoin(
           SCHEMA.resourceProvider,
           eq(SCHEMA.resource.providerId, SCHEMA.resourceProvider.id),
         )
         .where(
           and(
-            SCHEMA.resourceMatchesMetadata(ctx.db, selector),
             isNull(SCHEMA.resource.deletedAt),
-            eq(SCHEMA.resource.workspaceId, input.workspaceId),
+            eq(
+              SCHEMA.computedEnvironmentResource.environmentId,
+              input.environmentId,
+            ),
+            selector().query().resources().where(input.filter).sql(),
           ),
         )
         .limit(input.limit)
@@ -75,76 +65,83 @@ export const resourcesRouter = createTRPCRouter({
           })),
         );
 
-      const rows = await ctx.db
-        .selectDistinctOn([
-          SCHEMA.releaseJobTrigger.resourceId,
-          SCHEMA.deploymentVersion.deploymentId,
-        ])
-        .from(SCHEMA.releaseJobTrigger)
+      if (resources.length === 0) return [];
+
+      const latestJobSubquery = ctx.db
+        .selectDistinctOn([SCHEMA.versionRelease.releaseTargetId], {
+          jobId: SCHEMA.job.id,
+          jobStatus: SCHEMA.job.status,
+          releaseTargetId: SCHEMA.versionRelease.releaseTargetId,
+        })
+        .from(SCHEMA.versionRelease)
         .innerJoin(
-          SCHEMA.job,
-          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+          SCHEMA.release,
+          eq(SCHEMA.versionRelease.id, SCHEMA.release.versionReleaseId),
         )
         .innerJoin(
-          SCHEMA.deploymentVersion,
-          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
+          SCHEMA.releaseJob,
+          eq(SCHEMA.release.id, SCHEMA.releaseJob.releaseId),
         )
+        .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
         .orderBy(
-          SCHEMA.releaseJobTrigger.resourceId,
-          SCHEMA.deploymentVersion.deploymentId,
+          SCHEMA.versionRelease.releaseTargetId,
           desc(SCHEMA.job.createdAt),
+        )
+        .as("latest_job");
+
+      const releaseTargetStats = await ctx.db
+        .select({
+          successRate: sql<number>`
+            CASE
+              WHEN COUNT(*) FILTER (
+                WHERE ${and(
+                  inArray(latestJobSubquery.jobStatus, analyticsStatuses),
+                  isNotNull(latestJobSubquery.jobStatus),
+                )}
+              ) = 0
+              THEN 0
+              ELSE
+                100.0 * COUNT(*) FILTER (
+                  WHERE ${eq(latestJobSubquery.jobStatus, JobStatus.Successful)}
+                )::float
+                /
+                COUNT(*) FILTER (
+                  WHERE ${and(
+                    inArray(latestJobSubquery.jobStatus, analyticsStatuses),
+                    isNotNull(latestJobSubquery.jobStatus),
+                  )}
+                )
+            END
+        `.as("successRate"),
+          resourceId: SCHEMA.releaseTarget.resourceId,
+          isDeploying: sql<boolean>`
+            BOOL_OR(${eq(latestJobSubquery.jobStatus, JobStatus.InProgress)})
+          `.as("isDeploying"),
+        })
+        .from(SCHEMA.releaseTarget)
+        .leftJoin(
+          latestJobSubquery,
+          eq(latestJobSubquery.releaseTargetId, SCHEMA.releaseTarget.id),
         )
         .where(
           and(
+            eq(SCHEMA.releaseTarget.environmentId, input.environmentId),
             inArray(
-              SCHEMA.releaseJobTrigger.resourceId,
+              SCHEMA.releaseTarget.resourceId,
               resources.map((r) => r.id),
             ),
-            eq(SCHEMA.releaseJobTrigger.environmentId, input.environmentId),
           ),
-        );
-
-      const healthByResource: Record<
-        string,
-        { status: "healthy" | "unhealthy" | "deploying"; successRate: number }
-      > = _.chain(rows)
-        .groupBy((row) => row.release_job_trigger.resourceId)
-        .map((groupedRows) => {
-          const { resourceId } = groupedRows[0]!.release_job_trigger;
-          const statuses = groupedRows.map((r) => r.job.status);
-
-          const completedStatuses = statuses.filter((status) =>
-            analyticsStatuses.includes(status as JobStatus),
-          );
-          const numSuccess = completedStatuses.filter(
-            (status) => status === JobStatus.Successful,
-          ).length;
-          const successRate =
-            completedStatuses.length > 0
-              ? numSuccess / completedStatuses.length
-              : 0;
-
-          const isUnhealthy = completedStatuses.some((status) =>
-            failedStatuses.includes(status as JobStatus),
-          );
-          if (isUnhealthy)
-            return [resourceId, { status: "unhealthy", successRate }];
-
-          const isDeploying = statuses.some((status) =>
-            activeStatus.includes(status as JobStatus),
-          );
-          if (isDeploying)
-            return [resourceId, { status: "deploying", successRate }];
-
-          return [resourceId, { status: "healthy", successRate }];
-        })
-        .fromPairs()
-        .value();
+        )
+        .groupBy(SCHEMA.releaseTarget.resourceId);
 
       return resources.map((r) => ({
         ...r,
-        status: healthByResource[r.id]?.status ?? "healthy",
-        successRate: healthByResource[r.id]?.successRate ?? 0,
+        successRate:
+          releaseTargetStats.find((s) => s.resourceId === r.id)?.successRate ??
+          0,
+        isDeploying:
+          releaseTargetStats.find((s) => s.resourceId === r.id)?.isDeploying ??
+          false,
       }));
     }),
 });

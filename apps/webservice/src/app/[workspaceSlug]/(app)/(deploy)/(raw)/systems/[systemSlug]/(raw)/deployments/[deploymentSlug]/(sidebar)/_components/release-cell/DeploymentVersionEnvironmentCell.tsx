@@ -4,27 +4,22 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  IconBoltOff,
-  IconCubeOff,
-  IconFilterX,
-  IconShield,
-} from "@tabler/icons-react";
-import { format } from "date-fns";
-import _ from "lodash";
+import { IconBoltOff, IconCubeOff } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
-import { isPresent } from "ts-is-present";
 
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@ctrlplane/ui/hover-card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { StatusIcon } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/StatusIcon";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { ActiveJobsCell } from "./ActiveJobsCell";
+import {
+  ApprovalRequiredCell,
+  getPoliciesWithApprovalRequired,
+} from "./ApprovalRequiredCell";
+import {
+  BlockedByVersionSelectorCell,
+  getPoliciesBlockingByVersionSelector,
+} from "./BlockedByVersionSelectorCell";
 
 const SkeletonCell: React.FC = () => (
   <div className="flex h-full w-full items-center gap-2">
@@ -35,43 +30,6 @@ const SkeletonCell: React.FC = () => (
     </div>
   </div>
 );
-
-const ActiveJobsCell: React.FC<{
-  statuses: SCHEMA.JobStatus[];
-  deploymentVersion: { id: string; tag: string; createdAt: Date };
-}> = ({ statuses, deploymentVersion }) => {
-  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-    deploymentSlug: string;
-  }>();
-
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(systemSlug)
-    .deployment(deploymentSlug)
-    .release(deploymentVersion.id)
-    .jobs();
-
-  return (
-    <div className="flex h-full w-full items-center justify-center p-1">
-      <Link
-        href={versionUrl}
-        className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
-      >
-        <StatusIcon statuses={statuses} />
-        <div className="flex flex-col">
-          <div className="max-w-36 truncate font-semibold">
-            {deploymentVersion.tag}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {format(deploymentVersion.createdAt, "MMM d, hh:mm aa")}
-          </div>
-        </div>
-      </Link>
-    </div>
-  );
-};
 
 const NoReleaseTargetsCell: React.FC<{
   tag: string;
@@ -91,17 +49,15 @@ const NoReleaseTargetsCell: React.FC<{
 
 const NoJobAgentCell: React.FC<{
   tag: string;
-}> = ({ tag }) => {
-  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-    deploymentSlug: string;
-  }>();
+  system: { slug: string };
+  deployment: { slug: string };
+}> = ({ tag, system, deployment }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
   const workflowConfigUrl = urls
     .workspace(workspaceSlug)
-    .system(systemSlug)
-    .deployment(deploymentSlug)
+    .system(system.slug)
+    .deployment(deployment.slug)
     .workflow();
 
   return (
@@ -122,193 +78,8 @@ const NoJobAgentCell: React.FC<{
   );
 };
 
-type PolicyEvaluationResult = {
-  policies: { id: string; name: string }[];
-  rules: {
-    anyApprovals: Record<string, string[]>;
-    roleApprovals: Record<string, string[]>;
-    userApprovals: Record<string, string[]>;
-    versionSelector: Record<string, boolean>;
-  };
-};
-
-const getPoliciesBlockingByVersionSelector = (
-  policyEvaluations: PolicyEvaluationResult,
-) =>
-  Object.entries(policyEvaluations.rules.versionSelector)
-    .filter(([_, isPassing]) => !isPassing)
-    .map(([policyId]) =>
-      policyEvaluations.policies.find((p) => p.id === policyId),
-    )
-    .filter(isPresent);
-
-const BlockedByVersionSelectorCell: React.FC<{
-  policies: { id: string; name: string }[];
-  deploymentVersion: { id: string; tag: string };
-}> = ({ policies, deploymentVersion }) => {
-  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-    deploymentSlug: string;
-  }>();
-
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(systemSlug)
-    .deployment(deploymentSlug)
-    .release(deploymentVersion.id)
-    .checks();
-  return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <div className="flex h-full w-full items-center justify-center p-1">
-          <Link
-            href={versionUrl}
-            className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
-          >
-            <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-              <IconFilterX className="h-4 w-4" strokeWidth={2} />
-            </div>
-            <div className="flex flex-col">
-              <div className="max-w-36 truncate font-semibold">
-                {deploymentVersion.tag}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Blocked by version selector
-              </div>
-            </div>
-          </Link>
-        </div>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-80">
-        <div className="flex flex-col gap-2 text-sm">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <IconFilterX className="h-3 w-3" strokeWidth={2} />
-            Policies blocking version
-          </div>
-          {policies.map((p) => (
-            <Link
-              href={urls
-                .workspace(workspaceSlug)
-                .policies()
-                .edit(p.id)
-                .deploymentFlow()}
-              key={p.id}
-              className="max-w-72 truncate underline-offset-1 hover:underline"
-            >
-              {p.name}
-            </Link>
-          ))}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
-};
-
-const getPoliciesWithApprovalRequired = (
-  policyEvaluations: PolicyEvaluationResult,
-) => {
-  const policiesWithAnyApprovalRequired = Object.entries(
-    policyEvaluations.rules.anyApprovals,
-  )
-    .filter(([_, reasons]) => reasons.length > 0)
-    .map(([policyId]) =>
-      policyEvaluations.policies.find((p) => p.id === policyId),
-    )
-    .filter(isPresent);
-
-  const policiesWithRoleApprovalRequired = Object.entries(
-    policyEvaluations.rules.roleApprovals,
-  )
-    .filter(([_, reasons]) => reasons.length > 0)
-    .map(([policyId]) =>
-      policyEvaluations.policies.find((p) => p.id === policyId),
-    )
-    .filter(isPresent);
-
-  const policiesWithUserApprovalRequired = Object.entries(
-    policyEvaluations.rules.userApprovals,
-  )
-    .filter(([_, reasons]) => reasons.length > 0)
-    .map(([policyId]) =>
-      policyEvaluations.policies.find((p) => p.id === policyId),
-    )
-    .filter(isPresent);
-
-  return _.uniqBy(
-    [
-      ...policiesWithAnyApprovalRequired,
-      ...policiesWithRoleApprovalRequired,
-      ...policiesWithUserApprovalRequired,
-    ],
-    (p) => p.id,
-  );
-};
-
-const ApprovalRequiredCell: React.FC<{
-  policies: { id: string; name: string }[];
-  deploymentVersion: { id: string; tag: string };
-}> = ({ policies, deploymentVersion }) => {
-  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-    deploymentSlug: string;
-  }>();
-
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(systemSlug)
-    .deployment(deploymentSlug)
-    .release(deploymentVersion.id)
-    .checks();
-  return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <div className="flex h-full w-full items-center justify-center p-1">
-          <Link
-            href={versionUrl}
-            className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
-          >
-            <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
-              <IconShield className="h-4 w-4" strokeWidth={2} />
-            </div>
-            <div className="flex flex-col">
-              <div className="max-w-36 truncate font-semibold">
-                {deploymentVersion.tag}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Approval required
-              </div>
-            </div>
-          </Link>
-        </div>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-80">
-        <div className="flex flex-col gap-2 text-sm">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <IconShield className="h-3 w-3" strokeWidth={2} />
-            Policies missing approval
-          </div>
-          {policies.map((p) => (
-            <Link
-              href={urls
-                .workspace(workspaceSlug)
-                .policies()
-                .edit(p.id)
-                .qualitySecurity()}
-              key={p.id}
-              className="max-w-72 truncate underline-offset-1 hover:underline"
-            >
-              {p.name}
-            </Link>
-          ))}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
-};
-
 type DeploymentVersionEnvironmentCellProps = {
+  system: { slug: string };
   environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
   deploymentVersion: SCHEMA.DeploymentVersion;
@@ -316,7 +87,8 @@ type DeploymentVersionEnvironmentCellProps = {
 
 const DeploymentVersionEnvironmentCell: React.FC<
   DeploymentVersionEnvironmentCellProps
-> = ({ environment, deployment, deploymentVersion }) => {
+> = (props) => {
+  const { environment, deployment, deploymentVersion } = props;
   const { data: releaseTargets, isLoading: isReleaseTargetsLoading } =
     api.releaseTarget.list.useQuery({
       environmentId: environment.id,
@@ -341,12 +113,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
 
   const hasJobs = jobs != null && jobs.length > 0;
   if (hasJobs)
-    return (
-      <ActiveJobsCell
-        statuses={jobs.map((j) => j.status)}
-        deploymentVersion={deploymentVersion}
-      />
-    );
+    return <ActiveJobsCell statuses={jobs.map((j) => j.status)} {...props} />;
 
   const hasNoReleaseTargets =
     releaseTargets == null || releaseTargets.length === 0;
@@ -364,7 +131,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
     return (
       <BlockedByVersionSelectorCell
         policies={policiesWithBlockingVersionSelector}
-        deploymentVersion={deploymentVersion}
+        {...props}
       />
     );
 
@@ -378,12 +145,13 @@ const DeploymentVersionEnvironmentCell: React.FC<
     return (
       <ApprovalRequiredCell
         policies={policiesWithApprovalRequired}
-        deploymentVersion={deploymentVersion}
+        {...props}
       />
     );
 
   const hasNoJobAgent = deployment.jobAgentId == null;
-  if (hasNoJobAgent) return <NoJobAgentCell tag={deploymentVersion.tag} />;
+  if (hasNoJobAgent)
+    return <NoJobAgentCell tag={deploymentVersion.tag} {...props} />;
 
   return <NoReleaseTargetsCell tag={deploymentVersion.tag} />;
 };

@@ -20,7 +20,24 @@ export const openapi: Swagger.SwaggerV3 = {
               },
               deployment: { $ref: "#/components/schemas/Deployment" },
               runbook: { $ref: "#/components/schemas/Runbook" },
-              resource: { $ref: "#/components/schemas/Resource" },
+              resource: {
+                allOf: [
+                  {
+                    $ref: "#/components/schemas/ResourceWithVariablesAndMetadata",
+                  },
+                  {
+                    type: "object",
+                    properties: {
+                      relationships: {
+                        type: "object",
+                        additionalProperties: {
+                          $ref: "#/components/schemas/Resource",
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
               environment: { $ref: "#/components/schemas/Environment" },
               variables: { $ref: "#/components/schemas/VariableMap" },
               approval: {

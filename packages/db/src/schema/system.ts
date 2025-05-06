@@ -12,7 +12,7 @@ export const systemSchema = z.object({
   name: z
     .string()
     .min(3, { message: "System name must be at least 3 characters long." })
-    .max(30, { message: "System Name must be at most 30 characters long." }),
+    .max(100, { message: "System Name must be at most 100 characters long." }),
   slug: z
     .string()
     .min(3, { message: "Slug must be at least 3 characters long." })

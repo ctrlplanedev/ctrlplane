@@ -3,8 +3,10 @@ import _ from "lodash";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 
+import { dispatchComputeDeploymentResourceSelectorJobs } from "../../utils/dispatch-compute-deployment-jobs.js";
+import { dispatchComputeEnvironmentResourceSelectorJobs } from "../../utils/dispatch-compute-env-jobs.js";
 import { withSpan } from "./span.js";
 
 export const updatedResourceWorker = createWorker(
@@ -21,25 +23,18 @@ export const updatedResourceWorker = createWorker(
 
     if (workspace == null) throw new Error("Workspace not found");
 
-    const deploymentJobs = workspace.systems.flatMap((system) =>
-      system.deployments.map((deployment) => ({
-        name: deployment.id,
-        data: deployment,
-      })),
+    const deployments = workspace.systems.flatMap(
+      ({ deployments }) => deployments,
     );
 
-    const environmentJobs = workspace.systems.flatMap((system) =>
-      system.environments.map((environment) => ({
-        name: environment.id,
-        data: environment,
-      })),
+    const environments = workspace.systems.flatMap(
+      ({ environments }) => environments,
     );
 
-    await getQueue(Channel.ComputeDeploymentResourceSelector).addBulk(
-      deploymentJobs,
-    );
-    await getQueue(Channel.ComputeEnvironmentResourceSelector).addBulk(
-      environmentJobs,
-    );
+    for (const deployment of deployments)
+      await dispatchComputeDeploymentResourceSelectorJobs(deployment);
+
+    for (const environment of environments)
+      await dispatchComputeEnvironmentResourceSelectorJobs(environment);
   }),
 );

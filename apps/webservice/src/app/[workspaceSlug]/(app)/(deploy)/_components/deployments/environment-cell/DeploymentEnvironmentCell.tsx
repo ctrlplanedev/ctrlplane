@@ -1,15 +1,15 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { format } from "date-fns";
 import { useInView } from "react-intersection-observer";
 
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { StatusIcon } from "./StatusIcon";
+import { LazyDeploymentVersionEnvironmentCell } from "../../../(raw)/systems/[systemSlug]/(raw)/deployments/[deploymentSlug]/(sidebar)/_components/release-cell/DeploymentVersionEnvironmentCell";
 
 const CellSkeleton: React.FC = () => (
   <div className="flex h-full w-full items-center gap-2">
@@ -22,61 +22,50 @@ const CellSkeleton: React.FC = () => (
 );
 
 type DeploymentEnvironmentCellProps = {
-  environmentId: string;
-  deployment: { id: string; slug: string };
-  systemSlug: string;
+  environment: SCHEMA.Environment;
+  deployment: SCHEMA.Deployment;
+  system: { slug: string };
 };
 
 const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
-  environmentId,
+  environment,
   deployment,
-  systemSlug,
+  system,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
-  const { data, isLoading } = api.system.table.cell.useQuery({
-    environmentId,
+  const { data, isLoading } = api.deployment.version.list.useQuery({
     deploymentId: deployment.id,
+    limit: 1,
   });
 
   const deploymentUrls = urls
     .workspace(workspaceSlug)
-    .system(systemSlug)
+    .system(system.slug)
     .deployment(deployment.slug);
 
   if (isLoading) return <CellSkeleton />;
 
-  if (data == null)
+  const version = data?.items.at(0);
+  if (version == null)
     return (
       <Link
         href={deploymentUrls.releases()}
         className="flex h-full w-full items-center justify-center p-2 text-muted-foreground"
       >
-        <div className="flex h-full w-full items-center justify-center hover:bg-accent">
-          No jobs
+        <div className="flex h-full w-full items-center justify-center rounded-md text-sm hover:bg-accent">
+          No versions
         </div>
       </Link>
     );
 
-  const versionUrl = deploymentUrls.release(data.versionId).baseUrl();
-
   return (
-    <div className="flex h-full w-full items-center justify-center p-1">
-      <Link
-        href={versionUrl}
-        className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
-      >
-        <StatusIcon statuses={data.statuses} />
-        <div className="flex flex-col">
-          <div className="max-w-36 truncate font-semibold">
-            {data.versionTag}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {format(data.versionCreatedAt, "MMM d, hh:mm aa")}
-          </div>
-        </div>
-      </Link>
-    </div>
+    <LazyDeploymentVersionEnvironmentCell
+      environment={environment}
+      deployment={deployment}
+      deploymentVersion={version}
+      system={system}
+    />
   );
 };
 

@@ -77,7 +77,7 @@ export const SidebarGroupKinds: React.FC<{ workspace: Workspace }> = ({
                   >
                     <Link href={url} className="pl-6">
                       <ResourceIcon version={version} kind={kind} />
-                      <span className="flex-grow">{kind}</span>
+                      <span className="w-36 truncate">{kind}</span>
                       <Badge
                         variant="secondary"
                         className="rounded-full bg-neutral-500/10 text-xs text-muted-foreground"

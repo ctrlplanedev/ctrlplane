@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 import { workspace } from "./workspace.js";
 
@@ -71,8 +72,9 @@ export const resourceRelationshipRule = pgTable(
 
     sourceKind: text("source_kind").notNull(),
     sourceVersion: text("source_version").notNull(),
-    targetKind: text("target_kind").notNull(),
-    targetVersion: text("target_version").notNull(),
+
+    targetKind: text("target_kind"),
+    targetVersion: text("target_version"),
   },
   (t) => [
     uniqueIndex("unique_resource_relationship_rule_reference").on(
@@ -80,6 +82,27 @@ export const resourceRelationshipRule = pgTable(
       t.reference,
       t.sourceKind,
       t.sourceVersion,
+    ),
+  ],
+);
+
+export const resourceRelationshipTargetRuleMetadataEquals = pgTable(
+  "resource_relationship_rule_target_metadata_equals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceRelationshipRuleId: uuid("resource_relationship_rule_id")
+      .notNull()
+      .references(() => resourceRelationshipRule.id, {
+        onDelete: "cascade",
+      }),
+
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => [
+    uniqueIndex("unique_resource_relationship_rule_target_metadata_equals").on(
+      t.resourceRelationshipRuleId,
+      t.key,
     ),
   ],
 );
@@ -108,6 +131,7 @@ export const resourceRelationshipRuleRelations = relations(
   resourceRelationshipRule,
   ({ many }) => ({
     metadataMatches: many(resourceRelationshipRuleMetadataMatch),
+    metadataEquals: many(resourceRelationshipTargetRuleMetadataEquals),
   }),
 );
 
@@ -123,6 +147,28 @@ export const resourceRelationshipRuleMetadataMatchRelations = relations(
   }),
 );
 
+export const resourceRelationshipRuleMetadataEqualsRelations = relations(
+  resourceRelationshipTargetRuleMetadataEquals,
+  ({ one }) => ({
+    rule: one(resourceRelationshipRule, {
+      fields: [
+        resourceRelationshipTargetRuleMetadataEquals.resourceRelationshipRuleId,
+      ],
+      references: [resourceRelationshipRule.id],
+    }),
+  }),
+);
+
 export const createResourceRelationshipRule = createInsertSchema(
   resourceRelationshipRule,
-);
+)
+  .omit({ id: true })
+  .extend({
+    metadataKeysMatch: z.array(z.string()).optional(),
+    metadataKeysEquals: z
+      .array(z.object({ key: z.string(), value: z.string() }))
+      .optional(),
+  });
+
+export const updateResourceRelationshipRule =
+  createResourceRelationshipRule.partial();

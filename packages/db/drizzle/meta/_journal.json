@@ -687,6 +687,20 @@
       "when": 1746124328588,
       "tag": "0097_violet_ultimo",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1746421492060,
+      "tag": "0098_fair_abomination",
+      "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1746497118592,
+      "tag": "0099_pink_chamber",
+      "breakpoints": true
     }
   ]
 }

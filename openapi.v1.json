@@ -3070,10 +3070,84 @@
         }
       }
     },
+    "/v1/resource-relationship-rules/{ruleId}": {
+      "patch": {
+        "summary": "Update a resource relationship rule",
+        "operationId": "updateResourceRelationshipRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateResourceRelationshipRule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated resource relationship rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceRelationshipRule"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The resource relationship rule was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An error occurred while updating the resource relationship rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/resource-relationship-rules": {
       "post": {
         "summary": "Create a resource relationship rule",
-        "operationId": "upsertResourceRelationshipRule",
+        "operationId": "createResourceRelationshipRule",
         "requestBody": {
           "required": true,
           "content": {
@@ -3095,7 +3169,22 @@
               }
             }
           },
-          "400": {
+          "409": {
+            "description": "Resource relationship rule already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
             "description": "Failed to create resource relationship rule",
             "content": {
               "application/json": {
@@ -4781,7 +4870,22 @@
                 "$ref": "#/components/schemas/Runbook"
               },
               "resource": {
-                "$ref": "#/components/schemas/Resource"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ResourceWithVariablesAndMetadata"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "relationships": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "$ref": "#/components/schemas/Resource"
+                        }
+                      }
+                    }
+                  }
+                ]
               },
               "environment": {
                 "$ref": "#/components/schemas/Environment"
@@ -5673,6 +5777,62 @@
           "versionRoleApprovals"
         ]
       },
+      "UpdateResourceRelationshipRule": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "dependencyType": {
+            "$ref": "#/components/schemas/ResourceRelationshipRuleDependencyType"
+          },
+          "dependencyDescription": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "sourceVersion": {
+            "type": "string"
+          },
+          "targetKind": {
+            "type": "string"
+          },
+          "targetVersion": {
+            "type": "string"
+          },
+          "metadataKeysMatch": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadataTargetKeysEquals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        }
+      },
       "ResourceRelationshipRuleDependencyType": {
         "type": "string",
         "enum": [
@@ -5688,10 +5848,12 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "workspaceId": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -5719,6 +5881,30 @@
           },
           "targetVersion": {
             "type": "string"
+          },
+          "metadataKeysMatch": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadataTargetKeysEquals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
           }
         },
         "required": [
@@ -5728,9 +5914,7 @@
           "reference",
           "dependencyType",
           "sourceKind",
-          "sourceVersion",
-          "targetKind",
-          "targetVersion"
+          "sourceVersion"
         ]
       },
       "CreateResourceRelationshipRule": {
@@ -5771,6 +5955,24 @@
             "items": {
               "type": "string"
             }
+          },
+          "metadataTargetKeysEquals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
           }
         },
         "required": [
@@ -5781,8 +5983,7 @@
           "sourceKind",
           "sourceVersion",
           "targetKind",
-          "targetVersion",
-          "metadataKeysMatch"
+          "targetVersion"
         ]
       },
       "ReleaseTarget": {
