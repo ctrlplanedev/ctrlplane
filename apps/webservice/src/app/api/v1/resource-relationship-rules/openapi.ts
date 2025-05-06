@@ -95,7 +95,7 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "array",
             items: { type: "string" },
           },
-          metadataKeysEquals: {
+          metadataTargetKeysEquals: {
             type: "array",
             items: {
               type: "object",
@@ -103,6 +103,7 @@ export const openapi: Swagger.SwaggerV3 = {
                 key: { type: "string" },
                 value: { type: "string" },
               },
+              required: ["key", "value"],
             },
           },
         },
@@ -135,7 +136,7 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "array",
             items: { type: "string" },
           },
-          metadataKeysEquals: {
+          metadataTargetKeysEquals: {
             type: "array",
             items: {
               type: "object",

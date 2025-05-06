@@ -5813,7 +5813,7 @@
               "type": "string"
             }
           },
-          "metadataKeysEquals": {
+          "metadataTargetKeysEquals": {
             "type": "array",
             "items": {
               "type": "object",
@@ -5888,7 +5888,7 @@
               "type": "string"
             }
           },
-          "metadataKeysEquals": {
+          "metadataTargetKeysEquals": {
             "type": "array",
             "items": {
               "type": "object",
@@ -5899,7 +5899,11 @@
                 "value": {
                   "type": "string"
                 }
-              }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
             }
           }
         },
@@ -5952,7 +5956,7 @@
               "type": "string"
             }
           },
-          "metadataKeysEquals": {
+          "metadataTargetKeysEquals": {
             "type": "array",
             "items": {
               "type": "object",
