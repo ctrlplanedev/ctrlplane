@@ -3,12 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import _ from "lodash";
 
 import type { Tx } from "../common.js";
-import {
-  resourceRelationshipRule,
-  resourceRelationshipRuleMetadataEquals,
-  resourceRelationshipRuleMetadataMatch,
-} from "../schema/resource-relationship-rule.js";
-import { resource, resourceMetadata } from "../schema/resource.js";
+import * as schema from "../schema/index.js";
 
 /**
  * Gets relationships for a resource based on relationship rules
@@ -17,13 +12,13 @@ import { resource, resourceMetadata } from "../schema/resource.js";
  */
 export const getResourceParents = async (tx: Tx, resourceId: string) => {
   // Create aliases for tables we'll join multiple times to avoid naming conflicts
-  const sourceResource = alias(resource, "sourceResource");
-  const sourceMetadata = alias(resourceMetadata, "sourceMetadata");
-  const targetResource = alias(resource, "targetResource");
-  const targetMetadata = alias(resourceMetadata, "targetMetadata");
+  const sourceResource = alias(schema.resource, "sourceResource");
+  const sourceMetadata = alias(schema.resourceMetadata, "sourceMetadata");
+  const targetResource = alias(schema.resource, "targetResource");
+  const targetMetadata = alias(schema.resourceMetadata, "targetMetadata");
 
   const isMetadataMatchSatisfied = or(
-    isNull(resourceRelationshipRuleMetadataMatch.key),
+    isNull(schema.resourceRelationshipRuleMetadataMatch.key),
     exists(
       tx
         .select()
@@ -34,14 +29,17 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
             eq(sourceMetadata.resourceId, sourceResource.id),
             eq(targetMetadata.resourceId, targetResource.id),
             eq(sourceMetadata.value, targetMetadata.value),
-            eq(sourceMetadata.key, resourceRelationshipRuleMetadataMatch.key),
+            eq(
+              sourceMetadata.key,
+              schema.resourceRelationshipRuleMetadataMatch.key,
+            ),
           ),
         ),
     ),
   );
 
   const isMetadataEqualsSatisfied = or(
-    isNull(resourceRelationshipRuleMetadataEquals.key),
+    isNull(schema.resourceRelationshipRuleMetadataEquals.key),
     exists(
       tx
         .select()
@@ -49,10 +47,13 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
         .where(
           and(
             eq(targetMetadata.resourceId, targetResource.id),
-            eq(targetMetadata.key, resourceRelationshipRuleMetadataEquals.key),
+            eq(
+              targetMetadata.key,
+              schema.resourceRelationshipRuleMetadataEquals.key,
+            ),
             eq(
               targetMetadata.value,
-              resourceRelationshipRuleMetadataEquals.value,
+              schema.resourceRelationshipRuleMetadataEquals.value,
             ),
           ),
         ),
@@ -60,28 +61,28 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
   );
 
   const ruleMatchesSource = [
-    eq(resourceRelationshipRule.workspaceId, sourceResource.workspaceId),
-    eq(resourceRelationshipRule.sourceKind, sourceResource.kind),
-    eq(resourceRelationshipRule.sourceVersion, sourceResource.version),
+    eq(schema.resourceRelationshipRule.workspaceId, sourceResource.workspaceId),
+    eq(schema.resourceRelationshipRule.sourceKind, sourceResource.kind),
+    eq(schema.resourceRelationshipRule.sourceVersion, sourceResource.version),
   ];
 
   const ruleMatchesTarget = [
     or(
-      isNull(resourceRelationshipRule.targetKind),
-      eq(resourceRelationshipRule.targetKind, targetResource.kind),
+      isNull(schema.resourceRelationshipRule.targetKind),
+      eq(schema.resourceRelationshipRule.targetKind, targetResource.kind),
     ),
     or(
-      isNull(resourceRelationshipRule.targetVersion),
-      eq(resourceRelationshipRule.targetVersion, targetResource.version),
+      isNull(schema.resourceRelationshipRule.targetVersion),
+      eq(schema.resourceRelationshipRule.targetVersion, targetResource.version),
     ),
   ];
 
   const relationships = await tx
-    .selectDistinctOn([targetResource.id, resourceRelationshipRule.id], {
-      ruleId: resourceRelationshipRule.id,
-      type: resourceRelationshipRule.dependencyType,
+    .selectDistinctOn([targetResource.id, schema.resourceRelationshipRule.id], {
+      ruleId: schema.resourceRelationshipRule.id,
+      type: schema.resourceRelationshipRule.dependencyType,
       target: targetResource,
-      reference: resourceRelationshipRule.reference,
+      reference: schema.resourceRelationshipRule.reference,
     })
     .from(sourceResource)
     .innerJoin(
@@ -89,21 +90,22 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
       eq(targetResource.workspaceId, sourceResource.workspaceId),
     )
     .innerJoin(
-      resourceRelationshipRule,
+      schema.resourceRelationshipRule,
       and(...ruleMatchesSource, ...ruleMatchesTarget),
     )
     .leftJoin(
-      resourceRelationshipRuleMetadataMatch,
+      schema.resourceRelationshipRuleMetadataMatch,
       eq(
-        resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
-        resourceRelationshipRule.id,
+        schema.resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
+        schema.resourceRelationshipRule.id,
       ),
     )
     .leftJoin(
-      resourceRelationshipRuleMetadataEquals,
+      schema.resourceRelationshipRuleMetadataEquals,
       eq(
-        resourceRelationshipRuleMetadataEquals.resourceRelationshipRuleId,
-        resourceRelationshipRule.id,
+        schema.resourceRelationshipRuleMetadataEquals
+          .resourceRelationshipRuleId,
+        schema.resourceRelationshipRule.id,
       ),
     )
     .where(
@@ -121,7 +123,7 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
     await tx.query.resource
       .findMany({
         where: inArray(
-          resource.id,
+          schema.resource.id,
           Object.values(relationships).map((r) => r.target.id),
         ),
         with: {
@@ -156,23 +158,29 @@ export const getResourceRelationshipRules = async (
 ) => {
   return tx
     .select()
-    .from(resource)
+    .from(schema.resource)
     .innerJoin(
-      resourceRelationshipRule,
+      schema.resourceRelationshipRule,
       and(
-        eq(resourceRelationshipRule.workspaceId, resource.workspaceId),
-        eq(resourceRelationshipRule.sourceKind, resource.kind),
-        eq(resourceRelationshipRule.sourceVersion, resource.version),
+        eq(
+          schema.resourceRelationshipRule.workspaceId,
+          schema.resource.workspaceId,
+        ),
+        eq(schema.resourceRelationshipRule.sourceKind, schema.resource.kind),
+        eq(
+          schema.resourceRelationshipRule.sourceVersion,
+          schema.resource.version,
+        ),
       ),
     )
     .innerJoin(
-      resourceRelationshipRuleMetadataMatch,
+      schema.resourceRelationshipRuleMetadataMatch,
       eq(
-        resourceRelationshipRule.id,
-        resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
+        schema.resourceRelationshipRule.id,
+        schema.resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
       ),
     )
-    .where(eq(resource.id, resourceId))
+    .where(eq(schema.resource.id, resourceId))
     .then((r) =>
       _.chain(r)
         .groupBy((v) => v.resource_relationship_rule.id)
