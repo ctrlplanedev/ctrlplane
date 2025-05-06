@@ -1,5 +1,5 @@
 {
-  "id": "45cb559c-82d4-4a6d-a390-8d6d7bbc6d1e",
+  "id": "a491210f-543e-42f5-b0dc-381b8c5282b6",
   "prevId": "388fdaa7-8b17-4f2c-a523-a344c2e223b3",
   "version": "7",
   "dialect": "postgresql",
@@ -6075,76 +6075,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.resource_relationship_rule_metadata_equals": {
-      "name": "resource_relationship_rule_metadata_equals",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "resource_relationship_rule_id": {
-          "name": "resource_relationship_rule_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "key": {
-          "name": "key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "value": {
-          "name": "value",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "unique_resource_relationship_rule_metadata_equals": {
-          "name": "unique_resource_relationship_rule_metadata_equals",
-          "columns": [
-            {
-              "expression": "resource_relationship_rule_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "resource_relationship_rule_metadata_equals_resource_relationship_rule_id_resource_relationship_rule_id_fk": {
-          "name": "resource_relationship_rule_metadata_equals_resource_relationship_rule_id_resource_relationship_rule_id_fk",
-          "tableFrom": "resource_relationship_rule_metadata_equals",
-          "tableTo": "resource_relationship_rule",
-          "columnsFrom": ["resource_relationship_rule_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.resource_relationship_rule_metadata_match": {
       "name": "resource_relationship_rule_metadata_match",
       "schema": "",
@@ -6196,6 +6126,76 @@
         "resource_relationship_rule_metadata_match_resource_relationship_rule_id_resource_relationship_rule_id_fk": {
           "name": "resource_relationship_rule_metadata_match_resource_relationship_rule_id_resource_relationship_rule_id_fk",
           "tableFrom": "resource_relationship_rule_metadata_match",
+          "tableTo": "resource_relationship_rule",
+          "columnsFrom": ["resource_relationship_rule_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.resource_relationship_rule_target_metadata_equals": {
+      "name": "resource_relationship_rule_target_metadata_equals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "resource_relationship_rule_id": {
+          "name": "resource_relationship_rule_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "unique_resource_relationship_rule_target_metadata_equals": {
+          "name": "unique_resource_relationship_rule_target_metadata_equals",
+          "columns": [
+            {
+              "expression": "resource_relationship_rule_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "resource_relationship_rule_target_metadata_equals_resource_relationship_rule_id_resource_relationship_rule_id_fk": {
+          "name": "resource_relationship_rule_target_metadata_equals_resource_relationship_rule_id_resource_relationship_rule_id_fk",
+          "tableFrom": "resource_relationship_rule_target_metadata_equals",
           "tableTo": "resource_relationship_rule",
           "columnsFrom": ["resource_relationship_rule_id"],
           "columnsTo": ["id"],
@@ -6296,6 +6296,7 @@
         "resource",
         "resourceProvider",
         "resourceMetadataGroup",
+        "resourceRelationshipRule",
         "workspace",
         "environment",
         "environmentPolicy",

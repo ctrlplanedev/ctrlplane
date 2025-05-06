@@ -71,7 +71,7 @@ export const POST = request()
           );
           if (metadataKeysEquals.length > 0)
             await tx
-              .insert(schema.resourceRelationshipRuleMetadataEquals)
+              .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
               .values(
                 metadataKeysEquals.map((m) => ({
                   resourceRelationshipRuleId: rule.id,

@@ -86,8 +86,8 @@ export const resourceRelationshipRule = pgTable(
   ],
 );
 
-export const resourceRelationshipRuleMetadataEquals = pgTable(
-  "resource_relationship_rule_metadata_equals",
+export const resourceRelationshipTargetRuleMetadataEquals = pgTable(
+  "resource_relationship_rule_target_metadata_equals",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     resourceRelationshipRuleId: uuid("resource_relationship_rule_id")
@@ -100,7 +100,7 @@ export const resourceRelationshipRuleMetadataEquals = pgTable(
     value: text("value").notNull(),
   },
   (t) => [
-    uniqueIndex("unique_resource_relationship_rule_metadata_equals").on(
+    uniqueIndex("unique_resource_relationship_rule_target_metadata_equals").on(
       t.resourceRelationshipRuleId,
       t.key,
     ),
@@ -131,7 +131,7 @@ export const resourceRelationshipRuleRelations = relations(
   resourceRelationshipRule,
   ({ many }) => ({
     metadataMatches: many(resourceRelationshipRuleMetadataMatch),
-    metadataEquals: many(resourceRelationshipRuleMetadataEquals),
+    metadataEquals: many(resourceRelationshipTargetRuleMetadataEquals),
   }),
 );
 
@@ -148,11 +148,11 @@ export const resourceRelationshipRuleMetadataMatchRelations = relations(
 );
 
 export const resourceRelationshipRuleMetadataEqualsRelations = relations(
-  resourceRelationshipRuleMetadataEquals,
+  resourceRelationshipTargetRuleMetadataEquals,
   ({ one }) => ({
     rule: one(resourceRelationshipRule, {
       fields: [
-        resourceRelationshipRuleMetadataEquals.resourceRelationshipRuleId,
+        resourceRelationshipTargetRuleMetadataEquals.resourceRelationshipRuleId,
       ],
       references: [resourceRelationshipRule.id],
     }),

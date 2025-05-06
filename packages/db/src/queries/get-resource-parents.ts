@@ -39,7 +39,7 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
   );
 
   const isMetadataEqualsSatisfied = or(
-    isNull(schema.resourceRelationshipRuleMetadataEquals.key),
+    isNull(schema.resourceRelationshipTargetRuleMetadataEquals.key),
     exists(
       tx
         .select()
@@ -49,11 +49,11 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
             eq(targetMetadata.resourceId, targetResource.id),
             eq(
               targetMetadata.key,
-              schema.resourceRelationshipRuleMetadataEquals.key,
+              schema.resourceRelationshipTargetRuleMetadataEquals.key,
             ),
             eq(
               targetMetadata.value,
-              schema.resourceRelationshipRuleMetadataEquals.value,
+              schema.resourceRelationshipTargetRuleMetadataEquals.value,
             ),
           ),
         ),
@@ -101,9 +101,9 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
       ),
     )
     .leftJoin(
-      schema.resourceRelationshipRuleMetadataEquals,
+      schema.resourceRelationshipTargetRuleMetadataEquals,
       eq(
-        schema.resourceRelationshipRuleMetadataEquals
+        schema.resourceRelationshipTargetRuleMetadataEquals
           .resourceRelationshipRuleId,
         schema.resourceRelationshipRule.id,
       ),

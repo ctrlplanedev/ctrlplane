@@ -47,10 +47,10 @@ const replaceMetadataEqualsRules = async (
   metadataKeysEquals?: { key: string; value: string }[],
 ) => {
   await tx
-    .delete(schema.resourceRelationshipRuleMetadataEquals)
+    .delete(schema.resourceRelationshipTargetRuleMetadataEquals)
     .where(
       eq(
-        schema.resourceRelationshipRuleMetadataEquals
+        schema.resourceRelationshipTargetRuleMetadataEquals
           .resourceRelationshipRuleId,
         ruleId,
       ),
@@ -58,7 +58,7 @@ const replaceMetadataEqualsRules = async (
 
   const metadataKeys = _.uniqBy(metadataKeysEquals ?? [], (m) => m.key);
   if (metadataKeys.length > 0)
-    await tx.insert(schema.resourceRelationshipRuleMetadataEquals).values(
+    await tx.insert(schema.resourceRelationshipTargetRuleMetadataEquals).values(
       metadataKeys.map(({ key, value }) => ({
         resourceRelationshipRuleId: ruleId,
         key,
