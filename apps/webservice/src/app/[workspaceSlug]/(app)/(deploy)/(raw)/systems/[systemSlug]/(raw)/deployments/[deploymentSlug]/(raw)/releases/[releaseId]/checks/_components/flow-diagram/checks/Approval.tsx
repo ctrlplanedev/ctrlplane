@@ -1,10 +1,4 @@
 import { Button } from "@ctrlplane/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@ctrlplane/ui/tooltip";
 
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
 import { api } from "~/trpc/react";
@@ -16,16 +10,24 @@ export const ApprovalCheck: React.FC<{
   versionId: string;
   versionTag: string;
 }> = (props) => {
-  const { data, isLoading } =
-    api.deployment.version.checks.approval.status.useQuery(props);
+  const { data, isLoading } = api.policy.evaluate.useQuery(props);
   const utils = api.useUtils();
-  const invalidate = () =>
-    utils.deployment.version.checks.approval.status.invalidate(props);
+  const invalidate = () => utils.policy.evaluate.invalidate(props);
 
-  const isApproved = data?.approved ?? false;
-  const rejectionReasonEntries = Array.from(
-    data?.rejectionReasons.entries() ?? [],
-  );
+  const isAnyApprovalSatisfied = Object.values(
+    data?.rules.anyApprovals ?? {},
+  ).every((reasons) => reasons.length === 0);
+  const isUserApprovalSatisfied = Object.values(
+    data?.rules.userApprovals ?? {},
+  ).every((reasons) => reasons.length === 0);
+  const isRoleApprovalSatisfied = Object.values(
+    data?.rules.roleApprovals ?? {},
+  ).every((reasons) => reasons.length === 0);
+
+  const isApproved =
+    isAnyApprovalSatisfied &&
+    isUserApprovalSatisfied &&
+    isRoleApprovalSatisfied;
 
   if (isLoading)
     return (
@@ -39,35 +41,6 @@ export const ApprovalCheck: React.FC<{
       <div className="flex items-center gap-2">
         <Passing /> Approved
       </div>
-    );
-
-  if (rejectionReasonEntries.length > 0)
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Waiting /> Not enough approvals
-              </div>
-              <ApprovalDialog {...props} onSubmit={invalidate}>
-                <Button size="sm" className="h-6">
-                  Approve
-                </Button>
-              </ApprovalDialog>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <ul>
-              {rejectionReasonEntries.map(([reason, comment]) => (
-                <li key={reason}>
-                  {reason}: {comment}
-                </li>
-              ))}
-            </ul>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
     );
 
   return (
