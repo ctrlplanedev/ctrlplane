@@ -1,6 +1,7 @@
 import type { FilterRule, Policy, PreValidationRule } from "../types";
 import type { Version } from "./version-rule-engine";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
+import { ReleaseTargetConcurrencyRule } from "../rules/release-target-concurrency-rule.js";
 import {
   getAnyApprovalRecords,
   getRoleApprovalRecords,
@@ -68,8 +69,12 @@ export const getVersionApprovalRules = (
 
 export const getRules = (
   policy: Policy | null,
+  releaseTargetId: string,
 ): Array<FilterRule<Version> | PreValidationRule> => {
-  return getVersionApprovalRules(policy);
+  return [
+    new ReleaseTargetConcurrencyRule(releaseTargetId),
+    ...getVersionApprovalRules(policy),
+  ];
   // The rrule package is being stupid and deny windows is not top priority
   // right now so I am commenting this out
   // https://github.com/jkbrzt/rrule/issues/478
