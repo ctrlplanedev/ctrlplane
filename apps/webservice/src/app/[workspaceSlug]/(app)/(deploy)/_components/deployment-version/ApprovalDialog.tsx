@@ -26,8 +26,7 @@ export const ApprovalDialog: React.FC<{
   onSubmit?: () => void;
 }> = ({ versionId, versionTag, environmentId, children, onSubmit }) => {
   const [open, setOpen] = useState(false);
-  const addRecord =
-    api.deployment.version.checks.approval.addRecord.useMutation();
+  const addRecord = api.deployment.version.addApprovalRecord.useMutation();
 
   const router = useRouter();
 

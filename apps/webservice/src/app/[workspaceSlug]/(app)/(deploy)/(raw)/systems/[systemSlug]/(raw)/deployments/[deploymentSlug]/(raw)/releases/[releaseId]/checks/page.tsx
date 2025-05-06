@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { IconMenu2 } from "@tabler/icons-react";
+import _ from "lodash";
 
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
@@ -44,9 +45,15 @@ export default async function ChecksPage(props: PageProps) {
   if (deploymentVersion == null || deployment == null) return notFound();
 
   const { system } = deployment;
-  const environments = await api.deployment.version.checks.environmentsToCheck(
-    deployment.id,
+  const releaseTargets = await api.releaseTarget.list({
+    deploymentId: deployment.id,
+  });
+
+  const environments = _.uniqBy(
+    releaseTargets.map((r) => r.environment),
+    (env) => env.id,
   );
+
   return (
     <div className="relative h-full">
       <SidebarTrigger

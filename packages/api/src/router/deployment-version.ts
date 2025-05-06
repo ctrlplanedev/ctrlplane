@@ -45,7 +45,6 @@ import {
 } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { deploymentVersionChecksRouter } from "./deployment-version-checks/router";
 import { deploymentVersionJobsRouter } from "./deployment-version-jobs";
 import { deploymentVersionMetadataKeysRouter } from "./version-metadata-keys";
 
@@ -378,6 +377,66 @@ export const versionRouter = createTRPCRouter({
             .then(() => rel),
         ),
     ),
+
+  addApprovalRecord: protectedProcedure
+    .input(
+      z.object({
+        deploymentVersionId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+        status: z.nativeEnum(SCHEMA.ApprovalStatus),
+        reason: z.string().optional(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVersionGet).on({
+          type: "deploymentVersion",
+          id: input.deploymentVersionId,
+        }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const { deploymentVersionId, environmentId, status, reason } = input;
+
+      const record = await ctx.db
+        .insert(SCHEMA.policyRuleAnyApprovalRecord)
+        .values({
+          deploymentVersionId,
+          userId: ctx.session.user.id,
+          status,
+          reason,
+          approvedAt:
+            status === SCHEMA.ApprovalStatus.Approved ? new Date() : null,
+        })
+        .returning();
+
+      const rows = await ctx.db
+        .select()
+        .from(SCHEMA.deploymentVersion)
+        .innerJoin(
+          SCHEMA.releaseTarget,
+          eq(
+            SCHEMA.deploymentVersion.deploymentId,
+            SCHEMA.releaseTarget.deploymentId,
+          ),
+        )
+        .where(
+          and(
+            eq(SCHEMA.deploymentVersion.id, deploymentVersionId),
+            eq(SCHEMA.releaseTarget.environmentId, environmentId),
+          ),
+        );
+
+      const targets = rows.map((row) => row.release_target);
+      if (targets.length > 0)
+        await getQueue(Channel.EvaluateReleaseTarget).addBulk(
+          targets.map((rt) => ({
+            name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
+            data: rt,
+          })),
+        );
+
+      return record;
+    }),
 
   /**
    * Lists all environments where a deployment version is blocked from being deployed based on policy rules.
@@ -834,5 +893,4 @@ export const versionRouter = createTRPCRouter({
   }),
 
   metadataKeys: deploymentVersionMetadataKeysRouter,
-  checks: deploymentVersionChecksRouter,
 });
