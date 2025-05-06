@@ -41,6 +41,7 @@ export const RelationshipRulesTable: React.FC<RelationshipRulesTableProps> = ({
               <TableHead>Reference</TableHead>
               <TableHead>Dependency</TableHead>
               <TableHead>Matching Metadata</TableHead>
+              <TableHead>Target Metadata</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -68,7 +69,19 @@ export const RelationshipRulesTable: React.FC<RelationshipRulesTableProps> = ({
                     ))}
                   </div>
                 </TableCell>
-
+                <TableCell>
+                  <div className="flex flex-wrap gap-2">
+                    {rule.metadataEquals?.map((match) => (
+                      <Badge
+                        variant="outline"
+                        className="font-mono"
+                        key={match.key}
+                      >
+                        {match.key}={match.value}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex justify-end">
                     <RelationshipRuleDropdown ruleId={rule.id} />

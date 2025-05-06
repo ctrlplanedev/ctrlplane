@@ -49,6 +49,9 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
       schema.createResourceRelationshipRule.and(
         z.object({
           metadataKeys: z.string().array().optional(),
+          metadataKeysEquals: z
+            .array(z.object({ key: z.string(), value: z.string() }))
+            .optional(),
         }),
       ),
     )
@@ -59,7 +62,7 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .mutation(async ({ ctx, input }) => {
-      const { metadataKeys, ...rest } = input;
+      const { metadataKeys, metadataKeysEquals, ...rest } = input;
       const rule = await ctx.db
         .insert(schema.resourceRelationshipRule)
         .values({
@@ -70,13 +73,26 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await ctx.db.insert(schema.resourceRelationshipRuleMetadataMatch).values(
-        metadataKeys?.map((key) => ({
-          resourceRelationshipRuleId: rule.id,
-          key,
-        })) ?? [],
-      );
+      const metadataMatches = metadataKeys?.map((key) => ({
+        resourceRelationshipRuleId: rule.id,
+        key,
+      })) ?? [];
+      
+      if (metadataMatches.length > 0)
+        await ctx.db.insert(schema.resourceRelationshipRuleMetadataMatch).values(metadataMatches);
+      
+      const metadataEqualsEntries = metadataKeysEquals?.map((item) => ({
+        resourceRelationshipRuleId: rule.id,
+        key: item.key,
+        value: item.value,
+      })) ?? [];
+      
+      if (metadataEqualsEntries.length > 0)
+        await ctx.db.insert(schema.resourceRelationshipTargetRuleMetadataEquals).values(metadataEqualsEntries);
 
-      return rule;
+      return ctx.db.query.resourceRelationshipRule.findFirst({
+        where: eq(schema.resourceRelationshipRule.id, rule.id),
+        with: { metadataMatches: true, metadataEquals: true },
+      });
     }),
 });

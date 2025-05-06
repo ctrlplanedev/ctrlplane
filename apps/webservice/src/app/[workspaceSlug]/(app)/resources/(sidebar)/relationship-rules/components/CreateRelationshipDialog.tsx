@@ -30,6 +30,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { api } from "~/trpc/react";
 
@@ -70,12 +71,14 @@ const schema = z.object({
   targetVersion: z.string().nullable(),
   dependencyType: z.enum(dependencyType),
   metadataKeys: z.string().array().min(1),
+  metadataKeysEquals: z.array(z.object({ key: z.string(), value: z.string() })),
 });
 
 export const CreateRelationshipDialog: React.FC<
   CreateRelationshipDialogProps
 > = ({ workspaceId }) => {
   const [currentMetadataKey, setCurrentMetadataKey] = useState("");
+  const [currentKeyValue, setCurrentKeyValue] = useState({ key: "", value: "" });
 
   const form = useForm({
     schema,
@@ -90,6 +93,7 @@ export const CreateRelationshipDialog: React.FC<
       targetVersion: null,
       dependencyType: "depends_on",
       metadataKeys: [],
+      metadataKeysEquals: [],
     },
   });
 
@@ -118,8 +122,9 @@ export const CreateRelationshipDialog: React.FC<
             onSubmit={form.handleSubmit((data) =>
               createRule.mutateAsync({
                 workspaceId,
-
                 ...data,
+                metadataKeysMatch: data.metadataKeys,
+                metadataKeysEquals: data.metadataKeysEquals,
               }),
             )}
             className="space-y-4"
@@ -319,8 +324,9 @@ export const CreateRelationshipDialog: React.FC<
 
             <div className="space-y-4">
               <h4 className="text-sm font-medium leading-none">
-                Metadata Keys
+                Metadata Matching
               </h4>
+              
               <FormField
                 control={form.control}
                 name="metadataKeys"
@@ -335,6 +341,9 @@ export const CreateRelationshipDialog: React.FC<
 
                   return (
                     <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">
+                        Metadata Keys to Match
+                      </FormLabel>
                       <FormControl>
                         <div className="flex flex-wrap items-start gap-2">
                           {field.value.map((key, index) => (
@@ -376,6 +385,100 @@ export const CreateRelationshipDialog: React.FC<
                               variant="secondary"
                               size="sm"
                               onClick={addKey}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium leading-none">
+                Additional Target Metadata Matching
+              </h4>
+              
+              <FormField
+                control={form.control}
+                name="metadataKeysEquals"
+                render={({ field }) => {
+                  const addKeyValue = () => {
+                    const key = currentKeyValue.key.trim();
+                    const value = currentKeyValue.value.trim();
+                    
+                    if (key && value && !field.value.some(item => item.key === key)) {
+                      field.onChange([...field.value, { key, value }]);
+                      setCurrentKeyValue({ key: "", value: "" });
+                    }
+                  };
+
+                  return (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">
+                        Target Metadata Key-Value Pairs
+                      </FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          {field.value.map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 rounded-md bg-secondary px-3 py-2"
+                            >
+                              <span className="font-medium">{item.key}:</span>
+                              <span>{item.value}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newItems = [...field.value];
+                                  newItems.splice(index, 1);
+                                  field.onChange(newItems);
+                                }}
+                                className="ml-auto text-muted-foreground hover:text-foreground"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                          
+                          <div className="flex items-center gap-2">
+                            <Input
+                              className="flex-1"
+                              placeholder="Key"
+                              value={currentKeyValue.key}
+                              onChange={(e) =>
+                                setCurrentKeyValue({
+                                  ...currentKeyValue,
+                                  key: e.target.value,
+                                })
+                              }
+                            />
+                            <Input
+                              className="flex-1"
+                              placeholder="Value"
+                              value={currentKeyValue.value}
+                              onChange={(e) =>
+                                setCurrentKeyValue({
+                                  ...currentKeyValue,
+                                  value: e.target.value,
+                                })
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  addKeyValue();
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={addKeyValue}
                             >
                               Add
                             </Button>
