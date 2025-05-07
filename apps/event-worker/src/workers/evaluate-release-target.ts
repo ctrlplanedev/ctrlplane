@@ -12,6 +12,8 @@ import {
   VersionReleaseManager,
 } from "@ctrlplane/rule-engine";
 
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+
 const tracer = trace.getTracer("evaluate-release-target");
 const withSpan = makeWithSpan(tracer);
 
@@ -176,12 +178,8 @@ export const evaluateReleaseTargetWorker = createWorker(
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       const isReleaseTargetNotCommittedYet = e.code === "23503";
-      if (isRowLocked || isReleaseTargetNotCommittedYet) {
-        await getQueue(Channel.EvaluateReleaseTarget).add(job.name, job.data, {
-          delay: 500,
-        });
-        return;
-      }
+      if (isRowLocked || isReleaseTargetNotCommittedYet)
+        dispatchEvaluateJobs([job.data]);
       throw e;
     }
   }),
