@@ -46,7 +46,9 @@ export const CreateRelationshipDialog: React.FC<
 
   const form = useForm({
     schema: SCHEMA.createResourceRelationshipRule.extend({
-      metadataKeysMatch: z.array(z.object({ key: z.string() })),
+      metadataKeysMatch: z.array(z.object({ key: z.string() })).transform(items => 
+        items.map(item => item.key)
+      ),
     }),
     defaultValues: {
       workspaceId,
@@ -69,20 +71,14 @@ export const CreateRelationshipDialog: React.FC<
 
   const onSubmit = form.handleSubmit((data) => {
     const { metadataKeysMatch, metadataKeysEquals } = data;
-    const matchKeys = metadataKeysMatch
-      .map((item) => item.key)
-      .filter((key) => key.trim().length > 0);
-
-    const equalsKeys = metadataKeysEquals
-      ? metadataKeysEquals.filter(
-          (item) => item.key.trim().length > 0 && item.value.trim().length > 0,
-        )
-      : [];
+    const equalsKeys = metadataKeysEquals || [];
 
     createRule
       .mutateAsync({
         ...data,
-        metadataKeysMatch: matchKeys,
+        metadataKeysMatch: metadataKeysMatch.length > 0 
+          ? metadataKeysMatch.map(item => item.key).filter(Boolean)
+          : [],
         metadataKeysEquals: equalsKeys,
       })
       .then(() => utils.resource.relationshipRules.list.invalidate())
