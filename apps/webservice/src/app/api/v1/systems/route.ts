@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
+import _ from "lodash";
 import { z } from "zod";
 
-import { takeFirst } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -23,26 +24,50 @@ export const POST = request()
         .on({ type: "workspace", id: ctx.body.workspaceId }),
     ),
   )
-  .handle<{ body: z.infer<typeof schema.createSystem> }>(async (ctx) =>
-    ctx.db
-      .insert(schema.system)
-      .values(ctx.body)
-      .returning()
-      .then(takeFirst)
-      .then((system) =>
-        NextResponse.json(system, { status: httpStatus.CREATED }),
-      )
-      .catch((error) => {
-        if (error instanceof z.ZodError)
-          return NextResponse.json(
-            { error: error.errors },
-            { status: httpStatus.BAD_REQUEST },
-          );
+  .handle<{ body: z.infer<typeof schema.createSystem> }>(async (ctx) => {
+    try {
+      const existingSystem = await ctx.db
+        .select()
+        .from(schema.system)
+        .where(
+          and(
+            eq(schema.system.workspaceId, ctx.body.workspaceId),
+            eq(schema.system.slug, ctx.body.slug),
+          ),
+        )
+        .then(takeFirstOrNull);
 
-        log.error("Error creating system:", error);
+      if (existingSystem != null) {
+        // Update existing system
+        const updatedSystem = await ctx.db
+          .update(schema.system)
+          .set(ctx.body)
+          .where(eq(schema.system.id, existingSystem.id))
+          .returning()
+          .then(takeFirst);
+
+        return NextResponse.json(updatedSystem, { status: httpStatus.OK });
+      }
+
+      // Create new system
+      const newSystem = await ctx.db
+        .insert(schema.system)
+        .values(ctx.body)
+        .returning()
+        .then(takeFirst);
+
+      return NextResponse.json(newSystem, { status: httpStatus.CREATED });
+    } catch (error) {
+      if (error instanceof z.ZodError)
         return NextResponse.json(
-          { error: "Internal Server Error" },
-          { status: httpStatus.INTERNAL_SERVER_ERROR },
+          { error: error.errors },
+          { status: httpStatus.BAD_REQUEST },
         );
-      }),
-  );
+
+      log.error("Error upserting system:", error);
+      return NextResponse.json(
+        { error: "Internal Server Error" },
+        { status: httpStatus.INTERNAL_SERVER_ERROR },
+      );
+    }
+  });

@@ -1155,6 +1155,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Deployment updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deployment"
+                }
+              }
+            }
+          },
           "201": {
             "description": "Deployment created",
             "content": {
@@ -3934,6 +3944,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "System updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System"
+                }
+              }
+            }
+          },
           "201": {
             "description": "System created successfully",
             "content": {

@@ -38,6 +38,14 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
         responses: {
+          "200": {
+            description: "System updated successfully",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/System" },
+              },
+            },
+          },
           "201": {
             description: "System created successfully",
             content: {
