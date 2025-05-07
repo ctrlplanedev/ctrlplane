@@ -186,9 +186,24 @@ export const createResourceRelationshipRule = createInsertSchema(
             "Reference must be in slug case (my-reference), camel case (myReference), or snake case (my_reference)",
         },
       ),
-    metadataKeysMatch: z.array(z.string().min(1)).optional(),
+    metadataKeysMatch: z
+      .array(
+        z.string().refine((val) => val.trim().length > 0, {
+          message: "Metadata match key cannot be empty",
+        }),
+      )
+      .optional(),
     metadataKeysEquals: z
-      .array(z.object({ key: z.string().min(1), value: z.string().min(1) }))
+      .array(
+        z.object({
+          key: z.string().refine((val) => val.trim().length > 0, {
+            message: "Key cannot be empty",
+          }),
+          value: z.string().refine((val) => val.trim().length > 0, {
+            message: "Value cannot be empty",
+          }),
+        }),
+      )
       .optional(),
   });
 
