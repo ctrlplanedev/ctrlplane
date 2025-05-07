@@ -68,11 +68,23 @@ export const CreateRelationshipDialog: React.FC<
   const createRule = api.resource.relationshipRules.create.useMutation();
 
   const onSubmit = form.handleSubmit((data) => {
-    const { metadataKeysMatch } = data;
-    const matchKeys = metadataKeysMatch.map((item) => item.key);
+    const { metadataKeysMatch, metadataKeysEquals } = data;
+    const matchKeys = metadataKeysMatch
+      .map((item) => item.key)
+      .filter((key) => key.trim().length > 0);
+
+    const equalsKeys = metadataKeysEquals
+      ? metadataKeysEquals.filter(
+          (item) => item.key.trim().length > 0 && item.value.trim().length > 0,
+        )
+      : [];
 
     createRule
-      .mutateAsync({ ...data, metadataKeysMatch: matchKeys })
+      .mutateAsync({ 
+        ...data, 
+        metadataKeysMatch: matchKeys,
+        metadataKeysEquals: equalsKeys
+      })
       .then(() => utils.resource.relationshipRules.list.invalidate())
       .then(() => setOpen(false));
   });
