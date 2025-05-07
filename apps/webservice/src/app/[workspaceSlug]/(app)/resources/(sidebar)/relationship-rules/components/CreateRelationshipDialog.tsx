@@ -80,10 +80,10 @@ export const CreateRelationshipDialog: React.FC<
       : [];
 
     createRule
-      .mutateAsync({ 
-        ...data, 
+      .mutateAsync({
+        ...data,
         metadataKeysMatch: matchKeys,
-        metadataKeysEquals: equalsKeys
+        metadataKeysEquals: equalsKeys,
       })
       .then(() => utils.resource.relationshipRules.list.invalidate())
       .then(() => setOpen(false));
