@@ -71,7 +71,7 @@ export const CreateRelationshipDialog: React.FC<
 
   const onSubmit = form.handleSubmit((data) => {
     const { metadataKeysMatch, metadataKeysEquals } = data;
-    const equalsKeys = metadataKeysEquals || [];
+    const equalsKeys = metadataKeysEquals ?? [];
 
     createRule
       .mutateAsync({
