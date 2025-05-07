@@ -12,7 +12,7 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ResourceList)
+          .perform(Permission.ResourceRelationshipRuleList)
           .on({ type: "workspace", id: input }),
     })
     .query(async ({ ctx, input }) => {
@@ -33,7 +33,7 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         if (rule == null) return false;
 
         return canUser
-          .perform(Permission.ResourceDelete)
+          .perform(Permission.ResourceRelationshipRuleDelete)
           .on({ type: "workspace", id: rule.workspaceId });
       },
     })
@@ -45,21 +45,15 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
     }),
 
   create: protectedProcedure
-    .input(
-      schema.createResourceRelationshipRule.and(
-        z.object({
-          metadataKeys: z.string().array().optional(),
-        }),
-      ),
-    )
+    .input(schema.createResourceRelationshipRule)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ResourceCreate)
+          .perform(Permission.ResourceRelationshipRuleCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .mutation(async ({ ctx, input }) => {
-      const { metadataKeys, ...rest } = input;
+      const { metadataKeysMatch, metadataKeysEquals, ...rest } = input;
       const rule = await ctx.db
         .insert(schema.resourceRelationshipRule)
         .values({
@@ -70,12 +64,26 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await ctx.db.insert(schema.resourceRelationshipRuleMetadataMatch).values(
-        metadataKeys?.map((key) => ({
-          resourceRelationshipRuleId: rule.id,
-          key,
-        })) ?? [],
-      );
+      if (metadataKeysMatch != null && metadataKeysMatch.length > 0)
+        await ctx.db
+          .insert(schema.resourceRelationshipRuleMetadataMatch)
+          .values(
+            metadataKeysMatch.map((key) => ({
+              resourceRelationshipRuleId: rule.id,
+              key,
+            })),
+          );
+
+      if (metadataKeysEquals != null && metadataKeysEquals.length > 0)
+        await ctx.db
+          .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
+          .values(
+            metadataKeysEquals.map(({ key, value }) => ({
+              resourceRelationshipRuleId: rule.id,
+              key,
+              value,
+            })),
+          );
 
       return rule;
     }),
