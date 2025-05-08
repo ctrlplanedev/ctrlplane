@@ -96,18 +96,13 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
           policyTarget,
         );
 
+        const prevIds = new Set(previous.map((rt) => rt.releaseTargetId));
+        const nextIds = new Set(releaseTargets.map((rt) => rt.releaseTargetId));
         const unmatched = previous.filter(
-          (previousRt) =>
-            !releaseTargets.some(
-              (rt) => rt.releaseTargetId === previousRt.releaseTargetId,
-            ),
+          ({ releaseTargetId }) => !nextIds.has(releaseTargetId),
         );
-
         const newReleaseTargets = releaseTargets.filter(
-          (rt) =>
-            !previous.some(
-              (previousRt) => previousRt.releaseTargetId === rt.releaseTargetId,
-            ),
+          ({ releaseTargetId }) => !prevIds.has(releaseTargetId),
         );
 
         if (releaseTargets.length > 0)
@@ -120,6 +115,8 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
           (rt) => rt.releaseTargetId,
         );
       });
+
+      if (affectedReleaseTargetIds.length === 0) return;
 
       const affectedReleaseTargets = await db
         .select()
