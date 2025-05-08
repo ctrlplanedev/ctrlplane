@@ -4,12 +4,14 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import {
   IconChevronRight,
+  IconCopy,
   IconDots,
   IconExternalLink,
   IconSwitch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { formatDistanceToNowStrict } from "date-fns";
+import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
@@ -20,14 +22,16 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 import { TableCell, TableRow } from "@ctrlplane/ui/table";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
 
-const JobActionsDropdownMenu: React.FC<{ jobIds: string[] }> = ({ jobIds }) => {
+const JobActionsDropdownMenu: React.FC<{ jobId: string }> = ({ jobId }) => {
   const utils = api.useUtils();
+  const [, copy] = useCopyToClipboard();
 
   return (
     <DropdownMenu>
@@ -37,8 +41,18 @@ const JobActionsDropdownMenu: React.FC<{ jobIds: string[] }> = ({ jobIds }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <DropdownMenuItem
+          onSelect={() => {
+            copy(jobId);
+            toast.success("Job ID copied to clipboard");
+          }}
+          className="flex items-center gap-2"
+        >
+          <IconCopy className="h-4 w-4" />
+          Copy job ID
+        </DropdownMenuItem>
         <OverrideJobStatusDialog
-          jobIds={jobIds}
+          jobIds={[jobId]}
           onClose={() => utils.deployment.version.job.list.invalidate()}
         >
           <DropdownMenuItem
@@ -155,7 +169,7 @@ export const ReleaseTargetRow: React.FC<{
       )}
       DropdownMenu={
         <TableCell className="flex justify-end">
-          <JobActionsDropdownMenu jobIds={[latestJob.id]} />
+          <JobActionsDropdownMenu jobId={latestJob.id} />
         </TableCell>
       }
     >
