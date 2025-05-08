@@ -5,7 +5,6 @@ import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 
-import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Command,
@@ -34,14 +33,16 @@ export const SystemSelector: React.FC<{
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selectedSystem?.name ?? "Select system..."}
+          <div className="min-w-0 truncate">
+            {selectedSystem?.name ?? "Select system..."}
+          </div>
           <IconChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[240px] p-0">
         <Command>
           <CommandInput placeholder="Search system..." />
-          <CommandList>
+          <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
             <CommandEmpty>No Systems found.</CommandEmpty>
             <CommandGroup>
               {systems.map((system) => (
@@ -53,16 +54,12 @@ export const SystemSelector: React.FC<{
                     );
                     router.refresh();
                   }}
+                  className="flex items-center justify-between"
                 >
-                  <IconCheck
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedSystem?.id === system.id
-                        ? "opacity-100"
-                        : "opacity-0",
-                    )}
-                  />
-                  {system.name}
+                  <div className="min-w-0 truncate">{system.name}</div>
+                  {selectedSystem?.id === system.id && (
+                    <IconCheck className="h-4 w-4 flex-shrink-0" />
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
