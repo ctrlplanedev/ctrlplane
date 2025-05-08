@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, uniqueIndex, uuid, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,7 +8,7 @@ import { workspace } from "./workspace.js";
 /**
  * Enum defining types of resource dependency relationships.
  */
-const resourceDependencyType = pgEnum("resource_dependency_type", [
+export const resourceDependencyType = pgEnum("resource_dependency_type", [
   /**
    * Direct dependency, indicating that the source explicitly depends on the
    * target.
@@ -51,6 +51,12 @@ const resourceDependencyType = pgEnum("resource_dependency_type", [
    * configuration.
    */
   "inherits_from",
+
+  /**
+   * Associated with dependency, indicating the source is associated with the target.
+   * @example A Kubernetes cluster is associated with a Google Cloud project.
+   */
+  "associated_with",
 ]);
 
 export enum ResourceDependencyType {
@@ -60,6 +66,7 @@ export enum ResourceDependencyType {
   CreatedAfter = "created_after",
   ProvisionedIn = "provisioned_in",
   InheritsFrom = "inherits_from",
+  AssociatedWith = "associated_with",
 }
 
 export const resourceRelationshipRule = pgTable(
@@ -92,6 +99,7 @@ export const resourceRelationshipRule = pgTable(
       t.sourceKind,
       t.sourceVersion,
     ),
+    index("resource_relationship_rule_ws_idx").on(t.workspaceId),
   ],
 );
 

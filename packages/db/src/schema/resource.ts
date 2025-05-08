@@ -32,6 +32,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  index,
 } from "drizzle-orm/pg-core";
 import { and, eq } from "drizzle-orm/sql";
 import { createInsertSchema } from "drizzle-zod";
@@ -55,6 +56,7 @@ import { releaseJobTrigger } from "./release-job-trigger.js";
 import { releaseTarget } from "./release.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
+import { resourceDependencyType, resourceRelationshipRule } from "./resource-relationship-rule.js";
 
 export const resource = pgTable(
   "resource",
@@ -83,7 +85,14 @@ export const resource = pgTable(
     ),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.identifier, t.workspaceId) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.identifier, t.workspaceId),
+    workspaceKindVersionIdx: index("resource_wkv_idx").on(
+      t.workspaceId,
+      t.kind,
+      t.version,
+    ),
+  }),
 );
 
 export const resourceRelations = relations(resource, ({ one, many }) => ({
@@ -165,7 +174,13 @@ export const resourceMetadata = pgTable(
     key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.resourceId) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.key, t.resourceId),
+    resourceIdKeyIdx: index("resource_metadata_rid_key_idx").on(
+      t.resourceId,
+      t.key,
+    ),
+  }),
 );
 
 export const resourceMetadataRelations = relations(
@@ -333,11 +348,6 @@ export function resourceMatchesMetadata(
     : buildCondition(tx, metadata);
 }
 
-export const resourceRelationshipType = pgEnum("resource_relationship_type", [
-  "associated_with",
-  "depends_on",
-]);
-
 export const resourceRelationship = pgTable(
   "resource_relationship",
   {
@@ -347,9 +357,30 @@ export const resourceRelationship = pgTable(
       .references(() => workspace.id, { onDelete: "cascade" }),
     fromIdentifier: text("from_identifier").notNull(),
     toIdentifier: text("to_identifier").notNull(),
-    type: resourceRelationshipType("type").notNull(),
+    type: resourceDependencyType("type").notNull(),
+    establishedByRuleId: uuid("established_by_rule_id").references(
+      () => resourceRelationshipRule.id,
+      { onDelete: "set null" },
+    ),
+    lastValidatedAt: timestamp("last_validated_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+      () => new Date(),
+    ),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.toIdentifier, t.fromIdentifier) }),
+  (t) => ({
+    uq_resource_relationship_instance: uniqueIndex(
+      "uq_resource_relationship_instance",
+    ).on(t.workspaceId, t.fromIdentifier, t.toIdentifier, t.type),
+    establishedByRuleIdx: index(
+      "resource_relationship_rule_id_idx",
+    ).on(t.establishedByRuleId),
+    lastValidatedAtIdx: index(
+      "resource_relationship_last_validated_idx",
+    ).on(t.lastValidatedAt),
+  }),
 );
 
 export const createResourceRelationship = createInsertSchema(
