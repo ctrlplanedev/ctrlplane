@@ -192,7 +192,7 @@ export const createResourceRelationshipRule = createInsertSchema(
           message: "Metadata match key cannot be empty",
         }),
       )
-      .optional(),
+      .min(1, "At least one metadata match key is required"),
     metadataKeysEquals: z
       .array(
         z.object({
