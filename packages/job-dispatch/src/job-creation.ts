@@ -1,15 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, eq, isNotNull, ne, or, takeFirst } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
+import { eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
-
-import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
-import { isPassingAllPolicies } from "./policy-checker.js";
-import { cancelOldReleaseJobTriggersOnJobDispatch } from "./release-sequencing.js";
 
 export const createTriggeredRunbookJob = async (
   db: Tx,
@@ -56,124 +51,4 @@ export const createTriggeredRunbookJob = async (
     await db.insert(schema.jobVariable).values(variables);
 
   return job;
-};
-
-/**
- * When a job completes, there may be other jobs that should now be triggered
- * because the completion of this job means that some policies are now passing.
- *
- * criteria requirement - "need n from QA to pass before deploying to staging"
- * wait requirement - "in the same environment, need to wait for previous release to be deployed first"
- * concurrency requirement - "only n releases in staging at a time"
- * version dependency - "need to wait for deployment X version Y to be deployed first"
- *
- *
- * This function looks at the job's release and deployment and finds all the
- * other release that should be triggered and dispatches them.
- *
- * @param je
- */
-export const onJobCompletion = async (je: schema.Job) => {
-  const triggers = await db
-    .select()
-    .from(schema.releaseJobTrigger)
-    .innerJoin(
-      schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
-    )
-    .innerJoin(
-      schema.environment,
-      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-    )
-    .where(eq(schema.releaseJobTrigger.jobId, je.id))
-    .then(takeFirst);
-
-  const isDependentOnTriggerForCriteria = and(
-    eq(schema.releaseJobTrigger.versionId, triggers.deployment_version.id),
-    eq(
-      schema.environmentPolicyDeployment.environmentId,
-      triggers.release_job_trigger.environmentId,
-    ),
-  );
-
-  const isWaitingOnConcurrencyRequirementInSameRelease = and(
-    isNotNull(schema.environmentPolicy.concurrencyLimit),
-    eq(schema.environmentPolicy.id, triggers.environment.policyId),
-    eq(
-      schema.deploymentVersion.deploymentId,
-      triggers.deployment_version.deploymentId,
-    ),
-    eq(schema.job.status, JobStatus.Pending),
-  );
-
-  const isDependentOnVersionOfTriggerDeployment = isNotNull(
-    schema.versionDependency.id,
-  );
-
-  const isWaitingOnJobToFinish = and(
-    eq(schema.environment.id, triggers.release_job_trigger.environmentId),
-    eq(schema.deployment.id, triggers.deployment.id),
-    ne(schema.deploymentVersion.id, triggers.deployment_version.id),
-  );
-
-  const affectedReleaseJobTriggers = await db
-    .select()
-    .from(schema.releaseJobTrigger)
-    .innerJoin(
-      schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
-    )
-    .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
-    .innerJoin(
-      schema.environment,
-      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-    )
-    .leftJoin(
-      schema.environmentPolicy,
-      eq(schema.environment.policyId, schema.environmentPolicy.id),
-    )
-    .leftJoin(
-      schema.environmentPolicyDeployment,
-      eq(
-        schema.environmentPolicyDeployment.policyId,
-        schema.environmentPolicy.id,
-      ),
-    )
-    .leftJoin(
-      schema.versionDependency,
-      and(
-        eq(
-          schema.versionDependency.versionId,
-          schema.releaseJobTrigger.versionId,
-        ),
-        eq(schema.versionDependency.deploymentId, triggers.deployment.id),
-      ),
-    )
-    .where(
-      and(
-        eq(schema.job.status, JobStatus.Pending),
-        or(
-          isDependentOnTriggerForCriteria,
-          isWaitingOnJobToFinish,
-          isWaitingOnConcurrencyRequirementInSameRelease,
-          isDependentOnVersionOfTriggerDeployment,
-        ),
-      ),
-    );
-
-  await dispatchReleaseJobTriggers(db)
-    .releaseTriggers(
-      affectedReleaseJobTriggers.map((t) => t.release_job_trigger),
-    )
-    .filter(isPassingAllPolicies)
-    .then(cancelOldReleaseJobTriggersOnJobDispatch)
-    .dispatch();
 };

@@ -42,7 +42,7 @@ export type PreValidationResult = {
 
 export interface PreValidationRule {
   name: string;
-  passing(): PreValidationResult;
+  passing(): PreValidationResult | Promise<PreValidationResult>;
 }
 
 /**

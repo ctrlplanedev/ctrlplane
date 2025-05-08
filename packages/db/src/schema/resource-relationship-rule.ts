@@ -53,6 +53,15 @@ const resourceDependencyType = pgEnum("resource_dependency_type", [
   "inherits_from",
 ]);
 
+export enum ResourceDependencyType {
+  DependsOn = "depends_on",
+  DependsIndirectlyOn = "depends_indirectly_on",
+  UsesAtRuntime = "uses_at_runtime",
+  CreatedAfter = "created_after",
+  ProvisionedIn = "provisioned_in",
+  InheritsFrom = "inherits_from",
+}
+
 export const resourceRelationshipRule = pgTable(
   "resource_relationship_rule",
   {
@@ -164,9 +173,37 @@ export const createResourceRelationshipRule = createInsertSchema(
 )
   .omit({ id: true })
   .extend({
-    metadataKeysMatch: z.array(z.string()).optional(),
+    reference: z
+      .string()
+      .min(1)
+      .refine(
+        (val) =>
+          /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(val) || // slug case
+          /^[a-z][a-zA-Z0-9]*$/.test(val) || // camel case
+          /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/.test(val), // snake case
+        {
+          message:
+            "Reference must be in slug case (my-reference), camel case (myReference), or snake case (my_reference)",
+        },
+      ),
+    metadataKeysMatch: z
+      .array(
+        z.string().refine((val) => val.trim().length > 0, {
+          message: "Metadata match key cannot be empty",
+        }),
+      )
+      .min(1, "At least one metadata match key is required"),
     metadataKeysEquals: z
-      .array(z.object({ key: z.string(), value: z.string() }))
+      .array(
+        z.object({
+          key: z.string().refine((val) => val.trim().length > 0, {
+            message: "Key cannot be empty",
+          }),
+          value: z.string().refine((val) => val.trim().length > 0, {
+            message: "Value cannot be empty",
+          }),
+        }),
+      )
       .optional(),
   });
 

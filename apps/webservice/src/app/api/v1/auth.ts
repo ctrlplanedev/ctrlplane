@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { can, getUser as getUserFromApiKey } from "@ctrlplane/auth/utils";
+import { logger } from "@ctrlplane/logger";
 
 import type { Context, Middleware } from "./middleware";
 
@@ -19,6 +20,8 @@ export const authn: Middleware = async (ctx, _, next) => {
 
   return next({ ...ctx, user, canUser: can().user(user.id) });
 };
+
+const log = logger.child({ module: "api/v1/auth" });
 
 export const authz: (
   checker: (args: {
@@ -36,14 +39,15 @@ export const authz: (
         params: await (extra as any).params,
         can: can().user(ctx.user.id),
       });
-      if (!allowed) {
+      if (!allowed)
         return NextResponse.json(
           { error: "Permission denied" },
           { status: 403 },
         );
-      }
+
       return next(ctx);
     } catch (error: any) {
+      log.error("Permission check failed", { error });
       return NextResponse.json(
         {
           error: "Permission check failed",

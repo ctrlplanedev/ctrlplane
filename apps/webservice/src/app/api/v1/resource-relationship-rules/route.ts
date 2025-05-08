@@ -54,7 +54,7 @@ export const POST = request()
             .returning()
             .then(takeFirst);
 
-          const metadataKeysMatch = _.uniq(body.metadataKeysMatch ?? []);
+          const metadataKeysMatch = _.uniq(body.metadataKeysMatch);
           if (metadataKeysMatch.length > 0)
             await tx
               .insert(schema.resourceRelationshipRuleMetadataMatch)

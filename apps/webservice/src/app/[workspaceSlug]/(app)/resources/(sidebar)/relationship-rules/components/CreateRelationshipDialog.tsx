@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { IconPlus } from "@tabler/icons-react";
+import { IconPlus, IconX } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { z } from "zod";
 
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -37,49 +39,21 @@ interface CreateRelationshipDialogProps {
   workspaceId: string;
 }
 
-const dependencyType = [
-  "depends_on",
-  "depends_indirectly_on",
-  "uses_at_runtime",
-  "created_after",
-  "provisioned_in",
-  "inherits_from",
-] as const;
-
-const schema = z.object({
-  reference: z
-    .string()
-    .min(1)
-    .refine(
-      (val) =>
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(val) || // slug case
-        /^[a-z][a-zA-Z0-9]*$/.test(val) || // camel case
-        /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/.test(val), // snake case
-      {
-        message:
-          "Reference must be in slug case (my-reference), camel case (myReference), or snake case (my_reference)",
-      },
-    ),
-
-  name: z.string().min(1),
-  description: z.string().nullable(),
-  dependencyDescription: z.string().nullable(),
-  sourceKind: z.string(),
-  sourceVersion: z.string(),
-  targetKind: z.string().nullable(),
-  targetVersion: z.string().nullable(),
-  dependencyType: z.enum(dependencyType),
-  metadataKeys: z.string().array().min(1),
-});
-
 export const CreateRelationshipDialog: React.FC<
   CreateRelationshipDialogProps
 > = ({ workspaceId }) => {
-  const [currentMetadataKey, setCurrentMetadataKey] = useState("");
+  const [open, setOpen] = useState(false);
 
   const form = useForm({
-    schema,
+    schema: SCHEMA.createResourceRelationshipRule.extend({
+      metadataKeysMatch: z
+        .array(z.object({ key: z.string() }))
+        .refine((items) => items.length > 0, {
+          message: "At least one metadata match key is required",
+        }),
+    }),
     defaultValues: {
+      workspaceId,
       reference: "",
       name: "",
       description: null,
@@ -89,19 +63,50 @@ export const CreateRelationshipDialog: React.FC<
       targetKind: null,
       targetVersion: null,
       dependencyType: "depends_on",
-      metadataKeys: [],
+      metadataKeysMatch: [] as { key: string }[],
+      metadataKeysEquals: [] as { key: string; value: string }[],
     },
   });
 
   const utils = api.useUtils();
-  const createRule = api.resource.relationshipRules.create.useMutation({
-    onSuccess: () => {
-      utils.resource.relationshipRules.list.invalidate();
-    },
+  const createRule = api.resource.relationshipRules.create.useMutation();
+
+  const onSubmit = form.handleSubmit((data) => {
+    const equalsKeys = data.metadataKeysEquals ?? [];
+
+    createRule
+      .mutateAsync({
+        ...data,
+        metadataKeysMatch: data.metadataKeysMatch.map((item) => item.key),
+        metadataKeysEquals: equalsKeys,
+      })
+      .then(() => utils.resource.relationshipRules.list.invalidate())
+      .then(() => setOpen(false));
   });
 
+  const {
+    fields: metadataKeysMatch,
+    append: appendMetadataKeysMatch,
+    remove: removeMetadataKeysMatch,
+  } = useFieldArray({
+    name: "metadataKeysMatch",
+    control: form.control,
+  });
+
+  const {
+    fields: metadataKeysEquals,
+    append: appendMetadataKeysEquals,
+    remove: removeMetadataKeysEquals,
+  } = useFieldArray({
+    name: "metadataKeysEquals",
+    control: form.control,
+  });
+
+  const formError = form.formState.errors;
+  console.log({ formError });
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="flex items-center gap-2">
           <IconPlus className="h-4 w-4" />
@@ -114,16 +119,7 @@ export const CreateRelationshipDialog: React.FC<
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((data) =>
-              createRule.mutateAsync({
-                workspaceId,
-
-                ...data,
-              }),
-            )}
-            className="space-y-4"
-          >
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="reference"
@@ -144,12 +140,13 @@ export const CreateRelationshipDialog: React.FC<
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({ field: { value, onChange } }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
-                      {...field}
+                      value={value ?? ""}
+                      onChange={onChange}
                       placeholder="Enter a human-readable name"
                     />
                   </FormControl>
@@ -254,14 +251,16 @@ export const CreateRelationshipDialog: React.FC<
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-full min-w-[200px]">
-                        {dependencyType.map((type) => (
-                          <DropdownMenuItem
-                            key={type}
-                            onClick={() => field.onChange(type)}
-                          >
-                            {capitalCase(type)}
-                          </DropdownMenuItem>
-                        ))}
+                        {Object.values(SCHEMA.ResourceDependencyType).map(
+                          (type) => (
+                            <DropdownMenuItem
+                              key={type}
+                              onClick={() => field.onChange(type)}
+                            >
+                              {capitalCase(type)}
+                            </DropdownMenuItem>
+                          ),
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </FormControl>
@@ -319,74 +318,111 @@ export const CreateRelationshipDialog: React.FC<
 
             <div className="space-y-4">
               <h4 className="text-sm font-medium leading-none">
-                Metadata Keys
+                Metadata Match Keys
               </h4>
-              <FormField
-                control={form.control}
-                name="metadataKeys"
-                render={({ field }) => {
-                  const addKey = () => {
-                    const value = currentMetadataKey.trim();
-                    if (value && !field.value.includes(value)) {
-                      field.onChange([...field.value, value]);
-                      setCurrentMetadataKey("");
-                    }
-                  };
-
-                  return (
-                    <FormItem>
-                      <FormControl>
-                        <div className="flex flex-wrap items-start gap-2">
-                          {field.value.map((key, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-1 rounded-md bg-secondary px-2 py-1"
-                            >
-                              <span>{key}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newKeys = [...field.value];
-                                  newKeys.splice(index, 1);
-                                  field.onChange(newKeys);
-                                }}
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                          <div className="flex min-w-[200px] flex-1 items-center gap-2">
+              <div className="flex flex-wrap items-start gap-2">
+                {metadataKeysMatch.map((field, index) => (
+                  <FormField
+                    key={field.id}
+                    control={form.control}
+                    name={`metadataKeysMatch.${index}`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="flex items-center gap-1 rounded-md border border-neutral-800 px-2 py-1">
                             <Input
-                              className="!mt-0 flex-1"
-                              placeholder="Enter metadata key"
-                              value={currentMetadataKey}
+                              value={field.value.key}
                               onChange={(e) =>
-                                setCurrentMetadataKey(e.target.value)
+                                field.onChange({ key: e.target.value })
                               }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  addKey();
-                                }
-                              }}
+                              placeholder="Enter key..."
+                              className="h-6 w-32 border-0 ring-0 focus-visible:ring-0"
                             />
                             <Button
                               type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={addKey}
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeMetadataKeysMatch(index)}
+                              className="h-5 w-5"
                             >
-                              Add
+                              <IconX className="h-3 w-3" />
                             </Button>
                           </div>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => appendMetadataKeysMatch({ key: "" })}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium leading-none">
+                Metadata Equals Keys
+              </h4>
+              <div className="flex flex-wrap items-start gap-2">
+                {metadataKeysEquals.map((field, index) => (
+                  <FormField
+                    key={field.id}
+                    control={form.control}
+                    name={`metadataKeysEquals.${index}`}
+                    render={({ field: { value, onChange } }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="flex items-center gap-4 rounded-md border border-neutral-800 px-2 py-1">
+                            <Input
+                              value={value.key}
+                              onChange={(e) =>
+                                onChange({ ...value, key: e.target.value })
+                              }
+                              placeholder="key"
+                              className="h-6 w-40 border-neutral-800 ring-0 focus-visible:ring-0"
+                            />
+                            <span className="text-sm text-neutral-200">
+                              equals
+                            </span>
+                            <Input
+                              value={value.value}
+                              onChange={(e) =>
+                                onChange({ ...value, value: e.target.value })
+                              }
+                              placeholder="value"
+                              className="h-6 w-40 border-neutral-800 ring-0 focus-visible:ring-0"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeMetadataKeysEquals(index)}
+                              className="h-5 w-5"
+                            >
+                              <IconX className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    appendMetadataKeysEquals({ key: "", value: "" })
+                  }
+                >
+                  Add
+                </Button>
+              </div>
             </div>
 
             <Button type="submit">Create</Button>

@@ -2,28 +2,31 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
-import Link from "next/link";
 import {
-  IconChevronRight,
-  IconExternalLink,
+  IconDots,
   IconMenu2,
   IconSearch,
+  IconSwitch,
 } from "@tabler/icons-react";
-import { capitalCase } from "change-case";
-import { formatDistanceToNowStrict } from "date-fns";
-import _ from "lodash";
 import { useDebounce } from "react-use";
 
-import { cn } from "@ctrlplane/ui";
-import { Badge } from "@ctrlplane/ui/badge";
-import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import { Button } from "@ctrlplane/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ctrlplane/ui/dropdown-menu";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
+import { Table, TableBody, TableCell } from "@ctrlplane/ui/table";
 
-import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
+import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
+import { CollapsibleRow } from "./CollapsibleRow";
+import { EnvironmentTableRow } from "./EnvironmentTableRow";
+import { ReleaseTargetRow } from "./ReleaseTargetRow";
 
 type DeploymentVersionJobsTableProps = {
   deploymentVersion: {
@@ -54,195 +57,31 @@ const SearchInput: React.FC<{
   </div>
 );
 
-const CollapsibleRow: React.FC<{
-  Heading: React.FC<{ isExpanded: boolean }>;
-  children: React.ReactNode;
-}> = ({ Heading, children }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const JobActionsDropdownMenu: React.FC<{ jobIds: string[] }> = ({ jobIds }) => {
+  const utils = api.useUtils();
 
   return (
-    <>
-      <TableRow
-        className={cn("sticky")}
-        onClick={() => setIsExpanded((t) => !t)}
-      >
-        <Heading isExpanded={isExpanded} />
-      </TableRow>
-      {isExpanded && children}
-    </>
-  );
-};
-
-const JobStatusBadge: React.FC<{
-  status: SCHEMA.JobStatus;
-  count?: number;
-}> = ({ status, count = 0 }) => (
-  <Badge variant="outline" className="rounded-full px-1.5 py-0.5">
-    <JobTableStatusIcon status={status} />
-    <span className="pl-1">{count}</span>
-  </Badge>
-);
-
-const EnvironmentTableRow: React.FC<{
-  isExpanded: boolean;
-  deployment: { id: string };
-  environment: { name: string };
-  releaseTargets: Array<{
-    id: string;
-    resourceId: string;
-    jobs: { status: SCHEMA.JobStatus; id: string }[];
-  }>;
-}> = ({ isExpanded, environment, releaseTargets }) => {
-  const statusCounts = _.chain(releaseTargets)
-    .map((target) => target.jobs[0]!)
-    .countBy((job) => job.status)
-    .value();
-
-  return (
-    <TableCell colSpan={7} className="bg-neutral-800/40">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <IconChevronRight
-            className={cn(
-              "h-3 w-3 text-muted-foreground transition-all",
-              isExpanded && "rotate-90",
-            )}
-          />
-          {environment.name}
-          <div className="flex items-center gap-1.5">
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <JobStatusBadge
-                key={status}
-                status={status as SCHEMA.JobStatus}
-                count={count}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </TableCell>
-  );
-};
-
-const JobStatusCell: React.FC<{
-  status: SCHEMA.JobStatus;
-}> = ({ status }) => (
-  <TableCell className="w-26">
-    <div className="flex items-center gap-1">
-      <JobTableStatusIcon status={status} />
-      {capitalCase(status)}
-    </div>
-  </TableCell>
-);
-
-const ExternalIdCell: React.FC<{
-  externalId: string | null;
-}> = ({ externalId }) => (
-  <TableCell>
-    {externalId != null ? (
-      <code className="font-mono text-xs">{externalId}</code>
-    ) : (
-      <span className="text-sm text-muted-foreground">No external ID</span>
-    )}
-  </TableCell>
-);
-
-const LinksCell: React.FC<{
-  links: Record<string, string>;
-}> = ({ links }) => (
-  <TableCell onClick={(e) => e.stopPropagation()} className="py-0">
-    <div className="flex items-center gap-1">
-      {Object.entries(links).map(([label, url]) => (
-        <Link
-          key={label}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants({
-            variant: "secondary",
-            size: "xs",
-            className: "gap-1",
-          })}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6">
+          <IconDots className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <OverrideJobStatusDialog
+          jobIds={jobIds}
+          onClose={() => utils.deployment.version.job.list.invalidate()}
         >
-          <IconExternalLink className="h-4 w-4" />
-          {label}
-        </Link>
-      ))}
-    </div>
-  </TableCell>
-);
-
-const CreatedAtCell: React.FC<{
-  createdAt: Date;
-}> = ({ createdAt }) => (
-  <TableCell>
-    {formatDistanceToNowStrict(createdAt, { addSuffix: true })}
-  </TableCell>
-);
-
-const ReleaseTargetRow: React.FC<{
-  id: string;
-  resource: { id: string; name: string };
-  jobs: Array<{
-    id: string;
-    status: SCHEMA.JobStatus;
-    externalId: string | null;
-    links: Record<string, string>;
-    createdAt: Date;
-  }>;
-}> = ({ id, resource, jobs }) => {
-  const latestJob = jobs.at(0)!;
-
-  return (
-    <CollapsibleRow
-      key={id}
-      Heading={({ isExpanded }) => (
-        <>
-          <TableCell className="h-10">
-            {jobs.length > 1 && (
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <IconChevronRight
-                    className={cn(
-                      "h-3 w-3 text-muted-foreground transition-all",
-                      isExpanded && "rotate-90",
-                    )}
-                  />
-                </Button>
-                {resource.name}
-              </div>
-            )}
-
-            {jobs.length === 1 && (
-              <div className="pl-[29px]">{resource.name}</div>
-            )}
-          </TableCell>
-          <JobStatusCell status={latestJob.status} />
-          <ExternalIdCell externalId={latestJob.externalId} />
-          <LinksCell links={latestJob.links} />
-          <CreatedAtCell createdAt={latestJob.createdAt} />
-          <TableCell></TableCell>
-        </>
-      )}
-    >
-      {jobs.map((job, idx) => {
-        if (idx === 0) return null;
-        return (
-          <TableRow key={job.id}>
-            <TableCell className="p-0">
-              <div className="pl-5">
-                <div className="h-10 border-l border-neutral-700/50" />
-              </div>
-            </TableCell>
-            <JobStatusCell status={job.status} />
-            <ExternalIdCell externalId={job.externalId} />
-            <LinksCell links={job.links} />
-            <CreatedAtCell createdAt={job.createdAt} />
-            <TableCell></TableCell>
-          </TableRow>
-        );
-      })}
-    </CollapsibleRow>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex items-center gap-2"
+          >
+            <IconSwitch className="h-4 w-4" />
+            Override status
+          </DropdownMenuItem>
+        </OverrideJobStatusDialog>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
@@ -304,6 +143,13 @@ export const DeploymentVersionJobsTable: React.FC<
                     releaseTargets={releaseTargets}
                   />
                 )}
+                DropdownMenu={
+                  <TableCell className="flex justify-end bg-neutral-800/40">
+                    <JobActionsDropdownMenu
+                      jobIds={releaseTargets.map(({ jobs }) => jobs.at(0)!.id)}
+                    />
+                  </TableCell>
+                }
               >
                 {releaseTargets.map(({ id, resource, jobs }) => {
                   return (

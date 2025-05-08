@@ -71,8 +71,8 @@ const overrideJobStatusFormSchema = z.object({
 
 export const OverrideJobStatusDialog: React.FC<{
   jobIds: string[];
-  onClose: () => void;
   children: React.ReactNode;
+  onClose?: () => void;
 }> = ({ jobIds, onClose, children }) => {
   const [open, setOpen] = useState(false);
   const updateJobs = api.job.updateMany.useMutation();
@@ -90,7 +90,7 @@ export const OverrideJobStatusDialog: React.FC<{
       .then(() => jobIds.map((id) => utils.job.config.byId.invalidate(id)))
       .then(() => utils.deployment.version.list.invalidate())
       .then(() => setOpen(false))
-      .then(() => onClose()),
+      .then(() => onClose?.()),
   );
 
   return (
@@ -98,7 +98,7 @@ export const OverrideJobStatusDialog: React.FC<{
       open={open}
       onOpenChange={(open) => {
         setOpen(open);
-        if (!open) onClose();
+        if (!open) onClose?.();
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>

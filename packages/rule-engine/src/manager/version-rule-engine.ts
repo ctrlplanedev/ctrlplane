@@ -62,7 +62,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
   async evaluate(candidates: Version[]): Promise<RuleSelectionResult<Version>> {
     const preValidationRules = this.rules.filter(isPreValidationRule);
     for (const rule of preValidationRules) {
-      const result = rule.passing();
+      const result = await rule.passing();
 
       if (!result.passing) {
         return {

@@ -74,6 +74,14 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
         responses: {
+          "200": {
+            description: "Deployment updated",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Deployment" },
+              },
+            },
+          },
           "201": {
             description: "Deployment created",
             content: {
