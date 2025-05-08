@@ -5,9 +5,11 @@ import React, { useState } from "react";
 import Link from "next/link";
 import {
   IconChevronRight,
+  IconDots,
   IconExternalLink,
   IconMenu2,
   IconSearch,
+  IconSwitch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -17,10 +19,17 @@ import { useDebounce } from "react-use";
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ctrlplane/ui/dropdown-menu";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
+import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
@@ -56,17 +65,16 @@ const SearchInput: React.FC<{
 
 const CollapsibleRow: React.FC<{
   Heading: React.FC<{ isExpanded: boolean }>;
+  DropdownMenu?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ Heading, children }) => {
+}> = ({ Heading, DropdownMenu, children }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <>
-      <TableRow
-        className={cn("sticky")}
-        onClick={() => setIsExpanded((t) => !t)}
-      >
+      <TableRow className="sticky" onClick={() => setIsExpanded((t) => !t)}>
         <Heading isExpanded={isExpanded} />
+        {DropdownMenu != null && DropdownMenu}
       </TableRow>
       {isExpanded && children}
     </>
@@ -99,7 +107,7 @@ const EnvironmentTableRow: React.FC<{
     .value();
 
   return (
-    <TableCell colSpan={7} className="bg-neutral-800/40">
+    <TableCell colSpan={5} className="bg-neutral-800/40">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <IconChevronRight
@@ -121,6 +129,34 @@ const EnvironmentTableRow: React.FC<{
         </div>
       </div>
     </TableCell>
+  );
+};
+
+const JobActionsDropdownMenu: React.FC<{ jobIds: string[] }> = ({ jobIds }) => {
+  const utils = api.useUtils();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6">
+          <IconDots className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <OverrideJobStatusDialog
+          jobIds={jobIds}
+          onClose={() => utils.deployment.version.job.list.invalidate()}
+        >
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex items-center gap-2"
+          >
+            <IconSwitch className="h-4 w-4" />
+            Override status
+          </DropdownMenuItem>
+        </OverrideJobStatusDialog>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
@@ -221,9 +257,13 @@ const ReleaseTargetRow: React.FC<{
           <ExternalIdCell externalId={latestJob.externalId} />
           <LinksCell links={latestJob.links} />
           <CreatedAtCell createdAt={latestJob.createdAt} />
-          <TableCell></TableCell>
         </>
       )}
+      DropdownMenu={
+        <TableCell className="flex justify-end">
+          <JobActionsDropdownMenu jobIds={[latestJob.id]} />
+        </TableCell>
+      }
     >
       {jobs.map((job, idx) => {
         if (idx === 0) return null;
@@ -304,6 +344,13 @@ export const DeploymentVersionJobsTable: React.FC<
                     releaseTargets={releaseTargets}
                   />
                 )}
+                DropdownMenu={
+                  <TableCell className="flex justify-end bg-neutral-800/40">
+                    <JobActionsDropdownMenu
+                      jobIds={releaseTargets.map(({ jobs }) => jobs.at(0)!.id)}
+                    />
+                  </TableCell>
+                }
               >
                 {releaseTargets.map(({ id, resource, jobs }) => {
                   return (
