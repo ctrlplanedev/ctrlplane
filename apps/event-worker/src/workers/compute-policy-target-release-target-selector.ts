@@ -71,7 +71,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
     if (policyTarget == null) throw new Error("Policy target not found");
 
     try {
-      const actionableReleaseTargetIds = await db.transaction(async (tx) => {
+      const affectedReleaseTargetIds = await db.transaction(async (tx) => {
         await tx.execute(
           sql`
             SELECT * from ${schema.computedPolicyTargetReleaseTarget}
@@ -121,12 +121,12 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
         );
       });
 
-      const actionableReleaseTargets = await db
+      const affectedReleaseTargets = await db
         .select()
         .from(schema.releaseTarget)
-        .where(inArray(schema.releaseTarget.id, actionableReleaseTargetIds));
+        .where(inArray(schema.releaseTarget.id, affectedReleaseTargetIds));
 
-      await dispatchEvaluateJobs(actionableReleaseTargets);
+      await dispatchEvaluateJobs(affectedReleaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
