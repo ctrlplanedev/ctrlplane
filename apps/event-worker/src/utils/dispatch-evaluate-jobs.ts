@@ -15,9 +15,6 @@ export const dispatchEvaluateJobs = async (rts: ReleaseTargetIdentifier[]) => {
       ),
   );
 
-  const jobs = rtsToEvaluate.map((rt) => ({
-    name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-    data: rt,
-  }));
-  await q.addBulk(jobs);
+  for (const rt of rtsToEvaluate)
+    await q.add(`${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`, rt);
 };

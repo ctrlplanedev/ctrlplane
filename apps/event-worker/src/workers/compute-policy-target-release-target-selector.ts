@@ -3,9 +3,10 @@ import type { Tx } from "@ctrlplane/db";
 import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { Channel, createWorker } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
+import { dispatchComputePolicyTargetReleaseTargetSelectorJobs } from "../utils/dispatch-compute-policy-target-selector-jobs.js";
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({
@@ -128,10 +129,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
           "Row locked in compute-policy-target-release-target-selector, requeueing...",
           { job },
         );
-        await getQueue(Channel.ComputePolicyTargetReleaseTargetSelector).add(
-          job.name,
-          job.data,
-        );
+        dispatchComputePolicyTargetReleaseTargetSelectorJobs(policyTarget);
         return;
       }
 
