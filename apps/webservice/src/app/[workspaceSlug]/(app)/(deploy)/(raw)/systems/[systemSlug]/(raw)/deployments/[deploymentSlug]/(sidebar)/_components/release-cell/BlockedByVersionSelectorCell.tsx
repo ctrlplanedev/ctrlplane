@@ -22,10 +22,8 @@ import {
 } from "@ctrlplane/ui/hover-card";
 
 import type { PolicyEvaluationResult } from "./policy-evaluation";
-import {
-  DropdownAction,
-  ForceDeployVersionDialog,
-} from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { urls } from "~/app/urls";
 
 export const getPoliciesBlockingByVersionSelector = (

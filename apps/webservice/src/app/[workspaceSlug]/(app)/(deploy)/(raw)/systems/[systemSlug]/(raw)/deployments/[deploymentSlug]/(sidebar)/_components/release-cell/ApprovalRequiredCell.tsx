@@ -25,10 +25,8 @@ import {
 
 import type { PolicyEvaluationResult } from "./policy-evaluation";
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
-import {
-  DropdownAction,
-  ForceDeployVersionDialog,
-} from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { urls } from "~/app/urls";
 
 export const getPoliciesWithApprovalRequired = (
