@@ -18,11 +18,9 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import {
-  DropdownAction,
-  ForceDeployVersionDialog,
-  RedeployVersionDialog,
-} from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
+import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { StatusIcon } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/StatusIcon";
 import { urls } from "~/app/urls";
 
