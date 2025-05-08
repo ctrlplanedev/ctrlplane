@@ -3,8 +3,10 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import {
+  IconAlertTriangle,
   IconDots,
   IconMenu2,
+  IconReload,
   IconSearch,
   IconSwitch,
 } from "@tabler/icons-react";
@@ -22,6 +24,8 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell } from "@ctrlplane/ui/table";
 
 import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
+import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
+import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
@@ -57,7 +61,16 @@ const SearchInput: React.FC<{
   </div>
 );
 
-const JobActionsDropdownMenu: React.FC<{ jobIds: string[] }> = ({ jobIds }) => {
+type JobActionsDropdownMenuProps = {
+  jobIds: string[];
+  deployment: { id: string; name: string };
+  environment: { id: string; name: string };
+};
+
+const JobActionsDropdownMenu: React.FC<JobActionsDropdownMenuProps> = (
+  props,
+) => {
+  const { jobIds } = props;
   const utils = api.useUtils();
 
   return (
@@ -68,6 +81,24 @@ const JobActionsDropdownMenu: React.FC<{ jobIds: string[] }> = ({ jobIds }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <RedeployVersionDialog {...props}>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex items-center gap-2"
+          >
+            <IconReload className="h-4 w-4" />
+            Redeploy
+          </DropdownMenuItem>
+        </RedeployVersionDialog>
+        <ForceDeployVersionDialog {...props}>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex items-center gap-2"
+          >
+            <IconAlertTriangle className="h-4 w-4" />
+            Force deploy
+          </DropdownMenuItem>
+        </ForceDeployVersionDialog>
         <OverrideJobStatusDialog
           jobIds={jobIds}
           onClose={() => utils.deployment.version.job.list.invalidate()}
@@ -147,6 +178,8 @@ export const DeploymentVersionJobsTable: React.FC<
                   <TableCell className="flex justify-end bg-neutral-800/40">
                     <JobActionsDropdownMenu
                       jobIds={releaseTargets.map(({ jobs }) => jobs.at(0)!.id)}
+                      deployment={deployment}
+                      environment={environment}
                     />
                   </TableCell>
                 }
