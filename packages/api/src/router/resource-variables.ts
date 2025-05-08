@@ -13,15 +13,7 @@ const updateResourceVariableQueue = getQueue(Channel.UpdateResourceVariable);
 export const resourceVariables = createTRPCRouter({
   // For direct variables only
   create: protectedProcedure
-    .input(
-      z.object({
-        resourceId: z.string().uuid(),
-        key: z.string(),
-        value: z.union([z.string(), z.number(), z.boolean()]),
-        sensitive: z.boolean().optional().default(false),
-        valueType: z.literal("direct"),
-      }),
-    )
+    .input(schema.createResourceVariable)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -50,17 +42,7 @@ export const resourceVariables = createTRPCRouter({
     }),
 
   createReference: protectedProcedure
-    .input(
-      z.object({
-        resourceId: z.string().uuid(),
-        key: z.string(),
-        reference: z.string(),
-        path: z.array(z.string()),
-        defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
-        sensitive: z.boolean().optional().default(false),
-        valueType: z.literal("reference"),
-      }),
-    )
+    .input(schema.createResourceVariable)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser

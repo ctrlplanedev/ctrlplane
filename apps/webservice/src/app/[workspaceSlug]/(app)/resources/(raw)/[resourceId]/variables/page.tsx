@@ -139,7 +139,7 @@ export default async function VariablesPage(props: {
               {referenceVariables.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center text-muted-foreground"
                   >
                     No reference variables found
