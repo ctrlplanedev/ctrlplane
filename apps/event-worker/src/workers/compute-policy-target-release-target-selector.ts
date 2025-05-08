@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
@@ -66,16 +66,12 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
 
     const policyTarget = await db.query.policyTarget.findFirst({
       where: eq(schema.policyTarget.id, id),
-      with: { policy: true },
     });
 
     if (policyTarget == null) throw new Error("Policy target not found");
 
-    const { policy } = policyTarget;
-    const { workspaceId } = policy;
-
     try {
-      await db.transaction(async (tx) => {
+      const actionableReleaseTargetIds = await db.transaction(async (tx) => {
         await tx.execute(
           sql`
             SELECT * from ${schema.computedPolicyTargetReleaseTarget}
@@ -85,43 +81,52 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
           `,
         );
 
-        await tx
+        const previous = await tx
           .delete(schema.computedPolicyTargetReleaseTarget)
           .where(
             eq(
               schema.computedPolicyTargetReleaseTarget.policyTargetId,
               policyTarget.id,
             ),
-          );
+          )
+          .returning();
 
         const releaseTargets = await findMatchingReleaseTargets(
           tx,
           policyTarget,
         );
 
-        if (releaseTargets.length === 0) return;
-        await tx
-          .insert(schema.computedPolicyTargetReleaseTarget)
-          .values(releaseTargets)
-          .onConflictDoNothing();
+        const unmatched = previous.filter(
+          (previousRt) =>
+            !releaseTargets.some(
+              (rt) => rt.releaseTargetId === previousRt.releaseTargetId,
+            ),
+        );
+
+        const newReleaseTargets = releaseTargets.filter(
+          (rt) =>
+            !previous.some(
+              (previousRt) => previousRt.releaseTargetId === rt.releaseTargetId,
+            ),
+        );
+
+        if (releaseTargets.length > 0)
+          await tx
+            .insert(schema.computedPolicyTargetReleaseTarget)
+            .values(releaseTargets)
+            .onConflictDoNothing();
+
+        return [...unmatched, ...newReleaseTargets].map(
+          (rt) => rt.releaseTargetId,
+        );
       });
 
-      const releaseTargets = await db
+      const actionableReleaseTargets = await db
         .select()
         .from(schema.releaseTarget)
-        .innerJoin(
-          schema.resource,
-          eq(schema.releaseTarget.resourceId, schema.resource.id),
-        )
-        .where(
-          and(
-            isNull(schema.resource.deletedAt),
-            eq(schema.resource.workspaceId, workspaceId),
-          ),
-        )
-        .then((rows) => rows.map((row) => row.release_target));
+        .where(inArray(schema.releaseTarget.id, actionableReleaseTargetIds));
 
-      await dispatchEvaluateJobs(releaseTargets);
+      await dispatchEvaluateJobs(actionableReleaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
