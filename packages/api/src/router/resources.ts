@@ -394,24 +394,9 @@ export const resourceRouter = createTRPCRouter({
 
           const { relationships, getTargetsWithMetadata } =
             await getResourceParents(ctx.db, t.id);
-          const relatipnshipTargets = await getTargetsWithMetadata();
+          const relationshipTargets = await getTargetsWithMetadata();
 
-          const processedVariables = t.variables
-            .map((v) => {
-              if (v.valueType === "direct") return v;
-              if (v.valueType === "reference") {
-                const target = relationships[v.reference!]?.target.id;
-                const targetResource = relatipnshipTargets[target ?? ""];
-                const resolvedValue =
-                  targetResource == null
-                    ? v.defaultValue
-                    : get(targetResource, v.path ?? [], v.defaultValue);
-                return { ...v, value: resolvedValue };
-              }
-              console.warn(`Unknown variable value type: ${v.valueType}`);
-              return null;
-            })
-            .filter(isPresent)
+          const parsedVariables = t.variables
             .map((v) => {
               try {
                 return schema.resourceVariableSchema.parse(v);
@@ -425,13 +410,55 @@ export const resourceRouter = createTRPCRouter({
             })
             .filter(isPresent);
 
+          const directVariables = parsedVariables.filter(
+            (v): v is schema.DirectResourceVariable => v.valueType === "direct",
+          );
+
+          const referenceVariables = parsedVariables
+            .filter(
+              (v): v is schema.ReferenceResourceVariable =>
+                v.valueType === "reference",
+            )
+            .map((v) => {
+              const relationshipInfo = relationships[v.reference];
+              if (!relationshipInfo)
+                return { ...v, resolvedValue: v.defaultValue };
+
+              const targetId = relationshipInfo.target.id;
+              const targetResource = relationshipTargets[targetId];
+
+              if (!targetResource)
+                return { ...v, resolvedValue: v.defaultValue };
+
+              if (v.path.length === 0)
+                return {
+                  ...v,
+                  resolvedValue: get(targetResource, [], v.defaultValue),
+                };
+
+              const metadataKey = v.path.join("/");
+              const metadataValue =
+                metadataKey in targetResource.metadata
+                  ? targetResource.metadata[metadataKey]
+                  : undefined;
+
+              if (metadataValue !== undefined)
+                return { ...v, resolvedValue: metadataValue };
+
+              return {
+                ...v,
+                resolvedValue: get(targetResource, v.path, v.defaultValue),
+              };
+            });
+
           const metadata = Object.fromEntries(
             t.metadata.map((m) => [m.key, m.value]),
           );
           return {
             ...t,
             relationships,
-            variables: processedVariables,
+            directVariables,
+            referenceVariables,
             metadata,
             rules: await getResourceRelationshipRules(ctx.db, t.id),
           };

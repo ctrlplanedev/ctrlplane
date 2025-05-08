@@ -500,7 +500,9 @@ export const referenceVariableSchema = baseVariableSchema.extend({
   value: z.null().or(z.undefined()),
   reference: z.string(),
   path: z.array(z.string()),
-  defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  defaultValue: z
+    .union([z.string(), z.number(), z.boolean(), z.null()])
+    .optional(),
 });
 
 export const resourceVariableSchema = z.discriminatedUnion("valueType", [

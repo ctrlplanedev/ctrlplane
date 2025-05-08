@@ -11,6 +11,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 const updateResourceVariableQueue = getQueue(Channel.UpdateResourceVariable);
 
 export const resourceVariables = createTRPCRouter({
+  // For direct variables only
   create: protectedProcedure
     .input(schema.createResourceVariable)
     .meta({
@@ -20,11 +21,41 @@ export const resourceVariables = createTRPCRouter({
           .on({ type: "resource", id: input.resourceId }),
     })
     .mutation(async ({ ctx, input }) => {
-      const { sensitive } = input;
-      const value = sensitive
+      const value = input.sensitive
         ? variablesAES256().encrypt(String(input.value))
         : input.value;
-      const data = { ...input, value };
+
+      const variable = await ctx.db
+        .insert(schema.resourceVariable)
+        .values({
+          ...input,
+          value,
+          reference: null,
+          path: null,
+        })
+        .returning()
+        .then(takeFirst);
+
+      const parsedVariable = schema.resourceVariableSchema.parse(variable);
+      await updateResourceVariableQueue.add(parsedVariable.id, parsedVariable);
+      return parsedVariable;
+    }),
+
+  createReference: protectedProcedure
+    .input(schema.createResourceVariable)
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceUpdate)
+          .on({ type: "resource", id: input.resourceId }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const data = {
+        ...input,
+        defaultValue: input.defaultValue ?? undefined,
+        value: null,
+      };
+
       const variable = await ctx.db
         .insert(schema.resourceVariable)
         .values(data)

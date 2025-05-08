@@ -118,7 +118,7 @@ const VariableRow: React.FC<{
 
 export const VariableContent: React.FC<{
   resourceId: string;
-  resourceVariables: SCHEMA.ResourceVariable[];
+  resourceVariables: SCHEMA.DirectResourceVariable[];
 }> = ({ resourceId, resourceVariables }) => {
   const deployments = api.deployment.byResourceId.useQuery(resourceId);
   const variables = api.deployment.variable.byResourceId.useQuery(resourceId);

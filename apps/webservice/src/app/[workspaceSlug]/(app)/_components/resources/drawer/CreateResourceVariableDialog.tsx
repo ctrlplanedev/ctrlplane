@@ -65,7 +65,7 @@ export const CreateResourceVariableDialog: React.FC<
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit((data) =>
     createResourceVariable
-      .mutateAsync({ resourceId: resourceId, ...data })
+      .mutateAsync({ resourceId: resourceId, ...data, valueType: "direct" })
       .then(() => utils.resource.byId.invalidate(resourceId))
       .then(() => form.reset())
       .then(() => setOpen(false)),

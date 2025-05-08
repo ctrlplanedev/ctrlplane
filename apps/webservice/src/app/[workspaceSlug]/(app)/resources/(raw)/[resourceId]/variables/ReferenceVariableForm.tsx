@@ -41,6 +41,7 @@ export const referenceFormSchema = (existingKeys: string[]) =>
       .refine((p) => p.length > 0, {
         message: "Path is required",
       }),
+    defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   });
 
 export type ReferenceVariableFormProps = {
@@ -56,17 +57,30 @@ export const ReferenceVariableForm: React.FC<ReferenceVariableFormProps> = ({
   onSuccess,
   references,
 }) => {
-  const createResourceVariable = api.resource.variable.create.useMutation();
+  const createResourceVariable =
+    api.resource.variable.createReference.useMutation();
   const utils = api.useUtils();
 
   const form = useForm({
     schema: referenceFormSchema(existingKeys),
-    defaultValues: { key: "", reference: "", path: [] },
+    defaultValues: {
+      key: "",
+      reference: "",
+      path: [],
+      defaultValue: undefined,
+    },
   });
 
   const onSubmit = form.handleSubmit((data) =>
     createResourceVariable
-      .mutateAsync({ resourceId, ...data })
+      .mutateAsync({
+        resourceId,
+        key: data.key,
+        reference: data.reference,
+        path: data.path,
+        defaultValue: data.defaultValue === "" ? undefined : data.defaultValue,
+        valueType: "reference",
+      })
       .then(() => utils.resource.byId.invalidate(resourceId))
       .then(() => form.reset())
       .then(onSuccess),
@@ -169,6 +183,27 @@ export const ReferenceVariableForm: React.FC<ReferenceVariableFormProps> = ({
                     }}
                   />
                 </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="defaultValue"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Default Value (Optional)</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value === undefined ? "" : String(field.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.trim();
+                    field.onChange(value === "" ? undefined : value);
+                  }}
+                  placeholder="Fallback if reference is not available"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

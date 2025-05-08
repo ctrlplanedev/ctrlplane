@@ -66,7 +66,13 @@ export const DirectVariableForm: React.FC<DirectVariableFormProps> = ({
 
   const onSubmit = form.handleSubmit((data) =>
     createResourceVariable
-      .mutateAsync({ resourceId, ...data })
+      .mutateAsync({
+        resourceId,
+        key: data.key,
+        value: data.value,
+        sensitive: data.sensitive,
+        valueType: "direct",
+      })
       .then(() => utils.resource.byId.invalidate(resourceId))
       .then(() => form.reset())
       .then(onSuccess),
