@@ -73,6 +73,9 @@ const workspace = (slug: string) => {
     resource: (resourceId: string) => resource(slug, resourceId),
     policies: () => workspacePolicies(slug),
     settings: () => workspaceSettings(slug),
+    dashboards: () => buildUrl(slug, "dashboards"),
+    dashboard: (dashboardId: string) =>
+      dashboard({ workspaceSlug: slug, dashboardId }),
   };
 };
 
@@ -222,6 +225,19 @@ const release = (params: ReleaseParams) => {
     baseUrl: () => buildUrl(...base),
     jobs: () => buildUrl(...base, "jobs"),
     checks: () => buildUrl(...base, "checks"),
+  };
+};
+
+type DashboardParams = WorkspaceParams & {
+  dashboardId: string;
+};
+
+const dashboard = (params: DashboardParams) => {
+  const { workspaceSlug, dashboardId } = params;
+  const base = [workspaceSlug, "dashboards", dashboardId];
+
+  return {
+    baseUrl: () => buildUrl(...base),
   };
 };
 
