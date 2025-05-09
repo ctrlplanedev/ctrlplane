@@ -48,9 +48,7 @@ export const CreateRelationshipDialog: React.FC<
     schema: SCHEMA.createResourceRelationshipRule.extend({
       metadataKeysMatch: z
         .array(z.object({ key: z.string() }))
-        .refine((items) => items.length > 0, {
-          message: "At least one metadata match key is required",
-        }),
+        .transform((items) => items.map((item) => item.key)),
     }),
     defaultValues: {
       workspaceId,
@@ -63,8 +61,8 @@ export const CreateRelationshipDialog: React.FC<
       targetKind: null,
       targetVersion: null,
       dependencyType: "depends_on",
-      metadataKeysMatch: [] as { key: string }[],
-      metadataKeysEquals: [] as { key: string; value: string }[],
+      metadataKeysMatch: [],
+      metadataKeysEquals: [],
     },
   });
 
@@ -72,12 +70,16 @@ export const CreateRelationshipDialog: React.FC<
   const createRule = api.resource.relationshipRules.create.useMutation();
 
   const onSubmit = form.handleSubmit((data) => {
-    const equalsKeys = data.metadataKeysEquals ?? [];
+    const { metadataKeysMatch, metadataKeysEquals } = data;
+    const equalsKeys = metadataKeysEquals ?? [];
 
     createRule
       .mutateAsync({
         ...data,
-        metadataKeysMatch: data.metadataKeysMatch.map((item) => item.key),
+        metadataKeysMatch:
+          metadataKeysMatch.length > 0
+            ? metadataKeysMatch.map((item) => item.key).filter(Boolean)
+            : [],
         metadataKeysEquals: equalsKeys,
       })
       .then(() => utils.resource.relationshipRules.list.invalidate())
