@@ -58,28 +58,46 @@ export const deploymentVariableValue = pgTable(
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
-    value: jsonb("value").$type<any>().notNull(),
+
+    valueType: text("value_type").notNull().default("direct"), // 'direct' | 'reference'
+
+    value: jsonb("value").$type<string | number | boolean | object>(),
     sensitive: boolean("sensitive").notNull().default(false),
+
+    // Reference fields
+    reference: text("reference"),
+    path: text("path").array(),
+    defaultValue: jsonb("default_value").$type<
+      string | number | boolean | object
+    >(),
+
     resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
   },
-  (t) => ({
-    uniq: uniqueIndex().on(t.variableId, t.value),
-    variableIdFk: foreignKey({
+  (t) => [
+    foreignKey({
       columns: [t.variableId],
       foreignColumns: [deploymentVariable.id],
     })
       .onUpdate("restrict")
       .onDelete("cascade"),
-  }),
+
+    sql`CONSTRAINT valid_value_type CHECK (
+      (value_type = 'direct' AND value IS NOT NULL AND reference IS NULL AND path IS NULL) OR
+      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL)
+    )`,
+  ],
 );
 export type DeploymentVariableValue = InferSelectModel<
   typeof deploymentVariableValue
 >;
 export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
-  { resourceSelector: resourceCondition.refine(isValidResourceCondition) },
+  {
+    resourceSelector: resourceCondition.refine(isValidResourceCondition),
+    path: z.array(z.string()).optional(),
+  },
 )
   .omit({ id: true, variableId: true })
   .extend({ default: z.boolean().optional() });

@@ -57,7 +57,10 @@ const valueRouter = createTRPCRouter({
       ctx.db.transaction((tx) =>
         tx
           .insert(deploymentVariableValue)
-          .values({ ...input.data, variableId: input.variableId })
+          .values({
+            ...input.data,
+            variableId: input.variableId,
+          })
           .returning()
           .then(takeFirst)
           .then(async (value) => {
