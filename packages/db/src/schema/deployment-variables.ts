@@ -58,11 +58,19 @@ export const deploymentVariableValue = pgTable(
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
-    value: jsonb("value").$type<any>().notNull(),
-    sensitive: boolean("sensitive").notNull().default(false),
+    valueType: text("value_type").notNull().default("direct"), // 'direct' | 'reference'
+
     resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
+
+    // Direct value fields
+    value: jsonb("value").$type<any>(),
+    sensitive: boolean("sensitive").notNull().default(false),
+
+    // Reference fields
+    reference: text("reference"),
+    path: text("path").array(),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.variableId, t.value),
@@ -72,8 +80,15 @@ export const deploymentVariableValue = pgTable(
     })
       .onUpdate("restrict")
       .onDelete("cascade"),
+
+    // Add check constraint to ensure proper field combinations
+    check: sql`CONSTRAINT valid_value_type CHECK (
+      (value_type = 'direct' AND value IS NOT NULL AND reference IS NULL AND path IS NULL) OR
+      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL)
+    )`,
   }),
 );
+
 export type DeploymentVariableValue = InferSelectModel<
   typeof deploymentVariableValue
 >;
