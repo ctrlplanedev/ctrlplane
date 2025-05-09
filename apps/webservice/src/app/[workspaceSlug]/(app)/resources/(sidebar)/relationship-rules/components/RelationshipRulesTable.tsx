@@ -85,7 +85,7 @@ export const RelationshipRulesTable: React.FC<RelationshipRulesTableProps> = ({
 
                 <TableCell>
                   <div className="flex justify-end">
-                    <RelationshipRuleDropdown ruleId={rule.id} />
+                    <RelationshipRuleDropdown rule={rule} />
                   </div>
                 </TableCell>
               </TableRow>

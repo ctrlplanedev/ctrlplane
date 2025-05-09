@@ -209,3 +209,10 @@ export const createResourceRelationshipRule = createInsertSchema(
 
 export const updateResourceRelationshipRule =
   createResourceRelationshipRule.partial();
+
+export type ResourceRelationshipRule =
+  typeof resourceRelationshipRule.$inferSelect;
+export type ResourceRelationshipRuleMetadataMatch =
+  typeof resourceRelationshipRuleMetadataMatch.$inferSelect;
+export type ResourceRelationshipRuleMetadataEquals =
+  typeof resourceRelationshipTargetRuleMetadataEquals.$inferSelect;
