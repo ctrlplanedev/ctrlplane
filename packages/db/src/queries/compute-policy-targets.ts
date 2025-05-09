@@ -57,11 +57,11 @@ export const computePolicyTargets = async (
   return db.transaction(async (tx) => {
     await tx.execute(
       sql`
-            SELECT * from ${schema.computedPolicyTargetReleaseTarget}
-            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.id, schema.computedPolicyTargetReleaseTarget.releaseTargetId)}
-            WHERE ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, policyTarget.id)}
-            FOR UPDATE NOWAIT
-          `,
+        SELECT * from ${schema.computedPolicyTargetReleaseTarget}
+        INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.id, schema.computedPolicyTargetReleaseTarget.releaseTargetId)}
+        WHERE ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, policyTarget.id)}
+        FOR UPDATE NOWAIT
+      `,
     );
 
     await tx
