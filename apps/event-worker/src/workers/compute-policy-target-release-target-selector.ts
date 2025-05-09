@@ -1,7 +1,6 @@
-import type { Tx } from "@ctrlplane/db";
-
-import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
+import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
@@ -12,52 +11,6 @@ import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 const log = logger.child({
   worker: "compute-policy-target-release-target-selector",
 });
-
-const findMatchingReleaseTargets = (
-  tx: Tx,
-  policyTarget: schema.PolicyTarget,
-) =>
-  tx
-    .select()
-    .from(schema.releaseTarget)
-    .innerJoin(
-      schema.resource,
-      eq(schema.releaseTarget.resourceId, schema.resource.id),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.releaseTarget.deploymentId, schema.deployment.id),
-    )
-    .innerJoin(
-      schema.environment,
-      eq(schema.releaseTarget.environmentId, schema.environment.id),
-    )
-    .where(
-      and(
-        isNull(schema.resource.deletedAt),
-        selector()
-          .query()
-          .resources()
-          .where(policyTarget.resourceSelector)
-          .sql(),
-        selector()
-          .query()
-          .deployments()
-          .where(policyTarget.deploymentSelector)
-          .sql(),
-        selector()
-          .query()
-          .environments()
-          .where(policyTarget.environmentSelector)
-          .sql(),
-      ),
-    )
-    .then((rt) =>
-      rt.map((rt) => ({
-        policyTargetId: policyTarget.id,
-        releaseTargetId: rt.release_target.id,
-      })),
-    );
 
 export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
   Channel.ComputePolicyTargetReleaseTargetSelector,
@@ -74,36 +27,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
     const { workspaceId } = policy;
 
     try {
-      await db.transaction(async (tx) => {
-        await tx.execute(
-          sql`
-            SELECT * from ${schema.computedPolicyTargetReleaseTarget}
-            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.id, schema.computedPolicyTargetReleaseTarget.releaseTargetId)}
-            WHERE ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, policyTarget.id)}
-            FOR UPDATE NOWAIT
-          `,
-        );
-
-        await tx
-          .delete(schema.computedPolicyTargetReleaseTarget)
-          .where(
-            eq(
-              schema.computedPolicyTargetReleaseTarget.policyTargetId,
-              policyTarget.id,
-            ),
-          );
-
-        const releaseTargets = await findMatchingReleaseTargets(
-          tx,
-          policyTarget,
-        );
-
-        if (releaseTargets.length > 0)
-          await tx
-            .insert(schema.computedPolicyTargetReleaseTarget)
-            .values(releaseTargets)
-            .onConflictDoNothing();
-      });
+      await computePolicyTargets(db, policyTarget);
 
       const releaseTargets = await db
         .select()
