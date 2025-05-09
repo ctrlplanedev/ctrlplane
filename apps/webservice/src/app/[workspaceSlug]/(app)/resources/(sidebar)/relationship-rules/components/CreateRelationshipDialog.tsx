@@ -35,9 +35,9 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-interface CreateRelationshipDialogProps {
+type CreateRelationshipDialogProps = {
   workspaceId: string;
-}
+};
 
 export const CreateRelationshipDialog: React.FC<
   CreateRelationshipDialogProps
