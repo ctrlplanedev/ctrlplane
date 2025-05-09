@@ -1,7 +1,6 @@
-import type { Tx } from "@ctrlplane/db";
-
-import { and, eq, inArray, isNull, selector, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
@@ -12,52 +11,6 @@ import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 const log = logger.child({
   worker: "compute-policy-target-release-target-selector",
 });
-
-const findMatchingReleaseTargets = (
-  tx: Tx,
-  policyTarget: schema.PolicyTarget,
-) =>
-  tx
-    .select()
-    .from(schema.releaseTarget)
-    .innerJoin(
-      schema.resource,
-      eq(schema.releaseTarget.resourceId, schema.resource.id),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.releaseTarget.deploymentId, schema.deployment.id),
-    )
-    .innerJoin(
-      schema.environment,
-      eq(schema.releaseTarget.environmentId, schema.environment.id),
-    )
-    .where(
-      and(
-        isNull(schema.resource.deletedAt),
-        selector()
-          .query()
-          .resources()
-          .where(policyTarget.resourceSelector)
-          .sql(),
-        selector()
-          .query()
-          .deployments()
-          .where(policyTarget.deploymentSelector)
-          .sql(),
-        selector()
-          .query()
-          .environments()
-          .where(policyTarget.environmentSelector)
-          .sql(),
-      ),
-    )
-    .then((rt) =>
-      rt.map((rt) => ({
-        policyTargetId: policyTarget.id,
-        releaseTargetId: rt.release_target.id,
-      })),
-    );
 
 export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
   Channel.ComputePolicyTargetReleaseTargetSelector,
@@ -71,59 +24,27 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
     if (policyTarget == null) throw new Error("Policy target not found");
 
     try {
-      const affectedReleaseTargetIds = await db.transaction(async (tx) => {
-        await tx.execute(
-          sql`
-            SELECT * from ${schema.computedPolicyTargetReleaseTarget}
-            INNER JOIN ${schema.releaseTarget} ON ${eq(schema.releaseTarget.id, schema.computedPolicyTargetReleaseTarget.releaseTargetId)}
-            WHERE ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, policyTarget.id)}
-            FOR UPDATE NOWAIT
-          `,
-        );
+      const changedReleaseTaretIds = await computePolicyTargets(
+        db,
+        policyTarget,
+      );
 
-        const previous = await tx
-          .delete(schema.computedPolicyTargetReleaseTarget)
-          .where(
-            eq(
-              schema.computedPolicyTargetReleaseTarget.policyTargetId,
-              policyTarget.id,
-            ),
-          )
-          .returning();
-
-        const releaseTargets = await findMatchingReleaseTargets(
-          tx,
-          policyTarget,
-        );
-
-        const prevIds = new Set(previous.map((rt) => rt.releaseTargetId));
-        const nextIds = new Set(releaseTargets.map((rt) => rt.releaseTargetId));
-        const unmatched = previous.filter(
-          ({ releaseTargetId }) => !nextIds.has(releaseTargetId),
-        );
-        const newReleaseTargets = releaseTargets.filter(
-          ({ releaseTargetId }) => !prevIds.has(releaseTargetId),
-        );
-
-        if (releaseTargets.length > 0)
-          await tx
-            .insert(schema.computedPolicyTargetReleaseTarget)
-            .values(releaseTargets)
-            .onConflictDoNothing();
-
-        return [...unmatched, ...newReleaseTargets].map(
-          (rt) => rt.releaseTargetId,
-        );
-      });
-
-      if (affectedReleaseTargetIds.length === 0) return;
-
-      const affectedReleaseTargets = await db
+      const releaseTargets = await db
         .select()
         .from(schema.releaseTarget)
-        .where(inArray(schema.releaseTarget.id, affectedReleaseTargetIds));
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseTarget.resourceId, schema.resource.id),
+        )
+        .where(
+          and(
+            inArray(schema.releaseTarget.id, changedReleaseTaretIds),
+            isNull(schema.resource.deletedAt),
+          ),
+        )
+        .then((rows) => rows.map((row) => row.release_target));
 
-      await dispatchEvaluateJobs(affectedReleaseTargets);
+      dispatchEvaluateJobs(releaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {

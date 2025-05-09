@@ -192,7 +192,7 @@ export const createResourceRelationshipRule = createInsertSchema(
           message: "Metadata match key cannot be empty",
         }),
       )
-      .min(1, "At least one metadata match key is required"),
+      .optional(),
     metadataKeysEquals: z
       .array(
         z.object({
@@ -209,3 +209,10 @@ export const createResourceRelationshipRule = createInsertSchema(
 
 export const updateResourceRelationshipRule =
   createResourceRelationshipRule.partial();
+
+export type ResourceRelationshipRule =
+  typeof resourceRelationshipRule.$inferSelect;
+export type ResourceRelationshipRuleMetadataMatch =
+  typeof resourceRelationshipRuleMetadataMatch.$inferSelect;
+export type ResourceRelationshipRuleMetadataEquals =
+  typeof resourceRelationshipTargetRuleMetadataEquals.$inferSelect;
