@@ -64,21 +64,31 @@ export const computePolicyTargets = async (
       `,
     );
 
-    await tx
+    const previous = await tx
       .delete(schema.computedPolicyTargetReleaseTarget)
       .where(
         eq(
           schema.computedPolicyTargetReleaseTarget.policyTargetId,
           policyTarget.id,
         ),
-      );
+      )
+      .returning();
 
     const releaseTargets = await findMatchingReleaseTargets(tx, policyTarget);
+
+    const prevIds = new Set(previous.map((rt) => rt.releaseTargetId));
+    const nextIds = new Set(releaseTargets.map((rt) => rt.releaseTargetId));
+    const deleted = previous.filter((rt) => !nextIds.has(rt.releaseTargetId));
+    const created = releaseTargets.filter(
+      (rt) => !prevIds.has(rt.releaseTargetId),
+    );
 
     if (releaseTargets.length > 0)
       await tx
         .insert(schema.computedPolicyTargetReleaseTarget)
         .values(releaseTargets)
         .onConflictDoNothing();
+
+    return [...created, ...deleted].map((rt) => rt.releaseTargetId);
   });
 };

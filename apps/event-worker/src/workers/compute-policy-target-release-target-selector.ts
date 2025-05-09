@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "@ctrlplane/db";
+import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
@@ -19,15 +19,15 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
 
     const policyTarget = await db.query.policyTarget.findFirst({
       where: eq(schema.policyTarget.id, id),
-      with: { policy: true },
     });
 
     if (policyTarget == null) throw new Error("Policy target not found");
-    const { policy } = policyTarget;
-    const { workspaceId } = policy;
 
     try {
-      await computePolicyTargets(db, policyTarget);
+      const changedReleaseTaretIds = await computePolicyTargets(
+        db,
+        policyTarget,
+      );
 
       const releaseTargets = await db
         .select()
@@ -38,7 +38,7 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
         )
         .where(
           and(
-            eq(schema.resource.workspaceId, workspaceId),
+            inArray(schema.releaseTarget.id, changedReleaseTaretIds),
             isNull(schema.resource.deletedAt),
           ),
         )
