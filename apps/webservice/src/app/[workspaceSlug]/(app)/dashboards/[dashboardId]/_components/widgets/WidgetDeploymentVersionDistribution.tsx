@@ -3,11 +3,12 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type React from "react";
 import { IconEdit, IconTrash } from "@tabler/icons-react";
+import { Cell, Pie, PieChart } from "recharts";
 import colors from "tailwindcss/colors";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
-import { ChartContainer } from "@ctrlplane/ui/chart";
+import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 
 import { api } from "~/trpc/react";
 import { DashboardWidget } from "../DashboardWidget";
@@ -47,11 +48,35 @@ const COLORS = [
   colors.teal[500],
 ];
 
-// const DistroChart: React.FC<{
-//   versionCounts: { versionTag: string; count: number }[];
-// }> = ({ versionCounts }) => {
-//   return <ChartContainer
-// }
+const DistroChart: React.FC<{
+  versionCounts: { versionTag: string; count: number }[];
+}> = ({ versionCounts }) => {
+  return (
+    <ChartContainer config={{}} className="h-full w-full flex-grow">
+      <PieChart>
+        <ChartTooltip
+          content={({ active, payload }) => {
+            if (active && payload?.length) {
+              return (
+                <div className="flex items-center gap-4 rounded-lg border bg-background p-2 text-xs shadow-sm">
+                  <div className="font-semibold">{payload[0]?.name}</div>
+                  <div className="text-sm text-neutral-400">
+                    {payload[0]?.value}
+                  </div>
+                </div>
+              );
+            }
+          }}
+        />
+        <Pie data={versionCounts} dataKey="count" nameKey="versionTag">
+          {versionCounts.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Pie>
+      </PieChart>
+    </ChartContainer>
+  );
+};
 
 export const WidgetDeploymentVersionDistribution: React.FC<{
   widget: SCHEMA.DashboardWidget;
@@ -82,4 +107,13 @@ export const WidgetDeploymentVersionDistribution: React.FC<{
         </div>
       </DashboardWidget>
     );
+
+  return (
+    <DashboardWidget
+      name={name}
+      WidgetActions={<WidgetActions widget={widget} />}
+    >
+      <DistroChart versionCounts={versionCounts} />
+    </DashboardWidget>
+  );
 };

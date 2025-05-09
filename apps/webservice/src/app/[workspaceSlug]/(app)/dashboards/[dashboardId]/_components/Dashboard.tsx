@@ -3,8 +3,9 @@
 import type * as schema from "@ctrlplane/db/schema";
 import { Responsive, WidthProvider } from "react-grid-layout";
 
+import type { WidgetKind } from "./widgets/WidgetKinds";
 import { useDashboard } from "./DashboardContext";
-import { DashboardWidget } from "./DashboardWidget";
+import { WidgetComponents } from "./widgets/WidgetKinds";
 
 const ReactGridLayout = WidthProvider(Responsive);
 
@@ -29,29 +30,13 @@ export const Dashboard: React.FC = () => {
         const layoutItem = layout.lg?.find((item) => item.i === widget.id);
         if (layoutItem == null) return null;
 
+        const WidgetComponent = WidgetComponents[widget.widget as WidgetKind];
         return (
-          <div
-            key={widget.id}
-            data-grid={{ ...layoutItem }}
-            // className="rounded-sm border bg-background"
-          >
-            <DashboardWidget
-              {...widget}
-              WidgetActions={<div>Actions</div>}
-              WidgetContent={<div>Content</div>}
-            />
+          <div key={widget.id} data-grid={{ ...layoutItem }}>
+            <WidgetComponent widget={widget} />
           </div>
         );
       })}
-      {/* {dashboard.widgets.map((widget) => (
-        <div
-          key={widget.id}
-          data-grid={{ ...widget }}
-          className="rounded-sm border bg-background p-2"
-        >
-          {widget.name}
-        </div>
-      ))} */}
     </ReactGridLayout>
   );
 };
