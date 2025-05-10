@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { asc, eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -19,6 +19,11 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
       return ctx.db.query.resourceRelationshipRule.findMany({
         where: eq(schema.resourceRelationshipRule.workspaceId, input),
         with: { metadataMatches: true, metadataEquals: true },
+        orderBy: [
+          asc(schema.resourceRelationshipRule.reference),
+          asc(schema.resourceRelationshipRule.sourceKind),
+          asc(schema.resourceRelationshipRule.targetKind),
+        ],
       });
     }),
 
