@@ -1315,7 +1315,7 @@ export interface components {
         key: string;
         value: string;
       }[];
-      metadataKeysMatch?: string[];
+      metadataKeysMatches?: string[];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;
@@ -1328,7 +1328,7 @@ export interface components {
       sourceVersion: string;
       targetKind: string;
       targetVersion: string;
-      metadataKeysMatch?: string[];
+      metadataKeysMatches?: string[];
       targetMetadataEquals?: {
         key: string;
         value: string;

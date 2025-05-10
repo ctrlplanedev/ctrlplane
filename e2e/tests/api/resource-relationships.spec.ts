@@ -44,7 +44,7 @@ test.describe("Resource Relationships API", () => {
           sourceVersion: "test-version/v1",
           targetKind: "Target",
           targetVersion: "test-version/v1",
-          metadataKeysMatch: ["e2e/test", importedEntities.prefix],
+          metadataKeysMatches: ["e2e/test", importedEntities.prefix],
         },
       },
     );
@@ -63,7 +63,7 @@ test.describe("Resource Relationships API", () => {
           sourceVersion: "test-version/v1",
           targetKind: "Target",
           targetVersion: "test-version/v1",
-          metadataKeysMatch: ["e2e/test", importedEntities.prefix],
+          metadataKeysMatches: ["e2e/test", importedEntities.prefix],
         },
       },
     );
@@ -164,7 +164,7 @@ test.describe("Resource Relationships API", () => {
         targetKind: "TargetA",
         targetVersion: "test-version/v1",
         description: "Initial description",
-        metadataKeysMatch: ["e2e/test"],
+        metadataKeysMatches: ["e2e/test"],
       },
     });
 
