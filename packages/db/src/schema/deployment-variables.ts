@@ -85,7 +85,7 @@ export const deploymentVariableValue = pgTable(
 
     sql`CONSTRAINT valid_value_type CHECK (
       (value_type = 'direct' AND value IS NOT NULL AND reference IS NULL AND path IS NULL) OR
-      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL)
+      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL AND default_value IS NOT NULL)
     )`,
   ],
 );
@@ -96,7 +96,13 @@ export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
   {
     resourceSelector: resourceCondition.refine(isValidResourceCondition),
+    value: z
+      .union([z.string(), z.number(), z.boolean(), z.object({})])
+      .optional(),
     path: z.array(z.string()).optional(),
+    defaultValue: z
+      .union([z.string(), z.number(), z.boolean(), z.object({})])
+      .optional(),
   },
 )
   .omit({ id: true, variableId: true })
@@ -104,6 +110,30 @@ export const createDeploymentVariableValue = createInsertSchema(
 
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
+
+export type DeploymentVariableValueDirect = DeploymentVariableValue & {
+  valueType: "direct";
+  reference: null;
+  path: null;
+};
+
+export type DeploymentVariableValueReference = DeploymentVariableValue & {
+  valueType: "reference";
+  reference: string;
+  path: string[];
+};
+
+export const isDeploymentVariableValueDirect = (
+  value: DeploymentVariableValue,
+): value is DeploymentVariableValueDirect => {
+  return value.valueType === "direct";
+};
+
+export const isDeploymentVariableValueReference = (
+  value: DeploymentVariableValue,
+): value is DeploymentVariableValueReference => {
+  return value.valueType === "reference";
+};
 
 // workaround for cirular reference - https://www.answeroverflow.com/m/1194395880523042936
 const defaultValueIdFKConstraint: {

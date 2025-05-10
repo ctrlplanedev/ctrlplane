@@ -115,7 +115,7 @@ export const EditVariableDialog: React.FC<EditVariableDialogProps> = ({
                       <SelectContent>
                         {variable.values.map((v) => (
                           <SelectItem key={v.id} value={v.id}>
-                            {v.value}
+                            {String(v.value)}
                           </SelectItem>
                         ))}
                       </SelectContent>
