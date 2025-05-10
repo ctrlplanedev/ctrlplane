@@ -215,7 +215,7 @@ test.describe("Resource Variables API", () => {
           {
             key: "ref-var",
             reference: systemPrefix,
-            path: ["e2e-test"],
+            path: ["metadata", "e2e-test"],
           },
         ],
       },

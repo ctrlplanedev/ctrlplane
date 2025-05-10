@@ -17,13 +17,5 @@ export const getReferenceVariableValue = async (
   const targetResource = relationshipTargets[targetId];
   if (targetResource == null) return variable.defaultValue;
 
-  const isResourceAttribute = variable.path.length === 0;
-  if (isResourceAttribute) {
-    const resolvedValue = _.get(targetResource, [], variable.defaultValue);
-    return resolvedValue;
-  }
-
-  const metadataKey = variable.path.join("/");
-  const metadataValue = targetResource.metadata[metadataKey];
-  return metadataValue ?? variable.defaultValue;
+  return _.get(targetResource, variable.path, variable.defaultValue);
 };
