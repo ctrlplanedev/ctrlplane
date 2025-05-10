@@ -176,7 +176,9 @@ test.describe("Resource Variables API", () => {
     api,
     workspace,
   }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = importedEntities.system.slug
+      .split("-")[0]!
+      .toLowerCase();
 
     // Create target resource
     const targetResource = await api.POST("/v1/resources", {
@@ -185,13 +187,12 @@ test.describe("Resource Variables API", () => {
         name: `${systemPrefix}-target`,
         kind: "Target",
         identifier: `${systemPrefix}-target`,
-        version: "test-version/v1",
+        version: `${systemPrefix}-version/v1`,
         config: { "e2e-test": true } as any,
         metadata: {
           "e2e-test": "true",
-          [`${systemPrefix}`]: "true",
+          [systemPrefix]: "true",
         },
-        variables: [{ key: "target-var", value: "target-value" }],
       },
     });
     expect(targetResource.response.status).toBe(200);
@@ -204,7 +205,7 @@ test.describe("Resource Variables API", () => {
         name: `${systemPrefix}-source`,
         kind: "Source",
         identifier: `${systemPrefix}-source`,
-        version: "test-version/v1",
+        version: `${systemPrefix}-version/v1`,
         config: { "e2e-test": true } as any,
         metadata: {
           "e2e-test": "true",
@@ -214,7 +215,7 @@ test.describe("Resource Variables API", () => {
           {
             key: "ref-var",
             reference: systemPrefix,
-            path: ["metadata", "e2e-test"],
+            path: ["e2e-test"],
           },
         ],
       },
@@ -230,9 +231,9 @@ test.describe("Resource Variables API", () => {
         reference: systemPrefix,
         dependencyType: "depends_on",
         sourceKind: "Source",
-        sourceVersion: "test-version/v1",
+        sourceVersion: `${systemPrefix}-version/v1`,
         targetKind: "Target",
-        targetVersion: "test-version/v1",
+        targetVersion: `${systemPrefix}-version/v1`,
         metadataKeysMatch: ["e2e-test", systemPrefix],
       },
     });
