@@ -3,681 +3,816 @@
     "westus": {
       "timezone": "UTC-8",
       "latitude": 37.783,
-      "longitude": -122.417
+      "longitude": -122.417,
+      "continent": "North America"
     },
     "westus2": {
       "timezone": "UTC-8",
       "latitude": 47.233,
-      "longitude": -119.852
+      "longitude": -119.852,
+      "continent": "North America"
     },
     "westus3": {
       "timezone": "UTC-8",
       "latitude": 33.448,
-      "longitude": -112.074
+      "longitude": -112.074,
+      "continent": "North America"
     },
     "westusstage": {
       "timezone": "UTC-8",
       "latitude": 37.783,
-      "longitude": -122.417
+      "longitude": -122.417,
+      "continent": "North America"
     },
     "westus2stage": {
       "timezone": "UTC-8",
       "latitude": 47.233,
-      "longitude": -119.852
+      "longitude": -119.852,
+      "continent": "North America"
     },
     "westcentralus": {
       "timezone": "UTC-7",
       "latitude": 40.89,
-      "longitude": -110.234
+      "longitude": -110.234,
+      "continent": "North America"
     },
     "southcentralus": {
       "timezone": "UTC-6",
       "latitude": 29.424,
-      "longitude": -98.494
+      "longitude": -98.494,
+      "continent": "North America"
     },
     "centralus": {
       "timezone": "UTC-6",
       "latitude": 41.691,
-      "longitude": -93.742
+      "longitude": -93.742,
+      "continent": "North America"
     },
     "mexicocentral": {
       "timezone": "UTC-6",
       "latitude": 19.432,
-      "longitude": -99.133
+      "longitude": -99.133,
+      "continent": "North America"
     },
     "northcentralus": {
       "timezone": "UTC-6",
       "latitude": 41.986,
-      "longitude": -87.984
+      "longitude": -87.984,
+      "continent": "North America"
     },
     "centralusstage": {
       "timezone": "UTC-6",
       "latitude": 41.691,
-      "longitude": -93.742
+      "longitude": -93.742,
+      "continent": "North America"
     },
     "northcentralusstage": {
       "timezone": "UTC-6",
       "latitude": 41.986,
-      "longitude": -87.984
+      "longitude": -87.984,
+      "continent": "North America"
     },
     "southcentralusstage": {
       "timezone": "UTC-6",
       "latitude": 29.424,
-      "longitude": -98.494
+      "longitude": -98.494,
+      "continent": "North America"
     },
     "southcentralusstg": {
       "timezone": "UTC-6",
       "latitude": 29.424,
-      "longitude": -98.494
+      "longitude": -98.494,
+      "continent": "North America"
     },
     "centraluseuap": {
       "timezone": "UTC-6",
       "latitude": 41.691,
-      "longitude": -93.742
+      "longitude": -93.742,
+      "continent": "North America"
     },
     "eastus": {
       "timezone": "UTC-5",
       "latitude": 37.3719,
-      "longitude": -79.8164
+      "longitude": -79.8164,
+      "continent": "North America"
     },
     "eastus2": {
       "timezone": "UTC-5",
       "latitude": 36.6681,
-      "longitude": -78.3889
+      "longitude": -78.3889,
+      "continent": "North America"
     },
     "canadacentral": {
       "timezone": "UTC-5",
       "latitude": 43.653,
-      "longitude": -79.383
+      "longitude": -79.383,
+      "continent": "North America"
     },
     "canadaeast": {
       "timezone": "UTC-5",
       "latitude": 46.8139,
-      "longitude": -71.2082
+      "longitude": -71.2082,
+      "continent": "North America"
     },
     "eastusstage": {
       "timezone": "UTC-5",
       "latitude": 37.3719,
-      "longitude": -79.8164
+      "longitude": -79.8164,
+      "continent": "North America"
     },
     "eastus2stage": {
       "timezone": "UTC-5",
       "latitude": 36.6681,
-      "longitude": -78.3889
+      "longitude": -78.3889,
+      "continent": "North America"
     },
     "eastus2euap": {
       "timezone": "UTC-5",
       "latitude": 36.6681,
-      "longitude": -78.3889
+      "longitude": -78.3889,
+      "continent": "North America"
     },
     "brazilsouth": {
       "timezone": "UTC-3",
       "latitude": -23.55,
-      "longitude": -46.633
+      "longitude": -46.633,
+      "continent": "South America"
     },
     "brazilsoutheast": {
       "timezone": "UTC-3",
       "latitude": -22.9068,
-      "longitude": -43.1729
+      "longitude": -43.1729,
+      "continent": "South America"
     },
     "northeurope": {
       "timezone": "UTC+0",
       "latitude": 53.3478,
-      "longitude": -6.2597
+      "longitude": -6.2597,
+      "continent": "Europe"
     },
     "uksouth": {
       "timezone": "UTC+0",
       "latitude": 50.941,
-      "longitude": -0.799
+      "longitude": -0.799,
+      "continent": "Europe"
     },
     "ukwest": {
       "timezone": "UTC+0",
       "latitude": 53.427,
-      "longitude": -3.084
+      "longitude": -3.084,
+      "continent": "Europe"
     },
     "swedencentral": {
       "timezone": "UTC+1",
       "latitude": 60.6749,
-      "longitude": 17.1413
+      "longitude": 17.1413,
+      "continent": "Europe"
     },
     "westeurope": {
       "timezone": "UTC+1",
       "latitude": 52.3667,
-      "longitude": 4.9
+      "longitude": 4.9,
+      "continent": "Europe"
     },
     "francecentral": {
       "timezone": "UTC+1",
       "latitude": 46.3772,
-      "longitude": 2.373
+      "longitude": 2.373,
+      "continent": "Europe"
     },
     "germanywestcentral": {
       "timezone": "UTC+1",
       "latitude": 50.11,
-      "longitude": 8.682
+      "longitude": 8.682,
+      "continent": "Europe"
     },
     "italynorth": {
       "timezone": "UTC+1",
       "latitude": 45.464,
-      "longitude": 9.191
+      "longitude": 9.191,
+      "continent": "Europe"
     },
     "norwayeast": {
       "timezone": "UTC+1",
       "latitude": 59.913,
-      "longitude": 10.752
+      "longitude": 10.752,
+      "continent": "Europe"
     },
     "polandcentral": {
       "timezone": "UTC+1",
       "latitude": 52.232,
-      "longitude": 21.008
+      "longitude": 21.008,
+      "continent": "Europe"
     },
     "spaincentral": {
       "timezone": "UTC+1",
       "latitude": 40.383,
-      "longitude": -3.717
+      "longitude": -3.717,
+      "continent": "Europe"
     },
     "switzerlandnorth": {
       "timezone": "UTC+1",
       "latitude": 47.451,
-      "longitude": 8.582
+      "longitude": 8.582,
+      "continent": "Europe"
     },
     "francesouth": {
       "timezone": "UTC+1",
       "latitude": 43.6044,
-      "longitude": 1.4442
+      "longitude": 1.4442,
+      "continent": "Europe"
     },
     "germanynorth": {
       "timezone": "UTC+1",
       "latitude": 53.073,
-      "longitude": 8.806
+      "longitude": 8.806,
+      "continent": "Europe"
     },
     "norwaywest": {
       "timezone": "UTC+1",
       "latitude": 58.969,
-      "longitude": 5.733
+      "longitude": 5.733,
+      "continent": "Europe"
     },
     "switzerlandwest": {
       "timezone": "UTC+1",
       "latitude": 46.204,
-      "longitude": 6.143
+      "longitude": 6.143,
+      "continent": "Europe"
     },
     "southafricanorth": {
       "timezone": "UTC+2",
       "latitude": -25.731,
-      "longitude": 28.218
+      "longitude": 28.218,
+      "continent": "Africa"
     },
     "israelcentral": {
       "timezone": "UTC+2",
       "latitude": 31.768,
-      "longitude": 35.216
+      "longitude": 35.216,
+      "continent": "Asia"
     },
     "southafricawest": {
       "timezone": "UTC+2",
       "latitude": -33.927,
-      "longitude": 18.424
+      "longitude": 18.424,
+      "continent": "Africa"
     },
     "qatarcentral": {
       "timezone": "UTC+3",
       "latitude": 25.286,
-      "longitude": 51.534
+      "longitude": 51.534,
+      "continent": "Asia"
     },
     "uaenorth": {
       "timezone": "UTC+4",
       "latitude": 25.266,
-      "longitude": 55.307
+      "longitude": 55.307,
+      "continent": "Asia"
     },
     "uaecentral": {
       "timezone": "UTC+4",
       "latitude": 24.466,
-      "longitude": 54.366
+      "longitude": 54.366,
+      "continent": "Asia"
     },
     "centralindia": {
       "timezone": "UTC+5:30",
       "latitude": 18.5822,
-      "longitude": 73.9091
+      "longitude": 73.9091,
+      "continent": "Asia"
     },
     "jioindiawest": {
       "timezone": "UTC+5:30",
       "latitude": 19.088,
-      "longitude": 72.868
+      "longitude": 72.868,
+      "continent": "Asia"
     },
     "jioindiacentral": {
       "timezone": "UTC+5:30",
       "latitude": 21.146,
-      "longitude": 79.089
+      "longitude": 79.089,
+      "continent": "Asia"
     },
     "southindia": {
       "timezone": "UTC+5:30",
       "latitude": 12.968,
-      "longitude": 80.169
+      "longitude": 80.169,
+      "continent": "Asia"
     },
     "westindia": {
       "timezone": "UTC+5:30",
       "latitude": 19.088,
-      "longitude": 72.868
+      "longitude": 72.868,
+      "continent": "Asia"
     },
     "southeastasia": {
       "timezone": "UTC+7",
       "latitude": 1.283,
-      "longitude": 103.833
+      "longitude": 103.833,
+      "continent": "Asia"
     },
     "eastasia": {
       "timezone": "UTC+8",
       "latitude": 22.267,
-      "longitude": 114.188
+      "longitude": 114.188,
+      "continent": "Asia"
     },
     "japaneast": {
       "timezone": "UTC+9",
       "latitude": 35.682,
-      "longitude": 139.752
+      "longitude": 139.752,
+      "continent": "Asia"
     },
     "koreacentral": {
       "timezone": "UTC+9",
       "latitude": 37.566,
-      "longitude": 126.978
+      "longitude": 126.978,
+      "continent": "Asia"
     },
     "japanwest": {
       "timezone": "UTC+9",
       "latitude": 34.694,
-      "longitude": 135.502
+      "longitude": 135.502,
+      "continent": "Asia"
     },
     "koreasouth": {
       "timezone": "UTC+9",
       "latitude": 35.18,
-      "longitude": 129.076
+      "longitude": 129.076,
+      "continent": "Asia"
     },
     "australiaeast": {
       "timezone": "UTC+10",
       "latitude": -33.855,
-      "longitude": 151.216
+      "longitude": 151.216,
+      "continent": "Oceania"
     },
     "australiacentral": {
       "timezone": "UTC+10",
       "latitude": -35.307,
-      "longitude": 149.124
+      "longitude": 149.124,
+      "continent": "Oceania"
     },
     "australiacentral2": {
       "timezone": "UTC+10",
       "latitude": -35.307,
-      "longitude": 149.124
+      "longitude": 149.124,
+      "continent": "Oceania"
     },
     "australiasoutheast": {
       "timezone": "UTC+10",
       "latitude": -37.814,
-      "longitude": 144.963
+      "longitude": 144.963,
+      "continent": "Oceania"
     },
     "newzealandnorth": {
       "timezone": "UTC+12",
       "latitude": -36.848,
-      "longitude": 174.763
+      "longitude": 174.763,
+      "continent": "Oceania"
     }
   },
   "gcp": {
     "us-west1": {
       "timezone": "UTC-8",
       "latitude": 45.601,
-      "longitude": -121.185
+      "longitude": -121.185,
+      "continent": "North America"
     },
     "us-west2": {
       "timezone": "UTC-8",
       "latitude": 34.0522,
-      "longitude": -118.244
+      "longitude": -118.244,
+      "continent": "North America"
     },
     "us-west3": {
       "timezone": "UTC-8",
       "latitude": 40.759,
-      "longitude": -111.888
+      "longitude": -111.888,
+      "continent": "North America"
     },
     "us-west4": {
       "timezone": "UTC-8",
       "latitude": 36.175,
-      "longitude": -115.137
+      "longitude": -115.137,
+      "continent": "North America"
     },
     "northamerica-west1": {
       "timezone": "UTC-8",
       "latitude": 49.246,
-      "longitude": -123.116
+      "longitude": -123.116,
+      "continent": "North America"
     },
     "us-central1": {
       "timezone": "UTC-6",
       "latitude": 41.261,
-      "longitude": -95.861
+      "longitude": -95.861,
+      "continent": "North America"
     },
     "us-central2": {
       "timezone": "UTC-6",
       "latitude": 41.261,
-      "longitude": -95.861
+      "longitude": -95.861,
+      "continent": "North America"
     },
     "us-east1": {
       "timezone": "UTC-5",
       "latitude": 33.757,
-      "longitude": -84.387
+      "longitude": -84.387,
+      "continent": "North America"
     },
     "us-east4": {
       "timezone": "UTC-5",
       "latitude": 39.002,
-      "longitude": -77.459
+      "longitude": -77.459,
+      "continent": "North America"
     },
     "us-east5": {
       "timezone": "UTC-5",
       "latitude": 39.96,
-      "longitude": -75.606
+      "longitude": -75.606,
+      "continent": "North America"
     },
     "northamerica-northeast1": {
       "timezone": "UTC-5",
       "latitude": 45.501,
-      "longitude": -73.567
+      "longitude": -73.567,
+      "continent": "North America"
     },
     "northamerica-northeast2": {
       "timezone": "UTC-5",
       "latitude": 43.654,
-      "longitude": -79.387
+      "longitude": -79.387,
+      "continent": "North America"
     },
     "us-south1": {
       "timezone": "UTC-5",
       "latitude": 32.779,
-      "longitude": -96.802
+      "longitude": -96.802,
+      "continent": "North America"
     },
     "southamerica-west1": {
       "timezone": "UTC-4",
       "latitude": -33.447,
-      "longitude": -70.673
+      "longitude": -70.673,
+      "continent": "South America"
     },
     "southamerica-east1": {
       "timezone": "UTC-3",
       "latitude": -23.551,
-      "longitude": -46.633
+      "longitude": -46.633,
+      "continent": "South America"
     },
     "europe-west2": {
       "timezone": "UTC+0",
       "latitude": 51.507,
-      "longitude": -0.127
+      "longitude": -0.127,
+      "continent": "Europe"
     },
     "europe-west10": {
       "timezone": "UTC+0",
       "latitude": 51.507,
-      "longitude": -0.127
+      "longitude": -0.127,
+      "continent": "Europe"
     },
     "europe-west12": {
       "timezone": "UTC+0",
       "latitude": 51.507,
-      "longitude": -0.127
+      "longitude": -0.127,
+      "continent": "Europe"
     },
     "europe-west1": {
       "timezone": "UTC+1",
       "latitude": 50.448,
-      "longitude": 3.818
+      "longitude": 3.818,
+      "continent": "Europe"
     },
     "europe-west3": {
       "timezone": "UTC+1",
       "latitude": 50.11,
-      "longitude": 8.682
+      "longitude": 8.682,
+      "continent": "Europe"
     },
     "europe-west4": {
       "timezone": "UTC+1",
       "latitude": 53.439,
-      "longitude": 6.836
+      "longitude": 6.836,
+      "continent": "Europe"
     },
     "europe-west6": {
       "timezone": "UTC+1",
       "latitude": 47.366,
-      "longitude": 8.55
+      "longitude": 8.55,
+      "continent": "Europe"
     },
     "europe-west8": {
       "timezone": "UTC+1",
       "latitude": 45.464,
-      "longitude": 9.191
+      "longitude": 9.191,
+      "continent": "Europe"
     },
     "europe-west9": {
       "timezone": "UTC+1",
       "latitude": 48.857,
-      "longitude": 2.352
+      "longitude": 2.352,
+      "continent": "Europe"
     },
     "europe-central2": {
       "timezone": "UTC+1",
       "latitude": 52.23,
-      "longitude": 21.012
+      "longitude": 21.012,
+      "continent": "Europe"
     },
     "europe-north1": {
       "timezone": "UTC+1",
       "latitude": 60.566,
-      "longitude": 27.19
+      "longitude": 27.19,
+      "continent": "Europe"
     },
     "europe-southwest1": {
       "timezone": "UTC+1",
       "latitude": 40.416,
-      "longitude": -3.702
+      "longitude": -3.702,
+      "continent": "Europe"
     },
     "africa-south1": {
       "timezone": "UTC+2",
       "latitude": -26.204,
-      "longitude": 28.047
+      "longitude": 28.047,
+      "continent": "Africa"
     },
     "me-west1": {
       "timezone": "UTC+3",
       "latitude": 32.087,
-      "longitude": 34.789
+      "longitude": 34.789,
+      "continent": "Asia"
     },
     "me-central1": {
       "timezone": "UTC+3",
       "latitude": 26.267,
-      "longitude": 50.639
+      "longitude": 50.639,
+      "continent": "Asia"
     },
     "me-central2": {
       "timezone": "UTC+3",
       "latitude": 25.268,
-      "longitude": 51.609
+      "longitude": 51.609,
+      "continent": "Asia"
     },
     "asia-south1": {
       "timezone": "UTC+5:30",
       "latitude": 19.076,
-      "longitude": 72.877
+      "longitude": 72.877,
+      "continent": "Asia"
     },
     "asia-south2": {
       "timezone": "UTC+5:30",
       "latitude": 28.644,
-      "longitude": 77.216
+      "longitude": 77.216,
+      "continent": "Asia"
     },
     "asia-southeast1": {
       "timezone": "UTC+7",
       "latitude": 1.352,
-      "longitude": 103.82
+      "longitude": 103.82,
+      "continent": "Asia"
     },
     "asia-southeast2": {
       "timezone": "UTC+7",
       "latitude": -6.175,
-      "longitude": 106.827
+      "longitude": 106.827,
+      "continent": "Asia"
     },
     "asia-east1": {
       "timezone": "UTC+8",
       "latitude": 24.052,
-      "longitude": 120.516
+      "longitude": 120.516,
+      "continent": "Asia"
     },
     "asia-east2": {
       "timezone": "UTC+8",
       "latitude": 22.396,
-      "longitude": 114.109
+      "longitude": 114.109,
+      "continent": "Asia"
     },
     "asia-northeast1": {
       "timezone": "UTC+9",
       "latitude": 35.689,
-      "longitude": 139.692
+      "longitude": 139.692,
+      "continent": "Asia"
     },
     "asia-northeast2": {
       "timezone": "UTC+9",
       "latitude": 34.694,
-      "longitude": 135.502
+      "longitude": 135.502,
+      "continent": "Asia"
     },
     "asia-northeast3": {
       "timezone": "UTC+9",
       "latitude": 37.566,
-      "longitude": 126.978
+      "longitude": 126.978,
+      "continent": "Asia"
     },
     "australia-southeast1": {
       "timezone": "UTC+10",
       "latitude": -33.868,
-      "longitude": 151.207
+      "longitude": 151.207,
+      "continent": "Oceania"
     },
     "australia-southeast2": {
       "timezone": "UTC+10",
       "latitude": -37.814,
-      "longitude": 144.963
+      "longitude": 144.963,
+      "continent": "Oceania"
     }
   },
   "aws": {
     "us-west-1": {
       "timezone": "UTC-8",
       "latitude": 37.7749,
-      "longitude": -122.4194
+      "longitude": -122.4194,
+      "continent": "North America"
     },
     "us-west-2": {
       "timezone": "UTC-8",
       "latitude": 45.8491,
-      "longitude": -119.6885
+      "longitude": -119.6885,
+      "continent": "North America"
     },
     "us-gov-west-1": {
       "timezone": "UTC-8",
       "latitude": 37.7749,
-      "longitude": -122.4194
+      "longitude": -122.4194,
+      "continent": "North America"
     },
     "ca-west-1": {
       "timezone": "UTC-8",
       "latitude": 49.246,
-      "longitude": -123.116
+      "longitude": -123.116,
+      "continent": "North America"
     },
     "us-east-1": {
       "timezone": "UTC-5",
       "latitude": 39.0437,
-      "longitude": -77.4875
+      "longitude": -77.4875,
+      "continent": "North America"
     },
     "us-east-2": {
       "timezone": "UTC-5",
       "latitude": 40.4173,
-      "longitude": -82.9071
+      "longitude": -82.9071,
+      "continent": "North America"
     },
     "us-gov-east-1": {
       "timezone": "UTC-5",
       "latitude": 39.0437,
-      "longitude": -77.4875
+      "longitude": -77.4875,
+      "continent": "North America"
     },
     "ca-central-1": {
       "timezone": "UTC-5",
       "latitude": 45.5017,
-      "longitude": -73.5673
+      "longitude": -73.5673,
+      "continent": "North America"
     },
     "sa-east-1": {
       "timezone": "UTC-3",
       "latitude": -23.5505,
-      "longitude": -46.6333
+      "longitude": -46.6333,
+      "continent": "South America"
     },
     "eu-west-1": {
       "timezone": "UTC+0",
       "latitude": 53.3498,
-      "longitude": -6.2603
+      "longitude": -6.2603,
+      "continent": "Europe"
     },
     "eu-west-2": {
       "timezone": "UTC+0",
       "latitude": 51.5074,
-      "longitude": -0.1278
+      "longitude": -0.1278,
+      "continent": "Europe"
     },
     "eu-west-3": {
       "timezone": "UTC+1",
       "latitude": 48.8566,
-      "longitude": 2.3522
+      "longitude": 2.3522,
+      "continent": "Europe"
     },
     "eu-north-1": {
       "timezone": "UTC+1",
       "latitude": 59.3293,
-      "longitude": 18.0686
+      "longitude": 18.0686,
+      "continent": "Europe"
     },
     "eu-central-1": {
       "timezone": "UTC+1",
       "latitude": 50.1109,
-      "longitude": 8.6821
+      "longitude": 8.6821,
+      "continent": "Europe"
     },
     "eu-central-2": {
       "timezone": "UTC+1",
       "latitude": 47.3769,
-      "longitude": 8.5417
+      "longitude": 8.5417,
+      "continent": "Europe"
     },
     "eu-south-1": {
       "timezone": "UTC+1",
       "latitude": 45.4642,
-      "longitude": 9.19
+      "longitude": 9.19,
+      "continent": "Europe"
     },
     "eu-south-2": {
       "timezone": "UTC+1",
       "latitude": 39.4699,
-      "longitude": -0.3763
+      "longitude": -0.3763,
+      "continent": "Europe"
     },
     "af-south-1": {
       "timezone": "UTC+2",
       "latitude": -33.9249,
-      "longitude": 18.4241
+      "longitude": 18.4241,
+      "continent": "Africa"
     },
     "il-central-1": {
       "timezone": "UTC+2",
       "latitude": 31.0461,
-      "longitude": 34.8516
+      "longitude": 34.8516,
+      "continent": "Asia"
     },
     "me-south-1": {
       "timezone": "UTC+3",
       "latitude": 26.0667,
-      "longitude": 50.5577
+      "longitude": 50.5577,
+      "continent": "Asia"
     },
     "me-central-1": {
       "timezone": "UTC+3",
       "latitude": 24.4667,
-      "longitude": 54.3667
+      "longitude": 54.3667,
+      "continent": "Asia"
     },
     "ap-south-1": {
       "timezone": "UTC+5:30",
       "latitude": 19.076,
-      "longitude": 72.8777
+      "longitude": 72.8777,
+      "continent": "Asia"
     },
     "ap-south-2": {
       "timezone": "UTC+5:30",
       "latitude": 12.9716,
-      "longitude": 77.5946
+      "longitude": 77.5946,
+      "continent": "Asia"
     },
     "ap-southeast-3": {
       "timezone": "UTC+7",
       "latitude": -6.2088,
-      "longitude": 106.8456
+      "longitude": 106.8456,
+      "continent": "Asia"
     },
     "ap-southeast-4": {
       "timezone": "UTC+7",
       "latitude": 13.7563,
-      "longitude": 100.5018
+      "longitude": 100.5018,
+      "continent": "Asia"
     },
     "ap-southeast-1": {
       "timezone": "UTC+8",
       "latitude": 1.3521,
-      "longitude": 103.8198
+      "longitude": 103.8198,
+      "continent": "Asia"
     },
     "ap-east-1": {
       "timezone": "UTC+8",
       "latitude": 22.3193,
-      "longitude": 114.1694
+      "longitude": 114.1694,
+      "continent": "Asia"
     },
     "ap-northeast-1": {
       "timezone": "UTC+9",
       "latitude": 35.6762,
-      "longitude": 139.6503
+      "longitude": 139.6503,
+      "continent": "Asia"
     },
     "ap-northeast-2": {
       "timezone": "UTC+9",
       "latitude": 37.5665,
-      "longitude": 126.978
+      "longitude": 126.978,
+      "continent": "Asia"
     },
     "ap-northeast-3": {
       "timezone": "UTC+9",
       "latitude": 34.6937,
-      "longitude": 135.5022
+      "longitude": 135.5022,
+      "continent": "Asia"
     },
     "ap-southeast-2": {
       "timezone": "UTC+10",
       "latitude": -33.8688,
-      "longitude": 151.2093
+      "longitude": 151.2093,
+      "continent": "Oceania"
     }
   }
 }
