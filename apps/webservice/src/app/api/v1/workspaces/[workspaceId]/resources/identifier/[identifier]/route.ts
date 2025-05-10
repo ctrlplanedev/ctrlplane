@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { get } from "lodash";
 
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
+import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -74,34 +74,26 @@ export const GET = request()
       );
     }
 
-    const { relationships, getTargetsWithMetadata } = await getResourceParents(
-      db,
-      resource.id,
-    );
-    const relatipnshipTargets = await getTargetsWithMetadata();
+    const { relationships } = await getResourceParents(db, resource.id);
 
-    const variables = Object.fromEntries(
-      resource.variables.map((v) => {
-        if (v.valueType === "direct") {
-          const strval = String(v.value);
-          const value = v.sensitive
-            ? variablesAES256().decrypt(strval)
-            : v.value;
-          return [v.key, value];
-        }
+    const resourceVariablesPromises = resource.variables.map(async (v) => {
+      if (v.valueType === "direct") {
+        const strval = String(v.value);
+        const value = v.sensitive ? variablesAES256().decrypt(strval) : v.value;
+        return [v.key, value] as const;
+      }
 
-        if (v.valueType === "reference") {
-          if (v.path == null) return [v.key, v.defaultValue];
-          if (v.reference == null) return [v.key, v.defaultValue];
-          const target = relationships[v.reference]?.target.id;
-          const targetResource = relatipnshipTargets[target ?? ""];
-          if (targetResource == null) return [v.key, v.defaultValue];
-          return [v.key, get(targetResource, v.path, v.defaultValue)];
-        }
+      if (v.valueType === "reference") {
+        const resolvedValue = await getReferenceVariableValue(
+          v as schema.ReferenceResourceVariable,
+        );
+        return [v.key, resolvedValue] as const;
+      }
 
-        throw new Error(`Unknown variable value type: ${v.valueType}`);
-      }),
-    );
+      return [v.key, v.defaultValue] as const;
+    });
+    const resourceVariables = await Promise.all(resourceVariablesPromises);
+    const variables = Object.fromEntries(resourceVariables);
 
     const metadata = Object.fromEntries(
       resource.metadata.map((t) => [t.key, t.value]),

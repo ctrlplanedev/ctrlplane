@@ -1,6 +1,6 @@
 import type { SQL, Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import _, { get } from "lodash";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -32,6 +32,7 @@ import {
   isPassingChannelSelectorPolicy,
   isPassingNoPendingJobsPolicy,
 } from "@ctrlplane/job-dispatch";
+import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
@@ -383,87 +384,52 @@ export const resourceRouter = createTRPCRouter({
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
-    .query(({ ctx, input }) =>
-      ctx.db.query.resource
-        .findFirst({
-          where: and(eq(schema.resource.id, input), isNotDeleted),
-          with: { metadata: true, variables: true, provider: true },
+    .query(async ({ ctx, input }) => {
+      const resource = await ctx.db.query.resource.findFirst({
+        where: and(eq(schema.resource.id, input), isNotDeleted),
+        with: { metadata: true, variables: true, provider: true },
+      });
+      if (resource == null) return null;
+
+      const { relationships } = await getResourceParents(ctx.db, resource.id);
+
+      const parsedVariables = resource.variables
+        .map((v) => {
+          const parsed = schema.resourceVariableSchema.safeParse(v);
+          if (!parsed.success) return null;
+          return parsed.data;
         })
-        .then(async (t) => {
-          if (t == null) return null;
+        .filter(isPresent);
 
-          const { relationships, getTargetsWithMetadata } =
-            await getResourceParents(ctx.db, t.id);
-          const relationshipTargets = await getTargetsWithMetadata();
+      const directVariables = parsedVariables.filter(
+        (v): v is schema.DirectResourceVariable => v.valueType === "direct",
+      );
 
-          const parsedVariables = t.variables
-            .map((v) => {
-              try {
-                return schema.resourceVariableSchema.parse(v);
-              } catch (error) {
-                console.error(
-                  `Failed to parse variable ${v.key} for resource ${t.id}:`,
-                  error,
-                );
-                return null;
-              }
-            })
-            .filter(isPresent);
+      const referenceVariables = parsedVariables.filter(
+        (v): v is schema.ReferenceResourceVariable =>
+          v.valueType === "reference",
+      );
 
-          const directVariables = parsedVariables.filter(
-            (v): v is schema.DirectResourceVariable => v.valueType === "direct",
-          );
-
-          const referenceVariables = parsedVariables
-            .filter(
-              (v): v is schema.ReferenceResourceVariable =>
-                v.valueType === "reference",
-            )
-            .map((v) => {
-              const relationshipInfo = relationships[v.reference];
-              if (!relationshipInfo)
-                return { ...v, resolvedValue: v.defaultValue };
-
-              const targetId = relationshipInfo.target.id;
-              const targetResource = relationshipTargets[targetId];
-
-              if (!targetResource)
-                return { ...v, resolvedValue: v.defaultValue };
-
-              if (v.path.length === 0)
-                return {
-                  ...v,
-                  resolvedValue: get(targetResource, [], v.defaultValue),
-                };
-
-              const metadataKey = v.path.join("/");
-              const metadataValue =
-                metadataKey in targetResource.metadata
-                  ? targetResource.metadata[metadataKey]
-                  : undefined;
-
-              if (metadataValue !== undefined)
-                return { ...v, resolvedValue: metadataValue };
-
-              return {
-                ...v,
-                resolvedValue: get(targetResource, v.path, v.defaultValue),
-              };
-            });
-
-          const metadata = Object.fromEntries(
-            t.metadata.map((m) => [m.key, m.value]),
-          );
-          return {
-            ...t,
-            relationships,
-            directVariables,
-            referenceVariables,
-            metadata,
-            rules: await getResourceRelationshipRules(ctx.db, t.id),
-          };
+      const resolvedReferenceVariables = await Promise.all(
+        referenceVariables.map(async (v) => {
+          const resolvedValue = await getReferenceVariableValue(v);
+          return { ...v, resolvedValue };
         }),
-    ),
+      );
+
+      const metadata = Object.fromEntries(
+        resource.metadata.map((m) => [m.key, m.value]),
+      );
+
+      return {
+        ...resource,
+        relationships,
+        directVariables,
+        referenceVariables: resolvedReferenceVariables,
+        metadata,
+        rules: await getResourceRelationshipRules(ctx.db, resource.id),
+      };
+    }),
 
   latestDeployedVersions: createTRPCRouter({
     byResourceAndEnvironmentId: protectedProcedure
