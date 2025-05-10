@@ -1,6 +1,7 @@
 "use client";
 
-import { IconDots } from "@tabler/icons-react";
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import { IconDots, IconPencil, IconTrash } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -11,14 +12,18 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
+import { EditRelationshipDialog } from "./EditRelationshipDialog";
 
 interface RelationshipRuleDropdownProps {
-  ruleId: string;
+  rule: SCHEMA.ResourceRelationshipRule & {
+    metadataKeysMatches: SCHEMA.ResourceRelationshipRuleMetadataMatch[];
+    targetMetadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
+  };
 }
 
 export const RelationshipRuleDropdown: React.FC<
   RelationshipRuleDropdownProps
-> = ({ ruleId }) => {
+> = ({ rule }) => {
   const utils = api.useUtils();
   const deleteRule = api.resource.relationshipRules.delete.useMutation({
     onSuccess: () => {
@@ -34,11 +39,19 @@ export const RelationshipRuleDropdown: React.FC<
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <EditRelationshipDialog rule={rule}>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex cursor-pointer items-center gap-2"
+          >
+            <IconPencil className="h-4 w-4" /> Edit
+          </DropdownMenuItem>
+        </EditRelationshipDialog>
         <DropdownMenuItem
-          className="text-destructive"
-          onClick={() => deleteRule.mutateAsync(ruleId)}
+          className="flex cursor-pointer items-center gap-2 text-destructive"
+          onClick={() => deleteRule.mutateAsync(rule.id)}
         >
-          Delete
+          <IconTrash className="h-4 w-4" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

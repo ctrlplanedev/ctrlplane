@@ -332,6 +332,137 @@ test.describe("Release Creation", () => {
     expect(variable.value).toBe("test-a");
   });
 
+  test("should create a release when a new resource is created that does not match any policy target", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    const policyName = faker.string.alphanumeric(10);
+    const policyResponse = await api.POST("/v1/policies", {
+      body: {
+        name: policyName,
+        description: "Test Policy Description",
+        workspaceId: workspace.id,
+        targets: [
+          {
+            resourceSelector: {
+              type: "identifier",
+              operator: "equals",
+              value: `${policyName}`,
+            },
+          },
+        ],
+      },
+    });
+    expect(policyResponse.response.status).toBe(200);
+
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: { deploymentId },
+        },
+        body: {
+          key: "test",
+          description: "test",
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          values: [
+            {
+              value: "test-a",
+              default: true,
+            },
+            { value: "test-b" },
+          ],
+        },
+      },
+    );
+    expect(variableCreateResponse.response.status).toBe(201);
+
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const resourceCreateResponse = await api.POST("/v1/resources", {
+      body: {
+        name: resourceName,
+        kind: "service",
+        identifier: resourceName,
+        version: "1.0.0",
+        config: {},
+        metadata: {},
+        variables: [],
+        workspaceId: workspace.id,
+      },
+    });
+    expect(resourceCreateResponse.response.status).toBe(200);
+    const resourceId = resourceCreateResponse.data?.id ?? "";
+
+    await page.waitForTimeout(26_000);
+
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: { resourceId },
+        },
+      },
+    );
+    expect(releaseTargetResponse.response.status).toBe(200);
+    const releaseTargets = releaseTargetResponse.data ?? [];
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
+
+    const releaseResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: {
+            releaseTargetId: releaseTarget?.id ?? "",
+          },
+        },
+      },
+    );
+
+    expect(releaseResponse.response.status).toBe(200);
+    const releases = releaseResponse.data ?? [];
+    for (const release of releases) {
+      console.log(release);
+    }
+    expect(releases.length).toBe(1);
+
+    const latestRelease = releases.at(0)!;
+    expect(latestRelease.version.tag).toBe(versionTag);
+    const variables = latestRelease.variables ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("test");
+    expect(variable.value).toBe("test-a");
+  });
+
   test("should not create a release when an existing resource is updated", async ({
     api,
     page,

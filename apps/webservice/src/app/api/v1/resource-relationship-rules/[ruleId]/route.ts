@@ -105,19 +105,19 @@ export const PATCH = request()
           .returning()
           .then(takeFirst);
 
-        const metadataKeysMatch = await replaceMetadataMatchRules(
+        const metadataKeysMatches = await replaceMetadataMatchRules(
           tx,
           ruleId,
-          body.metadataKeysMatch,
+          body.metadataKeysMatches,
         );
 
-        const metadataKeysEquals = await replaceMetadataEqualsRules(
+        const targetMetadataEquals = await replaceMetadataEqualsRules(
           tx,
           ruleId,
-          body.metadataKeysEquals,
+          body.targetMetadataEquals,
         );
 
-        return { ...rule, metadataKeysMatch, metadataKeysEquals };
+        return { ...rule, metadataKeysMatches, targetMetadataEquals };
       });
 
       return NextResponse.json(rule);

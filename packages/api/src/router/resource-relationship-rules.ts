@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { asc, eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -18,7 +18,12 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.query.resourceRelationshipRule.findMany({
         where: eq(schema.resourceRelationshipRule.workspaceId, input),
-        with: { metadataMatches: true, metadataEquals: true },
+        with: { metadataKeysMatches: true, targetMetadataEquals: true },
+        orderBy: [
+          asc(schema.resourceRelationshipRule.reference),
+          asc(schema.resourceRelationshipRule.sourceKind),
+          asc(schema.resourceRelationshipRule.targetKind),
+        ],
       });
     }),
 
@@ -53,7 +58,7 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .mutation(async ({ ctx, input }) => {
-      const { metadataKeysMatch, metadataKeysEquals, ...rest } = input;
+      const { metadataKeysMatches, targetMetadataEquals, ...rest } = input;
       const rule = await ctx.db
         .insert(schema.resourceRelationshipRule)
         .values({
@@ -64,18 +69,21 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await ctx.db.insert(schema.resourceRelationshipRuleMetadataMatch).values(
-        metadataKeysMatch.map((key) => ({
-          resourceRelationshipRuleId: rule.id,
-          key,
-        })),
-      );
+      if (metadataKeysMatches != null && metadataKeysMatches.length > 0)
+        await ctx.db
+          .insert(schema.resourceRelationshipRuleMetadataMatch)
+          .values(
+            metadataKeysMatches.map((key) => ({
+              resourceRelationshipRuleId: rule.id,
+              key,
+            })),
+          );
 
-      if (metadataKeysEquals != null && metadataKeysEquals.length > 0)
+      if (targetMetadataEquals != null && targetMetadataEquals.length > 0)
         await ctx.db
           .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
           .values(
-            metadataKeysEquals.map(({ key, value }) => ({
+            targetMetadataEquals.map(({ key, value }) => ({
               resourceRelationshipRuleId: rule.id,
               key,
               value,
@@ -83,5 +91,83 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
           );
 
       return rule;
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        data: schema.updateResourceRelationshipRule,
+      }),
+    )
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceRelationshipRuleUpdate)
+          .on({ type: "resourceRelationshipRule", id: input.id }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const { id, data } = input;
+      return ctx.db.transaction(async (tx) => {
+        const { metadataKeysMatches, targetMetadataEquals, ...rest } = data;
+
+        const rule = await tx
+          .update(schema.resourceRelationshipRule)
+          .set(rest)
+          .where(eq(schema.resourceRelationshipRule.id, id))
+          .returning()
+          .then(takeFirst);
+
+        if (metadataKeysMatches != null) {
+          await tx
+            .delete(schema.resourceRelationshipRuleMetadataMatch)
+            .where(
+              eq(
+                schema.resourceRelationshipRuleMetadataMatch
+                  .resourceRelationshipRuleId,
+                id,
+              ),
+            );
+
+          if (metadataKeysMatches.length > 0)
+            await tx
+              .insert(schema.resourceRelationshipRuleMetadataMatch)
+              .values(
+                metadataKeysMatches.map((key) => ({
+                  resourceRelationshipRuleId: id,
+                  key,
+                })),
+              );
+        }
+
+        if (targetMetadataEquals != null) {
+          await tx
+            .delete(schema.resourceRelationshipTargetRuleMetadataEquals)
+            .where(
+              eq(
+                schema.resourceRelationshipTargetRuleMetadataEquals
+                  .resourceRelationshipRuleId,
+                id,
+              ),
+            );
+
+          if (targetMetadataEquals.length > 0)
+            await tx
+              .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
+              .values(
+                targetMetadataEquals.map(({ key, value }) => ({
+                  resourceRelationshipRuleId: id,
+                  key,
+                  value,
+                })),
+              );
+        }
+
+        return {
+          ...rule,
+          metadataKeysMatches: metadataKeysMatches ?? [],
+          targetMetadataEquals: targetMetadataEquals ?? [],
+        };
+      });
     }),
 });

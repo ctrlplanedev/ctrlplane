@@ -46,51 +46,53 @@ export const SidebarGroupKinds: React.FC<{ workspace: Workspace }> = ({
             No resources found
           </div>
         )}
-        {Object.entries(kindsByVersion).map(([version, versionKinds]) => (
-          <Collapsible key={version}>
-            <CollapsibleTrigger className="group flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-neutral-800">
-              <IconChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-              <span className="overflow-hidden text-ellipsis text-nowrap">
-                {version}
-              </span>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              {versionKinds.map(({ kind, count }) => {
-                const url = `/${workspace.slug}/resources/list?condition=${LZString.compressToEncodedURIComponent(
-                  JSON.stringify({
-                    type: ConditionType.Comparison,
-                    operator: ComparisonOperator.And,
-                    conditions: [
-                      {
-                        type: ResourceConditionType.Kind,
-                        value: kind,
-                        operator: "equals",
-                      },
-                    ],
-                  }),
-                )}`;
-                return (
-                  <SidebarMenuButton
-                    asChild
-                    key={`${version}/${kind}`}
-                    isActive={pathname.includes(url)}
-                  >
-                    <Link href={url} className="pl-6">
-                      <ResourceIcon version={version} kind={kind} />
-                      <span className="w-36 truncate">{kind}</span>
-                      <Badge
-                        variant="secondary"
-                        className="rounded-full bg-neutral-500/10 text-xs text-muted-foreground"
-                      >
-                        {count}
-                      </Badge>
-                    </Link>
-                  </SidebarMenuButton>
-                );
-              })}
-            </CollapsibleContent>
-          </Collapsible>
-        ))}
+        {Object.entries(kindsByVersion)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([version, versionKinds]) => (
+            <Collapsible key={version}>
+              <CollapsibleTrigger className="group flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-neutral-800">
+                <IconChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                <span className="overflow-hidden text-ellipsis text-nowrap">
+                  {version}
+                </span>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                {versionKinds.map(({ kind, count }) => {
+                  const url = `/${workspace.slug}/resources/list?condition=${LZString.compressToEncodedURIComponent(
+                    JSON.stringify({
+                      type: ConditionType.Comparison,
+                      operator: ComparisonOperator.And,
+                      conditions: [
+                        {
+                          type: ResourceConditionType.Kind,
+                          value: kind,
+                          operator: "equals",
+                        },
+                      ],
+                    }),
+                  )}`;
+                  return (
+                    <SidebarMenuButton
+                      asChild
+                      key={`${version}/${kind}`}
+                      isActive={pathname.includes(url)}
+                    >
+                      <Link href={url} className="pl-6">
+                        <ResourceIcon version={version} kind={kind} />
+                        <span className="w-36 truncate">{kind}</span>
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full bg-neutral-500/10 text-xs text-muted-foreground"
+                        >
+                          {count}
+                        </Badge>
+                      </Link>
+                    </SidebarMenuButton>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
       </SidebarMenu>
     </SidebarGroup>
   );

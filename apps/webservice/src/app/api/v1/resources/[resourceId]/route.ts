@@ -7,6 +7,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
+import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -57,18 +58,27 @@ export const GET = request()
         );
 
       const { metadata, ...resource } = data;
-      const variables = Object.fromEntries(
-        data.variables.map((v) => {
-          if (v.valueType === "direct") {
-            const strval = String(v.value);
-            const value = v.sensitive
-              ? variablesAES256().decrypt(strval)
-              : v.value;
-            return [v.key, value];
-          }
+      const variablesPromises = data.variables.map(async (v) => {
+        if (v.valueType === "direct") {
+          const strval = String(v.value);
+          const value = v.sensitive
+            ? variablesAES256().decrypt(strval)
+            : v.value;
+          return [v.key, value] as const;
+        }
 
-          return [v.key, v.defaultValue];
-        }),
+        if (v.valueType === "reference") {
+          const resolvedValue = await getReferenceVariableValue(
+            v as schema.ReferenceResourceVariable,
+          );
+          return [v.key, resolvedValue] as const;
+        }
+
+        return [v.key, v.defaultValue] as const;
+      });
+
+      const variables = Object.fromEntries(
+        await Promise.all(variablesPromises),
       );
 
       return NextResponse.json({

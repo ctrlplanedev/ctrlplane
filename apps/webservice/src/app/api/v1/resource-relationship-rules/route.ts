@@ -31,18 +31,19 @@ export const POST = request()
         const existingRule = await db.query.resourceRelationshipRule.findFirst({
           where: and(
             eq(schema.resourceRelationshipRule.workspaceId, body.workspaceId),
-            eq(schema.resourceRelationshipRule.reference, body.reference),
+            eq(schema.resourceRelationshipRule.sourceKind, body.sourceKind),
             eq(
-              schema.resourceRelationshipRule.dependencyType,
-              body.dependencyType,
+              schema.resourceRelationshipRule.sourceVersion,
+              body.sourceVersion,
             ),
+            eq(schema.resourceRelationshipRule.reference, body.reference),
           ),
         });
 
         if (existingRule != null)
           return NextResponse.json(
             {
-              error: `Resource relationship with reference ${body.reference} and dependency type ${body.dependencyType} already exists in workspace ${body.workspaceId}`,
+              error: `Resource relationship rule with reference ${body.reference} for source kind ${body.sourceKind} and version ${body.sourceVersion} already exists in workspace ${body.workspaceId}`,
             },
             { status: CONFLICT },
           );
@@ -54,33 +55,33 @@ export const POST = request()
             .returning()
             .then(takeFirst);
 
-          const metadataKeysMatch = _.uniq(body.metadataKeysMatch);
-          if (metadataKeysMatch.length > 0)
+          const metadataKeysMatches = _.uniq(body.metadataKeysMatches ?? []);
+          if (metadataKeysMatches.length > 0)
             await tx
               .insert(schema.resourceRelationshipRuleMetadataMatch)
               .values(
-                metadataKeysMatch.map((key) => ({
+                metadataKeysMatches.map((key) => ({
                   resourceRelationshipRuleId: rule.id,
                   key,
                 })),
               );
 
-          const metadataKeysEquals = _.uniqBy(
-            body.metadataKeysEquals ?? [],
+          const targetMetadataEquals = _.uniqBy(
+            body.targetMetadataEquals ?? [],
             (m) => m.key,
           );
-          if (metadataKeysEquals.length > 0)
+          if (targetMetadataEquals.length > 0)
             await tx
               .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
               .values(
-                metadataKeysEquals.map((m) => ({
+                targetMetadataEquals.map((m) => ({
                   resourceRelationshipRuleId: rule.id,
                   key: m.key,
                   value: m.value,
                 })),
               );
 
-          return { ...rule, metadataKeysMatch, metadataKeysEquals };
+          return { ...rule, metadataKeysMatches, targetMetadataEquals };
         });
 
         return NextResponse.json(rule);

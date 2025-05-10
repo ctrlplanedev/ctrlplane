@@ -139,8 +139,8 @@ export const resourceRelationshipRuleMetadataMatch = pgTable(
 export const resourceRelationshipRuleRelations = relations(
   resourceRelationshipRule,
   ({ many }) => ({
-    metadataMatches: many(resourceRelationshipRuleMetadataMatch),
-    metadataEquals: many(resourceRelationshipTargetRuleMetadataEquals),
+    metadataKeysMatches: many(resourceRelationshipRuleMetadataMatch),
+    targetMetadataEquals: many(resourceRelationshipTargetRuleMetadataEquals),
   }),
 );
 
@@ -186,14 +186,14 @@ export const createResourceRelationshipRule = createInsertSchema(
             "Reference must be in slug case (my-reference), camel case (myReference), or snake case (my_reference)",
         },
       ),
-    metadataKeysMatch: z
+    metadataKeysMatches: z
       .array(
         z.string().refine((val) => val.trim().length > 0, {
           message: "Metadata match key cannot be empty",
         }),
       )
-      .min(1, "At least one metadata match key is required"),
-    metadataKeysEquals: z
+      .optional(),
+    targetMetadataEquals: z
       .array(
         z.object({
           key: z.string().refine((val) => val.trim().length > 0, {
@@ -209,3 +209,10 @@ export const createResourceRelationshipRule = createInsertSchema(
 
 export const updateResourceRelationshipRule =
   createResourceRelationshipRule.partial();
+
+export type ResourceRelationshipRule =
+  typeof resourceRelationshipRule.$inferSelect;
+export type ResourceRelationshipRuleMetadataMatch =
+  typeof resourceRelationshipRuleMetadataMatch.$inferSelect;
+export type ResourceRelationshipRuleMetadataEquals =
+  typeof resourceRelationshipTargetRuleMetadataEquals.$inferSelect;

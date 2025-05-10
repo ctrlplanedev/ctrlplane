@@ -2,11 +2,11 @@ import type { Tx } from "@ctrlplane/db";
 
 import { and, eq, inArray, isNull, or, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
-import { dispatchComputePolicyTargetReleaseTargetSelectorJobs } from "../utils/dispatch-compute-policy-target-selector-jobs.js";
 import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
@@ -179,11 +179,11 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         )
         .where(eq(schema.policy.workspaceId, workspaceId));
 
-      if (policyTargets.length > 0) {
-        for (const { policy_target: policyTarget } of policyTargets)
-          dispatchComputePolicyTargetReleaseTargetSelectorJobs(policyTarget);
-        return;
-      }
+      await Promise.all(
+        policyTargets.map(({ policy_target: policyTarget }) =>
+          computePolicyTargets(db, policyTarget),
+        ),
+      );
 
       await dispatchEvaluateJobs(created);
     } catch (e: any) {

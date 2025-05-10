@@ -1311,11 +1311,11 @@ export interface components {
       sourceVersion: string;
       targetKind?: string;
       targetVersion?: string;
-      metadataKeysMatch?: string[];
-      metadataTargetKeysEquals?: {
+      targetMetadataEquals?: {
         key: string;
         value: string;
       }[];
+      metadataKeysMatches?: string[];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;
@@ -1328,8 +1328,8 @@ export interface components {
       sourceVersion: string;
       targetKind: string;
       targetVersion: string;
-      metadataKeysMatch?: string[];
-      metadataTargetKeysEquals?: {
+      metadataKeysMatches?: string[];
+      targetMetadataEquals?: {
         key: string;
         value: string;
       }[];
@@ -2081,6 +2081,15 @@ export interface operations {
       };
     };
     responses: {
+      /** @description Deployment updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
+        };
+      };
       /** @description Deployment created */
       201: {
         headers: {
@@ -3839,6 +3848,15 @@ export interface operations {
       };
     };
     responses: {
+      /** @description System updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["System"];
+        };
+      };
       /** @description System created successfully */
       201: {
         headers: {

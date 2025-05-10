@@ -31,7 +31,6 @@ export const updateEnvironmentWorker = createWorker(
     try {
       const { oldSelector, resourceSelector } = job.data;
       if (_.isEqual(oldSelector, resourceSelector)) return;
-      console.log("updateEnvironmentWorker");
       await dispatchComputeEnvironmentResourceSelectorJobs(job.data);
     } catch (error) {
       log.error("Error updating environment", { error });
