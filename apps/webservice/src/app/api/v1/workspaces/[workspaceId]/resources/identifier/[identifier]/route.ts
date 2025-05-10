@@ -80,17 +80,17 @@ export const GET = request()
       if (v.valueType === "direct") {
         const strval = String(v.value);
         const value = v.sensitive ? variablesAES256().decrypt(strval) : v.value;
-        return [v.key, value];
+        return [v.key, value] as const;
       }
 
       if (v.valueType === "reference") {
         const resolvedValue = await getReferenceVariableValue(
           v as schema.ReferenceResourceVariable,
         );
-        return [v.key, resolvedValue];
+        return [v.key, resolvedValue] as const;
       }
 
-      throw new Error(`Unknown variable value type: ${v.valueType}`);
+      return [v.key, v.defaultValue] as const;
     });
     const resourceVariables = await Promise.all(resourceVariablesPromises);
     const variables = Object.fromEntries(resourceVariables);
