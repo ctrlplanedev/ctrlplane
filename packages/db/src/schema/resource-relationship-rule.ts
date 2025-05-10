@@ -193,7 +193,7 @@ export const createResourceRelationshipRule = createInsertSchema(
         }),
       )
       .optional(),
-    metadataKeysEquals: z
+    targetMetadataEquals: z
       .array(
         z.object({
           key: z.string().refine((val) => val.trim().length > 0, {

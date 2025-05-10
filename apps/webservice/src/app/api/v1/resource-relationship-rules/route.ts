@@ -66,22 +66,22 @@ export const POST = request()
                 })),
               );
 
-          const metadataKeysEquals = _.uniqBy(
-            body.metadataKeysEquals ?? [],
+          const targetMetadataEquals = _.uniqBy(
+            body.targetMetadataEquals ?? [],
             (m) => m.key,
           );
-          if (metadataKeysEquals.length > 0)
+          if (targetMetadataEquals.length > 0)
             await tx
               .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
               .values(
-                metadataKeysEquals.map((m) => ({
+                targetMetadataEquals.map((m) => ({
                   resourceRelationshipRuleId: rule.id,
                   key: m.key,
                   value: m.value,
                 })),
               );
 
-          return { ...rule, metadataKeysMatch, metadataKeysEquals };
+          return { ...rule, metadataKeysMatch, targetMetadataEquals };
         });
 
         return NextResponse.json(rule);

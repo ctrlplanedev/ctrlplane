@@ -5902,13 +5902,7 @@
           "targetVersion": {
             "type": "string"
           },
-          "metadataKeysMatch": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "metadataTargetKeysEquals": {
+          "targetMetadataEquals": {
             "type": "array",
             "items": {
               "type": "object",
@@ -5924,6 +5918,12 @@
                 "key",
                 "value"
               ]
+            }
+          },
+          "metadataKeysMatch": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         },
@@ -5976,7 +5976,7 @@
               "type": "string"
             }
           },
-          "metadataTargetKeysEquals": {
+          "metadataTargetEquals": {
             "type": "array",
             "items": {
               "type": "object",
