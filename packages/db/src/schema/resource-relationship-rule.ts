@@ -186,7 +186,7 @@ export const createResourceRelationshipRule = createInsertSchema(
             "Reference must be in slug case (my-reference), camel case (myReference), or snake case (my_reference)",
         },
       ),
-    metadataKeysMatch: z
+    metadataKeysMatches: z
       .array(
         z.string().refine((val) => val.trim().length > 0, {
           message: "Metadata match key cannot be empty",

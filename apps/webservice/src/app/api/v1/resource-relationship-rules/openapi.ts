@@ -103,7 +103,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
 
-          metadataKeysMatch: {
+          metadataKeysMatches: {
             type: "array",
             items: { type: "string" },
           },
@@ -133,7 +133,7 @@ export const openapi: Swagger.SwaggerV3 = {
           sourceVersion: { type: "string" },
           targetKind: { type: "string" },
           targetVersion: { type: "string" },
-          metadataKeysMatch: {
+          metadataKeysMatches: {
             type: "array",
             items: { type: "string" },
           },

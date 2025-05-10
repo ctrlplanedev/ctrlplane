@@ -105,10 +105,10 @@ export const PATCH = request()
           .returning()
           .then(takeFirst);
 
-        const metadataKeysMatch = await replaceMetadataMatchRules(
+        const metadataKeysMatches = await replaceMetadataMatchRules(
           tx,
           ruleId,
-          body.metadataKeysMatch,
+          body.metadataKeysMatches,
         );
 
         const targetMetadataEquals = await replaceMetadataEqualsRules(
@@ -117,7 +117,7 @@ export const PATCH = request()
           body.targetMetadataEquals,
         );
 
-        return { ...rule, metadataKeysMatch, targetMetadataEquals };
+        return { ...rule, metadataKeysMatches, targetMetadataEquals };
       });
 
       return NextResponse.json(rule);

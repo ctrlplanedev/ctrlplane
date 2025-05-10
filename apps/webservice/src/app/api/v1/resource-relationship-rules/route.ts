@@ -55,12 +55,12 @@ export const POST = request()
             .returning()
             .then(takeFirst);
 
-          const metadataKeysMatch = _.uniq(body.metadataKeysMatch ?? []);
-          if (metadataKeysMatch.length > 0)
+          const metadataKeysMatches = _.uniq(body.metadataKeysMatches ?? []);
+          if (metadataKeysMatches.length > 0)
             await tx
               .insert(schema.resourceRelationshipRuleMetadataMatch)
               .values(
-                metadataKeysMatch.map((key) => ({
+                metadataKeysMatches.map((key) => ({
                   resourceRelationshipRuleId: rule.id,
                   key,
                 })),
@@ -81,7 +81,7 @@ export const POST = request()
                 })),
               );
 
-          return { ...rule, metadataKeysMatch, targetMetadataEquals };
+          return { ...rule, metadataKeysMatches, targetMetadataEquals };
         });
 
         return NextResponse.json(rule);
