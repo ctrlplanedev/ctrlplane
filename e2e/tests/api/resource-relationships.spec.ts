@@ -30,7 +30,8 @@ test.describe("Resource Relationships API", () => {
     api,
     workspace,
   }) => {
-    const reference = `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`;
+    const reference =
+      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -49,6 +50,25 @@ test.describe("Resource Relationships API", () => {
     );
 
     expect(resourceRelationship.response.status).toBe(200);
+
+    const resourceRelationship2 = await api.POST(
+      "/v1/resource-relationship-rules",
+      {
+        body: {
+          workspaceId: workspace.id,
+          name: reference + "-resource-relationship-rule",
+          reference,
+          dependencyType: "depends_on",
+          sourceKind: "SecondarySource",
+          sourceVersion: "test-version/v1",
+          targetKind: "Target",
+          targetVersion: "test-version/v1",
+          metadataKeysMatch: ["e2e/test", importedEntities.prefix],
+        },
+      },
+    );
+
+    expect(resourceRelationship2.response.status).toBe(200);
 
     const sourceResource = await api.GET(
       `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
@@ -80,7 +100,8 @@ test.describe("Resource Relationships API", () => {
     api,
     workspace,
   }) => {
-    const reference = `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`;
+    const reference =
+      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -129,12 +150,14 @@ test.describe("Resource Relationships API", () => {
   });
 
   test("upsert a relationship rule", async ({ api, workspace }) => {
+    const reference =
+      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
     // First create a new relationship rule
     const initialRule = await api.POST("/v1/resource-relationship-rules", {
       body: {
         workspaceId: workspace.id,
         name: importedEntities.prefix + "-upsert-rule",
-        reference: importedEntities.prefix + "-upsert",
+        reference,
         dependencyType: "depends_on",
         sourceKind: "SourceA",
         sourceVersion: "test-version/v1",

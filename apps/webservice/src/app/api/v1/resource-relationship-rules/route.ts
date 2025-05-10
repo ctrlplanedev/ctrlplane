@@ -31,18 +31,19 @@ export const POST = request()
         const existingRule = await db.query.resourceRelationshipRule.findFirst({
           where: and(
             eq(schema.resourceRelationshipRule.workspaceId, body.workspaceId),
-            eq(schema.resourceRelationshipRule.reference, body.reference),
+            eq(schema.resourceRelationshipRule.sourceKind, body.sourceKind),
             eq(
-              schema.resourceRelationshipRule.dependencyType,
-              body.dependencyType,
+              schema.resourceRelationshipRule.sourceVersion,
+              body.sourceVersion,
             ),
+            eq(schema.resourceRelationshipRule.reference, body.reference),
           ),
         });
 
         if (existingRule != null)
           return NextResponse.json(
             {
-              error: `Resource relationship with reference ${body.reference} and dependency type ${body.dependencyType} already exists in workspace ${body.workspaceId}`,
+              error: `Resource relationship rule with reference ${body.reference} for source kind ${body.sourceKind} and version ${body.sourceVersion} already exists in workspace ${body.workspaceId}`,
             },
             { status: CONFLICT },
           );
