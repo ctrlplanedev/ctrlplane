@@ -2,7 +2,7 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type React from "react";
-import { IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconChartPie, IconEdit, IconTrash } from "@tabler/icons-react";
 import { Cell, Pie, PieChart } from "recharts";
 import colors from "tailwindcss/colors";
 import { z } from "zod";
@@ -10,10 +10,11 @@ import { z } from "zod";
 import { Button } from "@ctrlplane/ui/button";
 import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 
+import type { DashboardWidget } from "../DashboardWidget";
 import { api } from "~/trpc/react";
-import { DashboardWidget } from "../DashboardWidget";
+import { DashboardWidgetCard } from "../DashboardWidget";
 
-const schema = z.object({
+export const schema = z.object({
   deploymentId: z.string().uuid(),
   environmentIds: z.array(z.string().uuid()).optional(),
 });
@@ -78,42 +79,84 @@ const DistroChart: React.FC<{
   );
 };
 
-export const WidgetDeploymentVersionDistribution: React.FC<{
-  widget: SCHEMA.DashboardWidget;
-}> = ({ widget }) => {
-  const { config, name } = widget;
-  const parsedConfig = schema.safeParse(config);
-  const isValidConfig = parsedConfig.success;
+export const WidgetDeploymentVersionDistribution: DashboardWidget = {
+  displayName: "Deployment Version Distribution",
+  Icon: <IconChartPie />,
+  Component: ({ widget }) => {
+    const { config, name } = widget;
+    const parsedConfig = schema.safeParse(config);
+    const isValidConfig = parsedConfig.success;
 
-  const { data, isLoading } =
-    api.dashboard.widget.data.deploymentVersionDistribution.useQuery(
-      {
-        deploymentId: parsedConfig.data?.deploymentId ?? "",
-        environmentIds: parsedConfig.data?.environmentIds,
-      },
-      { enabled: isValidConfig },
-    );
+    const { data, isLoading } =
+      api.dashboard.widget.data.deploymentVersionDistribution.useQuery(
+        {
+          deploymentId: parsedConfig.data?.deploymentId ?? "",
+          environmentIds: parsedConfig.data?.environmentIds,
+        },
+        { enabled: isValidConfig },
+      );
 
-  const versionCounts = data ?? [];
+    const versionCounts = data ?? [];
 
-  if (!isValidConfig || (!isLoading && versionCounts.length === 0))
+    if (!isValidConfig || (!isLoading && versionCounts.length === 0))
+      return (
+        <DashboardWidgetCard
+          name={name}
+          WidgetActions={<WidgetActions widget={widget} />}
+        >
+          <div className="flex h-full w-full items-center justify-center">
+            <p className="text-sm text-muted-foreground">Invalid config</p>
+          </div>
+        </DashboardWidgetCard>
+      );
+
     return (
-      <DashboardWidget
+      <DashboardWidgetCard
         name={name}
         WidgetActions={<WidgetActions widget={widget} />}
       >
-        <div className="flex h-full w-full items-center justify-center">
-          <p className="text-sm text-muted-foreground">Invalid config</p>
-        </div>
-      </DashboardWidget>
+        <DistroChart versionCounts={versionCounts} />
+      </DashboardWidgetCard>
     );
-
-  return (
-    <DashboardWidget
-      name={name}
-      WidgetActions={<WidgetActions widget={widget} />}
-    >
-      <DistroChart versionCounts={versionCounts} />
-    </DashboardWidget>
-  );
+  },
 };
+
+// export const WidgetDeploymentVersionDistribution: React.FC<{
+//   widget: SCHEMA.DashboardWidget;
+// }> = ({ widget }) => {
+//   const { config, name } = widget;
+//   const parsedConfig = schema.safeParse(config);
+//   const isValidConfig = parsedConfig.success;
+
+//   const { data, isLoading } =
+//     api.dashboard.widget.data.deploymentVersionDistribution.useQuery(
+//       {
+//         deploymentId: parsedConfig.data?.deploymentId ?? "",
+//         environmentIds: parsedConfig.data?.environmentIds,
+//       },
+//       { enabled: isValidConfig },
+//     );
+
+//   const versionCounts = data ?? [];
+
+//   if (!isValidConfig || (!isLoading && versionCounts.length === 0))
+//     return (
+//       <DashboardWidget
+//         name={name}
+//         WidgetActions={<WidgetActions widget={widget} />}
+//       >
+//         <div className="flex h-full w-full items-center justify-center">
+//           <p className="text-sm text-muted-foreground">Invalid config</p>
+//         </div>
+//       </DashboardWidget>
+//     );
+
+//   return (
+//     <DashboardWidget
+//       name={name}
+//       WidgetActions={<WidgetActions widget={widget} />}
+//     >
+//       <DistroChart versionCounts={versionCounts} />
+//     </DashboardWidget>
+//   );
+// };

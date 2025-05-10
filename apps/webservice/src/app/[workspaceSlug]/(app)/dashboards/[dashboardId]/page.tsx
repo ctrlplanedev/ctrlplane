@@ -15,6 +15,7 @@ import { Separator } from "@ctrlplane/ui/separator";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
+import { CreateWidgetDrawer } from "../_components/widget-drawer/CreateWidgetDrawer";
 import { PageHeader } from "../../_components/PageHeader";
 import { Dashboard } from "./_components/Dashboard";
 import { DashboardContextProvider } from "./_components/DashboardContext";
@@ -44,30 +45,33 @@ export default async function DashboardPage(props: PageProps) {
 
   return (
     <div className="h-full w-full">
-      <PageHeader className="justify-between">
-        <div className="flex shrink-0 items-center gap-4">
-          <Link href={urls.workspace(workspaceSlug).dashboards()}>
-            <IconArrowLeft className="size-5" />
-          </Link>
-          <Separator orientation="vertical" className="h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  href={urls.workspace(workspaceSlug).dashboards()}
-                >
-                  Dashboards
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{dashboard.name}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-      </PageHeader>
       <DashboardContextProvider dashboard={dashboard}>
+        <PageHeader className="justify-between">
+          <div className="flex shrink-0 items-center gap-4">
+            <Link href={urls.workspace(workspaceSlug).dashboards()}>
+              <IconArrowLeft className="size-5" />
+            </Link>
+            <Separator orientation="vertical" className="h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink
+                    href={urls.workspace(workspaceSlug).dashboards()}
+                  >
+                    Dashboards
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{dashboard.name}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
+          <CreateWidgetDrawer workspaceId={dashboard.workspaceId} />
+        </PageHeader>
+
         <Dashboard />
       </DashboardContextProvider>
     </div>

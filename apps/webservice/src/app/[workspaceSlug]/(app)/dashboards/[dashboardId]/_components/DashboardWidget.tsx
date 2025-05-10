@@ -1,6 +1,13 @@
-import React from "react";
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import type React from "react";
 
-export const DashboardWidget: React.FC<{
+export type DashboardWidget = {
+  displayName: string;
+  Icon: React.ReactNode;
+  Component: React.FC<{ widget: SCHEMA.DashboardWidget }>;
+};
+
+export const DashboardWidgetCard: React.FC<{
   name: string;
   WidgetActions: React.ReactNode;
   children: React.ReactNode;

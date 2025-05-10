@@ -1,15 +1,11 @@
-import type * as schema from "@ctrlplane/db/schema";
-import type React from "react";
-
+import type { DashboardWidget } from "../DashboardWidget";
 import { WidgetDeploymentVersionDistribution } from "./WidgetDeploymentVersionDistribution";
-
-type WidgetComponent = React.FC<{ widget: schema.DashboardWidget }>;
 
 export enum WidgetKind {
   DeploymentVersionDistribution = "deployment-version-distribution",
 }
 
-export const WidgetComponents: Record<WidgetKind, WidgetComponent> = {
+export const WidgetComponents: Record<WidgetKind, DashboardWidget> = {
   [WidgetKind.DeploymentVersionDistribution]:
     WidgetDeploymentVersionDistribution,
 } as const;

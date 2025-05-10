@@ -25,15 +25,17 @@ export const Dashboard: React.FC = () => {
       margin={[16, 16]}
       onLayoutChange={setLayout}
       draggableHandle=".widget-drag-handle"
+      isDroppable
+      droppingItem={{ i: "xx", h: 6, w: 3 }}
     >
       {dashboard.widgets.map((widget) => {
         const layoutItem = layout.lg?.find((item) => item.i === widget.id);
         if (layoutItem == null) return null;
 
-        const WidgetComponent = WidgetComponents[widget.widget as WidgetKind];
+        const { Component } = WidgetComponents[widget.widget as WidgetKind];
         return (
           <div key={widget.id} data-grid={{ ...layoutItem }}>
-            <WidgetComponent widget={widget} />
+            <Component widget={widget} />
           </div>
         );
       })}
