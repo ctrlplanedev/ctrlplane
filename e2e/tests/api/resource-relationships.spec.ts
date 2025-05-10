@@ -114,7 +114,7 @@ test.describe("Resource Relationships API", () => {
           sourceVersion: "test-version/v1",
           targetKind: "Target",
           targetVersion: "test-version/v1",
-          metadataTargetEquals: [
+          targetMetadataEquals: [
             { key: importedEntities.prefix, value: "true" },
           ],
         },

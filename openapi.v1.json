@@ -5976,7 +5976,7 @@
               "type": "string"
             }
           },
-          "metadataTargetEquals": {
+          "targetMetadataEquals": {
             "type": "array",
             "items": {
               "type": "object",

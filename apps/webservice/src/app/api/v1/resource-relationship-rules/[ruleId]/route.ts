@@ -111,13 +111,13 @@ export const PATCH = request()
           body.metadataKeysMatch,
         );
 
-        const metadataKeysEquals = await replaceMetadataEqualsRules(
+        const targetMetadataEquals = await replaceMetadataEqualsRules(
           tx,
           ruleId,
-          body.metadataKeysEquals,
+          body.targetMetadataEquals,
         );
 
-        return { ...rule, metadataKeysMatch, metadataKeysEquals };
+        return { ...rule, metadataKeysMatch, targetMetadataEquals };
       });
 
       return NextResponse.json(rule);

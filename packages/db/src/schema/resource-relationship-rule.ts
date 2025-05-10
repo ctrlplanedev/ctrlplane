@@ -139,8 +139,8 @@ export const resourceRelationshipRuleMetadataMatch = pgTable(
 export const resourceRelationshipRuleRelations = relations(
   resourceRelationshipRule,
   ({ many }) => ({
-    metadataMatches: many(resourceRelationshipRuleMetadataMatch),
-    metadataEquals: many(resourceRelationshipTargetRuleMetadataEquals),
+    metadataKeysMatches: many(resourceRelationshipRuleMetadataMatch),
+    targetMetadataEquals: many(resourceRelationshipTargetRuleMetadataEquals),
   }),
 );
 

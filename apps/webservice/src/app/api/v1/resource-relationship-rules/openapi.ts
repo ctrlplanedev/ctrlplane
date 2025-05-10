@@ -137,7 +137,7 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "array",
             items: { type: "string" },
           },
-          metadataTargetEquals: {
+          targetMetadataEquals: {
             type: "array",
             items: {
               type: "object",

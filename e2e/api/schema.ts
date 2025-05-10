@@ -1329,7 +1329,7 @@ export interface components {
       targetKind: string;
       targetVersion: string;
       metadataKeysMatch?: string[];
-      metadataTargetEquals?: {
+      targetMetadataEquals?: {
         key: string;
         value: string;
       }[];
