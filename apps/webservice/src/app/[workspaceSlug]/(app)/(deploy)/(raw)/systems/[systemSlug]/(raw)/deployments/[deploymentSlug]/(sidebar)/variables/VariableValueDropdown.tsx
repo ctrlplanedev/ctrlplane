@@ -66,7 +66,6 @@ const EditVariableValueDialog: React.FC<{
     defaultValues: {
       ...value,
       default: variable.defaultValueId === value.id,
-      valueType: value.valueType as "direct" | "reference",
     },
   });
 
