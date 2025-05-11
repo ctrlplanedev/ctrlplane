@@ -114,16 +114,29 @@ export const createDeploymentVariableValue = createInsertSchema(
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
 
-export type DeploymentVariableValueDirect = DeploymentVariableValue & {
+type BaseVariableAttributes = {
+  id: string;
+  variableId: string;
+  valueType: "direct" | "reference";
+  resourceSelector: ResourceCondition | null;
+};
+
+export type DeploymentVariableValueDirect = BaseVariableAttributes & {
   valueType: "direct";
+  value: string | number | boolean | object;
+  sensitive: boolean;
+  defaultValue: null;
   reference: null;
   path: null;
 };
 
-export type DeploymentVariableValueReference = DeploymentVariableValue & {
+export type DeploymentVariableValueReference = BaseVariableAttributes & {
   valueType: "reference";
   reference: string;
   path: string[];
+  defaultValue: string | number | boolean | object | null;
+  value: null;
+  sensitive: boolean;
 };
 
 export const isDeploymentVariableValueDirect = (

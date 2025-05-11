@@ -413,24 +413,6 @@ test.describe("Resource Variables API", () => {
     expect(refVar).toBeDefined();
     expect(refVar?.value).toBe("true");
 
-    // // Verify reference resolves
-    // const getSource = await api.GET(
-    //   `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
-    //   {
-    //     params: {
-    //       path: {
-    //         workspaceId: workspace.id,
-    //         identifier: `${systemPrefix}-source`,
-    //       },
-    //     },
-    //   },
-    // );
-    // expect(getSource.response.status).toBe(200);
-    // expect(getSource.data?.relationships?.[systemPrefix]?.target?.id).toBe(
-    //   targetResource.data?.id,
-    // );
-    // expect(getSource.data?.variables?.["ref-var"]).toBe("true");
-
     // Cleanup
     await api.DELETE("/v1/resources/{resourceId}", {
       params: { path: { resourceId: sourceResource.data?.id ?? "" } },

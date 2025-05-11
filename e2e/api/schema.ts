@@ -910,34 +910,36 @@ export interface components {
        */
       longitude: number;
     };
-    DeploymentVariableValue: {
-      /** Format: uuid */
-      id: string;
-      value?:
+    BaseVariableValue: {
+      resourceSelector?: {
+        [key: string]: unknown;
+      } | null;
+      default?: boolean;
+    };
+    DeploymentVariableDirectValue: components["schemas"]["BaseVariableValue"] & {
+      /** @enum {string} */
+      valueType: "direct";
+      value: string | number | boolean | Record<string, never> | unknown[];
+      sensitive?: boolean;
+    };
+    DeploymentVariableReferenceValue: components["schemas"]["BaseVariableValue"] & {
+      /** @enum {string} */
+      valueType: "reference";
+      reference: string;
+      path: string[];
+      defaultValue?:
         | string
         | number
         | boolean
-        | {
-            [key: string]: unknown;
-          };
-      sensitive?: boolean;
-      resourceSelector: {
-        [key: string]: unknown;
-      } | null;
-      /** @enum {string} */
-      valueType: "direct" | "reference";
-      reference?: string | null;
-      path?: string[] | null;
-      defaultValue?:
-        | (
-            | string
-            | number
-            | boolean
-            | {
-                [key: string]: unknown;
-              }
-          )
-        | null;
+        | Record<string, never>
+        | unknown[];
+    };
+    VariableValue:
+      | components["schemas"]["DeploymentVariableDirectValue"]
+      | components["schemas"]["DeploymentVariableReferenceValue"];
+    DeploymentVariableValue: components["schemas"]["VariableValue"] & {
+      /** Format: uuid */
+      id: string;
     };
     DeploymentVariable: {
       /** Format: uuid */
@@ -1978,34 +1980,11 @@ export interface operations {
           config: {
             [key: string]: unknown;
           };
-          values?: {
-            value?:
-              | string
-              | number
-              | boolean
-              | {
-                  [key: string]: unknown;
-                };
-            sensitive?: boolean;
+          values?: (components["schemas"]["VariableValue"] & {
             resourceSelector?: {
               [key: string]: unknown;
             } | null;
-            default?: boolean;
-            /** @enum {string} */
-            valueType?: "direct" | "reference";
-            reference?: string | null;
-            path?: string[] | null;
-            defaultValue?:
-              | (
-                  | string
-                  | number
-                  | boolean
-                  | {
-                      [key: string]: unknown;
-                    }
-                )
-              | null;
-          }[];
+          })[];
         };
       };
     };

@@ -8,38 +8,79 @@ export const openapi: Swagger.SwaggerV3 = {
   },
   components: {
     schemas: {
-      DeploymentVariableValue: {
+      BaseVariableValue: {
         type: "object",
         properties: {
-          id: { type: "string", format: "uuid" },
-          value: {
-            oneOf: [
-              { type: "string" },
-              { type: "number" },
-              { type: "boolean" },
-              { type: "object", additionalProperties: true },
-            ],
-          },
-          sensitive: { type: "boolean" },
           resourceSelector: {
             type: "object",
             additionalProperties: true,
             nullable: true,
           },
-          valueType: { type: "string", enum: ["direct", "reference"] },
-          reference: { type: "string", nullable: true },
-          path: { type: "array", items: { type: "string" }, nullable: true },
-          defaultValue: {
-            oneOf: [
-              { type: "string" },
-              { type: "number" },
-              { type: "boolean" },
-              { type: "object", additionalProperties: true },
-            ],
-            nullable: true,
-          },
+          default: { type: "boolean" },
         },
-        required: ["id", "resourceSelector", "valueType"],
+      },
+      DeploymentVariableDirectValue: {
+        allOf: [
+          { $ref: "#/components/schemas/BaseVariableValue" },
+          {
+            type: "object",
+            properties: {
+              valueType: { type: "string", enum: ["direct"] },
+              value: {
+                oneOf: [
+                  { type: "string" },
+                  { type: "number" },
+                  { type: "boolean" },
+                  { type: "object" },
+                  { type: "array" },
+                ],
+              },
+              sensitive: { type: "boolean" },
+            },
+            required: ["value", "valueType"],
+          },
+        ],
+      },
+      DeploymentVariableReferenceValue: {
+        allOf: [
+          { $ref: "#/components/schemas/BaseVariableValue" },
+          {
+            type: "object",
+            properties: {
+              valueType: { type: "string", enum: ["reference"] },
+              reference: { type: "string" },
+              path: { type: "array", items: { type: "string" } },
+              defaultValue: {
+                oneOf: [
+                  { type: "string" },
+                  { type: "number" },
+                  { type: "boolean" },
+                  { type: "object" },
+                  { type: "array" },
+                ],
+              },
+            },
+            required: ["reference", "path", "valueType"],
+          },
+        ],
+      },
+      VariableValue: {
+        oneOf: [
+          { $ref: "#/components/schemas/DeploymentVariableDirectValue" },
+          { $ref: "#/components/schemas/DeploymentVariableReferenceValue" },
+        ],
+      },
+      DeploymentVariableValue: {
+        allOf: [
+          { $ref: "#/components/schemas/VariableValue" },
+          {
+            type: "object",
+            properties: {
+              id: { type: "string", format: "uuid" },
+            },
+            required: ["id"],
+          },
+        ],
       },
       DeploymentVariable: {
         type: "object",
@@ -140,44 +181,19 @@ export const openapi: Swagger.SwaggerV3 = {
                   values: {
                     type: "array",
                     items: {
-                      type: "object",
-                      properties: {
-                        value: {
-                          oneOf: [
-                            { type: "string" },
-                            { type: "number" },
-                            { type: "boolean" },
-                            { type: "object", additionalProperties: true },
-                          ],
-                        },
-                        sensitive: { type: "boolean" },
-                        resourceSelector: {
+                      allOf: [
+                        { $ref: "#/components/schemas/VariableValue" },
+                        {
                           type: "object",
-                          additionalProperties: true,
-                          nullable: true,
+                          properties: {
+                            resourceSelector: {
+                              type: "object",
+                              additionalProperties: true,
+                              nullable: true,
+                            },
+                          },
                         },
-                        default: { type: "boolean" },
-                        valueType: {
-                          type: "string",
-                          enum: ["direct", "reference"],
-                        },
-                        reference: { type: "string", nullable: true },
-                        path: {
-                          type: "array",
-                          items: { type: "string" },
-                          nullable: true,
-                        },
-                        defaultValue: {
-                          oneOf: [
-                            { type: "string" },
-                            { type: "number" },
-                            { type: "boolean" },
-                            { type: "object", additionalProperties: true },
-                          ],
-                          nullable: true,
-                        },
-                      },
-                      required: ["valueType"],
+                      ],
                     },
                   },
                 },
