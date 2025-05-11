@@ -1179,6 +1179,19 @@ export interface components {
     };
     ResourceWithVariablesAndMetadata: components["schemas"]["ResourceWithVariables"] &
       components["schemas"]["ResourceWithMetadata"];
+    CreateResource: {
+      identifier: string;
+      name: string;
+      version: string;
+      kind: string;
+      config: {
+        [key: string]: unknown;
+      };
+      metadata: {
+        [key: string]: string;
+      };
+      variables?: components["schemas"]["Variable"][];
+    };
     /** @enum {string} */
     JobStatus:
       | "successful"
@@ -3175,18 +3188,7 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": {
-          resources: {
-            identifier: string;
-            name: string;
-            version: string;
-            kind: string;
-            config: {
-              [key: string]: unknown;
-            };
-            metadata: {
-              [key: string]: string;
-            };
-          }[];
+          resources: components["schemas"]["CreateResource"][];
         };
       };
     };
