@@ -913,11 +913,31 @@ export interface components {
     DeploymentVariableValue: {
       /** Format: uuid */
       id: string;
-      value: unknown;
-      sensitive: boolean;
+      value?:
+        | string
+        | number
+        | boolean
+        | {
+            [key: string]: unknown;
+          };
+      sensitive?: boolean;
       resourceSelector: {
         [key: string]: unknown;
       } | null;
+      /** @enum {string} */
+      valueType: "direct" | "reference";
+      reference?: string | null;
+      path?: string[] | null;
+      defaultValue?:
+        | (
+            | string
+            | number
+            | boolean
+            | {
+                [key: string]: unknown;
+              }
+          )
+        | null;
     };
     DeploymentVariable: {
       /** Format: uuid */
@@ -1959,12 +1979,32 @@ export interface operations {
             [key: string]: unknown;
           };
           values?: {
-            value: unknown;
+            value?:
+              | string
+              | number
+              | boolean
+              | {
+                  [key: string]: unknown;
+                };
             sensitive?: boolean;
             resourceSelector?: {
               [key: string]: unknown;
             } | null;
             default?: boolean;
+            /** @enum {string} */
+            valueType?: "direct" | "reference";
+            reference?: string | null;
+            path?: string[] | null;
+            defaultValue?:
+              | (
+                  | string
+                  | number
+                  | boolean
+                  | {
+                      [key: string]: unknown;
+                    }
+                )
+              | null;
           }[];
         };
       };

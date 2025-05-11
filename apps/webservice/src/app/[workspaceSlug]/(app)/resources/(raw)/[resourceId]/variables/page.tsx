@@ -248,7 +248,7 @@ export default async function VariablesPage(props: {
                 deploymentVariables.map((v) => (
                   <TableRow key={v.key}>
                     <TableCell>{v.key}</TableCell>
-                    <TableCell>{v.value.value}</TableCell>
+                    <TableCell>{String(v.value.value)}</TableCell>
                     <TableCell>
                       <Link
                         href={urls

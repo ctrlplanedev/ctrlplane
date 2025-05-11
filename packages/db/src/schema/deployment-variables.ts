@@ -7,6 +7,7 @@ import {
   boolean,
   foreignKey,
   jsonb,
+  pgEnum,
   pgTable,
   text,
   uniqueIndex,
@@ -53,13 +54,15 @@ export type InsertDeploymentVariable = InferInsertModel<
   typeof deploymentVariable
 >;
 
+export const valueType = pgEnum("value_type", ["direct", "reference"]);
+
 export const deploymentVariableValue = pgTable(
   "deployment_variable_value",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
 
-    valueType: text("value_type").notNull().default("direct"), // 'direct' | 'reference'
+    valueType: valueType("value_type").notNull().default("direct"), // 'direct' | 'reference'
 
     value: jsonb("value").$type<string | number | boolean | object>(),
     sensitive: boolean("sensitive").notNull().default(false),
@@ -96,7 +99,13 @@ export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
   {
     resourceSelector: resourceCondition.refine(isValidResourceCondition),
+    value: z
+      .union([z.string(), z.number(), z.boolean(), z.object({})])
+      .optional(),
     path: z.array(z.string()).optional(),
+    defaultValue: z
+      .union([z.string(), z.number(), z.boolean(), z.object({})])
+      .optional(),
   },
 )
   .omit({ id: true, variableId: true })
@@ -104,6 +113,30 @@ export const createDeploymentVariableValue = createInsertSchema(
 
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
+
+export type DeploymentVariableValueDirect = DeploymentVariableValue & {
+  valueType: "direct";
+  reference: null;
+  path: null;
+};
+
+export type DeploymentVariableValueReference = DeploymentVariableValue & {
+  valueType: "reference";
+  reference: string;
+  path: string[];
+};
+
+export const isDeploymentVariableValueDirect = (
+  value: DeploymentVariableValue,
+): value is DeploymentVariableValueDirect => {
+  return value.valueType === "direct";
+};
+
+export const isDeploymentVariableValueReference = (
+  value: DeploymentVariableValue,
+): value is DeploymentVariableValueReference => {
+  return value.valueType === "reference";
+};
 
 // workaround for cirular reference - https://www.answeroverflow.com/m/1194395880523042936
 const defaultValueIdFKConstraint: {

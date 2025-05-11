@@ -987,7 +987,23 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "value": {},
+                        "value": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          ]
+                        },
                         "sensitive": {
                           "type": "boolean"
                         },
@@ -998,10 +1014,46 @@
                         },
                         "default": {
                           "type": "boolean"
+                        },
+                        "valueType": {
+                          "type": "string",
+                          "enum": [
+                            "direct",
+                            "reference"
+                          ]
+                        },
+                        "reference": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "path": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "nullable": true
+                        },
+                        "defaultValue": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          ],
+                          "nullable": true
                         }
                       },
                       "required": [
-                        "value"
+                        "valueType"
                       ]
                     }
                   }
@@ -4817,7 +4869,23 @@
             "type": "string",
             "format": "uuid"
           },
-          "value": {},
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "additionalProperties": true
+              }
+            ]
+          },
           "sensitive": {
             "type": "boolean"
           },
@@ -4825,13 +4893,48 @@
             "type": "object",
             "additionalProperties": true,
             "nullable": true
+          },
+          "valueType": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "reference"
+            ]
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "defaultValue": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "additionalProperties": true
+              }
+            ],
+            "nullable": true
           }
         },
         "required": [
           "id",
-          "value",
-          "sensitive",
-          "resourceSelector"
+          "resourceSelector",
+          "valueType"
         ]
       },
       "DeploymentVariable": {
