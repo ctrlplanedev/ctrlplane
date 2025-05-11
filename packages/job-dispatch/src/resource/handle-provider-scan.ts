@@ -15,7 +15,10 @@ export type ResourceToInsert = Omit<
   "providerId" | "workspaceId"
 > & {
   metadata?: Record<string, string>;
-  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+  variables?: Array<
+    | { key: string; value: any; sensitive: boolean }
+    | { key: string; reference: string; path: string[]; defaultValue?: any }
+  >;
 };
 export const handleResourceProviderScan = async (
   tx: Tx,

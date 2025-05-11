@@ -46,7 +46,10 @@ export const CreateRelationshipDialog: React.FC<
 
   const form = useForm({
     schema: SCHEMA.createResourceRelationshipRule.extend({
-      metadataKeysMatch: z.array(z.object({ key: z.string() })),
+      metadataKeysMatches: z.array(z.object({ key: z.string() })),
+      targetMetadataEquals: z.array(
+        z.object({ value: z.string(), key: z.string() }),
+      ),
     }),
     defaultValues: {
       workspaceId,
@@ -59,8 +62,8 @@ export const CreateRelationshipDialog: React.FC<
       targetKind: null,
       targetVersion: null,
       dependencyType: "depends_on",
-      metadataKeysMatch: [],
-      metadataKeysEquals: [],
+      metadataKeysMatches: [],
+      targetMetadataEquals: [],
     },
   });
 
@@ -68,10 +71,10 @@ export const CreateRelationshipDialog: React.FC<
   const createRule = api.resource.relationshipRules.create.useMutation();
 
   const onSubmit = form.handleSubmit((data) => {
-    const { metadataKeysMatch } = data;
-    const keys = metadataKeysMatch.map((item) => item.key);
+    const { metadataKeysMatches } = data;
+    const keys = metadataKeysMatches.map((item) => item.key);
     createRule
-      .mutateAsync({ ...data, metadataKeysMatch: keys })
+      .mutateAsync({ ...data, metadataKeysMatches: keys })
       .then(() => utils.resource.relationshipRules.list.invalidate())
       .then(() => setOpen(false));
   });
@@ -81,16 +84,16 @@ export const CreateRelationshipDialog: React.FC<
     append: appendMetadataKeysMatch,
     remove: removeMetadataKeysMatch,
   } = useFieldArray({
-    name: "metadataKeysMatch",
+    name: "metadataKeysMatches",
     control: form.control,
   });
 
   const {
-    fields: metadataKeysEquals,
-    append: appendMetadataKeysEquals,
-    remove: removeMetadataKeysEquals,
+    fields: targetMetadataEquals,
+    append: appendTargetMetadataEquals,
+    remove: removeTargetMetadataEquals,
   } = useFieldArray({
-    name: "metadataKeysEquals",
+    name: "targetMetadataEquals",
     control: form.control,
   });
 
@@ -314,7 +317,7 @@ export const CreateRelationshipDialog: React.FC<
                   <FormField
                     key={field.id}
                     control={form.control}
-                    name={`metadataKeysMatch.${index}`}
+                    name={`metadataKeysMatches.${index}`}
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
@@ -355,14 +358,14 @@ export const CreateRelationshipDialog: React.FC<
 
             <div className="space-y-4">
               <h4 className="text-sm font-medium leading-none">
-                Metadata Equals Keys
+                Target Metadata Equals
               </h4>
               <div className="flex flex-wrap items-start gap-2">
-                {metadataKeysEquals.map((field, index) => (
+                {targetMetadataEquals.map((field, index) => (
                   <FormField
                     key={field.id}
                     control={form.control}
-                    name={`metadataKeysEquals.${index}`}
+                    name={`targetMetadataEquals.${index}`}
                     render={({ field: { value, onChange } }) => (
                       <FormItem>
                         <FormControl>
@@ -390,7 +393,7 @@ export const CreateRelationshipDialog: React.FC<
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeMetadataKeysEquals(index)}
+                              onClick={() => removeTargetMetadataEquals(index)}
                               className="h-5 w-5"
                             >
                               <IconX className="h-3 w-3" />
@@ -406,7 +409,7 @@ export const CreateRelationshipDialog: React.FC<
                   variant="secondary"
                   size="sm"
                   onClick={() =>
-                    appendMetadataKeysEquals({ key: "", value: "" })
+                    appendTargetMetadataEquals({ key: "", value: "" })
                   }
                 >
                   Add
