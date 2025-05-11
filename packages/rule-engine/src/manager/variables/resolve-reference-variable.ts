@@ -6,12 +6,15 @@ import { getResourceParents } from "@ctrlplane/db/queries";
 import { logger } from "@ctrlplane/logger";
 
 export const getReferenceVariableValue = async (
-  variable: schema.ReferenceResourceVariable,
+  resourceId: string,
+  variable:
+    | schema.ReferenceResourceVariable
+    | schema.DeploymentVariableValueReference,
 ) => {
   try {
     const { relationships, getTargetsWithMetadata } = await getResourceParents(
       db,
-      variable.resourceId,
+      resourceId,
     );
     const relationshipTargets = await getTargetsWithMetadata();
 

@@ -1,20 +1,13 @@
 import type { Tx } from "@ctrlplane/db";
 import type { VariableSetValue } from "@ctrlplane/db/schema";
 
-import { and, asc, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, asc, eq, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import {
-  deploymentVariable,
-  deploymentVariableValue,
-  resource,
-  resourceMatchesMetadata,
-  resourceVariable,
-  variableSetEnvironment,
-  variableSetValue,
-} from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, Variable, VariableProvider } from "./types.js";
+import { getReferenceVariableValue } from "./resolve-reference-variable.js";
 
 export type DatabaseResourceVariableOptions = {
   resourceId: string;
@@ -31,7 +24,7 @@ export class DatabaseResourceVariableProvider implements VariableProvider {
 
   private async loadVariables() {
     const variables = await this.db.query.resourceVariable.findMany({
-      where: and(eq(resourceVariable.resourceId, this.options.resourceId)),
+      where: eq(schema.resourceVariable.resourceId, this.options.resourceId),
     });
     return variables.map((v) => ({
       id: v.id,
@@ -57,16 +50,11 @@ export type DatabaseDeploymentVariableOptions = {
   db?: Tx;
 };
 
-type DeploymentVariableValue = {
-  value: any;
-  resourceSelector: any;
-};
-
 type DeploymentVariable = {
   id: string;
   key: string;
-  defaultValue: DeploymentVariableValue | null;
-  values: DeploymentVariableValue[];
+  defaultValue: schema.DeploymentVariableValue | null;
+  values: schema.DeploymentVariableValue[];
 };
 
 export class DatabaseDeploymentVariableProvider implements VariableProvider {
@@ -79,10 +67,13 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
 
   private loadVariables() {
     return this.db.query.deploymentVariable.findMany({
-      where: eq(deploymentVariable.deploymentId, this.options.deploymentId),
+      where: eq(
+        schema.deploymentVariable.deploymentId,
+        this.options.deploymentId,
+      ),
       with: {
         defaultValue: true,
-        values: { orderBy: [asc(deploymentVariableValue.value)] },
+        values: { orderBy: [asc(schema.deploymentVariableValue.value)] },
       },
     });
   }
@@ -91,42 +82,67 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     return (this.variables ??= this.loadVariables());
   }
 
+  async isSelectingResource(value: schema.DeploymentVariableValue) {
+    if (value.resourceSelector == null) return false;
+
+    const resourceMatch = await this.db.query.resource.findFirst({
+      where: and(
+        eq(schema.resource.id, this.options.resourceId),
+        selector().query().resources().where(value.resourceSelector).sql(),
+      ),
+    });
+
+    return resourceMatch != null;
+  }
+
+  async resolveVariableValue(value: schema.DeploymentVariableValue) {
+    const isDirect = schema.isDeploymentVariableValueDirect(value);
+    if (isDirect) return { resolved: true, value: value.value };
+
+    const isReference = schema.isDeploymentVariableValueReference(value);
+    if (isReference)
+      return {
+        resolved: true,
+        value: await getReferenceVariableValue(this.options.resourceId, value),
+      };
+
+    return { resolved: false, value: null };
+  }
+
   async getVariable(key: string): Promise<MaybeVariable> {
     const variables = await this.getVariables();
     const variable = variables.find((v) => v.key === key) ?? null;
     if (variable == null) return null;
 
     for (const value of variable.values) {
-      if (value.resourceSelector == null) continue;
-      const res = await this.db
-        .select()
-        .from(resource)
-        .where(
-          and(
-            eq(resource.id, this.options.resourceId),
-            resourceMatchesMetadata(this.db, value.resourceSelector),
-          ),
-        )
-        .then(takeFirstOrNull);
+      const isSelectingResource = await this.isSelectingResource(value);
+      if (!isSelectingResource) continue;
 
-      if (res != null)
-        return {
-          id: variable.id,
-          key,
-          sensitive: false,
-          ...value,
-        };
-    }
+      const { resolved, value: resolvedValue } =
+        await this.resolveVariableValue(value);
+      if (!resolved) continue;
 
-    if (variable.defaultValue != null)
       return {
         id: variable.id,
         key,
-        sensitive: false,
-        ...variable.defaultValue,
+        value: resolvedValue,
+        sensitive: value.sensitive,
       };
+    }
 
-    return null;
+    if (variable.defaultValue == null) return null;
+
+    const { resolved, value: resolvedValue } = await this.resolveVariableValue(
+      variable.defaultValue,
+    );
+    if (!resolved) return null;
+
+    return {
+      id: variable.id,
+      key,
+      value: resolvedValue,
+      sensitive: variable.defaultValue.sensitive,
+    };
   }
 }
 
@@ -148,18 +164,21 @@ export class DatabaseSystemVariableSetProvider implements VariableProvider {
   private loadVariables() {
     return this.db
       .select()
-      .from(variableSetValue)
+      .from(schema.variableSetValue)
       .innerJoin(
-        variableSetEnvironment,
+        schema.variableSetEnvironment,
         eq(
-          variableSetValue.variableSetId,
-          variableSetEnvironment.variableSetId,
+          schema.variableSetValue.variableSetId,
+          schema.variableSetEnvironment.variableSetId,
         ),
       )
       .where(
-        eq(variableSetEnvironment.environmentId, this.options.environmentId),
+        eq(
+          schema.variableSetEnvironment.environmentId,
+          this.options.environmentId,
+        ),
       )
-      .orderBy(asc(variableSetValue.value))
+      .orderBy(asc(schema.variableSetValue.value))
       .then((rows) => rows.map((r) => r.variable_set_value));
   }
 

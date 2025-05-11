@@ -8,7 +8,6 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTriggeredRunbookJob } from "./job-creation.js";
 import { updateJob } from "./job-update.js";
-import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
@@ -72,32 +71,9 @@ class DispatchBuilder {
 
     console.log(`Dispatching ${wfs.length} jobs to the dispatch queue`);
 
-    const results = await Promise.allSettled(
-      wfsWithJobAgent.map((wf) => createReleaseVariables(this.db, wf.id)),
-    );
-
-    const jobsWithResolvedVariables = await Promise.all(
-      results.map(async (result, index) => {
-        if (result.status !== "fulfilled") {
-          const wf = wfsWithJobAgent[index];
-          if (!wf) return null;
-
-          return updateJob(this.db, wf.id, {
-            status: JobStatus.Failure,
-            message: `Variable resolution failed during job dispatch: ${result.reason.message}`,
-          });
-        }
-        return wfsWithJobAgent[index];
-      }),
-    );
-
-    const validJobsWithResolvedVariables = jobsWithResolvedVariables.filter(
-      (job): job is schema.Job => job !== null,
-    );
-
-    if (validJobsWithResolvedVariables.length > 0) {
+    if (wfsWithJobAgent.length > 0) {
       await getQueue(Channel.DispatchJob).addBulk(
-        validJobsWithResolvedVariables.map((wf) => ({
+        wfsWithJobAgent.map((wf) => ({
           name: wf.id,
           data: { jobId: wf.id },
         })),
@@ -113,7 +89,7 @@ class DispatchBuilder {
       ),
     );
 
-    return validJobsWithResolvedVariables;
+    return wfsWithJobAgent;
   }
 }
 

@@ -8,19 +8,79 @@ export const openapi: Swagger.SwaggerV3 = {
   },
   components: {
     schemas: {
-      DeploymentVariableValue: {
+      BaseVariableValue: {
         type: "object",
         properties: {
-          id: { type: "string", format: "uuid" },
-          value: {},
-          sensitive: { type: "boolean" },
           resourceSelector: {
             type: "object",
             additionalProperties: true,
             nullable: true,
           },
+          default: { type: "boolean" },
         },
-        required: ["id", "value", "sensitive", "resourceSelector"],
+      },
+      DeploymentVariableDirectValue: {
+        allOf: [
+          { $ref: "#/components/schemas/BaseVariableValue" },
+          {
+            type: "object",
+            properties: {
+              valueType: { type: "string", enum: ["direct"] },
+              value: {
+                oneOf: [
+                  { type: "string" },
+                  { type: "number" },
+                  { type: "boolean" },
+                  { type: "object" },
+                  { type: "array" },
+                ],
+              },
+              sensitive: { type: "boolean" },
+            },
+            required: ["value", "valueType"],
+          },
+        ],
+      },
+      DeploymentVariableReferenceValue: {
+        allOf: [
+          { $ref: "#/components/schemas/BaseVariableValue" },
+          {
+            type: "object",
+            properties: {
+              valueType: { type: "string", enum: ["reference"] },
+              reference: { type: "string" },
+              path: { type: "array", items: { type: "string" } },
+              defaultValue: {
+                oneOf: [
+                  { type: "string" },
+                  { type: "number" },
+                  { type: "boolean" },
+                  { type: "object" },
+                  { type: "array" },
+                ],
+              },
+            },
+            required: ["reference", "path", "valueType"],
+          },
+        ],
+      },
+      VariableValue: {
+        oneOf: [
+          { $ref: "#/components/schemas/DeploymentVariableDirectValue" },
+          { $ref: "#/components/schemas/DeploymentVariableReferenceValue" },
+        ],
+      },
+      DeploymentVariableValue: {
+        allOf: [
+          { $ref: "#/components/schemas/VariableValue" },
+          {
+            type: "object",
+            properties: {
+              id: { type: "string", format: "uuid" },
+            },
+            required: ["id"],
+          },
+        ],
       },
       DeploymentVariable: {
         type: "object",
@@ -121,18 +181,19 @@ export const openapi: Swagger.SwaggerV3 = {
                   values: {
                     type: "array",
                     items: {
-                      type: "object",
-                      properties: {
-                        value: {},
-                        sensitive: { type: "boolean" },
-                        resourceSelector: {
+                      allOf: [
+                        { $ref: "#/components/schemas/VariableValue" },
+                        {
                           type: "object",
-                          additionalProperties: true,
-                          nullable: true,
+                          properties: {
+                            resourceSelector: {
+                              type: "object",
+                              additionalProperties: true,
+                              nullable: true,
+                            },
+                          },
                         },
-                        default: { type: "boolean" },
-                      },
-                      required: ["value"],
+                      ],
                     },
                   },
                 },

@@ -85,6 +85,7 @@ export const GET = request()
 
       if (v.valueType === "reference") {
         const resolvedValue = await getReferenceVariableValue(
+          resource.id,
           v as schema.ReferenceResourceVariable,
         );
         return [v.key, resolvedValue] as const;

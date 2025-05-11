@@ -64,7 +64,11 @@ export const DeploymentsContent: React.FC<{ resourceId: string }> = ({
                     {deploymentVariables.map(({ key, value }) => (
                       <tr className="text-sm" key={key}>
                         <TableCell className="p-3">{key}</TableCell>
-                        <TableCell className="p-3">{value.value}</TableCell>
+                        <TableCell className="p-3">
+                          {typeof value.value === "object"
+                            ? JSON.stringify(value.value)
+                            : value.value}
+                        </TableCell>
                         <TableHead />
                       </tr>
                     ))}

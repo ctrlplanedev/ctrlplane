@@ -910,14 +910,36 @@ export interface components {
        */
       longitude: number;
     };
-    DeploymentVariableValue: {
-      /** Format: uuid */
-      id: string;
-      value: unknown;
-      sensitive: boolean;
-      resourceSelector: {
+    BaseVariableValue: {
+      resourceSelector?: {
         [key: string]: unknown;
       } | null;
+      default?: boolean;
+    };
+    DeploymentVariableDirectValue: components["schemas"]["BaseVariableValue"] & {
+      /** @enum {string} */
+      valueType: "direct";
+      value: string | number | boolean | Record<string, never> | unknown[];
+      sensitive?: boolean;
+    };
+    DeploymentVariableReferenceValue: components["schemas"]["BaseVariableValue"] & {
+      /** @enum {string} */
+      valueType: "reference";
+      reference: string;
+      path: string[];
+      defaultValue?:
+        | string
+        | number
+        | boolean
+        | Record<string, never>
+        | unknown[];
+    };
+    VariableValue:
+      | components["schemas"]["DeploymentVariableDirectValue"]
+      | components["schemas"]["DeploymentVariableReferenceValue"];
+    DeploymentVariableValue: components["schemas"]["VariableValue"] & {
+      /** Format: uuid */
+      id: string;
     };
     DeploymentVariable: {
       /** Format: uuid */
@@ -1971,14 +1993,11 @@ export interface operations {
           config: {
             [key: string]: unknown;
           };
-          values?: {
-            value: unknown;
-            sensitive?: boolean;
+          values?: (components["schemas"]["VariableValue"] & {
             resourceSelector?: {
               [key: string]: unknown;
             } | null;
-            default?: boolean;
-          }[];
+          })[];
         };
       };
     };
