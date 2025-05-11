@@ -2,6 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { CREATED, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
+import { isPresent } from "ts-is-present";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
@@ -17,6 +18,14 @@ import { request } from "~/app/api/v1/middleware";
 const log = logger.child({
   route: "/v1/deployments/[deploymentId]/variables",
 });
+
+const resolveDirectValue = (val: schema.DeploymentVariableValueDirect) => {
+  const { id, value, valueType, sensitive, resourceSelector } = val;
+  const strVal =
+    typeof value === "object" ? JSON.stringify(value) : String(value);
+  const resolvedValue = sensitive ? variablesAES256().decrypt(strVal) : value;
+  return { id, value: resolvedValue, valueType, resourceSelector, sensitive };
+};
 
 export const GET = request()
   .use(authn)
@@ -48,19 +57,17 @@ export const GET = request()
 
         const variables = variablesResult.map((v) => {
           const { values, defaultValueId, deploymentId: _, ...rest } = v;
-          const resolvedValues = values.map((val) => {
-            const { id, value, sensitive, resourceSelector } = val;
-            const strVal = String(value);
-            const resolvedValue = sensitive
-              ? variablesAES256().decrypt(strVal)
-              : strVal;
-            return {
-              id,
-              value: resolvedValue,
-              resourceSelector,
-              sensitive,
-            };
-          });
+          const resolvedValues = values
+            .map((val) => {
+              const isDirect = schema.isDeploymentVariableValueDirect(val);
+              if (isDirect) return resolveDirectValue(val);
+              const isReference =
+                schema.isDeploymentVariableValueReference(val);
+              if (isReference) return val;
+              log.error("Invalid variable value type", { value: val });
+              return null;
+            })
+            .filter(isPresent);
 
           const defaultValue = resolvedValues.find(
             (v) => v.id === defaultValueId,
