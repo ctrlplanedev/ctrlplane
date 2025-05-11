@@ -12,15 +12,34 @@ export const openapi: Swagger.SwaggerV3 = {
         type: "object",
         properties: {
           id: { type: "string", format: "uuid" },
-          value: {},
+          value: {
+            oneOf: [
+              { type: "string" },
+              { type: "number" },
+              { type: "boolean" },
+              { type: "object", additionalProperties: true },
+            ],
+          },
           sensitive: { type: "boolean" },
           resourceSelector: {
             type: "object",
             additionalProperties: true,
             nullable: true,
           },
+          valueType: { type: "string", enum: ["direct", "reference"] },
+          reference: { type: "string", nullable: true },
+          path: { type: "array", items: { type: "string" }, nullable: true },
+          defaultValue: {
+            oneOf: [
+              { type: "string" },
+              { type: "number" },
+              { type: "boolean" },
+              { type: "object", additionalProperties: true },
+            ],
+            nullable: true,
+          },
         },
-        required: ["id", "value", "sensitive", "resourceSelector"],
+        required: ["id", "resourceSelector", "valueType"],
       },
       DeploymentVariable: {
         type: "object",
@@ -123,7 +142,14 @@ export const openapi: Swagger.SwaggerV3 = {
                     items: {
                       type: "object",
                       properties: {
-                        value: {},
+                        value: {
+                          oneOf: [
+                            { type: "string" },
+                            { type: "number" },
+                            { type: "boolean" },
+                            { type: "object", additionalProperties: true },
+                          ],
+                        },
                         sensitive: { type: "boolean" },
                         resourceSelector: {
                           type: "object",
@@ -131,8 +157,27 @@ export const openapi: Swagger.SwaggerV3 = {
                           nullable: true,
                         },
                         default: { type: "boolean" },
+                        valueType: {
+                          type: "string",
+                          enum: ["direct", "reference"],
+                        },
+                        reference: { type: "string", nullable: true },
+                        path: {
+                          type: "array",
+                          items: { type: "string" },
+                          nullable: true,
+                        },
+                        defaultValue: {
+                          oneOf: [
+                            { type: "string" },
+                            { type: "number" },
+                            { type: "boolean" },
+                            { type: "object", additionalProperties: true },
+                          ],
+                          nullable: true,
+                        },
                       },
-                      required: ["value"],
+                      required: ["valueType"],
                     },
                   },
                 },

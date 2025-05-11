@@ -7,6 +7,7 @@ import {
   boolean,
   foreignKey,
   jsonb,
+  pgEnum,
   pgTable,
   text,
   uniqueIndex,
@@ -53,13 +54,15 @@ export type InsertDeploymentVariable = InferInsertModel<
   typeof deploymentVariable
 >;
 
+export const valueType = pgEnum("value_type", ["direct", "reference"]);
+
 export const deploymentVariableValue = pgTable(
   "deployment_variable_value",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
 
-    valueType: text("value_type").notNull().default("direct"), // 'direct' | 'reference'
+    valueType: valueType("value_type").notNull().default("direct"), // 'direct' | 'reference'
 
     value: jsonb("value").$type<string | number | boolean | object>(),
     sensitive: boolean("sensitive").notNull().default(false),
@@ -85,7 +88,7 @@ export const deploymentVariableValue = pgTable(
 
     sql`CONSTRAINT valid_value_type CHECK (
       (value_type = 'direct' AND value IS NOT NULL AND reference IS NULL AND path IS NULL) OR
-      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL AND default_value IS NOT NULL)
+      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL)
     )`,
   ],
 );

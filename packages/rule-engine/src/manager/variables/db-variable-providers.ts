@@ -24,9 +24,7 @@ export class DatabaseResourceVariableProvider implements VariableProvider {
 
   private async loadVariables() {
     const variables = await this.db.query.resourceVariable.findMany({
-      where: and(
-        eq(schema.resourceVariable.resourceId, this.options.resourceId),
-      ),
+      where: eq(schema.resourceVariable.resourceId, this.options.resourceId),
     });
     return variables.map((v) => ({
       id: v.id,

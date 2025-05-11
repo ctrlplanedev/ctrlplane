@@ -412,7 +412,7 @@ export const resourceRouter = createTRPCRouter({
 
       const resolvedReferenceVariables = await Promise.all(
         referenceVariables.map(async (v) => {
-          const resolvedValue = await getReferenceVariableValue(v);
+          const resolvedValue = await getReferenceVariableValue(resource.id, v);
           return { ...v, resolvedValue };
         }),
       );
