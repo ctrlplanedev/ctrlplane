@@ -128,7 +128,6 @@ test.describe("Deployment Variables API", () => {
     expect(receivedGetKey).toBe(key);
 
     const receivedValues = receivedVariable.values;
-    console.log(receivedValues);
     expect(receivedValues.length).toBe(2);
     const receivedValueA =
       receivedValues[0]!.valueType === "direct"
