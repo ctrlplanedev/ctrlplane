@@ -180,21 +180,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   },
                   values: {
                     type: "array",
-                    items: {
-                      allOf: [
-                        { $ref: "#/components/schemas/VariableValue" },
-                        {
-                          type: "object",
-                          properties: {
-                            resourceSelector: {
-                              type: "object",
-                              additionalProperties: true,
-                              nullable: true,
-                            },
-                          },
-                        },
-                      ],
-                    },
+                    items: { $ref: "#/components/schemas/VariableValue" },
                   },
                 },
                 required: ["key", "config"],

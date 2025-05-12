@@ -985,21 +985,7 @@
                   "values": {
                     "type": "array",
                     "items": {
-                      "allOf": [
-                        {
-                          "$ref": "#/components/schemas/VariableValue"
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "resourceSelector": {
-                              "type": "object",
-                              "additionalProperties": true,
-                              "nullable": true
-                            }
-                          }
-                        }
-                      ]
+                      "$ref": "#/components/schemas/VariableValue"
                     }
                   }
                 },
@@ -5952,7 +5938,7 @@
               "type": "string"
             }
           },
-          "metadataTargetKeysEquals": {
+          "targetMetadataEquals": {
             "type": "array",
             "items": {
               "type": "object",
