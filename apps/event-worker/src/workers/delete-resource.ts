@@ -28,6 +28,18 @@ const deleteComputedResources = async (tx: Tx, resource: SCHEMA.Resource) =>
       .where(eq(SCHEMA.computedEnvironmentResource.resourceId, resource.id)),
   ]);
 
+const dispatchVariableUpdateJobs = async (
+  tx: Tx,
+  resource: SCHEMA.Resource,
+) => {
+  const variables = await tx.query.resourceVariable.findMany({
+    where: eq(SCHEMA.resourceVariable.resourceId, resource.id),
+  });
+
+  for (const variable of variables)
+    getQueue(Channel.UpdateResourceVariable).add(variable.id, variable);
+};
+
 export const deleteResourceWorker = createWorker(
   Channel.DeleteResource,
   async ({ data: resource }) => {
@@ -40,5 +52,7 @@ export const deleteResourceWorker = createWorker(
           deduplication: { id: rt.id },
         });
     });
+
+    await dispatchVariableUpdateJobs(db, resource);
   },
 );

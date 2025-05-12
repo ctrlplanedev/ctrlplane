@@ -76,6 +76,69 @@ export const getResourceChildren = async (tx: Tx, resourceId: string) => {
     ),
   ];
 
+  const relationships2 = await tx
+    .selectDistinctOn([targetResource.id, schema.resourceRelationshipRule.id])
+    .from(sourceResource)
+    .innerJoin(
+      targetResource,
+      eq(targetResource.workspaceId, sourceResource.workspaceId),
+    )
+    .innerJoin(
+      schema.resourceRelationshipRule,
+      and(...ruleMatchesSource, ...ruleMatchesTarget),
+    )
+    .leftJoin(
+      schema.resourceRelationshipRuleMetadataMatch,
+      eq(
+        schema.resourceRelationshipRuleMetadataMatch.resourceRelationshipRuleId,
+        schema.resourceRelationshipRule.id,
+      ),
+    )
+    .leftJoin(
+      schema.resourceRelationshipTargetRuleMetadataEquals,
+      eq(
+        schema.resourceRelationshipTargetRuleMetadataEquals
+          .resourceRelationshipRuleId,
+        schema.resourceRelationshipRule.id,
+      ),
+    )
+    .where(
+      and(
+        eq(targetResource.id, resourceId),
+        ne(sourceResource.id, resourceId),
+        /**
+         * NOTE: we do NOT check if the target resource is deleted:
+         * we will call this function after we delete a resource
+         * to get its dependencies - then we will reevaluate them since they
+         * may reference this resource's variables, meaning we would need a new
+         * variable release.
+         */
+        isNull(sourceResource.deletedAt),
+        // isMetadataEqualsSatisfied,
+        // isMetadataMatchSatisfied,
+      ),
+    );
+
+  const targetMeta = await tx
+    .select()
+    .from(targetMetadata)
+    .where(eq(targetMetadata.resourceId, resourceId));
+
+  console.log({ targetMeta });
+
+  for (const rel of relationships2) {
+    const sourceMeta = await tx
+      .select()
+      .from(sourceMetadata)
+      .where(eq(sourceMetadata.resourceId, rel.sourceResource.id));
+
+    console.log({ sourceMeta });
+  }
+
+  for (const rel of relationships2) {
+    console.log({ rel });
+  }
+
   const relationships = await tx
     .selectDistinctOn([targetResource.id, schema.resourceRelationshipRule.id], {
       ruleId: schema.resourceRelationshipRule.id,
@@ -111,8 +174,14 @@ export const getResourceChildren = async (tx: Tx, resourceId: string) => {
       and(
         eq(targetResource.id, resourceId),
         ne(sourceResource.id, resourceId),
+        /**
+         * NOTE: we do NOT check if the target resource is deleted:
+         * we will call this function after we delete a resource
+         * to get its dependencies - then we will reevaluate them since they
+         * may reference this resource's variables, meaning we would need a new
+         * variable release.
+         */
         isNull(sourceResource.deletedAt),
-        isNull(targetResource.deletedAt),
         isMetadataEqualsSatisfied,
         isMetadataMatchSatisfied,
       ),

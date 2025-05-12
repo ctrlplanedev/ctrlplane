@@ -5,4 +5,4 @@ export * from "./utils/merge-policies.js";
 export * from "./types.js";
 export * from "./manager/version-manager.js";
 export * from "./manager/variable-manager.js";
-export * from "./manager/variables/resolve-reference-variable.js";
+export * from "./manager/variables/index.js";

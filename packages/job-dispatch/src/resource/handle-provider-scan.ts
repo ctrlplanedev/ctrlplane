@@ -1,10 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 
-import { inArray, upsertResources } from "@ctrlplane/db";
+import { and, eq, inArray, upsertResources } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
+import { getAffectedVariables } from "@ctrlplane/rule-engine";
 
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
 
@@ -20,6 +21,27 @@ export type ResourceToInsert = Omit<
     | { key: string; reference: string; path: string[]; defaultValue?: any }
   >;
 };
+
+const getPreviousVariables = (
+  tx: Tx,
+  workspaceId: string,
+  toUpdate: ResourceToInsert[],
+) =>
+  tx.query.resource
+    .findMany({
+      where: and(
+        inArray(
+          schema.resource.identifier,
+          toUpdate.map((r) => r.identifier),
+        ),
+        eq(schema.resource.workspaceId, workspaceId),
+      ),
+      with: { variables: true },
+    })
+    .then((resources) =>
+      Object.fromEntries(resources.map((r) => [r.identifier, r.variables])),
+    );
+
 export const handleResourceProviderScan = async (
   tx: Tx,
   workspaceId: string,
@@ -37,6 +59,12 @@ export const handleResourceProviderScan = async (
       );
     log.info(
       `found ${toInsert.length} resources to insert and ${toUpdate.length} resources to update `,
+    );
+
+    const previousVariables = await getPreviousVariables(
+      tx,
+      workspaceId,
+      toUpdate,
     );
 
     const [insertedResources, updatedResources] = await Promise.all([
@@ -73,6 +101,27 @@ export const handleResourceProviderScan = async (
     await getQueue(Channel.DeleteResource).addBulk(deleteJobs);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
     await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
+
+    for (const resource of insertedResources) {
+      const { variables } = resource;
+      for (const variable of variables)
+        await getQueue(Channel.UpdateResourceVariable).add(
+          variable.id,
+          variable,
+        );
+    }
+
+    for (const resource of updatedResources) {
+      const { variables } = resource;
+      const previousVars = previousVariables[resource.identifier] ?? [];
+
+      const affectedVariables = getAffectedVariables(previousVars, variables);
+      for (const variable of affectedVariables)
+        await getQueue(Channel.UpdateResourceVariable).add(
+          variable.id,
+          variable,
+        );
+    }
 
     log.info("completed handling resource provider scan");
     return {

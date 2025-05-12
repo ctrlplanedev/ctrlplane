@@ -15,6 +15,7 @@ export const updateResourceMetadata = async (
   tx: Tx,
   resources: ResourceWithMetadata[],
 ) => {
+  console.log("resources", resources);
   const resourceMetadataValues = resources.flatMap((resource) => {
     const { id, metadata = {} } = resource;
     return Object.entries(metadata).map(([key, value]) => ({
@@ -171,8 +172,6 @@ export const upsertResources = async (
       ),
       eq(SCHEMA.resource.workspaceId, workspaceId),
     ),
-    with: {
-      metadata: true,
-    },
+    with: { metadata: true, variables: true },
   });
 };

@@ -7,6 +7,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
+import { getAffectedVariables } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -75,9 +76,7 @@ export const POST = request()
             eq(schema.resource.identifier, ctx.body.identifier),
             eq(schema.resource.workspaceId, ctx.body.workspaceId),
           ),
-          with: {
-            metadata: true,
-          },
+          with: { metadata: true, variables: true },
         });
 
         const [insertedResource] = await upsertResources(
@@ -98,6 +97,17 @@ export const POST = request()
         getQueue(queueChannel).add(insertedResource.id, insertedResource, {
           jobId: insertedResource.id,
         });
+
+        const affectedVariables = getAffectedVariables(
+          existingResource?.variables ?? [],
+          insertedResource.variables,
+        );
+
+        for (const variable of affectedVariables)
+          await getQueue(Channel.UpdateResourceVariable).add(
+            variable.id,
+            variable,
+          );
 
         const resourceWithMeta = {
           ...insertedResource,
