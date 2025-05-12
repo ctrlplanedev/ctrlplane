@@ -1319,7 +1319,7 @@ export interface components {
       targetKind?: string;
       targetVersion?: string;
       metadataKeysMatch?: string[];
-      metadataTargetKeysEquals?: {
+      targetMetadataEquals?: {
         key: string;
         value: string;
       }[];
