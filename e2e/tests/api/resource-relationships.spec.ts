@@ -261,7 +261,7 @@ test.describe("Resource Relationships API", () => {
         sourceVersion: `${importedEntities.prefix}-version/v1`,
         targetKind: "Target",
         targetVersion: `${importedEntities.prefix}-version/v1`,
-        metadataKeysMatches: ["e2e/test", importedEntities.prefix],
+        metadataKeysMatches: ["e2e/test", "e2e/test2"],
       },
     });
 
