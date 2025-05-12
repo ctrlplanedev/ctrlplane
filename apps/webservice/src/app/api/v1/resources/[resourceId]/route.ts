@@ -127,7 +127,10 @@ export const PATCH = request()
       const isResource = eq(schema.resource.id, resourceId);
       const isNotDeleted = isNull(schema.resource.deletedAt);
       const where = and(isResource, isNotDeleted);
-      const resource = await db.query.resource.findFirst({ where });
+      const resource = await db.query.resource.findFirst({
+        where,
+        with: { metadata: true, variables: true },
+      });
 
       if (resource == null)
         return NextResponse.json(
