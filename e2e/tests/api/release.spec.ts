@@ -71,7 +71,7 @@ test.describe("Release Creation", () => {
     expect(resource).toBeDefined();
     const resourceId = resource?.id ?? "";
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(24_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -153,8 +153,9 @@ test.describe("Release Creation", () => {
             {
               value: "test-a",
               default: true,
+              valueType: "direct",
             },
-            { value: "test-b" },
+            { value: "test-b", valueType: "direct" },
           ],
         },
       },
@@ -178,7 +179,7 @@ test.describe("Release Creation", () => {
     expect(resource).toBeDefined();
     const resourceId = resource?.id ?? "";
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(24_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -264,8 +265,9 @@ test.describe("Release Creation", () => {
             {
               value: "test-a",
               default: true,
+              valueType: "direct",
             },
-            { value: "test-b" },
+            { value: "test-b", valueType: "direct" },
           ],
         },
       },
@@ -288,7 +290,7 @@ test.describe("Release Creation", () => {
     expect(resourceCreateResponse.response.status).toBe(200);
     const resourceId = resourceCreateResponse.data?.id ?? "";
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(24_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -395,8 +397,9 @@ test.describe("Release Creation", () => {
             {
               value: "test-a",
               default: true,
+              valueType: "direct",
             },
-            { value: "test-b" },
+            { value: "test-b", valueType: "direct" },
           ],
         },
       },
@@ -419,7 +422,7 @@ test.describe("Release Creation", () => {
     expect(resourceCreateResponse.response.status).toBe(200);
     const resourceId = resourceCreateResponse.data?.id ?? "";
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(24_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -507,8 +510,9 @@ test.describe("Release Creation", () => {
             {
               value: "test-a",
               default: true,
+              valueType: "direct",
             },
-            { value: "test-b" },
+            { value: "test-b", valueType: "direct" },
           ],
         },
       },
@@ -542,7 +546,7 @@ test.describe("Release Creation", () => {
     );
     expect(resourceUpdateResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(24_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -630,8 +634,9 @@ test.describe("Release Creation", () => {
             {
               value: "test-a",
               default: true,
+              valueType: "direct",
             },
-            { value: "test-b" },
+            { value: "test-b", valueType: "direct" },
           ],
         },
       },
@@ -665,7 +670,7 @@ test.describe("Release Creation", () => {
     );
     expect(resourceUpdateResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(24_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -753,8 +758,9 @@ test.describe("Release Creation", () => {
             {
               value: "test-a",
               default: true,
+              valueType: "direct",
             },
-            { value: "test-b" },
+            { value: "test-b", valueType: "direct" },
           ],
         },
       },
@@ -790,7 +796,7 @@ test.describe("Release Creation", () => {
     );
     expect(resourceUpdateResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(24_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
