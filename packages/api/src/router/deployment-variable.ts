@@ -258,12 +258,7 @@ export const deploymentVariableRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const deploymentVariableValueSubquery = ctx.db
-        .select({
-          id: deploymentVariableValue.id,
-          value: deploymentVariableValue.value,
-          variableId: deploymentVariableValue.variableId,
-          resourceSelector: deploymentVariableValue.resourceSelector,
-        })
+        .select()
         .from(deploymentVariableValue)
         .orderBy(asc(deploymentVariableValue.value))
         .groupBy(deploymentVariableValue.id)
@@ -280,7 +275,11 @@ export const deploymentVariableRouter = createTRPCRouter({
                     'id', ${deploymentVariableValueSubquery.id},
                     'value', ${deploymentVariableValueSubquery.value},
                     'variableId', ${deploymentVariableValueSubquery.variableId},
-                    'resourceSelector', ${deploymentVariableValueSubquery.resourceSelector}
+                    'resourceSelector', ${deploymentVariableValueSubquery.resourceSelector},
+                    'valueType', ${deploymentVariableValueSubquery.valueType},
+                    'reference', ${deploymentVariableValueSubquery.reference},
+                    'path', ${deploymentVariableValueSubquery.path},
+                    'defaultValue', ${deploymentVariableValueSubquery.defaultValue}
                   )
                 else null end
               ) filter (where ${deploymentVariableValueSubquery.id} is not null),
