@@ -88,7 +88,7 @@ export const createReleaseJob = async (
   } catch (e) {
     log.error("Failed to create release job for release", {
       releaseId: release.id,
-      error: e,
+      error: e instanceof Error ? e.message : String(e),
     });
     throw e;
   }
