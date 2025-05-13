@@ -45,7 +45,7 @@ export class VariableReleaseManager implements ReleaseManager {
         .returning()
         .then(takeFirst);
 
-      const vars = _.compact(variables);
+      const vars = _.compact(variables).filter((v) => v.value !== null);
       if (vars.length === 0) return { created: true, release };
 
       await tx
@@ -54,7 +54,7 @@ export class VariableReleaseManager implements ReleaseManager {
           vars.map((v) => ({
             workspaceId: this.releaseTarget.workspaceId,
             key: v.key,
-            value: v.value === null ? "" : v.value,
+            value: v.value,
             sensitive: v.sensitive,
           })),
         )
@@ -70,10 +70,7 @@ export class VariableReleaseManager implements ReleaseManager {
             ...vars.map((v) =>
               and(
                 eq(schema.variableValueSnapshot.key, v.key),
-                eq(
-                  schema.variableValueSnapshot.value,
-                  v.value === null ? "" : v.value,
-                ),
+                eq(schema.variableValueSnapshot.value, v.value),
                 eq(
                   schema.variableValueSnapshot.workspaceId,
                   this.releaseTarget.workspaceId,

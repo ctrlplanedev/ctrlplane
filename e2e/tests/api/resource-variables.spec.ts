@@ -758,8 +758,7 @@ test.describe("Resource Variables API", () => {
     const variables = latestRelease?.variables ?? [];
 
     const refVar = variables.find((v) => v.key === key);
-    expect(refVar).toBeDefined();
-    expect(refVar?.value).toBe("");
+    expect(refVar).toBeUndefined();
 
     // Cleanup
     await api.DELETE("/v1/resources/{resourceId}", {
