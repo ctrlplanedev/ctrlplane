@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, desc, eq, or, takeFirst } from "@ctrlplane/db";
+import { and, desc, eq, isNull, or, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
@@ -70,7 +70,9 @@ export class VariableReleaseManager implements ReleaseManager {
             ...vars.map((v) =>
               and(
                 eq(schema.variableValueSnapshot.key, v.key),
-                eq(schema.variableValueSnapshot.value, v.value),
+                v.value === null
+                  ? isNull(schema.variableValueSnapshot.value)
+                  : eq(schema.variableValueSnapshot.value, v.value),
                 eq(
                   schema.variableValueSnapshot.workspaceId,
                   this.releaseTarget.workspaceId,

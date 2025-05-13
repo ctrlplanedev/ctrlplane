@@ -179,6 +179,7 @@ test.describe("Resource Variables API", () => {
     const systemPrefix = importedEntities.system.slug
       .split("-")[0]!
       .toLowerCase();
+    const reference = faker.string.alphanumeric(10).toLowerCase();
 
     // Create target resource
     const targetResource = await api.POST("/v1/resources", {
@@ -214,7 +215,7 @@ test.describe("Resource Variables API", () => {
         variables: [
           {
             key: "ref-var",
-            reference: systemPrefix,
+            reference,
             path: ["metadata", "e2e-test"],
           },
         ],
@@ -228,7 +229,7 @@ test.describe("Resource Variables API", () => {
       body: {
         workspaceId: workspace.id,
         name: `${systemPrefix}-relationship`,
-        reference: systemPrefix,
+        reference,
         dependencyType: "depends_on",
         sourceKind: "Source",
         sourceVersion: `${systemPrefix}-version/v1`,
@@ -253,7 +254,7 @@ test.describe("Resource Variables API", () => {
       },
     );
     expect(getSource.response.status).toBe(200);
-    expect(getSource.data?.relationships?.[systemPrefix]?.target?.id).toBe(
+    expect(getSource.data?.relationships?.[reference]?.target?.id).toBe(
       targetResource.data?.id,
     );
     expect(getSource.data?.variables?.["ref-var"]).toBe("true");
@@ -275,7 +276,7 @@ test.describe("Resource Variables API", () => {
     const systemPrefix = importedEntities.system.slug
       .split("-")[0]!
       .toLowerCase();
-
+    const reference = faker.string.alphanumeric(10).toLowerCase();
     // Create target resource
     const targetResource = await api.POST("/v1/resources", {
       body: {
@@ -318,7 +319,7 @@ test.describe("Resource Variables API", () => {
       body: {
         workspaceId: workspace.id,
         name: `${systemPrefix}-relationship`,
-        reference: systemPrefix,
+        reference,
         dependencyType: "depends_on",
         sourceKind: "Source",
         sourceVersion: `${systemPrefix}-version/v1`,
@@ -348,7 +349,7 @@ test.describe("Resource Variables API", () => {
         values: [
           {
             valueType: "reference",
-            reference: systemPrefix,
+            reference,
             path: ["metadata", "e2e-test"],
             resourceSelector: {
               type: "identifier",
@@ -363,7 +364,7 @@ test.describe("Resource Variables API", () => {
     await api.POST("/v1/deployment-versions", {
       body: {
         deploymentId: deployment.id,
-        tag: `${systemPrefix}-tag`,
+        tag: faker.string.alphanumeric(10),
       },
     });
 
@@ -419,6 +420,350 @@ test.describe("Resource Variables API", () => {
     });
     await api.DELETE("/v1/resources/{resourceId}", {
       params: { path: { resourceId: targetResource.data?.id ?? "" } },
+    });
+  });
+
+  test("should trigger a release target evaluation if a referenced resource is updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
+    const systemPrefix = importedEntities.system.slug
+      .split("-")[0]!
+      .toLowerCase();
+    const reference = faker.string.alphanumeric(10).toLowerCase();
+
+    // Create target resource
+    const targetResource = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-target`,
+        kind: "Target",
+        identifier: `${systemPrefix}-target`,
+        version: `${systemPrefix}-version/v1`,
+        config: { "e2e-test": true } as any,
+        metadata: {
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+        },
+      },
+    });
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.id).toBeDefined();
+    const targetResourceId = targetResource.data?.id ?? "";
+
+    // Create source resource
+    const sourceResource = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-source`,
+        kind: "Source",
+        identifier: `${systemPrefix}-source`,
+        version: `${systemPrefix}-version/v1`,
+        config: { "e2e-test": true } as any,
+        metadata: {
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+          reference: "true",
+        },
+      },
+    });
+    expect(sourceResource.response.status).toBe(200);
+    expect(sourceResource.data?.id).toBeDefined();
+    const sourceResourceId = sourceResource.data?.id;
+
+    // Create relationship rule
+    const relationship = await api.POST("/v1/resource-relationship-rules", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-relationship`,
+        reference,
+        dependencyType: "depends_on",
+        sourceKind: "Source",
+        sourceVersion: `${systemPrefix}-version/v1`,
+        targetKind: "Target",
+        targetVersion: `${systemPrefix}-version/v1`,
+        metadataKeysMatches: ["e2e-test", systemPrefix],
+      },
+    });
+
+    expect(relationship.response.status).toBe(200);
+
+    // Create a deployment variable with reference type
+    const deployment = importedEntities.deployments[0]!;
+
+    const key = faker.string.alphanumeric(10);
+
+    await api.POST("/v1/deployments/{deploymentId}/variables", {
+      params: {
+        path: {
+          deploymentId: deployment.id,
+        },
+      },
+      body: {
+        key,
+        config: {
+          type: "string",
+          inputType: "text",
+        },
+        values: [
+          {
+            valueType: "reference",
+            reference,
+            path: ["metadata", "reference"],
+            resourceSelector: {
+              type: "identifier",
+              operator: "contains",
+              value: systemPrefix,
+            },
+          },
+        ],
+      },
+    });
+
+    await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId: deployment.id,
+        tag: faker.string.alphanumeric(10),
+      },
+    });
+
+    await page.waitForTimeout(5_000);
+
+    const patchResponse = await api.PATCH("/v1/resources/{resourceId}", {
+      params: {
+        path: {
+          resourceId: targetResourceId,
+        },
+      },
+      body: {
+        metadata: {
+          [systemPrefix]: "true",
+          "e2e-test": "true",
+          reference: "false",
+        },
+      },
+    });
+    expect(patchResponse.response.status).toBe(200);
+
+    await page.waitForTimeout(5_000);
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: {
+            resourceId: sourceResourceId ?? "",
+          },
+        },
+      },
+    );
+
+    const releaseTargets = releaseTargetsResponse.data ?? [];
+
+    const releaseTarget = releaseTargets.find(
+      (rt) =>
+        rt.resource.id === sourceResourceId &&
+        rt.deployment.id === deployment.id,
+    );
+
+    expect(releaseTarget).toBeDefined();
+
+    const releaseTargetId = releaseTarget?.id ?? "";
+
+    const releasesResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: {
+            releaseTargetId: releaseTargetId,
+          },
+        },
+      },
+    );
+
+    const latestRelease = releasesResponse.data?.at(0);
+
+    expect(latestRelease).toBeDefined();
+
+    const variables = latestRelease?.variables ?? [];
+
+    const refVar = variables.find((v) => v.key === key);
+    expect(refVar).toBeDefined();
+    expect(refVar?.value).toBe("false");
+
+    // Cleanup
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: sourceResource.data?.id ?? "" } },
+    });
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: targetResource.data?.id ?? "" } },
+    });
+  });
+
+  test("should trigger a release target evaluation if a related resource is deleted and its variables are referenced", async ({
+    api,
+    workspace,
+    page,
+  }) => {
+    const systemPrefix = importedEntities.system.slug
+      .split("-")[0]!
+      .toLowerCase();
+    const reference = faker.string.alphanumeric(10).toLowerCase();
+
+    // Create target resource
+    const targetResource = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-target`,
+        kind: "Target",
+        identifier: `${systemPrefix}-target`,
+        version: `${systemPrefix}-version/v1`,
+        config: { "e2e-test": true } as any,
+        metadata: {
+          reference: "true",
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+        },
+      },
+    });
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.id).toBeDefined();
+
+    // Create source resource
+    const sourceResource = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-source`,
+        kind: "Source",
+        identifier: `${systemPrefix}-source`,
+        version: `${systemPrefix}-version/v1`,
+        config: { "e2e-test": true } as any,
+        metadata: {
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+        },
+      },
+    });
+    expect(sourceResource.response.status).toBe(200);
+    expect(sourceResource.data?.id).toBeDefined();
+    const sourceResourceId = sourceResource.data?.id;
+
+    // Create relationship rule
+    const relationship = await api.POST("/v1/resource-relationship-rules", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-relationship`,
+        reference,
+        dependencyType: "depends_on",
+        sourceKind: "Source",
+        sourceVersion: `${systemPrefix}-version/v1`,
+        targetKind: "Target",
+        targetVersion: `${systemPrefix}-version/v1`,
+        metadataKeysMatches: ["e2e-test", systemPrefix],
+      },
+    });
+
+    expect(relationship.response.status).toBe(200);
+
+    // Create a deployment variable with reference type
+    const deployment = importedEntities.deployments[0]!;
+
+    const key = faker.string.alphanumeric(10);
+
+    await api.POST("/v1/deployments/{deploymentId}/variables", {
+      params: {
+        path: {
+          deploymentId: deployment.id,
+        },
+      },
+      body: {
+        key,
+        config: {
+          type: "string",
+          inputType: "text",
+        },
+        values: [
+          {
+            valueType: "reference",
+            reference,
+            path: ["metadata", "reference"],
+            resourceSelector: {
+              type: "identifier",
+              operator: "contains",
+              value: systemPrefix,
+            },
+          },
+        ],
+      },
+    });
+
+    await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId: deployment.id,
+        tag: faker.string.alphanumeric(10),
+      },
+    });
+
+    await page.waitForTimeout(5_000);
+
+    const deleteTargetResponse = await api.DELETE(
+      "/v1/resources/{resourceId}",
+      {
+        params: { path: { resourceId: targetResource.data?.id ?? "" } },
+      },
+    );
+
+    expect(deleteTargetResponse.response.status).toBe(200);
+    await page.waitForTimeout(5_000);
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: {
+            resourceId: sourceResourceId ?? "",
+          },
+        },
+      },
+    );
+
+    const releaseTargets = releaseTargetsResponse.data ?? [];
+
+    const releaseTarget = releaseTargets.find(
+      (rt) =>
+        rt.resource.id === sourceResourceId &&
+        rt.deployment.id === deployment.id,
+    );
+
+    expect(releaseTarget).toBeDefined();
+
+    const releaseTargetId = releaseTarget?.id ?? "";
+
+    const releasesResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: {
+            releaseTargetId: releaseTargetId,
+          },
+        },
+      },
+    );
+
+    const latestRelease = releasesResponse.data?.at(0);
+
+    expect(latestRelease).toBeDefined();
+
+    const variables = latestRelease?.variables ?? [];
+
+    const refVar = variables.find((v) => v.key === key);
+    expect(refVar).toBeDefined();
+    expect(refVar?.value).toBe("null");
+
+    // Cleanup
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: sourceResource.data?.id ?? "" } },
     });
   });
 });

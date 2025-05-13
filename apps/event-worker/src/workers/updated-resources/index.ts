@@ -1,13 +1,32 @@
 import _ from "lodash";
 
-import { eq } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { getResourceChildren } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
 
 import { dispatchComputeDeploymentResourceSelectorJobs } from "../../utils/dispatch-compute-deployment-jobs.js";
 import { dispatchComputeEnvironmentResourceSelectorJobs } from "../../utils/dispatch-compute-env-jobs.js";
+import { dispatchEvaluateJobs } from "../../utils/dispatch-evaluate-jobs.js";
 import { withSpan } from "./span.js";
+
+const getAffectedReleaseTargets = async (resourceId: string) => {
+  const resourceChildren = await getResourceChildren(db, resourceId);
+  const releaseTargets = await db
+    .selectDistinctOn([schema.releaseTarget.id])
+    .from(schema.releaseTarget)
+    .where(
+      and(
+        inArray(
+          schema.releaseTarget.resourceId,
+          resourceChildren.map((dr) => dr.source.id),
+        ),
+      ),
+    );
+
+  return releaseTargets;
+};
 
 export const updatedResourceWorker = createWorker(
   Channel.UpdatedResource,
@@ -36,5 +55,8 @@ export const updatedResourceWorker = createWorker(
 
     for (const environment of environments)
       await dispatchComputeEnvironmentResourceSelectorJobs(environment);
+
+    const affectedReleaseTargets = await getAffectedReleaseTargets(resource.id);
+    await dispatchEvaluateJobs(affectedReleaseTargets);
   }),
 );

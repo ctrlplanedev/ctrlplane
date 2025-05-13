@@ -36,9 +36,8 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const parsedVariable = schema.resourceVariableSchema.parse(variable);
-      await updateResourceVariableQueue.add(parsedVariable.id, parsedVariable);
-      return parsedVariable;
+      await updateResourceVariableQueue.add(variable.id, variable);
+      return variable;
     }),
 
   createReference: protectedProcedure
@@ -62,9 +61,8 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const parsedVariable = schema.resourceVariableSchema.parse(variable);
-      await updateResourceVariableQueue.add(parsedVariable.id, parsedVariable);
-      return parsedVariable;
+      await updateResourceVariableQueue.add(variable.id, variable);
+      return variable;
     }),
 
   update: protectedProcedure
@@ -98,12 +96,8 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst)
         .then(async (variable) => {
-          const parsedVariable = schema.resourceVariableSchema.parse(variable);
-          await updateResourceVariableQueue.add(
-            parsedVariable.id,
-            parsedVariable,
-          );
-          return parsedVariable;
+          await updateResourceVariableQueue.add(variable.id, variable);
+          return variable;
         });
     }),
 
@@ -130,12 +124,8 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst)
         .then(async (variable) => {
-          const parsedVariable = schema.resourceVariableSchema.parse(variable);
-          await updateResourceVariableQueue.add(
-            parsedVariable.id,
-            parsedVariable,
-          );
-          return parsedVariable;
+          await updateResourceVariableQueue.add(variable.id, variable);
+          return variable;
         }),
     ),
 });

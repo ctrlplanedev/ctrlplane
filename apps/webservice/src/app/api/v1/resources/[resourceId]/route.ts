@@ -7,7 +7,10 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
-import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
+import {
+  getAffectedVariables,
+  getReferenceVariableValue,
+} from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -135,6 +138,12 @@ export const PATCH = request()
           { status: 404 },
         );
 
+      // make a separate call to variables because we use the base resource
+      // in the merge below
+      const prevVariables = await db.query.resourceVariable.findMany({
+        where: eq(schema.resourceVariable.resourceId, resource.id),
+      });
+
       const all = await upsertResources(db, resource.workspaceId, [
         _.merge(resource, body),
       ]);
@@ -148,6 +157,17 @@ export const PATCH = request()
       };
 
       await getQueue(Channel.UpdatedResource).add(resource.id, resource);
+
+      const affectedVariables = getAffectedVariables(
+        prevVariables,
+        res.variables,
+      );
+
+      for (const variable of affectedVariables)
+        await getQueue(Channel.UpdateResourceVariable).add(
+          variable.id,
+          variable,
+        );
 
       return NextResponse.json(resourceWithMeta);
     } catch (err) {
