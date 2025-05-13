@@ -183,8 +183,10 @@ export const evaluateReleaseTargetWorker = createWorker(
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       const isReleaseTargetNotCommittedYet = e.code === "23503";
-      if (isRowLocked || isReleaseTargetNotCommittedYet)
+      if (isRowLocked || isReleaseTargetNotCommittedYet) {
         dispatchEvaluateJobs([job.data]);
+        return;
+      }
       log.error("Failed to evaluate release target", { error: e });
       throw e;
     }
