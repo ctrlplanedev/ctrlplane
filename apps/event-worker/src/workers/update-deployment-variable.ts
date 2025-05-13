@@ -20,7 +20,6 @@ export const updateDeploymentVariableWorker = createWorker(
   async (job) => {
     const variable = await db.query.deploymentVariable.findFirst({
       where: eq(schema.deploymentVariable.id, job.data.id),
-      with: { deployment: { with: { system: true } } },
     });
 
     if (variable == null) throw new Error("Deployment variable not found");
