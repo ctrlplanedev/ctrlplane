@@ -6,7 +6,7 @@ import { db } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { makeWithSpan, trace } from "@ctrlplane/logger";
+import { logger, makeWithSpan, trace } from "@ctrlplane/logger";
 import {
   VariableReleaseManager,
   VersionReleaseManager,
@@ -16,6 +16,7 @@ import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const tracer = trace.getTracer("evaluate-release-target");
 const withSpan = makeWithSpan(tracer);
+const log = logger.child({ module: "evaluate-release-target" });
 
 /**
  * Handles version release evaluation and creation for a release target
@@ -172,6 +173,10 @@ export const evaluateReleaseTargetWorker = createWorker(
       const newReleaseJob = await db.transaction(async (tx) =>
         createReleaseJob(tx, release),
       );
+      log.info("Created release job", {
+        releaseId: release.id,
+        job: newReleaseJob,
+      });
       getQueue(Channel.DispatchJob).add(newReleaseJob.id, {
         jobId: newReleaseJob.id,
       });
@@ -180,6 +185,7 @@ export const evaluateReleaseTargetWorker = createWorker(
       const isReleaseTargetNotCommittedYet = e.code === "23503";
       if (isRowLocked || isReleaseTargetNotCommittedYet)
         dispatchEvaluateJobs([job.data]);
+      log.error("Failed to evaluate release target", { error: e });
       throw e;
     }
   }),

@@ -60,6 +60,8 @@ export const createReleaseJob = async (
       .returning()
       .then(takeFirstOrNull);
 
+    log.info("Created job for release", { releaseId: release.id, job });
+
     if (job == null) throw new Error("Failed to create job");
 
     // Add job variables if any exist
@@ -79,6 +81,8 @@ export const createReleaseJob = async (
       releaseId: release.id,
       jobId: job.id,
     });
+
+    log.info("Created release job", { releaseId: release.id, job });
 
     return job;
   } catch (e) {
