@@ -3,14 +3,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import {
-  and,
-  buildConflictUpdateColumns,
-  eq,
-  inArray,
-  sql,
-  takeFirst,
-} from "@ctrlplane/db";
+import { and, eq, sql, takeFirst } from "@ctrlplane/db";
 import {
   createEnvironmentPolicy,
   createEnvironmentPolicyDeployment,
@@ -22,7 +15,6 @@ import {
   environmentPolicyReleaseWindow,
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
-import { handleEnvironmentPolicyVersionChannelUpdate } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -256,105 +248,6 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironmentPolicy }))
     .mutation(async ({ ctx, input }) => {
-      const { versionChannels, releaseWindows, ...data } = input.data;
-      const hasUpdates = Object.entries(data).length > 0;
-      if (hasUpdates)
-        await ctx.db
-          .update(environmentPolicy)
-          .set(data)
-          .where(eq(environmentPolicy.id, input.id))
-          .returning()
-          .then(takeFirst);
-
-      if (versionChannels != null) {
-        const prevVersionChannels = await ctx.db
-          .select({
-            deploymentId:
-              environmentPolicyDeploymentVersionChannel.deploymentId,
-            channelId: environmentPolicyDeploymentVersionChannel.channelId,
-          })
-          .from(environmentPolicyDeploymentVersionChannel)
-          .where(
-            eq(environmentPolicyDeploymentVersionChannel.policyId, input.id),
-          );
-
-        const [nulled, set] = _.partition(
-          Object.entries(versionChannels),
-          ([_, channelId]) => channelId == null,
-        );
-
-        const nulledIds = nulled.map(([deploymentId]) => deploymentId);
-        const setChannels = set.map(([deploymentId, channelId]) => ({
-          policyId: input.id,
-          deploymentId,
-          channelId: channelId!,
-        }));
-
-        await ctx.db.transaction(async (db) => {
-          if (nulledIds.length > 0)
-            await db
-              .delete(environmentPolicyDeploymentVersionChannel)
-              .where(
-                inArray(
-                  environmentPolicyDeploymentVersionChannel.deploymentId,
-                  nulledIds,
-                ),
-              );
-
-          if (setChannels.length > 0)
-            await db
-              .insert(environmentPolicyDeploymentVersionChannel)
-              .values(setChannels)
-              .onConflictDoUpdate({
-                target: [
-                  environmentPolicyDeploymentVersionChannel.policyId,
-                  environmentPolicyDeploymentVersionChannel.deploymentId,
-                ],
-                set: buildConflictUpdateColumns(
-                  environmentPolicyDeploymentVersionChannel,
-                  ["channelId"],
-                ),
-              });
-        });
-
-        const newVersionChannels = await ctx.db
-          .select({
-            deploymentId:
-              environmentPolicyDeploymentVersionChannel.deploymentId,
-            channelId: environmentPolicyDeploymentVersionChannel.channelId,
-          })
-          .from(environmentPolicyDeploymentVersionChannel)
-          .where(
-            eq(environmentPolicyDeploymentVersionChannel.policyId, input.id),
-          );
-
-        const prevMap = Object.fromEntries(
-          prevVersionChannels.map((r) => [r.deploymentId, r.channelId]),
-        );
-        const newMap = Object.fromEntries(
-          newVersionChannels.map((r) => [r.deploymentId, r.channelId]),
-        );
-
-        await handleEnvironmentPolicyVersionChannelUpdate(
-          input.id,
-          prevMap,
-          newMap,
-        );
-      }
-
-      if (releaseWindows != null) {
-        await ctx.db.transaction(async (db) => {
-          await db
-            .delete(environmentPolicyReleaseWindow)
-            .where(eq(environmentPolicyReleaseWindow.policyId, input.id));
-          if (releaseWindows.length > 0)
-            await db
-              .insert(environmentPolicyReleaseWindow)
-              .values(releaseWindows.map((r) => ({ ...r, policyId: input.id })))
-              .returning();
-        });
-      }
-
       return ctx.db
         .select()
         .from(environmentPolicy)

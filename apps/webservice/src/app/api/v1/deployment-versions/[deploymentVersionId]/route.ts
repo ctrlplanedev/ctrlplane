@@ -5,14 +5,6 @@ import { z } from "zod";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import {
-  cancelOldReleaseJobTriggersOnJobDispatch,
-  createJobApprovals,
-  createReleaseJobTriggers,
-  dispatchReleaseJobTriggers,
-  isPassingAllPolicies,
-  isPassingChannelSelectorPolicy,
-} from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
@@ -37,11 +29,11 @@ export const PATCH = request()
     ),
   )
   .handle<
-    { body: z.infer<typeof patchSchema>; user: SCHEMA.User },
+    { body: z.infer<typeof patchSchema> },
     { params: Promise<{ deploymentVersionId: string }> }
   >(async (ctx, { params }) => {
     const { deploymentVersionId } = await params;
-    const { body, user, req } = ctx;
+    const { body } = ctx;
 
     const prevDeploymentVersion = await ctx.db
       .select()
@@ -107,26 +99,6 @@ export const PATCH = request()
         deploymentVersion.id,
         deploymentVersion,
       );
-
-      await createReleaseJobTriggers(ctx.db, "version_updated")
-        .causedById(user.id)
-        .filter(isPassingChannelSelectorPolicy)
-        .versions([deploymentVersionId])
-        .then(createJobApprovals)
-        .insert()
-        .then((releaseJobTriggers) => {
-          dispatchReleaseJobTriggers(ctx.db)
-            .releaseTriggers(releaseJobTriggers)
-            .filter(isPassingAllPolicies)
-            .then(cancelOldReleaseJobTriggersOnJobDispatch)
-            .dispatch();
-        })
-        .then(() =>
-          logger.info(
-            `Version for ${deploymentVersionId} job triggers created and dispatched.`,
-            req,
-          ),
-        );
 
       return NextResponse.json(deploymentVersion);
     } catch (error) {

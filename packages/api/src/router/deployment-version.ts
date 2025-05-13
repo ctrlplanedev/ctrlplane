@@ -21,14 +21,6 @@ import {
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import {
-  cancelOldReleaseJobTriggersOnJobDispatch,
-  createJobApprovals,
-  createReleaseJobTriggers,
-  dispatchReleaseJobTriggers,
-  isPassingAllPolicies,
-  isPassingChannelSelectorPolicy,
-} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
@@ -326,7 +318,7 @@ export const versionRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { name, ...rest } = input;
       const relName = name == null || name === "" ? rest.tag : name;
-      const rel = await db
+      const rel = await ctx.db
         .insert(SCHEMA.deploymentVersion)
         .values({ ...rest, name: relName })
         .returning()
@@ -337,27 +329,11 @@ export const versionRouter = createTRPCRouter({
         versionId: rel.id,
       }));
       if (versionDeps.length > 0)
-        await db.insert(SCHEMA.versionDependency).values(versionDeps);
-
-      const releaseJobTriggers = await createReleaseJobTriggers(
-        db,
-        "new_version",
-      )
-        .causedById(ctx.session.user.id)
-        .filter(isPassingChannelSelectorPolicy)
-        .versions([rel.id])
-        .then(createJobApprovals)
-        .insert();
-
-      await dispatchReleaseJobTriggers(db)
-        .releaseTriggers(releaseJobTriggers)
-        .filter(isPassingAllPolicies)
-        .then(cancelOldReleaseJobTriggersOnJobDispatch)
-        .dispatch();
+        await ctx.db.insert(SCHEMA.versionDependency).values(versionDeps);
 
       getQueue(Channel.NewDeploymentVersion).add(rel.id, rel);
 
-      return { ...rel, releaseJobTriggers };
+      return rel;
     }),
 
   update: protectedProcedure

@@ -23,15 +23,6 @@ import {
 } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import {
-  cancelOldReleaseJobTriggersOnJobDispatch,
-  createJobApprovals,
-  createReleaseJobTriggers,
-  dispatchReleaseJobTriggers,
-  isPassingAllPoliciesExceptNewerThanLastActive,
-  isPassingChannelSelectorPolicy,
-  isPassingNoPendingJobsPolicy,
-} from "@ctrlplane/job-dispatch";
 import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
@@ -814,34 +805,4 @@ export const resourceRouter = createTRPCRouter({
         .returning()
         .then(takeFirst),
     ),
-
-  redeploy: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceUpdate)
-          .on({ type: "resource", id: input }),
-    })
-    .mutation(async ({ ctx, input }) => {
-      const resource = await ctx.db.query.resource.findFirst({
-        where: and(eq(schema.resource.id, input), isNotDeleted),
-      });
-      if (resource == null) return null;
-
-      return createReleaseJobTriggers(ctx.db, "redeploy")
-        .causedById(ctx.session.user.id)
-        .resources([input])
-        .filter(isPassingChannelSelectorPolicy)
-        .filter(isPassingNoPendingJobsPolicy)
-        .then(createJobApprovals)
-        .insert()
-        .then((triggers) =>
-          dispatchReleaseJobTriggers(ctx.db)
-            .releaseTriggers(triggers)
-            .filter(isPassingAllPoliciesExceptNewerThanLastActive)
-            .then(cancelOldReleaseJobTriggersOnJobDispatch)
-            .dispatch(),
-        );
-    }),
 });

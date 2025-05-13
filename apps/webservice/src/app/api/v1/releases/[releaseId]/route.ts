@@ -4,14 +4,6 @@ import { z } from "zod";
 
 import { buildConflictUpdateColumns, eq, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import {
-  cancelOldReleaseJobTriggersOnJobDispatch,
-  createJobApprovals,
-  createReleaseJobTriggers,
-  dispatchReleaseJobTriggers,
-  isPassingAllPolicies,
-  isPassingChannelSelectorPolicy,
-} from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -37,11 +29,11 @@ export const PATCH = request()
     ),
   )
   .handle<
-    { body: z.infer<typeof patchSchema>; user: SCHEMA.User },
+    { body: z.infer<typeof patchSchema> },
     { params: { releaseId: string } }
   >(async (ctx, { params }) => {
     const { releaseId: versionId } = params;
-    const { body, user, req } = ctx;
+    const { body } = ctx;
 
     try {
       const tag = body.tag ?? body.version;
@@ -71,26 +63,6 @@ export const PATCH = request()
               "value",
             ]),
           });
-
-      await createReleaseJobTriggers(ctx.db, "version_updated")
-        .causedById(user.id)
-        .filter(isPassingChannelSelectorPolicy)
-        .versions([versionId])
-        .then(createJobApprovals)
-        .insert()
-        .then((releaseJobTriggers) => {
-          dispatchReleaseJobTriggers(ctx.db)
-            .releaseTriggers(releaseJobTriggers)
-            .filter(isPassingAllPolicies)
-            .then(cancelOldReleaseJobTriggersOnJobDispatch)
-            .dispatch();
-        })
-        .then(() =>
-          logger.info(
-            `Version for ${versionId} job triggers created and dispatched.`,
-            req,
-          ),
-        );
 
       return NextResponse.json(release);
     } catch (error) {
