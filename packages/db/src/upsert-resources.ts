@@ -15,7 +15,6 @@ export const updateResourceMetadata = async (
   tx: Tx,
   resources: ResourceWithMetadata[],
 ) => {
-  console.log("resources", resources);
   const resourceMetadataValues = resources.flatMap((resource) => {
     const { id, metadata = {} } = resource;
     return Object.entries(metadata).map(([key, value]) => ({

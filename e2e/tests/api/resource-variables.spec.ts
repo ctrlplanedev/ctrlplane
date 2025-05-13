@@ -364,7 +364,7 @@ test.describe("Resource Variables API", () => {
     await api.POST("/v1/deployment-versions", {
       body: {
         deploymentId: deployment.id,
-        tag: `${systemPrefix}-tag`,
+        tag: faker.string.alphanumeric(10),
       },
     });
 
@@ -423,7 +423,7 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("should trigger a release target evaluation if a referenced variable is updated", async ({
+  test("should trigger a release target evaluation if a referenced resource is updated", async ({
     api,
     workspace,
     page,
@@ -464,6 +464,7 @@ test.describe("Resource Variables API", () => {
         metadata: {
           "e2e-test": "true",
           [systemPrefix]: "true",
+          reference: "true",
         },
       },
     });
@@ -491,6 +492,8 @@ test.describe("Resource Variables API", () => {
     // Create a deployment variable with reference type
     const deployment = importedEntities.deployments[0]!;
 
+    const key = faker.string.alphanumeric(10);
+
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
@@ -498,7 +501,7 @@ test.describe("Resource Variables API", () => {
         },
       },
       body: {
-        key: "ref-var",
+        key,
         config: {
           type: "string",
           inputType: "text",
@@ -507,7 +510,7 @@ test.describe("Resource Variables API", () => {
           {
             valueType: "reference",
             reference,
-            path: ["metadata", "e2e-test"],
+            path: ["metadata", "reference"],
             resourceSelector: {
               type: "identifier",
               operator: "contains",
@@ -521,7 +524,7 @@ test.describe("Resource Variables API", () => {
     await api.POST("/v1/deployment-versions", {
       body: {
         deploymentId: deployment.id,
-        tag: `${systemPrefix}-tag`,
+        tag: faker.string.alphanumeric(10),
       },
     });
 
@@ -534,7 +537,11 @@ test.describe("Resource Variables API", () => {
         },
       },
       body: {
-        variables: [{ key: "ref-var", value: "false" }],
+        metadata: {
+          [systemPrefix]: "true",
+          "e2e-test": "true",
+          reference: "false",
+        },
       },
     });
     expect(patchResponse.response.status).toBe(200);
@@ -581,7 +588,7 @@ test.describe("Resource Variables API", () => {
 
     const variables = latestRelease?.variables ?? [];
 
-    const refVar = variables.find((v) => v.key === "ref-var");
+    const refVar = variables.find((v) => v.key === key);
     expect(refVar).toBeDefined();
     expect(refVar?.value).toBe("false");
 
@@ -614,6 +621,7 @@ test.describe("Resource Variables API", () => {
         version: `${systemPrefix}-version/v1`,
         config: { "e2e-test": true } as any,
         metadata: {
+          reference: "true",
           "e2e-test": "true",
           [systemPrefix]: "true",
         },
@@ -661,6 +669,8 @@ test.describe("Resource Variables API", () => {
     // Create a deployment variable with reference type
     const deployment = importedEntities.deployments[0]!;
 
+    const key = faker.string.alphanumeric(10);
+
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
@@ -668,7 +678,7 @@ test.describe("Resource Variables API", () => {
         },
       },
       body: {
-        key: "ref-var",
+        key,
         config: {
           type: "string",
           inputType: "text",
@@ -677,7 +687,7 @@ test.describe("Resource Variables API", () => {
           {
             valueType: "reference",
             reference,
-            path: ["metadata", "e2e-test"],
+            path: ["metadata", "reference"],
             resourceSelector: {
               type: "identifier",
               operator: "contains",
@@ -691,7 +701,7 @@ test.describe("Resource Variables API", () => {
     await api.POST("/v1/deployment-versions", {
       body: {
         deploymentId: deployment.id,
-        tag: `${systemPrefix}-tag`,
+        tag: faker.string.alphanumeric(10),
       },
     });
 
@@ -747,9 +757,9 @@ test.describe("Resource Variables API", () => {
 
     const variables = latestRelease?.variables ?? [];
 
-    const refVar = variables.find((v) => v.key === "ref-var");
+    const refVar = variables.find((v) => v.key === key);
     expect(refVar).toBeDefined();
-    expect(refVar?.value).toBeNull();
+    expect(refVar?.value).toBe("");
 
     // Cleanup
     await api.DELETE("/v1/resources/{resourceId}", {

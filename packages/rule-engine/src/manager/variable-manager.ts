@@ -54,7 +54,7 @@ export class VariableReleaseManager implements ReleaseManager {
           vars.map((v) => ({
             workspaceId: this.releaseTarget.workspaceId,
             key: v.key,
-            value: v.value,
+            value: v.value === null ? "" : v.value,
             sensitive: v.sensitive,
           })),
         )
@@ -70,7 +70,10 @@ export class VariableReleaseManager implements ReleaseManager {
             ...vars.map((v) =>
               and(
                 eq(schema.variableValueSnapshot.key, v.key),
-                eq(schema.variableValueSnapshot.value, v.value),
+                eq(
+                  schema.variableValueSnapshot.value,
+                  v.value === null ? "" : v.value,
+                ),
                 eq(
                   schema.variableValueSnapshot.workspaceId,
                   this.releaseTarget.workspaceId,

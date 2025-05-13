@@ -1,10 +1,13 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { eq } from "@ctrlplane/db";
+import { eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { getResourceChildren } from "@ctrlplane/db/queries";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+
+import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const softDeleteResource = async (tx: Tx, resource: SCHEMA.Resource) =>
   tx
@@ -28,16 +31,23 @@ const deleteComputedResources = async (tx: Tx, resource: SCHEMA.Resource) =>
       .where(eq(SCHEMA.computedEnvironmentResource.resourceId, resource.id)),
   ]);
 
-const dispatchVariableUpdateJobs = async (
+const dispatchAffectedTargetJobs = async (
   tx: Tx,
   resource: SCHEMA.Resource,
 ) => {
-  const variables = await tx.query.resourceVariable.findMany({
-    where: eq(SCHEMA.resourceVariable.resourceId, resource.id),
-  });
+  const affectedResources = await getResourceChildren(tx, resource.id);
 
-  for (const variable of variables)
-    getQueue(Channel.UpdateResourceVariable).add(variable.id, variable);
+  const affectedReleaseTargets = await db
+    .selectDistinctOn([SCHEMA.releaseTarget.id])
+    .from(SCHEMA.releaseTarget)
+    .where(
+      inArray(
+        SCHEMA.releaseTarget.resourceId,
+        affectedResources.map((r) => r.source.id),
+      ),
+    );
+
+  await dispatchEvaluateJobs(affectedReleaseTargets);
 };
 
 export const deleteResourceWorker = createWorker(
@@ -53,6 +63,6 @@ export const deleteResourceWorker = createWorker(
         });
     });
 
-    await dispatchVariableUpdateJobs(db, resource);
+    await dispatchAffectedTargetJobs(db, resource);
   },
 );

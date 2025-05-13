@@ -130,10 +130,7 @@ export const PATCH = request()
       const isResource = eq(schema.resource.id, resourceId);
       const isNotDeleted = isNull(schema.resource.deletedAt);
       const where = and(isResource, isNotDeleted);
-      const resource = await db.query.resource.findFirst({
-        where,
-        with: { metadata: true, variables: true },
-      });
+      const resource = await db.query.resource.findFirst({ where });
 
       if (resource == null)
         return NextResponse.json(
@@ -141,7 +138,11 @@ export const PATCH = request()
           { status: 404 },
         );
 
-      console.log(body);
+      // make a separate call to variables because we use the base resource
+      // in the merge below
+      const prevVariables = await db.query.resourceVariable.findMany({
+        where: eq(schema.resourceVariable.resourceId, resource.id),
+      });
 
       const all = await upsertResources(db, resource.workspaceId, [
         _.merge(resource, body),
@@ -149,12 +150,6 @@ export const PATCH = request()
       const res = all.at(0);
 
       if (res == null) throw new Error("Failed to update resource");
-
-      console.log(res.metadata);
-
-      console.log(
-        Object.fromEntries(res.metadata.map((m) => [m.key, m.value])),
-      );
 
       const resourceWithMeta = {
         ...res,
@@ -164,7 +159,7 @@ export const PATCH = request()
       await getQueue(Channel.UpdatedResource).add(resource.id, resource);
 
       const affectedVariables = getAffectedVariables(
-        resource.variables,
+        prevVariables,
         res.variables,
       );
 

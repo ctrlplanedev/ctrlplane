@@ -12,11 +12,9 @@ export const updateResourceVariableWorker = createWorker(
   Channel.UpdateResourceVariable,
   async (job) => {
     const { data: variable } = job;
-    console.log(variable);
     const { resourceId, key } = variable;
 
     const dependentResources = await getResourceChildren(db, resourceId);
-    console.log(dependentResources);
 
     const affectedReleaseTargets = await db
       .selectDistinctOn([schema.releaseTarget.id])
