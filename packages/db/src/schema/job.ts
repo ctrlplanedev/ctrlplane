@@ -157,7 +157,7 @@ export const jobVariable = pgTable(
       .notNull()
       .references(() => job.id, { onDelete: "cascade" }),
     key: text("key").notNull(),
-    value: json("value").notNull(),
+    value: json("value"),
     sensitive: boolean("sensitive").notNull().default(false),
   },
   (t) => ({ uniq: uniqueIndex().on(t.jobId, t.key) }),
