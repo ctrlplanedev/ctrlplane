@@ -22,25 +22,27 @@ export type ResourceToInsert = Omit<
   >;
 };
 
-const getPreviousVariables = (
+const getPreviousVariables = async (
   tx: Tx,
   workspaceId: string,
   toUpdate: ResourceToInsert[],
-) =>
-  tx.query.resource
-    .findMany({
-      where: and(
-        inArray(
-          schema.resource.identifier,
-          toUpdate.map((r) => r.identifier),
-        ),
-        eq(schema.resource.workspaceId, workspaceId),
-      ),
-      with: { variables: true },
-    })
-    .then((resources) =>
-      Object.fromEntries(resources.map((r) => [r.identifier, r.variables])),
-    );
+) => {
+  const resources =
+    toUpdate.length > 0
+      ? await tx.query.resource.findMany({
+          where: and(
+            inArray(
+              schema.resource.identifier,
+              toUpdate.map((r) => r.identifier),
+            ),
+            eq(schema.resource.workspaceId, workspaceId),
+          ),
+          with: { variables: true },
+        })
+      : [];
+
+  return Object.fromEntries(resources.map((r) => [r.identifier, r.variables]));
+};
 
 export const handleResourceProviderScan = async (
   tx: Tx,
