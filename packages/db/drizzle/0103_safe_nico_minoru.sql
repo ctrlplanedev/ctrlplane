@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "variable_value_snapshot_workspace_id_key_index" ON "variable_value_snapshot" USING btree ("workspace_id","key") WHERE "variable_value_snapshot"."value" is null;
