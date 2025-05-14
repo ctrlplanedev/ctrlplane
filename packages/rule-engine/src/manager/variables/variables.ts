@@ -63,6 +63,6 @@ export class VariableManager {
       const variable = await provider.getVariable(key);
       if (variable) return variable;
     }
-    return null;
+    return { key, value: null, sensitive: false };
   }
 }

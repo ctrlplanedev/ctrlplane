@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { isNull, relations, sql } from "drizzle-orm";
 import {
   boolean,
   jsonb,
@@ -107,7 +107,10 @@ export const variableValueSnapshot = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.key, t.value) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.workspaceId, t.key, t.value),
+    uniq_null: uniqueIndex().on(t.workspaceId, t.key).where(isNull(t.value)),
+  }),
 );
 
 export const release = pgTable("release", {
