@@ -40,7 +40,6 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { Switch } from "@ctrlplane/ui/switch";
-import { toast } from "@ctrlplane/ui/toast";
 import {
   defaultCondition,
   deploymentVersionCondition,
@@ -146,14 +145,6 @@ export const CreateDeploymentVersionDialog: React.FC<{
       .baseUrl();
     router.push(url);
     setOpen(false);
-
-    const numOfReleaseJobTriggers = version.releaseJobTriggers.length;
-    toast(
-      numOfReleaseJobTriggers === 0
-        ? `No resources to deploy version to.`
-        : `Dispatching ${version.releaseJobTriggers.length} job configuration${version.releaseJobTriggers.length > 1 ? "s" : ""}.`,
-      { dismissible: true, duration: 2_000 },
-    );
 
     props.onClose?.();
     setOpen(false);

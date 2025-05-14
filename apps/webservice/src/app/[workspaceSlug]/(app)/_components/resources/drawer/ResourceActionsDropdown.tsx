@@ -93,10 +93,10 @@ const RedeployResourceDialog: React.FC<RedeployResourceDialogProps> = ({
   children,
 }) => {
   const [open, setOpen] = useState(false);
-  const redeployResource = api.resource.redeploy.useMutation();
+  const redeployResource = api.redeploy.useMutation();
 
   const onRedeploy = () =>
-    redeployResource.mutateAsync(resourceId).then(() => setOpen(false));
+    redeployResource.mutateAsync({ resourceId }).then(() => setOpen(false));
 
   return (
     <AlertDialog

@@ -89,7 +89,9 @@ export default async function VariablesPage(props: {
                         "*****"
                       ) : (
                         <span className="rounded-md p-0.5 px-1 font-mono text-red-400">
-                          {String(v.value)}
+                          {typeof v.value === "object"
+                            ? JSON.stringify(v.value)
+                            : v.value}
                         </span>
                       )}
                     </TableCell>
@@ -248,7 +250,7 @@ export default async function VariablesPage(props: {
                 deploymentVariables.map((v) => (
                   <TableRow key={v.key}>
                     <TableCell>{v.key}</TableCell>
-                    <TableCell>{v.value.value}</TableCell>
+                    <TableCell>{String(v.value.value)}</TableCell>
                     <TableCell>
                       <Link
                         href={urls

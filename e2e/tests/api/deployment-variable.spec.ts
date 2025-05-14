@@ -95,7 +95,10 @@ test.describe("Deployment Variables API", () => {
             type: "string",
             inputType: "text",
           },
-          values: [{ value: valueA }, { value: valueB }],
+          values: [
+            { value: valueA, valueType: "direct" },
+            { value: valueB, valueType: "direct" },
+          ],
         },
       },
     );
@@ -126,8 +129,14 @@ test.describe("Deployment Variables API", () => {
 
     const receivedValues = receivedVariable.values;
     expect(receivedValues.length).toBe(2);
-    const receivedValueA = receivedValues[0]!.value;
-    const receivedValueB = receivedValues[1]!.value;
+    const receivedValueA =
+      receivedValues[0]!.valueType === "direct"
+        ? receivedValues[0]!.value
+        : receivedValues[0]!.defaultValue;
+    const receivedValueB =
+      receivedValues[1]!.valueType === "direct"
+        ? receivedValues[1]!.value
+        : receivedValues[1]!.defaultValue;
     expect(receivedValueA).toBe(valueA);
     expect(receivedValueB).toBe(valueB);
   });
@@ -155,7 +164,10 @@ test.describe("Deployment Variables API", () => {
             type: "string",
             inputType: "text",
           },
-          values: [{ value: valueA }, { value: valueB, default: true }],
+          values: [
+            { value: valueA, valueType: "direct" },
+            { value: valueB, valueType: "direct", default: true },
+          ],
         },
       },
     );
@@ -186,13 +198,23 @@ test.describe("Deployment Variables API", () => {
 
     const receivedValues = receivedVariable.values;
     expect(receivedValues.length).toBe(2);
-    const receivedValueA = receivedValues[0]!.value;
-    const receivedValueB = receivedValues[1]!.value;
+    const receivedValueA =
+      receivedValues[0]!.valueType === "direct"
+        ? receivedValues[0]!.value
+        : receivedValues[0]!.defaultValue;
+    const receivedValueB =
+      receivedValues[1]!.valueType === "direct"
+        ? receivedValues[1]!.value
+        : receivedValues[1]!.defaultValue;
     expect(receivedValueA).toBe(valueA);
     expect(receivedValueB).toBe(valueB);
 
-    const receivedDefaultValue = receivedVariable.defaultValue;
-    expect(receivedDefaultValue?.value).toBe(valueB);
+    const receivedDefaultValue =
+      receivedValues[1]!.valueType === "direct"
+        ? receivedValues[1]!.value
+        : receivedValues[1]!.defaultValue;
+
+    expect(receivedDefaultValue).toBe(valueB);
   });
 
   test("shoudl fail if more than one default value is provided", async ({
@@ -219,8 +241,8 @@ test.describe("Deployment Variables API", () => {
             inputType: "text",
           },
           values: [
-            { value: valueA, default: true },
-            { value: valueB, default: true },
+            { value: valueA, valueType: "direct", default: true },
+            { value: valueB, valueType: "direct", default: true },
           ],
         },
       },

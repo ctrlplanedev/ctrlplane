@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { asc, eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -18,7 +18,12 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.query.resourceRelationshipRule.findMany({
         where: eq(schema.resourceRelationshipRule.workspaceId, input),
-        with: { metadataMatches: true, metadataEquals: true },
+        with: { metadataKeysMatches: true, targetMetadataEquals: true },
+        orderBy: [
+          asc(schema.resourceRelationshipRule.reference),
+          asc(schema.resourceRelationshipRule.sourceKind),
+          asc(schema.resourceRelationshipRule.targetKind),
+        ],
       });
     }),
 
@@ -53,7 +58,7 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .mutation(async ({ ctx, input }) => {
-      const { metadataKeysMatch, metadataKeysEquals, ...rest } = input;
+      const { metadataKeysMatches, targetMetadataEquals, ...rest } = input;
       const rule = await ctx.db
         .insert(schema.resourceRelationshipRule)
         .values({
@@ -64,21 +69,21 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      if (metadataKeysMatch != null && metadataKeysMatch.length > 0)
+      if (metadataKeysMatches != null && metadataKeysMatches.length > 0)
         await ctx.db
           .insert(schema.resourceRelationshipRuleMetadataMatch)
           .values(
-            metadataKeysMatch.map((key) => ({
+            metadataKeysMatches.map((key) => ({
               resourceRelationshipRuleId: rule.id,
               key,
             })),
           );
 
-      if (metadataKeysEquals != null && metadataKeysEquals.length > 0)
+      if (targetMetadataEquals != null && targetMetadataEquals.length > 0)
         await ctx.db
           .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
           .values(
-            metadataKeysEquals.map(({ key, value }) => ({
+            targetMetadataEquals.map(({ key, value }) => ({
               resourceRelationshipRuleId: rule.id,
               key,
               value,
@@ -104,7 +109,7 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id, data } = input;
       return ctx.db.transaction(async (tx) => {
-        const { metadataKeysMatch, metadataKeysEquals, ...rest } = data;
+        const { metadataKeysMatches, targetMetadataEquals, ...rest } = data;
 
         const rule = await tx
           .update(schema.resourceRelationshipRule)
@@ -113,7 +118,7 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        if (metadataKeysMatch != null) {
+        if (metadataKeysMatches != null) {
           await tx
             .delete(schema.resourceRelationshipRuleMetadataMatch)
             .where(
@@ -124,18 +129,18 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
               ),
             );
 
-          if (metadataKeysMatch.length > 0)
+          if (metadataKeysMatches.length > 0)
             await tx
               .insert(schema.resourceRelationshipRuleMetadataMatch)
               .values(
-                metadataKeysMatch.map((key) => ({
+                metadataKeysMatches.map((key) => ({
                   resourceRelationshipRuleId: id,
                   key,
                 })),
               );
         }
 
-        if (metadataKeysEquals != null) {
+        if (targetMetadataEquals != null) {
           await tx
             .delete(schema.resourceRelationshipTargetRuleMetadataEquals)
             .where(
@@ -146,11 +151,11 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
               ),
             );
 
-          if (metadataKeysEquals.length > 0)
+          if (targetMetadataEquals.length > 0)
             await tx
               .insert(schema.resourceRelationshipTargetRuleMetadataEquals)
               .values(
-                metadataKeysEquals.map(({ key, value }) => ({
+                targetMetadataEquals.map(({ key, value }) => ({
                   resourceRelationshipRuleId: id,
                   key,
                   value,
@@ -160,8 +165,8 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
 
         return {
           ...rule,
-          metadataMatches: metadataKeysMatch ?? [],
-          metadataEquals: metadataKeysEquals ?? [],
+          metadataKeysMatches: metadataKeysMatches ?? [],
+          targetMetadataEquals: targetMetadataEquals ?? [],
         };
       });
     }),

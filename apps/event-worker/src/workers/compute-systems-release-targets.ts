@@ -5,12 +5,9 @@ import { db } from "@ctrlplane/db/client";
 import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { logger } from "@ctrlplane/logger";
 
 import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
-
-const log = logger.child({ worker: "compute-systems-release-targets" });
 
 const findMatchingEnvironmentDeploymentPairs = (
   tx: Tx,
@@ -189,10 +186,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
-        log.info(
-          "Row locked in compute-systems-release-targets, requeueing...",
-          { job },
-        );
         dispatchComputeSystemReleaseTargetsJobs(system);
         return;
       }

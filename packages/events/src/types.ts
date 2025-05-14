@@ -52,7 +52,7 @@ export type ChannelMap = {
   [Channel.NewPolicy]: schema.Policy;
 
   [Channel.UpdateDeploymentVariable]: schema.DeploymentVariable;
-  [Channel.UpdateResourceVariable]: schema.ResourceVariable;
+  [Channel.UpdateResourceVariable]: typeof schema.resourceVariable.$inferSelect;
   [Channel.UpdateEnvironment]: schema.Environment & {
     oldSelector: ResourceCondition | null;
   };

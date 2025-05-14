@@ -1,0 +1,1 @@
+ALTER TABLE "job_variable" ALTER COLUMN "value" DROP NOT NULL;

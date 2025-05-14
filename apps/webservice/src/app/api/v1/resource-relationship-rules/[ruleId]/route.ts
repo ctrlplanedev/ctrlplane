@@ -44,7 +44,7 @@ const replaceMetadataMatchRules = async (
 const replaceMetadataEqualsRules = async (
   tx: Tx,
   ruleId: string,
-  metadataKeysEquals?: { key: string; value: string }[],
+  targetMetadataEquals?: { key: string; value: string }[],
 ) => {
   await tx
     .delete(schema.resourceRelationshipTargetRuleMetadataEquals)
@@ -56,7 +56,7 @@ const replaceMetadataEqualsRules = async (
       ),
     );
 
-  const metadataKeys = _.uniqBy(metadataKeysEquals ?? [], (m) => m.key);
+  const metadataKeys = _.uniqBy(targetMetadataEquals ?? [], (m) => m.key);
   if (metadataKeys.length > 0)
     await tx.insert(schema.resourceRelationshipTargetRuleMetadataEquals).values(
       metadataKeys.map(({ key, value }) => ({
@@ -105,19 +105,19 @@ export const PATCH = request()
           .returning()
           .then(takeFirst);
 
-        const metadataKeysMatch = await replaceMetadataMatchRules(
+        const metadataKeysMatches = await replaceMetadataMatchRules(
           tx,
           ruleId,
-          body.metadataKeysMatch,
+          body.metadataKeysMatches,
         );
 
-        const metadataKeysEquals = await replaceMetadataEqualsRules(
+        const targetMetadataEquals = await replaceMetadataEqualsRules(
           tx,
           ruleId,
-          body.metadataKeysEquals,
+          body.targetMetadataEquals,
         );
 
-        return { ...rule, metadataKeysMatch, metadataKeysEquals };
+        return { ...rule, metadataKeysMatches, targetMetadataEquals };
       });
 
       return NextResponse.json(rule);

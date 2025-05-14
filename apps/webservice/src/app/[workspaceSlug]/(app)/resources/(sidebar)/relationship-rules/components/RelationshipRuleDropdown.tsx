@@ -16,8 +16,8 @@ import { EditRelationshipDialog } from "./EditRelationshipDialog";
 
 interface RelationshipRuleDropdownProps {
   rule: SCHEMA.ResourceRelationshipRule & {
-    metadataMatches: SCHEMA.ResourceRelationshipRuleMetadataMatch[];
-    metadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
+    metadataKeysMatches: SCHEMA.ResourceRelationshipRuleMetadataMatch[];
+    targetMetadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
   };
 }
 

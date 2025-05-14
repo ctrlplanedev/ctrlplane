@@ -7,7 +7,6 @@ import { z } from "zod";
 import { eq, inArray, takeFirstOrNull, upsertEnv } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
-import { createJobsForNewEnvironment } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -62,7 +61,6 @@ export const POST = request()
 
         const environment = await upsertEnv(tx, { ...body, versionChannels });
 
-        await createJobsForNewEnvironment(tx, environment);
         const { metadata } = body;
         return { ...environment, metadata };
       });

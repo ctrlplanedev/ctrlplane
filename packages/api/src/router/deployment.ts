@@ -307,9 +307,7 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "deployment", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: SCHEMA.updateDeployment }))
-    .mutation(({ ctx, input }) =>
-      updateDeployment(input.id, input.data, ctx.session.user.id),
-    ),
+    .mutation(({ input }) => updateDeployment(input.id, input.data)),
 
   delete: protectedProcedure
     .meta({

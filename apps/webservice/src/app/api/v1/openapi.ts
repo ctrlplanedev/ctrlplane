@@ -302,6 +302,45 @@ export const openapi: Swagger.SwaggerV3 = {
           { $ref: "#/components/schemas/ResourceWithMetadata" },
         ],
       },
+      CreateResource: {
+        type: "object",
+        properties: {
+          identifier: {
+            type: "string",
+          },
+          name: {
+            type: "string",
+          },
+          version: {
+            type: "string",
+          },
+          kind: {
+            type: "string",
+          },
+          config: {
+            type: "object",
+            additionalProperties: true,
+          },
+          metadata: {
+            type: "object",
+            additionalProperties: {
+              type: "string",
+            },
+          },
+          variables: {
+            type: "array",
+            items: { $ref: "#/components/schemas/Variable" },
+          },
+        },
+        required: [
+          "identifier",
+          "name",
+          "version",
+          "kind",
+          "config",
+          "metadata",
+        ],
+      },
       JobStatus: {
         type: "string",
         enum: [

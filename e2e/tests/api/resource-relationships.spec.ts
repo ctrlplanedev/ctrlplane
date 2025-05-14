@@ -30,7 +30,8 @@ test.describe("Resource Relationships API", () => {
     api,
     workspace,
   }) => {
-    const reference = `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`;
+    const reference =
+      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -40,15 +41,34 @@ test.describe("Resource Relationships API", () => {
           reference,
           dependencyType: "depends_on",
           sourceKind: "Source",
-          sourceVersion: "test-version/v1",
+          sourceVersion: `${importedEntities.prefix}-test-version/v1`,
           targetKind: "Target",
-          targetVersion: "test-version/v1",
-          metadataKeysMatch: ["e2e/test", importedEntities.prefix],
+          targetVersion: `${importedEntities.prefix}-test-version/v1`,
+          metadataKeysMatches: ["e2e/test", importedEntities.prefix],
         },
       },
     );
 
     expect(resourceRelationship.response.status).toBe(200);
+
+    const resourceRelationship2 = await api.POST(
+      "/v1/resource-relationship-rules",
+      {
+        body: {
+          workspaceId: workspace.id,
+          name: reference + "-resource-relationship-rule",
+          reference,
+          dependencyType: "depends_on",
+          sourceKind: "SecondarySource",
+          sourceVersion: "test-version/v1",
+          targetKind: "Target",
+          targetVersion: "test-version/v1",
+          metadataKeysMatches: ["e2e/test", importedEntities.prefix],
+        },
+      },
+    );
+
+    expect(resourceRelationship2.response.status).toBe(200);
 
     const sourceResource = await api.GET(
       `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
@@ -64,6 +84,7 @@ test.describe("Resource Relationships API", () => {
 
     expect(sourceResource.response.status).toBe(200);
     expect(sourceResource.data?.relationships).toBeDefined();
+    console.log(sourceResource.data?.relationships);
     const target = sourceResource.data?.relationships?.[reference];
     expect(target).toBeDefined();
     expect(target?.type).toBe("depends_on");
@@ -80,7 +101,8 @@ test.describe("Resource Relationships API", () => {
     api,
     workspace,
   }) => {
-    const reference = `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`;
+    const reference =
+      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -90,10 +112,10 @@ test.describe("Resource Relationships API", () => {
           reference,
           dependencyType: "depends_on",
           sourceKind: "Source",
-          sourceVersion: "test-version/v1",
+          sourceVersion: `${importedEntities.prefix}-test-version/v1`,
           targetKind: "Target",
-          targetVersion: "test-version/v1",
-          metadataTargetKeysEquals: [
+          targetVersion: `${importedEntities.prefix}-test-version/v1`,
+          targetMetadataEquals: [
             { key: importedEntities.prefix, value: "true" },
           ],
         },
@@ -129,19 +151,21 @@ test.describe("Resource Relationships API", () => {
   });
 
   test("upsert a relationship rule", async ({ api, workspace }) => {
+    const reference =
+      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
     // First create a new relationship rule
     const initialRule = await api.POST("/v1/resource-relationship-rules", {
       body: {
         workspaceId: workspace.id,
         name: importedEntities.prefix + "-upsert-rule",
-        reference: importedEntities.prefix + "-upsert",
+        reference,
         dependencyType: "depends_on",
         sourceKind: "SourceA",
-        sourceVersion: "test-version/v1",
+        sourceVersion: `${importedEntities.prefix}-test-version/v1`,
         targetKind: "TargetA",
-        targetVersion: "test-version/v1",
+        targetVersion: `${importedEntities.prefix}-test-version/v1`,
         description: "Initial description",
-        metadataKeysMatch: ["e2e/test"],
+        metadataKeysMatches: ["e2e/test"],
       },
     });
 
@@ -184,5 +208,80 @@ test.describe("Resource Relationships API", () => {
     expect(updatedRule.data?.targetKind).toBe("TargetB");
     expect(updatedRule.data?.targetVersion).toBe("test-version/v2");
     expect(updatedRule.data?.description).toBe("Updated description");
+  });
+
+  test("should not match if some rules are not satisfied", async ({
+    api,
+    workspace,
+  }) => {
+    const reference =
+      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+
+    const sourceResourceCreate = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: importedEntities.prefix + "-source-resource",
+        kind: "Source",
+        identifier: importedEntities.prefix + "-source-resource",
+        version: `${importedEntities.prefix}-version/v1`,
+        config: {},
+        metadata: {
+          "e2e/test": "true",
+          "e2e/test2": "true",
+        },
+      },
+    });
+
+    expect(sourceResourceCreate.response.status).toBe(200);
+
+    const targetResourceCreate = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: importedEntities.prefix + "-target-resource",
+        kind: "Target",
+        identifier: importedEntities.prefix + "-target-resource",
+        version: `${importedEntities.prefix}-version/v1`,
+        config: {},
+        metadata: {
+          "e2e/test": "true",
+          "e2e/test2": "false",
+        },
+      },
+    });
+
+    expect(targetResourceCreate.response.status).toBe(200);
+
+    const relationshipRule = await api.POST("/v1/resource-relationship-rules", {
+      body: {
+        workspaceId: workspace.id,
+        name: importedEntities.prefix + "-relationship-rule",
+        reference,
+        dependencyType: "depends_on",
+        sourceKind: "Source",
+        sourceVersion: `${importedEntities.prefix}-version/v1`,
+        targetKind: "Target",
+        targetVersion: `${importedEntities.prefix}-version/v1`,
+        metadataKeysMatches: ["e2e/test", "e2e/test2"],
+      },
+    });
+
+    expect(relationshipRule.response.status).toBe(200);
+
+    const sourceResource = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: importedEntities.prefix + "-source-resource",
+          },
+        },
+      },
+    );
+
+    expect(sourceResource.response.status).toBe(200);
+    expect(sourceResource.data?.relationships).toBeDefined();
+    const target = sourceResource.data?.relationships?.[reference];
+    expect(target).toBeUndefined();
   });
 });

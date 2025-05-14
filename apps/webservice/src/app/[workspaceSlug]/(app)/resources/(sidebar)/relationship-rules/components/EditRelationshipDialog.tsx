@@ -37,8 +37,8 @@ import { api } from "~/trpc/react";
 
 type EditRelationshipDialogProps = {
   rule: SCHEMA.ResourceRelationshipRule & {
-    metadataMatches: SCHEMA.ResourceRelationshipRuleMetadataMatch[];
-    metadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
+    metadataKeysMatches: SCHEMA.ResourceRelationshipRuleMetadataMatch[];
+    targetMetadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
   };
   children: React.ReactNode;
 };
@@ -51,43 +51,56 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
 
   const form = useForm({
     schema: SCHEMA.updateResourceRelationshipRule.extend({
-      metadataKeysMatch: z.array(z.object({ key: z.string() })).optional(),
+      metadataKeysMatches: z.array(z.object({ key: z.string() })).optional(),
+      targetMetadataEquals: z
+        .array(z.object({ key: z.string(), value: z.string() }))
+        .optional(),
     }),
     defaultValues: {
       ...rule,
-      metadataKeysMatch: rule.metadataMatches.map((match) => ({
+      metadataKeysMatches: rule.metadataKeysMatches.map((match) => ({
         key: match.key,
       })),
     },
   });
 
   const utils = api.useUtils();
-  const updateRule = api.resource.relationshipRules.update.useMutation();
+  const updateRule = api.resource.relationshipRules.update.useMutation({
+    onSuccess: () => {
+      utils.resource.relationshipRules.list.invalidate();
+    },
+  });
 
   const {
     fields: metadataKeysMatch,
     append: appendMetadataKeysMatch,
     remove: removeMetadataKeysMatch,
   } = useFieldArray({
-    name: "metadataKeysMatch",
+    name: "metadataKeysMatches",
     control: form.control,
   });
 
   const {
-    fields: metadataKeysEquals,
-    append: appendMetadataKeysEquals,
-    remove: removeMetadataKeysEquals,
+    fields: targetMetadataEquals,
+    append: appendTargetMetadataEquals,
+    remove: removeTargetMetadataEquals,
   } = useFieldArray({
-    name: "metadataKeysEquals",
+    name: "targetMetadataEquals",
     control: form.control,
   });
 
   const onSubmit = form.handleSubmit((data) => {
-    const { metadataKeysMatch } = data;
-    const keys = metadataKeysMatch?.map((item) => item.key);
+    const { metadataKeysMatches, targetMetadataEquals } = data;
+    const keys = metadataKeysMatches?.map((item) => item.key);
     updateRule
-      .mutateAsync({ id: rule.id, data: { ...data, metadataKeysMatch: keys } })
-      .then(() => utils.resource.relationshipRules.list.invalidate())
+      .mutateAsync({
+        id: rule.id,
+        data: {
+          ...data,
+          metadataKeysMatches: keys,
+          targetMetadataEquals: targetMetadataEquals,
+        },
+      })
       .then(() => setOpen(false));
   });
 
@@ -305,7 +318,7 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
                   <FormField
                     key={field.id}
                     control={form.control}
-                    name={`metadataKeysMatch.${index}`}
+                    name={`metadataKeysMatches.${index}`}
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
@@ -349,11 +362,11 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
                 Metadata Equals Keys
               </h4>
               <div className="flex flex-wrap items-start gap-2">
-                {metadataKeysEquals.map((field, index) => (
+                {targetMetadataEquals.map((field, index) => (
                   <FormField
                     key={field.id}
                     control={form.control}
-                    name={`metadataKeysEquals.${index}`}
+                    name={`targetMetadataEquals.${index}`}
                     render={({ field: { value, onChange } }) => (
                       <FormItem>
                         <FormControl>
@@ -381,7 +394,7 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeMetadataKeysEquals(index)}
+                              onClick={() => removeTargetMetadataEquals(index)}
                               className="h-5 w-5"
                             >
                               <IconX className="h-3 w-3" />
@@ -397,7 +410,7 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
                   variant="secondary"
                   size="sm"
                   onClick={() =>
-                    appendMetadataKeysEquals({ key: "", value: "" })
+                    appendTargetMetadataEquals({ key: "", value: "" })
                   }
                 >
                   Add

@@ -91,11 +91,7 @@ export const openapi: Swagger.SwaggerV3 = {
           sourceVersion: { type: "string" },
           targetKind: { type: "string" },
           targetVersion: { type: "string" },
-          metadataKeysMatch: {
-            type: "array",
-            items: { type: "string" },
-          },
-          metadataTargetKeysEquals: {
+          targetMetadataEquals: {
             type: "array",
             items: {
               type: "object",
@@ -105,6 +101,11 @@ export const openapi: Swagger.SwaggerV3 = {
               },
               required: ["key", "value"],
             },
+          },
+
+          metadataKeysMatches: {
+            type: "array",
+            items: { type: "string" },
           },
         },
         required: [
@@ -132,11 +133,11 @@ export const openapi: Swagger.SwaggerV3 = {
           sourceVersion: { type: "string" },
           targetKind: { type: "string" },
           targetVersion: { type: "string" },
-          metadataKeysMatch: {
+          metadataKeysMatches: {
             type: "array",
             items: { type: "string" },
           },
-          metadataTargetKeysEquals: {
+          targetMetadataEquals: {
             type: "array",
             items: {
               type: "object",

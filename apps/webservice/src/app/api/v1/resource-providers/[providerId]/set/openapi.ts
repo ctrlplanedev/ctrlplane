@@ -16,9 +16,7 @@ export const openapi: Swagger.SwaggerV3 = {
             name: "providerId",
             in: "path",
             required: true,
-            schema: {
-              type: "string",
-            },
+            schema: { type: "string" },
             description: "UUID of the scanner",
           },
         ],
@@ -32,41 +30,7 @@ export const openapi: Swagger.SwaggerV3 = {
                 properties: {
                   resources: {
                     type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        identifier: {
-                          type: "string",
-                        },
-                        name: {
-                          type: "string",
-                        },
-                        version: {
-                          type: "string",
-                        },
-                        kind: {
-                          type: "string",
-                        },
-                        config: {
-                          type: "object",
-                          additionalProperties: true,
-                        },
-                        metadata: {
-                          type: "object",
-                          additionalProperties: {
-                            type: "string",
-                          },
-                        },
-                      },
-                      required: [
-                        "identifier",
-                        "name",
-                        "version",
-                        "kind",
-                        "config",
-                        "metadata",
-                      ],
-                    },
+                    items: { $ref: "#/components/schemas/CreateResource" },
                   },
                 },
               },

@@ -3,14 +3,9 @@ import { db } from "@ctrlplane/db/client";
 import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker } from "@ctrlplane/events";
-import { logger } from "@ctrlplane/logger";
 
 import { dispatchComputePolicyTargetReleaseTargetSelectorJobs } from "../utils/dispatch-compute-policy-target-selector-jobs.js";
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
-
-const log = logger.child({
-  worker: "compute-policy-target-release-target-selector",
-});
 
 export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
   Channel.ComputePolicyTargetReleaseTargetSelector,
@@ -48,10 +43,6 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
-        log.info(
-          "Row locked in compute-policy-target-release-target-selector, requeueing...",
-          { job },
-        );
         dispatchComputePolicyTargetReleaseTargetSelectorJobs(policyTarget);
         return;
       }

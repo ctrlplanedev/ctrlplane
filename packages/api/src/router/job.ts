@@ -21,8 +21,6 @@ import {
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import {
-  cancelOldReleaseJobTriggersOnJobDispatch,
-  dispatchReleaseJobTriggers,
   getRolloutDateForReleaseJobTrigger,
   isDateInTimeWindow,
   updateJob,
@@ -736,40 +734,6 @@ const jobAgentRouter = createTRPCRouter({
   }),
 });
 
-const jobTriggerRouter = createTRPCRouter({
-  create: createTRPCRouter({
-    byEnvId: protectedProcedure
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.DeploymentUpdate)
-            .on({ type: "environment", id: input }),
-      })
-      .input(z.string().uuid())
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .select()
-          .from(schema.releaseJobTrigger)
-          .innerJoin(
-            schema.job,
-            eq(schema.job.id, schema.releaseJobTrigger.jobId),
-          )
-          .where(
-            and(
-              eq(schema.releaseJobTrigger.environmentId, input),
-              eq(schema.job.status, JobStatus.Pending),
-            ),
-          )
-          .then((jcs) =>
-            dispatchReleaseJobTriggers(ctx.db)
-              .releaseTriggers(jcs.map((jc) => jc.release_job_trigger))
-              .then(cancelOldReleaseJobTriggersOnJobDispatch)
-              .dispatch(),
-          ),
-      ),
-  }),
-});
-
 const metadataKeysRouter = createTRPCRouter({
   byReleaseId: protectedProcedure
     .meta({
@@ -861,6 +825,5 @@ export const jobRouter = createTRPCRouter({
 
   config: releaseJobTriggerRouter,
   agent: jobAgentRouter,
-  trigger: jobTriggerRouter,
   metadataKey: metadataKeysRouter,
 });

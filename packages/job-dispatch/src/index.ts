@@ -1,7 +1,6 @@
 export * from "./config.js";
 export * from "./release-job-trigger.js";
 export * from "./deployment-update.js";
-export * from "./environment-release-channel-update.js";
 export * from "./job-update.js";
 export * from "./job-dispatch.js";
 export * from "./policy-checker.js";
@@ -20,7 +19,6 @@ export * from "./policies/release-dependency.js";
 export * from "./policies/release-string-check.js";
 export * from "./policies/concurrency-policy.js";
 export * from "./policies/release-window.js";
-export * from "./environment-creation.js";
 export * from "./pending-job-checker.js";
 export * from "./events/index.js";
 export * from "./resource/index.js";

@@ -235,6 +235,56 @@ test.describe("Resource API", () => {
     expect(releaseTarget).toBeDefined();
   });
 
+  test("updating non metadata fields should not change resource's current metadata", async ({
+    api,
+    workspace,
+  }) => {
+    // First create a resource
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: resourceName,
+        kind: "ResourceAPI",
+        identifier: resourceName,
+        version: "test-version/v1",
+        config: { "e2e-test": true } as any,
+        metadata: { "e2e-test": "true" },
+      },
+    });
+
+    // Get the resource to update
+    const getResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: resourceName,
+          },
+        },
+      },
+    );
+
+    const { data } = getResponse;
+    const resourceId = data?.id ?? "";
+
+    // Update the resource
+    const newName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const updateResponse = await api.PATCH("/v1/resources/{resourceId}", {
+      params: {
+        path: { resourceId },
+      },
+      body: { name: newName },
+    });
+
+    expect(updateResponse.response.status).toBe(200);
+    const { data: updatedData } = updateResponse;
+    expect(updatedData?.name).toBe(newName);
+    expect(updatedData?.metadata?.["e2e-test"]).toBe("true");
+  });
+
   test("delete a resource", async ({ api, workspace }) => {
     // First create a resource
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;

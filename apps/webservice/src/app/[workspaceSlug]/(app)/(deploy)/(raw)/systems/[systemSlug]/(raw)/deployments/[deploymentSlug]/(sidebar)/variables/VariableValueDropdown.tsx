@@ -1,9 +1,8 @@
-import type * as schema from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconPencil, IconTrash } from "@tabler/icons-react";
-import { z } from "zod";
 
+import * as schema from "@ctrlplane/db/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,11 +40,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Switch } from "@ctrlplane/ui/switch";
-import {
-  defaultCondition,
-  isValidResourceCondition,
-  resourceCondition,
-} from "@ctrlplane/validators/resources";
+import { defaultCondition } from "@ctrlplane/validators/resources";
 
 import type { VariableValue } from "./variable-data";
 import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionRender";
@@ -55,16 +50,6 @@ import {
   VariableChoiceSelect,
   VariableStringInput,
 } from "./VariableInputs";
-
-const editVariableValueFormSchema = z.object({
-  value: z.union([z.string(), z.number(), z.boolean()]),
-  resourceSelector: resourceCondition
-    .nullish()
-    .refine((data) => data == null || isValidResourceCondition(data), {
-      message: "Invalid resource condition",
-    }),
-  default: z.boolean().optional(),
-});
 
 const EditVariableValueDialog: React.FC<{
   value: VariableValue;
@@ -77,8 +62,11 @@ const EditVariableValueDialog: React.FC<{
   const router = useRouter();
 
   const form = useForm({
-    schema: editVariableValueFormSchema,
-    defaultValues: { ...value, default: variable.defaultValueId === value.id },
+    schema: schema.updateDeploymentVariableValue,
+    defaultValues: {
+      ...value,
+      default: variable.defaultValueId === value.id,
+    },
   });
 
   const onSubmit = form.handleSubmit((data) =>

@@ -985,24 +985,7 @@
                   "values": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "value": {},
-                        "sensitive": {
-                          "type": "boolean"
-                        },
-                        "resourceSelector": {
-                          "type": "object",
-                          "additionalProperties": true,
-                          "nullable": true
-                        },
-                        "default": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "value"
-                      ]
+                      "$ref": "#/components/schemas/VariableValue"
                     }
                   }
                 },
@@ -2903,39 +2886,7 @@
                   "resources": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "identifier": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        },
-                        "kind": {
-                          "type": "string"
-                        },
-                        "config": {
-                          "type": "object",
-                          "additionalProperties": true
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "identifier",
-                        "name",
-                        "version",
-                        "kind",
-                        "config",
-                        "metadata"
-                      ]
+                      "$ref": "#/components/schemas/CreateResource"
                     }
                   }
                 }
@@ -4810,28 +4761,141 @@
           }
         }
       },
-      "DeploymentVariableValue": {
+      "BaseVariableValue": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "value": {},
-          "sensitive": {
-            "type": "boolean"
-          },
           "resourceSelector": {
             "type": "object",
             "additionalProperties": true,
             "nullable": true
+          },
+          "default": {
+            "type": "boolean"
           }
-        },
-        "required": [
-          "id",
-          "value",
-          "sensitive",
-          "resourceSelector"
+        }
+      },
+      "DeploymentVariableDirectValue": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseVariableValue"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "valueType": {
+                "type": "string",
+                "enum": [
+                  "direct"
+                ]
+              },
+              "value": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "object"
+                  },
+                  {
+                    "type": "array"
+                  }
+                ]
+              },
+              "sensitive": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "value",
+              "valueType"
+            ]
+          }
+        ]
+      },
+      "DeploymentVariableReferenceValue": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseVariableValue"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "valueType": {
+                "type": "string",
+                "enum": [
+                  "reference"
+                ]
+              },
+              "reference": {
+                "type": "string"
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "defaultValue": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "object"
+                  },
+                  {
+                    "type": "array"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "reference",
+              "path",
+              "valueType"
+            ]
+          }
+        ]
+      },
+      "VariableValue": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DeploymentVariableDirectValue"
+          },
+          {
+            "$ref": "#/components/schemas/DeploymentVariableReferenceValue"
+          }
+        ]
+      },
+      "DeploymentVariableValue": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/VariableValue"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
         ]
       },
       "DeploymentVariable": {
@@ -5441,6 +5505,47 @@
           }
         ]
       },
+      "CreateResource": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Variable"
+            }
+          }
+        },
+        "required": [
+          "identifier",
+          "name",
+          "version",
+          "kind",
+          "config",
+          "metadata"
+        ]
+      },
       "JobStatus": {
         "type": "string",
         "enum": [
@@ -5833,7 +5938,7 @@
               "type": "string"
             }
           },
-          "metadataTargetKeysEquals": {
+          "targetMetadataEquals": {
             "type": "array",
             "items": {
               "type": "object",
@@ -5902,13 +6007,7 @@
           "targetVersion": {
             "type": "string"
           },
-          "metadataKeysMatch": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "metadataTargetKeysEquals": {
+          "targetMetadataEquals": {
             "type": "array",
             "items": {
               "type": "object",
@@ -5924,6 +6023,12 @@
                 "key",
                 "value"
               ]
+            }
+          },
+          "metadataKeysMatches": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         },
@@ -5970,13 +6075,13 @@
           "targetVersion": {
             "type": "string"
           },
-          "metadataKeysMatch": {
+          "metadataKeysMatches": {
             "type": "array",
             "items": {
               "type": "string"
             }
           },
-          "metadataTargetKeysEquals": {
+          "targetMetadataEquals": {
             "type": "array",
             "items": {
               "type": "object",

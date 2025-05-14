@@ -910,14 +910,36 @@ export interface components {
        */
       longitude: number;
     };
-    DeploymentVariableValue: {
-      /** Format: uuid */
-      id: string;
-      value: unknown;
-      sensitive: boolean;
-      resourceSelector: {
+    BaseVariableValue: {
+      resourceSelector?: {
         [key: string]: unknown;
       } | null;
+      default?: boolean;
+    };
+    DeploymentVariableDirectValue: components["schemas"]["BaseVariableValue"] & {
+      /** @enum {string} */
+      valueType: "direct";
+      value: string | number | boolean | Record<string, never> | unknown[];
+      sensitive?: boolean;
+    };
+    DeploymentVariableReferenceValue: components["schemas"]["BaseVariableValue"] & {
+      /** @enum {string} */
+      valueType: "reference";
+      reference: string;
+      path: string[];
+      defaultValue?:
+        | string
+        | number
+        | boolean
+        | Record<string, never>
+        | unknown[];
+    };
+    VariableValue:
+      | components["schemas"]["DeploymentVariableDirectValue"]
+      | components["schemas"]["DeploymentVariableReferenceValue"];
+    DeploymentVariableValue: components["schemas"]["VariableValue"] & {
+      /** Format: uuid */
+      id: string;
     };
     DeploymentVariable: {
       /** Format: uuid */
@@ -1157,6 +1179,19 @@ export interface components {
     };
     ResourceWithVariablesAndMetadata: components["schemas"]["ResourceWithVariables"] &
       components["schemas"]["ResourceWithMetadata"];
+    CreateResource: {
+      identifier: string;
+      name: string;
+      version: string;
+      kind: string;
+      config: {
+        [key: string]: unknown;
+      };
+      metadata: {
+        [key: string]: string;
+      };
+      variables?: components["schemas"]["Variable"][];
+    };
     /** @enum {string} */
     JobStatus:
       | "successful"
@@ -1284,7 +1319,7 @@ export interface components {
       targetKind?: string;
       targetVersion?: string;
       metadataKeysMatch?: string[];
-      metadataTargetKeysEquals?: {
+      targetMetadataEquals?: {
         key: string;
         value: string;
       }[];
@@ -1311,11 +1346,11 @@ export interface components {
       sourceVersion: string;
       targetKind?: string;
       targetVersion?: string;
-      metadataKeysMatch?: string[];
-      metadataTargetKeysEquals?: {
+      targetMetadataEquals?: {
         key: string;
         value: string;
       }[];
+      metadataKeysMatches?: string[];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;
@@ -1328,8 +1363,8 @@ export interface components {
       sourceVersion: string;
       targetKind: string;
       targetVersion: string;
-      metadataKeysMatch?: string[];
-      metadataTargetKeysEquals?: {
+      metadataKeysMatches?: string[];
+      targetMetadataEquals?: {
         key: string;
         value: string;
       }[];
@@ -1958,14 +1993,11 @@ export interface operations {
           config: {
             [key: string]: unknown;
           };
-          values?: {
-            value: unknown;
-            sensitive?: boolean;
+          values?: (components["schemas"]["VariableValue"] & {
             resourceSelector?: {
               [key: string]: unknown;
             } | null;
-            default?: boolean;
-          }[];
+          })[];
         };
       };
     };
@@ -2081,6 +2113,15 @@ export interface operations {
       };
     };
     responses: {
+      /** @description Deployment updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
+        };
+      };
       /** @description Deployment created */
       201: {
         headers: {
@@ -3147,18 +3188,7 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": {
-          resources: {
-            identifier: string;
-            name: string;
-            version: string;
-            kind: string;
-            config: {
-              [key: string]: unknown;
-            };
-            metadata: {
-              [key: string]: string;
-            };
-          }[];
+          resources: components["schemas"]["CreateResource"][];
         };
       };
     };
@@ -3839,6 +3869,15 @@ export interface operations {
       };
     };
     responses: {
+      /** @description System updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["System"];
+        };
+      };
       /** @description System created successfully */
       201: {
         headers: {

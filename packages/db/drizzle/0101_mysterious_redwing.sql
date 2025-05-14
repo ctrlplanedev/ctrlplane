@@ -1,0 +1,1 @@
+ALTER TABLE "variable_value_snapshot" ALTER COLUMN "value" DROP NOT NULL;

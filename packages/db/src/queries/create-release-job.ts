@@ -1,9 +1,13 @@
 import { eq } from "drizzle-orm";
 import _ from "lodash";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { Tx } from "../common.js";
 import { takeFirstOrNull } from "../common.js";
 import * as schema from "../schema/index.js";
+
+const log = logger.child({ function: "createReleaseJob" });
 
 /**
  * Creates a new release job with the given version and variable releases
@@ -20,60 +24,72 @@ export const createReleaseJob = async (
     variableReleaseId: string;
   },
 ) => {
-  // Get version release and related data
-  const versionRelease = await tx.query.versionRelease.findFirst({
-    where: eq(schema.versionRelease.id, release.versionReleaseId),
-    with: {
-      version: { with: { deployment: { with: { jobAgent: true } } } },
-    },
-  });
-  if (!versionRelease) throw new Error("Failed to get release");
+  try {
+    // Get version release and related data
+    const versionRelease = await tx.query.versionRelease.findFirst({
+      where: eq(schema.versionRelease.id, release.versionReleaseId),
+      with: {
+        version: { with: { deployment: { with: { jobAgent: true } } } },
+      },
+    });
+    if (!versionRelease) throw new Error("Failed to get release");
 
-  // Extract job agent info
-  const { jobAgent, jobAgentConfig: deploymentJobAgentConfig } =
-    versionRelease.version.deployment;
-  if (!jobAgent) throw new Error("Deployment has no Job Agent");
+    // Extract job agent info
+    const { jobAgent, jobAgentConfig: deploymentJobAgentConfig } =
+      versionRelease.version.deployment;
+    if (!jobAgent) throw new Error("Deployment has no Job Agent");
 
-  const jobAgentConfig = _.merge(jobAgent.config, deploymentJobAgentConfig);
+    const jobAgentConfig = _.merge(jobAgent.config, deploymentJobAgentConfig);
 
-  // Get variable release data
-  const variableRelease = await tx.query.variableSetRelease.findFirst({
-    where: eq(schema.variableSetRelease.id, release.variableReleaseId),
-    with: { values: { with: { variableValueSnapshot: true } } },
-  });
-  if (!variableRelease) throw new Error("Failed to get variable release");
+    // Get variable release data
+    const variableRelease = await tx.query.variableSetRelease.findFirst({
+      where: eq(schema.variableSetRelease.id, release.variableReleaseId),
+      with: { values: { with: { variableValueSnapshot: true } } },
+    });
+    if (!variableRelease) throw new Error("Failed to get variable release");
 
-  // Create job
-  const job = await tx
-    .insert(schema.job)
-    .values({
-      jobAgentId: jobAgent.id,
-      jobAgentConfig,
-      status: "pending",
-      reason: "policy_passing", // Keep using valid reason type
-    })
-    .returning()
-    .then(takeFirstOrNull);
+    // Create job
+    const job = await tx
+      .insert(schema.job)
+      .values({
+        jobAgentId: jobAgent.id,
+        jobAgentConfig,
+        status: "pending",
+        reason: "policy_passing", // Keep using valid reason type
+      })
+      .returning()
+      .then(takeFirstOrNull);
 
-  if (job == null) throw new Error("Failed to create job");
+    log.info("Created job for release", { releaseId: release.id, job });
 
-  // Add job variables if any exist
-  if (variableRelease.values.length > 0) {
-    await tx.insert(schema.jobVariable).values(
-      variableRelease.values.map((v) => ({
-        jobId: job.id,
-        key: v.variableValueSnapshot.key,
-        sensitive: v.variableValueSnapshot.sensitive,
-        value: v.variableValueSnapshot.value,
-      })),
-    );
+    if (job == null) throw new Error("Failed to create job");
+
+    // Add job variables if any exist
+    if (variableRelease.values.length > 0) {
+      await tx.insert(schema.jobVariable).values(
+        variableRelease.values.map((v) => ({
+          jobId: job.id,
+          key: v.variableValueSnapshot.key,
+          sensitive: v.variableValueSnapshot.sensitive,
+          value: v.variableValueSnapshot.value,
+        })),
+      );
+    }
+
+    // Create release record
+    await tx.insert(schema.releaseJob).values({
+      releaseId: release.id,
+      jobId: job.id,
+    });
+
+    log.info("Created release job", { releaseId: release.id, job });
+
+    return job;
+  } catch (e) {
+    log.error("Failed to create release job for release", {
+      releaseId: release.id,
+      error: e instanceof Error ? e.message : String(e),
+    });
+    throw e;
   }
-
-  // Create release record
-  await tx.insert(schema.releaseJob).values({
-    releaseId: release.id,
-    jobId: job.id,
-  });
-
-  return job;
 };

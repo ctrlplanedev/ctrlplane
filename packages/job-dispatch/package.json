@@ -28,6 +28,7 @@
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
+    "@ctrlplane/rule-engine": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "date-fns": "catalog:",

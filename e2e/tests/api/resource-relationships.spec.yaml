@@ -5,15 +5,23 @@ system:
 
 resources:
   - kind: "Source"
-    version: "test-version/v1"
+    version: "{{ prefix }}-test-version/v1"
     identifier: "{{ prefix }}-source-resource"
     name: "{{ prefix }}-source-resource"
     slug: "{{ prefix }}-source-resource"
     metadata:
       "{{ prefix }}": "true"
       e2e/test: "true"
+  - kind: "SecondarySource"
+    version: "{{ prefix }}-test-version/v1"
+    identifier: "{{ prefix }}-secondary-source-resource"
+    name: "{{ prefix }}-secondary-source-resource"
+    slug: "{{ prefix }}-secondary-source-resource"
+    metadata:
+      "{{ prefix }}": "true"
+      e2e/test: "true"
   - kind: "Target"
-    version: "test-version/v1"
+    version: "{{ prefix }}-test-version/v1"
     identifier: "{{ prefix }}-target-resource"
     name: "{{ prefix }}-target-resource"
     slug: "{{ prefix }}-target-resource"

@@ -171,8 +171,6 @@ export const upsertResources = async (
       ),
       eq(SCHEMA.resource.workspaceId, workspaceId),
     ),
-    with: {
-      metadata: true,
-    },
+    with: { metadata: true, variables: true },
   });
 };

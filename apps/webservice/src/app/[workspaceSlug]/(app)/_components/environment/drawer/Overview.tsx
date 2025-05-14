@@ -28,7 +28,6 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
   const defaultValues = { ...environment };
   const form = useForm({ schema, defaultValues });
   const update = api.environment.update.useMutation();
-  const envOverride = api.job.trigger.create.byEnvId.useMutation();
 
   const utils = api.useUtils();
 
@@ -97,17 +96,6 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
             disabled={update.isPending || !form.formState.isDirty}
           >
             Save
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              envOverride
-                .mutateAsync(id)
-                .then(() => utils.environment.bySystemId.invalidate(systemId))
-                .then(() => utils.environment.byId.invalidate(id))
-            }
-          >
-            Override
           </Button>
         </div>
 
