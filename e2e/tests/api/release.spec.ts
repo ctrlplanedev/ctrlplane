@@ -221,6 +221,110 @@ test.describe("Release Creation", () => {
     expect(variable.value).toBe("test-a");
   });
 
+  test("should create a release with a null variable value", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: importedEntities.system.id,
+      },
+    });
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: { deploymentId },
+        },
+        body: {
+          key: "test",
+          description: "test",
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+        },
+      },
+    );
+    expect(variableCreateResponse.response.status).toBe(201);
+
+    const importedResource = importedEntities.resources.at(0)!;
+    const resourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: importedResource.identifier,
+          },
+        },
+      },
+    );
+    expect(resourceResponse.response.status).toBe(200);
+    const resource = resourceResponse.data;
+    expect(resource).toBeDefined();
+    const resourceId = resource?.id ?? "";
+
+    await page.waitForTimeout(24_000);
+
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: {
+            resourceId,
+          },
+        },
+      },
+    );
+    expect(releaseTargetResponse.response.status).toBe(200);
+    const releaseTargets = releaseTargetResponse.data ?? [];
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
+
+    const releaseResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: {
+            releaseTargetId: releaseTarget?.id ?? "",
+          },
+        },
+      },
+    );
+
+    expect(releaseResponse.response.status).toBe(200);
+    const releases = releaseResponse.data ?? [];
+    expect(releases.length).toBe(2);
+
+    const latestRelease = releases.at(0)!;
+    const variables = latestRelease.variables ?? [];
+    expect(variables.length).toBe(1);
+    const variable = variables[0]!;
+    expect(variable.key).toBe("test");
+    expect(variable.value).toBe("null");
+  });
+
   test("should create a release when a new resource is created", async ({
     api,
     page,
