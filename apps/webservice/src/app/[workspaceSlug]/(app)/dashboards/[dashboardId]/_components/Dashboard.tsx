@@ -5,7 +5,6 @@ import React from "react";
 import { useParams } from "next/navigation";
 import { Responsive, WidthProvider } from "react-grid-layout";
 
-import type { NewWidget } from "./DashboardContext";
 import type { WidgetKind } from "./widgets/WidgetKinds";
 import { NEW_WIDGET_ID, useDashboard } from "./DashboardContext";
 import { WidgetComponents } from "./widgets/WidgetKinds";
@@ -17,31 +16,20 @@ type Dashboard = schema.Dashboard & {
 };
 
 const CreateWidgetPlaceholder: React.FC<{
-  widgetBeingCreated: NewWidget;
+  widgetBeingCreated: schema.DashboardWidget;
 }> = ({ widgetBeingCreated }) => {
-  const { dashboardId } = useParams<{ dashboardId: string }>();
-  const { Component } = WidgetComponents[widgetBeingCreated.widgetKind];
-
-  const widget = {
-    id: NEW_WIDGET_ID,
-    widget: widgetBeingCreated.widgetKind,
-    config: {},
-    name: "New Widget",
-    dashboardId,
-    ...widgetBeingCreated,
-  };
-
-  return <Component widget={widget} />;
+  const { Component } =
+    WidgetComponents[widgetBeingCreated.widget as WidgetKind];
+  return <Component widget={widgetBeingCreated} />;
 };
 
 export const Dashboard: React.FC = () => {
-  const {
-    dashboard,
-    layout,
-    setLayout,
-    widgetBeingCreated,
-    addWidgetCreationPlaceholder,
-  } = useDashboard();
+  const { dashboardId } = useParams<{ dashboardId: string }>();
+  const { widgets, layout, setLayout, addWidgetCreationPlaceholder } =
+    useDashboard();
+  const widgetBeingCreated = widgets.find(
+    (widget) => widget.id === NEW_WIDGET_ID,
+  );
 
   return (
     <ReactGridLayout
@@ -58,7 +46,14 @@ export const Dashboard: React.FC = () => {
         const widgetKind = e.dataTransfer?.getData("widget-kind");
         if (widgetKind == null) return;
         const wk = widgetKind as WidgetKind;
-        addWidgetCreationPlaceholder({ ...item, widgetKind: wk });
+        addWidgetCreationPlaceholder({
+          ...item,
+          id: item.i,
+          widget: wk,
+          dashboardId,
+          name: "New Widget",
+          config: {},
+        });
       }}
     >
       {widgetBeingCreated != null && (
@@ -66,10 +61,9 @@ export const Dashboard: React.FC = () => {
           <CreateWidgetPlaceholder widgetBeingCreated={widgetBeingCreated} />
         </div>
       )}
-      {dashboard.widgets.map((widget) => {
+      {widgets.map((widget) => {
         const layoutItem = layout.lg?.find((item) => item.i === widget.id);
         if (layoutItem == null) return null;
-
         const { Component } = WidgetComponents[widget.widget as WidgetKind];
         return (
           <div key={widget.id} data-grid={{ ...layoutItem }}>
