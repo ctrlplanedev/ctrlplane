@@ -1,6 +1,7 @@
 import React from "react";
 import {
   IconCube,
+  IconDashboard,
   IconRocket,
   IconSettings,
   IconShieldCheck,
@@ -46,6 +47,11 @@ export default async function Layout(props: {
               icon={<IconShieldCheck />}
               label="Policies"
               href={workspaceUrls.policies().baseUrl()}
+            />
+            <TopSidebarIcon
+              icon={<IconDashboard />}
+              label="Dashboards"
+              href={workspaceUrls.dashboards()}
             />
             <div className="flex-grow" />
             {/* <TopSidebarIcon
