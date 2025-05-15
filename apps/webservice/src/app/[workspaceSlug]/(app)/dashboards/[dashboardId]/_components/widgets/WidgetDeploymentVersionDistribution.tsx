@@ -4,7 +4,12 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import type React from "react";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { IconChartPie, IconSelector, IconTrash } from "@tabler/icons-react";
+import {
+  IconChartPie,
+  IconLoader2,
+  IconSelector,
+  IconTrash,
+} from "@tabler/icons-react";
 import { Cell, Pie, PieChart } from "recharts";
 import colors from "tailwindcss/colors";
 import { z } from "zod";
@@ -115,10 +120,12 @@ const WidgetEdit: React.FC<{
   const { data: workspace, isLoading: isWorkspaceLoading } =
     api.workspace.bySlug.useQuery(workspaceSlug);
 
-  const { data: deploymentsResult, isLoading: isDeploymentsLoading } =
+  const { data: deploymentsResult, isLoading: isDeploymentsResultLoading } =
     api.deployment.byWorkspaceId.useQuery(workspace?.id ?? "", {
       enabled: workspace != null,
     });
+
+  const isDeploymentsLoading = isWorkspaceLoading || isDeploymentsResultLoading;
 
   const deployments = deploymentsResult ?? [];
 
@@ -220,6 +227,12 @@ const WidgetEdit: React.FC<{
                     <Command>
                       <CommandInput placeholder="Search deployment..." />
                       <CommandList>
+                        {isDeploymentsLoading && (
+                          <CommandItem className="flex items-center gap-2 text-muted-foreground">
+                            <IconLoader2 className="h-3 w-3 animate-spin" />
+                            Loading deployments...
+                          </CommandItem>
+                        )}
                         {deployments.map((deployment) => (
                           <CommandItem
                             key={`${deployment.system.name}-${deployment.name}`}
@@ -259,6 +272,12 @@ const WidgetEdit: React.FC<{
               <Command>
                 <CommandInput placeholder="Add environments..." />
                 <CommandList>
+                  {isEnvironmentsLoading && (
+                    <CommandItem className="flex items-center gap-2 text-muted-foreground">
+                      <IconLoader2 className="h-3 w-3 animate-spin" />
+                      Loading environments...
+                    </CommandItem>
+                  )}
                   {unselectedEnvironments.map((environment) => (
                     <CommandItem
                       key={environment.id}

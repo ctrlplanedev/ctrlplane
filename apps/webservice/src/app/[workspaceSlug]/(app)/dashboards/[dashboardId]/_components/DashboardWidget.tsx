@@ -22,7 +22,7 @@ import {
 } from "@ctrlplane/ui/dialog";
 
 import { useExpandedWidget } from "../_hooks/useExpandedWidget";
-import { useDashboard } from "../DashboardContext";
+import { NEW_WIDGET_ID, useDashboard } from "../DashboardContext";
 
 const DeleteWidgetConfirmationDialog: React.FC<{
   widgetId: string;
@@ -117,6 +117,8 @@ export const WidgetFullscreen: React.FC<WidgetFullscreenProps> = ({
     setIsEditing,
   } = useExpandedWidget();
 
+  const { deleteWidget } = useDashboard();
+
   return (
     <Dialog
       open={expandedWidgetId === widget.id}
@@ -126,6 +128,7 @@ export const WidgetFullscreen: React.FC<WidgetFullscreenProps> = ({
           return;
         }
         clearExpandedWidget();
+        if (widget.id === NEW_WIDGET_ID) deleteWidget(widget.id);
       }}
     >
       <DialogContent className="min-w-[1000px]">
