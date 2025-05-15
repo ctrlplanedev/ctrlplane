@@ -71,7 +71,9 @@ export default async function DashboardPage(props: PageProps) {
           <CreateWidgetDrawer />
         </PageHeader>
 
-        <Dashboard />
+        <div className="h-[calc(100vh-64px-56px-2px)] w-full overflow-y-auto">
+          <Dashboard />
+        </div>
       </DashboardContextProvider>
     </div>
   );
