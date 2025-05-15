@@ -17,6 +17,10 @@ type DashboardContextType = {
   setLayout: (currentLayout: Layout[], allLayouts: Layouts) => void;
   addWidgetCreationPlaceholder: (widget: schema.DashboardWidget) => void;
   createWidget: (widget: schema.DashboardWidgetInsert) => Promise<void>;
+  updateWidget: (
+    widgetId: string,
+    widget: schema.DashboardWidgetUpdate,
+  ) => Promise<void>;
   deleteWidget: (widgetId: string) => void;
 };
 
@@ -49,7 +53,7 @@ export const DashboardContextProvider: React.FC<{
     setExpandedWidget(widget.id, true);
   };
 
-  const updateWidget = api.dashboard.widget.update.useMutation();
+  const updateWidgetMutation = api.dashboard.widget.update.useMutation();
 
   const handleLayoutChange = (currentLayout: Layout[]) =>
     setWidgets((prevWidgets) => {
@@ -72,7 +76,7 @@ export const DashboardContextProvider: React.FC<{
         const isResized = isXChanged || isYChanged || isWChanged || isHChanged;
         if (!isResized) continue;
 
-        updateWidget.mutate({
+        updateWidgetMutation.mutate({
           id: newWidget.id,
           data: {
             x: newWidget.x,
@@ -101,6 +105,21 @@ export const DashboardContextProvider: React.FC<{
     clearExpandedWidget();
   };
 
+  const updateWidget = async (
+    widgetId: string,
+    widget: schema.DashboardWidgetUpdate,
+  ) => {
+    setWidgets((prevWidgets) => {
+      const newWidgets = prevWidgets.map((w) => {
+        if (w.id === widgetId) return { ...w, ...widget };
+        return w;
+      });
+      return newWidgets;
+    });
+    await updateWidgetMutation.mutateAsync({ id: widgetId, data: widget });
+    clearExpandedWidget();
+  };
+
   const deleteWidgetMutation = api.dashboard.widget.delete.useMutation();
   const deleteWidget = (widgetId: string) => {
     if (widgetId !== NEW_WIDGET_ID) deleteWidgetMutation.mutate(widgetId);
@@ -120,6 +139,7 @@ export const DashboardContextProvider: React.FC<{
         setLayout: handleLayoutChange,
         addWidgetCreationPlaceholder,
         createWidget,
+        updateWidget,
         deleteWidget,
       }}
     >

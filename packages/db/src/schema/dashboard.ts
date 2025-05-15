@@ -64,3 +64,4 @@ export const createDashboardWidget = dashboardWidgetInsert;
 export const updateDashboardWidget = dashboardWidgetInsert.partial();
 export type DashboardWidget = InferSelectModel<typeof dashboardWidget>;
 export type DashboardWidgetInsert = InferInsertModel<typeof dashboardWidget>;
+export type DashboardWidgetUpdate = z.infer<typeof updateDashboardWidget>;

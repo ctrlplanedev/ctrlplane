@@ -1,5 +1,5 @@
 import type { DashboardWidget } from "../DashboardWidget";
-import { WidgetDeploymentVersionDistribution } from "./WidgetDeploymentVersionDistribution";
+import { WidgetDeploymentVersionDistribution } from "./deployment-version-distribution/WidgetDeploymentVersionDistribution";
 
 export enum WidgetKind {
   DeploymentVersionDistribution = "deployment-version-distribution",

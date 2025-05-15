@@ -1,22 +1,11 @@
-"use client";
-
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type React from "react";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import {
-  IconChartPie,
-  IconLoader2,
-  IconSelector,
-  IconTrash,
-} from "@tabler/icons-react";
-import { Cell, Pie, PieChart } from "recharts";
-import colors from "tailwindcss/colors";
+import { IconLoader2, IconSelector, IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 import {
   Command,
   CommandInput,
@@ -36,86 +25,11 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
-import type { DashboardWidget } from "../DashboardWidget";
 import { api } from "~/trpc/react";
-import { NEW_WIDGET_ID, useDashboard } from "../../DashboardContext";
-import { DashboardWidgetCard, WidgetFullscreen } from "../DashboardWidget";
-import { WidgetKind } from "./WidgetKinds";
+import { NEW_WIDGET_ID, useDashboard } from "../../../DashboardContext";
+import { WidgetKind } from "../WidgetKinds";
 
-export const schema = z.object({
-  deploymentId: z.string().uuid(),
-  environmentIds: z.array(z.string().uuid()).optional(),
-});
-
-const COLORS = [
-  colors.blue[500],
-  colors.green[500],
-  colors.yellow[500],
-  colors.red[500],
-  colors.purple[500],
-  colors.amber[500],
-  colors.cyan[500],
-  colors.fuchsia[500],
-  colors.lime[500],
-  colors.orange[500],
-  colors.pink[500],
-  colors.teal[500],
-];
-
-const DistroChart: React.FC<{
-  versionCounts: { versionTag: string; count: number }[];
-}> = ({ versionCounts }) => {
-  return (
-    <ChartContainer config={{}} className="h-full w-full flex-grow">
-      <PieChart>
-        <ChartTooltip
-          content={({ active, payload }) => {
-            if (active && payload?.length) {
-              return (
-                <div className="flex items-center gap-4 rounded-lg border bg-background p-2 text-xs shadow-sm">
-                  <div className="font-semibold">{payload[0]?.name}</div>
-                  <div className="text-sm text-neutral-400">
-                    {payload[0]?.value}
-                  </div>
-                </div>
-              );
-            }
-          }}
-        />
-        <Pie data={versionCounts} dataKey="count" nameKey="versionTag">
-          {versionCounts.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Pie>
-      </PieChart>
-    </ChartContainer>
-  );
-};
-
-const WidgetEdit: React.FC<{
-  widget: SCHEMA.DashboardWidget;
-  deploymentId: string;
-  environmentIds?: string[];
-}> = ({ widget, deploymentId, environmentIds }) => {
-  const { dashboardId } = useParams<{ dashboardId: string }>();
-
-  const form = useForm({
-    schema: z.object({
-      name: z.string().min(1),
-      deploymentId: z.string().uuid(),
-      environmentIds: z.array(z.object({ id: z.string().uuid() })).optional(),
-    }),
-    defaultValues: {
-      name: widget.name,
-      deploymentId,
-      environmentIds: environmentIds?.map((id) => ({ id })),
-    },
-  });
-
-  const { createWidget } = useDashboard();
-
-  const updateWidget = api.dashboard.widget.update.useMutation();
-
+const useGetDeployments = () => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const { data: workspace, isLoading: isWorkspaceLoading } =
     api.workspace.bySlug.useQuery(workspaceSlug);
@@ -128,6 +42,34 @@ const WidgetEdit: React.FC<{
   const isDeploymentsLoading = isWorkspaceLoading || isDeploymentsResultLoading;
 
   const deployments = deploymentsResult ?? [];
+  return { deployments, isDeploymentsLoading };
+};
+
+export const WidgetEdit: React.FC<{
+  widget: SCHEMA.DashboardWidget;
+  deploymentId: string;
+  environmentIds?: string[];
+}> = ({ widget, deploymentId, environmentIds }) => {
+  const { dashboardId } = useParams<{ dashboardId: string }>();
+
+  const form = useForm({
+    schema: z.object({
+      name: z.string().min(1),
+      deploymentId: z.string().uuid(),
+      environmentIds: z
+        .array(z.object({ envId: z.string().uuid() }))
+        .optional(),
+    }),
+    defaultValues: {
+      name: widget.name,
+      deploymentId,
+      environmentIds: environmentIds?.map((id) => ({ envId: id })),
+    },
+  });
+
+  const { createWidget, updateWidget } = useDashboard();
+
+  const { deployments, isDeploymentsLoading } = useGetDeployments();
 
   const [deploymentsOpen, setDeploymentsOpen] = useState(false);
   const selectedDeployment = deployments.find(
@@ -147,10 +89,21 @@ const WidgetEdit: React.FC<{
 
   const environments = environmentsResult ?? [];
   const unselectedEnvironments = environments.filter(
-    (e) => !fields.some((f) => f.id === e.id),
+    (e) => !fields.some((f) => f.envId === e.id),
   );
+  const utils = api.useUtils();
+  const invalidate = () =>
+    utils.dashboard.widget.data.deploymentVersionDistribution.invalidate({
+      deploymentId,
+    });
 
   const onSubmit = form.handleSubmit(async (data) => {
+    const deploymentId = data.deploymentId;
+    const environmentIds =
+      data.environmentIds == null || data.environmentIds.length === 0
+        ? undefined
+        : data.environmentIds.map((e) => e.envId);
+
     if (widget.id === NEW_WIDGET_ID) {
       await createWidget({
         dashboardId,
@@ -160,27 +113,17 @@ const WidgetEdit: React.FC<{
         w: widget.w,
         h: widget.h,
         name: data.name,
-        config: {
-          deploymentId: data.deploymentId,
-          environmentIds:
-            data.environmentIds == null || data.environmentIds.length === 0
-              ? undefined
-              : data.environmentIds.map((e) => e.id),
-        },
+        config: { deploymentId, environmentIds },
       });
+      invalidate();
       return;
     }
 
-    await updateWidget.mutateAsync({
-      id: widget.id,
-      data: {
-        name: data.name,
-        config: {
-          deploymentId: data.deploymentId,
-          environmentIds: data.environmentIds,
-        },
-      },
+    await updateWidget(widget.id, {
+      name: data.name,
+      config: { deploymentId, environmentIds },
     });
+    invalidate();
   });
 
   return (
@@ -241,6 +184,7 @@ const WidgetEdit: React.FC<{
                               field.onChange(deployment.id);
                               setDeploymentsOpen(false);
                             }}
+                            className="cursor-pointer"
                           >
                             {deployment.system.name} / {deployment.name}
                           </CommandItem>
@@ -282,8 +226,9 @@ const WidgetEdit: React.FC<{
                     <CommandItem
                       key={environment.id}
                       value={environment.name}
+                      className="cursor-pointer"
                       onSelect={() => {
-                        append({ id: environment.id });
+                        append({ envId: environment.id });
                         setEnvironmentsOpen(false);
                       }}
                     >
@@ -298,7 +243,7 @@ const WidgetEdit: React.FC<{
 
         <div className="flex flex-wrap items-center gap-2">
           {fields.map((field, index) => {
-            const environment = environments.find((e) => e.id === field.id);
+            const environment = environments.find((e) => e.id === field.envId);
             if (environment == null) return null;
             return (
               <Badge
@@ -314,7 +259,7 @@ const WidgetEdit: React.FC<{
                   className="h-4 w-4"
                   onClick={() => remove(index)}
                 >
-                  <IconTrash className="h-4 w-4" />
+                  <IconX className="h-3 w-3" />
                 </Button>
               </Badge>
             );
@@ -331,70 +276,4 @@ const WidgetEdit: React.FC<{
       </form>
     </Form>
   );
-};
-
-export const WidgetDeploymentVersionDistribution: DashboardWidget = {
-  displayName: "Version Distribution",
-  Icon: (props) => <IconChartPie {...props} />,
-  Component: ({ widget }) => {
-    const { config } = widget;
-    const parsedConfig = schema.safeParse(config);
-    const isValidConfig = parsedConfig.success;
-
-    const { data, isLoading } =
-      api.dashboard.widget.data.deploymentVersionDistribution.useQuery(
-        {
-          deploymentId: parsedConfig.data?.deploymentId ?? "",
-          environmentIds: parsedConfig.data?.environmentIds,
-        },
-        { enabled: isValidConfig },
-      );
-
-    const versionCounts = data ?? [];
-
-    if (!isValidConfig || (!isLoading && versionCounts.length === 0))
-      return (
-        <DashboardWidgetCard
-          widget={widget}
-          WidgetFullscreen={
-            <WidgetFullscreen
-              widget={widget}
-              WidgetExpanded={<DistroChart versionCounts={versionCounts} />}
-              WidgetEditing={
-                <WidgetEdit
-                  widget={widget}
-                  deploymentId={parsedConfig.data?.deploymentId ?? ""}
-                  environmentIds={parsedConfig.data?.environmentIds}
-                />
-              }
-            />
-          }
-        >
-          <div className="flex h-full w-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">Invalid config</p>
-          </div>
-        </DashboardWidgetCard>
-      );
-
-    return (
-      <DashboardWidgetCard
-        widget={widget}
-        WidgetFullscreen={
-          <WidgetFullscreen
-            widget={widget}
-            WidgetExpanded={<DistroChart versionCounts={versionCounts} />}
-            WidgetEditing={
-              <WidgetEdit
-                widget={widget}
-                deploymentId={parsedConfig.data.deploymentId}
-                environmentIds={parsedConfig.data.environmentIds}
-              />
-            }
-          />
-        }
-      >
-        <DistroChart versionCounts={versionCounts} />
-      </DashboardWidgetCard>
-    );
-  },
 };
