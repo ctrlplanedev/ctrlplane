@@ -26,12 +26,7 @@ export const dashboardWidgetRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createDashboardWidget)
     .mutation(({ ctx, input }) =>
-      ctx.db
-        .insert(dashboardWidget)
-        .values(input)
-        .onConflictDoNothing()
-        .returning()
-        .then(takeFirst),
+      ctx.db.insert(dashboardWidget).values(input).returning().then(takeFirst),
     ),
 
   update: protectedProcedure

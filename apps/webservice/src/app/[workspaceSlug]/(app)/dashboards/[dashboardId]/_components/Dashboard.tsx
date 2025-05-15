@@ -43,6 +43,7 @@ export const Dashboard: React.FC = () => {
       isDroppable
       droppingItem={{ i: NEW_WIDGET_ID, h: 6, w: 3 }}
       onDrop={(_, item, e: DragEvent) => {
+        e.preventDefault();
         const widgetKind = e.dataTransfer?.getData("widget-kind");
         if (widgetKind == null) return;
         const wk = widgetKind as WidgetKind;
