@@ -1,4 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   integer,
   jsonb,
@@ -63,3 +63,4 @@ const dashboardWidgetInsert = createInsertSchema(dashboardWidget, {
 export const createDashboardWidget = dashboardWidgetInsert;
 export const updateDashboardWidget = dashboardWidgetInsert.partial();
 export type DashboardWidget = InferSelectModel<typeof dashboardWidget>;
+export type DashboardWidgetInsert = InferInsertModel<typeof dashboardWidget>;

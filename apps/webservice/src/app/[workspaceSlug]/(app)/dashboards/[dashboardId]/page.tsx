@@ -68,8 +68,7 @@ export default async function DashboardPage(props: PageProps) {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-
-          <CreateWidgetDrawer workspaceId={dashboard.workspaceId} />
+          <CreateWidgetDrawer />
         </PageHeader>
 
         <Dashboard />

@@ -14,23 +14,45 @@ import {
 
 import { WidgetComponents } from "../../[dashboardId]/_components/widgets/WidgetKinds";
 
-export const CreateWidgetDrawer: React.FC<{
-  workspaceId: string;
-}> = ({ workspaceId }) => {
+export const CreateWidgetDrawer: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="grid grid-cols-4 gap-4">
-      {Object.entries(WidgetComponents).map(([key, { displayName, Icon }]) => (
-        <div
-          draggable
-          unselectable="on"
-          key={key}
-          onDragStart={(e) => e.dataTransfer.setData("text/plain", "")}
-          className="flex flex-col items-center justify-center gap-2 rounded-md border p-2"
-        >
-          {Icon}
-          <div>{displayName}</div>
+    <Drawer open={isOpen} onOpenChange={setIsOpen}>
+      <DrawerTrigger asChild>
+        <Button variant="outline" size="sm">
+          Create widget
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Create widget</DrawerTitle>
+          <DrawerDescription>
+            Drag and drop a widget to the dashboard to add it.
+          </DrawerDescription>
+        </DrawerHeader>
+        <div className="grid grid-cols-4 gap-4 p-4">
+          {Object.entries(WidgetComponents).map(
+            ([key, { displayName, Icon }]) => (
+              <div className="space-y-1" key={key}>
+                <div
+                  draggable
+                  unselectable="on"
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/plain", "");
+                    e.dataTransfer.setData("widget-kind", key);
+                    setIsOpen(false);
+                  }}
+                  className="flex cursor-grab flex-col items-center justify-center gap-2 rounded-md border p-2"
+                >
+                  <Icon className="h-10 w-10 stroke-1" />
+                </div>
+                <div className="text-sm">{displayName}</div>
+              </div>
+            ),
+          )}
         </div>
-      ))}
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 };

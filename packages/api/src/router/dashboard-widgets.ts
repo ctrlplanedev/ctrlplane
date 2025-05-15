@@ -1,6 +1,15 @@
 import { z } from "zod";
 
-import { and, count, desc, eq, inArray, isNull, sql } from "@ctrlplane/db";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  sql,
+  takeFirst,
+} from "@ctrlplane/db";
 import {
   createDashboardWidget,
   dashboardWidget,
@@ -17,7 +26,12 @@ export const dashboardWidgetRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createDashboardWidget)
     .mutation(({ ctx, input }) =>
-      ctx.db.insert(dashboardWidget).values(input).onConflictDoNothing(),
+      ctx.db
+        .insert(dashboardWidget)
+        .values(input)
+        .onConflictDoNothing()
+        .returning()
+        .then(takeFirst),
     ),
 
   update: protectedProcedure
