@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Responsive, WidthProvider } from "react-grid-layout";
 
 import type { WidgetKind } from "./widgets/WidgetKinds";
-import { NEW_WIDGET_ID, useDashboard } from "./DashboardContext";
+import { NEW_WIDGET_ID, useDashboard } from "../DashboardContext";
 import { WidgetComponents } from "./widgets/WidgetKinds";
 
 const ReactGridLayout = WidthProvider(Responsive);

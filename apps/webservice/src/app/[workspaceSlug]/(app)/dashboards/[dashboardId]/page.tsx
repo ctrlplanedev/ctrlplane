@@ -18,7 +18,7 @@ import { api } from "~/trpc/server";
 import { CreateWidgetDrawer } from "../_components/widget-drawer/CreateWidgetDrawer";
 import { PageHeader } from "../../_components/PageHeader";
 import { Dashboard } from "./_components/Dashboard";
-import { DashboardContextProvider } from "./_components/DashboardContext";
+import { DashboardContextProvider } from "./DashboardContext";
 
 type PageProps = {
   params: Promise<{ workspaceSlug: string; dashboardId: string }>;

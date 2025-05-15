@@ -5,7 +5,7 @@ import type { Layout, Layouts } from "react-grid-layout";
 import { createContext, useContext, useState } from "react";
 
 import { api } from "~/trpc/react";
-import { useExpandedWidget } from "../_hooks/useExpandedWidget";
+import { useExpandedWidget } from "./_hooks/useExpandedWidget";
 
 type Dashboard = schema.Dashboard & {
   widgets: schema.DashboardWidget[];

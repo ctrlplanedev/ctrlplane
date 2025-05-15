@@ -22,7 +22,7 @@ import {
 } from "@ctrlplane/ui/dialog";
 
 import { useExpandedWidget } from "../_hooks/useExpandedWidget";
-import { useDashboard } from "./DashboardContext";
+import { useDashboard } from "../DashboardContext";
 
 const DeleteWidgetConfirmationDialog: React.FC<{
   widgetId: string;

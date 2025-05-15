@@ -33,7 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import type { DashboardWidget } from "../DashboardWidget";
 import { api } from "~/trpc/react";
-import { NEW_WIDGET_ID, useDashboard } from "../DashboardContext";
+import { NEW_WIDGET_ID, useDashboard } from "../../DashboardContext";
 import { DashboardWidgetCard, WidgetFullscreen } from "../DashboardWidget";
 import { WidgetKind } from "./WidgetKinds";
 
