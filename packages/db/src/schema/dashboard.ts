@@ -1,4 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   integer,
   jsonb,
@@ -43,21 +43,25 @@ export const dashboardWidget = pgTable("dashboard_widget", {
     .references(() => dashboard.id, { onDelete: "cascade" })
     .notNull(),
 
+  name: text("name").notNull().default(""),
   widget: text("widget").notNull(),
   config: jsonb("config").notNull().$type<Record<string, any>>().default({}),
 
   x: integer("x").notNull(),
   y: integer("y").notNull(),
-  width: integer("w").notNull(),
-  height: integer("h").notNull(),
+  w: integer("w").notNull(),
+  h: integer("h").notNull(),
 });
 
 export type Dashboard = InferSelectModel<typeof dashboard>;
 
 const dashboardWidgetInsert = createInsertSchema(dashboardWidget, {
   config: z.record(z.any()),
+  name: z.string().min(1),
 }).omit({ id: true });
 
 export const createDashboardWidget = dashboardWidgetInsert;
 export const updateDashboardWidget = dashboardWidgetInsert.partial();
 export type DashboardWidget = InferSelectModel<typeof dashboardWidget>;
+export type DashboardWidgetInsert = InferInsertModel<typeof dashboardWidget>;
+export type DashboardWidgetUpdate = z.infer<typeof updateDashboardWidget>;

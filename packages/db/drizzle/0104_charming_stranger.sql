@@ -1,0 +1,1 @@
+ALTER TABLE "dashboard_widget" ADD COLUMN "name" text DEFAULT '' NOT NULL;
