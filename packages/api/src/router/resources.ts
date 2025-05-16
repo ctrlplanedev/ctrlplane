@@ -1,5 +1,4 @@
 import type { SQL, Tx } from "@ctrlplane/db";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -10,7 +9,6 @@ import {
   desc,
   eq,
   inArray,
-  isNotNull,
   isNull,
   not,
   sql,
@@ -18,6 +16,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
+  getResourceChildren,
   getResourceParents,
   getResourceRelationshipRules,
 } from "@ctrlplane/db/queries";
@@ -68,21 +67,6 @@ const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
       schema.resourceProvider.id,
       schema.workspace.id,
     );
-
-const environmentHasResource = (
-  db: Tx,
-  resourceId: string,
-  resourceSelector: ResourceCondition,
-) =>
-  db.query.resource
-    .findFirst({
-      where: and(
-        eq(schema.resource.id, resourceId),
-        schema.resourceMatchesMetadata(db, resourceSelector),
-        isNotDeleted,
-      ),
-    })
-    .then((matchedResource) => matchedResource != null);
 
 const latestDeployedVersionByResourceAndEnvironmentId = (
   db: Tx,
@@ -162,201 +146,6 @@ const latestDeployedVersionByResourceAndEnvironmentId = (
         },
       })),
     );
-};
-
-const getNodeDataForResource = async (
-  db: Tx,
-  resourceId: string,
-  jobId?: string,
-) => {
-  const hasFilter = isNotNull(schema.environment.resourceSelector);
-  const resource = await db.query.resource.findFirst({
-    where: and(eq(schema.resource.id, resourceId), isNotDeleted),
-    with: {
-      provider: { with: { google: true } },
-      workspace: {
-        with: {
-          systems: {
-            with: { environments: { where: hasFilter }, deployments: true },
-          },
-        },
-      },
-    },
-  });
-  if (resource == null) return null;
-
-  const matchesIdentifier = eq(
-    schema.jobResourceRelationship.resourceIdentifier,
-    resource.identifier,
-  );
-  const matchesJobId =
-    jobId == null ? undefined : eq(schema.jobResourceRelationship.jobId, jobId);
-  const parent = await db.query.jobResourceRelationship.findFirst({
-    where: and(matchesIdentifier, matchesJobId),
-  });
-
-  const { systems } = resource.workspace;
-  const systemsWithResource = await _.chain(
-    systems.map(async (s) =>
-      _.chain(s.environments)
-        .filter((e) => isPresent(e.resourceSelector))
-        .map((e) =>
-          environmentHasResource(db, resource.id, e.resourceSelector!).then(
-            async (t) =>
-              t
-                ? {
-                    ...e,
-                    resource,
-                    latestActiveReleases:
-                      await latestDeployedVersionByResourceAndEnvironmentId(
-                        db,
-                        resource.id,
-                        e.id,
-                      ),
-                  }
-                : null,
-          ),
-        )
-        .thru((promises) => Promise.all(promises))
-        .thru((results) => {
-          return results;
-        })
-        .value()
-        .then((t) => t.filter(isPresent))
-        .then((t) => (t.length > 0 ? { ...s, environments: t } : null)),
-    ),
-  )
-    .thru((promises) => Promise.all(promises))
-    .value()
-    .then((t) => t.filter(isPresent));
-
-  const provider =
-    resource.provider == null
-      ? null
-      : {
-          ...resource.provider,
-          google: resource.provider.google[0] ?? null,
-        };
-
-  return {
-    ...resource,
-    workspace: { ...resource.workspace, systems: systemsWithResource },
-    provider,
-    parent: parent ?? null,
-  };
-};
-
-type Node = Awaited<ReturnType<typeof getNodeDataForResource>>;
-
-const getChildrenNodesRecursivelyHelper = async (
-  db: Tx,
-  node: Node,
-  nodes: NonNullable<Node>[],
-): Promise<NonNullable<Node>[]> => {
-  if (node == null) return nodes;
-  const activeReleaseJobs = node.workspace.systems
-    .flatMap((s) => s.environments)
-    .flatMap((e) => e.latestActiveReleases)
-    .map((r) => r.releaseJobTrigger.job);
-
-  const jobIds = activeReleaseJobs.map((j) => j.id);
-  const relationships = await db
-    .select()
-    .from(schema.jobResourceRelationship)
-    .leftJoin(
-      schema.resource,
-      eq(
-        schema.jobResourceRelationship.resourceIdentifier,
-        schema.resource.identifier,
-      ),
-    )
-    .where(inArray(schema.jobResourceRelationship.jobId, jobIds))
-    .then((rows) =>
-      rows
-        .map((r) =>
-          r.resource != null
-            ? { ...r.job_resource_relationship, resource: r.resource }
-            : null,
-        )
-        .filter(isPresent),
-    );
-
-  const childrenPromises = relationships.map((r) =>
-    getNodeDataForResource(db, r.resource.id, r.jobId),
-  );
-  const children = await Promise.all(childrenPromises);
-
-  const childrenNodesPromises = children.map((c) =>
-    getChildrenNodesRecursivelyHelper(db, c, []),
-  );
-  const childrenNodes = (await Promise.all(childrenNodesPromises)).flat();
-  return [...nodes, node, ...childrenNodes].filter(isPresent);
-};
-
-const getChildrenNodesRecursively = async (db: Tx, resourceId: string) => {
-  const baseNode = await getNodeDataForResource(db, resourceId);
-  return getChildrenNodesRecursivelyHelper(db, baseNode, []);
-};
-
-type ParentNodesResult = {
-  parentNodes: NonNullable<Node>[];
-  node: Node;
-};
-
-const getParentNodesRecursivelyHelper = async (
-  db: Tx,
-  node: Node,
-  nodes: NonNullable<Node>[],
-): Promise<ParentNodesResult> => {
-  if (node == null) return { parentNodes: nodes, node };
-
-  const parentJob = await db
-    .select()
-    .from(schema.jobResourceRelationship)
-    .innerJoin(
-      schema.job,
-      eq(schema.jobResourceRelationship.jobId, schema.job.id),
-    )
-    .innerJoin(
-      schema.releaseJobTrigger,
-      eq(schema.releaseJobTrigger.jobId, schema.job.id),
-    )
-    .innerJoin(
-      schema.resource,
-      eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
-    )
-    .where(
-      and(
-        eq(schema.jobResourceRelationship.resourceIdentifier, node.identifier),
-        isNull(schema.resource.deletedAt),
-        eq(schema.resource.workspaceId, node.workspaceId),
-      ),
-    )
-    .orderBy(desc(schema.releaseJobTrigger.createdAt))
-    .limit(1)
-    .then(takeFirstOrNull);
-
-  if (parentJob == null) return { parentNodes: nodes, node };
-
-  const parentNode = await getNodeDataForResource(db, parentJob.resource.id);
-  if (parentNode == null) return { parentNodes: nodes, node };
-
-  const { job_resource_relationship: parentRelationship } = parentJob;
-
-  const { parentNodes, node: parentNodeWithData } =
-    await getParentNodesRecursivelyHelper(db, parentNode, []);
-
-  const nodeWithParent = { ...node, parent: parentRelationship };
-
-  return {
-    parentNodes: [...parentNodes, parentNodeWithData].filter(isPresent),
-    node: nodeWithParent,
-  };
-};
-
-const getParentNodesRecursively = async (db: Tx, resourceId: string) => {
-  const baseNode = await getNodeDataForResource(db, resourceId);
-  return getParentNodesRecursivelyHelper(db, baseNode, []);
 };
 
 export const resourceRouter = createTRPCRouter({
@@ -454,89 +243,19 @@ export const resourceRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const resource = await ctx.db.query.resource.findFirst({
-        where: eq(schema.resource.id, input),
-      });
-      if (resource == null) return null;
-      const childrenNodes = await getChildrenNodesRecursively(ctx.db, input);
-      const { parentNodes, node } = await getParentNodesRecursively(
-        ctx.db,
-        input,
-      );
-
-      const childrenNodesUpdated = childrenNodes.map((n) =>
-        n.id === node?.id ? node : n,
-      );
-
-      const nodesQuery = ctx.db
+      const resource = await ctx.db
         .select()
-        .from(schema.resourceRelationship)
-        .innerJoin(
-          schema.resource,
-          eq(
-            schema.resourceRelationship.fromIdentifier,
-            schema.resource.identifier,
-          ),
-        );
+        .from(schema.resource)
+        .where(eq(schema.resource.id, input))
+        .then(takeFirst);
 
-      const fromNodesPromises = nodesQuery
-        .where(
-          and(
-            eq(schema.resourceRelationship.workspaceId, resource.workspaceId),
-            eq(schema.resourceRelationship.toIdentifier, resource.identifier),
-          ),
-        )
-        .then((rows) =>
-          rows.map(async (row) => ({
-            ...row,
-            node: await getNodeDataForResource(ctx.db, row.resource.id),
-          })),
-        )
-        .then((promises) => Promise.all(promises));
+      const { relationships: parents } = await getResourceParents(
+        ctx.db,
+        resource.id,
+      );
+      const children = await getResourceChildren(ctx.db, resource.id);
 
-      const toNodesPromises = nodesQuery
-        .where(
-          and(
-            eq(schema.resourceRelationship.workspaceId, resource.workspaceId),
-            eq(schema.resourceRelationship.fromIdentifier, resource.identifier),
-          ),
-        )
-        .then((rows) =>
-          rows.map(async (row) => ({
-            ...row,
-            node: await getNodeDataForResource(ctx.db, row.resource.id),
-          })),
-        )
-        .then((promises) => Promise.all(promises));
-
-      const [fromNodes, toNodes] = await Promise.all([
-        fromNodesPromises,
-        toNodesPromises,
-      ]);
-
-      return {
-        resource,
-        nodes: [
-          ...parentNodes,
-          ...childrenNodesUpdated,
-          ...fromNodes.map((n) => n.node),
-          ...toNodes.map((n) => n.node),
-        ].filter(isPresent),
-        associations: {
-          from: fromNodes
-            .filter((n) => isPresent(n.node))
-            .map((n) => ({
-              ...n.resource_relationship,
-              resource: n.node!,
-            })),
-          to: toNodes
-            .filter((n) => isPresent(n.node))
-            .map((n) => ({
-              ...n.resource_relationship,
-              resource: n.node!,
-            })),
-        },
-      };
+      return { resource, parents, children };
     }),
 
   byWorkspaceId: createTRPCRouter({
