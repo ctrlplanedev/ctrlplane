@@ -1,4 +1,7 @@
+"use client";
+
 import type { NodeProps } from "reactflow";
+import { useParams } from "next/navigation";
 import { Handle, Position } from "reactflow";
 
 import { cn } from "@ctrlplane/ui";
@@ -12,17 +15,17 @@ type ResourceNodeProps = NodeProps<{
   id: string;
   kind: string;
   version: string;
-  isBaseNode: boolean;
 }>;
 export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node;
+  const { resourceId } = useParams<{ resourceId: string }>();
   const { setResourceId } = useResourceDrawer();
   return (
     <>
       <div
         className={cn(
           "flex w-[250px] cursor-pointer flex-col gap-2 rounded-md border bg-neutral-900/30 px-4 py-3",
-          data.isBaseNode && "bg-neutral-800/60",
+          data.id === resourceId && "bg-neutral-800/60",
         )}
         onClick={() => setResourceId(data.id)}
       >
