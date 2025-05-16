@@ -2,10 +2,10 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, notInArray } from "@ctrlplane/db";
+import { and, desc, eq, notInArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { exitedStatus } from "@ctrlplane/validators/jobs";
+import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -172,5 +172,108 @@ export const releaseTargetRouter = createTRPCRouter({
           return { ...releaseTarget, jobs };
         })
         .value();
+    }),
+
+  releaseHistory: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.ReleaseTargetGet).on({
+          type: "releaseTarget",
+          id: input,
+        }),
+    })
+    .query(async ({ ctx, input }) => {
+      const successfulJobs = ctx.db
+        .select({
+          jobReleaseId: schema.releaseJob.releaseId,
+          jobForRelease: {
+            id: schema.job.id,
+            jobAgentId: schema.job.jobAgentId,
+            jobAgentConfig: schema.job.jobAgentConfig,
+            externalId: schema.job.externalId,
+            startedAt: schema.job.startedAt,
+            completedAt: schema.job.completedAt,
+            updatedAt: schema.job.updatedAt,
+            createdAt: schema.job.createdAt,
+            status: schema.job.status,
+            metadata: sql<
+              Record<string, string>
+            >`COALESCE(jsonb_object_agg(${schema.jobMetadata.key}, ${schema.jobMetadata.value}), '{}'::jsonb)`.as(
+              "jobMetadata",
+            ),
+            reason: schema.job.reason,
+          },
+        })
+        .from(schema.releaseJob)
+        .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
+        .leftJoin(
+          schema.jobMetadata,
+          eq(schema.jobMetadata.jobId, schema.job.id),
+        )
+        .where(eq(schema.job.status, JobStatus.Successful))
+        .groupBy(schema.releaseJob.releaseId, schema.job.id)
+        .as("successfulJobs");
+
+      const variableReleaseSubquery = ctx.db
+        .select({
+          variableSetReleaseId: schema.variableSetRelease.id,
+          variables: sql<Record<string, any>>`COALESCE(jsonb_object_agg(
+          ${schema.variableValueSnapshot.key},
+          ${schema.variableValueSnapshot.value}
+        ) FILTER (WHERE ${schema.variableValueSnapshot.id} IS NOT NULL), '{}'::jsonb)`.as(
+            "variables",
+          ),
+        })
+        .from(schema.variableSetRelease)
+        .leftJoin(
+          schema.variableSetReleaseValue,
+          eq(
+            schema.variableSetRelease.id,
+            schema.variableSetReleaseValue.variableSetReleaseId,
+          ),
+        )
+        .leftJoin(
+          schema.variableValueSnapshot,
+          eq(
+            schema.variableSetReleaseValue.variableValueSnapshotId,
+            schema.variableValueSnapshot.id,
+          ),
+        )
+        .groupBy(schema.variableSetRelease.id)
+        .as("variableRelease");
+
+      const releases = await ctx.db
+        .select()
+        .from(schema.release)
+        .innerJoin(
+          schema.versionRelease,
+          eq(schema.release.versionReleaseId, schema.versionRelease.id),
+        )
+        .innerJoin(
+          schema.deploymentVersion,
+          eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
+        )
+        .innerJoin(
+          variableReleaseSubquery,
+          eq(
+            schema.release.variableReleaseId,
+            variableReleaseSubquery.variableSetReleaseId,
+          ),
+        )
+        .innerJoin(
+          successfulJobs,
+          eq(schema.release.id, successfulJobs.jobReleaseId),
+        )
+        .where(eq(schema.versionRelease.releaseTargetId, input))
+        .orderBy(desc(successfulJobs.jobForRelease.startedAt))
+        .limit(500);
+
+      return releases.map((rel) => ({
+        release: rel.release,
+        version: rel.deployment_version,
+        variables: rel.variableRelease.variables,
+        job: rel.successfulJobs.jobForRelease,
+      }));
     }),
 });
