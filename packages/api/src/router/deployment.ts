@@ -20,7 +20,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentStatsRouter } from "./deployment-stats";
-import { deploymentVariableRouter } from "./deployment-variable";
+import { deploymentVariableRouter } from "./deployment-variable/deployment-variable";
 import { versionRouter } from "./deployment-version";
 
 const hookRouter = createTRPCRouter({
