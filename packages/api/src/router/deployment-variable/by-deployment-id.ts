@@ -1,8 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, selector } from "@ctrlplane/db";
+import { and, eq, inArray, selector } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -24,18 +23,13 @@ const getValueWithMatchedResources = async (
       resources: [] as ResolvedResource[],
     };
 
-  const matchedResourcePromises = resources.map(async (r) =>
-    db.query.resource.findFirst({
-      where: and(
-        eq(schema.resource.id, r.id),
-        selector().query().resources().where(val.resourceSelector).sql(),
-      ),
-    }),
-  );
-
-  const matchedResources = await Promise.all(matchedResourcePromises).then(
-    (resources) => resources.filter(isPresent),
-  );
+  const resourceIds = resources.map((r) => r.id);
+  const matchedResources = await db.query.resource.findMany({
+    where: and(
+      inArray(schema.resource.id, resourceIds),
+      selector().query().resources().where(val.resourceSelector).sql(),
+    ),
+  });
 
   if (schema.isDeploymentVariableValueReference(val)) {
     const resourcesWithResolvedReferences = await Promise.all(
