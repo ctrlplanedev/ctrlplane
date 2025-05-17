@@ -193,9 +193,8 @@ export default async function VariablesPage(props: {
                         "*****"
                       ) : (
                         <span className="rounded-md p-0.5 px-1 font-mono text-blue-400">
-                          {v.resolvedValue === null ||
-                          v.resolvedValue === undefined
-                            ? "(null)"
+                          {typeof v.resolvedValue === "object"
+                            ? JSON.stringify(v.resolvedValue)
                             : String(v.resolvedValue)}
                         </span>
                       )}
