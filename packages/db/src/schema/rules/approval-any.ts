@@ -13,14 +13,18 @@ import {
 } from "./base.js";
 
 // Any user approval rule - requires approval from any users
-export const policyRuleAnyApproval = pgTable("policy_rule_any_approval", {
-  ...basePolicyRuleFields,
+export const policyRuleAnyApproval = pgTable(
+  "policy_rule_any_approval",
+  {
+    ...basePolicyRuleFields,
 
-  // Minimum number of approvals required from any users
-  requiredApprovalsCount: integer("required_approvals_count")
-    .notNull()
-    .default(1),
-});
+    // Minimum number of approvals required from any users
+    requiredApprovalsCount: integer("required_approvals_count")
+      .notNull()
+      .default(1),
+  },
+  (t) => [uniqueIndex("unique_policy_id").on(t.policyId)],
+);
 
 // Approval records specific to any approval rules
 export const policyRuleAnyApprovalRecord = pgTable(

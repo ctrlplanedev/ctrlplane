@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "unique_policy_id" ON "policy_rule_any_approval" USING btree ("policy_id");
