@@ -150,7 +150,7 @@ export const ApprovalRequiredCell: React.FC<{
               className="space-x-2"
             >
               <IconShield className="h-4 w-4" />
-              <span>Approve</span>
+              <span>Review</span>
             </DropdownMenuItem>
           </ApprovalDialog>
           <DropdownAction

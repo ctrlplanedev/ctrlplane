@@ -50,7 +50,7 @@ export const ApprovalCheck: React.FC<{
       </div>
       <ApprovalDialog {...props} onSubmit={invalidate}>
         <Button size="sm" className="h-6">
-          Approve
+          Review
         </Button>
       </ApprovalDialog>
     </div>
