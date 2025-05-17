@@ -1,4 +1,4 @@
-import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
+import type { Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import {
   asc,
   eq,
   isNull,
-  sql,
+  selector,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -18,6 +18,8 @@ import {
   deployment,
   deploymentVariable,
   deploymentVariableValue,
+  isDeploymentVariableValueReference,
+  releaseTarget,
   resource,
   resourceMatchesMetadata,
   system,
@@ -25,6 +27,7 @@ import {
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
+import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -257,44 +260,117 @@ export const deploymentVariableRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const deploymentVariableValueSubquery = ctx.db
+      const releaseTargets = await ctx.db
         .select()
-        .from(deploymentVariableValue)
-        .orderBy(asc(deploymentVariableValue.value))
-        .groupBy(deploymentVariableValue.id)
-        .as("deployment_variable_value_subquery");
+        .from(releaseTarget)
+        .innerJoin(resource, eq(releaseTarget.resourceId, resource.id))
+        .where(eq(releaseTarget.deploymentId, input));
 
-      return ctx.db
-        .select({
-          deploymentVariable: deploymentVariable,
-          values: sql<DeploymentVariableValue[]>`
-            coalesce(
-              array_agg(
-                case when ${deploymentVariableValueSubquery.id} is not null then
-                  json_build_object(
-                    'id', ${deploymentVariableValueSubquery.id},
-                    'value', ${deploymentVariableValueSubquery.value},
-                    'variableId', ${deploymentVariableValueSubquery.variableId},
-                    'resourceSelector', ${deploymentVariableValueSubquery.resourceSelector},
-                    'valueType', ${deploymentVariableValueSubquery.valueType},
-                    'reference', ${deploymentVariableValueSubquery.reference},
-                    'path', ${deploymentVariableValueSubquery.path},
-                    'defaultValue', ${deploymentVariableValueSubquery.defaultValue}
-                  )
-                else null end
-              ) filter (where ${deploymentVariableValueSubquery.id} is not null),
-              array[]::json[]
-            )
-          `.as("values"),
-        })
-        .from(deploymentVariable)
-        .leftJoin(
-          deploymentVariableValueSubquery,
-          eq(deploymentVariable.id, deploymentVariableValueSubquery.variableId),
-        )
-        .groupBy(deploymentVariable.id)
-        .orderBy(asc(deploymentVariable.key))
-        .where(eq(deploymentVariable.deploymentId, input));
+      const deploymentVariables =
+        await ctx.db.query.deploymentVariable.findMany({
+          where: eq(deploymentVariable.deploymentId, input),
+          with: { values: true },
+        });
+
+      const resolvedVarliablesPromises = deploymentVariables.map(
+        async (variable) => {
+          const nonDefaultValues = variable.values.filter(
+            (v) => v.id !== variable.defaultValueId,
+          );
+
+          type ResolvedResource = Resource & {
+            resolvedValue: string | number | boolean | object | null;
+          };
+
+          const nonDefaultValuesWithResources = await Promise.all(
+            nonDefaultValues.map(async (val) => {
+              if (val.resourceSelector == null)
+                return {
+                  ...val,
+                  resources: [] as ResolvedResource[],
+                };
+
+              const matchedResourcePromises = releaseTargets.map(async (rt) =>
+                ctx.db.query.resource.findFirst({
+                  where: and(
+                    eq(resource.id, rt.resource.id),
+                    selector()
+                      .query()
+                      .resources()
+                      .where(val.resourceSelector)
+                      .sql(),
+                  ),
+                }),
+              );
+
+              const matchedResources = await Promise.all(
+                matchedResourcePromises,
+              ).then((resources) => resources.filter(isPresent));
+
+              if (isDeploymentVariableValueReference(val)) {
+                const resourcesWithResolvedReferences = await Promise.all(
+                  matchedResources.map(async (r) => {
+                    const resolvedValue = await getReferenceVariableValue(
+                      r.id,
+                      val,
+                    );
+                    return { ...r, resolvedValue };
+                  }),
+                );
+
+                return { ...val, resources: resourcesWithResolvedReferences };
+              }
+
+              const resourcesWithDirectValues = matchedResources.map((r) => ({
+                ...r,
+                resolvedValue: val.value,
+              }));
+              return { ...val, resources: resourcesWithDirectValues };
+            }),
+          );
+
+          const defaultValue = variable.values.find(
+            (v) => v.id === variable.defaultValueId,
+          );
+          if (defaultValue == null)
+            return { ...variable, values: nonDefaultValuesWithResources };
+
+          const matchedResourcesIds = nonDefaultValuesWithResources.flatMap(
+            (r) => r.resources.map((r) => r.id),
+          );
+          const resourcesMatchedByDefaultPromises = releaseTargets
+            .filter((rt) => !matchedResourcesIds.includes(rt.resource.id))
+            .map(async (rt) => {
+              if (isDeploymentVariableValueReference(defaultValue)) {
+                const resolvedValue = await getReferenceVariableValue(
+                  rt.resource.id,
+                  defaultValue,
+                );
+                return { ...rt.resource, resolvedValue };
+              }
+
+              return { ...rt.resource, resolvedValue: defaultValue.value };
+            });
+
+          const resourcesMatchedByDefault = await Promise.all(
+            resourcesMatchedByDefaultPromises,
+          );
+          const defaultValueWithResources = {
+            ...defaultValue,
+            resources: resourcesMatchedByDefault,
+          };
+
+          return {
+            ...variable,
+            values: [
+              ...nonDefaultValuesWithResources,
+              defaultValueWithResources,
+            ],
+          };
+        },
+      );
+
+      return Promise.all(resolvedVarliablesPromises);
     }),
 
   create: protectedProcedure

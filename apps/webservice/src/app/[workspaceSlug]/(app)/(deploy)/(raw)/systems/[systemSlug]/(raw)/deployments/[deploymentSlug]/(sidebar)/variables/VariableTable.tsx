@@ -51,9 +51,12 @@ const VariableSearchInput: React.FC<{
 );
 
 const ResourceRow: React.FC<{
-  resource: schema.Resource;
+  resource: schema.Resource & {
+    resolvedValue: string | number | boolean | object | null;
+  };
   workspaceUrls: ReturnType<typeof urls.workspace>;
-}> = ({ resource, workspaceUrls }) => (
+  valueType: "direct" | "reference";
+}> = ({ resource, workspaceUrls, valueType }) => (
   <TableRow className="border-none">
     <TableCell className="h-10 cursor-pointer py-0 pl-[56px]" colSpan={2}>
       <Link
@@ -72,6 +75,13 @@ const ResourceRow: React.FC<{
               {resource.version}
             </span>
           </div>
+          {valueType === "reference" && (
+            <span className="rounded-md border border-blue-800/40 bg-blue-950/20 px-2 py-0.5 font-mono text-blue-300/90">
+              {typeof resource.resolvedValue === "object"
+                ? JSON.stringify(resource.resolvedValue)
+                : String(resource.resolvedValue)}
+            </span>
+          )}
         </div>
       </Link>
     </TableCell>
@@ -252,8 +262,8 @@ const VariableValueRow: React.FC<{
             variant="secondary"
             className="flex justify-center hover:bg-secondary"
           >
-            {value.resourceCount} resource
-            {value.resourceCount === 1 ? "" : "s"}
+            {value.resources.length} resource
+            {value.resources.length === 1 ? "" : "s"}
           </Badge>
           <VariableValueDropdown value={value} variable={variable}>
             <Button
@@ -274,9 +284,10 @@ const VariableValueRow: React.FC<{
               key={resource.id}
               resource={resource}
               workspaceUrls={workspaceUrls}
+              valueType={value.valueType}
             />
           ))}
-          {value.resourceCount !== 0 && (
+          {value.resources.length !== 0 && (
             <TableRow className="border-none">
               <TableCell
                 className="h-10 cursor-pointer py-0 pl-[56px]"
@@ -285,17 +296,19 @@ const VariableValueRow: React.FC<{
                 <div className="flex h-full items-center border-l border-neutral-800 pl-7 text-muted-foreground hover:text-white">
                   <Link
                     className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6"
-                    href={`${workspaceUrls.resources().baseUrl()}?condition=${value.conditionHash}`}
+                    href={workspaceUrls
+                      .resources()
+                      .filtered(value.resourceSelector)}
                     target="_blank"
                   >
                     <IconDotsVertical className="h-4 w-4" />
-                    View {value.resourceCount} resources...
+                    View {value.resources.length} resources...
                   </Link>
                 </div>
               </TableCell>
             </TableRow>
           )}
-          {value.resourceCount === 0 && (
+          {value.resources.length === 0 && (
             <TableRow className="border-none">
               <TableCell
                 className="h-10 cursor-pointer py-0 pl-[56px]"

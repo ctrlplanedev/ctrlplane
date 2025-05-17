@@ -20,11 +20,12 @@ export const getReferenceVariableValue = async (
 
     const targetId = relationships[variable.reference]?.target.id ?? "";
     const targetResource = relationshipTargets[targetId];
-    if (targetResource == null) return variable.defaultValue;
-
-    return _.get(targetResource, variable.path, variable.defaultValue);
+    if (targetResource == null) return variable.defaultValue ?? null;
+    const resolvedPath =
+      _.get(targetResource, variable.path, variable.defaultValue) ?? null;
+    return resolvedPath as string | number | boolean | object | null;
   } catch (error) {
     logger.error("Error resolving reference variable", { error, variable });
-    return variable.defaultValue;
+    return variable.defaultValue ?? null;
   }
 };
