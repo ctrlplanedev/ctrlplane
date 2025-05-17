@@ -89,8 +89,7 @@ export const openapi: Swagger.SwaggerV3 = {
             $ref: "#/components/schemas/DeploymentVersionSelector",
           },
           versionAnyApprovals: {
-            type: "array",
-            items: { $ref: "#/components/schemas/VersionAnyApproval" },
+            $ref: "#/components/schemas/VersionAnyApproval",
           },
           versionUserApprovals: {
             type: "array",
