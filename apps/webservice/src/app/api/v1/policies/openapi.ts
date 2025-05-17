@@ -163,12 +163,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   versionRoleApprovals: {
                     type: "array",
                     items: {
-                      type: "object",
-                      properties: {
-                        roleId: { type: "string" },
-                        requiredApprovalsCount: { type: "number" },
-                      },
-                      required: ["roleId"],
+                      $ref: "#/components/schemas/VersionRoleApproval",
                     },
                   },
                 },
