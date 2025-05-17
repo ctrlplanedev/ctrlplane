@@ -1,3 +1,6 @@
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
+import LZString from "lz-string";
+
 type WorkspaceParams = {
   workspaceSlug: string;
 };
@@ -90,6 +93,19 @@ const workspaceJobAgents = (slug: string) => {
 const resources = (workspaceSlug: string) => ({
   baseUrl: () => buildUrl(workspaceSlug, "resources"),
   list: () => buildUrl(workspaceSlug, "resources", "list"),
+  filtered: (filter: ResourceCondition | null) => {
+    if (filter == null) return buildUrl(workspaceSlug, "resources", "list");
+
+    const filterHash = LZString.compressToEncodedURIComponent(
+      JSON.stringify(filter),
+    );
+    return buildUrl(
+      workspaceSlug,
+      "resources",
+      "list",
+      `?condition=${filterHash}`,
+    );
+  },
   providers: () => providers(workspaceSlug),
   groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
   schemas: () => buildUrl(workspaceSlug, "resources", "schemas"),

@@ -1,4 +1,3 @@
-import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -8,7 +7,6 @@ import {
   asc,
   eq,
   isNull,
-  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -27,7 +25,8 @@ import {
 import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import { byDeploymentId } from "./by-deployment-id";
 
 const updateDeploymentVariableQueue = getQueue(
   Channel.UpdateDeploymentVariable,
@@ -248,54 +247,7 @@ export const deploymentVariableRouter = createTRPCRouter({
       ).then((rows) => rows.filter(isPresent));
     }),
 
-  byDeploymentId: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentGet)
-          .on({ type: "deployment", id: input }),
-    })
-    .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const deploymentVariableValueSubquery = ctx.db
-        .select()
-        .from(deploymentVariableValue)
-        .orderBy(asc(deploymentVariableValue.value))
-        .groupBy(deploymentVariableValue.id)
-        .as("deployment_variable_value_subquery");
-
-      return ctx.db
-        .select({
-          deploymentVariable: deploymentVariable,
-          values: sql<DeploymentVariableValue[]>`
-            coalesce(
-              array_agg(
-                case when ${deploymentVariableValueSubquery.id} is not null then
-                  json_build_object(
-                    'id', ${deploymentVariableValueSubquery.id},
-                    'value', ${deploymentVariableValueSubquery.value},
-                    'variableId', ${deploymentVariableValueSubquery.variableId},
-                    'resourceSelector', ${deploymentVariableValueSubquery.resourceSelector},
-                    'valueType', ${deploymentVariableValueSubquery.valueType},
-                    'reference', ${deploymentVariableValueSubquery.reference},
-                    'path', ${deploymentVariableValueSubquery.path},
-                    'defaultValue', ${deploymentVariableValueSubquery.defaultValue}
-                  )
-                else null end
-              ) filter (where ${deploymentVariableValueSubquery.id} is not null),
-              array[]::json[]
-            )
-          `.as("values"),
-        })
-        .from(deploymentVariable)
-        .leftJoin(
-          deploymentVariableValueSubquery,
-          eq(deploymentVariable.id, deploymentVariableValueSubquery.variableId),
-        )
-        .groupBy(deploymentVariable.id)
-        .orderBy(asc(deploymentVariable.key))
-        .where(eq(deploymentVariable.deploymentId, input));
-    }),
+  byDeploymentId,
 
   create: protectedProcedure
     .meta({
