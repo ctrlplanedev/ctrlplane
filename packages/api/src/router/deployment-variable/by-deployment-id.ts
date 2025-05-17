@@ -1,5 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import type { Resource } from "@ctrlplane/rule-engine";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -10,7 +9,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../../trpc";
 
-type ResolvedResource = Resource & {
+type ResolvedResource = schema.Resource & {
   resolvedValue: string | number | boolean | object | null;
 };
 
