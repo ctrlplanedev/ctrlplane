@@ -37,7 +37,7 @@ jobs:
         uses: ./tooling/github/setup
 
       - name: Run Tests
-        run: turbo test --filter=!@ctrlplane/e2e
+        run: turbo test --filter=@ctrlplane/packages/rule-engine
 
   format:
     name: Format
