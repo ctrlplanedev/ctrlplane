@@ -22,6 +22,7 @@ import {
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell } from "@ctrlplane/ui/table";
+import { failedStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
@@ -166,6 +167,14 @@ export const DeploymentVersionJobsTable: React.FC<
             {environmentsWithJobs.map(({ environment, releaseTargets }) => (
               <CollapsibleRow
                 key={environment.id}
+                isInitiallyExpanded={
+                  releaseTargets.length <= 5 ||
+                  releaseTargets.some(({ jobs }) =>
+                    [...failedStatuses, JobStatus.ActionRequired].includes(
+                      (jobs.at(0)?.status ?? JobStatus.Pending) as JobStatus,
+                    ),
+                  )
+                }
                 Heading={({ isExpanded }) => (
                   <EnvironmentTableRow
                     isExpanded={isExpanded}

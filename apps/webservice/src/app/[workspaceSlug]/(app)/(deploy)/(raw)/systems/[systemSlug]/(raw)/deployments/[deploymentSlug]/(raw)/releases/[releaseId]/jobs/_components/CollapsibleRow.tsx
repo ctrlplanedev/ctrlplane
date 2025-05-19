@@ -6,10 +6,11 @@ import { TableRow } from "@ctrlplane/ui/table";
 
 export const CollapsibleRow: React.FC<{
   Heading: React.FC<{ isExpanded: boolean }>;
+  isInitiallyExpanded?: boolean;
   DropdownMenu?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ Heading, DropdownMenu, children }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+}> = ({ Heading, isInitiallyExpanded = false, DropdownMenu, children }) => {
+  const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
 
   return (
     <>
