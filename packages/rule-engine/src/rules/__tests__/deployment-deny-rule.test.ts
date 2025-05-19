@@ -171,24 +171,24 @@ describe("DeploymentDenyRule", () => {
 
     /**
      * These test UTC 13:30
-     * during EST, this is 8:30am, which is during the denied period
-     * during EDT, this is 9:30am, which is outside the denied period
-     * hence, before the DST change, the rule should deny access,
-     * and should allow access after the DST change
+     * during EST, this is 8:30am, which is outside the denied period
+     * during EDT, this is 9:30am, which is during the denied period
+     * hence, before the DST change, the rule should allow access,
+     * and should deny access after the DST change
      */
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-11T13:30:00Z"),
     );
     result = rule.passing();
-    expect(result.passing).toBe(false);
-    expect(result.rejectionReason).toBeDefined();
+    expect(result.passing).toBe(true);
+    expect(result.rejectionReason).toBeUndefined();
 
     vi.spyOn(rule as any, "getCurrentTime").mockReturnValue(
       new Date("2023-03-12T13:30:00Z"),
     );
     result = rule.passing();
-    expect(result.passing).toBe(true);
-    expect(result.rejectionReason).toBeUndefined();
+    expect(result.passing).toBe(false);
+    expect(result.rejectionReason).toBeDefined();
   });
 
   it("should handle daylight time to standard time changes correctly (EDT -> EST in November)", () => {
