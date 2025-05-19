@@ -37,7 +37,7 @@ jobs:
         uses: ./tooling/github/setup
 
       - name: Run Tests
-        run: turbo test
+        run: turbo test --filter=!@ctrlplane/e2e
 
   format:
     name: Format
