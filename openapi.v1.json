@@ -328,6 +328,73 @@
         }
       }
     },
+    "/v1/deployment-versions/{deploymentVersionId}/releases": {
+      "get": {
+        "summary": "Get all releases for a deployment version",
+        "parameters": [
+          {
+            "name": "deploymentVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Release"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/deployment-versions": {
       "post": {
         "summary": "Upserts a deployment version",
@@ -1901,6 +1968,10 @@
                         "roleId"
                       ]
                     }
+                  },
+                  "gradualRollout": {
+                    "$ref": "#/components/schemas/GradualRollout",
+                    "nullable": true
                   }
                 }
               }
@@ -2124,6 +2195,9 @@
                     "items": {
                       "$ref": "#/components/schemas/VersionRoleApproval"
                     }
+                  },
+                  "gradualRollout": {
+                    "$ref": "#/components/schemas/GradualRollout"
                   }
                 },
                 "required": [
@@ -4742,6 +4816,27 @@
           }
         }
       },
+      "Release": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "environment": {
+            "$ref": "#/components/schemas/Environment"
+          },
+          "deployment": {
+            "$ref": "#/components/schemas/Deployment"
+          },
+          "version": {
+            "$ref": "#/components/schemas/DeploymentVersion"
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
       "BaseVariableValue": {
         "type": "object",
         "properties": {
@@ -5134,7 +5229,7 @@
         ],
         "additionalProperties": true
       },
-      "Release": {
+      "Release1": {
         "type": "object",
         "properties": {
           "id": {
@@ -5809,6 +5904,28 @@
           "requiredApprovalsCount"
         ]
       },
+      "GradualRollout": {
+        "type": "object",
+        "properties": {
+          "deployRate": {
+            "type": "number"
+          },
+          "windowSizeMinutes": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "deployRate",
+          "windowSizeMinutes",
+          "name"
+        ]
+      },
       "Policy1": {
         "type": "object",
         "properties": {
@@ -5865,6 +5982,10 @@
             "items": {
               "$ref": "#/components/schemas/VersionRoleApproval"
             }
+          },
+          "gradualRollout": {
+            "$ref": "#/components/schemas/GradualRollout",
+            "nullable": true
           }
         },
         "required": [
@@ -5877,7 +5998,8 @@
           "targets",
           "denyWindows",
           "versionUserApprovals",
-          "versionRoleApprovals"
+          "versionRoleApprovals",
+          "gradualRollout"
         ]
       },
       "UpdateResourceRelationshipRule": {

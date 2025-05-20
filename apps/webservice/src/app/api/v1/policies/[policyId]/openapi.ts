@@ -77,6 +77,10 @@ export const openapi: Swagger.SwaggerV3 = {
                       required: ["roleId"],
                     },
                   },
+                  gradualRollout: {
+                    $ref: "#/components/schemas/GradualRollout",
+                    nullable: true,
+                  },
                 },
               },
             },

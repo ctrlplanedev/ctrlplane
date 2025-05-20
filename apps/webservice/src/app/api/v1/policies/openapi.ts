@@ -67,6 +67,16 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         required: ["roleId", "requiredApprovalsCount"],
       },
+      GradualRollout: {
+        type: "object",
+        properties: {
+          deployRate: { type: "number" },
+          windowSizeMinutes: { type: "number" },
+          name: { type: "string" },
+          description: { type: "string" },
+        },
+        required: ["deployRate", "windowSizeMinutes", "name"],
+      },
       Policy: {
         type: "object",
         properties: {
@@ -99,6 +109,10 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "array",
             items: { $ref: "#/components/schemas/VersionRoleApproval" },
           },
+          gradualRollout: {
+            $ref: "#/components/schemas/GradualRollout",
+            nullable: true,
+          },
         },
         required: [
           "id",
@@ -111,6 +125,7 @@ export const openapi: Swagger.SwaggerV3 = {
           "denyWindows",
           "versionUserApprovals",
           "versionRoleApprovals",
+          "gradualRollout",
         ],
       },
     },
@@ -165,6 +180,9 @@ export const openapi: Swagger.SwaggerV3 = {
                     items: {
                       $ref: "#/components/schemas/VersionRoleApproval",
                     },
+                  },
+                  gradualRollout: {
+                    $ref: "#/components/schemas/GradualRollout",
                   },
                 },
                 required: ["name", "workspaceId", "targets"],

@@ -136,6 +136,23 @@ const updateVersionRoleApprovals = async (
     );
 };
 
+const updateGradualRollout = async (
+  tx: Tx,
+  policyId: string,
+  gradualRollout: SCHEMA.UpdatePolicy["gradualRollout"],
+) => {
+  if (gradualRollout === undefined) return;
+  if (gradualRollout === null)
+    return tx
+      .delete(SCHEMA.policyRuleGradualRollout)
+      .where(eq(SCHEMA.policyRuleGradualRollout.policyId, policyId));
+
+  await tx.update(SCHEMA.policyRuleGradualRollout).set({
+    ...gradualRollout,
+    policyId,
+  });
+};
+
 export const updatePolicyInTx = async (
   tx: Tx,
   id: string,
@@ -148,6 +165,7 @@ export const updatePolicyInTx = async (
     versionAnyApprovals,
     versionUserApprovals,
     versionRoleApprovals,
+    gradualRollout,
     ...rest
   } = input;
 
@@ -172,6 +190,7 @@ export const updatePolicyInTx = async (
     updateVersionAnyApprovals(tx, policy.id, versionAnyApprovals),
     updateVersionUserApprovals(tx, policy.id, versionUserApprovals),
     updateVersionRoleApprovals(tx, policy.id, versionRoleApprovals),
+    updateGradualRollout(tx, policy.id, gradualRollout),
   ]);
 
   const updatedPolicy = await tx.query.policy.findFirst({
@@ -183,6 +202,7 @@ export const updatePolicyInTx = async (
       versionAnyApprovals: true,
       versionUserApprovals: true,
       versionRoleApprovals: true,
+      gradualRollout: true,
     },
   });
 

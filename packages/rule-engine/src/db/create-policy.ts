@@ -92,6 +92,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     versionAnyApprovals,
     versionUserApprovals,
     versionRoleApprovals,
+    gradualRollout,
     ...rest
   } = input;
 
@@ -176,6 +177,11 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
           "requiredApprovalsCount",
         ]),
       });
+
+  if (gradualRollout != null)
+    await tx
+      .insert(SCHEMA.policyRuleGradualRollout)
+      .values({ ...gradualRollout, policyId });
 
   return {
     ...policy,
