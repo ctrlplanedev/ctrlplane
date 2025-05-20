@@ -84,25 +84,31 @@ export const gradualRolloutRule = (
     const versionApprovalRules = getVersionApprovalRules(policy);
     if (versionApprovalRules.length === 0) return version.createdAt;
 
-    for (const rule of versionApprovalRules) {
-      const result = await rule.filter([version]);
-      if (result.allowedCandidates.length === 0) return null;
-    }
+    // Check if version passes all approval rules
+    const allApprovalsPassed = await versionApprovalRules.reduce(
+      async (passedSoFar, rule) => {
+        if (!(await passedSoFar)) return false;
+        const { allowedCandidates } = await rule.filter([version]);
+        return allowedCandidates.length > 0;
+      },
+      Promise.resolve(true),
+    );
 
-    const anyApprovalRecords = await getAnyApprovalRecords([version.id]);
-    const userApprovalRecords = await getUserApprovalRecords([version.id]);
-    const roleApprovalRecords = await getRoleApprovalRecords([version.id]);
+    if (!allApprovalsPassed) return null;
 
-    const latestRecord = _.chain([
-      ...anyApprovalRecords,
-      ...userApprovalRecords,
-      ...roleApprovalRecords,
-    ])
-      .filter((r) => r.approvedAt != null)
-      .maxBy((r) => r.approvedAt)
+    // Get most recent approval timestamp
+    const allApprovalRecords = [
+      ...(await getAnyApprovalRecords([version.id])),
+      ...(await getUserApprovalRecords([version.id])),
+      ...(await getRoleApprovalRecords([version.id])),
+    ];
+
+    const latestApprovalRecord = _.chain(allApprovalRecords)
+      .filter((record) => record.approvedAt != null)
+      .maxBy((record) => record.approvedAt)
       .value();
 
-    return latestRecord.approvedAt ?? version.createdAt;
+    return latestApprovalRecord.approvedAt ?? version.createdAt;
   };
 
   const getReleaseTargetPosition = async (version: Version) => {
@@ -152,9 +158,6 @@ export const getRules = (
   return [
     new ReleaseTargetConcurrencyRule(releaseTargetId),
     ...getVersionApprovalRules(policy),
-
-    // keep gradual rollout rule last in the chain
-    // as a rollout does not start until the version has cleared all other rules
     gradualRolloutRule(policy, releaseTargetId),
   ].filter(isPresent);
   // The rrule package is being stupid and deny windows is not top priority
