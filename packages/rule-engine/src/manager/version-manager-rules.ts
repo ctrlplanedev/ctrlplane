@@ -81,16 +81,18 @@ export const gradualRolloutRule = (
 ) => {
   if (policy?.gradualRollout == null) return null;
   const getRolloutStartTime = async (version: Version) => {
-    const policyHasApprovalRules = getVersionApprovalRules(policy).length > 0;
-    if (!policyHasApprovalRules) return version.createdAt;
+    const versionApprovalRules = getVersionApprovalRules(policy);
+    if (versionApprovalRules.length === 0) return version.createdAt;
+
+    for (const rule of versionApprovalRules) {
+      const result = await rule.filter([version]);
+      if (result.allowedCandidates.length === 0) return null;
+    }
 
     const anyApprovalRecords = await getAnyApprovalRecords([version.id]);
     const userApprovalRecords = await getUserApprovalRecords([version.id]);
     const roleApprovalRecords = await getRoleApprovalRecords([version.id]);
 
-    // the rollout rule will be the last rule that runs in the filter chain
-    // hence if it is passing and the policy has approval rules, the version is fully approved
-    // so we can safely return the latest approval record approvedAt as the start of the rollout
     const latestRecord = _.chain([
       ...anyApprovalRecords,
       ...userApprovalRecords,

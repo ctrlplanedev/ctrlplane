@@ -6,7 +6,7 @@ import type { FilterRule, RuleEngineRuleResult } from "../types";
 type GradualRolloutRuleOptions = {
   deployRate: number;
   windowSizeMinutes: number;
-  getRolloutStartTime: (version: Version) => Date | Promise<Date>;
+  getRolloutStartTime: (version: Version) => Date | Promise<Date | null> | null;
   getReleaseTargetPosition: (version: Version) => number | Promise<number>;
   skipReason?: string;
 };
@@ -27,8 +27,7 @@ export class GradualRolloutRule implements FilterRule<Version> {
     return new Date();
   }
 
-  async getDeploymentTime(version: Version) {
-    const startTime = await this.options.getRolloutStartTime(version);
+  async getDeploymentTime(version: Version, startTime: Date) {
     const targetPosition = await this.options.getReleaseTargetPosition(version);
     const windowPosition = Math.floor(targetPosition / this.options.deployRate);
     return addMinutes(
@@ -45,7 +44,16 @@ export class GradualRolloutRule implements FilterRule<Version> {
       "Version not eligible for deployment in the current time window";
 
     for (const candidate of candidates) {
-      const deploymentTime = await this.getDeploymentTime(candidate);
+      const startTime = await this.options.getRolloutStartTime(candidate);
+      if (startTime == null) {
+        rejectionReasons.set(
+          candidate.id,
+          "Rollout has not started for this version",
+        );
+        continue;
+      }
+      const deploymentTime = await this.getDeploymentTime(candidate, startTime);
+
       const isEligible =
         isAfter(now, deploymentTime) || isEqual(now, deploymentTime);
       if (!isEligible) rejectionReasons.set(candidate.id, skip);
