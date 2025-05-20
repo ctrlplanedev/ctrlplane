@@ -58,6 +58,66 @@ export interface paths {
     patch: operations["updateDeploymentVersion"];
     trace?: never;
   };
+  "/v1/deployment-versions/{deploymentVersionId}/releases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get all releases for a deployment version */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          deploymentVersionId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["Release"][];
+          };
+        };
+        /** @description Not Found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              error: string;
+            };
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              error: string;
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployment-versions": {
     parameters: {
       query?: never;
@@ -910,6 +970,15 @@ export interface components {
        */
       longitude: number;
     };
+    Release: {
+      resource?: components["schemas"]["Resource"];
+      environment?: components["schemas"]["Environment"];
+      deployment?: components["schemas"]["Deployment"];
+      version?: components["schemas"]["DeploymentVersion"];
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     BaseVariableValue: {
       resourceSelector?: {
         [key: string]: unknown;
@@ -1036,7 +1105,7 @@ export interface components {
     } & (WithRequired<components["schemas"]["Deployment"], "id"> & {
       [key: string]: unknown;
     });
-    Release: {
+    Release1: {
       /** Format: uuid */
       id: string;
       name: string;
@@ -1290,6 +1359,12 @@ export interface components {
       roleId: string;
       requiredApprovalsCount: number;
     };
+    GradualRollout: {
+      deployRate: number;
+      windowSizeMinutes: number;
+      name: string;
+      description?: string;
+    };
     Policy1: {
       /** Format: uuid */
       id: string;
@@ -1304,9 +1379,10 @@ export interface components {
       targets: components["schemas"]["PolicyTarget"][];
       denyWindows: components["schemas"]["DenyWindow"][];
       deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-      versionAnyApprovals?: components["schemas"]["VersionAnyApproval"][];
+      versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
+      gradualRollout: components["schemas"]["GradualRollout"];
     };
     UpdateResourceRelationshipRule: {
       name?: string;
@@ -1993,11 +2069,7 @@ export interface operations {
           config: {
             [key: string]: unknown;
           };
-          values?: (components["schemas"]["VariableValue"] & {
-            resourceSelector?: {
-              [key: string]: unknown;
-            } | null;
-          })[];
+          values?: components["schemas"]["VariableValue"][];
         };
       };
     };
@@ -2626,6 +2698,7 @@ export interface operations {
             roleId: string;
             requiredApprovalsCount?: number;
           }[];
+          gradualRollout?: components["schemas"]["GradualRollout"];
         };
       };
     };
@@ -2725,14 +2798,10 @@ export interface operations {
             dtend?: string;
           }[];
           deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-          versionAnyApprovals?: {
-            requiredApprovalsCount?: number;
-          }[];
+          versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
-          versionRoleApprovals?: {
-            roleId: string;
-            requiredApprovalsCount?: number;
-          }[];
+          versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
+          gradualRollout?: components["schemas"]["GradualRollout"];
         };
       };
     };

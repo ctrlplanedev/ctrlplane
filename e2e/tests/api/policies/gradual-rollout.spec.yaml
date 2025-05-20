@@ -1,0 +1,104 @@
+system:
+  name: "{{ prefix }}-gradual-rollout"
+  slug: "{{ prefix }}-gradual-rollout"
+  description: "Gradual Rollout System"
+
+environments:
+  - name: "{{ prefix }}-prod"
+    description: "Prod environment"
+    systemId: "{{ prefix }}-gradual-rollout"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+resources:
+  - name: "{{ prefix }}-1"
+    kind: service
+    identifier: "{{ prefix }}-1"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-2"
+    kind: service
+    identifier: "{{ prefix }}-2"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa
+
+  - name: "{{ prefix }}-3"
+    kind: service
+    identifier: "{{ prefix }}-3"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-4"
+    kind: service
+    identifier: "{{ prefix }}-4"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa
+
+  - name: "{{ prefix }}-5"
+    kind: service
+    identifier: "{{ prefix }}-5"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-6"
+    kind: service
+    identifier: "{{ prefix }}-6"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa
+
+  - name: "{{ prefix }}-7"
+    kind: service
+    identifier: "{{ prefix }}-7"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-8"
+    kind: service
+    identifier: "{{ prefix }}-8"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa
+
+  - name: "{{ prefix }}-9"
+    kind: service
+    identifier: "{{ prefix }}-9"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-10"
+    kind: service
+    identifier: "{{ prefix }}-10"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: qa

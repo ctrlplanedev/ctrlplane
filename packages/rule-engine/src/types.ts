@@ -69,6 +69,7 @@ export type Policy = schema.Policy & {
   versionAnyApprovals: schema.PolicyRuleAnyApproval | null;
   versionUserApprovals: schema.PolicyRuleUserApproval[];
   versionRoleApprovals: schema.PolicyRuleRoleApproval[];
+  gradualRollout: schema.PolicyGradualRollout | null;
 };
 
 export type ReleaseTargetIdentifier = {
