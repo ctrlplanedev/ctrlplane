@@ -8,7 +8,6 @@ import {
   IconFilter,
   IconFolder,
   IconGraph,
-  IconHistory,
   IconLoader2,
 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -46,7 +45,6 @@ import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_c
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { LazyDeploymentVersionEnvironmentCell } from "./_components/release-cell/DeploymentVersionEnvironmentCell";
-import { JobHistoryPopover } from "./_components/release-cell/JobHistoryPopover";
 import { VersionDistributionGraphPopover } from "./_components/release-cell/VersionDistributionPopover";
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
@@ -195,8 +193,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     { refetchInterval: 2_000 },
   );
 
-  const versionIds = versions.data?.items.map((v) => v.id) ?? [];
-
   const loading = versions.isLoading;
   const router = useRouter();
 
@@ -242,17 +238,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               <IconGraph className="h-4 w-4" />
             </Button>
           </VersionDistributionGraphPopover>
-          {versionIds.length > 0 && (
-            <JobHistoryPopover deploymentId={deployment.id}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-              >
-                <IconHistory className="h-4 w-4" />
-              </Button>
-            </JobHistoryPopover>
-          )}
         </div>
       </div>
 
