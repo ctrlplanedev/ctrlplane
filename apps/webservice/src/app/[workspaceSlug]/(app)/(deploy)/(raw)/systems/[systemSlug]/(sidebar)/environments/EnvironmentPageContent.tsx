@@ -71,11 +71,7 @@ export const EnvironmentPageContent: React.FC<{
 
       <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
         {environments.map((environment) => (
-          <EnvironmentCard
-            key={environment.id}
-            workspaceId={system.workspaceId}
-            environment={environment}
-          />
+          <EnvironmentCard key={environment.id} environment={environment} />
         ))}
 
         {environmentsQ.isLoading &&
