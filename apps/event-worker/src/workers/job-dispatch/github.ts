@@ -88,12 +88,20 @@ const getGithubEntity = async (
 const getReleaseJobAgentConfig = (jobId: string) =>
   db
     .select({ jobAgentConfig: SCHEMA.deploymentVersion.jobAgentConfig })
-    .from(SCHEMA.deploymentVersion)
+    .from(SCHEMA.releaseJob)
     .innerJoin(
-      SCHEMA.releaseJobTrigger,
-      eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
+      SCHEMA.release,
+      eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
     )
-    .where(eq(SCHEMA.releaseJobTrigger.jobId, jobId))
+    .innerJoin(
+      SCHEMA.versionRelease,
+      eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+    )
+    .innerJoin(
+      SCHEMA.deploymentVersion,
+      eq(SCHEMA.versionRelease.versionId, SCHEMA.deploymentVersion.id),
+    )
+    .where(eq(SCHEMA.releaseJob.jobId, jobId))
     .then(takeFirstOrNull)
     .then((r) => r?.jobAgentConfig);
 
@@ -115,7 +123,7 @@ export const dispatchGithubJob = async (je: Job) => {
 
   const { data: parsedConfig } = parsed;
   const releaseJobAgentConfig = await getReleaseJobAgentConfig(je.id);
-  const mergedConfig = _.merge(parsedConfig, releaseJobAgentConfig);
+  const mergedConfig = _.merge(parsedConfig, releaseJobAgentConfig ?? {});
 
   const ghEntity = await getGithubEntity(
     je.id,
