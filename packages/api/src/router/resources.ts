@@ -67,86 +67,6 @@ const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
       schema.workspace.id,
     );
 
-const latestDeployedVersionByResourceAndEnvironmentId = (
-  db: Tx,
-  resourceId: string,
-  environmentId: string,
-) => {
-  const rankSubquery = db
-    .select({
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.deploymentVersion.deploymentId}, ${schema.releaseJobTrigger.resourceId} ORDER BY ${schema.releaseJobTrigger.createdAt} DESC)`.as(
-        "rank",
-      ),
-      rankDeploymentId: schema.deploymentVersion.deploymentId,
-      rankResourceId: schema.releaseJobTrigger.resourceId,
-      rankTriggerId: schema.releaseJobTrigger.id,
-    })
-    .from(schema.deploymentVersion)
-    .innerJoin(
-      schema.releaseJobTrigger,
-      eq(schema.deploymentVersion.id, schema.releaseJobTrigger.versionId),
-    )
-    .as("rank_subquery");
-
-  return db
-    .select()
-    .from(schema.deployment)
-    .innerJoin(schema.system, eq(schema.system.id, schema.deployment.systemId))
-    .innerJoin(
-      schema.environment,
-      eq(schema.environment.systemId, schema.system.id),
-    )
-    .innerJoin(
-      schema.deploymentVersion,
-      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
-    )
-    .innerJoin(
-      schema.releaseJobTrigger,
-      and(
-        eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
-        eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-      ),
-    )
-    .innerJoin(
-      schema.resource,
-      eq(schema.resource.id, schema.releaseJobTrigger.resourceId),
-    )
-    .innerJoin(
-      rankSubquery,
-      and(
-        eq(
-          rankSubquery.rankDeploymentId,
-          schema.deploymentVersion.deploymentId,
-        ),
-        eq(rankSubquery.rankResourceId, resourceId),
-        eq(rankSubquery.rankTriggerId, schema.releaseJobTrigger.id),
-      ),
-    )
-    .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
-    .where(
-      and(
-        eq(schema.resource.id, resourceId),
-        eq(schema.environment.id, environmentId),
-        isNull(schema.resource.deletedAt),
-        eq(rankSubquery.rank, 1),
-      ),
-    )
-    .orderBy(schema.deployment.id, schema.releaseJobTrigger.createdAt)
-    .then((r) =>
-      r.map((row) => ({
-        ...row.deployment,
-        environment: row.environment,
-        system: row.system,
-        releaseJobTrigger: {
-          ...row.release_job_trigger,
-          job: row.job,
-          deploymentVersion: row.deployment_version,
-          resourceId: row.resource.id,
-        },
-      })),
-    );
-};
-
 export const resourceRouter = createTRPCRouter({
   metadataGroup: resourceMetadataGroupRouter,
   provider: resourceProviderRouter,
@@ -208,29 +128,6 @@ export const resourceRouter = createTRPCRouter({
         rules: await getResourceRelationshipRules(ctx.db, resource.id),
       };
     }),
-
-  latestDeployedVersions: createTRPCRouter({
-    byResourceAndEnvironmentId: protectedProcedure
-      .input(
-        z.object({
-          resourceId: z.string().uuid(),
-          environmentId: z.string().uuid(),
-        }),
-      )
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.ResourceGet)
-            .on({ type: "resource", id: input.resourceId }),
-      })
-      .query(({ ctx, input }) =>
-        latestDeployedVersionByResourceAndEnvironmentId(
-          ctx.db,
-          input.resourceId,
-          input.environmentId,
-        ),
-      ),
-  }),
 
   relationships: protectedProcedure
     .meta({
