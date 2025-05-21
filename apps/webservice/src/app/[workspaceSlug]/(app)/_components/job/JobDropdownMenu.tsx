@@ -86,8 +86,6 @@ export const OverrideJobStatusDialog: React.FC<{
   const onSubmit = form.handleSubmit((data) =>
     updateJobs
       .mutateAsync({ ids: jobIds, data })
-      .then(() => utils.job.config.byDeploymentVersionId.invalidate())
-      .then(() => jobIds.map((id) => utils.job.config.byId.invalidate(id)))
       .then(() => utils.deployment.version.list.invalidate())
       .then(() => setOpen(false))
       .then(() => onClose?.()),

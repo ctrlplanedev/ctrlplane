@@ -11,7 +11,6 @@ import { EnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/envir
 import { EnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
 import { urls } from "~/app/urls";
 import { DeploymentVersionChannelDrawer } from "./_components/channel/drawer/DeploymentVersionChannelDrawer";
-import { JobDrawer } from "./_components/job/drawer/JobDrawer";
 import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
 import { TopNav } from "./TopNav";
 import { TopSidebarIcon } from "./TopSidebarIcon";
@@ -75,7 +74,6 @@ export default async function Layout(props: {
       <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
       <DeploymentVersionChannelDrawer />
-      <JobDrawer />
     </>
   );
 }
