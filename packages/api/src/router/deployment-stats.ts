@@ -112,11 +112,8 @@ export const deploymentStatsRouter = createTRPCRouter({
           return eq(schema.system.workspaceId, input.workspaceId);
         if ("systemId" in input) return eq(schema.system.id, input.systemId);
         if ("environmentId" in input)
-          return eq(
-            schema.releaseJobTrigger.environmentId,
-            input.environmentId,
-          );
-        return eq(schema.releaseJobTrigger.resourceId, input.resourceId);
+          return eq(schema.releaseTarget.environmentId, input.environmentId);
+        return eq(schema.releaseTarget.resourceId, input.resourceId);
       };
 
       const lastRunAt = max(schema.job.startedAt);
@@ -135,10 +132,12 @@ export const deploymentStatsRouter = createTRPCRouter({
       `;
 
       const totalSuccess = sql<number>`
-(COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful} AND ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate}))::integer
-`;
+        (COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful} AND ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate}))::integer
+      `;
 
-      const associatedResources = countDistinct(schema.resource.id);
+      const associatedResources = countDistinct(
+        schema.releaseTarget.resourceId,
+      );
 
       const getOrderBy = () => {
         if (orderBy === StatsColumn.LastRunAt) return lastRunAt;
@@ -162,7 +161,7 @@ export const deploymentStatsRouter = createTRPCRouter({
       const inactiveDeploymentChecks = or(
         isNull(schema.job),
         isNull(schema.deploymentVersion),
-        isNull(schema.releaseJobTrigger),
+        isNull(schema.releaseTarget),
       );
 
       const results = await ctx.db
@@ -188,17 +187,29 @@ export const deploymentStatsRouter = createTRPCRouter({
           eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
         )
         .leftJoin(
-          schema.releaseJobTrigger,
-          eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
+          schema.versionRelease,
+          eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
         )
-        .leftJoin(schema.job, eq(schema.job.id, schema.releaseJobTrigger.jobId))
-        .innerJoin(
-          schema.system,
-          eq(schema.system.id, schema.deployment.systemId),
+        .leftJoin(
+          schema.releaseTarget,
+          eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
         )
         .leftJoin(
           schema.resource,
-          eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+          eq(schema.releaseTarget.resourceId, schema.resource.id),
+        )
+        .leftJoin(
+          schema.release,
+          eq(schema.release.versionReleaseId, schema.versionRelease.id),
+        )
+        .leftJoin(
+          schema.releaseJob,
+          eq(schema.releaseJob.releaseId, schema.release.id),
+        )
+        .leftJoin(schema.job, eq(schema.job.id, schema.releaseJob.jobId))
+        .innerJoin(
+          schema.system,
+          eq(schema.system.id, schema.deployment.systemId),
         )
         .where(
           and(
@@ -238,16 +249,24 @@ export const deploymentStatsRouter = createTRPCRouter({
         })
         .from(schema.job)
         .innerJoin(
-          schema.releaseJobTrigger,
-          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          schema.releaseJob,
+          eq(schema.releaseJob.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.releaseJob.releaseId, schema.release.id),
+        )
+        .innerJoin(
+          schema.versionRelease,
+          eq(schema.release.versionReleaseId, schema.versionRelease.id),
         )
         .innerJoin(
           schema.deploymentVersion,
-          eq(schema.deploymentVersion.id, schema.releaseJobTrigger.versionId),
+          eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
         )
         .innerJoin(
           schema.deployment,
-          eq(schema.deployment.id, schema.deploymentVersion.deploymentId),
+          eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
         )
         .innerJoin(
           schema.system,
@@ -293,12 +312,24 @@ export const deploymentStatsRouter = createTRPCRouter({
         })
         .from(schema.job)
         .innerJoin(
-          schema.releaseJobTrigger,
-          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          schema.releaseJob,
+          eq(schema.releaseJob.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.releaseJob.releaseId, schema.release.id),
+        )
+        .innerJoin(
+          schema.versionRelease,
+          eq(schema.release.versionReleaseId, schema.versionRelease.id),
+        )
+        .innerJoin(
+          schema.releaseTarget,
+          eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
         )
         .innerJoin(
           schema.deploymentVersion,
-          eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
+          eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
         )
         .where(
           and(
@@ -307,7 +338,7 @@ export const deploymentStatsRouter = createTRPCRouter({
             gte(schema.job.completedAt, startDate),
             lt(schema.job.completedAt, endDate),
             resourceId
-              ? eq(schema.releaseJobTrigger.resourceId, resourceId)
+              ? eq(schema.releaseTarget.resourceId, resourceId)
               : undefined,
           ),
         )
