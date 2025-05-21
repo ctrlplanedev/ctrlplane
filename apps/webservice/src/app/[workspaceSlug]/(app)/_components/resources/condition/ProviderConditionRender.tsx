@@ -15,8 +15,10 @@ export const ProviderConditionRender: React.FC<
     { enabled: workspace.isSuccess && workspace.data != null },
   );
 
-  const setProvider = (provider: string) =>
-    onChange({ ...condition, value: provider });
+  const setProvider = (provider: string) => {
+    const id = provider.split("|").at(0) ?? "";
+    onChange({ ...condition, value: id });
+  };
 
   const selectedProvider = providers.data?.find(
     (provider) => provider.id === condition.value,
@@ -24,7 +26,7 @@ export const ProviderConditionRender: React.FC<
 
   const options = (providers.data ?? []).map((provider) => ({
     key: provider.id,
-    value: provider.id,
+    value: `${provider.id}|${provider.name}`,
     display: provider.name,
   }));
 
