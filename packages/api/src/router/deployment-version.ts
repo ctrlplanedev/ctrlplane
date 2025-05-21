@@ -621,28 +621,37 @@ export const versionRouter = createTRPCRouter({
             : eq(SCHEMA.deploymentVersion.deploymentId, input.deploymentId);
 
         return db
-          .selectDistinctOn([SCHEMA.releaseJobTrigger.resourceId])
+          .selectDistinctOn([SCHEMA.releaseTarget.resourceId])
           .from(SCHEMA.job)
           .innerJoin(
-            SCHEMA.releaseJobTrigger,
-            eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+            SCHEMA.releaseJob,
+            eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id),
+          )
+          .innerJoin(
+            SCHEMA.release,
+            eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+          )
+          .innerJoin(
+            SCHEMA.versionRelease,
+            eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+          )
+          .innerJoin(
+            SCHEMA.releaseTarget,
+            eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
           )
           .innerJoin(
             SCHEMA.resource,
-            eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
+            eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
           )
           .innerJoin(
             SCHEMA.environment,
-            eq(SCHEMA.releaseJobTrigger.environmentId, SCHEMA.environment.id),
+            eq(SCHEMA.releaseTarget.environmentId, SCHEMA.environment.id),
           )
           .innerJoin(
             SCHEMA.deploymentVersion,
-            eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
+            eq(SCHEMA.versionRelease.versionId, SCHEMA.deploymentVersion.id),
           )
-          .orderBy(
-            SCHEMA.releaseJobTrigger.resourceId,
-            desc(SCHEMA.job.createdAt),
-          )
+          .orderBy(SCHEMA.releaseTarget.resourceId, desc(SCHEMA.job.createdAt))
           .where(and(releaseCheck, isMatchingDirectory));
       }),
   }),
