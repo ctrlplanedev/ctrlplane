@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import {
   and,
+  count,
   eq,
   gte,
   ilike,
@@ -13,7 +14,6 @@ import {
   or,
   sql,
   takeFirst,
-  takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -93,105 +93,16 @@ export const deploymentsRouter = createTRPCRouter({
       return deploymentStats;
     }),
 
-  total: protectedProcedure
-    .input(
-      z.object({
-        environmentId: z.string().uuid(),
-        workspaceId: z.string().uuid(),
-      }),
-    )
+  aggregateStats: protectedProcedure
+    .input(z.string().uuid())
     .meta({
-      authorizationCheck: async ({ ctx, canUser, input }) => {
-        const environment = await ctx.db
-          .select()
-          .from(SCHEMA.environment)
-          .where(eq(SCHEMA.environment.id, input.environmentId))
-          .then(takeFirstOrNull);
-
-        if (environment == null) return false;
-
-        return canUser
-          .perform(Permission.DeploymentList)
-          .on({ type: "system", id: environment.systemId });
-      },
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "environment", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const { environmentId, workspaceId } = input;
-      const today = new Date();
-      const currentPeriodStart = subDays(today, 30);
-      const previousPeriodStart = subDays(today, 60);
-
-      const deploymentsInCurrentPeriodPromise = ctx.db
-        .selectDistinctOn([
-          SCHEMA.releaseJobTrigger.resourceId,
-          SCHEMA.deploymentVersion.deploymentId,
-        ])
-        .from(SCHEMA.releaseJobTrigger)
-        .innerJoin(
-          SCHEMA.deploymentVersion,
-          eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.versionId),
-        )
-        .innerJoin(
-          SCHEMA.resource,
-          eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
-        )
-        .where(
-          and(
-            eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
-            gte(SCHEMA.releaseJobTrigger.createdAt, currentPeriodStart),
-            isNull(SCHEMA.resource.deletedAt),
-            eq(SCHEMA.resource.workspaceId, workspaceId),
-          ),
-        );
-
-      const deploymentsInPreviousPeriodPromise = ctx.db
-        .selectDistinctOn([
-          SCHEMA.releaseJobTrigger.resourceId,
-          SCHEMA.deploymentVersion.deploymentId,
-        ])
-        .from(SCHEMA.releaseJobTrigger)
-        .innerJoin(
-          SCHEMA.deploymentVersion,
-          eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.versionId),
-        )
-        .innerJoin(
-          SCHEMA.resource,
-          eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
-        )
-        .where(
-          and(
-            eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
-            gte(SCHEMA.releaseJobTrigger.createdAt, previousPeriodStart),
-            lt(SCHEMA.releaseJobTrigger.createdAt, currentPeriodStart),
-            or(
-              isNull(SCHEMA.resource.deletedAt),
-              gte(SCHEMA.resource.deletedAt, currentPeriodStart),
-            ),
-            eq(SCHEMA.resource.workspaceId, workspaceId),
-          ),
-        );
-
-      const [deploymentsInCurrentPeriod, deploymentsInPreviousPeriod] =
-        await Promise.all([
-          deploymentsInCurrentPeriodPromise,
-          deploymentsInPreviousPeriodPromise,
-        ]);
-
-      return {
-        deploymentsInCurrentPeriod: deploymentsInCurrentPeriod.length,
-        deploymentsInPreviousPeriod: deploymentsInPreviousPeriod.length,
-      };
-    }),
-
-  aggregateStats: protectedProcedure
-    .input(
-      z.object({
-        environmentId: z.string().uuid(),
-        workspaceId: z.string().uuid(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const { environmentId, workspaceId } = input;
+      const environmentId = input;
 
       const today = new Date();
       const currentPeriodStart = subDays(today, 30);
@@ -222,69 +133,77 @@ export const deploymentsRouter = createTRPCRouter({
         )
       `;
 
-      const statsInCurrentPeriod = await ctx.db
-        .select({
-          successRate: successRate(currentPeriodStart, today),
-          averageDuration: averageDuration,
-        })
-        .from(SCHEMA.releaseJobTrigger)
-        .innerJoin(
-          SCHEMA.job,
-          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
-        )
-        .innerJoin(
-          SCHEMA.resource,
-          eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
-        )
+      const statsBaseQuery = (startDate: Date, endDate: Date) =>
+        ctx.db
+          .select({
+            total: count().as("total"),
+            successRate: successRate(startDate, endDate).as("successRate"),
+            averageDuration: averageDuration.as("averageDuration"),
+          })
+          .from(SCHEMA.job)
+          .innerJoin(
+            SCHEMA.releaseJob,
+            eq(SCHEMA.job.id, SCHEMA.releaseJob.jobId),
+          )
+          .innerJoin(
+            SCHEMA.release,
+            eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+          )
+          .innerJoin(
+            SCHEMA.versionRelease,
+            eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+          )
+          .innerJoin(
+            SCHEMA.releaseTarget,
+            eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
+          );
+
+      const statsInCurrentPeriod = await statsBaseQuery(
+        currentPeriodStart,
+        today,
+      )
         .where(
           and(
-            eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
+            eq(SCHEMA.releaseTarget.environmentId, environmentId),
             gte(SCHEMA.job.createdAt, currentPeriodStart),
             lt(SCHEMA.job.createdAt, today),
-            eq(SCHEMA.resource.workspaceId, workspaceId),
-            isNull(SCHEMA.resource.deletedAt),
             inArray(SCHEMA.job.status, analyticsStatuses),
           ),
         )
         .then(takeFirst);
 
-      const statsInPreviousPeriod = await ctx.db
-        .select({
-          successRate: successRate(previousPeriodStart, currentPeriodStart),
-          averageDuration: averageDuration,
-        })
-        .from(SCHEMA.releaseJobTrigger)
-        .innerJoin(
-          SCHEMA.job,
-          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
-        )
+      const statsInPreviousPeriod = await statsBaseQuery(
+        previousPeriodStart,
+        currentPeriodStart,
+      )
         .innerJoin(
           SCHEMA.resource,
-          eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
+          eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
         )
         .where(
           and(
-            eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
             gte(SCHEMA.job.createdAt, previousPeriodStart),
             lt(SCHEMA.job.createdAt, currentPeriodStart),
-            eq(SCHEMA.resource.workspaceId, workspaceId),
             or(
               isNull(SCHEMA.resource.deletedAt),
               gte(SCHEMA.resource.deletedAt, currentPeriodStart),
             ),
             inArray(SCHEMA.job.status, analyticsStatuses),
+            eq(SCHEMA.releaseTarget.environmentId, environmentId),
           ),
         )
         .then(takeFirst);
 
       return {
         statsInCurrentPeriod: {
+          total: statsInCurrentPeriod.total,
           successRate: statsInCurrentPeriod.successRate ?? 0,
           averageDuration: Math.round(
             statsInCurrentPeriod.averageDuration ?? 0,
           ),
         },
         statsInPreviousPeriod: {
+          total: statsInPreviousPeriod.total,
           successRate: statsInPreviousPeriod.successRate ?? 0,
           averageDuration: Math.round(
             statsInPreviousPeriod.averageDuration ?? 0,

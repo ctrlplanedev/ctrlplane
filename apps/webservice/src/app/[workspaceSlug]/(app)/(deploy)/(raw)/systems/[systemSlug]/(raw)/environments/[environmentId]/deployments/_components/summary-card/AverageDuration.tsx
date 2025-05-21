@@ -34,13 +34,9 @@ export const PercentChange: React.FC<{
 
 export const AverageDuration: React.FC<{
   environmentId: string;
-  workspaceId: string;
-}> = ({ environmentId, workspaceId }) => {
+}> = ({ environmentId }) => {
   const averageDurationQ =
-    api.environment.page.deployments.aggregateStats.useQuery({
-      environmentId,
-      workspaceId,
-    });
+    api.environment.page.deployments.aggregateStats.useQuery(environmentId);
 
   const { statsInCurrentPeriod, statsInPreviousPeriod } =
     averageDurationQ.data ?? {

@@ -5,14 +5,9 @@ import { PercentChange } from "./PercentChange";
 
 export const SuccessRate: React.FC<{
   environmentId: string;
-  workspaceId: string;
-}> = ({ environmentId, workspaceId }) => {
-  const successRateQ = api.environment.page.deployments.aggregateStats.useQuery(
-    {
-      environmentId,
-      workspaceId,
-    },
-  );
+}> = ({ environmentId }) => {
+  const successRateQ =
+    api.environment.page.deployments.aggregateStats.useQuery(environmentId);
 
   const { statsInCurrentPeriod, statsInPreviousPeriod } = successRateQ.data ?? {
     statsInCurrentPeriod: { successRate: 0 },

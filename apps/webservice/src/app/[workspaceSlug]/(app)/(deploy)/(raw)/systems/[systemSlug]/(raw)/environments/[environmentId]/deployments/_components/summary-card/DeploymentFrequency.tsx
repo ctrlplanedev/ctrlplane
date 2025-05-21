@@ -5,18 +5,14 @@ import { PercentChange } from "./PercentChange";
 
 export const DeploymentFrequency: React.FC<{
   environmentId: string;
-  workspaceId: string;
-}> = ({ environmentId, workspaceId }) => {
-  const totalDeploymentsQ = api.environment.page.deployments.total.useQuery({
-    environmentId,
-    workspaceId,
-  });
+}> = ({ environmentId }) => {
+  const totalDeploymentsQ =
+    api.environment.page.deployments.aggregateStats.useQuery(environmentId);
 
-  const { deploymentsInCurrentPeriod, deploymentsInPreviousPeriod } =
-    totalDeploymentsQ.data ?? {
-      deploymentsInCurrentPeriod: 0,
-      deploymentsInPreviousPeriod: 0,
-    };
+  const deploymentsInCurrentPeriod =
+    totalDeploymentsQ.data?.statsInCurrentPeriod.total ?? 0;
+  const deploymentsInPreviousPeriod =
+    totalDeploymentsQ.data?.statsInPreviousPeriod.total ?? 0;
 
   const frequencyInCurrentPeriod = deploymentsInCurrentPeriod / 30;
   const frequencyInPreviousPeriod = deploymentsInPreviousPeriod / 30;

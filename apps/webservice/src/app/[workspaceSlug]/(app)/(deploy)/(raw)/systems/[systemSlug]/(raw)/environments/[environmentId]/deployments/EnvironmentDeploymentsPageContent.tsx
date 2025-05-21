@@ -170,22 +170,13 @@ export const EnvironmentDeploymentsPageContent: React.FC<{
     <div className="space-y-4">
       {/* Deployment Summary Cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
-        <TotalDeployments
-          environmentId={environmentId}
-          workspaceId={workspaceId}
-        />
+        <TotalDeployments environmentId={environmentId} />
 
-        <SuccessRate environmentId={environmentId} workspaceId={workspaceId} />
+        <SuccessRate environmentId={environmentId} />
 
-        <AverageDuration
-          environmentId={environmentId}
-          workspaceId={workspaceId}
-        />
+        <AverageDuration environmentId={environmentId} />
 
-        <DeploymentFrequency
-          environmentId={environmentId}
-          workspaceId={workspaceId}
-        />
+        <DeploymentFrequency environmentId={environmentId} />
       </div>
 
       {/* Search and Filters */}
