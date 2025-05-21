@@ -2,20 +2,11 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import {
-  and,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { updateDeployment } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
-import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentStatsRouter } from "./deployment-stats";
@@ -406,113 +397,6 @@ export const deploymentRouter = createTRPCRouter({
             }))
             .value(),
         );
-    }),
-
-  byResourceId: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentList)
-          .on({ type: "resource", id: input }),
-    })
-    .query(async ({ ctx, input }) => {
-      const tg = await ctx.db
-        .select()
-        .from(SCHEMA.resource)
-        .where(
-          and(eq(SCHEMA.resource.id, input), isNull(SCHEMA.resource.deletedAt)),
-        )
-        .then(takeFirst);
-
-      const envs = await ctx.db
-        .select()
-        .from(SCHEMA.environment)
-        .innerJoin(
-          SCHEMA.system,
-          eq(SCHEMA.environment.systemId, SCHEMA.system.id),
-        )
-        .where(
-          and(
-            eq(SCHEMA.system.workspaceId, tg.workspaceId),
-            isNotNull(SCHEMA.environment.resourceSelector),
-          ),
-        );
-
-      return Promise.all(
-        envs.map((env) =>
-          ctx.db
-            .select()
-            .from(SCHEMA.deployment)
-            .innerJoin(
-              SCHEMA.system,
-              eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
-            )
-            .innerJoin(
-              SCHEMA.environment,
-              eq(SCHEMA.environment.systemId, SCHEMA.system.id),
-            )
-            .leftJoin(
-              SCHEMA.deploymentVersion,
-              eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
-            )
-            .innerJoin(
-              SCHEMA.resource,
-              SCHEMA.resourceMatchesMetadata(
-                ctx.db,
-                env.environment.resourceSelector,
-              ),
-            )
-            .leftJoin(
-              SCHEMA.releaseJobTrigger,
-              and(
-                eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
-                eq(
-                  SCHEMA.releaseJobTrigger.versionId,
-                  SCHEMA.deploymentVersion.id,
-                ),
-                eq(
-                  SCHEMA.releaseJobTrigger.environmentId,
-                  SCHEMA.environment.id,
-                ),
-              ),
-            )
-            .leftJoin(
-              SCHEMA.job,
-              eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
-            )
-            .where(
-              and(
-                eq(SCHEMA.resource.id, input),
-                eq(SCHEMA.environment.id, env.environment.id),
-                isNull(SCHEMA.resource.deletedAt),
-                inArray(SCHEMA.job.status, [
-                  JobStatus.Successful,
-                  JobStatus.Pending,
-                  JobStatus.InProgress,
-                ]),
-              ),
-            )
-            .orderBy(SCHEMA.deployment.id, SCHEMA.releaseJobTrigger.createdAt)
-            .limit(500)
-            .then((r) =>
-              r.map((row) => ({
-                ...row.deployment,
-                environment: row.environment,
-                system: row.system,
-                releaseJobTrigger:
-                  row.release_job_trigger != null
-                    ? {
-                        ...row.release_job_trigger,
-                        job: row.job!,
-                        version: row.deployment_version!,
-                        resourceId: row.resource.id,
-                      }
-                    : null,
-              })),
-            ),
-        ),
-      ).then((r) => r.flat());
     }),
 
   byWorkspaceId: protectedProcedure
