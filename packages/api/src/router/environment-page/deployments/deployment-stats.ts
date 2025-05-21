@@ -3,7 +3,7 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, desc, eq, inArray, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import { and, desc, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   ComparisonOperator,
@@ -47,19 +47,19 @@ const getVersionSelector = async (
 
 const getStatus = (
   jobs: SCHEMA.Job[],
-  approval: SCHEMA.EnvironmentPolicyApproval | null,
 ): "failed" | "success" | "pending" | "deploying" => {
   const isFailed = jobs.some((job) =>
     failedStatuses.includes(job.status as JobStatus),
   );
   if (isFailed) return "failed";
 
-  if (approval != null && approval.status === "pending") return "pending";
-
   const isSuccess = jobs.every((job) => job.status === JobStatus.Successful);
   if (isSuccess) return "success";
 
-  return "deploying";
+  const isDeploying = jobs.some((job) => job.status === JobStatus.InProgress);
+  if (isDeploying) return "deploying";
+
+  return "pending";
 };
 
 const getDuration = (jobs: SCHEMA.Job[]) => {
@@ -143,11 +143,7 @@ export const getDeploymentStats = async (
 
   if (row == null) return null;
 
-  const {
-    deployment_version: version,
-    environment_policy_approval: approval,
-    user,
-  } = row;
+  const { deployment_version: version, user } = row;
 
   const resources = await db
     .select()
@@ -163,23 +159,25 @@ export const getDeploymentStats = async (
   const resourceCount = resources.length;
 
   const jobs = await db
-    .selectDistinctOn([SCHEMA.releaseJobTrigger.resourceId])
-    .from(SCHEMA.releaseJobTrigger)
-    .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id))
-    .where(
-      and(
-        eq(SCHEMA.releaseJobTrigger.environmentId, environment.id),
-        eq(SCHEMA.releaseJobTrigger.versionId, version.id),
-        inArray(
-          SCHEMA.releaseJobTrigger.resourceId,
-          resources.map((r) => r.id),
-        ),
-      ),
+    .selectDistinctOn([SCHEMA.versionRelease.releaseTargetId])
+    .from(SCHEMA.job)
+    .innerJoin(SCHEMA.releaseJob, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
+    .innerJoin(
+      SCHEMA.release,
+      eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
     )
-    .orderBy(SCHEMA.releaseJobTrigger.resourceId, desc(SCHEMA.job.createdAt))
+    .innerJoin(
+      SCHEMA.versionRelease,
+      eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+    )
+    .innerJoin(
+      SCHEMA.releaseTarget,
+      eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
+    )
+    .where(eq(SCHEMA.releaseTarget.environmentId, environment.id))
     .then((rows) => rows.map((row) => row.job));
 
-  const status = getStatus(jobs, approval);
+  const status = getStatus(jobs);
   if (statusFilter != null && statusFilter !== status) return null;
 
   const duration = getDuration(jobs);
