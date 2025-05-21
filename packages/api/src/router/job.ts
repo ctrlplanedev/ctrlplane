@@ -179,7 +179,7 @@ const jobAgentRouter = createTRPCRouter({
 });
 
 const metadataKeysRouter = createTRPCRouter({
-  byReleaseId: protectedProcedure
+  byVersionId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -192,13 +192,18 @@ const metadataKeysRouter = createTRPCRouter({
         .selectDistinct({ key: schema.jobMetadata.key })
         .from(schema.deploymentVersion)
         .innerJoin(
-          schema.releaseJobTrigger,
-          eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
+          schema.versionRelease,
+          eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
         )
         .innerJoin(
-          schema.job,
-          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          schema.release,
+          eq(schema.release.versionReleaseId, schema.versionRelease.id),
         )
+        .innerJoin(
+          schema.releaseJob,
+          eq(schema.releaseJob.releaseId, schema.release.id),
+        )
+        .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
         .innerJoin(
           schema.jobMetadata,
           eq(schema.jobMetadata.jobId, schema.job.id),

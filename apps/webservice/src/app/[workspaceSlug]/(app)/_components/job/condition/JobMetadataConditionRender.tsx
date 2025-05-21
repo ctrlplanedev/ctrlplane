@@ -10,7 +10,7 @@ export const JobMetadataConditionRender: React.FC<
 > = ({ condition, onChange, className }) => {
   const { versionId } = useParams<{ versionId?: string }>();
 
-  const metadataKeysQ = api.job.metadataKey.byReleaseId.useQuery(
+  const metadataKeysQ = api.job.metadataKey.byVersionId.useQuery(
     versionId ?? "",
     { enabled: versionId != null },
   );
