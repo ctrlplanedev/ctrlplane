@@ -1,7 +1,9 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams, useRouter } from "next/navigation";
+import _ from "lodash";
 import LZString from "lz-string";
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector } from "recharts";
 import colors from "tailwindcss/colors";
@@ -32,13 +34,9 @@ const COLORS = [
 ];
 
 export const ResourceKindPieChart: React.FC<{
-  kindDistro: {
-    kind: string;
-    percentage: number;
-  }[];
+  resources: SCHEMA.Resource[];
   resourceSelector: ResourceCondition | null;
-  resourceCount: number;
-}> = ({ kindDistro, resourceSelector, resourceCount }) => {
+}> = ({ resources, resourceSelector }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
   const router = useRouter();
@@ -46,7 +44,17 @@ export const ResourceKindPieChart: React.FC<{
   const prettyResourceCount = new Intl.NumberFormat("en", {
     notation: "compact",
     maximumFractionDigits: 1,
-  }).format(resourceCount);
+  }).format(resources.length);
+
+  const kindDistro = _.chain(resources)
+    .groupBy((r) => [r.kind, r.version])
+    .map((groupedResources) => {
+      const { kind, version } = groupedResources[0]!;
+      const percentage = (groupedResources.length / resources.length) * 100;
+      return { kind: `${kind}/${version}`, percentage };
+    })
+    .value();
+
   return (
     <ResponsiveContainer width="100%" height={280}>
       <PieChart>
@@ -113,15 +121,25 @@ export const ResourceKindPieChart: React.FC<{
               className="cursor-pointer focus:outline-none"
               onClick={() => {
                 if (resourceSelector == null) return;
+                const [resourceKind, version] = kind.split("/");
                 const kindCondition: ResourceCondition = {
                   type: ResourceConditionType.Kind,
                   operator: ColumnOperator.Equals,
-                  value: kind,
+                  value: resourceKind ?? "",
+                };
+                const versionCondition: ResourceCondition = {
+                  type: ResourceConditionType.Version,
+                  operator: ColumnOperator.Equals,
+                  value: version ?? "",
                 };
                 const selector: ResourceCondition = {
                   type: ConditionType.Comparison,
                   operator: ComparisonOperator.And,
-                  conditions: [resourceSelector, kindCondition],
+                  conditions: [
+                    resourceSelector,
+                    kindCondition,
+                    versionCondition,
+                  ],
                 };
                 const hash = LZString.compressToEncodedURIComponent(
                   JSON.stringify(selector),

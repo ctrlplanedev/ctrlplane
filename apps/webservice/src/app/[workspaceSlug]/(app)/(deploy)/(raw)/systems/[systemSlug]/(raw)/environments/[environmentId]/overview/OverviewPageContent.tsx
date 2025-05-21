@@ -11,33 +11,26 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 
+import { api } from "~/trpc/react";
 import { CopyEnvIdButton } from "./_components/CopyEnvIdButton";
-import { DeploymentTelemetryTable } from "./_components/DeploymentTelemetryTable";
 import { ResourceKindPieChart } from "./_components/ResourceKindPieChart";
 
 export const OverviewPageContent: React.FC<{
   environment: SCHEMA.Environment & { metadata: Record<string, string> };
   deployments: SCHEMA.Deployment[];
-  stats: {
-    deployments: {
-      total: number;
-      successful: number;
-      failed: number;
-      inProgress: number;
-      pending: number;
-      notDeployed: number;
-    };
-    resources: number;
-    kindDistro: {
-      kind: string;
-      percentage: number;
-    }[];
-  };
-}> = ({ environment, deployments, stats }) => {
-  const deploymentSuccess =
-    stats.deployments.total > 0
-      ? (stats.deployments.successful / stats.deployments.total) * 100
-      : 0;
+  resources: SCHEMA.Resource[];
+}> = ({ environment, deployments, resources }) => {
+  const { data: deploymentStatuses, isLoading } =
+    api.environment.page.overview.deploymentStatus.useQuery(environment.id);
+
+  const failed = deploymentStatuses?.failed ?? 0;
+  const successful = deploymentStatuses?.successful ?? 0;
+  const deploying = deploymentStatuses?.deploying ?? 0;
+
+  const totalNotDeploying = failed + successful;
+  const successRate =
+    totalNotDeploying !== 0 ? (successful / totalNotDeploying) * 100 : 0;
+
   return (
     <div className="w-full space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -114,13 +107,13 @@ export const OverviewPageContent: React.FC<{
                   Success Rate
                 </span>
                 <span className="text-sm text-neutral-400">
-                  {Number(deploymentSuccess).toFixed(1)}%
+                  {Number(successRate).toFixed(1)}%
                 </span>
               </div>
               <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-neutral-800">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
-                  style={{ width: `${deploymentSuccess}%` }}
+                  style={{ width: `${successRate}%` }}
                 ></div>
               </div>
             </div>
@@ -128,7 +121,7 @@ export const OverviewPageContent: React.FC<{
             <div className="grid grid-cols-2 gap-4 text-center">
               <div className="rounded-lg bg-neutral-800/50 p-3">
                 <div className="text-2xl font-semibold text-neutral-100">
-                  {stats.deployments.total}
+                  {deployments.length}
                 </div>
                 <div className="text-xs text-neutral-400">
                   Total Deployments
@@ -136,19 +129,19 @@ export const OverviewPageContent: React.FC<{
               </div>
               <div className="rounded-lg bg-neutral-800/50 p-3">
                 <div className="text-2xl font-semibold text-green-400">
-                  {stats.deployments.successful}
+                  {isLoading ? "-" : successful}
                 </div>
                 <div className="text-xs text-neutral-400">Successful</div>
               </div>
               <div className="rounded-lg bg-neutral-800/50 p-3">
                 <div className="text-2xl font-semibold text-red-400">
-                  {stats.deployments.failed}
+                  {isLoading ? "-" : failed}
                 </div>
                 <div className="text-xs text-neutral-400">Failed</div>
               </div>
               <div className="rounded-lg bg-neutral-800/50 p-3">
                 <div className="text-2xl font-semibold text-blue-400">
-                  {stats.deployments.inProgress + stats.deployments.pending}
+                  {isLoading ? "-" : deploying}
                 </div>
                 <div className="text-xs text-neutral-400">In Progress</div>
               </div>
@@ -165,50 +158,10 @@ export const OverviewPageContent: React.FC<{
           <CardContent>
             <div className="flex h-[300px] items-center justify-center">
               <ResourceKindPieChart
-                kindDistro={stats.kindDistro}
+                resources={resources}
                 resourceSelector={environment.resourceSelector}
-                resourceCount={stats.resources}
               />
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mb-10">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Resource Telemetry</CardTitle>
-            <CardDescription>
-              Real-time deployment status and version distribution across
-              environment.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* <div className="rounded-lg border border-neutral-800/40 bg-gradient-to-r from-purple-900/10 to-blue-900/10 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500"></div>
-                <span className="text-sm font-medium text-neutral-200">
-                  Deployment Status
-                </span>
-              </div>
-              <span className="rounded-full bg-neutral-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
-                75% Complete
-              </span>
-            </div>
-            <div className="h-1 w-full overflow-hidden rounded-full bg-neutral-800/50">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
-                style={{ width: "75%" }}
-              ></div>
-            </div>
-            <div className="mt-2 flex justify-between text-xs text-neutral-400">
-              <span>Started 24 minutes ago</span>
-              <span>ETA: ~8 minutes</span>
-            </div>
-          </div> */}
-
-            <DeploymentTelemetryTable deployments={deployments} />
           </CardContent>
         </Card>
       </div>
