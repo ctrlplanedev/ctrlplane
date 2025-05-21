@@ -18,35 +18,6 @@ const getGithubEntity = async (
   installationId: number,
   owner: string,
 ) => {
-  const releaseGhEntityPromise = db
-    .select()
-    .from(SCHEMA.githubEntity)
-    .innerJoin(
-      SCHEMA.workspace,
-      eq(SCHEMA.githubEntity.workspaceId, SCHEMA.workspace.id),
-    )
-    .innerJoin(
-      SCHEMA.system,
-      eq(SCHEMA.system.workspaceId, SCHEMA.workspace.id),
-    )
-    .innerJoin(
-      SCHEMA.environment,
-      eq(SCHEMA.environment.systemId, SCHEMA.system.id),
-    )
-    .innerJoin(
-      SCHEMA.releaseJobTrigger,
-      eq(SCHEMA.releaseJobTrigger.environmentId, SCHEMA.environment.id),
-    )
-    .where(
-      and(
-        eq(SCHEMA.githubEntity.installationId, installationId),
-        eq(SCHEMA.githubEntity.slug, owner),
-        eq(SCHEMA.releaseJobTrigger.jobId, jobId),
-      ),
-    )
-    .then(takeFirstOrNull)
-    .then((r) => r?.github_entity);
-
   const runbookGhEntityPromise = db
     .select()
     .from(SCHEMA.githubEntity)
@@ -106,11 +77,12 @@ const getGithubEntity = async (
     .then(takeFirstOrNull)
     .then((r) => r?.github_entity);
 
-  return (
-    (await releaseGhEntityPromise) ??
-    (await runbookGhEntityPromise) ??
-    (await releaseJobEntityPromise)
-  );
+  const [runbookGhEntity, releaseJobEntity] = await Promise.all([
+    runbookGhEntityPromise,
+    releaseJobEntityPromise,
+  ]);
+
+  return runbookGhEntity ?? releaseJobEntity;
 };
 
 const getReleaseJobAgentConfig = (jobId: string) =>
