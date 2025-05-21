@@ -2,14 +2,11 @@ import { z } from "zod";
 
 import {
   and,
+  desc,
   eq,
-  exists,
   gt,
   inArray,
-  isNotNull,
-  isNull,
   lte,
-  ne,
   sql,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -29,70 +26,43 @@ export const environmentStatsRouter = createTRPCRouter({
           .on({ type: "environment", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const environment = await ctx.db
-        .select()
-        .from(SCHEMA.environment)
-        .where(eq(SCHEMA.environment.id, input))
-        .then(takeFirstOrNull);
-
-      if (environment?.resourceSelector == null) return [];
-
-      const statusRankSubquery = ctx.db
-        .select({
-          environmentId: SCHEMA.releaseJobTrigger.environmentId,
-          resourceId: SCHEMA.releaseJobTrigger.resourceId,
-          systemId: SCHEMA.deployment.systemId,
-          rank: sql<number>`row_number() over (partition by ${SCHEMA.deploymentVersion.deploymentId}, ${SCHEMA.releaseJobTrigger.resourceId} order by ${SCHEMA.job.startedAt} desc)`.as(
-            "rank",
-          ),
+      const latestJobSubquery = ctx.db
+        .selectDistinctOn([SCHEMA.versionRelease.releaseTargetId], {
+          releaseTargetId: SCHEMA.versionRelease.releaseTargetId,
           status: SCHEMA.job.status,
         })
         .from(SCHEMA.job)
         .innerJoin(
-          SCHEMA.releaseJobTrigger,
-          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+          SCHEMA.releaseJob,
+          eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id),
         )
         .innerJoin(
-          SCHEMA.deploymentVersion,
-          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
+          SCHEMA.release,
+          eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
         )
         .innerJoin(
-          SCHEMA.deployment,
-          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+          SCHEMA.versionRelease,
+          eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
         )
-        .where(
-          and(
-            isNotNull(SCHEMA.job.startedAt),
-            isNotNull(SCHEMA.job.completedAt),
-          ),
+        .orderBy(
+          SCHEMA.versionRelease.releaseTargetId,
+          desc(SCHEMA.job.startedAt),
         )
-        .as("status_rank");
+        .as("latest_job");
 
       return ctx.db
-        .select({ value: sql<number>`1` })
-        .from(SCHEMA.resource)
+        .selectDistinctOn([SCHEMA.releaseTarget.resourceId], {
+          value: sql<number>`1`,
+        })
+        .from(SCHEMA.releaseTarget)
+        .innerJoin(
+          latestJobSubquery,
+          eq(latestJobSubquery.releaseTargetId, SCHEMA.releaseTarget.id),
+        )
         .where(
           and(
-            exists(
-              ctx.db
-                .select()
-                .from(statusRankSubquery)
-                .where(
-                  and(
-                    eq(statusRankSubquery.environmentId, input),
-                    eq(statusRankSubquery.resourceId, SCHEMA.resource.id),
-                    ne(statusRankSubquery.status, JobStatus.Successful),
-                    eq(statusRankSubquery.rank, 1),
-                    eq(statusRankSubquery.systemId, environment.systemId),
-                  ),
-                )
-                .limit(1),
-            ),
-            isNull(SCHEMA.resource.deletedAt),
-            SCHEMA.resourceMatchesMetadata(
-              ctx.db,
-              environment.resourceSelector,
-            ),
+            eq(latestJobSubquery.status, JobStatus.Failure),
+            eq(SCHEMA.releaseTarget.environmentId, input),
           ),
         );
     }),
@@ -127,12 +97,24 @@ export const environmentStatsRouter = createTRPCRouter({
         })
         .from(SCHEMA.job)
         .innerJoin(
-          SCHEMA.releaseJobTrigger,
-          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+          SCHEMA.releaseJob,
+          eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id),
+        )
+        .innerJoin(
+          SCHEMA.release,
+          eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+        )
+        .innerJoin(
+          SCHEMA.versionRelease,
+          eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+        )
+        .innerJoin(
+          SCHEMA.releaseTarget,
+          eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
         )
         .where(
           and(
-            eq(SCHEMA.releaseJobTrigger.environmentId, input.environmentId),
+            eq(SCHEMA.releaseTarget.environmentId, input.environmentId),
             gt(SCHEMA.job.createdAt, input.startDate),
             lte(SCHEMA.job.createdAt, input.endDate),
             inArray(SCHEMA.job.status, analyticsStatuses),

@@ -16,7 +16,7 @@ import { getHealthStatus, getStatusTextColor } from "./health-status";
 export const EnvironmentCardContent: React.FC<{
   environment: SCHEMA.Environment;
 }> = ({ environment }) => {
-  const { inView } = useInView();
+  const { inView, ref } = useInView();
 
   const { isHealthSummaryLoading, unhealthyCount, totalCount } =
     useEnvironmentHealth(environment, inView);
@@ -29,7 +29,7 @@ export const EnvironmentCardContent: React.FC<{
   );
 
   return (
-    <CardContent className="mt-4 space-y-3">
+    <CardContent className="mt-4 space-y-3" ref={ref}>
       <div className="flex justify-between">
         <span className="text-sm text-muted-foreground">Resources</span>
         {isHealthSummaryLoading && <Skeleton className="h-4 w-16" />}

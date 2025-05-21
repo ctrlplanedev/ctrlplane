@@ -18,7 +18,7 @@ import {
 export const EnvironmentCardHeader: React.FC<{
   environment: SCHEMA.Environment;
 }> = ({ environment }) => {
-  const { inView } = useInView();
+  const { inView, ref } = useInView();
 
   const { isHealthSummaryLoading, unhealthyCount, totalCount } =
     useEnvironmentHealth(environment, inView);
@@ -26,7 +26,10 @@ export const EnvironmentCardHeader: React.FC<{
   const healthStatus = getHealthStatus(unhealthyCount, totalCount);
 
   return (
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <CardHeader
+      className="flex flex-row items-center justify-between pb-2"
+      ref={ref}
+    >
       <div className="flex items-center space-x-2">
         {!isHealthSummaryLoading && (
           <div
