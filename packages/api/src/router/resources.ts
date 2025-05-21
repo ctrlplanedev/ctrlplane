@@ -30,7 +30,6 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { resourceMetadataGroupRouter } from "./resource-metadata-group";
 import { resourceProviderRouter } from "./resource-provider";
 import { resourceRelationshipRulesRouter } from "./resource-relationship-rules";
-import { resourceStatsRouter } from "./resource-stats";
 import { resourceVariables } from "./resource-variables";
 import { resourceViews } from "./resource-views";
 
@@ -153,7 +152,6 @@ export const resourceRouter = createTRPCRouter({
   provider: resourceProviderRouter,
   view: resourceViews,
   variable: resourceVariables,
-  stats: resourceStatsRouter,
   relationshipRules: resourceRelationshipRulesRouter,
 
   byId: protectedProcedure
