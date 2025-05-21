@@ -45,7 +45,7 @@ export default async function ChecksPage(props: PageProps) {
   if (deploymentVersion == null || deployment == null) return notFound();
 
   const { system } = deployment;
-  const releaseTargets = await api.releaseTarget.list({
+  const { items: releaseTargets } = await api.releaseTarget.list({
     deploymentId: deployment.id,
   });
 

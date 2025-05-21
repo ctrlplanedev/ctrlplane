@@ -124,11 +124,13 @@ const DeploymentVersionEnvironmentCell: React.FC<
   DeploymentVersionEnvironmentCellProps
 > = (props) => {
   const { environment, deployment, deploymentVersion } = props;
-  const { data: releaseTargets, isLoading: isReleaseTargetsLoading } =
+  const { data: releaseTargetsResult, isLoading: isReleaseTargetsLoading } =
     api.releaseTarget.list.useQuery({
       environmentId: environment.id,
       deploymentId: deployment.id,
+      limit: 0,
     });
+  const numReleaseTargets = releaseTargetsResult?.total ?? 0;
 
   const {
     data: targetsWithActiveJobs,
@@ -161,8 +163,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
   if (hasJobs)
     return <ActiveJobsCell statuses={jobs.map((j) => j.status)} {...props} />;
 
-  const hasNoReleaseTargets =
-    releaseTargets == null || releaseTargets.length === 0;
+  const hasNoReleaseTargets = numReleaseTargets === 0;
   if (hasNoReleaseTargets)
     return <NoReleaseTargetsCell tag={deploymentVersion.tag} />;
 

@@ -1,8 +1,15 @@
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, desc, eq, notInArray, sql } from "@ctrlplane/db";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  notInArray,
+  sql,
+  takeFirst,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
@@ -17,6 +24,8 @@ export const releaseTargetRouter = createTRPCRouter({
           resourceId: z.string().uuid().optional(),
           environmentId: z.string().uuid().optional(),
           deploymentId: z.string().uuid().optional(),
+          limit: z.number().default(500),
+          offset: z.number().default(0),
         })
         .refine(
           (data) =>
@@ -55,29 +64,36 @@ export const releaseTargetRouter = createTRPCRouter({
       },
     })
     .query(async ({ ctx, input }) => {
-      const { resourceId, environmentId, deploymentId } = input;
+      const { resourceId, environmentId, deploymentId, limit, offset } = input;
 
-      return ctx.db.query.releaseTarget.findMany({
-        where: and(
-          ...[
-            resourceId != null
-              ? eq(schema.releaseTarget.resourceId, resourceId)
-              : undefined,
-            environmentId != null
-              ? eq(schema.releaseTarget.environmentId, environmentId)
-              : undefined,
-            deploymentId != null
-              ? eq(schema.releaseTarget.deploymentId, deploymentId)
-              : undefined,
-          ].filter(isPresent),
-        ),
-        with: {
-          resource: true,
-          environment: true,
-          deployment: true,
-        },
-        limit: 500,
+      const where = and(
+        resourceId != null
+          ? eq(schema.releaseTarget.resourceId, resourceId)
+          : undefined,
+        environmentId != null
+          ? eq(schema.releaseTarget.environmentId, environmentId)
+          : undefined,
+        deploymentId != null
+          ? eq(schema.releaseTarget.deploymentId, deploymentId)
+          : undefined,
+      );
+
+      const totalPromise = ctx.db
+        .select({ count: count() })
+        .from(schema.releaseTarget)
+        .where(where)
+        .then(takeFirst)
+        .then(({ count }) => count);
+
+      const itemsPromise = ctx.db.query.releaseTarget.findMany({
+        where,
+        with: { resource: true, environment: true, deployment: true },
+        limit,
+        offset,
       });
+
+      const [total, items] = await Promise.all([totalPromise, itemsPromise]);
+      return { total, items };
     }),
 
   activeJobs: protectedProcedure
