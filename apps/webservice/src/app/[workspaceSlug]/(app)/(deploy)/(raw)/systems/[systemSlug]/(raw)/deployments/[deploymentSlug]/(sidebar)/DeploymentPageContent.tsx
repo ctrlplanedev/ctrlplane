@@ -4,12 +4,7 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams, useRouter } from "next/navigation";
-import {
-  IconFilter,
-  IconFolder,
-  IconGraph,
-  IconLoader2,
-} from "@tabler/icons-react";
+import { IconFilter, IconFolder, IconLoader2 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
@@ -45,7 +40,6 @@ import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_c
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { LazyDeploymentVersionEnvironmentCell } from "./_components/release-cell/DeploymentVersionEnvironmentCell";
-import { VersionDistributionGraphPopover } from "./_components/release-cell/VersionDistributionPopover";
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
@@ -227,18 +221,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
         </div>
 
         <TotalBadge total={versions.data?.total} />
-
-        <div className="flex items-center gap-2">
-          <VersionDistributionGraphPopover deployment={deployment}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-            >
-              <IconGraph className="h-4 w-4" />
-            </Button>
-          </VersionDistributionGraphPopover>
-        </div>
       </div>
 
       {loading && (

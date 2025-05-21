@@ -8,7 +8,6 @@ import {
   inArray,
   isNotNull,
   isNull,
-  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -226,63 +225,6 @@ export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   hook: hookRouter,
   version: versionRouter,
-  distributionById: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentGet)
-          .on({ type: "deployment", id: input }),
-    })
-    .input(z.string())
-    .query(({ ctx, input }) => {
-      const latestJobsPerResource = ctx.db
-        .select({
-          id: SCHEMA.job.id,
-          status: SCHEMA.job.status,
-          resourceId: SCHEMA.releaseJobTrigger.resourceId,
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${SCHEMA.releaseJobTrigger.resourceId} ORDER BY ${SCHEMA.job.createdAt} DESC)`.as(
-            "rank",
-          ),
-        })
-        .from(SCHEMA.job)
-        .innerJoin(
-          SCHEMA.releaseJobTrigger,
-          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
-        )
-        .as("latest_jobs");
-
-      return ctx.db
-        .select()
-        .from(latestJobsPerResource)
-        .innerJoin(
-          SCHEMA.releaseJobTrigger,
-          eq(SCHEMA.releaseJobTrigger.jobId, latestJobsPerResource.id),
-        )
-        .innerJoin(
-          SCHEMA.deploymentVersion,
-          eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.versionId),
-        )
-        .innerJoin(
-          SCHEMA.resource,
-          eq(SCHEMA.resource.id, SCHEMA.releaseJobTrigger.resourceId),
-        )
-        .where(
-          and(
-            eq(SCHEMA.deploymentVersion.deploymentId, input),
-            eq(latestJobsPerResource.rank, 1),
-            isNull(SCHEMA.resource.deletedAt),
-          ),
-        )
-        .then((r) =>
-          r.map((row) => ({
-            ...row.latest_jobs,
-            version: row.deployment_version,
-            resource: row.resource,
-            releaseJobTrigger: row.release_job_trigger,
-          })),
-        );
-    }),
-
   create: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
