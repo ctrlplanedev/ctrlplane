@@ -8,7 +8,10 @@ import * as schema from "@ctrlplane/db/schema";
 import type { FilterRule, Policy, PreValidationRule } from "../types";
 import type { Version } from "./version-rule-engine";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
-import { GradualRolloutRule } from "../rules/gradual-rollout-rule.js";
+import {
+  EnvironmentVersionRolloutRule,
+  linearDeploymentOffset,
+} from "../rules/environment-version-rollout-rule.js";
 import { ReleaseTargetConcurrencyRule } from "../rules/release-target-concurrency-rule.js";
 import {
   getAnyApprovalRecords,
@@ -144,10 +147,16 @@ export const gradualRolloutRule = (
       .then((r) => r.position);
   };
 
-  return new GradualRolloutRule({
+  const getDeploymentOffsetMinutes = linearDeploymentOffset(
+    policy.environmentVersionRollou.positionGrowthFactor,
+    policy.environmentVersionRollou.timeScaleMinutes,
+  );
+
+  return new EnvironmentVersionRolloutRule({
     ...policy.gradualRollout,
     getRolloutStartTime,
     getReleaseTargetPosition,
+    getDeploymentOffsetMinutes,
   });
 };
 

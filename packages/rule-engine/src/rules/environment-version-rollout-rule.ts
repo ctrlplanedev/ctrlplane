@@ -3,25 +3,35 @@ import { addMinutes, isAfter, isEqual, startOfMinute } from "date-fns";
 import type { Version } from "../manager/version-rule-engine";
 import type { FilterRule, RuleEngineRuleResult } from "../types";
 
-type GradualRolloutRuleOptions = {
-  deployRate: number;
-  windowSizeMinutes: number;
+type GetDeploymentOffsetMinutes = (targetPosition: number) => number;
+
+export const linearDeploymentOffset =
+  (
+    positionGrowthFactor: number,
+    timeScaleMinutes: number,
+  ): GetDeploymentOffsetMinutes =>
+  (x: number) =>
+    timeScaleMinutes * (x / positionGrowthFactor);
+
+export const exponentialDeploymentOffset =
+  (
+    positionGrowthFactor: number,
+    timeScaleMinutes: number,
+  ): GetDeploymentOffsetMinutes =>
+  (x: number) =>
+    timeScaleMinutes * (Math.exp(x / positionGrowthFactor) - 1);
+
+type EnvironmentVersionRolloutRuleOptions = {
   getRolloutStartTime: (version: Version) => Date | Promise<Date | null> | null;
   getReleaseTargetPosition: (version: Version) => number | Promise<number>;
+  getDeploymentOffsetMinutes: GetDeploymentOffsetMinutes;
   skipReason?: string;
 };
 
-export class GradualRolloutRule implements FilterRule<Version> {
-  public readonly name = "GradualRolloutRule";
+export class EnvironmentVersionRolloutRule implements FilterRule<Version> {
+  public readonly name = "EnvironmentVersionRolloutRule";
 
-  constructor(private readonly options: GradualRolloutRuleOptions) {
-    if (this.options.deployRate <= 0) {
-      throw new Error("Deploy rate must be greater than 0");
-    }
-    if (this.options.windowSizeMinutes <= 0) {
-      throw new Error("Window size must be greater than 0");
-    }
-  }
+  constructor(private readonly options: EnvironmentVersionRolloutRuleOptions) {}
 
   protected getCurrentTime() {
     return new Date();
@@ -29,11 +39,8 @@ export class GradualRolloutRule implements FilterRule<Version> {
 
   async getDeploymentTime(version: Version, startTime: Date) {
     const targetPosition = await this.options.getReleaseTargetPosition(version);
-    const windowPosition = Math.floor(targetPosition / this.options.deployRate);
-    return addMinutes(
-      startOfMinute(startTime),
-      windowPosition * this.options.windowSizeMinutes,
-    );
+    const minutes = this.options.getDeploymentOffsetMinutes(targetPosition);
+    return addMinutes(startOfMinute(startTime), minutes);
   }
 
   async filter(candidates: Version[]): Promise<RuleEngineRuleResult<Version>> {
