@@ -1,7 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
-import { eq } from "drizzle-orm";
 
-import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, eq, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { getLocalDateAsUTC } from "../utils/time-utils.js";
