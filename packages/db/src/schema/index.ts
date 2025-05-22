@@ -21,7 +21,6 @@ export * from "./rbac.js";
 export * from "./job-agent.js";
 export * from "./event.js";
 export * from "./release-channel.js";
-export * from "./release-job-trigger.js";
 export * from "./policy.js";
 export * from "./release.js";
 export * from "./rules/index.js";
