@@ -19,7 +19,7 @@ export const exponentialDeploymentOffset =
     timeScaleInterval: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleInterval * (Math.exp(x / positionGrowthFactor) - 1);
+    timeScaleInterval * (1 - Math.exp(-1 * (x / positionGrowthFactor)));
 
 type EnvironmentVersionRolloutRuleOptions = {
   getRolloutStartTime: (version: Version) => Date | Promise<Date | null> | null;
