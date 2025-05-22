@@ -22,7 +22,6 @@ import {
   policy,
   release,
   releaseJob,
-  releaseJobTrigger,
   releaseTarget,
   resource,
   resourceMetadataGroup,
@@ -360,24 +359,7 @@ const getJobAgentScopes = async (id: string) => {
   ];
 };
 
-const legacyJobScopes = async (id: string) =>
-  db
-    .select()
-    .from(job)
-    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-    .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(
-      deploymentVersion,
-      eq(releaseJobTrigger.versionId, deploymentVersion.id),
-    )
-    .innerJoin(deployment, eq(deploymentVersion.deploymentId, deployment.id))
-    .innerJoin(system, eq(deployment.systemId, system.id))
-    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-    .where(and(eq(job.id, id), isNull(resource.deletedAt)))
-    .then(takeFirstOrNull);
-
-const newJobScopes = async (id: string) =>
+const jobScopes = async (id: string) =>
   db
     .select()
     .from(job)
@@ -419,12 +401,7 @@ const getJobScopes = async (id: string) => {
       { type: "workspace" as const, id: runbookResult.workspace.id },
     ];
 
-  const [newEngine, legacy] = await Promise.all([
-    newJobScopes(id),
-    legacyJobScopes(id),
-  ]);
-
-  const result = newEngine ?? legacy;
+  const result = await jobScopes(id);
   if (result == null) return [];
 
   return [
