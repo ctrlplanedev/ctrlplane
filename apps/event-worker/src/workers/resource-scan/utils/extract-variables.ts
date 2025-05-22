@@ -1,4 +1,4 @@
-import type { ResourceToInsert } from "@ctrlplane/job-dispatch";
+import type { ResourceToInsert } from "@ctrlplane/events";
 
 const convertToTypedValue = (
   stringValue: string,
