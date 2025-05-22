@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
-    "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@date-fns/tz": "^1.2.0",

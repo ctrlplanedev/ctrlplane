@@ -1,4 +1,4 @@
-import type { ResourceToInsert } from "@ctrlplane/job-dispatch";
+import type { ResourceToInsert } from "@ctrlplane/events";
 import type { Job } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -10,8 +10,12 @@ import {
   resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-import { handleResourceProviderScan } from "@ctrlplane/job-dispatch";
+import {
+  Channel,
+  createWorker,
+  getQueue,
+  handleResourceProviderScan,
+} from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 import { getEksResources } from "./aws/eks.js";

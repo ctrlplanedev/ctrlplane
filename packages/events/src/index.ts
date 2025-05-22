@@ -35,3 +35,4 @@ export const getQueue = <T extends keyof ChannelMap>(name: T) => {
 
 export * from "./types.js";
 export * from "./redis.js";
+export * from "./resource-provider-scan/handle-provider-scan.js";

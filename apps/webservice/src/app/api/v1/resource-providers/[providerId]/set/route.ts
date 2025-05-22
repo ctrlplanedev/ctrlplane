@@ -9,7 +9,7 @@ import {
   resourceProvider,
   workspace,
 } from "@ctrlplane/db/schema";
-import { handleResourceProviderScan } from "@ctrlplane/job-dispatch";
+import { handleResourceProviderScan } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
