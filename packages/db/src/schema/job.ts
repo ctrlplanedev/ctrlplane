@@ -47,7 +47,6 @@ import { JobConditionType } from "@ctrlplane/validators/jobs";
 import type { Tx } from "../common.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { jobAgent } from "./job-agent.js";
-import { releaseJobTrigger } from "./release-job-trigger.js";
 import { releaseJob } from "./release.js";
 import { jobResourceRelationship, resource } from "./resource.js";
 
@@ -111,7 +110,6 @@ export const jobRelations = relations(job, ({ many, one }) => ({
     fields: [job.jobAgentId],
     references: [jobAgent.id],
   }),
-  releaseTrigger: many(releaseJobTrigger),
   jobRelationships: many(jobResourceRelationship),
   metadata: many(jobMetadata),
   releaseJob: one(releaseJob, {
@@ -268,8 +266,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobConditionType.Status) return eq(job.status, cond.value);
   if (cond.type === JobConditionType.Deployment)
     return eq(deploymentVersion.deploymentId, cond.value);
-  if (cond.type === JobConditionType.Environment)
-    return eq(releaseJobTrigger.environmentId, cond.value);
+  if (cond.type === JobConditionType.Environment) return sql`true`;
   if (cond.type === ConditionType.Version) return buildVersionCondition(cond);
   if (cond.type === JobConditionType.JobResource)
     return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;

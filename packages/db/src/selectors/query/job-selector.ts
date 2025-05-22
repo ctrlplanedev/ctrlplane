@@ -139,8 +139,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
     return eq(SCHEMA.job.status, cond.value);
   if (cond.type === JobConditionType.Deployment)
     return eq(SCHEMA.deploymentVersion.deploymentId, cond.value);
-  if (cond.type === JobConditionType.Environment)
-    return eq(SCHEMA.releaseJobTrigger.environmentId, cond.value);
+  if (cond.type === JobConditionType.Environment) return sql`true`;
   if (cond.type === ConditionType.Version) return buildVersionCondition(cond);
   if (cond.type === JobConditionType.JobResource)
     return and(
