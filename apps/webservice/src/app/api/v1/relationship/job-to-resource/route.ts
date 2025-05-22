@@ -21,11 +21,9 @@ export const POST = request()
     const { jobId, resourceIdentifier } = body;
     const job = await db.query.job.findFirst({
       where: eq(SCHEMA.job.id, jobId),
-      with: { releaseTrigger: { with: { resource: true } } },
     });
 
-    const releaseTrigger = job?.releaseTrigger[0];
-    if (job == null || releaseTrigger == null)
+    if (job == null)
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
     return db
