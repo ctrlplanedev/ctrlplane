@@ -148,8 +148,8 @@ export const gradualRolloutRule = (
   };
 
   const getDeploymentOffsetMinutes = linearDeploymentOffset(
-    policy.environmentVersionRollou.positionGrowthFactor,
-    policy.environmentVersionRollou.timeScaleMinutes,
+    policy.environmentVersionRollout.positionGrowthFactor,
+    policy.environmentVersionRollout.timeScaleInterval,
   );
 
   return new EnvironmentVersionRolloutRule({

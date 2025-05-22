@@ -8,18 +8,18 @@ type GetDeploymentOffsetMinutes = (targetPosition: number) => number;
 export const linearDeploymentOffset =
   (
     positionGrowthFactor: number,
-    timeScaleMinutes: number,
+    timeScaleInterval: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleMinutes * (x / positionGrowthFactor);
+    timeScaleInterval * (x / positionGrowthFactor);
 
 export const exponentialDeploymentOffset =
   (
     positionGrowthFactor: number,
-    timeScaleMinutes: number,
+    timeScaleInterval: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleMinutes * (Math.exp(x / positionGrowthFactor) - 1);
+    timeScaleInterval * (Math.exp(x / positionGrowthFactor) - 1);
 
 type EnvironmentVersionRolloutRuleOptions = {
   getRolloutStartTime: (version: Version) => Date | Promise<Date | null> | null;
