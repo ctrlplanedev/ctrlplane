@@ -750,6 +750,13 @@
       "when": 1747872966598,
       "tag": "0106_faithful_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1748017095423,
+      "tag": "0107_thin_warbound",
+      "breakpoints": true
     }
   ]
 }
