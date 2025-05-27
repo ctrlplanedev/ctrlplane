@@ -4,15 +4,15 @@ import { expect } from "@playwright/test";
 
 import {
   cleanupImportedEntities,
-  ImportedEntities,
   importEntitiesFromYaml,
+  TestEntities,
 } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "resource-relationships.spec.yaml");
 
 test.describe("Resource Relationships API", () => {
-  let importedEntities: ImportedEntities;
+  let importedEntities: TestEntities;
 
   test.beforeAll(async ({ api, workspace }) => {
     importedEntities = await importEntitiesFromYaml(
@@ -26,12 +26,10 @@ test.describe("Resource Relationships API", () => {
     await cleanupImportedEntities(api, importedEntities, workspace.id);
   });
 
-  test("create a relationship with metadata match", async ({
-    api,
-    workspace,
-  }) => {
-    const reference =
-      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+  test("create a relationship with metadata match", async ({api,workspace,}) => {
+    const reference = `${importedEntities.prefix}-${
+      faker.string.alphanumeric(10)
+    }`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -97,12 +95,10 @@ test.describe("Resource Relationships API", () => {
     expect(target?.target?.config).toBeDefined();
   });
 
-  test("create a relationship with metadata equals", async ({
-    api,
-    workspace,
-  }) => {
-    const reference =
-      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+  test("create a relationship with metadata equals", async ({api,workspace,}) => {
+    const reference = `${importedEntities.prefix}-${
+      faker.string.alphanumeric(10)
+    }`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -151,8 +147,9 @@ test.describe("Resource Relationships API", () => {
   });
 
   test("upsert a relationship rule", async ({ api, workspace }) => {
-    const reference =
-      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+    const reference = `${importedEntities.prefix}-${
+      faker.string.alphanumeric(10)
+    }`.toLocaleLowerCase();
     // First create a new relationship rule
     const initialRule = await api.POST("/v1/resource-relationship-rules", {
       body: {
@@ -210,12 +207,10 @@ test.describe("Resource Relationships API", () => {
     expect(updatedRule.data?.description).toBe("Updated description");
   });
 
-  test("should not match if some rules are not satisfied", async ({
-    api,
-    workspace,
-  }) => {
-    const reference =
-      `${importedEntities.prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+  test("should not match if some rules are not satisfied", async ({api,workspace,}) => {
+    const reference = `${importedEntities.prefix}-${
+      faker.string.alphanumeric(10)
+    }`.toLocaleLowerCase();
 
     const sourceResourceCreate = await api.POST("/v1/resources", {
       body: {

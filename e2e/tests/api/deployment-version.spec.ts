@@ -4,15 +4,15 @@ import { expect } from "@playwright/test";
 
 import {
   cleanupImportedEntities,
-  ImportedEntities,
   importEntitiesFromYaml,
+  TestEntities,
 } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployment-version.spec.yaml");
 
 test.describe("Deployment Versions API", () => {
-  let importedEntities: ImportedEntities;
+  let importedEntities: TestEntities;
 
   test.beforeAll(async ({ api, workspace }) => {
     importedEntities = await importEntitiesFromYaml(
@@ -56,9 +56,7 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.status).toBe("ready");
   });
 
-  test("name should default to version tag if name not provided", async ({
-    api,
-  }) => {
+  test("name should default to version tag if name not provided", async ({api,}) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -79,9 +77,7 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.name).toBe(versionTag);
   });
 
-  test("should create a deployment version in building status", async ({
-    api,
-  }) => {
+  test("should create a deployment version in building status", async ({api,}) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -144,8 +140,9 @@ test.describe("Deployment Versions API", () => {
     expect(updatedDeploymentVersionResponse.response.status).toBe(200);
     const updatedDeploymentVersion = updatedDeploymentVersionResponse.data;
     expect(updatedDeploymentVersion).toBeDefined();
-    if (!updatedDeploymentVersion)
+    if (!updatedDeploymentVersion) {
       throw new Error("Deployment version not found");
+    }
 
     expect(updatedDeploymentVersion.name).toBe(newVersionName);
     expect(updatedDeploymentVersion.tag).toBe(newVersionTag);
@@ -186,8 +183,9 @@ test.describe("Deployment Versions API", () => {
     expect(updatedDeploymentVersionResponse.response.status).toBe(200);
     const updatedDeploymentVersion = updatedDeploymentVersionResponse.data;
     expect(updatedDeploymentVersion).toBeDefined();
-    if (!updatedDeploymentVersion)
+    if (!updatedDeploymentVersion) {
       throw new Error("Deployment version not found");
+    }
 
     expect(updatedDeploymentVersion.status).toBe("ready");
   });
@@ -226,8 +224,9 @@ test.describe("Deployment Versions API", () => {
     expect(updatedDeploymentVersionResponse.response.status).toBe(200);
     const updatedDeploymentVersion = updatedDeploymentVersionResponse.data;
     expect(updatedDeploymentVersion).toBeDefined();
-    if (!updatedDeploymentVersion)
+    if (!updatedDeploymentVersion) {
       throw new Error("Deployment version not found");
+    }
 
     expect(updatedDeploymentVersion.status).toBe("failed");
   });

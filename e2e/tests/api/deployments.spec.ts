@@ -4,15 +4,15 @@ import { expect } from "@playwright/test";
 
 import {
   cleanupImportedEntities,
-  ImportedEntities,
   importEntitiesFromYaml,
+  TestEntities,
 } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployments.spec.yaml");
 
 test.describe("Deployments API", () => {
-  let importedEntities: ImportedEntities;
+  let importedEntities: TestEntities;
 
   test.beforeAll(async ({ api, workspace }) => {
     importedEntities = await importEntitiesFromYaml(
@@ -152,13 +152,14 @@ test.describe("Deployments API", () => {
     );
 
     expect(releaseTargetsBeforeDeleteResponse.response.status).toBe(200);
-    const deploymentMatchBeforeDelete =
-      releaseTargetsBeforeDeleteResponse.data?.find(
+    const deploymentMatchBeforeDelete = releaseTargetsBeforeDeleteResponse.data
+      ?.find(
         (rt) => rt.deployment.id === deploymentId,
       );
     expect(deploymentMatchBeforeDelete).toBeDefined();
-    if (!deploymentMatchBeforeDelete)
+    if (!deploymentMatchBeforeDelete) {
       throw new Error("No deployment match found");
+    }
 
     const deleteDeployment = await api.DELETE(
       "/v1/deployments/{deploymentId}",
@@ -194,8 +195,8 @@ test.describe("Deployments API", () => {
     );
 
     expect(releaseTargetsAfterDeleteResponse.response.status).toBe(200);
-    const deploymentMatchAfterDelete =
-      releaseTargetsAfterDeleteResponse.data?.find(
+    const deploymentMatchAfterDelete = releaseTargetsAfterDeleteResponse.data
+      ?.find(
         (rt) => rt.deployment.id === deploymentId,
       );
     expect(deploymentMatchAfterDelete).toBeUndefined();
@@ -273,10 +274,7 @@ test.describe("Deployments API", () => {
     expect(matchedEnvironment).toBeDefined();
   });
 
-  test("should update a deployment's resource selector and update matched resources", async ({
-    api,
-    page,
-  }) => {
+  test("should update a deployment's resource selector and update matched resources", async ({api,page,}) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
@@ -377,13 +375,11 @@ test.describe("Deployments API", () => {
     expect(matchedEnvironment).toBeDefined();
   });
 
-  test("should not match deleted resources", async ({
-    api,
-    page,
-    workspace,
-  }) => {
+  test("should not match deleted resources", async ({api,page,workspace,}) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
-    const newResourceIdentifier = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const newResourceIdentifier = `${systemPrefix}-${
+      faker.string.alphanumeric(10)
+    }`;
     const newResource = await api.POST("/v1/resources", {
       body: {
         name: faker.string.alphanumeric(10),
@@ -451,11 +447,7 @@ test.describe("Deployments API", () => {
     expect(resources.data?.resources?.length).toBe(0);
   });
 
-  test("should unmatch resources if resource selector is set to null", async ({
-    api,
-    page,
-    workspace,
-  }) => {
+  test("should unmatch resources if resource selector is set to null", async ({api,page,workspace,}) => {
     const systemPrefix = importedEntities.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
