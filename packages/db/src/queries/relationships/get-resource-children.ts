@@ -102,7 +102,7 @@ export const getResourceChildren = async (tx: Tx, resourceId: string) => {
   ];
 
   const relationships = await tx
-    .selectDistinctOn([targetResource.id, schema.resourceRelationshipRule.id], {
+    .selectDistinctOn([sourceResource.id, schema.resourceRelationshipRule.id], {
       ruleId: schema.resourceRelationshipRule.id,
       type: schema.resourceRelationshipRule.dependencyType,
       source: sourceResource,
