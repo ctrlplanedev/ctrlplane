@@ -1,19 +1,17 @@
 import path from "path";
 import { expect } from "@playwright/test";
 
-import { ImportedEntities, importEntitiesFromYaml } from "../../api";
+import { EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "resource-grouping.spec.yaml");
 
 test.describe("Resource Provider API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createResources();
   });
 
   test("basic resource grouping", async ({ api, workspace }) => {

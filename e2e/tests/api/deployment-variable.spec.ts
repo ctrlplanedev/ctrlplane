@@ -2,33 +2,27 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  importEntitiesFromYaml,
-  TestEntities,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployment-variable.spec.yaml");
 
 test.describe("Deployment Variables API", () => {
-  let importedEntities: TestEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createDeployments();
     await new Promise((resolve) => setTimeout(resolve, 5_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
   test("should create a deployment variable", async ({ api }) => {
-    const importedDeployment = importedEntities.deployments[0]!;
+    const importedDeployment = builder.result.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const variableCreateResponse = await api.POST(
@@ -75,7 +69,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should create a deployment variable with values", async ({ api }) => {
-    const importedDeployment = importedEntities.deployments[0]!;
+    const importedDeployment = builder.result.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -139,8 +133,8 @@ test.describe("Deployment Variables API", () => {
     expect(receivedValueB).toBe(valueB);
   });
 
-  test("should create a deployment variable with values and default value", async ({api,}) => {
-    const importedDeployment = importedEntities.deployments[0]!;
+  test("should create a deployment variable with values and default value", async ({ api }) => {
+    const importedDeployment = builder.result.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -210,8 +204,8 @@ test.describe("Deployment Variables API", () => {
     expect(receivedDefaultValue).toBe(valueB);
   });
 
-  test("shoudl fail if more than one default value is provided", async ({api,}) => {
-    const importedDeployment = importedEntities.deployments[0]!;
+  test("shoudl fail if more than one default value is provided", async ({ api }) => {
+    const importedDeployment = builder.result.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);

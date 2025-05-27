@@ -47,6 +47,7 @@ export interface TestYamlFile {
       config: Record<string, any>;
       values?: Array<{
         value: any;
+        valueType?: "direct" | "reference";
         sensitive?: boolean;
         resourceSelector?: any;
         default?: boolean;
@@ -110,6 +111,7 @@ export interface TestEntities {
       values?: Array<{
         id: string;
         value: any;
+        valueType?: "direct" | "reference";
         sensitive?: boolean;
         resourceSelector?: any;
         default?: boolean;

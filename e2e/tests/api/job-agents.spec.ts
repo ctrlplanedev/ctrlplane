@@ -2,28 +2,23 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "job-agents.spec.yaml");
 
 test.describe("Job Agent API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createEnvironments();
+    await builder.createDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
   test("create a job agent", async ({ api, workspace }) => {
@@ -59,7 +54,9 @@ test.describe("Job Agent API", () => {
     expect(agentId).toBeDefined();
 
     // Update the job agent with a new name
-    const updatedAgentName = `e2e-test-agent-updated-${faker.string.alphanumeric(8)}`;
+    const updatedAgentName = `e2e-test-agent-updated-${
+      faker.string.alphanumeric(8)
+    }`;
     const updateResponse = await api.PATCH("/v1/job-agents/name", {
       body: {
         workspaceId: workspace.id,

@@ -2,28 +2,23 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  importEntitiesFromYaml,
-  TestEntities,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployments.spec.yaml");
 
 test.describe("Deployments API", () => {
-  let importedEntities: TestEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createEnvironments();
+    await builder.createResources();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
   test("should create a deployment", async ({ api }) => {
@@ -32,7 +27,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
       },
     });
 
@@ -48,7 +43,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
       },
     });
 
@@ -76,7 +71,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
       },
     });
 
@@ -110,14 +105,14 @@ test.describe("Deployments API", () => {
   });
 
   test("should delete a deployment", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
 
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
       },
     });
 
@@ -203,13 +198,13 @@ test.describe("Deployments API", () => {
   });
 
   test("should match resources to a deployment", async ({ api, page }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -253,7 +248,7 @@ test.describe("Deployments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("Resource is undefined");
     expect(receivedResource.identifier).toBe(
-      importedEntities.resources.find((r) => r.metadata?.env === "qa")
+      builder.result.resources.find((r) => r.metadata?.env === "qa")
         ?.identifier,
     );
 
@@ -268,20 +263,20 @@ test.describe("Deployments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("Release target is undefined");
     expect(releaseTarget.deployment.id).toBe(deploymentId);
-    const matchedEnvironment = importedEntities.environments.find(
+    const matchedEnvironment = builder.result.environments.find(
       (e) => e.id === releaseTarget.environment.id,
     );
     expect(matchedEnvironment).toBeDefined();
   });
 
-  test("should update a deployment's resource selector and update matched resources", async ({api,page,}) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+  test("should update a deployment's resource selector and update matched resources", async ({ api, page }) => {
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -354,7 +349,7 @@ test.describe("Deployments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("Resource is undefined");
     expect(receivedResource.identifier).toBe(
-      importedEntities.resources.find((r) => r.metadata?.env === "prod")
+      builder.result.resources.find((r) => r.metadata?.env === "prod")
         ?.identifier,
     );
 
@@ -369,14 +364,14 @@ test.describe("Deployments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("Release target is undefined");
     expect(releaseTarget.deployment.id).toBe(deploymentId);
-    const matchedEnvironment = importedEntities.environments.find(
+    const matchedEnvironment = builder.result.environments.find(
       (e) => e.id === releaseTarget.environment.id,
     );
     expect(matchedEnvironment).toBeDefined();
   });
 
-  test("should not match deleted resources", async ({api,page,workspace,}) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+  test("should not match deleted resources", async ({ api, page, workspace }) => {
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const newResourceIdentifier = `${systemPrefix}-${
       faker.string.alphanumeric(10)
     }`;
@@ -405,7 +400,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -447,14 +442,14 @@ test.describe("Deployments API", () => {
     expect(resources.data?.resources?.length).toBe(0);
   });
 
-  test("should unmatch resources if resource selector is set to null", async ({api,page,workspace,}) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+  test("should unmatch resources if resource selector is set to null", async ({ api, page, workspace }) => {
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -500,7 +495,7 @@ test.describe("Deployments API", () => {
      * all resources should actually have release targets now
      * since the deployment no longer has a specific scope
      */
-    for (const resource of importedEntities.resources) {
+    for (const resource of builder.result.resources) {
       console.log(resource);
       const fetchedResourceResponse = await api.GET(
         "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
@@ -528,7 +523,7 @@ test.describe("Deployments API", () => {
       expect(releaseTarget).toBeDefined();
       if (!releaseTarget) throw new Error("Release target is undefined");
       expect(releaseTarget.deployment.id).toBe(deploymentId);
-      const matchedEnvironment = importedEntities.environments.find(
+      const matchedEnvironment = builder.result.environments.find(
         (e) => e.id === releaseTarget.environment.id,
       );
       expect(matchedEnvironment).toBeDefined();

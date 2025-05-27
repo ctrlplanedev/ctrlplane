@@ -2,36 +2,25 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployment-remove-event.spec.yaml");
 
 test.describe("Deployment remove event", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
-  test("deleting a resource should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = importedEntities.system!;
+  test("deleting a resource should trigger a deployment remove event", async ({ api, workspace, page }) => {
+    const system = builder.result.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -112,12 +101,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("deleting an environment should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = importedEntities.system!;
+  test("deleting an environment should trigger a deployment remove event", async ({ api, workspace, page }) => {
+    const system = builder.result.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -200,12 +185,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("unmatching a resource from an environment via resource update should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = importedEntities.system!;
+  test("unmatching a resource from an environment via resource update should trigger a deployment remove event", async ({ api, workspace, page }) => {
+    const system = builder.result.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -289,12 +270,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("unmatching a resource from an environment via env selector update should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = importedEntities.system!;
+  test("unmatching a resource from an environment via env selector update should trigger a deployment remove event", async ({ api, workspace, page }) => {
+    const system = builder.result.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -375,12 +352,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("updating a deployment's resource selector should trigger a deployment remove event if resource is unmatched", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = importedEntities.system!;
+  test("updating a deployment's resource selector should trigger a deployment remove event if resource is unmatched", async ({ api, workspace, page }) => {
+    const system = builder.result.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {

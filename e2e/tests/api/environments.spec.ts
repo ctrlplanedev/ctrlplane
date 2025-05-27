@@ -2,28 +2,23 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "environments.spec.yaml");
 
 test.describe("Environments API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createResources();
+    await builder.createDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
   test("should create an environment", async ({ api }) => {
@@ -31,7 +26,7 @@ test.describe("Environments API", () => {
     const environment = await api.POST("/v1/environments", {
       body: {
         name: environmentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
       },
     });
 
@@ -41,11 +36,11 @@ test.describe("Environments API", () => {
   });
 
   test("should match resources to new environment", async ({ api }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -84,7 +79,7 @@ test.describe("Environments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("No resource found");
     expect(receivedResource.identifier).toBe(
-      importedEntities.resources.find((r) => r.metadata?.env === "qa")
+      builder.result.resources.find((r) => r.metadata?.env === "qa")
         ?.identifier,
     );
 
@@ -99,7 +94,7 @@ test.describe("Environments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("No release target found");
     expect(releaseTarget.environment.id).toBe(environment.id);
-    const deploymentMatch = importedEntities.deployments.find(
+    const deploymentMatch = builder.result.deployments.find(
       (d) => d.id === releaseTarget.deployment.id,
     );
     expect(deploymentMatch).toBeDefined();
@@ -107,15 +102,13 @@ test.describe("Environments API", () => {
     expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
   });
 
-  test("should update environment selector and match new resources", async ({
-    api,
-  }) => {
+  test("should update environment selector and match new resources", async ({ api }) => {
     // First create an environment with a selector for QA resources
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -152,7 +145,7 @@ test.describe("Environments API", () => {
     expect(initialResourcesResponse.response.status).toBe(200);
     expect(initialResourcesResponse.data?.resources?.length).toBe(1);
     expect(initialResourcesResponse.data?.resources?.[0]?.identifier).toBe(
-      importedEntities.resources.find((r) => r.metadata?.env === "qa")
+      builder.result.resources.find((r) => r.metadata?.env === "qa")
         ?.identifier,
     );
 
@@ -161,7 +154,7 @@ test.describe("Environments API", () => {
       body: {
         id: environment.id,
         name: environment.name,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -202,7 +195,7 @@ test.describe("Environments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("No resource found");
     expect(receivedResource.identifier).toBe(
-      importedEntities.resources.find((r) => r.metadata?.env === "prod")
+      builder.result.resources.find((r) => r.metadata?.env === "prod")
         ?.identifier,
     );
 
@@ -217,7 +210,7 @@ test.describe("Environments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("No release target found");
     expect(releaseTarget.environment.id).toBe(updatedEnvironmentId);
-    const deploymentMatch = importedEntities.deployments.find(
+    const deploymentMatch = builder.result.deployments.find(
       (d) => d.id === releaseTarget.deployment.id,
     );
     expect(deploymentMatch).toBeDefined();
@@ -225,14 +218,12 @@ test.describe("Environments API", () => {
     expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
   });
 
-  test("should unmatch resources if environment selector is set to null", async ({
-    api,
-  }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+  test("should unmatch resources if environment selector is set to null", async ({ api }) => {
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -264,7 +255,7 @@ test.describe("Environments API", () => {
       body: {
         id: environment.id,
         name: environment.name,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: undefined,
       },
     });
@@ -294,7 +285,7 @@ test.describe("Environments API", () => {
       body: {
         name: originalName,
         description: originalDescription,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
       },
     });
 
@@ -314,7 +305,7 @@ test.describe("Environments API", () => {
         id: environment.id,
         name: updatedName,
         description: updatedDescription,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
       },
     });
 
@@ -338,14 +329,14 @@ test.describe("Environments API", () => {
   });
 
   test("should delete an environment", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
 
     // First create an environment
     const environmentName = faker.string.alphanumeric(10);
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: environmentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "identifier",
           operator: "equals",
@@ -384,13 +375,14 @@ test.describe("Environments API", () => {
     );
 
     expect(releaseTargetsBeforeDeleteResponse.response.status).toBe(200);
-    const environmentMatchBeforeDelete =
-      releaseTargetsBeforeDeleteResponse.data?.find(
+    const environmentMatchBeforeDelete = releaseTargetsBeforeDeleteResponse.data
+      ?.find(
         (rt) => rt.environment.id === environmentId,
       );
     expect(environmentMatchBeforeDelete).toBeDefined();
-    if (!environmentMatchBeforeDelete)
+    if (!environmentMatchBeforeDelete) {
       throw new Error("No environment match found");
+    }
 
     // Delete the environment
     const deleteResponse = await api.DELETE(
@@ -422,19 +414,18 @@ test.describe("Environments API", () => {
     );
 
     expect(releaseTargetsAfterDeleteResponse.response.status).toBe(200);
-    const environmentMatchAfterDelete =
-      releaseTargetsAfterDeleteResponse.data?.find(
+    const environmentMatchAfterDelete = releaseTargetsAfterDeleteResponse.data
+      ?.find(
         (rt) => rt.environment.id === environmentId,
       );
     expect(environmentMatchAfterDelete).toBeUndefined();
   });
 
-  test("should match not match deleted resources", async ({
-    api,
-    workspace,
-  }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
-    const newResourceIdentifier = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+  test("should match not match deleted resources", async ({ api, workspace }) => {
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
+    const newResourceIdentifier = `${systemPrefix}-${
+      faker.string.alphanumeric(10)
+    }`;
     const newResource = await api.POST("/v1/resources", {
       body: {
         name: faker.string.alphanumeric(10),
@@ -458,7 +449,7 @@ test.describe("Environments API", () => {
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: importedEntities.system.id,
+        systemId: builder.result.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -482,8 +473,9 @@ test.describe("Environments API", () => {
     if (
       environmentResponse.response.status !== 200 ||
       environmentResponse.data == null
-    )
+    ) {
       throw new Error("Failed to create environment");
+    }
 
     const environment = environmentResponse.data;
     await new Promise((resolve) => setTimeout(resolve, 10000));

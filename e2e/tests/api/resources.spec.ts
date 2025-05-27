@@ -2,32 +2,27 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  importEntitiesFromYaml,
-  TestEntities,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "resources.spec.yaml");
 
 test.describe("Resource API", () => {
-  let importedEntities: TestEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createEnvironments();
+    await builder.createDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
   test("create a resource", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName1 = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resource = await api.POST("/v1/resources", {
       body: {
@@ -54,8 +49,8 @@ test.describe("Resource API", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 5_000));
 
-    const environment = importedEntities.environments[0]!;
-    const deployment = importedEntities.deployments[0]!;
+    const environment = builder.result.environments[0]!;
+    const deployment = builder.result.deployments[0]!;
 
     const environmentResourcesResponse = await api.GET(
       "/v1/environments/{environmentId}/resources",
@@ -105,7 +100,7 @@ test.describe("Resource API", () => {
   });
 
   test("get a resource by identifier", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -139,7 +134,7 @@ test.describe("Resource API", () => {
   });
 
   test("list resources", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -168,7 +163,7 @@ test.describe("Resource API", () => {
 
   test("update a resource", async ({ api, workspace }) => {
     // First create a resource
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -217,8 +212,8 @@ test.describe("Resource API", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 5_000));
 
-    const environment = importedEntities.environments[0]!;
-    const deployment = importedEntities.deployments[0]!;
+    const environment = builder.result.environments[0]!;
+    const deployment = builder.result.deployments[0]!;
     const releaseTargetsResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
       {
@@ -235,9 +230,9 @@ test.describe("Resource API", () => {
     expect(releaseTarget).toBeDefined();
   });
 
-  test("updating non metadata fields should not change resource's current metadata", async ({api,workspace,}) => {
+  test("updating non metadata fields should not change resource's current metadata", async ({ api, workspace }) => {
     // First create a resource
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -284,7 +279,7 @@ test.describe("Resource API", () => {
 
   test("delete a resource", async ({ api, workspace }) => {
     // First create a resource
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resourceIdentifer = `${resourceName}/${
       faker.string.alphanumeric(10)
@@ -337,8 +332,8 @@ test.describe("Resource API", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 5_000));
 
-    const environment = importedEntities.environments[0]!;
-    const deployment = importedEntities.deployments[0]!;
+    const environment = builder.result.environments[0]!;
+    const deployment = builder.result.deployments[0]!;
 
     const environmentResourcesResponse = await api.GET(
       "/v1/environments/{environmentId}/resources",
@@ -366,7 +361,7 @@ test.describe("Resource API", () => {
   });
 
   test("create resource relationship", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.result.system.slug.split("-")[0]!;
     // Create two resources
     const resource1Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resource2Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;

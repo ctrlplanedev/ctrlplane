@@ -1,38 +1,29 @@
 import path from "path";
-import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "release-targets.spec.yaml");
 
 test.describe("Release Targets API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createResources();
+    await builder.createEnvironments();
+    await builder.createDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
-  test("should fetch release targets for a resource", async ({
-    api,
-    page,
-    workspace,
-  }) => {
+  test("should fetch release targets for a resource", async ({ api, page, workspace }) => {
     await page.waitForTimeout(5_000);
-    const importedResource = importedEntities.resources.at(0);
+    const importedResource = builder.result.resources.at(0);
     expect(importedResource).toBeDefined();
     if (!importedResource) throw new Error("No resource found");
 
@@ -68,13 +59,13 @@ test.describe("Release Targets API", () => {
     if (!releaseTarget) throw new Error("No release target found");
 
     expect(releaseTarget.resource.id).toBe(resourceId);
-    const environmentMatch = importedEntities.environments.find(
+    const environmentMatch = builder.result.environments.find(
       (e) => e.id === releaseTarget.environment.id,
     );
     expect(environmentMatch).toBeDefined();
     if (!environmentMatch) throw new Error("No environment match found");
 
-    const deploymentMatch = importedEntities.deployments.find(
+    const deploymentMatch = builder.result.deployments.find(
       (d) => d.id === releaseTarget.deployment.id,
     );
     expect(deploymentMatch).toBeDefined();

@@ -2,28 +2,22 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  importEntitiesFromYaml,
-  TestEntities,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployment-version.spec.yaml");
 
 test.describe("Deployment Versions API", () => {
-  let importedEntities: TestEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
   test("should create a deployment version", async ({ api }) => {
@@ -36,7 +30,7 @@ test.describe("Deployment Versions API", () => {
         body: {
           name: versionName,
           tag: versionTag,
-          deploymentId: importedEntities.deployments[0].id,
+          deploymentId: builder.result.deployments[0].id,
           metadata: { enabled: "true" },
         },
       },
@@ -50,13 +44,13 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.name).toBe(versionName);
     expect(deploymentVersion.tag).toBe(versionTag);
     expect(deploymentVersion.deploymentId).toBe(
-      importedEntities.deployments[0].id,
+      builder.result.deployments[0].id,
     );
     expect(deploymentVersion.metadata).toEqual({ enabled: "true" });
     expect(deploymentVersion.status).toBe("ready");
   });
 
-  test("name should default to version tag if name not provided", async ({api,}) => {
+  test("name should default to version tag if name not provided", async ({ api }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -64,7 +58,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: importedEntities.deployments[0].id,
+          deploymentId: builder.result.deployments[0].id,
         },
       },
     );
@@ -77,7 +71,7 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.name).toBe(versionTag);
   });
 
-  test("should create a deployment version in building status", async ({api,}) => {
+  test("should create a deployment version in building status", async ({ api }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -85,7 +79,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: importedEntities.deployments[0].id,
+          deploymentId: builder.result.deployments[0].id,
           status: "building",
         },
       },
@@ -108,7 +102,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: importedEntities.deployments[0].id,
+          deploymentId: builder.result.deployments[0].id,
           name: versionName,
           metadata: { enabled: "true" },
         },
@@ -155,7 +149,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: faker.string.alphanumeric(10),
-          deploymentId: importedEntities.deployments[0].id,
+          deploymentId: builder.result.deployments[0].id,
           status: "building",
         },
       },
@@ -196,7 +190,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: faker.string.alphanumeric(10),
-          deploymentId: importedEntities.deployments[0].id,
+          deploymentId: builder.result.deployments[0].id,
           status: "building",
         },
       },

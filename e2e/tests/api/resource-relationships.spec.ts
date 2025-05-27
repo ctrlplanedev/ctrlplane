@@ -2,34 +2,29 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  importEntitiesFromYaml,
-  TestEntities,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "resource-relationships.spec.yaml");
 
 test.describe("Resource Relationships API", () => {
-  let importedEntities: TestEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createResources();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
-  test("create a relationship with metadata match", async ({api,workspace,}) => {
-    const reference = `${importedEntities.prefix}-${
+  test("create a relationship with metadata match", async ({ api, workspace }) => {
+    const reference = `${builder.result.prefix}-${
       faker.string.alphanumeric(10)
-    }`.toLocaleLowerCase();
+    }`
+      .toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -39,10 +34,10 @@ test.describe("Resource Relationships API", () => {
           reference,
           dependencyType: "depends_on",
           sourceKind: "Source",
-          sourceVersion: `${importedEntities.prefix}-test-version/v1`,
+          sourceVersion: `${builder.result.prefix}-test-version/v1`,
           targetKind: "Target",
-          targetVersion: `${importedEntities.prefix}-test-version/v1`,
-          metadataKeysMatches: ["e2e/test", importedEntities.prefix],
+          targetVersion: `${builder.result.prefix}-test-version/v1`,
+          metadataKeysMatches: ["e2e/test", builder.result.prefix],
         },
       },
     );
@@ -61,7 +56,7 @@ test.describe("Resource Relationships API", () => {
           sourceVersion: "test-version/v1",
           targetKind: "Target",
           targetVersion: "test-version/v1",
-          metadataKeysMatches: ["e2e/test", importedEntities.prefix],
+          metadataKeysMatches: ["e2e/test", builder.result.prefix],
         },
       },
     );
@@ -74,7 +69,7 @@ test.describe("Resource Relationships API", () => {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: importedEntities.prefix + "-source-resource",
+            identifier: builder.result.prefix + "-source-resource",
           },
         },
       },
@@ -95,10 +90,11 @@ test.describe("Resource Relationships API", () => {
     expect(target?.target?.config).toBeDefined();
   });
 
-  test("create a relationship with metadata equals", async ({api,workspace,}) => {
-    const reference = `${importedEntities.prefix}-${
+  test("create a relationship with metadata equals", async ({ api, workspace }) => {
+    const reference = `${builder.result.prefix}-${
       faker.string.alphanumeric(10)
-    }`.toLocaleLowerCase();
+    }`
+      .toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -108,11 +104,11 @@ test.describe("Resource Relationships API", () => {
           reference,
           dependencyType: "depends_on",
           sourceKind: "Source",
-          sourceVersion: `${importedEntities.prefix}-test-version/v1`,
+          sourceVersion: `${builder.result.prefix}-test-version/v1`,
           targetKind: "Target",
-          targetVersion: `${importedEntities.prefix}-test-version/v1`,
+          targetVersion: `${builder.result.prefix}-test-version/v1`,
           targetMetadataEquals: [
-            { key: importedEntities.prefix, value: "true" },
+            { key: builder.result.prefix, value: "true" },
           ],
         },
       },
@@ -126,7 +122,7 @@ test.describe("Resource Relationships API", () => {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: importedEntities.prefix + "-source-resource",
+            identifier: builder.result.prefix + "-source-resource",
           },
         },
       },
@@ -147,20 +143,21 @@ test.describe("Resource Relationships API", () => {
   });
 
   test("upsert a relationship rule", async ({ api, workspace }) => {
-    const reference = `${importedEntities.prefix}-${
+    const reference = `${builder.result.prefix}-${
       faker.string.alphanumeric(10)
-    }`.toLocaleLowerCase();
+    }`
+      .toLocaleLowerCase();
     // First create a new relationship rule
     const initialRule = await api.POST("/v1/resource-relationship-rules", {
       body: {
         workspaceId: workspace.id,
-        name: importedEntities.prefix + "-upsert-rule",
+        name: builder.result.prefix + "-upsert-rule",
         reference,
         dependencyType: "depends_on",
         sourceKind: "SourceA",
-        sourceVersion: `${importedEntities.prefix}-test-version/v1`,
+        sourceVersion: `${builder.result.prefix}-test-version/v1`,
         targetKind: "TargetA",
-        targetVersion: `${importedEntities.prefix}-test-version/v1`,
+        targetVersion: `${builder.result.prefix}-test-version/v1`,
         description: "Initial description",
         metadataKeysMatches: ["e2e/test"],
       },
@@ -168,7 +165,7 @@ test.describe("Resource Relationships API", () => {
 
     expect(initialRule.response.status).toBe(200);
     expect(initialRule.data?.name).toBe(
-      importedEntities.prefix + "-upsert-rule",
+      builder.result.prefix + "-upsert-rule",
     );
     expect(initialRule.data?.sourceKind).toBe("SourceA");
     expect(initialRule.data?.targetKind).toBe("TargetA");
@@ -198,7 +195,7 @@ test.describe("Resource Relationships API", () => {
     expect(updatedRule.response.status).toBe(200);
     expect(updatedRule.data?.id).toBe(initialRule.data?.id); // Should maintain same ID
     expect(updatedRule.data?.name).toBe(
-      importedEntities.prefix + "-upsert-rule",
+      builder.result.prefix + "-upsert-rule",
     );
     expect(updatedRule.data?.sourceKind).toBe("SourceB");
     expect(updatedRule.data?.sourceVersion).toBe("test-version/v2");
@@ -207,18 +204,19 @@ test.describe("Resource Relationships API", () => {
     expect(updatedRule.data?.description).toBe("Updated description");
   });
 
-  test("should not match if some rules are not satisfied", async ({api,workspace,}) => {
-    const reference = `${importedEntities.prefix}-${
+  test("should not match if some rules are not satisfied", async ({ api, workspace }) => {
+    const reference = `${builder.result.prefix}-${
       faker.string.alphanumeric(10)
-    }`.toLocaleLowerCase();
+    }`
+      .toLocaleLowerCase();
 
     const sourceResourceCreate = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        name: importedEntities.prefix + "-source-resource",
+        name: builder.result.prefix + "-source-resource",
         kind: "Source",
-        identifier: importedEntities.prefix + "-source-resource",
-        version: `${importedEntities.prefix}-version/v1`,
+        identifier: builder.result.prefix + "-source-resource",
+        version: `${builder.result.prefix}-version/v1`,
         config: {},
         metadata: {
           "e2e/test": "true",
@@ -232,10 +230,10 @@ test.describe("Resource Relationships API", () => {
     const targetResourceCreate = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        name: importedEntities.prefix + "-target-resource",
+        name: builder.result.prefix + "-target-resource",
         kind: "Target",
-        identifier: importedEntities.prefix + "-target-resource",
-        version: `${importedEntities.prefix}-version/v1`,
+        identifier: builder.result.prefix + "-target-resource",
+        version: `${builder.result.prefix}-version/v1`,
         config: {},
         metadata: {
           "e2e/test": "true",
@@ -249,13 +247,13 @@ test.describe("Resource Relationships API", () => {
     const relationshipRule = await api.POST("/v1/resource-relationship-rules", {
       body: {
         workspaceId: workspace.id,
-        name: importedEntities.prefix + "-relationship-rule",
+        name: builder.result.prefix + "-relationship-rule",
         reference,
         dependencyType: "depends_on",
         sourceKind: "Source",
-        sourceVersion: `${importedEntities.prefix}-version/v1`,
+        sourceVersion: `${builder.result.prefix}-version/v1`,
         targetKind: "Target",
-        targetVersion: `${importedEntities.prefix}-version/v1`,
+        targetVersion: `${builder.result.prefix}-version/v1`,
         metadataKeysMatches: ["e2e/test", "e2e/test2"],
       },
     });
@@ -268,7 +266,7 @@ test.describe("Resource Relationships API", () => {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: importedEntities.prefix + "-source-resource",
+            identifier: builder.result.prefix + "-source-resource",
           },
         },
       },
