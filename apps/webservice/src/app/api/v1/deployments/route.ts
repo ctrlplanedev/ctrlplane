@@ -11,6 +11,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
+import { upsertExitHook } from "./_utils/upsertExitHook";
 
 export const POST = request()
   .use(authn)
@@ -35,6 +36,8 @@ export const POST = request()
         )
         .then(takeFirstOrNull);
 
+      const { exitHooks } = ctx.body;
+
       if (existingDeployment != null) {
         // Update existing deployment
         const updatedDeployment = await ctx.db
@@ -49,6 +52,13 @@ export const POST = request()
           old: existingDeployment,
         });
 
+        if (exitHooks != null)
+          await Promise.all(
+            exitHooks.map((eh) =>
+              upsertExitHook(ctx.db, updatedDeployment, eh),
+            ),
+          );
+
         return NextResponse.json(updatedDeployment, { status: httpStatus.OK });
       }
 
@@ -58,6 +68,11 @@ export const POST = request()
         .values({ ...ctx.body, description: ctx.body.description ?? "" })
         .returning()
         .then(takeFirst);
+
+      if (exitHooks != null)
+        await Promise.all(
+          exitHooks.map((eh) => upsertExitHook(ctx.db, newDeployment, eh)),
+        );
 
       await getQueue(Channel.NewDeployment).add(
         newDeployment.id,

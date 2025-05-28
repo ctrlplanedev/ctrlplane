@@ -1,6 +1,13 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
-import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -10,21 +17,25 @@ import { job } from "./job.js";
 import { runbookVariable } from "./runbook-variables.js";
 import { system } from "./system.js";
 
-export const runbook = pgTable("runbook", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description"),
-  systemId: uuid("system_id")
-    .notNull()
-    .references(() => system.id, { onDelete: "cascade" }),
-  jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
-    onDelete: "set null",
-  }),
-  jobAgentConfig: jsonb("job_agent_config")
-    .default("{}")
-    .$type<Record<string, any>>()
-    .notNull(),
-});
+export const runbook = pgTable(
+  "runbook",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    systemId: uuid("system_id")
+      .notNull()
+      .references(() => system.id, { onDelete: "cascade" }),
+    jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
+      onDelete: "set null",
+    }),
+    jobAgentConfig: jsonb("job_agent_config")
+      .default("{}")
+      .$type<Record<string, any>>()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("name_system_id_unique").on(t.name, t.systemId)],
+);
 
 const runbookInsert = createInsertSchema(runbook, {
   name: z.string().min(1),

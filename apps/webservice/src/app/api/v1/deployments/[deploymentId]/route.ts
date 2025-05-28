@@ -9,6 +9,7 @@ import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
+import { upsertExitHook } from "../_utils/upsertExitHook";
 import { authn, authz } from "../../auth";
 import { parseBody } from "../../body-parser";
 import { request } from "../../middleware";
@@ -116,6 +117,12 @@ export const PATCH = request()
         .where(eq(SCHEMA.deployment.id, deploymentId))
         .returning()
         .then(takeFirst);
+
+      const { exitHooks } = body;
+      if (exitHooks != null)
+        await Promise.all(
+          exitHooks.map((eh) => upsertExitHook(db, updatedDeployment, eh)),
+        );
 
       await getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
         new: updatedDeployment,

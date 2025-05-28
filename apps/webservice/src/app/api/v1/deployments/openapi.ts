@@ -6,6 +6,33 @@ export const openapi: Swagger.SwaggerV3 = {
     title: "Ctrlplane API",
     version: "1.0.0",
   },
+  components: {
+    schemas: {
+      ExitHook: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "The name of the exit hook",
+            example: "my-exit-hook",
+          },
+          jobAgentId: {
+            type: "string",
+            format: "uuid",
+            description: "The ID of the job agent to use for the exit hook",
+            example: "123e4567-e89b-12d3-a456-426614174000",
+          },
+          jobAgentConfig: {
+            type: "object",
+            description: "The configuration for the job agent",
+            example: { key: "value" },
+            additionalProperties: true,
+          },
+        },
+        required: ["name", "jobAgentId", "jobAgentConfig"],
+      },
+    },
+  },
   paths: {
     "/v1/deployments": {
       post: {
@@ -66,6 +93,9 @@ export const openapi: Swagger.SwaggerV3 = {
                     description: "The resource selector for the deployment",
                     example: { key: "value" },
                     additionalProperties: true,
+                  },
+                  exitHooks: {
+                    type: "array",
                   },
                 },
                 required: ["systemId", "slug", "name"],
