@@ -1134,7 +1134,10 @@
                     "additionalProperties": true
                   },
                   "exitHooks": {
-                    "type": "array"
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExitHook"
+                    }
                   }
                 },
                 "required": [
