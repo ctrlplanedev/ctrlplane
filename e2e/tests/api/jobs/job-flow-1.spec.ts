@@ -1,8 +1,8 @@
 import path from "path";
+import { expect } from "@playwright/test";
 
 import { cleanupImportedEntities, EntitiesBuilder } from "../../../api";
 import { test } from "../../fixtures";
-import { expect } from "@playwright/test";
 
 const yamlPath = path.join(__dirname, "job-flow-entities.spec.yaml");
 
