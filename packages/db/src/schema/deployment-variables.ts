@@ -65,6 +65,7 @@ export const deploymentVariableValue = pgTable(
     valueType: valueType("value_type").notNull().default("direct"), // 'direct' | 'reference'
 
     value: jsonb("value").$type<string | number | boolean | object>(),
+    valueHash: text("value_hash"),
     sensitive: boolean("sensitive").notNull().default(false),
 
     // Reference fields
@@ -95,6 +96,9 @@ export const deploymentVariableValue = pgTable(
 export type DeploymentVariableValue = InferSelectModel<
   typeof deploymentVariableValue
 >;
+export type InsertDeploymentVariableValue = InferInsertModel<
+  typeof deploymentVariableValue
+>;
 export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
   {
@@ -121,23 +125,42 @@ type BaseVariableAttributes = {
   resourceSelector: ResourceCondition | null;
 };
 
-export type DeploymentVariableValueDirect = BaseVariableAttributes & {
+type DirectValueAttributes = {
   valueType: "direct";
   value: string | number | boolean | object;
+  valueHash: string;
   sensitive: boolean;
   defaultValue: null;
   reference: null;
   path: null;
 };
 
-export type DeploymentVariableValueReference = BaseVariableAttributes & {
+type ReferenceValueAttributes = {
   valueType: "reference";
   reference: string;
   path: string[];
   defaultValue: string | number | boolean | object | null;
   value: null;
+  valueHash: null;
   sensitive: boolean;
 };
+
+export type DeploymentVariableValueDirect = BaseVariableAttributes &
+  DirectValueAttributes;
+
+export type DeploymentVariableValueReference = BaseVariableAttributes &
+  ReferenceValueAttributes;
+
+export type InsertDeploymentVariableValueDirect = DirectValueAttributes & {
+  variableId: string;
+  isDefault?: boolean;
+};
+
+export type InsertDeploymentVariableValueReference =
+  ReferenceValueAttributes & {
+    variableId: string;
+    isDefault?: boolean;
+  };
 
 export const isDeploymentVariableValueDirect = (
   value: DeploymentVariableValue,
@@ -148,6 +171,18 @@ export const isDeploymentVariableValueDirect = (
 export const isDeploymentVariableValueReference = (
   value: DeploymentVariableValue,
 ): value is DeploymentVariableValueReference => {
+  return value.valueType === "reference";
+};
+
+export const isInsertDeploymentVariableValueDirect = (
+  value: InsertDeploymentVariableValue,
+): value is InsertDeploymentVariableValueDirect => {
+  return value.valueType === "direct";
+};
+
+export const isInsertDeploymentVariableValueReference = (
+  value: InsertDeploymentVariableValue,
+): value is InsertDeploymentVariableValueReference => {
   return value.valueType === "reference";
 };
 

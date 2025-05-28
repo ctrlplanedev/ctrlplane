@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { CREATED, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import { isPresent } from "ts-is-present";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { eq, upsertDeploymentVariable } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
@@ -86,6 +86,24 @@ export const GET = request()
     },
   );
 
+const getDefaultValue = async (db: Tx, variable: schema.DeploymentVariable) => {
+  const { defaultValueId } = variable;
+  if (defaultValueId == null) return undefined;
+
+  const defaultValue = await db.query.deploymentVariableValue.findFirst({
+    where: eq(schema.deploymentVariableValue.id, defaultValueId),
+  });
+
+  if (defaultValue == null) return undefined;
+
+  const { value, ...rest } = defaultValue;
+
+  const resolvedValue = defaultValue.sensitive
+    ? variablesAES256().decrypt(String(value))
+    : value;
+  return { ...rest, value: resolvedValue };
+};
+
 export const POST = request()
   .use(authn)
   .use(
@@ -113,70 +131,14 @@ export const POST = request()
           { status: NOT_FOUND },
         );
 
-      const { values, ...rest } = body;
-
-      const variable = await db.transaction(async (tx) => {
-        const variable = await tx
-          .insert(schema.deploymentVariable)
-          .values({ ...rest, deploymentId })
-          .returning()
-          .then(takeFirst);
-
-        const insertPromises = (values ?? []).map(async (v) => {
-          const { default: isDefault, ...rest } = v;
-          const val = rest.sensitive
-            ? variablesAES256().encrypt(String(rest.value))
-            : rest.value;
-
-          const inserted = await tx
-            .insert(schema.deploymentVariableValue)
-            .values({ ...rest, value: val, variableId: variable.id })
-            .returning()
-            .then(takeFirst);
-
-          if (isDefault)
-            await tx
-              .update(schema.deploymentVariable)
-              .set({ defaultValueId: inserted.id })
-              .where(eq(schema.deploymentVariable.id, variable.id));
-
-          const strVal = String(inserted.value);
-          const resolvedValue = inserted.sensitive
-            ? variablesAES256().decrypt(strVal)
-            : strVal;
-
-          const { variableId: _, ...variableValue } = inserted;
-          return { ...variableValue, value: resolvedValue };
-        });
-
-        const insertedValues = await Promise.all(insertPromises);
-        return { ...variable, values: insertedValues };
-      });
+      const variable = await upsertDeploymentVariable(deploymentId, body);
 
       await getQueue(Channel.UpdateDeploymentVariable).add(
         variable.id,
         variable,
       );
 
-      const defaultValue =
-        variable.defaultValueId != null
-          ? await db.query.deploymentVariableValue
-              .findFirst({
-                where: eq(
-                  schema.deploymentVariableValue.id,
-                  variable.defaultValueId,
-                ),
-              })
-              .then((v) => {
-                if (v == null) return undefined;
-                const { value, ...rest } = v;
-                const strVal = String(value);
-                const resolvedValue = v.sensitive
-                  ? variablesAES256().decrypt(strVal)
-                  : strVal;
-                return { ...rest, value: resolvedValue };
-              })
-          : undefined;
+      const defaultValue = await getDefaultValue(db, variable);
 
       return NextResponse.json(
         { ...variable, defaultValue },
