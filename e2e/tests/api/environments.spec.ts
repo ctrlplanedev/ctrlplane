@@ -79,8 +79,7 @@ test.describe("Environments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("No resource found");
     expect(receivedResource.identifier).toBe(
-      builder.cache.resources.find((r) => r.metadata?.env === "qa")
-        ?.identifier,
+      builder.cache.resources.find((r) => r.metadata?.env === "qa")?.identifier,
     );
 
     const releaseTargetsResponse = await api.GET(
@@ -102,7 +101,9 @@ test.describe("Environments API", () => {
     expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
   });
 
-  test("should update environment selector and match new resources", async ({api,}) => {
+  test("should update environment selector and match new resources", async ({
+    api,
+  }) => {
     // First create an environment with a selector for QA resources
     const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
@@ -145,8 +146,7 @@ test.describe("Environments API", () => {
     expect(initialResourcesResponse.response.status).toBe(200);
     expect(initialResourcesResponse.data?.resources?.length).toBe(1);
     expect(initialResourcesResponse.data?.resources?.[0]?.identifier).toBe(
-      builder.cache.resources.find((r) => r.metadata?.env === "qa")
-        ?.identifier,
+      builder.cache.resources.find((r) => r.metadata?.env === "qa")?.identifier,
     );
 
     // Now update the environment to select prod resources instead
@@ -218,7 +218,9 @@ test.describe("Environments API", () => {
     expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
   });
 
-  test("should unmatch resources if environment selector is set to null", async ({api,}) => {
+  test("should unmatch resources if environment selector is set to null", async ({
+    api,
+  }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
@@ -375,8 +377,8 @@ test.describe("Environments API", () => {
     );
 
     expect(releaseTargetsBeforeDeleteResponse.response.status).toBe(200);
-    const environmentMatchBeforeDelete = releaseTargetsBeforeDeleteResponse.data
-      ?.find(
+    const environmentMatchBeforeDelete =
+      releaseTargetsBeforeDeleteResponse.data?.find(
         (rt) => rt.environment.id === environmentId,
       );
     expect(environmentMatchBeforeDelete).toBeDefined();
@@ -414,20 +416,21 @@ test.describe("Environments API", () => {
     );
 
     expect(releaseTargetsAfterDeleteResponse.response.status).toBe(200);
-    const environmentMatchAfterDelete = releaseTargetsAfterDeleteResponse.data
-      ?.find(
+    const environmentMatchAfterDelete =
+      releaseTargetsAfterDeleteResponse.data?.find(
         (rt) => rt.environment.id === environmentId,
       );
     expect(environmentMatchAfterDelete).toBeUndefined();
   });
 
-  test("should match not match deleted resources", async ({api,workspace,}) => {
+  test("should match not match deleted resources", async ({
+    api,
+    workspace,
+  }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!;
-    const newResourceIdentifier = `${systemPrefix}-${
-      faker.string.alphanumeric(
-        10,
-      )
-    }`;
+    const newResourceIdentifier = `${systemPrefix}-${faker.string.alphanumeric(
+      10,
+    )}`;
     const newResource = await api.POST("/v1/resources", {
       body: {
         name: faker.string.alphanumeric(10),

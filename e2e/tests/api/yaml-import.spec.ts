@@ -4,7 +4,7 @@ import { expect } from "@playwright/test";
 import {
   cleanupImportedEntities,
   EntitiesBuilder,
-} from "../../api/yaml-loader";
+} from "../../api/entities-builder";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "yaml-import.spec.yaml");
@@ -43,7 +43,10 @@ test.describe("YAML Entity Import", () => {
     expect(response.data?.description).toBe("System created from YAML fixture");
   });
 
-  test("should have created resources from YAML", async ({api,workspace,}) => {
+  test("should have created resources from YAML", async ({
+    api,
+    workspace,
+  }) => {
     // List resources in workspace
     const response = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: { path: { workspaceId: workspace.id } },

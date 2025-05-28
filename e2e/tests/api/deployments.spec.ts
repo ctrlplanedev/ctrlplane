@@ -147,8 +147,8 @@ test.describe("Deployments API", () => {
     );
 
     expect(releaseTargetsBeforeDeleteResponse.response.status).toBe(200);
-    const deploymentMatchBeforeDelete = releaseTargetsBeforeDeleteResponse.data
-      ?.find(
+    const deploymentMatchBeforeDelete =
+      releaseTargetsBeforeDeleteResponse.data?.find(
         (rt) => rt.deployment.id === deploymentId,
       );
     expect(deploymentMatchBeforeDelete).toBeDefined();
@@ -190,8 +190,8 @@ test.describe("Deployments API", () => {
     );
 
     expect(releaseTargetsAfterDeleteResponse.response.status).toBe(200);
-    const deploymentMatchAfterDelete = releaseTargetsAfterDeleteResponse.data
-      ?.find(
+    const deploymentMatchAfterDelete =
+      releaseTargetsAfterDeleteResponse.data?.find(
         (rt) => rt.deployment.id === deploymentId,
       );
     expect(deploymentMatchAfterDelete).toBeUndefined();
@@ -248,8 +248,7 @@ test.describe("Deployments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("Resource is undefined");
     expect(receivedResource.identifier).toBe(
-      builder.cache.resources.find((r) => r.metadata?.env === "qa")
-        ?.identifier,
+      builder.cache.resources.find((r) => r.metadata?.env === "qa")?.identifier,
     );
 
     const releaseTargets = await api.GET(
@@ -269,7 +268,10 @@ test.describe("Deployments API", () => {
     expect(matchedEnvironment).toBeDefined();
   });
 
-  test("should update a deployment's resource selector and update matched resources", async ({api,page,}) => {
+  test("should update a deployment's resource selector and update matched resources", async ({
+    api,
+    page,
+  }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
@@ -370,13 +372,15 @@ test.describe("Deployments API", () => {
     expect(matchedEnvironment).toBeDefined();
   });
 
-  test("should not match deleted resources", async ({api,page,workspace,}) => {
+  test("should not match deleted resources", async ({
+    api,
+    page,
+    workspace,
+  }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!;
-    const newResourceIdentifier = `${systemPrefix}-${
-      faker.string.alphanumeric(
-        10,
-      )
-    }`;
+    const newResourceIdentifier = `${systemPrefix}-${faker.string.alphanumeric(
+      10,
+    )}`;
     const newResource = await api.POST("/v1/resources", {
       body: {
         name: faker.string.alphanumeric(10),
@@ -444,7 +448,11 @@ test.describe("Deployments API", () => {
     expect(resources.data?.resources?.length).toBe(0);
   });
 
-  test("should unmatch resources if resource selector is set to null", async ({api,page,workspace,}) => {
+  test("should unmatch resources if resource selector is set to null", async ({
+    api,
+    page,
+    workspace,
+  }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {

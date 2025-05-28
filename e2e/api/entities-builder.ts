@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
 
 import { WorkspaceFixture } from "../tests/auth.setup";
-import { ApiClient } from "./index";
 import { EntityFixtures, importEntityFixtures } from "./entity-fixtures";
+import { ApiClient } from "./index";
 
 // Entities info -- after creation
 export interface EntitiesCache {
@@ -136,11 +136,9 @@ export class EntitiesBuilder {
 
       if (resourceResponse.response.status !== 200) {
         throw new Error(
-          `Failed to create resource: ${
-            JSON.stringify(
-              resourceResponse.error,
-            )
-          }`,
+          `Failed to create resource: ${JSON.stringify(
+            resourceResponse.error,
+          )}`,
         );
       }
     }
@@ -156,7 +154,8 @@ export class EntitiesBuilder {
 
   async createEnvironments() {
     if (
-      !this.fixtures.environments || this.fixtures.environments.length === 0
+      !this.fixtures.environments ||
+      this.fixtures.environments.length === 0
     ) {
       throw new Error("No environments defined in YAML file");
     }
@@ -210,11 +209,9 @@ export class EntitiesBuilder {
 
       if (deploymentResponse.response.status !== 201) {
         throw new Error(
-          `Failed to create deployment: ${
-            JSON.stringify(
-              deploymentResponse.error,
-            )
-          }`,
+          `Failed to create deployment: ${JSON.stringify(
+            deploymentResponse.error,
+          )}`,
         );
       }
       this.cache.deployments.push({
@@ -235,11 +232,9 @@ export class EntitiesBuilder {
     for (const deployment of this.fixtures.deployments) {
       if (deployment.versions && deployment.versions.length > 0) {
         console.log(
-          `Adding deployment versions: ${deployment.name} -> ${
-            deployment.versions
-              .map((v) => v.tag)
-              .join(", ")
-          }`,
+          `Adding deployment versions: ${deployment.name} -> ${deployment.versions
+            .map((v) => v.tag)
+            .join(", ")}`,
         );
 
         const deploymentResult = this.cache.deployments.find(
@@ -262,11 +257,9 @@ export class EntitiesBuilder {
 
           if (versionResponse.response.status !== 201) {
             throw new Error(
-              `Failed to create deployment version: ${
-                JSON.stringify(
-                  versionResponse.error,
-                )
-              }`,
+              `Failed to create deployment version: ${JSON.stringify(
+                versionResponse.error,
+              )}`,
             );
           }
 
@@ -289,11 +282,9 @@ export class EntitiesBuilder {
     for (const deployment of this.fixtures.deployments) {
       if (deployment.variables && deployment.variables.length > 0) {
         console.log(
-          `Adding deployment variables: ${deployment.name} -> ${
-            deployment.variables
-              .map((v) => v.key)
-              .join(", ")
-          }`,
+          `Adding deployment variables: ${deployment.name} -> ${deployment.variables
+            .map((v) => v.key)
+            .join(", ")}`,
         );
 
         const deploymentResult = this.cache.deployments.find(
@@ -316,11 +307,9 @@ export class EntitiesBuilder {
 
           if (variableResponse.response.status !== 201) {
             throw new Error(
-              `Failed to create deployment variable: ${
-                JSON.stringify(
-                  variableResponse.error,
-                )
-              }`,
+              `Failed to create deployment variable: ${JSON.stringify(
+                variableResponse.error,
+              )}`,
             );
           }
 

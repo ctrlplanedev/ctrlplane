@@ -123,17 +123,21 @@ test.describe("Deployment Variables API", () => {
 
     const receivedValues = receivedVariable.values;
     expect(receivedValues.length).toBe(2);
-    const receivedValueA = receivedValues[0]!.valueType === "direct"
-      ? receivedValues[0]!.value
-      : receivedValues[0]!.defaultValue;
-    const receivedValueB = receivedValues[1]!.valueType === "direct"
-      ? receivedValues[1]!.value
-      : receivedValues[1]!.defaultValue;
+    const receivedValueA =
+      receivedValues[0]!.valueType === "direct"
+        ? receivedValues[0]!.value
+        : receivedValues[0]!.defaultValue;
+    const receivedValueB =
+      receivedValues[1]!.valueType === "direct"
+        ? receivedValues[1]!.value
+        : receivedValues[1]!.defaultValue;
     expect(receivedValueA).toBe(valueA);
     expect(receivedValueB).toBe(valueB);
   });
 
-  test("should create a deployment variable with values and default value", async ({api,}) => {
+  test("should create a deployment variable with values and default value", async ({
+    api,
+  }) => {
     const importedDeployment = builder.cache.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
@@ -188,23 +192,28 @@ test.describe("Deployment Variables API", () => {
 
     const receivedValues = receivedVariable.values;
     expect(receivedValues.length).toBe(2);
-    const receivedValueA = receivedValues[0]!.valueType === "direct"
-      ? receivedValues[0]!.value
-      : receivedValues[0]!.defaultValue;
-    const receivedValueB = receivedValues[1]!.valueType === "direct"
-      ? receivedValues[1]!.value
-      : receivedValues[1]!.defaultValue;
+    const receivedValueA =
+      receivedValues[0]!.valueType === "direct"
+        ? receivedValues[0]!.value
+        : receivedValues[0]!.defaultValue;
+    const receivedValueB =
+      receivedValues[1]!.valueType === "direct"
+        ? receivedValues[1]!.value
+        : receivedValues[1]!.defaultValue;
     expect(receivedValueA).toBe(valueA);
     expect(receivedValueB).toBe(valueB);
 
-    const receivedDefaultValue = receivedValues[1]!.valueType === "direct"
-      ? receivedValues[1]!.value
-      : receivedValues[1]!.defaultValue;
+    const receivedDefaultValue =
+      receivedValues[1]!.valueType === "direct"
+        ? receivedValues[1]!.value
+        : receivedValues[1]!.defaultValue;
 
     expect(receivedDefaultValue).toBe(valueB);
   });
 
-  test("shoudl fail if more than one default value is provided", async ({api,}) => {
+  test("shoudl fail if more than one default value is provided", async ({
+    api,
+  }) => {
     const importedDeployment = builder.cache.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
