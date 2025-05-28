@@ -18,7 +18,7 @@ test.describe("Environments API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.result, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
   test("should create an environment", async ({ api }) => {
@@ -26,7 +26,7 @@ test.describe("Environments API", () => {
     const environment = await api.POST("/v1/environments", {
       body: {
         name: environmentName,
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
       },
     });
 
@@ -36,11 +36,11 @@ test.describe("Environments API", () => {
   });
 
   test("should match resources to new environment", async ({ api }) => {
-    const systemPrefix = builder.result.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -79,7 +79,7 @@ test.describe("Environments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("No resource found");
     expect(receivedResource.identifier).toBe(
-      builder.result.resources.find((r) => r.metadata?.env === "qa")
+      builder.cache.resources.find((r) => r.metadata?.env === "qa")
         ?.identifier,
     );
 
@@ -94,7 +94,7 @@ test.describe("Environments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("No release target found");
     expect(releaseTarget.environment.id).toBe(environment.id);
-    const deploymentMatch = builder.result.deployments.find(
+    const deploymentMatch = builder.cache.deployments.find(
       (d) => d.id === releaseTarget.deployment.id,
     );
     expect(deploymentMatch).toBeDefined();
@@ -102,15 +102,13 @@ test.describe("Environments API", () => {
     expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
   });
 
-  test("should update environment selector and match new resources", async ({
-    api,
-  }) => {
+  test("should update environment selector and match new resources", async ({api,}) => {
     // First create an environment with a selector for QA resources
-    const systemPrefix = builder.result.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -147,7 +145,7 @@ test.describe("Environments API", () => {
     expect(initialResourcesResponse.response.status).toBe(200);
     expect(initialResourcesResponse.data?.resources?.length).toBe(1);
     expect(initialResourcesResponse.data?.resources?.[0]?.identifier).toBe(
-      builder.result.resources.find((r) => r.metadata?.env === "qa")
+      builder.cache.resources.find((r) => r.metadata?.env === "qa")
         ?.identifier,
     );
 
@@ -156,7 +154,7 @@ test.describe("Environments API", () => {
       body: {
         id: environment.id,
         name: environment.name,
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -197,7 +195,7 @@ test.describe("Environments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("No resource found");
     expect(receivedResource.identifier).toBe(
-      builder.result.resources.find((r) => r.metadata?.env === "prod")
+      builder.cache.resources.find((r) => r.metadata?.env === "prod")
         ?.identifier,
     );
 
@@ -212,7 +210,7 @@ test.describe("Environments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("No release target found");
     expect(releaseTarget.environment.id).toBe(updatedEnvironmentId);
-    const deploymentMatch = builder.result.deployments.find(
+    const deploymentMatch = builder.cache.deployments.find(
       (d) => d.id === releaseTarget.deployment.id,
     );
     expect(deploymentMatch).toBeDefined();
@@ -220,14 +218,12 @@ test.describe("Environments API", () => {
     expect(deploymentMatch.id).toBe(releaseTarget.deployment.id);
   });
 
-  test("should unmatch resources if environment selector is set to null", async ({
-    api,
-  }) => {
-    const systemPrefix = builder.result.system.slug.split("-")[0]!;
+  test("should unmatch resources if environment selector is set to null", async ({api,}) => {
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -259,7 +255,7 @@ test.describe("Environments API", () => {
       body: {
         id: environment.id,
         name: environment.name,
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: undefined,
       },
     });
@@ -289,7 +285,7 @@ test.describe("Environments API", () => {
       body: {
         name: originalName,
         description: originalDescription,
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
       },
     });
 
@@ -309,7 +305,7 @@ test.describe("Environments API", () => {
         id: environment.id,
         name: updatedName,
         description: updatedDescription,
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
       },
     });
 
@@ -333,14 +329,14 @@ test.describe("Environments API", () => {
   });
 
   test("should delete an environment", async ({ api, workspace }) => {
-    const systemPrefix = builder.result.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
 
     // First create an environment
     const environmentName = faker.string.alphanumeric(10);
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: environmentName,
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: {
           type: "identifier",
           operator: "equals",
@@ -379,8 +375,8 @@ test.describe("Environments API", () => {
     );
 
     expect(releaseTargetsBeforeDeleteResponse.response.status).toBe(200);
-    const environmentMatchBeforeDelete =
-      releaseTargetsBeforeDeleteResponse.data?.find(
+    const environmentMatchBeforeDelete = releaseTargetsBeforeDeleteResponse.data
+      ?.find(
         (rt) => rt.environment.id === environmentId,
       );
     expect(environmentMatchBeforeDelete).toBeDefined();
@@ -418,21 +414,20 @@ test.describe("Environments API", () => {
     );
 
     expect(releaseTargetsAfterDeleteResponse.response.status).toBe(200);
-    const environmentMatchAfterDelete =
-      releaseTargetsAfterDeleteResponse.data?.find(
+    const environmentMatchAfterDelete = releaseTargetsAfterDeleteResponse.data
+      ?.find(
         (rt) => rt.environment.id === environmentId,
       );
     expect(environmentMatchAfterDelete).toBeUndefined();
   });
 
-  test("should match not match deleted resources", async ({
-    api,
-    workspace,
-  }) => {
-    const systemPrefix = builder.result.system.slug.split("-")[0]!;
-    const newResourceIdentifier = `${systemPrefix}-${faker.string.alphanumeric(
-      10,
-    )}`;
+  test("should match not match deleted resources", async ({api,workspace,}) => {
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const newResourceIdentifier = `${systemPrefix}-${
+      faker.string.alphanumeric(
+        10,
+      )
+    }`;
     const newResource = await api.POST("/v1/resources", {
       body: {
         name: faker.string.alphanumeric(10),
@@ -456,7 +451,7 @@ test.describe("Environments API", () => {
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: faker.string.alphanumeric(10),
-        systemId: builder.result.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",

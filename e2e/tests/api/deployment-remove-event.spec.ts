@@ -16,15 +16,11 @@ test.describe("Deployment remove event", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.result, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
-  test("deleting a resource should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = builder.result.system!;
+  test("deleting a resource should trigger a deployment remove event", async ({api,workspace,page,}) => {
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -105,12 +101,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("deleting an environment should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = builder.result.system!;
+  test("deleting an environment should trigger a deployment remove event", async ({api,workspace,page,}) => {
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -193,12 +185,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("unmatching a resource from an environment via resource update should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = builder.result.system!;
+  test("unmatching a resource from an environment via resource update should trigger a deployment remove event", async ({api,workspace,page,}) => {
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -282,12 +270,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("unmatching a resource from an environment via env selector update should trigger a deployment remove event", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = builder.result.system!;
+  test("unmatching a resource from an environment via env selector update should trigger a deployment remove event", async ({api,workspace,page,}) => {
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -368,12 +352,8 @@ test.describe("Deployment remove event", () => {
     expect(matchedEvent).toBeDefined();
   });
 
-  test("updating a deployment's resource selector should trigger a deployment remove event if resource is unmatched", async ({
-    api,
-    workspace,
-    page,
-  }) => {
-    const system = builder.result.system!;
+  test("updating a deployment's resource selector should trigger a deployment remove event if resource is unmatched", async ({api,workspace,page,}) => {
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {

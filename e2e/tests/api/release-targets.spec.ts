@@ -18,16 +18,12 @@ test.describe("Release Targets API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.result, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
-  test("should fetch release targets for a resource", async ({
-    api,
-    page,
-    workspace,
-  }) => {
+  test("should fetch release targets for a resource", async ({api,page,workspace,}) => {
     await page.waitForTimeout(5_000);
-    const importedResource = builder.result.resources.at(0);
+    const importedResource = builder.cache.resources.at(0);
     expect(importedResource).toBeDefined();
     if (!importedResource) throw new Error("No resource found");
 
@@ -63,13 +59,13 @@ test.describe("Release Targets API", () => {
     if (!releaseTarget) throw new Error("No release target found");
 
     expect(releaseTarget.resource.id).toBe(resourceId);
-    const environmentMatch = builder.result.environments.find(
+    const environmentMatch = builder.cache.environments.find(
       (e) => e.id === releaseTarget.environment.id,
     );
     expect(environmentMatch).toBeDefined();
     if (!environmentMatch) throw new Error("No environment match found");
 
-    const deploymentMatch = builder.result.deployments.find(
+    const deploymentMatch = builder.cache.deployments.find(
       (d) => d.id === releaseTarget.deployment.id,
     );
     expect(deploymentMatch).toBeDefined();

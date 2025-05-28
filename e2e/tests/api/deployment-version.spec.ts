@@ -17,7 +17,7 @@ test.describe("Deployment Versions API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.result, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
   test("should create a deployment version", async ({ api }) => {
@@ -30,7 +30,7 @@ test.describe("Deployment Versions API", () => {
         body: {
           name: versionName,
           tag: versionTag,
-          deploymentId: builder.result.deployments[0].id,
+          deploymentId: builder.cache.deployments[0].id,
           metadata: { enabled: "true" },
         },
       },
@@ -44,15 +44,13 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.name).toBe(versionName);
     expect(deploymentVersion.tag).toBe(versionTag);
     expect(deploymentVersion.deploymentId).toBe(
-      builder.result.deployments[0].id,
+      builder.cache.deployments[0].id,
     );
     expect(deploymentVersion.metadata).toEqual({ enabled: "true" });
     expect(deploymentVersion.status).toBe("ready");
   });
 
-  test("name should default to version tag if name not provided", async ({
-    api,
-  }) => {
+  test("name should default to version tag if name not provided", async ({ api }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -60,7 +58,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: builder.result.deployments[0].id,
+          deploymentId: builder.cache.deployments[0].id,
         },
       },
     );
@@ -73,9 +71,7 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.name).toBe(versionTag);
   });
 
-  test("should create a deployment version in building status", async ({
-    api,
-  }) => {
+  test("should create a deployment version in building status", async ({ api }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -83,7 +79,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: builder.result.deployments[0].id,
+          deploymentId: builder.cache.deployments[0].id,
           status: "building",
         },
       },
@@ -106,7 +102,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: builder.result.deployments[0].id,
+          deploymentId: builder.cache.deployments[0].id,
           name: versionName,
           metadata: { enabled: "true" },
         },
@@ -153,7 +149,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: faker.string.alphanumeric(10),
-          deploymentId: builder.result.deployments[0].id,
+          deploymentId: builder.cache.deployments[0].id,
           status: "building",
         },
       },
@@ -194,7 +190,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: faker.string.alphanumeric(10),
-          deploymentId: builder.result.deployments[0].id,
+          deploymentId: builder.cache.deployments[0].id,
           status: "building",
         },
       },

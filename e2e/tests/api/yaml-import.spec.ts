@@ -27,15 +27,15 @@ test.describe("YAML Entity Import", () => {
 
   test.afterAll(async ({ api, workspace }) => {
     // Clean up all imported entities
-    if (builder.result) {
-      await cleanupImportedEntities(api, builder.result, workspace.id);
+    if (builder.cache) {
+      await cleanupImportedEntities(api, builder.cache, workspace.id);
     }
   });
 
   test("should have created a system from YAML", async ({ api }) => {
     // Get the system by ID
     const response = await api.GET("/v1/systems/{systemId}", {
-      params: { path: { systemId: builder.result.system.id } },
+      params: { path: { systemId: builder.cache.system.id } },
     });
 
     // Verify system data
@@ -43,10 +43,7 @@ test.describe("YAML Entity Import", () => {
     expect(response.data?.description).toBe("System created from YAML fixture");
   });
 
-  test("should have created resources from YAML", async ({
-    api,
-    workspace,
-  }) => {
+  test("should have created resources from YAML", async ({api,workspace,}) => {
     // List resources in workspace
     const response = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: { path: { workspaceId: workspace.id } },
@@ -71,10 +68,10 @@ test.describe("YAML Entity Import", () => {
 
   test("should have created environments from YAML", async ({ api }) => {
     // Check that we have correct number of environments
-    expect(builder.result.environments.length).toBe(2);
+    expect(builder.cache.environments.length).toBe(2);
 
     // Get environment details for first environment
-    const prodEnvId = builder.result.environments.find(
+    const prodEnvId = builder.cache.environments.find(
       (e) => e.name === "Production",
     )?.id;
     expect(prodEnvId).toBeDefined();
@@ -90,9 +87,9 @@ test.describe("YAML Entity Import", () => {
   });
 
   test("should have created deployments from YAML", async ({ api }) => {
-    expect(builder.result.deployments.length).toBe(2);
+    expect(builder.cache.deployments.length).toBe(2);
 
-    const apiDeploymentId = builder.result.deployments.find(
+    const apiDeploymentId = builder.cache.deployments.find(
       (d) => d.name === "API Deployment",
     )?.id;
     expect(apiDeploymentId).toBeDefined();

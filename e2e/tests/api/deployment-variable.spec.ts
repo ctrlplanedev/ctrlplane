@@ -18,11 +18,11 @@ test.describe("Deployment Variables API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.result, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
   test("should create a deployment variable", async ({ api }) => {
-    const importedDeployment = builder.result.deployments[0]!;
+    const importedDeployment = builder.cache.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const variableCreateResponse = await api.POST(
@@ -69,7 +69,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should create a deployment variable with values", async ({ api }) => {
-    const importedDeployment = builder.result.deployments[0]!;
+    const importedDeployment = builder.cache.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -123,22 +123,18 @@ test.describe("Deployment Variables API", () => {
 
     const receivedValues = receivedVariable.values;
     expect(receivedValues.length).toBe(2);
-    const receivedValueA =
-      receivedValues[0]!.valueType === "direct"
-        ? receivedValues[0]!.value
-        : receivedValues[0]!.defaultValue;
-    const receivedValueB =
-      receivedValues[1]!.valueType === "direct"
-        ? receivedValues[1]!.value
-        : receivedValues[1]!.defaultValue;
+    const receivedValueA = receivedValues[0]!.valueType === "direct"
+      ? receivedValues[0]!.value
+      : receivedValues[0]!.defaultValue;
+    const receivedValueB = receivedValues[1]!.valueType === "direct"
+      ? receivedValues[1]!.value
+      : receivedValues[1]!.defaultValue;
     expect(receivedValueA).toBe(valueA);
     expect(receivedValueB).toBe(valueB);
   });
 
-  test("should create a deployment variable with values and default value", async ({
-    api,
-  }) => {
-    const importedDeployment = builder.result.deployments[0]!;
+  test("should create a deployment variable with values and default value", async ({api,}) => {
+    const importedDeployment = builder.cache.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -192,29 +188,24 @@ test.describe("Deployment Variables API", () => {
 
     const receivedValues = receivedVariable.values;
     expect(receivedValues.length).toBe(2);
-    const receivedValueA =
-      receivedValues[0]!.valueType === "direct"
-        ? receivedValues[0]!.value
-        : receivedValues[0]!.defaultValue;
-    const receivedValueB =
-      receivedValues[1]!.valueType === "direct"
-        ? receivedValues[1]!.value
-        : receivedValues[1]!.defaultValue;
+    const receivedValueA = receivedValues[0]!.valueType === "direct"
+      ? receivedValues[0]!.value
+      : receivedValues[0]!.defaultValue;
+    const receivedValueB = receivedValues[1]!.valueType === "direct"
+      ? receivedValues[1]!.value
+      : receivedValues[1]!.defaultValue;
     expect(receivedValueA).toBe(valueA);
     expect(receivedValueB).toBe(valueB);
 
-    const receivedDefaultValue =
-      receivedValues[1]!.valueType === "direct"
-        ? receivedValues[1]!.value
-        : receivedValues[1]!.defaultValue;
+    const receivedDefaultValue = receivedValues[1]!.valueType === "direct"
+      ? receivedValues[1]!.value
+      : receivedValues[1]!.defaultValue;
 
     expect(receivedDefaultValue).toBe(valueB);
   });
 
-  test("shoudl fail if more than one default value is provided", async ({
-    api,
-  }) => {
-    const importedDeployment = builder.result.deployments[0]!;
+  test("shoudl fail if more than one default value is provided", async ({api,}) => {
+    const importedDeployment = builder.cache.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);

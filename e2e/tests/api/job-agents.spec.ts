@@ -18,7 +18,7 @@ test.describe("Job Agent API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.result, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
   test("create a job agent", async ({ api, workspace }) => {
@@ -54,9 +54,11 @@ test.describe("Job Agent API", () => {
     expect(agentId).toBeDefined();
 
     // Update the job agent with a new name
-    const updatedAgentName = `e2e-test-agent-updated-${faker.string.alphanumeric(
-      8,
-    )}`;
+    const updatedAgentName = `e2e-test-agent-updated-${
+      faker.string.alphanumeric(
+        8,
+      )
+    }`;
     const updateResponse = await api.PATCH("/v1/job-agents/name", {
       body: {
         workspaceId: workspace.id,

@@ -1,78 +1,11 @@
-import fs from "fs";
-import path from "path";
 import { faker } from "@faker-js/faker";
-import { compile } from "handlebars";
-import yaml from "js-yaml";
 
 import { WorkspaceFixture } from "../tests/auth.setup";
 import { ApiClient } from "./index";
-
-// YAML structure used to create test entities
-export interface TestYamlFile {
-  system: {
-    name: string;
-    slug: string;
-    description?: string;
-  };
-  environments?: Array<{
-    name: string;
-    description?: string;
-    metadata?: Record<string, string>;
-    resourceSelector?: any;
-  }>;
-  resources?: Array<{
-    name: string;
-    kind: string;
-    identifier: string;
-    version: string;
-    config: Record<string, any>;
-    metadata: Record<string, string>;
-  }>;
-  deployments?: Array<{
-    name: string;
-    slug: string;
-    description?: string;
-    resourceSelector?: any;
-    versions?: Array<{
-      tag: string;
-      name?: string;
-      config?: Record<string, any>;
-      metadata?: Record<string, string>;
-      status?: "building" | "ready" | "failed";
-      message?: string;
-    }>;
-    variables?: Array<{
-      key: string;
-      description?: string;
-      config: Record<string, any>;
-      values?: Array<{
-        value: any;
-        valueType?: "direct" | "reference";
-        sensitive?: boolean;
-        resourceSelector?: any;
-        default?: boolean;
-      }>;
-    }>;
-  }>;
-  policies?: Array<{
-    name: string;
-    targets: Array<{
-      environmentSelector?: any;
-      deploymentSelector?: any;
-      resourceSelector?: any;
-    }>;
-    versionAnyApprovals?: Array<{
-      requiredApprovalsCount: number;
-    }>;
-    denyWindows?: Array<{
-      timeZone: string;
-      rrule: any;
-    }>;
-  }>;
-}
+import { EntityFixtures, importEntityFixtures } from "./entity-fixtures";
 
 // Entities info -- after creation
-export interface TestEntities {
+export interface EntitiesCache {
   prefix: string;
   system: {
     id: string;
@@ -126,35 +59,25 @@ export interface TestEntities {
 }
 
 export class EntitiesBuilder {
-  public readonly result: TestEntities;
-  private readonly data: TestYamlFile;
+  public readonly cache: EntitiesCache;
+  private readonly fixtures: EntityFixtures;
 
   /**
    * Import entities from a YAML file into the workspace
    * @param api API client instance
    * @param workspace workspace fixture to import into
    * @param yamlFilePath Path to the YAML file (absolute or relative to the execution directory)
-   * @param existingEntities If building from a previous EntitiesBuilder
+   * @param existingCache If building from a previous EntitiesBuilder
    */
   constructor(
     public readonly api: ApiClient,
     public readonly workspace: WorkspaceFixture,
     public readonly yamlFilePath: string,
-    existingEntities: TestEntities | undefined = undefined,
+    existingCache: EntitiesCache | undefined = undefined,
   ) {
-    const resolvedPath = path.isAbsolute(yamlFilePath)
-      ? yamlFilePath
-      : path.resolve(process.cwd(), yamlFilePath);
-
-    const fileContent = fs.readFileSync(resolvedPath, "utf8");
-    const template = compile(fileContent);
-    const prefix = faker.string.alphanumeric(6);
-    const fileTemplated = template({ prefix });
-    this.data = yaml.load(fileTemplated) as TestYamlFile;
-
-    if (!existingEntities) {
-      this.result = {
-        prefix,
+    if (!existingCache) {
+      this.cache = {
+        prefix: faker.string.alphanumeric(6),
         system: { id: "", name: "", slug: "" },
         environments: [],
         resources: [],
@@ -162,19 +85,21 @@ export class EntitiesBuilder {
         policies: [],
       };
     } else {
-      this.result = existingEntities;
+      this.cache = existingCache;
     }
+    console.log("Creating entities from YAML:", yamlFilePath);
+    this.fixtures = importEntityFixtures(yamlFilePath, this.cache.prefix);
   }
 
   async createSystem() {
-    console.log(`Creating system: ${this.data.system.name}`);
+    console.log(`Creating system: ${this.fixtures.system.name}`);
 
     const workspaceId = this.workspace.id;
 
     const systemResponse = await this.api.POST("/v1/systems", {
       body: {
         workspaceId,
-        ...this.data.system,
+        ...this.fixtures.system,
       },
     });
 
@@ -184,21 +109,21 @@ export class EntitiesBuilder {
       );
     }
 
-    this.result.system = {
+    this.cache.system = {
       id: systemResponse.data!.id,
       name: systemResponse.data!.name,
       slug: systemResponse.data!.slug,
-      originalName: this.data.system.name,
+      originalName: this.fixtures.system.name,
     };
   }
 
   async createResources() {
-    if (!this.data.resources || this.data.resources.length === 0) {
+    if (!this.fixtures.resources || this.fixtures.resources.length === 0) {
       throw new Error("No resources defined in YAML file");
     }
     const workspaceId = this.workspace.id;
 
-    for (const resource of this.data.resources) {
+    for (const resource of this.fixtures.resources) {
       console.log(`Creating resource: ${resource.name}`);
 
       const resourceResponse = await this.api.POST("/v1/resources", {
@@ -211,16 +136,18 @@ export class EntitiesBuilder {
 
       if (resourceResponse.response.status !== 200) {
         throw new Error(
-          `Failed to create resource: ${JSON.stringify(
-            resourceResponse.error,
-          )}`,
+          `Failed to create resource: ${
+            JSON.stringify(
+              resourceResponse.error,
+            )
+          }`,
         );
       }
     }
 
     // Store created resources in result
-    for (const r of this.data.resources) {
-      this.result.resources.push({
+    for (const r of this.fixtures.resources) {
+      this.cache.resources.push({
         ...r,
         originalIdentifier: r.identifier,
       });
@@ -228,17 +155,19 @@ export class EntitiesBuilder {
   }
 
   async createEnvironments() {
-    if (!this.data.environments || this.data.environments.length === 0) {
+    if (
+      !this.fixtures.environments || this.fixtures.environments.length === 0
+    ) {
       throw new Error("No environments defined in YAML file");
     }
 
-    if (!this.result.system.id || this.result.system.id.trim() === "") {
+    if (!this.cache.system.id || this.cache.system.id.trim() === "") {
       throw new Error(
         "System ID is blank. Please create the system before creating environments.",
       );
     }
 
-    for (const env of this.data.environments) {
+    for (const env of this.fixtures.environments) {
       console.log(`Creating environment: ${env.name}`);
 
       // TODO Update resource selector if needed
@@ -247,7 +176,7 @@ export class EntitiesBuilder {
       const envResponse = await this.api.POST("/v1/environments", {
         body: {
           ...env,
-          systemId: this.result.system.id,
+          systemId: this.cache.system.id,
         },
       });
 
@@ -257,7 +186,7 @@ export class EntitiesBuilder {
         );
       }
 
-      this.result.environments.push({
+      this.cache.environments.push({
         id: envResponse.data!.id,
         name: envResponse.data!.name,
         originalName: env.name,
@@ -266,27 +195,29 @@ export class EntitiesBuilder {
   }
 
   async createDeployments() {
-    if (!this.data.deployments || this.data.deployments.length === 0) {
+    if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
-    for (const deployment of this.data.deployments) {
+    for (const deployment of this.fixtures.deployments) {
       console.log(`Creating deployment: ${deployment.name}`);
 
       const deploymentResponse = await this.api.POST("/v1/deployments", {
         body: {
           ...deployment,
-          systemId: this.result.system.id,
+          systemId: this.cache.system.id,
         },
       });
 
       if (deploymentResponse.response.status !== 201) {
         throw new Error(
-          `Failed to create deployment: ${JSON.stringify(
-            deploymentResponse.error,
-          )}`,
+          `Failed to create deployment: ${
+            JSON.stringify(
+              deploymentResponse.error,
+            )
+          }`,
         );
       }
-      this.result.deployments.push({
+      this.cache.deployments.push({
         id: deploymentResponse.data!.id,
         name: deploymentResponse.data!.name,
         slug: deploymentResponse.data!.slug,
@@ -298,18 +229,20 @@ export class EntitiesBuilder {
   }
 
   async createDeploymentVersions() {
-    if (!this.data.deployments || this.data.deployments.length === 0) {
+    if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
-    for (const deployment of this.data.deployments) {
+    for (const deployment of this.fixtures.deployments) {
       if (deployment.versions && deployment.versions.length > 0) {
         console.log(
-          `Adding deployment versions: ${deployment.name} -> ${deployment.versions
-            .map((v) => v.tag)
-            .join(", ")}`,
+          `Adding deployment versions: ${deployment.name} -> ${
+            deployment.versions
+              .map((v) => v.tag)
+              .join(", ")
+          }`,
         );
 
-        const deploymentResult = this.result.deployments.find(
+        const deploymentResult = this.cache.deployments.find(
           (d) => d.name === deployment.name,
         );
         if (!deploymentResult) {
@@ -329,9 +262,11 @@ export class EntitiesBuilder {
 
           if (versionResponse.response.status !== 201) {
             throw new Error(
-              `Failed to create deployment version: ${JSON.stringify(
-                versionResponse.error,
-              )}`,
+              `Failed to create deployment version: ${
+                JSON.stringify(
+                  versionResponse.error,
+                )
+              }`,
             );
           }
 
@@ -348,18 +283,20 @@ export class EntitiesBuilder {
   }
 
   async createDeploymentVariables() {
-    if (!this.data.deployments || this.data.deployments.length === 0) {
+    if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
-    for (const deployment of this.data.deployments) {
+    for (const deployment of this.fixtures.deployments) {
       if (deployment.variables && deployment.variables.length > 0) {
         console.log(
-          `Adding deployment variables: ${deployment.name} -> ${deployment.variables
-            .map((v) => v.key)
-            .join(", ")}`,
+          `Adding deployment variables: ${deployment.name} -> ${
+            deployment.variables
+              .map((v) => v.key)
+              .join(", ")
+          }`,
         );
 
-        const deploymentResult = this.result.deployments.find(
+        const deploymentResult = this.cache.deployments.find(
           (d) => d.name === deployment.name,
         );
         if (!deploymentResult) {
@@ -379,9 +316,11 @@ export class EntitiesBuilder {
 
           if (variableResponse.response.status !== 201) {
             throw new Error(
-              `Failed to create deployment variable: ${JSON.stringify(
-                variableResponse.error,
-              )}`,
+              `Failed to create deployment variable: ${
+                JSON.stringify(
+                  variableResponse.error,
+                )
+              }`,
             );
           }
 
@@ -399,13 +338,13 @@ export class EntitiesBuilder {
   }
 
   async createPolicies() {
-    if (!this.data.policies || this.data.policies.length === 0) {
+    if (!this.fixtures.policies || this.fixtures.policies.length === 0) {
       throw new Error("No policies defined in YAML file");
     }
 
     const workspaceId = this.workspace.id;
 
-    for (const policy of this.data.policies) {
+    for (const policy of this.fixtures.policies) {
       console.log(`Creating policy: ${policy.name}`);
 
       const policyResponse = await this.api.POST("/v1/policies", {
@@ -421,7 +360,7 @@ export class EntitiesBuilder {
         );
       }
 
-      this.result.policies.push({
+      this.cache.policies.push({
         id: policyResponse.data!.id,
         name: policyResponse.data!.name,
         originalName: policy.name,
@@ -437,24 +376,24 @@ export class EntitiesBuilder {
  */
 export async function cleanupImportedEntities(
   api: ApiClient,
-  entities: TestEntities,
+  entities: EntitiesCache,
   workspaceId: string,
 ): Promise<void> {
-  for (const policy of entities.policies) {
+  for (const policy of entities.policies ?? []) {
     console.log(`Deleting policy: ${policy.name}`);
     await api.DELETE(`/v1/policies/{policyId}`, {
       params: { path: { policyId: policy.id } },
     });
   }
 
-  for (const deployment of entities.deployments) {
+  for (const deployment of entities.deployments ?? []) {
     console.log(`Deleting deployment: ${deployment.name}`);
     await api.DELETE(`/v1/deployments/{deploymentId}`, {
       params: { path: { deploymentId: deployment.id } },
     });
   }
 
-  for (const environment of entities.environments) {
+  for (const environment of entities.environments ?? []) {
     console.log(`Deleting environment: ${environment.name}`);
     await api.DELETE(`/v1/environments/{environmentId}`, {
       params: { path: { environmentId: environment.id } },
@@ -466,7 +405,7 @@ export async function cleanupImportedEntities(
     params: { path: { systemId: entities.system.id } },
   });
 
-  for (const resource of entities.resources) {
+  for (const resource of entities.resources ?? []) {
     console.log(`Deleting resource: ${resource.identifier}`);
     const response = await api.DELETE(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
