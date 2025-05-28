@@ -26,13 +26,14 @@ const upsertHook = (db: Tx, hookName: string, deploymentId: string) =>
     .returning()
     .then(takeFirst);
 
-const upsertRunbook = (db: Tx, runbookName: string, deploymentId: string) =>
+const upsertRunbook = (
+  db: Tx,
+  exitHook: ExitHookInsert,
+  deploymentId: string,
+) =>
   db
     .insert(schema.runbook)
-    .values({
-      name: runbookName,
-      systemId: deploymentId,
-    })
+    .values({ ...exitHook, systemId: deploymentId })
     .onConflictDoUpdate({
       target: [schema.runbook.name, schema.runbook.systemId],
       set: buildConflictUpdateColumns(schema.runbook, [
@@ -78,13 +79,12 @@ const upsertRunhook = (db: Tx, hookId: string, runbookId: string) =>
   db.insert(schema.runhook).values({ hookId, runbookId }).onConflictDoNothing();
 
 export const upsertExitHook = async (
-  db: Tx,
+  tx: Tx,
   deployment: schema.Deployment,
   exitHook: ExitHookInsert,
-) =>
-  db.transaction(async (tx) => {
-    const hook = await upsertHook(tx, exitHook.name, deployment.id);
-    const runbook = await upsertRunbook(tx, exitHook.name, deployment.systemId);
-    await upsertRunbookVariables(tx, runbook.id);
-    await upsertRunhook(tx, hook.id, runbook.id);
-  });
+) => {
+  const hook = await upsertHook(tx, exitHook.name, deployment.id);
+  const runbook = await upsertRunbook(tx, exitHook, deployment.systemId);
+  await upsertRunbookVariables(tx, runbook.id);
+  await upsertRunhook(tx, hook.id, runbook.id);
+};

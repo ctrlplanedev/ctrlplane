@@ -120,9 +120,8 @@ export const PATCH = request()
 
       const { exitHooks } = body;
       if (exitHooks != null)
-        await Promise.all(
-          exitHooks.map((eh) => upsertExitHook(db, updatedDeployment, eh)),
-        );
+        for (const eh of exitHooks)
+          await upsertExitHook(db, updatedDeployment, eh);
 
       await getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
         new: updatedDeployment,

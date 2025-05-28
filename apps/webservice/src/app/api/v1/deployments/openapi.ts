@@ -96,6 +96,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   },
                   exitHooks: {
                     type: "array",
+                    items: { $ref: "#/components/schemas/ExitHook" },
                   },
                 },
                 required: ["systemId", "slug", "name"],

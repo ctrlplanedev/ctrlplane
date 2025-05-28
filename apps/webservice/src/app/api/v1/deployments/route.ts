@@ -53,11 +53,8 @@ export const POST = request()
         });
 
         if (exitHooks != null)
-          await Promise.all(
-            exitHooks.map((eh) =>
-              upsertExitHook(ctx.db, updatedDeployment, eh),
-            ),
-          );
+          for (const eh of exitHooks)
+            await upsertExitHook(ctx.db, updatedDeployment, eh);
 
         return NextResponse.json(updatedDeployment, { status: httpStatus.OK });
       }
@@ -70,9 +67,8 @@ export const POST = request()
         .then(takeFirst);
 
       if (exitHooks != null)
-        await Promise.all(
-          exitHooks.map((eh) => upsertExitHook(ctx.db, newDeployment, eh)),
-        );
+        for (const eh of exitHooks)
+          await upsertExitHook(ctx.db, newDeployment, eh);
 
       await getQueue(Channel.NewDeployment).add(
         newDeployment.id,
