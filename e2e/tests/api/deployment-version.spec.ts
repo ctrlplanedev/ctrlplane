@@ -50,7 +50,9 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.status).toBe("ready");
   });
 
-  test("name should default to version tag if name not provided", async ({ api }) => {
+  test("name should default to version tag if name not provided", async ({
+    api,
+  }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -71,7 +73,9 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.name).toBe(versionTag);
   });
 
-  test("should create a deployment version in building status", async ({ api }) => {
+  test("should create a deployment version in building status", async ({
+    api,
+  }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(

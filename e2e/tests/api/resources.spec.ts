@@ -230,7 +230,10 @@ test.describe("Resource API", () => {
     expect(releaseTarget).toBeDefined();
   });
 
-  test("updating non metadata fields should not change resource's current metadata", async ({ api, workspace }) => {
+  test("updating non metadata fields should not change resource's current metadata", async ({
+    api,
+    workspace,
+  }) => {
     // First create a resource
     const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
@@ -281,9 +284,9 @@ test.describe("Resource API", () => {
     // First create a resource
     const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    const resourceIdentifer = `${resourceName}/${
-      faker.string.alphanumeric(10)
-    }`;
+    const resourceIdentifer = `${resourceName}/${faker.string.alphanumeric(
+      10,
+    )}`;
     const resourceResponse = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,

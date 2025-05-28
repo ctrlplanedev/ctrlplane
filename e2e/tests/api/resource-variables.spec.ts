@@ -134,7 +134,10 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("use resource variables in deployments and environments", async ({ api, workspace }) => {
+  test("use resource variables in deployments and environments", async ({
+    api,
+    workspace,
+  }) => {
     const systemPrefix = builder.result.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
 
@@ -164,7 +167,10 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("reference variables from related resources", async ({ api, workspace }) => {
+  test("reference variables from related resources", async ({
+    api,
+    workspace,
+  }) => {
     const systemPrefix = builder.result.system.slug
       .split("-")[0]!
       .toLowerCase();
@@ -257,7 +263,11 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("reference variables from related resources when the deployment variable value is reference type", async ({ api, workspace, page }) => {
+  test("reference variables from related resources when the deployment variable value is reference type", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const systemPrefix = builder.result.system.slug
       .split("-")[0]!
       .toLowerCase();
@@ -408,7 +418,11 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("should trigger a release target evaluation if a referenced resource is updated", async ({ api, workspace, page }) => {
+  test("should trigger a release target evaluation if a referenced resource is updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const systemPrefix = builder.result.system.slug
       .split("-")[0]!
       .toLowerCase();
@@ -582,7 +596,11 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("should trigger a release target evaluation if a related resource is deleted and its variables are referenced", async ({ api, workspace, page }) => {
+  test("should trigger a release target evaluation if a related resource is deleted and its variables are referenced", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const systemPrefix = builder.result.system.slug
       .split("-")[0]!
       .toLowerCase();

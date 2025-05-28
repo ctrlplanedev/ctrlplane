@@ -21,7 +21,11 @@ test.describe("Release Targets API", () => {
     await cleanupImportedEntities(api, builder.result, workspace.id);
   });
 
-  test("should fetch release targets for a resource", async ({ api, page, workspace }) => {
+  test("should fetch release targets for a resource", async ({
+    api,
+    page,
+    workspace,
+  }) => {
     await page.waitForTimeout(5_000);
     const importedResource = builder.result.resources.at(0);
     expect(importedResource).toBeDefined();
