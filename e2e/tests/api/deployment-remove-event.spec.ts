@@ -2,28 +2,21 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployment-remove-event.spec.yaml");
 
 test.describe("Deployment remove event", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
   test("deleting a resource should trigger a deployment remove event", async ({
@@ -31,7 +24,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = importedEntities.system!;
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -117,7 +110,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = importedEntities.system!;
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -205,7 +198,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = importedEntities.system!;
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -294,7 +287,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = importedEntities.system!;
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -380,7 +373,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = importedEntities.system!;
+    const system = builder.cache.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {

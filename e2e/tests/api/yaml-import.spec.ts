@@ -3,23 +3,23 @@ import { expect } from "@playwright/test";
 
 import {
   cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api/yaml-loader";
+  EntitiesBuilder,
+} from "../../api/entities-builder";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "yaml-import.spec.yaml");
 
 test.describe("YAML Entity Import", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    // Import entities from YAML file
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createResources();
+    await builder.createEnvironments();
+    await builder.createDeployments();
+    await builder.createDeploymentVariables();
+    await builder.createPolicies();
 
     // Allow time for resources to be processed
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -27,15 +27,15 @@ test.describe("YAML Entity Import", () => {
 
   test.afterAll(async ({ api, workspace }) => {
     // Clean up all imported entities
-    if (importedEntities) {
-      await cleanupImportedEntities(api, importedEntities, workspace.id);
+    if (builder.cache) {
+      await cleanupImportedEntities(api, builder.cache, workspace.id);
     }
   });
 
   test("should have created a system from YAML", async ({ api }) => {
     // Get the system by ID
     const response = await api.GET("/v1/systems/{systemId}", {
-      params: { path: { systemId: importedEntities.system.id } },
+      params: { path: { systemId: builder.cache.system.id } },
     });
 
     // Verify system data
@@ -71,10 +71,10 @@ test.describe("YAML Entity Import", () => {
 
   test("should have created environments from YAML", async ({ api }) => {
     // Check that we have correct number of environments
-    expect(importedEntities.environments.length).toBe(2);
+    expect(builder.cache.environments.length).toBe(2);
 
     // Get environment details for first environment
-    const prodEnvId = importedEntities.environments.find(
+    const prodEnvId = builder.cache.environments.find(
       (e) => e.name === "Production",
     )?.id;
     expect(prodEnvId).toBeDefined();
@@ -90,9 +90,9 @@ test.describe("YAML Entity Import", () => {
   });
 
   test("should have created deployments from YAML", async ({ api }) => {
-    expect(importedEntities.deployments.length).toBe(2);
+    expect(builder.cache.deployments.length).toBe(2);
 
-    const apiDeploymentId = importedEntities.deployments.find(
+    const apiDeploymentId = builder.cache.deployments.find(
       (d) => d.name === "API Deployment",
     )?.id;
     expect(apiDeploymentId).toBeDefined();

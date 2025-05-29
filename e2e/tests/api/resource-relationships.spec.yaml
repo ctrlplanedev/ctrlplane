@@ -9,6 +9,8 @@ resources:
     identifier: "{{ prefix }}-source-resource"
     name: "{{ prefix }}-source-resource"
     slug: "{{ prefix }}-source-resource"
+    config:
+      enabled: true
     metadata:
       "{{ prefix }}": "true"
       e2e/test: "true"
@@ -17,6 +19,8 @@ resources:
     identifier: "{{ prefix }}-secondary-source-resource"
     name: "{{ prefix }}-secondary-source-resource"
     slug: "{{ prefix }}-secondary-source-resource"
+    config:
+      enabled: true
     metadata:
       "{{ prefix }}": "true"
       e2e/test: "true"
@@ -25,6 +29,8 @@ resources:
     identifier: "{{ prefix }}-target-resource"
     name: "{{ prefix }}-target-resource"
     slug: "{{ prefix }}-target-resource"
+    config:
+      enabled: true
     metadata:
       "{{ prefix }}": "true"
       e2e/test: "true"

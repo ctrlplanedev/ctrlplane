@@ -1304,7 +1304,7 @@ export interface components {
       targets: components["schemas"]["PolicyTarget"][];
       denyWindows: components["schemas"]["DenyWindow"][];
       deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-      versionAnyApprovals?: components["schemas"]["VersionAnyApproval"][];
+      versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
     };
@@ -1993,11 +1993,7 @@ export interface operations {
           config: {
             [key: string]: unknown;
           };
-          values?: (components["schemas"]["VariableValue"] & {
-            resourceSelector?: {
-              [key: string]: unknown;
-            } | null;
-          })[];
+          values?: components["schemas"]["VariableValue"][];
         };
       };
     };
@@ -2725,14 +2721,9 @@ export interface operations {
             dtend?: string;
           }[];
           deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-          versionAnyApprovals?: {
-            requiredApprovalsCount?: number;
-          }[];
+          versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
-          versionRoleApprovals?: {
-            roleId: string;
-            requiredApprovalsCount?: number;
-          }[];
+          versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
         };
       };
     };
