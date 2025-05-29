@@ -5467,6 +5467,11 @@
             "type": "string",
             "format": "date-time"
           },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "workspaceId": {
             "type": "string",
             "format": "uuid"
@@ -5486,6 +5491,7 @@
           "workspaceId",
           "createdAt",
           "updatedAt",
+          "deletedAt",
           "metadata"
         ]
       },

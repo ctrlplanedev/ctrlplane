@@ -331,7 +331,8 @@ test.describe("Resource API", () => {
         },
       },
     );
-    expect(getResponse.response.status).toBe(404);
+    expect(getResponse.response.status).toBe(200);
+    expect(getResponse.data?.deletedAt).toBeDefined();
 
     await new Promise((resolve) => setTimeout(resolve, 5_000));
 

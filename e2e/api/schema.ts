@@ -952,6 +952,28 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    ExitHook: {
+      /**
+       * @description The name of the exit hook
+       * @example my-exit-hook
+       */
+      name: string;
+      /**
+       * Format: uuid
+       * @description The ID of the job agent to use for the exit hook
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      jobAgentId: string;
+      /**
+       * @description The configuration for the job agent
+       * @example {
+       *       "key": "value"
+       *     }
+       */
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+    };
     JobWithTrigger: components["schemas"]["Job"] & {
       release?: components["schemas"]["Release"];
       version?: components["schemas"]["DeploymentVersion"];
@@ -1166,6 +1188,8 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+      /** Format: date-time */
+      deletedAt: string | null;
       /** Format: uuid */
       workspaceId: string;
       /** Format: uuid */
@@ -1800,6 +1824,7 @@ export interface operations {
           resourceSelector?: {
             [key: string]: unknown;
           } | null;
+          exitHooks?: components["schemas"]["ExitHook"][];
         };
       };
     };
@@ -2105,6 +2130,7 @@ export interface operations {
           resourceSelector?: {
             [key: string]: unknown;
           };
+          exitHooks?: components["schemas"]["ExitHook"][];
         };
       };
     };
