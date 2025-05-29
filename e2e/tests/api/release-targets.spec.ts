@@ -11,21 +11,17 @@ test.describe("Release Targets API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createResources();
-    await builder.createEnvironments();
-    await builder.createDeployments();
+    await builder.upsertSystem();
+    await builder.upsertResources();
+    await builder.upsertEnvironments();
+    await builder.upsertDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
     await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
-  test("should fetch release targets for a resource", async ({
-    api,
-    page,
-    workspace,
-  }) => {
+  test("should fetch release targets for a resource", async ({ api, page, workspace }) => {
     await page.waitForTimeout(5_000);
     const importedResource = builder.cache.resources.at(0);
     expect(importedResource).toBeDefined();

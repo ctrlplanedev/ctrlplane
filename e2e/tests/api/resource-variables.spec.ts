@@ -12,9 +12,9 @@ test.describe("Resource Variables API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createEnvironments();
-    await builder.createDeployments();
+    await builder.upsertSystem();
+    await builder.upsertEnvironments();
+    await builder.upsertDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
@@ -134,10 +134,7 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("use resource variables in deployments and environments", async ({
-    api,
-    workspace,
-  }) => {
+  test("use resource variables in deployments and environments", async ({ api, workspace }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
 
@@ -167,10 +164,7 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("reference variables from related resources", async ({
-    api,
-    workspace,
-  }) => {
+  test("reference variables from related resources", async ({ api, workspace }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
@@ -261,11 +255,7 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("reference variables from related resources when the deployment variable value is reference type", async ({
-    api,
-    workspace,
-    page,
-  }) => {
+  test("reference variables from related resources when the deployment variable value is reference type", async ({ api, workspace, page }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
     // Create target resource
@@ -414,11 +404,7 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("should trigger a release target evaluation if a referenced resource is updated", async ({
-    api,
-    workspace,
-    page,
-  }) => {
+  test("should trigger a release target evaluation if a referenced resource is updated", async ({ api, workspace, page }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
@@ -590,11 +576,7 @@ test.describe("Resource Variables API", () => {
     });
   });
 
-  test("should trigger a release target evaluation if a related resource is deleted and its variables are referenced", async ({
-    api,
-    workspace,
-    page,
-  }) => {
+  test("should trigger a release target evaluation if a related resource is deleted and its variables are referenced", async ({ api, workspace, page }) => {
     const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
 

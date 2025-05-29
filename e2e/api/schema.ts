@@ -676,7 +676,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create a system */
-    post: operations["createSystem"];
+    post: operations["upsertSystem()"];
     delete?: never;
     options?: never;
     head?: never;
@@ -916,24 +916,28 @@ export interface components {
       } | null;
       default?: boolean;
     };
-    DeploymentVariableDirectValue: components["schemas"]["BaseVariableValue"] & {
-      /** @enum {string} */
-      valueType: "direct";
-      value: string | number | boolean | Record<string, never> | unknown[];
-      sensitive?: boolean;
-    };
-    DeploymentVariableReferenceValue: components["schemas"]["BaseVariableValue"] & {
-      /** @enum {string} */
-      valueType: "reference";
-      reference: string;
-      path: string[];
-      defaultValue?:
-        | string
-        | number
-        | boolean
-        | Record<string, never>
-        | unknown[];
-    };
+    DeploymentVariableDirectValue:
+      & components["schemas"]["BaseVariableValue"]
+      & {
+        /** @enum {string} */
+        valueType: "direct";
+        value: string | number | boolean | Record<string, never> | unknown[];
+        sensitive?: boolean;
+      };
+    DeploymentVariableReferenceValue:
+      & components["schemas"]["BaseVariableValue"]
+      & {
+        /** @enum {string} */
+        valueType: "reference";
+        reference: string;
+        path: string[];
+        defaultValue?:
+          | string
+          | number
+          | boolean
+          | Record<string, never>
+          | unknown[];
+      };
     VariableValue:
       | components["schemas"]["DeploymentVariableDirectValue"]
       | components["schemas"]["DeploymentVariableReferenceValue"];
@@ -1031,11 +1035,13 @@ export interface components {
       timeout?: number | null;
     };
     /** @description Schema for updating a deployment (all fields optional) */
-    UpdateDeployment: {
-      [key: string]: unknown;
-    } & (WithRequired<components["schemas"]["Deployment"], "id"> & {
-      [key: string]: unknown;
-    });
+    UpdateDeployment:
+      & {
+        [key: string]: unknown;
+      }
+      & (WithRequired<components["schemas"]["Deployment"], "id"> & {
+        [key: string]: unknown;
+      });
     Release: {
       /** Format: uuid */
       id: string;
@@ -1177,8 +1183,9 @@ export interface components {
     ResourceWithMetadata: components["schemas"]["Resource"] & {
       metadata?: components["schemas"]["MetadataMap"];
     };
-    ResourceWithVariablesAndMetadata: components["schemas"]["ResourceWithVariables"] &
-      components["schemas"]["ResourceWithMetadata"];
+    ResourceWithVariablesAndMetadata:
+      & components["schemas"]["ResourceWithVariables"]
+      & components["schemas"]["ResourceWithMetadata"];
     CreateResource: {
       identifier: string;
       name: string;
@@ -1303,7 +1310,8 @@ export interface components {
       workspaceId: string;
       targets: components["schemas"]["PolicyTarget"][];
       denyWindows: components["schemas"]["DenyWindow"][];
-      deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
+      deploymentVersionSelector?:
+        components["schemas"]["DeploymentVersionSelector"];
       versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
@@ -1311,7 +1319,8 @@ export interface components {
     UpdateResourceRelationshipRule: {
       name?: string;
       reference?: string;
-      dependencyType?: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyType?:
+        components["schemas"]["ResourceRelationshipRuleDependencyType"];
       dependencyDescription?: string;
       description?: string;
       sourceKind?: string;
@@ -1339,7 +1348,8 @@ export interface components {
       workspaceId: string;
       name: string;
       reference: string;
-      dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyType:
+        components["schemas"]["ResourceRelationshipRuleDependencyType"];
       dependencyDescription?: string;
       description?: string;
       sourceKind: string;
@@ -1356,7 +1366,8 @@ export interface components {
       workspaceId: string;
       name: string;
       reference: string;
-      dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyType:
+        components["schemas"]["ResourceRelationshipRuleDependencyType"];
       dependencyDescription?: string;
       description?: string;
       sourceKind: string;
@@ -2613,7 +2624,8 @@ export interface operations {
             /** Format: date-time */
             dtend?: string;
           }[];
-          deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
+          deploymentVersionSelector?:
+            components["schemas"]["DeploymentVersionSelector"];
           versionAnyApprovals?: {
             requiredApprovalsCount?: number;
           }[];
@@ -2720,7 +2732,8 @@ export interface operations {
             /** Format: date-time */
             dtend?: string;
           }[];
-          deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
+          deploymentVersionSelector?:
+            components["schemas"]["DeploymentVersionSelector"];
           versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
           versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
@@ -3268,7 +3281,8 @@ export interface operations {
     };
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["UpdateResourceRelationshipRule"];
+        "application/json":
+          components["schemas"]["UpdateResourceRelationshipRule"];
       };
     };
     responses: {
@@ -3314,7 +3328,8 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["CreateResourceRelationshipRule"];
+        "application/json":
+          components["schemas"]["CreateResourceRelationshipRule"];
       };
     };
     responses: {
@@ -3475,7 +3490,8 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
+          "application/json":
+            components["schemas"]["ResourceWithVariablesAndMetadata"];
         };
       };
       /** @description Unauthorized */
@@ -3585,7 +3601,8 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
+          "application/json":
+            components["schemas"]["ResourceWithVariablesAndMetadata"];
         };
       };
       /** @description Unauthorized */
@@ -3835,7 +3852,7 @@ export interface operations {
       };
     };
   };
-  createSystem: {
+  upsertSystem(): {
     parameters: {
       query?: never;
       header?: never;
@@ -4186,16 +4203,18 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"] & {
-            relationships?: {
-              [key: string]: {
-                ruleId: string;
-                type: string;
-                reference: string;
-                target: components["schemas"]["Resource"];
+          "application/json":
+            & components["schemas"]["ResourceWithVariablesAndMetadata"]
+            & {
+              relationships?: {
+                [key: string]: {
+                  ruleId: string;
+                  type: string;
+                  reference: string;
+                  target: components["schemas"]["Resource"];
+                };
               };
             };
-          };
         };
       };
       /** @description Unauthorized */
@@ -4427,6 +4446,8 @@ export interface operations {
     };
   };
 }
-type WithRequired<T, K extends keyof T> = T & {
-  [P in K]-?: T[P];
-};
+type WithRequired<T, K extends keyof T> =
+  & T
+  & {
+    [P in K]-?: T[P];
+  };

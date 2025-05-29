@@ -96,7 +96,7 @@ export class EntitiesBuilder {
     this.fixtures = importEntityFixtures(yamlFilePath, this.cache.prefix);
   }
 
-  async createSystem() {
+  async upsertSystem() {
     console.log(`Creating system: ${this.fixtures.system.name}`);
 
     const workspaceId = this.workspace.id;
@@ -122,7 +122,7 @@ export class EntitiesBuilder {
     };
   }
 
-  async createResources() {
+  async upsertResources() {
     if (!this.fixtures.resources || this.fixtures.resources.length === 0) {
       throw new Error("No resources defined in YAML file");
     }
@@ -141,9 +141,11 @@ export class EntitiesBuilder {
 
       if (resourceResponse.response.status !== 200) {
         throw new Error(
-          `Failed to create resource: ${JSON.stringify(
-            resourceResponse.error,
-          )}`,
+          `Failed to create resource: ${
+            JSON.stringify(
+              resourceResponse.error,
+            )
+          }`,
         );
       }
     }
@@ -157,7 +159,7 @@ export class EntitiesBuilder {
     }
   }
 
-  async createEnvironments() {
+  async upsertEnvironments() {
     if (
       !this.fixtures.environments ||
       this.fixtures.environments.length === 0
@@ -198,7 +200,7 @@ export class EntitiesBuilder {
     }
   }
 
-  async createDeployments() {
+  async upsertDeployments(agentId?: string) {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
@@ -209,14 +211,17 @@ export class EntitiesBuilder {
         body: {
           ...deployment,
           systemId: this.cache.system.id,
+          jobAgentId: agentId,
         },
       });
 
-      if (deploymentResponse.response.status !== 201) {
+      if (![200, 201].includes(deploymentResponse.response.status)) {
         throw new Error(
-          `Failed to create deployment: ${JSON.stringify(
-            deploymentResponse.error,
-          )}`,
+          `Failed to upsert deployment: ${
+            JSON.stringify(
+              deploymentResponse.error,
+            )
+          }`,
         );
       }
       this.cache.deployments.push({
@@ -237,9 +242,11 @@ export class EntitiesBuilder {
     for (const deployment of this.fixtures.deployments) {
       if (deployment.versions && deployment.versions.length > 0) {
         console.log(
-          `Adding deployment versions: ${deployment.name} -> ${deployment.versions
-            .map((v) => v.tag)
-            .join(", ")}`,
+          `Adding deployment versions: ${deployment.name} -> ${
+            deployment.versions
+              .map((v) => v.tag)
+              .join(", ")
+          }`,
         );
 
         const deploymentResult = this.cache.deployments.find(
@@ -262,9 +269,11 @@ export class EntitiesBuilder {
 
           if (versionResponse.response.status !== 201) {
             throw new Error(
-              `Failed to create deployment version: ${JSON.stringify(
-                versionResponse.error,
-              )}`,
+              `Failed to create deployment version: ${
+                JSON.stringify(
+                  versionResponse.error,
+                )
+              }`,
             );
           }
 
@@ -287,9 +296,11 @@ export class EntitiesBuilder {
     for (const deployment of this.fixtures.deployments) {
       if (deployment.variables && deployment.variables.length > 0) {
         console.log(
-          `Adding deployment variables: ${deployment.name} -> ${deployment.variables
-            .map((v) => v.key)
-            .join(", ")}`,
+          `Adding deployment variables: ${deployment.name} -> ${
+            deployment.variables
+              .map((v) => v.key)
+              .join(", ")
+          }`,
         );
 
         const deploymentResult = this.cache.deployments.find(
@@ -312,9 +323,11 @@ export class EntitiesBuilder {
 
           if (variableResponse.response.status !== 201) {
             throw new Error(
-              `Failed to create deployment variable: ${JSON.stringify(
-                variableResponse.error,
-              )}`,
+              `Failed to create deployment variable: ${
+                JSON.stringify(
+                  variableResponse.error,
+                )
+              }`,
             );
           }
 
@@ -331,7 +344,7 @@ export class EntitiesBuilder {
     }
   }
 
-  async createPolicies() {
+  async upsertPolicies() {
     if (!this.fixtures.policies || this.fixtures.policies.length === 0) {
       throw new Error("No policies defined in YAML file");
     }
@@ -362,7 +375,7 @@ export class EntitiesBuilder {
     }
   }
 
-  async createAgents() {
+  async upsertAgents() {
     if (!this.fixtures.agents || this.fixtures.agents.length === 0) {
       throw new Error("No agents defined in YAML file");
     }

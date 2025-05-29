@@ -14,12 +14,12 @@ test.describe("YAML Entity Import", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createResources();
-    await builder.createEnvironments();
-    await builder.createDeployments();
+    await builder.upsertSystem();
+    await builder.upsertResources();
+    await builder.upsertEnvironments();
+    await builder.upsertDeployments();
     await builder.createDeploymentVariables();
-    await builder.createPolicies();
+    await builder.upsertPolicies();
 
     // Allow time for resources to be processed
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -43,10 +43,7 @@ test.describe("YAML Entity Import", () => {
     expect(response.data?.description).toBe("System created from YAML fixture");
   });
 
-  test("should have created resources from YAML", async ({
-    api,
-    workspace,
-  }) => {
+  test("should have created resources from YAML", async ({ api, workspace }) => {
     // List resources in workspace
     const response = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: { path: { workspaceId: workspace.id } },

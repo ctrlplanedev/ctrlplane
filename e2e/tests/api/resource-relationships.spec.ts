@@ -15,21 +15,20 @@ test.describe("Resource Relationships API", () => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
     prefix = builder.cache.prefix;
 
-    await builder.createSystem();
-    await builder.createResources();
+    await builder.upsertSystem();
+    await builder.upsertResources();
   });
 
   test.afterAll(async ({ api, workspace }) => {
     await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
-  test("create a relationship with metadata match", async ({
-    api,
-    workspace,
-  }) => {
-    const reference = `${prefix}-${faker.string.alphanumeric(
-      10,
-    )}`.toLocaleLowerCase();
+  test("create a relationship with metadata match", async ({ api, workspace }) => {
+    const reference = `${prefix}-${
+      faker.string.alphanumeric(
+        10,
+      )
+    }`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -95,13 +94,12 @@ test.describe("Resource Relationships API", () => {
     expect(target?.target?.config).toBeDefined();
   });
 
-  test("create a relationship with metadata equals", async ({
-    api,
-    workspace,
-  }) => {
-    const reference = `${prefix}-${faker.string.alphanumeric(
-      10,
-    )}`.toLocaleLowerCase();
+  test("create a relationship with metadata equals", async ({ api, workspace }) => {
+    const reference = `${prefix}-${
+      faker.string.alphanumeric(
+        10,
+      )
+    }`.toLocaleLowerCase();
     const resourceRelationship = await api.POST(
       "/v1/resource-relationship-rules",
       {
@@ -148,9 +146,11 @@ test.describe("Resource Relationships API", () => {
   });
 
   test("upsert a relationship rule", async ({ api, workspace }) => {
-    const reference = `${prefix}-${faker.string.alphanumeric(
-      10,
-    )}`.toLocaleLowerCase();
+    const reference = `${prefix}-${
+      faker.string.alphanumeric(
+        10,
+      )
+    }`.toLocaleLowerCase();
     // First create a new relationship rule
     const initialRule = await api.POST("/v1/resource-relationship-rules", {
       body: {
@@ -204,13 +204,12 @@ test.describe("Resource Relationships API", () => {
     expect(updatedRule.data?.description).toBe("Updated description");
   });
 
-  test("should not match if some rules are not satisfied", async ({
-    api,
-    workspace,
-  }) => {
-    const reference = `${prefix}-${faker.string.alphanumeric(
-      10,
-    )}`.toLocaleLowerCase();
+  test("should not match if some rules are not satisfied", async ({ api, workspace }) => {
+    const reference = `${prefix}-${
+      faker.string.alphanumeric(
+        10,
+      )
+    }`.toLocaleLowerCase();
 
     const sourceResourceCreate = await api.POST("/v1/resources", {
       body: {

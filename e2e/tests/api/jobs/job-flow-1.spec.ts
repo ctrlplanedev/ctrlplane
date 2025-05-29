@@ -11,11 +11,13 @@ test.describe("Deployment Versions API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createResources();
-    await builder.createEnvironments();
-    await builder.createDeployments();
-    await builder.createAgents();
+    await builder.upsertSystem();
+    await builder.upsertResources();
+    await builder.upsertEnvironments();
+    await builder.upsertDeployments();
+    await builder.upsertAgents();
+    const agentId = builder.cache.agents[0].id;
+    await builder.upsertDeployments(agentId);
     await builder.createDeploymentVersions();
     await new Promise((resolve) => setTimeout(resolve, 5000));
   });
@@ -26,7 +28,7 @@ test.describe("Deployment Versions API", () => {
 
   test("should create a deployment version", async ({ api }) => {
     const agentId = builder.cache.agents[0].id;
-    const jobQueueResponse = await api.GET(
+    const nextJobsResponse = await api.GET(
       "/v1/job-agents/{agentId}/queue/next",
       {
         params: {
@@ -37,6 +39,11 @@ test.describe("Deployment Versions API", () => {
       },
     );
 
-    expect(jobQueueResponse.response.status).toBe(200);
+    expect(nextJobsResponse.response.status).toBe(200);
+
+    const nextJobs = nextJobsResponse.data;
+
+    expect(nextJobs?.jobs).toBeDefined();
+    expect(nextJobs?.jobs?.length).toBe(4);
   });
 });
