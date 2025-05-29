@@ -228,7 +228,6 @@ test.describe("Resource Provider API", () => {
     expect(resource1GetResponse.response.status).toBe(200);
     expect(resource1GetResponse.data?.metadata?.["e2e-test"]).toBe("updated");
 
-    // Verify resourceName2 was deleted (should return 404)
     const resource2GetResponse = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
@@ -241,9 +240,9 @@ test.describe("Resource Provider API", () => {
       },
     );
 
-    expect(resource2GetResponse.response.status).toBe(404);
+    expect(resource2GetResponse.response.status).toBe(200);
+    expect(resource2GetResponse.data?.deletedAt).toBeDefined();
 
-    // Verify resourceName3 was deleted (should return 404)
     const resource3GetResponse = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
@@ -256,7 +255,8 @@ test.describe("Resource Provider API", () => {
       },
     );
 
-    expect(resource3GetResponse.response.status).toBe(404);
+    expect(resource3GetResponse.response.status).toBe(200);
+    expect(resource3GetResponse.data?.deletedAt).toBeDefined();
   });
 
   test("delete all resources for a provider", async ({ api, workspace }) => {
@@ -366,7 +366,8 @@ test.describe("Resource Provider API", () => {
         },
       },
     );
-    expect(resource1GetResponse.response.status).toBe(404);
+    expect(resource1GetResponse.response.status).toBe(200);
+    expect(resource1GetResponse.data?.deletedAt).toBeDefined();
 
     const resource2GetResponse = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
@@ -379,7 +380,8 @@ test.describe("Resource Provider API", () => {
         },
       },
     );
-    expect(resource2GetResponse.response.status).toBe(404);
+    expect(resource2GetResponse.response.status).toBe(200);
+    expect(resource2GetResponse.data?.deletedAt).toBeDefined();
   });
 
   test("ignore resources owned by other providers", async ({
@@ -740,7 +742,8 @@ test.describe("Resource Provider API", () => {
         },
       },
     );
-    expect(deletedResourceResponse.response.status).toBe(404);
+    expect(deletedResourceResponse.response.status).toBe(200);
+    expect(deletedResourceResponse.data?.deletedAt).toBeDefined();
 
     // Create the same resource with a different provider, kind, and version
     const newKind = "NewKind";
