@@ -116,6 +116,7 @@ export const jobRelations = relations(job, ({ many, one }) => ({
     fields: [job.id],
     references: [releaseJob.jobId],
   }),
+  variables: many(jobVariable),
 }));
 
 export const jobMetadata = pgTable(
@@ -166,6 +167,9 @@ export const createJobVariable = createInsertSchema(jobVariable).omit({
   id: true,
 });
 export const updateJobVariable = createJobVariable.partial();
+export const jobVariableRelations = relations(jobVariable, ({ one }) => ({
+  job: one(job, { fields: [jobVariable.jobId], references: [job.id] }),
+}));
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)

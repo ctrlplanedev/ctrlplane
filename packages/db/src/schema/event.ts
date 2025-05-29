@@ -27,13 +27,23 @@ export const event = pgTable("event", {
     .defaultNow(),
 });
 
-export const hook = pgTable("hook", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  action: text("action").notNull(),
-  name: text("name").notNull(),
-  scopeType: text("scope_type").notNull(),
-  scopeId: uuid("scope_id").notNull(),
-});
+export const hook = pgTable(
+  "hook",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    action: text("action").notNull(),
+    name: text("name").notNull(),
+    scopeType: text("scope_type").notNull(),
+    scopeId: uuid("scope_id").notNull(),
+  },
+  (t) => [
+    uniqueIndex("name_scope_type_scope_id_unique").on(
+      t.name,
+      t.scopeType,
+      t.scopeId,
+    ),
+  ],
+);
 
 export const createHook = createInsertSchema(hook)
   .omit({ id: true })

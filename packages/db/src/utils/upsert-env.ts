@@ -1,10 +1,10 @@
 import type { z } from "zod";
 import { eq } from "drizzle-orm";
 
-import type { Tx } from "./common.js";
-import { buildConflictUpdateColumns, takeFirst } from "./common.js";
-import * as SCHEMA from "./schema/index.js";
-import { environment, environmentPolicy } from "./schema/index.js";
+import type { Tx } from "../common.js";
+import { buildConflictUpdateColumns, takeFirst } from "../common.js";
+import * as SCHEMA from "../schema/index.js";
+import { environment, environmentPolicy } from "../schema/index.js";
 
 const upsertVersionChannels = (
   db: Tx,

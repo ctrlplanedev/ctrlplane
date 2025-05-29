@@ -750,6 +750,13 @@
       "when": 1747872966598,
       "tag": "0106_faithful_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1748473291557,
+      "tag": "0107_small_deathbird",
+      "breakpoints": true
     }
   ]
 }

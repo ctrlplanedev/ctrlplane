@@ -96,7 +96,19 @@ const deploymentInsert = createInsertSchema(deployment, {
   ...deploymentSchema.shape,
   jobAgentConfig: z.record(z.any()),
   description: z.string().optional(),
-}).omit({ id: true });
+})
+  .omit({ id: true })
+  .extend({
+    exitHooks: z
+      .array(
+        z.object({
+          name: z.string(),
+          jobAgentId: z.string().uuid(),
+          jobAgentConfig: z.record(z.any()),
+        }),
+      )
+      .optional(),
+  });
 
 export const createDeployment = deploymentInsert;
 export type CreateDeployment = z.infer<typeof createDeployment>;

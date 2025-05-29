@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "name_scope_type_scope_id_unique" ON "hook" USING btree ("name","scope_type","scope_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "name_system_id_unique" ON "runbook" USING btree ("name","system_id");
