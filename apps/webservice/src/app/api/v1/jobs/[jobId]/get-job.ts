@@ -18,6 +18,7 @@ export const getJob = async (db: Tx, jobId: string) => {
     const jobResult = await db.query.job.findFirst({
       where: eq(schema.job.id, jobId),
       with: {
+        variables: true,
         releaseJob: {
           with: {
             release: {
@@ -72,9 +73,10 @@ export const getJob = async (db: Tx, jobId: string) => {
 
     const { values } = variableSetRelease;
     const jobVariables = Object.fromEntries(
-      values.map(({ variableValueSnapshot }) => {
-        const { key, value, sensitive } = variableValueSnapshot;
-        const strval = String(value);
+      job.variables.map((variable) => {
+        const { key, value, sensitive } = variable;
+        const strval =
+          typeof value === "object" ? JSON.stringify(value) : String(value);
         const resolvedValue = sensitive
           ? variablesAES256().decrypt(strval)
           : value;
