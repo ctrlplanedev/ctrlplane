@@ -470,7 +470,12 @@ export const resourceProviderRouter = createTRPCRouter({
             repositoryId: z.number().optional(),
           }),
         )
-        .meta({})
+        .meta({
+          authorizationCheck: ({ canUser, input }) =>
+            canUser
+              .perform(Permission.ResourceProviderUpdate)
+              .on({ type: "resourceProvider", id: input.resourceProviderId }),
+        })
         .mutation(({ ctx, input }) =>
           ctx.db.transaction(async (tx) => {
             if (input.name != null)

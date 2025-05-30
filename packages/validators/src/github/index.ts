@@ -16,15 +16,11 @@ export enum GithubEvent {
 export enum PullRequestState {
   Open = "open",
   Closed = "closed",
-  Draft = "draft",
-  Merged = "merged",
 }
 
 export const getPullRequestState = (state: string): PullRequestState => {
   if (state === "open") return PullRequestState.Open;
   if (state === "closed") return PullRequestState.Closed;
-  if (state === "draft") return PullRequestState.Draft;
-  if (state === "merged") return PullRequestState.Merged;
   throw new Error(`Invalid pull request state: ${state}`);
 };
 
