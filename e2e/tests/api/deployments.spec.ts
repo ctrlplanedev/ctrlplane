@@ -18,7 +18,7 @@ test.describe("Deployments API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("should create a deployment", async ({ api }) => {
@@ -27,7 +27,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
 
@@ -43,7 +43,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
 
@@ -71,7 +71,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
 
@@ -105,14 +105,14 @@ test.describe("Deployments API", () => {
   });
 
   test("should delete a deployment", async ({ api, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
 
@@ -198,13 +198,13 @@ test.describe("Deployments API", () => {
   });
 
   test("should match resources to a deployment", async ({ api, page }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -248,7 +248,7 @@ test.describe("Deployments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("Resource is undefined");
     expect(receivedResource.identifier).toBe(
-      builder.cache.resources.find((r) => r.metadata?.env === "qa")?.identifier,
+      builder.refs.resources.find((r) => r.metadata?.env === "qa")?.identifier,
     );
 
     const releaseTargets = await api.GET(
@@ -262,20 +262,20 @@ test.describe("Deployments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("Release target is undefined");
     expect(releaseTarget.deployment.id).toBe(deploymentId);
-    const matchedEnvironment = builder.cache.environments.find(
+    const matchedEnvironment = builder.refs.environments.find(
       (e) => e.id === releaseTarget.environment.id,
     );
     expect(matchedEnvironment).toBeDefined();
   });
 
   test("should update a deployment's resource selector and update matched resources", async ({ api, page }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -348,7 +348,7 @@ test.describe("Deployments API", () => {
     expect(receivedResource).toBeDefined();
     if (!receivedResource) throw new Error("Resource is undefined");
     expect(receivedResource.identifier).toBe(
-      builder.cache.resources.find((r) => r.metadata?.env === "prod")
+      builder.refs.resources.find((r) => r.metadata?.env === "prod")
         ?.identifier,
     );
 
@@ -363,14 +363,14 @@ test.describe("Deployments API", () => {
     expect(releaseTarget).toBeDefined();
     if (!releaseTarget) throw new Error("Release target is undefined");
     expect(releaseTarget.deployment.id).toBe(deploymentId);
-    const matchedEnvironment = builder.cache.environments.find(
+    const matchedEnvironment = builder.refs.environments.find(
       (e) => e.id === releaseTarget.environment.id,
     );
     expect(matchedEnvironment).toBeDefined();
   });
 
   test("should not match deleted resources", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const newResourceIdentifier = `${systemPrefix}-${
       faker.string.alphanumeric(
         10,
@@ -401,7 +401,7 @@ test.describe("Deployments API", () => {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -444,13 +444,13 @@ test.describe("Deployments API", () => {
   });
 
   test("should unmatch resources if resource selector is set to null", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = faker.string.alphanumeric(10);
     const deployment = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
         resourceSelector: {
           type: "comparison",
           operator: "and",
@@ -496,7 +496,7 @@ test.describe("Deployments API", () => {
      * all resources should actually have release targets now
      * since the deployment no longer has a specific scope
      */
-    for (const resource of builder.cache.resources) {
+    for (const resource of builder.refs.resources) {
       console.log(resource);
       const fetchedResourceResponse = await api.GET(
         "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
@@ -524,7 +524,7 @@ test.describe("Deployments API", () => {
       expect(releaseTarget).toBeDefined();
       if (!releaseTarget) throw new Error("Release target is undefined");
       expect(releaseTarget.deployment.id).toBe(deploymentId);
-      const matchedEnvironment = builder.cache.environments.find(
+      const matchedEnvironment = builder.refs.environments.find(
         (e) => e.id === releaseTarget.environment.id,
       );
       expect(matchedEnvironment).toBeDefined();

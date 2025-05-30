@@ -13,14 +13,14 @@ test.describe("Resource Relationships API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    prefix = builder.cache.prefix;
+    prefix = builder.refs.prefix;
 
     await builder.upsertSystem();
     await builder.upsertResources();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("create a relationship with metadata match", async ({ api, workspace }) => {

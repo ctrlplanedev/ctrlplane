@@ -18,7 +18,7 @@ test.describe("Job Agent API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("create a job agent", async ({ api, workspace }) => {

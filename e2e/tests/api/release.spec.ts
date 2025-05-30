@@ -19,17 +19,17 @@ test.describe("Release Creation", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("should create a release when a new version is created", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);
@@ -45,7 +45,7 @@ test.describe("Release Creation", () => {
     });
     expect(versionResponse.response.status).toBe(201);
 
-    const importedResource = builder.cache.resources.at(0)!;
+    const importedResource = builder.refs.resources.at(0)!;
     const resourceResponse = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
@@ -101,13 +101,13 @@ test.describe("Release Creation", () => {
   });
 
   test("should create a release when a new deployment variable is added", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);
@@ -149,7 +149,7 @@ test.describe("Release Creation", () => {
     );
     expect(variableCreateResponse.response.status).toBe(201);
 
-    const importedResource = builder.cache.resources.at(0)!;
+    const importedResource = builder.refs.resources.at(0)!;
     const resourceResponse = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
@@ -209,13 +209,13 @@ test.describe("Release Creation", () => {
   });
 
   test("should create a release with a null variable value", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);
@@ -249,7 +249,7 @@ test.describe("Release Creation", () => {
     );
     expect(variableCreateResponse.response.status).toBe(201);
 
-    const importedResource = builder.cache.resources.at(0)!;
+    const importedResource = builder.refs.resources.at(0)!;
     const resourceResponse = await api.GET(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
       {
@@ -309,13 +309,13 @@ test.describe("Release Creation", () => {
   });
 
   test("should create a release when a new resource is created", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);
@@ -437,13 +437,13 @@ test.describe("Release Creation", () => {
     });
     expect(policyResponse.response.status).toBe(200);
 
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);
@@ -546,13 +546,13 @@ test.describe("Release Creation", () => {
   });
 
   test("should not create a release when an existing resource is updated", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);
@@ -666,13 +666,13 @@ test.describe("Release Creation", () => {
   });
 
   test("should create a release when a resource variable is added and matches a deployment variable", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);
@@ -786,13 +786,13 @@ test.describe("Release Creation", () => {
   });
 
   test("should not create a release when a resource variable is added and does not match a deployment variable", async ({ api, page, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const deploymentCreateResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: builder.cache.system.id,
+        systemId: builder.refs.system.id,
       },
     });
     expect(deploymentCreateResponse.response.status).toBe(201);

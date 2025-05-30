@@ -3,67 +3,10 @@ import { faker } from "@faker-js/faker";
 import { WorkspaceFixture } from "../tests/auth.setup";
 import { EntityFixtures, importEntityFixtures } from "./entity-fixtures";
 import { ApiClient } from "./index";
-
-// Entities info -- references to entities after built in API
-export interface EntitiesCache {
-  prefix: string;
-  system: {
-    id: string;
-    name: string;
-    slug: string;
-    originalName?: string; // Original name without prefix
-  };
-  environments: Array<{
-    id: string;
-    name: string;
-    originalName?: string;
-  }>;
-  resources: Array<{
-    identifier: string;
-    name: string;
-    kind: string;
-    originalIdentifier?: string;
-    metadata?: Record<string, string>;
-  }>;
-  deployments: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    originalName?: string;
-    versions?: Array<{
-      id: string;
-      name: string;
-      tag: string;
-      status: "building" | "ready" | "failed";
-    }>;
-    variables?: Array<{
-      id: string;
-      key: string;
-      description?: string;
-      config: Record<string, any>;
-      values?: Array<{
-        id: string;
-        value: any;
-        valueType?: "direct" | "reference";
-        sensitive?: boolean;
-        resourceSelector?: any;
-        default?: boolean;
-      }>;
-    }>;
-  }>;
-  policies: Array<{
-    id: string;
-    name: string;
-    originalName?: string;
-  }>;
-  agents: Array<{
-    id: string;
-    name: string;
-  }>;
-}
+import { EntityRefs } from "./entity-refs";
 
 export class EntitiesBuilder {
-  public readonly cache: EntitiesCache;
+  public readonly refs: EntityRefs;
   private readonly fixtures: EntityFixtures;
 
   /**
@@ -71,29 +14,30 @@ export class EntitiesBuilder {
    * @param api API client instance
    * @param workspace workspace fixture to import into
    * @param yamlFilePath Path to the YAML file (absolute or relative to the execution directory)
-   * @param existingCache If building from a previous EntitiesBuilder
+   * @param existingRefs If building from a previous EntitiesBuilder
    */
   constructor(
     public readonly api: ApiClient,
     public readonly workspace: WorkspaceFixture,
     public readonly yamlFilePath: string,
-    existingCache: EntitiesCache | undefined = undefined,
+    existingRefs: EntityRefs | undefined = undefined,
   ) {
-    if (!existingCache) {
-      this.cache = {
-        prefix: faker.string.alphanumeric(6),
-        system: { id: "", name: "", slug: "" },
-        environments: [],
-        resources: [],
-        deployments: [],
-        policies: [],
-        agents: [],
+    console.debug(`EntityBuilder workspaceId: ${workspace.id}`);
+    if (!existingRefs) {
+      const system = {
+        id: "",
+        name: "",
+        slug: "",
       };
+      this.refs = new EntityRefs(
+        faker.string.alphanumeric(6),
+        system,
+      );
     } else {
-      this.cache = existingCache;
+      this.refs = existingRefs;
     }
     console.log("Creating entities from YAML:", yamlFilePath);
-    this.fixtures = importEntityFixtures(yamlFilePath, this.cache.prefix);
+    this.fixtures = importEntityFixtures(yamlFilePath, this.refs.prefix);
   }
 
   async upsertSystem() {
@@ -114,12 +58,10 @@ export class EntitiesBuilder {
       );
     }
 
-    this.cache.system = {
-      id: systemResponse.data!.id,
-      name: systemResponse.data!.name,
-      slug: systemResponse.data!.slug,
-      originalName: this.fixtures.system.name,
-    };
+    this.refs.system.id = systemResponse.data!.id;
+    this.refs.system.name = systemResponse.data!.name;
+    this.refs.system.slug = systemResponse.data!.slug;
+    this.refs.system.originalName = this.fixtures.system.name;
   }
 
   async upsertResources() {
@@ -152,7 +94,7 @@ export class EntitiesBuilder {
 
     // Store created resources in result
     for (const r of this.fixtures.resources) {
-      this.cache.resources.push({
+      this.refs.resources.push({
         ...r,
         originalIdentifier: r.identifier,
       });
@@ -167,7 +109,7 @@ export class EntitiesBuilder {
       throw new Error("No environments defined in YAML file");
     }
 
-    if (!this.cache.system.id || this.cache.system.id.trim() === "") {
+    if (!this.refs.system.id || this.refs.system.id.trim() === "") {
       throw new Error(
         "System ID is blank. Please create the system before creating environments.",
       );
@@ -182,7 +124,7 @@ export class EntitiesBuilder {
       const envResponse = await this.api.POST("/v1/environments", {
         body: {
           ...env,
-          systemId: this.cache.system.id,
+          systemId: this.refs.system.id,
         },
       });
 
@@ -192,7 +134,7 @@ export class EntitiesBuilder {
         );
       }
 
-      this.cache.environments.push({
+      this.refs.environments.push({
         id: envResponse.data!.id,
         name: envResponse.data!.name,
         originalName: env.name,
@@ -210,7 +152,7 @@ export class EntitiesBuilder {
       const deploymentResponse = await this.api.POST("/v1/deployments", {
         body: {
           ...deployment,
-          systemId: this.cache.system.id,
+          systemId: this.refs.system.id,
           jobAgentId: agentId,
         },
       });
@@ -224,7 +166,7 @@ export class EntitiesBuilder {
           }`,
         );
       }
-      this.cache.deployments.push({
+      this.refs.deployments.push({
         id: deploymentResponse.data!.id,
         name: deploymentResponse.data!.name,
         slug: deploymentResponse.data!.slug,
@@ -249,7 +191,7 @@ export class EntitiesBuilder {
           }`,
         );
 
-        const deploymentResult = this.cache.deployments.find(
+        const deploymentResult = this.refs.deployments.find(
           (d) => d.name === deployment.name,
         );
         if (!deploymentResult) {
@@ -303,7 +245,7 @@ export class EntitiesBuilder {
           }`,
         );
 
-        const deploymentResult = this.cache.deployments.find(
+        const deploymentResult = this.refs.deployments.find(
           (d) => d.name === deployment.name,
         );
         if (!deploymentResult) {
@@ -367,7 +309,7 @@ export class EntitiesBuilder {
         );
       }
 
-      this.cache.policies.push({
+      this.refs.policies.push({
         id: policyResponse.data!.id,
         name: policyResponse.data!.name,
         originalName: policy.name,
@@ -398,7 +340,7 @@ export class EntitiesBuilder {
         );
       }
 
-      this.cache.agents.push({
+      this.refs.agents.push({
         id: agentResponse.data!.id,
         name: agentResponse.data!.name,
       });
@@ -409,40 +351,40 @@ export class EntitiesBuilder {
 /**
  * Delete all entities created from a YAML import
  * @param api API client instance
- * @param entities The entities to delete (returned from importEntitiesFromYaml)
+ * @param refs Refs entities to delete (returned from importEntitiesFromYaml)
  */
 export async function cleanupImportedEntities(
   api: ApiClient,
-  entities: EntitiesCache,
+  refs: EntityRefs,
   workspaceId: string,
 ): Promise<void> {
-  for (const policy of entities.policies ?? []) {
+  for (const policy of refs.policies ?? []) {
     console.log(`Deleting policy: ${policy.name}`);
     await api.DELETE(`/v1/policies/{policyId}`, {
       params: { path: { policyId: policy.id } },
     });
   }
 
-  for (const deployment of entities.deployments ?? []) {
+  for (const deployment of refs.deployments ?? []) {
     console.log(`Deleting deployment: ${deployment.name}`);
     await api.DELETE(`/v1/deployments/{deploymentId}`, {
       params: { path: { deploymentId: deployment.id } },
     });
   }
 
-  for (const environment of entities.environments ?? []) {
+  for (const environment of refs.environments ?? []) {
     console.log(`Deleting environment: ${environment.name}`);
     await api.DELETE(`/v1/environments/{environmentId}`, {
       params: { path: { environmentId: environment.id } },
     });
   }
 
-  console.log(`Deleting system: ${entities.system.name}`);
+  console.log(`Deleting system: ${refs.system.name}`);
   await api.DELETE(`/v1/systems/{systemId}`, {
-    params: { path: { systemId: entities.system.id } },
+    params: { path: { systemId: refs.system.id } },
   });
 
-  for (const resource of entities.resources ?? []) {
+  for (const resource of refs.resources ?? []) {
     console.log(`Deleting resource: ${resource.identifier}`);
     const response = await api.DELETE(
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",

@@ -18,11 +18,11 @@ test.describe("Deployment Variables API", () => {
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("should create a deployment variable", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const variableCreateResponse = await api.POST(
@@ -69,7 +69,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should create a deployment variable with values", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -134,7 +134,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should create a deployment variable with values and default value", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -205,7 +205,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("shoudl fail if more than one default value is provided", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
