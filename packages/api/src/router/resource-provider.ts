@@ -19,6 +19,7 @@ import {
   resourceProvider,
   resourceProviderAws,
   resourceProviderAzure,
+  resourceProviderGithubRepo,
   resourceProviderGoogle,
   updateResourceProviderAws,
   updateResourceProviderGoogle,
@@ -420,6 +421,84 @@ export const resourceProviderRouter = createTRPCRouter({
             .where(eq(resourceProvider.id, input.resourceProviderId))
             .returning()
             .then(takeFirst),
+        ),
+    }),
+
+    github: createTRPCRouter({
+      create: protectedProcedure
+        .input(
+          z.object({
+            workspaceId: z.string().uuid(),
+            entityId: z.string().uuid(),
+            repositoryId: z.number(),
+            name: z.string(),
+          }),
+        )
+        .meta({
+          authorizationCheck: ({ canUser, input }) =>
+            canUser
+              .perform(Permission.ResourceProviderCreate)
+              .on({ type: "workspace", id: input.workspaceId }),
+        })
+        .mutation(({ ctx, input }) =>
+          ctx.db.transaction(async (tx) => {
+            const provider = await tx
+              .insert(resourceProvider)
+              .values({
+                workspaceId: input.workspaceId,
+                name: input.name,
+              })
+              .returning()
+              .then(takeFirst);
+
+            await tx.insert(resourceProviderGithubRepo).values({
+              resourceProviderId: provider.id,
+              githubEntityId: input.entityId,
+              repoId: input.repositoryId,
+            });
+
+            return provider;
+          }),
+        ),
+
+      update: protectedProcedure
+        .input(
+          z.object({
+            resourceProviderId: z.string().uuid(),
+            name: z.string().optional(),
+            entityId: z.string().uuid().optional(),
+            repositoryId: z.number().optional(),
+          }),
+        )
+        .meta({
+          authorizationCheck: ({ canUser, input }) =>
+            canUser
+              .perform(Permission.ResourceProviderUpdate)
+              .on({ type: "resourceProvider", id: input.resourceProviderId }),
+        })
+        .mutation(({ ctx, input }) =>
+          ctx.db.transaction(async (tx) => {
+            if (input.name != null)
+              await tx
+                .update(resourceProvider)
+                .set({ name: input.name })
+                .where(eq(resourceProvider.id, input.resourceProviderId));
+
+            const repoProviderUpdates = {
+              repoId: input.repositoryId,
+              githubEntityId: input.entityId,
+            };
+
+            await tx
+              .update(resourceProviderGithubRepo)
+              .set(repoProviderUpdates)
+              .where(
+                eq(
+                  resourceProviderGithubRepo.resourceProviderId,
+                  input.resourceProviderId,
+                ),
+              );
+          }),
         ),
     }),
   }),

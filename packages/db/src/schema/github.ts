@@ -11,6 +11,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 
 import { user } from "./auth.js";
+import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
 export const githubUser = pgTable("github_user", {
@@ -61,3 +62,23 @@ export const githubEntityInsert = createInsertSchema(githubEntity).omit({
   id: true,
   addedByUserId: true,
 });
+
+export const resourceProviderGithubRepo = pgTable(
+  "resource_provider_github_repo",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceProviderId: uuid("resource_provider_id")
+      .notNull()
+      .references(() => resourceProvider.id, { onDelete: "cascade" }),
+    githubEntityId: uuid("github_entity_id")
+      .notNull()
+      .references(() => githubEntity.id, { onDelete: "cascade" }),
+    repoId: integer("repo_id").notNull(),
+  },
+  (t) => [
+    uniqueIndex("unique_resource_provider_github_entity_repo").on(
+      t.githubEntityId,
+      t.repoId,
+    ),
+  ],
+);
