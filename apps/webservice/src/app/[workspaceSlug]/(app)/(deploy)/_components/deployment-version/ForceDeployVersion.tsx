@@ -19,6 +19,7 @@ import { api } from "~/trpc/react";
 export const ForceDeployVersionDialog: React.FC<DeployProps> = ({
   deployment,
   environment,
+  resource,
   children,
 }) => {
   const redeploy = api.redeploy.useMutation();
@@ -26,9 +27,10 @@ export const ForceDeployVersionDialog: React.FC<DeployProps> = ({
 
   const environmentId = environment.id;
   const deploymentId = deployment.id;
+  const resourceId = resource?.id;
   const handleForceDeploy = () =>
     redeploy
-      .mutateAsync({ environmentId, deploymentId, force: true })
+      .mutateAsync({ environmentId, deploymentId, resourceId, force: true })
       .then(() => router.refresh());
 
   return (
@@ -37,11 +39,13 @@ export const ForceDeployVersionDialog: React.FC<DeployProps> = ({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Force deploy {deployment.name} to {environment.name}?
+            Force deploy {deployment.name} to{" "}
+            {resource != null ? resource.name : environment.name}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            This will force the version to be deployed to all resources in the
-            environment regardless of any policies set on the environment.
+            {resource != null
+              ? "This will force the version to be deployed to the resource regardless of any policies set on the resource."
+              : "This will force the version to be deployed to all resources in the environment regardless of any policies set on the environment."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex">

@@ -3,10 +3,12 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import {
+  IconAlertTriangle,
   IconChevronRight,
   IconCopy,
   IconDots,
   IconExternalLink,
+  IconReload,
   IconSwitch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -26,10 +28,17 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
+import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
+import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
 
-const JobActionsDropdownMenu: React.FC<{ jobId: string }> = ({ jobId }) => {
+const JobActionsDropdownMenu: React.FC<{
+  jobId: string;
+  environment: { id: string; name: string };
+  deployment: { id: string; name: string };
+  resource: { id: string; name: string };
+}> = ({ jobId, environment, deployment, resource }) => {
   const utils = api.useUtils();
   const [, copy] = useCopyToClipboard();
 
@@ -63,6 +72,32 @@ const JobActionsDropdownMenu: React.FC<{ jobId: string }> = ({ jobId }) => {
             Override status
           </DropdownMenuItem>
         </OverrideJobStatusDialog>
+        <RedeployVersionDialog
+          environment={environment}
+          deployment={deployment}
+          resource={resource}
+        >
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex items-center gap-2"
+          >
+            <IconReload className="h-4 w-4" />
+            Redeploy
+          </DropdownMenuItem>
+        </RedeployVersionDialog>
+        <ForceDeployVersionDialog
+          environment={environment}
+          deployment={deployment}
+          resource={resource}
+        >
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="flex items-center gap-2"
+          >
+            <IconAlertTriangle className="h-4 w-4" />
+            Force deploy
+          </DropdownMenuItem>
+        </ForceDeployVersionDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -127,6 +162,8 @@ const CreatedAtCell: React.FC<{
 export const ReleaseTargetRow: React.FC<{
   id: string;
   resource: { id: string; name: string };
+  environment: { id: string; name: string };
+  deployment: { id: string; name: string };
   jobs: Array<{
     id: string;
     status: SCHEMA.JobStatus;
@@ -134,7 +171,7 @@ export const ReleaseTargetRow: React.FC<{
     links: Record<string, string>;
     createdAt: Date;
   }>;
-}> = ({ id, resource, jobs }) => {
+}> = ({ id, resource, environment, deployment, jobs }) => {
   const latestJob = jobs.at(0)!;
 
   return (
@@ -169,7 +206,12 @@ export const ReleaseTargetRow: React.FC<{
       )}
       DropdownMenu={
         <TableCell className="flex justify-end">
-          <JobActionsDropdownMenu jobId={latestJob.id} />
+          <JobActionsDropdownMenu
+            jobId={latestJob.id}
+            environment={environment}
+            deployment={deployment}
+            resource={resource}
+          />
         </TableCell>
       }
     >
