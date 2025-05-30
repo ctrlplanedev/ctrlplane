@@ -229,7 +229,11 @@ export const deploymentRouter = createTRPCRouter({
         .insert(SCHEMA.deployment)
         .values({ ...input, description: input.description ?? "" })
         .returning()
-        .then(takeFirst),
+        .then(takeFirst)
+        .then((dep) => {
+          getQueue(Channel.NewDeployment).add(dep.id, dep);
+          return dep;
+        }),
     ),
 
   update: protectedProcedure
