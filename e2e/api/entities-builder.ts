@@ -4,10 +4,14 @@ import { WorkspaceFixture } from "../tests/auth.setup";
 import { EntityFixtures, importEntityFixtures } from "./entity-fixtures";
 import { ApiClient } from "./index";
 import { EntityRefs } from "./entity-refs";
+import { trace } from "@opentelemetry/api";
+import { FetchResponse } from "openapi-fetch";
+import { FetchResultInfo } from "./fetch-test-helpers";
 
 export class EntitiesBuilder {
   public readonly refs: EntityRefs;
   private readonly fixtures: EntityFixtures;
+  private readonly tracer = trace.getTracer("EntitiesBuilder");
 
   /**
    * Import entities from a YAML file into the workspace
@@ -40,56 +44,56 @@ export class EntitiesBuilder {
     this.fixtures = importEntityFixtures(yamlFilePath, this.refs.prefix);
   }
 
-  async upsertSystem() {
+  async upsertSystem(): Promise<FetchResultInfo> {
     console.log(`Creating system: ${this.fixtures.system.name}`);
 
     const workspaceId = this.workspace.id;
+    const requestBody = {
+      workspaceId,
+      ...this.fixtures.system,
+    };
 
-    const systemResponse = await this.api.POST("/v1/systems", {
-      body: {
-        workspaceId,
-        ...this.fixtures.system,
-      },
+    const fetchResponse = await this.api.POST("/v1/systems", {
+      body: requestBody,
     });
 
-    if (systemResponse.response.status !== 201) {
+    if (fetchResponse.response.status !== 201) {
       throw new Error(
-        `Failed to create system: ${JSON.stringify(systemResponse.error)}`,
+        `Failed to create system: ${JSON.stringify(fetchResponse.error)}`,
       );
     }
 
-    this.refs.system.id = systemResponse.data!.id;
-    this.refs.system.name = systemResponse.data!.name;
-    this.refs.system.slug = systemResponse.data!.slug;
+    this.refs.system.id = fetchResponse.data!.id;
+    this.refs.system.name = fetchResponse.data!.name;
+    this.refs.system.slug = fetchResponse.data!.slug;
     this.refs.system.originalName = this.fixtures.system.name;
+
+    return { requestBody, fetchResponse };
   }
 
-  async upsertResources() {
+  async upsertResources(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.resources || this.fixtures.resources.length === 0) {
       throw new Error("No resources defined in YAML file");
     }
+    let results: FetchResultInfo[] = [];
     const workspaceId = this.workspace.id;
 
     for (const resource of this.fixtures.resources) {
       console.log(`Creating resource: ${resource.name}`);
 
-      const resourceResponse = await this.api.POST("/v1/resources", {
-        body: {
-          ...resource,
-          workspaceId,
-          config: resource.config as Record<string, never>,
-        },
+      const requestBody = {
+        ...resource,
+        workspaceId,
+        config: resource.config as Record<string, never>,
+      };
+      const fetchResponse = await this.api.POST("/v1/resources", {
+        body: requestBody,
       });
 
-      if (resourceResponse.response.status !== 200) {
-        throw new Error(
-          `Failed to create resource: ${
-            JSON.stringify(
-              resourceResponse.error,
-            )
-          }`,
-        );
-      }
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
     }
 
     // Store created resources in result
@@ -99,9 +103,11 @@ export class EntitiesBuilder {
         originalIdentifier: r.identifier,
       });
     }
+
+    return results;
   }
 
-  async upsertEnvironments() {
+  async upsertEnvironments(): Promise<FetchResultInfo[]> {
     if (
       !this.fixtures.environments ||
       this.fixtures.environments.length === 0
@@ -115,82 +121,80 @@ export class EntitiesBuilder {
       );
     }
 
+    const results: FetchResultInfo[] = [];
+
     for (const env of this.fixtures.environments) {
       console.log(`Creating environment: ${env.name}`);
 
+      const requestBody = {
+        ...env,
+        systemId: this.refs.system.id,
+      };
       // TODO Update resource selector if needed
       // let resourceSelector = env.resourceSelector;
 
-      const envResponse = await this.api.POST("/v1/environments", {
-        body: {
-          ...env,
-          systemId: this.refs.system.id,
-        },
+      const fetchResponse = await this.api.POST("/v1/environments", {
+        body: requestBody,
       });
 
-      if (envResponse.response.status !== 200) {
-        throw new Error(
-          `Failed to create environment: ${JSON.stringify(envResponse.error)}`,
-        );
-      }
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
 
       this.refs.environments.push({
-        id: envResponse.data!.id,
-        name: envResponse.data!.name,
+        id: fetchResponse.data!.id,
+        name: fetchResponse.data!.name,
         originalName: env.name,
       });
     }
+
+    return results;
   }
 
-  async upsertDeployments(agentId?: string) {
-    if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
+  async upsertDeployments(agentId?: string): Promise<FetchResultInfo[]> {
+    if (
+      !this.fixtures.deployments || this.fixtures.deployments.length === 0
+    ) {
       throw new Error("No deployments defined in YAML file");
     }
+    const results: FetchResultInfo[] = [];
     for (const deployment of this.fixtures.deployments) {
-      console.log(`Creating deployment: ${deployment.name}`);
-
-      const deploymentResponse = await this.api.POST("/v1/deployments", {
-        body: {
-          ...deployment,
-          systemId: this.refs.system.id,
-          jobAgentId: agentId,
-        },
+      const requestBody = {
+        ...deployment,
+        systemId: this.refs.system.id,
+        jobAgentId: agentId,
+      };
+      const uriPath = "/v1/deployments";
+      const fetchResponse = await this.api.POST(uriPath, {
+        body: requestBody,
       });
 
-      if (![200, 201].includes(deploymentResponse.response.status)) {
-        throw new Error(
-          `Failed to upsert deployment: ${
-            JSON.stringify(
-              deploymentResponse.error,
-            )
-          }`,
-        );
-      }
       this.refs.deployments.push({
-        id: deploymentResponse.data!.id,
-        name: deploymentResponse.data!.name,
-        slug: deploymentResponse.data!.slug,
+        id: fetchResponse.data!.id,
+        name: fetchResponse.data!.name,
+        slug: fetchResponse.data!.slug,
         originalName: deployment.name,
         versions: [],
         variables: [],
       });
+
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
     }
+
+    return results;
   }
 
-  async createDeploymentVersions() {
+  async createDeploymentVersions(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
+    const results: FetchResultInfo[] = [];
     for (const deployment of this.fixtures.deployments) {
       if (deployment.versions && deployment.versions.length > 0) {
-        console.log(
-          `Adding deployment versions: ${deployment.name} -> ${
-            deployment.versions
-              .map((v) => v.tag)
-              .join(", ")
-          }`,
-        );
-
         const deploymentResult = this.refs.deployments.find(
           (d) => d.name === deployment.name,
         );
@@ -199,52 +203,41 @@ export class EntitiesBuilder {
         }
 
         for (const version of deployment.versions) {
-          const versionResponse = await this.api.POST(
+          const requestBody = {
+            ...version,
+            deploymentId: deploymentResult.id,
+          };
+          const fetchResponse = await this.api.POST(
             "/v1/deployment-versions",
             {
-              body: {
-                ...version,
-                deploymentId: deploymentResult.id,
-              },
+              body: requestBody,
             },
           );
 
-          if (versionResponse.response.status !== 201) {
-            throw new Error(
-              `Failed to create deployment version: ${
-                JSON.stringify(
-                  versionResponse.error,
-                )
-              }`,
-            );
-          }
+          results.push({
+            fetchResponse,
+            requestBody,
+          });
 
-          const versionData = versionResponse.data!;
           deploymentResult.versions!.push({
-            id: versionData.id,
-            name: versionData.name,
-            tag: versionData.tag,
-            status: versionData.status ?? "ready",
+            id: fetchResponse.data!.id,
+            name: fetchResponse.data!.name,
+            tag: fetchResponse.data!.tag,
+            status: fetchResponse.data!.status ?? "ready",
           });
         }
       }
     }
+    return results;
   }
 
-  async createDeploymentVariables() {
+  async createDeploymentVariables(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
+    const results: FetchResultInfo[] = [];
     for (const deployment of this.fixtures.deployments) {
       if (deployment.variables && deployment.variables.length > 0) {
-        console.log(
-          `Adding deployment variables: ${deployment.name} -> ${
-            deployment.variables
-              .map((v) => v.key)
-              .join(", ")
-          }`,
-        );
-
         const deploymentResult = this.refs.deployments.find(
           (d) => d.name === deployment.name,
         );
@@ -253,98 +246,94 @@ export class EntitiesBuilder {
         }
 
         for (const variable of deployment.variables) {
-          const variableResponse = await this.api.POST(
+          const requestBody = {
+            ...variable,
+          };
+          const fetchResponse = await this.api.POST(
             "/v1/deployments/{deploymentId}/variables",
             {
               params: { path: { deploymentId: deploymentResult.id } },
               body: {
-                ...variable,
+                requestBody,
               },
             },
           );
 
-          if (variableResponse.response.status !== 201) {
-            throw new Error(
-              `Failed to create deployment variable: ${
-                JSON.stringify(
-                  variableResponse.error,
-                )
-              }`,
-            );
-          }
+          results.push({
+            fetchResponse,
+            requestBody,
+          });
 
-          const variableData = variableResponse.data!;
           deploymentResult.variables!.push({
-            id: variableData.id,
-            key: variableData.key,
-            description: variableData.description,
-            config: variableData.config,
-            values: variableData.values,
+            id: fetchResponse.data!.id,
+            key: fetchResponse.data!.key,
+            description: fetchResponse.data!.description,
+            config: fetchResponse.data!.config,
+            values: fetchResponse.data!.values,
           });
         }
       }
     }
   }
 
-  async upsertPolicies() {
+  async upsertPolicies(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.policies || this.fixtures.policies.length === 0) {
       throw new Error("No policies defined in YAML file");
     }
-
+    const results: FetchResultInfo[] = [];
     const workspaceId = this.workspace.id;
 
     for (const policy of this.fixtures.policies) {
-      console.log(`Creating policy: ${policy.name}`);
-
-      const policyResponse = await this.api.POST("/v1/policies", {
-        body: {
-          ...policy,
-          workspaceId,
-        },
+      const requestBody = {
+        ...policy,
+        workspaceId,
+      };
+      const fetchResponse = await this.api.POST("/v1/policies", {
+        body: requestBody,
       });
 
-      if (policyResponse.response.status !== 200) {
-        throw new Error(
-          `Failed to create policy: ${JSON.stringify(policyResponse.error)}`,
-        );
-      }
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
 
       this.refs.policies.push({
-        id: policyResponse.data!.id,
-        name: policyResponse.data!.name,
+        id: fetchResponse.data!.id,
+        name: fetchResponse.data!.name,
         originalName: policy.name,
       });
     }
+
+    return results;
   }
 
-  async upsertAgents() {
+  async upsertAgents(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.agents || this.fixtures.agents.length === 0) {
       throw new Error("No agents defined in YAML file");
     }
-
+    const results: FetchResultInfo[] = [];
     const workspaceId = this.workspace.id;
 
     for (const agent of this.fixtures.agents) {
-      console.log(`Creating agent: ${agent.name}`);
-
-      const agentResponse = await this.api.PATCH("/v1/job-agents/name", {
-        body: {
-          ...agent,
-          workspaceId,
-        },
+      const requestBody = {
+        ...agent,
+        workspaceId,
+      };
+      const fetchResponse = await this.api.PATCH("/v1/job-agents/name", {
+        body: requestBody,
       });
 
-      if (agentResponse.response.status !== 200) {
-        throw new Error(
-          `Failed to create agent: ${JSON.stringify(agentResponse.error)}`,
-        );
-      }
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
 
       this.refs.agents.push({
-        id: agentResponse.data!.id,
-        name: agentResponse.data!.name,
+        id: fetchResponse.data!.id,
+        name: fetchResponse.data!.name,
       });
     }
+    return results;
   }
 }
 
@@ -357,48 +346,49 @@ export async function cleanupImportedEntities(
   api: ApiClient,
   refs: EntityRefs,
   workspaceId: string,
-): Promise<void> {
+): Promise<FetchResultInfo[]> {
+  const results: FetchResultInfo[] = [];
   for (const policy of refs.policies ?? []) {
-    console.log(`Deleting policy: ${policy.name}`);
-    await api.DELETE(`/v1/policies/{policyId}`, {
-      params: { path: { policyId: policy.id } },
+    results.push({
+      fetchResponse: await api.DELETE(`/v1/policies/{policyId}`, {
+        params: { path: { policyId: policy.id } },
+      }),
     });
   }
 
   for (const deployment of refs.deployments ?? []) {
-    console.log(`Deleting deployment: ${deployment.name}`);
-    await api.DELETE(`/v1/deployments/{deploymentId}`, {
-      params: { path: { deploymentId: deployment.id } },
+    results.push({
+      fetchResponse: await api.DELETE(`/v1/deployments/{deploymentId}`, {
+        params: { path: { deploymentId: deployment.id } },
+      }),
     });
   }
 
   for (const environment of refs.environments ?? []) {
-    console.log(`Deleting environment: ${environment.name}`);
-    await api.DELETE(`/v1/environments/{environmentId}`, {
-      params: { path: { environmentId: environment.id } },
+    results.push({
+      fetchResponse: await api.DELETE(`/v1/environments/{environmentId}`, {
+        params: { path: { environmentId: environment.id } },
+      }),
     });
   }
 
-  console.log(`Deleting system: ${refs.system.name}`);
-  await api.DELETE(`/v1/systems/{systemId}`, {
-    params: { path: { systemId: refs.system.id } },
+  results.push({
+    fetchResponse: await api.DELETE(`/v1/systems/{systemId}`, {
+      params: { path: { systemId: refs.system.id } },
+    }),
   });
 
   for (const resource of refs.resources ?? []) {
-    console.log(`Deleting resource: ${resource.identifier}`);
-    const response = await api.DELETE(
-      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-      {
-        params: {
-          path: { workspaceId: workspaceId, identifier: resource.identifier },
+    results.push({
+      fetchResponse: await api.DELETE(
+        "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+        {
+          params: {
+            path: { workspaceId: workspaceId, identifier: resource.identifier },
+          },
         },
-      },
-    );
-
-    if (response.response.status !== 200) {
-      console.error(
-        `Failed to delete resource: ${JSON.stringify(response.error)}`,
-      );
-    }
+      ),
+    });
   }
+  return results;
 }

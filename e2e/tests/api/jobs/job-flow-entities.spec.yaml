@@ -2,35 +2,35 @@ isQaTier: &isQaTier
   type: metadata
   key: instance/tier
   operator: equals
-  value: qa
+  value: "{{ prefix }}-qa"
 
 metaQa: &metaQa
-  instance/tier: qa
+  instance/tier: "{{ prefix }}-qa"
 
 isDevTier: &isDevTier
   type: metadata
   key: instance/tier
   operator: equals
-  value: dev
+  value: "{{ prefix }}-dev"
 
 metaDev: &metaDev
-  instance/tier: dev
+  instance/tier: "{{ prefix }}-dev"
 
 isKindService: &isKindService
   type: kind
   operator: equals
-  value: service
+  value: "{{ prefix }}-service"
 
 kindService: &kindService
-  kind: service
+  kind: "{{ prefix }}-service"
 
 isKindDatabase: &isKindDatabase
   type: kind
   operator: equals
-  value: database
+  value: "{{ prefix }}-database"
 
 kindDatabase: &kindDatabase
-  kind: database
+  kind: "{{ prefix }}-database"
 
 system:
   name: "{{ prefix }}-deployment-version"

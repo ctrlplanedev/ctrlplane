@@ -1,92 +1,145 @@
 import path from "path";
-import { expect } from "@playwright/test";
-
+import { expect, TestType } from "@playwright/test";
 import { cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
 import { test } from "../../fixtures";
 import { Client } from "openapi-fetch";
 import _ from "lodash";
+import {
+  fetchResultHandler,
+  fetchResultListHandler,
+} from "../../../api/fetch-test-helpers";
 
 const yamlPath = path.join(__dirname, "job-flow-entities.spec.yaml");
 
-test.describe("jobs from initial deployment version", () => {
+test.describe("queue initial jobs", () => {
   let builder: EntitiesBuilder;
 
-  test.beforeAll(async ({ api, workspace }) => {
+  test.beforeEach(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
+
+    fetchResultHandler(
+      test,
+      await builder.upsertSystem(),
+      /20[01]/,
+    );
+
+    fetchResultListHandler(
+      test,
+      await builder.upsertEnvironments(),
+      /20[01]/,
+    );
+
+    fetchResultListHandler(
+      test,
+      await builder.upsertDeployments(),
+      /20[01]/,
+    );
   });
 
-  test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.refs, workspace.id);
+  test.afterEach(async ({ api, workspace }) => {
+    fetchResultListHandler(
+      test,
+      await cleanupImportedEntities(api, builder.refs, workspace.id),
+    );
   });
 
-  test("job queue", async ({ api }) => {
-    await builder.upsertSystem();
-    await builder.upsertResources();
-    await builder.upsertEnvironments();
-    await builder.upsertDeployments();
-    await builder.upsertAgents();
+  test("trigger with initial deployment versions", async ({ api }) => {
+    fetchResultListHandler(
+      test,
+      await builder.upsertResources(),
+      /20[01]/,
+    );
+
+    fetchResultListHandler(
+      test,
+      await builder.upsertAgents(),
+      /20[01]/,
+    );
+
     const agentId = builder.refs.oneAgent().id;
+
     // Attach agent to deployment:
-    await builder.upsertDeployments(agentId);
-    await builder.createDeploymentVersions(); // job trigger
+    fetchResultListHandler(
+      test,
+      await builder.upsertDeployments(agentId),
+      /20[01]/,
+    );
 
-    await nextJobs(api, agentId, 4);
-  });
-});
+    // triggers job
+    fetchResultListHandler(
+      test,
+      await builder.createDeploymentVersions(),
+      /20[01]/,
+    );
 
-test.describe("jobs from initial agent assignment", () => {
-  let builder: EntitiesBuilder;
-
-  test.beforeAll(async ({ api, workspace }) => {
-    builder = new EntitiesBuilder(api, workspace, yamlPath);
-  });
-
-  test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.refs, workspace.id);
+    await nextJobs(test, api, agentId, 4);
   });
 
-  test("job queue", async ({ api }) => {
-    await builder.upsertSystem();
-    await builder.upsertResources();
-    await builder.upsertEnvironments();
-    await builder.upsertDeployments();
-    await builder.upsertAgents();
+  test("trigger with initial agent attachment", async ({ api }) => {
+    fetchResultListHandler(
+      test,
+      await builder.upsertResources(),
+      /20[01]/,
+    );
+
+    fetchResultListHandler(
+      test,
+      await builder.upsertAgents(),
+      /20[01]/,
+    );
+
     const agentId = builder.refs.oneAgent().id;
-    await builder.createDeploymentVersions();
-    // Attach agent to deployment:
-    await builder.upsertDeployments(agentId); // job trigger
 
-    await nextJobs(api, agentId, 4);
-  });
-});
+    fetchResultListHandler(
+      test,
+      await builder.createDeploymentVersions(),
+      /20[01]/,
+    );
 
-test.describe("jobs from initial resource", () => {
-  let builder: EntitiesBuilder;
+    // Attach agent to deployment -> triggers job
+    fetchResultListHandler(
+      test,
+      await builder.upsertDeployments(agentId),
+      /20[01]/,
+    );
 
-  test.beforeAll(async ({ api, workspace }) => {
-    builder = new EntitiesBuilder(api, workspace, yamlPath);
-  });
-
-  test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.refs, workspace.id);
+    await nextJobs(test, api, agentId, 4);
   });
 
-  test("job queue", async ({ api }) => {
-    await builder.upsertSystem();
-    await builder.upsertEnvironments();
-    await builder.upsertDeployments();
-    await builder.upsertAgents();
+  test("trigger with initial resources", async ({ api }) => {
+    fetchResultListHandler(
+      test,
+      await builder.upsertAgents(),
+      /20[01]/,
+    );
+
     const agentId = builder.refs.oneAgent().id;
-    await builder.createDeploymentVersions();
-    // Attach agent to deployment:
-    await builder.upsertDeployments(agentId);
-    await builder.upsertResources(); // job trigger
 
-    await nextJobs(api, agentId, 4);
+    fetchResultListHandler(
+      test,
+      await builder.createDeploymentVersions(),
+      /20[01]/,
+    );
+
+    // Attach agent to deployment:
+    fetchResultListHandler(
+      test,
+      await builder.upsertDeployments(agentId),
+      /20[01]/,
+    );
+
+    fetchResultListHandler(
+      test,
+      await builder.upsertResources(), // job trigger
+      /20[01]/,
+    );
+
+    await nextJobs(test, api, agentId, 4);
   });
 });
 
 async function nextJobs(
+  test: TestType<any, any>,
   api: Client<paths, `${string}/${string}`>,
   agentId: string,
   expectedJobCount: number,
@@ -96,7 +149,7 @@ async function nextJobs(
 
   while (jobs.length < expectedJobCount && attempts < 10) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const nextJobsResponse = await api.GET(
+    const fetchResponse = await api.GET(
       "/v1/job-agents/{agentId}/queue/next",
       {
         params: {
@@ -107,9 +160,13 @@ async function nextJobs(
       },
     );
 
-    expect(nextJobsResponse.response.status).toBe(200);
+    fetchResultHandler(
+      test,
+      { fetchResponse },
+      /20[01]/,
+    );
 
-    const nextJobs = nextJobsResponse.data;
+    const nextJobs = fetchResponse.data;
     expect(nextJobs?.jobs).toBeDefined();
 
     expect(Array.isArray(nextJobs?.jobs)).toBe(true);

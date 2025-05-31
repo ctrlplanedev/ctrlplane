@@ -55,7 +55,12 @@ const yamlPath = path.join(
   "fixtures",
   "test-system.yaml",
 );
-const entities = await importEntitiesFromYaml(api, workspace.id, yamlPath);
+const entities = await importEntitiesFromYaml(
+  api,
+  workspace.id,
+  yamlPath,
+  tracer,
+);
 
 // Or with a random prefix to avoid naming conflicts
 const prefixedEntities = await importEntitiesFromYaml(

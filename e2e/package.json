@@ -29,11 +29,17 @@
     "generate": "pnpm dlx openapi-typescript ../openapi.v1.json -o api/schema.ts"
   },
   "devDependencies": {
+    "@aergonaut/playwright-opentelemetry-reporter": "^0.2.0",
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@faker-js/faker": "^9.6.0",
     "@openapitools/openapi-generator-cli": "^2.13.5",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-jaeger": "^2.0.0",
+    "@opentelemetry/sdk-node": "^0.54.2",
+    "@opentelemetry/sdk-trace-base": "^1.27.0",
+    "@opentelemetry/sdk-trace-node": "^2.0.1",
     "@playwright/test": "^1.51.0",
     "@types/js-yaml": "^4.0.9",
     "@types/mustache": "^4.2.5",
@@ -45,6 +51,13 @@
     "prettier": "catalog:"
   },
   "dependencies": {
+    "@ctrlplane/logger": "workspace:^",
+    "@opentelemetry/context-zone": "^2.0.1",
+    "@opentelemetry/core": "^2.0.1",
+    "@opentelemetry/instrumentation-document-load": "^0.46.0",
+    "@opentelemetry/instrumentation-fetch": "^0.201.1",
+    "@opentelemetry/propagator-jaeger": "^2.0.1",
+    "@opentelemetry/sdk-trace-web": "^2.0.1",
     "handlebars": "^4.7.8",
     "js-yaml": "^4.1.0",
     "lodash": "catalog:",
