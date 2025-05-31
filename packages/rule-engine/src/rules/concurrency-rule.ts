@@ -1,6 +1,7 @@
-import { count, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, count, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { PreValidationRule } from "../types";
 
@@ -30,7 +31,12 @@ export class ConcurrencyRule implements PreValidationRule {
         schema.releaseTarget,
         eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
       )
-      .where(inArray(schema.releaseTarget.id, releaseTargetsIds))
+      .where(
+        and(
+          inArray(schema.releaseTarget.id, releaseTargetsIds),
+          inArray(schema.job.status, [JobStatus.Pending, JobStatus.InProgress]),
+        ),
+      )
       .then(takeFirst)
       .then(({ count }) => count);
   }
