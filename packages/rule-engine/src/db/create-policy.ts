@@ -185,6 +185,8 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .onConflictDoUpdate({
         target: [SCHEMA.policyRuleConcurrency.id],
         set: buildConflictUpdateColumns(SCHEMA.policyRuleConcurrency, [
+          "name",
+          "description",
           "concurrency",
         ]),
       });

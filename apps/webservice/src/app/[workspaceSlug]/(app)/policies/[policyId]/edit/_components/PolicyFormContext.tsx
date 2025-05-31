@@ -23,6 +23,7 @@ type Policy = SCHEMA.Policy & {
   versionAnyApprovals: SCHEMA.PolicyRuleAnyApproval | null;
   versionUserApprovals: SCHEMA.PolicyRuleUserApproval[];
   versionRoleApprovals: SCHEMA.PolicyRuleRoleApproval[];
+  concurrency: SCHEMA.PolicyRuleConcurrency | null;
 };
 
 type PolicyFormContextType = {

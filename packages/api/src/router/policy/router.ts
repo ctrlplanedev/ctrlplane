@@ -78,6 +78,7 @@ export const policyRouter = createTRPCRouter({
           versionAnyApprovals: true,
           versionUserApprovals: true,
           versionRoleApprovals: true,
+          concurrency: true,
         },
       }),
     ),
