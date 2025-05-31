@@ -6,6 +6,7 @@ import {
   policyTarget,
 } from "./policy.js";
 import { releaseTarget } from "./release.js";
+import { policyRuleConcurrency } from "./rules/concurrency.js";
 import {
   policyRuleAnyApproval,
   policyRuleDenyWindow,
@@ -27,6 +28,8 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   versionUserApprovals: many(policyRuleUserApproval),
   versionRoleApprovals: many(policyRuleRoleApproval),
   versionAnyApprovals: one(policyRuleAnyApproval),
+
+  concurrency: one(policyRuleConcurrency),
 }));
 
 export const policyTargetRelations = relations(

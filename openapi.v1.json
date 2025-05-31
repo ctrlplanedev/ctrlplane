@@ -1913,6 +1913,9 @@
                         "roleId"
                       ]
                     }
+                  },
+                  "concurrency": {
+                    "$ref": "#/components/schemas/PolicyConcurrency"
                   }
                 }
               }
@@ -5856,6 +5859,26 @@
           "requiredApprovalsCount"
         ]
       },
+      "PolicyConcurrency": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "concurrency": {
+            "type": "number",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "name",
+          "concurrency"
+        ],
+        "additionalProperties": false
+      },
       "Policy1": {
         "type": "object",
         "properties": {
@@ -5912,6 +5935,9 @@
             "items": {
               "$ref": "#/components/schemas/VersionRoleApproval"
             }
+          },
+          "concurrency": {
+            "$ref": "#/components/schemas/PolicyConcurrency"
           }
         },
         "required": [
