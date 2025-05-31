@@ -67,6 +67,16 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         required: ["roleId", "requiredApprovalsCount"],
       },
+      PolicyConcurrency: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          description: { type: "string" },
+          concurrency: { type: "number", minimum: 1 },
+        },
+        required: ["name", "concurrency"],
+        additionalProperties: false,
+      },
       Policy: {
         type: "object",
         properties: {
@@ -98,6 +108,9 @@ export const openapi: Swagger.SwaggerV3 = {
           versionRoleApprovals: {
             type: "array",
             items: { $ref: "#/components/schemas/VersionRoleApproval" },
+          },
+          concurrency: {
+            $ref: "#/components/schemas/PolicyConcurrency",
           },
         },
         required: [

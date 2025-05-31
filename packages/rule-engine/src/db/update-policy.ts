@@ -135,6 +135,22 @@ const updateVersionRoleApprovals = async (
     );
 };
 
+const updateConcurrency = async (
+  tx: Tx,
+  policyId: string,
+  concurrency: SCHEMA.UpdatePolicy["concurrency"],
+) => {
+  if (concurrency == null) return;
+
+  await tx
+    .delete(SCHEMA.policyRuleConcurrency)
+    .where(eq(SCHEMA.policyRuleConcurrency.policyId, policyId));
+
+  await tx
+    .insert(SCHEMA.policyRuleConcurrency)
+    .values({ ...concurrency, policyId });
+};
+
 export const updatePolicyInTx = async (
   tx: Tx,
   id: string,
@@ -147,6 +163,7 @@ export const updatePolicyInTx = async (
     versionAnyApprovals,
     versionUserApprovals,
     versionRoleApprovals,
+    concurrency,
     ...rest
   } = input;
 
@@ -171,6 +188,7 @@ export const updatePolicyInTx = async (
     updateVersionAnyApprovals(tx, policy.id, versionAnyApprovals),
     updateVersionUserApprovals(tx, policy.id, versionUserApprovals),
     updateVersionRoleApprovals(tx, policy.id, versionRoleApprovals),
+    updateConcurrency(tx, policy.id, concurrency),
   ]);
 
   const updatedPolicy = await tx.query.policy.findFirst({
@@ -182,6 +200,7 @@ export const updatePolicyInTx = async (
       versionAnyApprovals: true,
       versionUserApprovals: true,
       versionRoleApprovals: true,
+      concurrency: true,
     },
   });
 

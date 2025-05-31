@@ -92,6 +92,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     versionAnyApprovals,
     versionUserApprovals,
     versionRoleApprovals,
+    concurrency,
     ...rest
   } = input;
 
@@ -174,6 +175,17 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         set: buildConflictUpdateColumns(SCHEMA.policyRuleRoleApproval, [
           "roleId",
           "requiredApprovalsCount",
+        ]),
+      });
+
+  if (concurrency != null)
+    await tx
+      .insert(SCHEMA.policyRuleConcurrency)
+      .values({ ...concurrency, policyId })
+      .onConflictDoUpdate({
+        target: [SCHEMA.policyRuleConcurrency.id],
+        set: buildConflictUpdateColumns(SCHEMA.policyRuleConcurrency, [
+          "concurrency",
         ]),
       });
 
