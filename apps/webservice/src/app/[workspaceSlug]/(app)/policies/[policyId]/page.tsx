@@ -28,12 +28,11 @@ export default async function PolicyPage(props: {
       policy.versionAnyApprovals != null ||
       policy.versionUserApprovals.length > 0 ||
       policy.versionRoleApprovals.length > 0
-    ) {
+    )
       rules.push("approval-gate");
-    }
-    if (policy.deploymentVersionSelector != null) {
+    if (policy.deploymentVersionSelector != null)
       rules.push("deployment-version-selector");
-    }
+    if (policy.concurrency != null) rules.push("concurrency");
     return rules;
   };
 

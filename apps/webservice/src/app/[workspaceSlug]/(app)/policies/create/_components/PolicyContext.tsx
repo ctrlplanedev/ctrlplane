@@ -96,6 +96,11 @@ export const PolicyContextProvider: React.FC<{
   const createPolicy = api.policy.create.useMutation();
 
   const onSubmit = form.handleSubmit((data) => {
+    const { errors } = form.formState;
+    for (const error of Object.values(errors))
+      if (error.message != null)
+        toast.error("Error creating policy", { description: error.message });
+
     const targets = data.targets.map(convertEmptySelectorsToNull);
     const isTargetsValid = targets.every(isValidTarget);
     if (!isTargetsValid) {
@@ -118,11 +123,6 @@ export const PolicyContextProvider: React.FC<{
         });
       });
   });
-
-  const { errors } = form.formState;
-  for (const error of Object.values(errors))
-    if (error.message != null)
-      toast.error("Error creating policy", { description: error.message });
 
   return (
     <PolicyContext.Provider
