@@ -1913,6 +1913,9 @@
                         "roleId"
                       ]
                     }
+                  },
+                  "concurrency": {
+                    "$ref": "#/components/schemas/PolicyConcurrency"
                   }
                 }
               }
@@ -5856,6 +5859,10 @@
           "requiredApprovalsCount"
         ]
       },
+      "PolicyConcurrency": {
+        "type": "number",
+        "nullable": true
+      },
       "Policy1": {
         "type": "object",
         "properties": {
@@ -5912,6 +5919,9 @@
             "items": {
               "$ref": "#/components/schemas/VersionRoleApproval"
             }
+          },
+          "concurrency": {
+            "$ref": "#/components/schemas/PolicyConcurrency"
           }
         },
         "required": [

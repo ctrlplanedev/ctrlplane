@@ -51,6 +51,8 @@ const getRules = (policy: RouterOutputs["policy"]["list"][number]) => {
   if (policy.deploymentVersionSelector != null)
     rules.push("deployment-version-selector");
 
+  if (policy.concurrency != null) rules.push("concurrency");
+
   return rules;
 };
 

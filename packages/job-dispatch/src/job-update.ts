@@ -1,6 +1,14 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  ne,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -92,11 +100,7 @@ const getIsJobJustCompleted = (
 
 const getReleaseTarget = (db: Tx, jobId: string) =>
   db
-    .select({
-      environmentId: schema.releaseTarget.environmentId,
-      resourceId: schema.releaseTarget.resourceId,
-      deploymentId: schema.releaseTarget.deploymentId,
-    })
+    .select()
     .from(schema.releaseJob)
     .innerJoin(
       schema.release,
@@ -111,7 +115,67 @@ const getReleaseTarget = (db: Tx, jobId: string) =>
       eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
     )
     .where(eq(schema.releaseJob.jobId, jobId))
-    .then(takeFirstOrNull);
+    .then(takeFirstOrNull)
+    .then((row) => row?.release_target ?? null);
+
+const getReleaseTargetsInConcurrencyGroup = async (
+  db: Tx,
+  jobReleaseTarget: schema.ReleaseTarget,
+) => {
+  const policiesMatchingTargetWithConcurrency = await db
+    .select()
+    .from(schema.policy)
+    .innerJoin(
+      schema.policyRuleConcurrency,
+      eq(schema.policyRuleConcurrency.policyId, schema.policy.id),
+    )
+    .innerJoin(
+      schema.policyTarget,
+      eq(schema.policyTarget.policyId, schema.policy.id),
+    )
+    .innerJoin(
+      schema.computedPolicyTargetReleaseTarget,
+      eq(
+        schema.computedPolicyTargetReleaseTarget.policyTargetId,
+        schema.policyTarget.id,
+      ),
+    )
+    .where(
+      eq(
+        schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+        jobReleaseTarget.id,
+      ),
+    )
+    .then((rows) => rows.map((row) => row.policy));
+
+  return db
+    .select()
+    .from(schema.releaseTarget)
+    .innerJoin(
+      schema.computedPolicyTargetReleaseTarget,
+      eq(
+        schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+        schema.releaseTarget.id,
+      ),
+    )
+    .innerJoin(
+      schema.policyTarget,
+      eq(
+        schema.computedPolicyTargetReleaseTarget.policyTargetId,
+        schema.policyTarget.id,
+      ),
+    )
+    .where(
+      and(
+        ne(schema.releaseTarget.id, jobReleaseTarget.id),
+        inArray(
+          schema.policyTarget.policyId,
+          policiesMatchingTargetWithConcurrency.map((p) => p.id),
+        ),
+      ),
+    )
+    .then((rows) => rows.map((row) => row.release_target));
+};
 
 export const updateJob = async (
   db: Tx,
@@ -154,6 +218,14 @@ export const updateJob = async (
     `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`,
     releaseTarget,
   );
+
+  const releaseTargetsInConcurrencyGroup =
+    await getReleaseTargetsInConcurrencyGroup(db, releaseTarget);
+  for (const releaseTarget of releaseTargetsInConcurrencyGroup)
+    await getQueue(Channel.EvaluateReleaseTarget).add(
+      `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`,
+      releaseTarget,
+    );
 
   return updatedJob;
 };

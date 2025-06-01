@@ -135,6 +135,31 @@ const updateVersionRoleApprovals = async (
     );
 };
 
+const updateConcurrency = async (
+  tx: Tx,
+  policyId: string,
+  concurrency: SCHEMA.UpdatePolicy["concurrency"],
+) => {
+  if (concurrency === undefined) return;
+
+  if (concurrency === null) {
+    await tx
+      .delete(SCHEMA.policyRuleConcurrency)
+      .where(eq(SCHEMA.policyRuleConcurrency.policyId, policyId));
+    return;
+  }
+
+  await tx
+    .insert(SCHEMA.policyRuleConcurrency)
+    .values({ concurrency, policyId })
+    .onConflictDoUpdate({
+      target: [SCHEMA.policyRuleConcurrency.policyId],
+      set: buildConflictUpdateColumns(SCHEMA.policyRuleConcurrency, [
+        "concurrency",
+      ]),
+    });
+};
+
 export const updatePolicyInTx = async (
   tx: Tx,
   id: string,
@@ -147,6 +172,7 @@ export const updatePolicyInTx = async (
     versionAnyApprovals,
     versionUserApprovals,
     versionRoleApprovals,
+    concurrency,
     ...rest
   } = input;
 
@@ -171,6 +197,7 @@ export const updatePolicyInTx = async (
     updateVersionAnyApprovals(tx, policy.id, versionAnyApprovals),
     updateVersionUserApprovals(tx, policy.id, versionUserApprovals),
     updateVersionRoleApprovals(tx, policy.id, versionRoleApprovals),
+    updateConcurrency(tx, policy.id, concurrency),
   ]);
 
   const updatedPolicy = await tx.query.policy.findFirst({
@@ -182,10 +209,12 @@ export const updatePolicyInTx = async (
       versionAnyApprovals: true,
       versionUserApprovals: true,
       versionRoleApprovals: true,
+      concurrency: true,
     },
   });
 
   if (updatedPolicy == null) throw new Error("Policy not found");
 
-  return updatedPolicy;
+  const updatedConcurrency = updatedPolicy.concurrency?.concurrency;
+  return { ...updatedPolicy, concurrency: updatedConcurrency };
 };
