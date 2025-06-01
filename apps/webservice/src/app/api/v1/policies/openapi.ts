@@ -170,6 +170,9 @@ export const openapi: Swagger.SwaggerV3 = {
                       $ref: "#/components/schemas/VersionRoleApproval",
                     },
                   },
+                  concurrency: {
+                    $ref: "#/components/schemas/PolicyConcurrency",
+                  },
                 },
                 required: ["name", "workspaceId", "targets"],
               },

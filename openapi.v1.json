@@ -2139,6 +2139,9 @@
                     "items": {
                       "$ref": "#/components/schemas/VersionRoleApproval"
                     }
+                  },
+                  "concurrency": {
+                    "$ref": "#/components/schemas/PolicyConcurrency"
                   }
                 },
                 "required": [
