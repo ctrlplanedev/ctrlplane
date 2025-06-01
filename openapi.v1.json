@@ -5860,24 +5860,8 @@
         ]
       },
       "PolicyConcurrency": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "concurrency": {
-            "type": "number",
-            "minimum": 1
-          }
-        },
-        "required": [
-          "name",
-          "concurrency"
-        ],
-        "additionalProperties": false
+        "type": "number",
+        "nullable": true
       },
       "Policy1": {
         "type": "object",
