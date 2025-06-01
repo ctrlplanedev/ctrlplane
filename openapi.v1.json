@@ -5864,7 +5864,9 @@
       },
       "PolicyConcurrency": {
         "type": "number",
-        "nullable": true
+        "nullable": true,
+        "format": "integer",
+        "minimum": 1
       },
       "Policy1": {
         "type": "object",
