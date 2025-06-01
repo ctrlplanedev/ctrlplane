@@ -676,6 +676,12 @@
                     "type": "object",
                     "additionalProperties": true,
                     "nullable": true
+                  },
+                  "exitHooks": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExitHook"
+                    }
                   }
                 }
               }
@@ -1126,6 +1132,12 @@
                       "key": "value"
                     },
                     "additionalProperties": true
+                  },
+                  "exitHooks": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExitHook"
+                    }
                   }
                 },
                 "required": [
@@ -1901,6 +1913,9 @@
                         "roleId"
                       ]
                     }
+                  },
+                  "concurrency": {
+                    "$ref": "#/components/schemas/PolicyConcurrency"
                   }
                 }
               }
@@ -2124,6 +2139,9 @@
                     "items": {
                       "$ref": "#/components/schemas/VersionRoleApproval"
                     }
+                  },
+                  "concurrency": {
+                    "$ref": "#/components/schemas/PolicyConcurrency"
                   }
                 },
                 "required": [
@@ -4914,6 +4932,35 @@
           "config"
         ]
       },
+      "ExitHook": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the exit hook",
+            "example": "my-exit-hook"
+          },
+          "jobAgentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The ID of the job agent to use for the exit hook",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "jobAgentConfig": {
+            "type": "object",
+            "description": "The configuration for the job agent",
+            "example": {
+              "key": "value"
+            },
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "name",
+          "jobAgentId",
+          "jobAgentConfig"
+        ]
+      },
       "JobWithTrigger": {
         "allOf": [
           {
@@ -5426,6 +5473,11 @@
             "type": "string",
             "format": "date-time"
           },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "workspaceId": {
             "type": "string",
             "format": "uuid"
@@ -5445,6 +5497,7 @@
           "workspaceId",
           "createdAt",
           "updatedAt",
+          "deletedAt",
           "metadata"
         ]
       },
@@ -5809,6 +5862,12 @@
           "requiredApprovalsCount"
         ]
       },
+      "PolicyConcurrency": {
+        "type": "number",
+        "nullable": true,
+        "format": "integer",
+        "minimum": 1
+      },
       "Policy1": {
         "type": "object",
         "properties": {
@@ -5865,6 +5924,9 @@
             "items": {
               "$ref": "#/components/schemas/VersionRoleApproval"
             }
+          },
+          "concurrency": {
+            "$ref": "#/components/schemas/PolicyConcurrency"
           }
         },
         "required": [

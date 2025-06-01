@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import React from "react";
 import { notFound } from "next/navigation";
 import { SiAmazon, SiGooglecloud } from "@icons-pack/react-simple-icons";
-import { IconBrandAzure, IconMenu2 } from "@tabler/icons-react";
+import {
+  IconBrandAzure,
+  IconBrandGithub,
+  IconMenu2,
+} from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -31,6 +35,7 @@ import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { AwsActionButton } from "./AwsActionButton";
 import { CreateAzureProviderDialog } from "./azure/CreateAzureProviderDialog";
+import { GithubDialog } from "./github/GithubDialog";
 import { GoogleActionButton } from "./GoogleActionButton";
 import { selfManagedAgents } from "./SelfManaged";
 
@@ -62,6 +67,10 @@ const VmBadge: React.FC = () => (
 
 const VpcBadge: React.FC = () => (
   <Badge className="bg-neutral-500/20 text-neutral-300">VPC</Badge>
+);
+
+const GithubBadge: React.FC = () => (
+  <Badge className="bg-neutral-500/20 text-neutral-300">GitHub</Badge>
 );
 
 const ResourceProviderCard: React.FC<{ children: React.ReactNode }> = ({
@@ -186,6 +195,28 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
                 <CreateAzureProviderDialog workspaceId={workspace.id} />
               </ResourceProviderCard>
             )}
+
+            <ResourceProviderCard>
+              <ResourceProviderContent>
+                <ResourceProviderHeading>
+                  <IconBrandGithub className="mx-auto text-4xl text-neutral-300" />
+                  <div className="font-semibold">GitHub</div>
+                </ResourceProviderHeading>
+                <p className="text-xs text-muted-foreground">
+                  Select one of your connected organizations to scan in pull
+                  requests.
+                </p>
+                <ResourceProviderBadges>
+                  <GithubBadge />
+                </ResourceProviderBadges>
+              </ResourceProviderContent>
+
+              <GithubDialog workspaceId={workspace.id}>
+                <ResourceProviderActionButton>
+                  Create a provider
+                </ResourceProviderActionButton>
+              </GithubDialog>
+            </ResourceProviderCard>
           </div>
 
           <div className="my-16 border-b" />

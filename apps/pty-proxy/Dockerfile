@@ -30,6 +30,7 @@ COPY packages/auth/package.json ./packages/auth/package.json
 COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 COPY packages/events/package.json ./packages/events/package.json
+COPY packages/rule-engine/package.json ./packages/rule-engine/package.json
 
 COPY apps/pty-proxy/package.json ./apps/pty-proxy/package.json
 

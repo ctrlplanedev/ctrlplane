@@ -3,30 +3,27 @@ import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 import _ from "lodash";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../../api";
 import { test } from "../../fixtures";
 
 const yamlPath = path.join(__dirname, "matched-release-targets.spec.yaml");
 
 test.describe("Release Targets API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+
+    builder.createSystem();
+    builder.createResources();
+    builder.createEnvironments();
+    builder.createDeployments();
 
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
   test("should match a policy to a specific resource", async ({
@@ -35,7 +32,7 @@ test.describe("Release Targets API", () => {
     page,
   }) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -93,7 +90,7 @@ test.describe("Release Targets API", () => {
     page,
   }) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
@@ -169,7 +166,7 @@ test.describe("Release Targets API", () => {
     page,
   }) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-sample`;
     const sampleResourceResponse = await api.POST("/v1/resources", {
       body: {
@@ -241,7 +238,7 @@ test.describe("Release Targets API", () => {
     page,
   }) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -299,7 +296,7 @@ test.describe("Release Targets API", () => {
     page,
   }) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
@@ -375,13 +372,13 @@ test.describe("Release Targets API", () => {
     page,
   }) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const environmentName = `${systemPrefix}-staging`;
 
     const environmentResponse = await api.POST("/v1/environments", {
       body: {
         name: environmentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.cache.system.id,
         resourceSelector: {
           type: "identifier",
           operator: "equals",

@@ -49,6 +49,7 @@ import { deploymentVersion } from "./deployment-version.js";
 import { jobAgent } from "./job-agent.js";
 import { releaseJob } from "./release.js";
 import { jobResourceRelationship, resource } from "./resource.js";
+import { runbookJobTrigger } from "./runbook.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
@@ -116,6 +117,11 @@ export const jobRelations = relations(job, ({ many, one }) => ({
     fields: [job.id],
     references: [releaseJob.jobId],
   }),
+  variables: many(jobVariable),
+  runbookJobTrigger: one(runbookJobTrigger, {
+    fields: [job.id],
+    references: [runbookJobTrigger.jobId],
+  }),
 }));
 
 export const jobMetadata = pgTable(
@@ -166,6 +172,9 @@ export const createJobVariable = createInsertSchema(jobVariable).omit({
   id: true,
 });
 export const updateJobVariable = createJobVariable.partial();
+export const jobVariableRelations = relations(jobVariable, ({ one }) => ({
+  job: one(job, { fields: [jobVariable.jobId], references: [job.id] }),
+}));
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)

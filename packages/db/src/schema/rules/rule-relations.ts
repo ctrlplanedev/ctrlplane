@@ -15,6 +15,7 @@ import {
   policyRuleUserApproval,
   policyRuleUserApprovalRecord,
 } from "./approval-user.js";
+import { policyRuleConcurrency } from "./concurrency.js";
 import { policyRuleDenyWindow } from "./deny-window.js";
 import { policyRuleDeploymentVersionSelector } from "./deployment-selector.js";
 
@@ -123,6 +124,16 @@ export const policyDeploymentVersionSelectorRelations = relations(
   ({ one }) => ({
     policy: one(policy, {
       fields: [policyRuleDeploymentVersionSelector.policyId],
+      references: [policy.id],
+    }),
+  }),
+);
+
+export const policyRuleConcurrencyRelations = relations(
+  policyRuleConcurrency,
+  ({ one }) => ({
+    policy: one(policy, {
+      fields: [policyRuleConcurrency.policyId],
       references: [policy.id],
     }),
   }),

@@ -3,8 +3,6 @@ system:
   slug: "{{ prefix }}-selectors"
   description: System for testing resource selectors
 
-environments: []
-
 resources:
   - name: Group A Resource 1
     kind: TestResource
@@ -80,6 +78,3 @@ resources:
     metadata:
       group: c
       priority: low
-
-deployments: []
-policies: []

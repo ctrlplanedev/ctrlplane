@@ -750,6 +750,27 @@
       "when": 1747872966598,
       "tag": "0106_faithful_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1748473291557,
+      "tag": "0107_small_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1748637451684,
+      "tag": "0108_moaning_shooting_star",
+      "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1748802336990,
+      "tag": "0109_nervous_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

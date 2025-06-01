@@ -77,6 +77,9 @@ export const openapi: Swagger.SwaggerV3 = {
                       required: ["roleId"],
                     },
                   },
+                  concurrency: {
+                    $ref: "#/components/schemas/PolicyConcurrency",
+                  },
                 },
               },
             },

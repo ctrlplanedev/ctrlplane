@@ -66,6 +66,7 @@ type JobActionsDropdownMenuProps = {
   jobIds: string[];
   deployment: { id: string; name: string };
   environment: { id: string; name: string };
+  resource?: { id: string; name: string };
 };
 
 const JobActionsDropdownMenu: React.FC<JobActionsDropdownMenuProps> = (
@@ -199,6 +200,8 @@ export const DeploymentVersionJobsTable: React.FC<
                       key={id}
                       id={id}
                       resource={resource}
+                      environment={environment}
+                      deployment={deployment}
                       jobs={jobs}
                     />
                   );

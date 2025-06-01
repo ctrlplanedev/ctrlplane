@@ -1,9 +1,6 @@
-import path from "path";
 import { expect } from "@playwright/test";
 
 import { test } from "../fixtures";
-
-const yamlPath = path.join(__dirname, "workspace.spec.yaml");
 
 test.describe("Workspace API", () => {
   test("should fetch a workspace by ID", async ({ api, workspace }) => {

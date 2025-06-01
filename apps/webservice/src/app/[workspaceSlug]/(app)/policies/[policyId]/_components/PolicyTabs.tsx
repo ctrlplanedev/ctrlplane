@@ -24,6 +24,7 @@ export const PolicyTabs: React.FC = () => {
   const timeWindowsUrl = editUrls.timeWindows();
   const deploymentFlowUrl = editUrls.deploymentFlow();
   const qualitySecurityUrl = editUrls.qualitySecurity();
+  const concurrencyUrl = editUrls.concurrency();
 
   const pathname = usePathname();
 
@@ -33,6 +34,7 @@ export const PolicyTabs: React.FC = () => {
     if (pathname === timeWindowsUrl) return "time-windows";
     if (pathname === deploymentFlowUrl) return "deployment-flow";
     if (pathname === qualitySecurityUrl) return "quality-security";
+    if (pathname === concurrencyUrl) return "concurrency";
     return "overview";
   };
 
@@ -46,6 +48,7 @@ export const PolicyTabs: React.FC = () => {
     if (value === "time-windows") router.push(timeWindowsUrl);
     if (value === "deployment-flow") router.push(deploymentFlowUrl);
     if (value === "quality-security") router.push(qualitySecurityUrl);
+    if (value === "concurrency") router.push(concurrencyUrl);
     setActiveTab(value);
   };
 
@@ -64,6 +67,10 @@ export const PolicyTabs: React.FC = () => {
         >
           <IconTag className="h-4 w-4" />
           Version Conditions
+        </TabsTrigger>
+        <TabsTrigger value="concurrency" className="flex items-center gap-1">
+          <IconCircleCheck className="h-4 w-4" />
+          Concurrency
         </TabsTrigger>
         <TabsTrigger
           value="quality-security"

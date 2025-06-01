@@ -126,6 +126,10 @@ export const openapi: Swagger.SwaggerV3 = {
                     additionalProperties: true,
                     nullable: true,
                   },
+                  exitHooks: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/ExitHook" },
+                  },
                 },
               },
             },

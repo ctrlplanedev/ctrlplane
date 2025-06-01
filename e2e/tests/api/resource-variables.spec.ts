@@ -2,32 +2,27 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "resource-variables.spec.yaml");
 
 test.describe("Resource Variables API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
-    importedEntities = await importEntitiesFromYaml(
-      api,
-      workspace.id,
-      yamlPath,
-    );
+    builder = new EntitiesBuilder(api, workspace, yamlPath);
+    await builder.createSystem();
+    await builder.createEnvironments();
+    await builder.createDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, importedEntities, workspace.id);
+    await cleanupImportedEntities(api, builder.cache, workspace.id);
   });
 
   test("create a resource with variables", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
 
     // Create a resource with variables
@@ -82,7 +77,7 @@ test.describe("Resource Variables API", () => {
   });
 
   test("update resource variables", async ({ api, workspace }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
 
     // Create a resource with initial variables
@@ -143,7 +138,7 @@ test.describe("Resource Variables API", () => {
     api,
     workspace,
   }) => {
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
 
     // Create a resource with variables
@@ -176,9 +171,7 @@ test.describe("Resource Variables API", () => {
     api,
     workspace,
   }) => {
-    const systemPrefix = importedEntities.system.slug
-      .split("-")[0]!
-      .toLowerCase();
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
     // Create target resource
@@ -273,9 +266,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = importedEntities.system.slug
-      .split("-")[0]!
-      .toLowerCase();
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
     // Create target resource
     const targetResource = await api.POST("/v1/resources", {
@@ -332,7 +323,7 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = importedEntities.deployments[0]!;
+    const deployment = builder.cache.deployments[0]!;
 
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
@@ -428,9 +419,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = importedEntities.system.slug
-      .split("-")[0]!
-      .toLowerCase();
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
     // Create target resource
@@ -490,7 +479,7 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = importedEntities.deployments[0]!;
+    const deployment = builder.cache.deployments[0]!;
 
     const key = faker.string.alphanumeric(10);
 
@@ -606,9 +595,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = importedEntities.system.slug
-      .split("-")[0]!
-      .toLowerCase();
+    const systemPrefix = builder.cache.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
     // Create target resource
@@ -667,7 +654,7 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = importedEntities.deployments[0]!;
+    const deployment = builder.cache.deployments[0]!;
 
     const key = faker.string.alphanumeric(10);
 

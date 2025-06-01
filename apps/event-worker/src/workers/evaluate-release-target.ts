@@ -110,7 +110,10 @@ export const evaluateReleaseTargetWorker = createWorker(
 
         await tx.execute(
           sql`
-            SELECT id FROM ${schema.releaseTarget}
+            SELECT * FROM ${schema.releaseTarget}
+            INNER JOIN ${schema.computedPolicyTargetReleaseTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.releaseTargetId, schema.releaseTarget.id)}
+            INNER JOIN ${schema.policyTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, schema.policyTarget.id)}
+            INNER JOIN ${schema.policy} ON ${eq(schema.policyTarget.policyId, schema.policy.id)}
             WHERE ${eq(schema.releaseTarget.id, releaseTarget.id)}
             FOR UPDATE NOWAIT
           `,
