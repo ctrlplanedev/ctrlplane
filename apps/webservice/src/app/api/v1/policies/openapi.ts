@@ -67,16 +67,7 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         required: ["roleId", "requiredApprovalsCount"],
       },
-      PolicyConcurrency: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          description: { type: "string" },
-          concurrency: { type: "number", minimum: 1 },
-        },
-        required: ["name", "concurrency"],
-        additionalProperties: false,
-      },
+      PolicyConcurrency: { type: "number", nullable: true },
       Policy: {
         type: "object",
         properties: {

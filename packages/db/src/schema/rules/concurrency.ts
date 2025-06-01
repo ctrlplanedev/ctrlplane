@@ -1,14 +1,10 @@
-import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { integer, pgTable, uuid } from "drizzle-orm/pg-core";
 
 import { policy } from "../policy.js";
 import { basePolicyRuleFields } from "./base.js";
 
 export const policyRuleConcurrency = pgTable("policy_rule_concurrency", {
   ...basePolicyRuleFields,
-
-  name: text("name").notNull(),
-  description: text("description"),
 
   policyId: uuid("policy_id")
     .notNull()
@@ -19,7 +15,3 @@ export const policyRuleConcurrency = pgTable("policy_rule_concurrency", {
 });
 
 export type PolicyRuleConcurrency = typeof policyRuleConcurrency.$inferSelect;
-
-export const createPolicyRuleConcurrency = createInsertSchema(
-  policyRuleConcurrency,
-);

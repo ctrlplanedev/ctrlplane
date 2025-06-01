@@ -46,11 +46,11 @@ export const PolicyFormContextProvider: React.FC<{
   children: React.ReactNode;
   policy: Policy;
 }> = ({ children, policy }) => {
-  console.log(policy);
-
+  const concurrency = policy.concurrency?.concurrency ?? null;
+  const defaultValues = { ...policy, concurrency };
   const form = useForm({
     schema: SCHEMA.updatePolicy,
-    defaultValues: policy,
+    defaultValues,
   });
 
   console.log(form.getValues());

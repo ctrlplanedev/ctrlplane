@@ -35,7 +35,6 @@ import { releaseTarget } from "./release.js";
 import { createPolicyRuleAnyApproval } from "./rules/approval-any.js";
 import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
 import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
-import { createPolicyRuleConcurrency } from "./rules/concurrency.js";
 import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
 import { createPolicyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { workspace } from "./workspace.js";
@@ -149,14 +148,14 @@ export const createPolicy = z.intersection(
       .optional()
       .nullable(),
 
-    concurrency: createPolicyRuleConcurrency
-      .omit({ policyId: true })
-      .refine((data) => data.concurrency == null || data.concurrency > 0, {
+    concurrency: z
+      .number()
+      .optional()
+      .nullable()
+      .refine((data) => data == null || data > 0, {
         message: "Concurrency must be greater than 0",
         path: ["concurrency"],
-      })
-      .optional()
-      .nullable(),
+      }),
   }),
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;
@@ -183,14 +182,14 @@ export const updatePolicy = policyInsertSchema.partial().extend({
     .array(createPolicyRuleRoleApproval.omit({ policyId: true }))
     .optional(),
 
-  concurrency: createPolicyRuleConcurrency
-    .omit({ policyId: true })
-    .refine((data) => data.concurrency == null || data.concurrency > 0, {
+  concurrency: z
+    .number()
+    .optional()
+    .nullable()
+    .refine((data) => data == null || data > 0, {
       message: "Concurrency must be greater than 0",
       path: ["concurrency"],
-    })
-    .optional()
-    .nullable(),
+    }),
 });
 export type UpdatePolicy = z.infer<typeof updatePolicy>;
 

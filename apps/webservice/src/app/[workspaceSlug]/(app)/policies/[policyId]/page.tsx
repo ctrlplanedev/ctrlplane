@@ -109,6 +109,14 @@ export default async function PolicyPage(props: {
                       Version Conditions
                     </Badge>
                   )}
+                  {rules.includes("concurrency") && (
+                    <Badge
+                      variant="outline"
+                      className="border-yellow-500 text-yellow-500"
+                    >
+                      Concurrency
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>

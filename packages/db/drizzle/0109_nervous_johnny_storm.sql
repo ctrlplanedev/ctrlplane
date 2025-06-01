@@ -2,8 +2,6 @@ CREATE TABLE "policy_rule_concurrency" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"policy_id" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"name" text NOT NULL,
-	"description" text,
 	"concurrency" integer DEFAULT 1 NOT NULL,
 	CONSTRAINT "policy_rule_concurrency_policy_id_unique" UNIQUE("policy_id")
 );

@@ -21,6 +21,7 @@ export type PolicyTab =
   | "config"
   | "time-windows"
   | "deployment-flow"
+  | "concurrency"
   | "quality-security";
 
 type PolicyContextType = {
@@ -45,6 +46,7 @@ const defaultPolicy: CreatePolicy = {
   versionAnyApprovals: null,
   versionUserApprovals: [],
   versionRoleApprovals: [],
+  concurrency: null,
 };
 
 const PolicyContext = createContext<PolicyContextType>({
@@ -82,6 +84,7 @@ export const PolicyContextProvider: React.FC<{
       versionAnyApprovals: null,
       versionUserApprovals: [],
       versionRoleApprovals: [],
+      concurrency: null,
     },
   });
   const [activeTab, setActiveTab] = useState<PolicyTab>("config");
@@ -115,6 +118,11 @@ export const PolicyContextProvider: React.FC<{
         });
       });
   });
+
+  const { errors } = form.formState;
+  for (const error of Object.values(errors))
+    if (error.message != null)
+      toast.error("Error creating policy", { description: error.message });
 
   return (
     <PolicyContext.Provider

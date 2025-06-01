@@ -1,5 +1,5 @@
 {
-  "id": "449f774f-60f7-428f-8266-7fe7a11a687f",
+  "id": "17639907-2b8e-4013-a586-96363497e921",
   "prevId": "6f18b9b2-dcc2-4b26-890c-f1c5d703fa7f",
   "version": "7",
   "dialect": "postgresql",
@@ -6035,18 +6035,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "concurrency": {
           "name": "concurrency",

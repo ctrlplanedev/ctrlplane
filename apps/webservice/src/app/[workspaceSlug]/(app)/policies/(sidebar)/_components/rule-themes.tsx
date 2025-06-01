@@ -5,6 +5,7 @@ import {
   LayersIcon,
 } from "@radix-ui/react-icons";
 import {
+  IconArrowsSplit,
   IconCalendarTime,
   IconFilter,
   IconUserCheck,
@@ -19,7 +20,8 @@ export type RuleType =
   | "rollout-pass-rate"
   | "release-dependency"
   | "approval-gate"
-  | "deployment-version-selector";
+  | "deployment-version-selector"
+  | "concurrency";
 
 export const ruleTypeIcons: Record<
   RuleType,
@@ -46,6 +48,11 @@ export const ruleTypeIcons: Record<
   "deployment-version-selector": (props) => (
     <IconFilter className={cn("size-3 text-purple-400", props.className)} />
   ),
+  concurrency: (props) => (
+    <IconArrowsSplit
+      className={cn("size-3 text-yellow-400", props.className)}
+    />
+  ),
 } as const;
 
 export const getRuleTypeIcon = (type: RuleType) => {
@@ -60,6 +67,7 @@ export const ruleTypeLabels: Record<RuleType, string> = {
   "release-dependency": "Release Dependency",
   "approval-gate": "Approval Gate",
   "deployment-version-selector": "Deployment Version Selector",
+  concurrency: "Concurrency",
 } as const;
 
 export const getRuleTypeLabel = (type: RuleType) => {
@@ -81,6 +89,8 @@ export const ruleTypeColors: Record<RuleType, string> = {
     "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border-purple-500/50",
   "deployment-version-selector":
     "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border-purple-500/50",
+  concurrency:
+    "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 border-yellow-500/50",
 } as const;
 
 export const getTypeColorClass = (type: RuleType): string => {

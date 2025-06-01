@@ -140,15 +140,24 @@ const updateConcurrency = async (
   policyId: string,
   concurrency: SCHEMA.UpdatePolicy["concurrency"],
 ) => {
-  if (concurrency == null) return;
+  if (concurrency === undefined) return;
 
-  await tx
-    .delete(SCHEMA.policyRuleConcurrency)
-    .where(eq(SCHEMA.policyRuleConcurrency.policyId, policyId));
+  if (concurrency === null) {
+    await tx
+      .delete(SCHEMA.policyRuleConcurrency)
+      .where(eq(SCHEMA.policyRuleConcurrency.policyId, policyId));
+    return;
+  }
 
   await tx
     .insert(SCHEMA.policyRuleConcurrency)
-    .values({ ...concurrency, policyId });
+    .values({ concurrency, policyId })
+    .onConflictDoUpdate({
+      target: [SCHEMA.policyRuleConcurrency.policyId],
+      set: buildConflictUpdateColumns(SCHEMA.policyRuleConcurrency, [
+        "concurrency",
+      ]),
+    });
 };
 
 export const updatePolicyInTx = async (
@@ -206,5 +215,6 @@ export const updatePolicyInTx = async (
 
   if (updatedPolicy == null) throw new Error("Policy not found");
 
-  return updatedPolicy;
+  const updatedConcurrency = updatedPolicy.concurrency?.concurrency;
+  return { ...updatedPolicy, concurrency: updatedConcurrency };
 };

@@ -49,6 +49,12 @@ export const PolicyEditTabs: React.FC = () => {
       href: policyEditUrls.deploymentFlow(),
     },
     {
+      id: "concurrency",
+      label: "Concurrency",
+      description: "Control the number of concurrent deployments",
+      href: policyEditUrls.concurrency(),
+    },
+    {
       id: "quality-security",
       label: "Quality & Security",
       description: "Deployment safety measures",
