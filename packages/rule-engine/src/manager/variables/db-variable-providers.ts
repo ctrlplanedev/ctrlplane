@@ -123,6 +123,10 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     }
 
     for (const referenceValue of referenceValues) {
+      const isSelectingResource =
+        await this.isSelectingResource(referenceValue);
+      if (!isSelectingResource) continue;
+
       const resolvedValue = await getReferenceVariableValue(
         this.options.resourceId,
         referenceValue,
