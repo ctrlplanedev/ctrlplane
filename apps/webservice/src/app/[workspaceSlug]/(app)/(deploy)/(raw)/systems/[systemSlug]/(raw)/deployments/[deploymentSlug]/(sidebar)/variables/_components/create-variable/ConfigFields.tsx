@@ -1,14 +1,9 @@
 "use client";
 
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
-  DeploymentVariableConfigType,
-  EnvironmentVariableConfigType,
   NumberVariableConfigType,
-  ResourceVariableConfigType,
-  RunbookVariableConfigType,
   StringVariableConfigType,
   VariableConfigType,
 } from "@ctrlplane/validators/variables";
@@ -25,13 +20,6 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
-import {
-  defaultCondition,
-  isEmptyCondition,
-} from "@ctrlplane/validators/resources";
-
-import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionBadge";
-import { ResourceConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionDialog";
 
 export const ConfigTypeSelector: React.FC<{
   value: string | undefined;
@@ -55,25 +43,6 @@ export const ConfigTypeSelector: React.FC<{
       {!exclude?.includes("choice") && (
         <SelectItem value="choice">Choice</SelectItem>
       )}
-    </SelectContent>
-  </Select>
-);
-
-export const RunbookConfigTypeSelector: React.FC<{
-  value: string | undefined;
-  onChange: (type: string) => void;
-}> = ({ value, onChange }) => (
-  <Select value={value} onValueChange={onChange}>
-    <SelectTrigger>
-      <SelectValue placeholder="Select type" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="string">String</SelectItem>
-      <SelectItem value="number">Number</SelectItem>
-      <SelectItem value="boolean">Boolean</SelectItem>
-      <SelectItem value="choice">Choice</SelectItem>
-      <SelectItem value="resource">Resource</SelectItem>
-      <SelectItem value="environment">Environment</SelectItem>
     </SelectContent>
   </Select>
 );
@@ -265,43 +234,4 @@ export const ChoiceConfigFields: ConfigFieldsFC<ChoiceVariableConfigType> = ({
       </FormItem>
     </>
   );
-};
-
-type RunbookConfigFieldsFC<T extends RunbookVariableConfigType> = React.FC<{
-  config: T;
-  updateConfig: (updates: Partial<T>) => void;
-}>;
-
-export const ResourceConfigFields: RunbookConfigFieldsFC<
-  ResourceVariableConfigType
-> = ({ config, updateConfig }) => {
-  const onSelectorChange = (condition: ResourceCondition | null) => {
-    const cond = condition ?? defaultCondition;
-    if (isEmptyCondition(cond)) updateConfig({ ...config, filter: undefined });
-    if (!isEmptyCondition(cond)) updateConfig({ ...config, filter: cond });
-  };
-
-  return (
-    <>
-      {config.filter && <ResourceConditionBadge condition={config.filter} />}
-      <ResourceConditionDialog
-        condition={config.filter ?? defaultCondition}
-        onChange={onSelectorChange}
-      >
-        <Button variant="outline">Edit Filter</Button>
-      </ResourceConditionDialog>
-    </>
-  );
-};
-
-export const EnvironmentConfigFields: RunbookConfigFieldsFC<
-  EnvironmentVariableConfigType
-> = () => {
-  return <></>;
-};
-
-export const DeploymentConfigFields: RunbookConfigFieldsFC<
-  DeploymentVariableConfigType
-> = () => {
-  return <></>;
 };

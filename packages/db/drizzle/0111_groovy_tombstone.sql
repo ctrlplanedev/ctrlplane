@@ -1,0 +1,1 @@
+ALTER TYPE "public"."scope_type" ADD VALUE 'deploymentVariableValue' BEFORE 'variableSet';

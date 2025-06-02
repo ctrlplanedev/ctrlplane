@@ -1,6 +1,12 @@
+import type { Tx } from "@ctrlplane/db";
 import { z } from "zod";
 
-import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  eq,
+  takeFirst,
+  upsertDirectVariableValue,
+  upsertReferenceVariableValue,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -11,145 +17,123 @@ const updateDeploymentVariableQueue = getQueue(
   Channel.UpdateDeploymentVariable,
 );
 
-export const valueRouter = createTRPCRouter({
+const addVariableToQueue = async (db: Tx, variableId: string) => {
+  const variable = await db
+    .select()
+    .from(schema.deploymentVariable)
+    .where(eq(schema.deploymentVariable.id, variableId))
+    .then(takeFirst);
+
+  await updateDeploymentVariableQueue.add(variable.id, variable);
+};
+
+const directValueRouter = createTRPCRouter({
   create: protectedProcedure
-    .meta({
-      authorizationCheck: async ({ canUser, ctx, input }) => {
-        const variable = await ctx.db
-          .select()
-          .from(schema.deploymentVariable)
-          .where(eq(schema.deploymentVariable.id, input.variableId))
-          .then(takeFirst);
-        return canUser
-          .perform(Permission.DeploymentVariableCreate)
-          .on({ type: "deployment", id: variable.deploymentId });
-      },
-    })
     .input(
       z.object({
         variableId: z.string().uuid(),
-        data: z.any(),
+        data: schema.createDirectDeploymentVariableValue,
       }),
     )
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVariableValueCreate).on({
+          type: "deploymentVariable",
+          id: input.variableId,
+        }),
+    })
     .mutation(async ({ ctx, input }) => {
-      const { variableId, data } = input;
-      const variable = await ctx.db.query.deploymentVariable.findFirst({
-        where: eq(schema.deploymentVariable.id, variableId),
-      });
-      if (variable == null) throw new Error("Variable not found");
-      const valueInsert = { ...data, variableId };
-      console.log(valueInsert);
-      // const value = await upsertVariableValue(ctx.db, valueInsert);
-      // await updateDeploymentVariableQueue.add(variableId, variable);
-      // return value;
+      const insertedValue = await ctx.db.transaction((tx) =>
+        upsertDirectVariableValue(tx, input.variableId, input.data),
+      );
+      await addVariableToQueue(ctx.db, input.variableId);
+      return insertedValue;
     }),
 
   update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        data: schema.createDirectDeploymentVariableValue,
+      }),
+    )
     .meta({
-      authorizationCheck: async ({ canUser, ctx, input }) => {
-        const value = await ctx.db
-          .select()
-          .from(schema.deploymentVariableValue)
-          .where(eq(schema.deploymentVariableValue.id, input.id))
-          .then(takeFirstOrNull);
-
-        if (value == null) return false;
-
-        return canUser.perform(Permission.DeploymentVariableUpdate).on({
-          type: "deploymentVariable",
-          id: value.variableId,
-        });
-      },
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVariableValueUpdate).on({
+          type: "deploymentVariableValue",
+          id: input.id,
+        }),
     })
-    .input(z.object({ id: z.string().uuid(), data: z.any() }))
     .mutation(async ({ ctx, input }) => {
-      const { deployment_variable: variable } = await ctx.db
-        .select()
-        .from(schema.deploymentVariableValue)
-        .innerJoin(
-          schema.deploymentVariable,
-          eq(
-            schema.deploymentVariableValue.variableId,
-            schema.deploymentVariable.id,
-          ),
-        )
-        .where(eq(schema.deploymentVariableValue.id, input.id))
-        .then(takeFirst);
-
       const updatedValue = await ctx.db.transaction((tx) =>
-        tx
-          .update(schema.deploymentVariableValue)
-          .set(input.data)
-          .where(eq(schema.deploymentVariableValue.id, input.id))
-          .returning()
-          .then(takeFirst)
-          .then(async (updatedValue) => {
-            if (
-              input.data.default &&
-              variable.defaultValueId !== updatedValue.id
-            )
-              await tx
-                .update(schema.deploymentVariable)
-                .set({ defaultValueId: updatedValue.id })
-                .where(
-                  eq(schema.deploymentVariable.id, updatedValue.variableId),
-                );
-
-            if (
-              input.data.default === false &&
-              variable.defaultValueId === updatedValue.id
-            )
-              await tx
-                .update(schema.deploymentVariable)
-                .set({ defaultValueId: null })
-                .where(
-                  eq(schema.deploymentVariable.id, updatedValue.variableId),
-                );
-
-            return updatedValue;
-          }),
+        upsertDirectVariableValue(tx, input.id, input.data),
       );
-
-      await updateDeploymentVariableQueue.add(variable.id, variable);
+      await addVariableToQueue(ctx.db, updatedValue.variableId);
       return updatedValue;
     }),
+});
 
-  delete: protectedProcedure
+const referenceValueRouter = createTRPCRouter({
+  create: protectedProcedure
+    .input(
+      z.object({
+        variableId: z.string().uuid(),
+        data: schema.createReferenceDeploymentVariableValue,
+      }),
+    )
     .meta({
-      authorizationCheck: async ({ canUser, ctx, input }) => {
-        const value = await ctx.db
-          .select()
-          .from(schema.deploymentVariableValue)
-          .innerJoin(
-            schema.deploymentVariable,
-            eq(
-              schema.deploymentVariableValue.variableId,
-              schema.deploymentVariable.id,
-            ),
-          )
-          .where(eq(schema.deploymentVariableValue.id, input))
-          .then(takeFirst);
-        return canUser.perform(Permission.DeploymentVariableUpdate).on({
-          type: "deployment",
-          id: value.deployment_variable.deploymentId,
-        });
-      },
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVariableValueCreate).on({
+          type: "deploymentVariable",
+          id: input.variableId,
+        }),
     })
-    .input(z.string().uuid())
     .mutation(async ({ ctx, input }) => {
-      const value = await ctx.db
-        .delete(schema.deploymentVariableValue)
-        .where(eq(schema.deploymentVariableValue.id, input))
-        .returning()
-        .then(takeFirst);
-
-      const variable = await ctx.db
-        .select()
-        .from(schema.deploymentVariable)
-        .where(eq(schema.deploymentVariable.id, value.variableId))
-        .then(takeFirst);
-
-      await updateDeploymentVariableQueue.add(variable.id, variable);
-      return value;
+      const insertedValue = await ctx.db.transaction((tx) =>
+        upsertReferenceVariableValue(tx, input.variableId, input.data),
+      );
+      await addVariableToQueue(ctx.db, input.variableId);
+      return insertedValue;
     }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        data: schema.createReferenceDeploymentVariableValue,
+      }),
+    )
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVariableValueUpdate).on({
+          type: "deploymentVariableValue",
+          id: input.id,
+        }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const updatedValue = await ctx.db.transaction((tx) =>
+        upsertReferenceVariableValue(tx, input.id, input.data),
+      );
+      await addVariableToQueue(ctx.db, updatedValue.variableId);
+      return updatedValue;
+    }),
+});
+
+export const valueRouter = createTRPCRouter({
+  direct: directValueRouter,
+  reference: referenceValueRouter,
+  delete: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVariableValueDelete).on({
+          type: "deploymentVariableValue",
+          id: input,
+        }),
+    })
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .delete(schema.deploymentVariableValue)
+        .where(eq(schema.deploymentVariableValue.id, input)),
+    ),
 });

@@ -8,7 +8,7 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { CreateDeploymentVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/CreateDeploymentVersion";
 import { CreateHookDialog } from "../hooks/CreateHookDialog";
-import { CreateVariableDialog } from "../variables/CreateVariableDialog";
+import { CreateVariableDialog } from "../variables/_components/create-variable/CreateVariableDialog";
 
 export const DeploymentCTA: React.FC<{
   workspace: SCHEMA.Workspace;

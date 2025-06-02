@@ -12,6 +12,7 @@ import { db } from "@ctrlplane/db/client";
 import {
   deployment,
   deploymentVariable,
+  deploymentVariableValue,
   deploymentVersion,
   deploymentVersionChannel,
   entityRole,
@@ -305,6 +306,35 @@ const getDeploymentVariableScopes = async (id: string) => {
   ];
 };
 
+const getDeploymentVariableValueScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(deployment, eq(deployment.systemId, system.id))
+    .innerJoin(
+      deploymentVariable,
+      eq(deploymentVariable.deploymentId, deployment.id),
+    )
+    .innerJoin(
+      deploymentVariableValue,
+      eq(deploymentVariableValue.variableId, deploymentVariable.id),
+    )
+    .where(eq(deploymentVariableValue.id, id))
+    .then(takeFirst);
+
+  return [
+    {
+      type: "deploymentVariableValue" as const,
+      id: result.deployment_variable_value.id,
+    },
+    { type: "deploymentVariable" as const, id: result.deployment_variable.id },
+    { type: "deployment" as const, id: result.deployment.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 const getRunbookScopes = async (id: string) => {
   const result = await db
     .select()
@@ -461,6 +491,7 @@ export const scopeHandlers: Record<
   resourceProvider: getResourceProviderScopes,
   deployment: getDeploymentScopes,
   deploymentVariable: getDeploymentVariableScopes,
+  deploymentVariableValue: getDeploymentVariableValueScopes,
   runbook: getRunbookScopes,
   system: getSystemScopes,
   workspace: getWorkspaceScopes,

@@ -43,6 +43,7 @@ export const scopeType = pgEnum("scope_type", [
   "environment",
   "environmentPolicy",
   "deploymentVariable",
+  "deploymentVariableValue",
   "variableSet",
   "system",
   "deployment",

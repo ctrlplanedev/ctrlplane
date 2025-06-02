@@ -24,7 +24,7 @@ import {
 
 import type { VariableData } from "./variable-data";
 import { api } from "~/trpc/react";
-import { AddVariableValueDialog } from "./AddVariableValueDialog";
+import { CreateDirectValueDialog } from "./_components/direct-value/CreateDirectValueDialog";
 import { EditVariableDialog } from "./EditVariableDialog";
 
 const DeleteVariableDialog: React.FC<{
@@ -87,15 +87,18 @@ export const VariableDropdown: React.FC<{
               Edit
             </DropdownMenuItem>
           </EditVariableDialog>
-          <AddVariableValueDialog variable={variable}>
+          <CreateDirectValueDialog
+            variable={variable}
+            onClose={() => setOpen(false)}
+          >
             <DropdownMenuItem
               className="flex items-center gap-2"
               onSelect={(e) => e.preventDefault()}
             >
               <IconPlus className="h-4 w-4" />
-              Add Value
+              Add Direct Value
             </DropdownMenuItem>
-          </AddVariableValueDialog>
+          </CreateDirectValueDialog>
           <DeleteVariableDialog variableId={variable.id}>
             <DropdownMenuItem
               className="flex items-center gap-2"
