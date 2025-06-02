@@ -41,13 +41,20 @@ export interface EntitiesCache {
       key: string;
       description?: string;
       config: Record<string, any>;
-      values?: Array<{
+      directValues?: Array<{
         id: string;
         value: any;
-        valueType?: "direct" | "reference";
         sensitive?: boolean;
         resourceSelector?: any;
-        default?: boolean;
+        isDefault?: boolean;
+      }>;
+      referenceValues?: Array<{
+        id: string;
+        resourceSelector?: any;
+        reference: string;
+        path: string[];
+        defaultValue?: any;
+        isDefault?: boolean;
       }>;
     }>;
   }>;
@@ -306,6 +313,14 @@ export class EntitiesBuilder {
               params: { path: { deploymentId: deploymentResult.id } },
               body: {
                 ...variable,
+                directValues: variable.directValues?.map((dv) => ({
+                  ...dv,
+                  resourceSelector: dv.resourceSelector ?? null,
+                })),
+                referenceValues: variable.referenceValues?.map((rv) => ({
+                  ...rv,
+                  resourceSelector: rv.resourceSelector ?? null,
+                })),
               },
             },
           );
@@ -319,12 +334,20 @@ export class EntitiesBuilder {
           }
 
           const variableData = variableResponse.data!;
+          const { directValues, referenceValues } = variableData;
+          directValues?.forEach((dv) => {
+            dv.id = dv.id ?? faker.string.uuid();
+          });
+          referenceValues?.forEach((rv) => {
+            rv.id = rv.id ?? faker.string.uuid();
+          });
           deploymentResult.variables!.push({
             id: variableData.id,
             key: variableData.key,
             description: variableData.description,
             config: variableData.config,
-            values: variableData.values,
+            directValues: variableData.directValues,
+            referenceValues: variableData.referenceValues,
           });
         }
       }

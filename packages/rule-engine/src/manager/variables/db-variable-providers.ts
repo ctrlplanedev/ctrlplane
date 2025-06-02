@@ -1,7 +1,14 @@
 import type { Tx } from "@ctrlplane/db";
 import type { VariableSetValue } from "@ctrlplane/db/schema";
 
-import { and, asc, eq, selector } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  eq,
+  getDeploymentVariables,
+  getResolvedDirectValue,
+  selector,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -53,8 +60,9 @@ export type DatabaseDeploymentVariableOptions = {
 type DeploymentVariable = {
   id: string;
   key: string;
-  defaultValue: schema.DeploymentVariableValue | null;
-  values: schema.DeploymentVariableValue[];
+  directValues: schema.DirectDeploymentVariableValue[];
+  referenceValues: schema.ReferenceDeploymentVariableValue[];
+  defaultValue?: schema.DeploymentVariableValue | null;
 };
 
 export class DatabaseDeploymentVariableProvider implements VariableProvider {
@@ -65,21 +73,11 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     this.db = options.db ?? db;
   }
 
-  private loadVariables() {
-    return this.db.query.deploymentVariable.findMany({
-      where: eq(
-        schema.deploymentVariable.deploymentId,
-        this.options.deploymentId,
-      ),
-      with: {
-        defaultValue: true,
-        values: { orderBy: [asc(schema.deploymentVariableValue.value)] },
-      },
-    });
-  }
-
   private getVariables() {
-    return (this.variables ??= this.loadVariables());
+    return (this.variables ??= getDeploymentVariables(
+      this.db,
+      this.options.deploymentId,
+    ));
   }
 
   async isSelectingResource(value: schema.DeploymentVariableValue) {
@@ -95,53 +93,81 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     return resourceMatch != null;
   }
 
-  async resolveVariableValue(value: schema.DeploymentVariableValue) {
-    const isDirect = schema.isDeploymentVariableValueDirect(value);
-    if (isDirect) return { resolved: true, value: value.value };
-
-    const isReference = schema.isDeploymentVariableValueReference(value);
-    if (isReference)
-      return {
-        resolved: true,
-        value: await getReferenceVariableValue(this.options.resourceId, value),
-      };
-
-    return { resolved: false, value: null };
-  }
-
+  /**
+   * @param key - The key of the variable to get.
+   * @returns The variable with the given key, or null if the variable does not exist.
+   * Order of precedence:
+   * 1. Direct value -> these are already sorted by value
+   * 2. Reference value -> these are already sorted by reference
+   * 3. Default value -> this is the last resort
+   *
+   */
   async getVariable(key: string): Promise<MaybeVariable> {
     const variables = await this.getVariables();
     const variable = variables.find((v) => v.key === key) ?? null;
     if (variable == null) return null;
 
-    for (const value of variable.values) {
-      const isSelectingResource = await this.isSelectingResource(value);
+    const { directValues, referenceValues, defaultValue } = variable;
+
+    for (const directValue of directValues) {
+      const isSelectingResource = await this.isSelectingResource(directValue);
       if (!isSelectingResource) continue;
 
-      const { resolved, value: resolvedValue } =
-        await this.resolveVariableValue(value);
-      if (!resolved) continue;
-
+      const resolvedValue = getResolvedDirectValue(directValue);
       return {
         id: variable.id,
         key,
         value: resolvedValue,
-        sensitive: value.sensitive,
+        sensitive: directValue.sensitive,
       };
     }
 
-    if (variable.defaultValue == null) return null;
+    for (const referenceValue of referenceValues) {
+      const isSelectingResource =
+        await this.isSelectingResource(referenceValue);
+      if (!isSelectingResource) continue;
 
-    const { resolved, value: resolvedValue } = await this.resolveVariableValue(
-      variable.defaultValue,
-    );
-    if (!resolved) return null;
+      const resolvedValue = await getReferenceVariableValue(
+        this.options.resourceId,
+        referenceValue,
+      );
+      return {
+        id: variable.id,
+        key,
+        value: resolvedValue,
+        sensitive: false,
+      };
+    }
+
+    if (defaultValue == null) return null;
+    if (schema.isDeploymentVariableValueDirect(defaultValue)) {
+      const resolvedValue = getResolvedDirectValue(defaultValue);
+      return {
+        id: variable.id,
+        key,
+        value: resolvedValue,
+        sensitive: defaultValue.sensitive,
+      };
+    }
+
+    if (schema.isDeploymentVariableValueReference(defaultValue)) {
+      const resolvedValue = await getReferenceVariableValue(
+        this.options.resourceId,
+        defaultValue,
+      );
+      return {
+        id: variable.id,
+        key,
+        value: resolvedValue,
+        sensitive: false,
+      };
+    }
 
     return {
       id: variable.id,
       key,
-      value: resolvedValue,
-      sensitive: variable.defaultValue.sensitive,
+      value: null,
+      sensitive: false,
     };
   }
 }

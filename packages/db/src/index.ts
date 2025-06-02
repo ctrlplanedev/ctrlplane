@@ -6,6 +6,5 @@ export {
   workspaceSchema,
   systemSchema,
 } from "./schema/index.js";
-export * from "./utils/upsert-env.js";
-export * from "./utils/upsert-resources.js";
+export * from "./utils/index.js";
 export * from "./selectors/index.js";

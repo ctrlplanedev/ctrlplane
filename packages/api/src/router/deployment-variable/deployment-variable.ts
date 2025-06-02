@@ -9,10 +9,10 @@ import {
   isNull,
   takeFirst,
   takeFirstOrNull,
+  upsertDeploymentVariable,
 } from "@ctrlplane/db";
 import {
   createDeploymentVariable,
-  createDeploymentVariableValue,
   deployment,
   deploymentVariable,
   deploymentVariableValue,
@@ -20,7 +20,6 @@ import {
   resourceMatchesMetadata,
   system,
   updateDeploymentVariable,
-  updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -49,35 +48,21 @@ const valueRouter = createTRPCRouter({
     .input(
       z.object({
         variableId: z.string().uuid(),
-        data: createDeploymentVariableValue,
+        data: z.any(),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      ctx.db.transaction((tx) =>
-        tx
-          .insert(deploymentVariableValue)
-          .values({
-            ...input.data,
-            variableId: input.variableId,
-          })
-          .returning()
-          .then(takeFirst)
-          .then(async (value) => {
-            if (input.data.default)
-              await tx
-                .update(deploymentVariable)
-                .set({ defaultValueId: value.id })
-                .where(eq(deploymentVariable.id, input.variableId));
-            const variable = await tx
-              .select()
-              .from(deploymentVariable)
-              .where(eq(deploymentVariable.id, input.variableId))
-              .then(takeFirst);
-            await updateDeploymentVariableQueue.add(variable.id, variable);
-            return value;
-          }),
-      ),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const { variableId, data } = input;
+      const variable = await ctx.db.query.deploymentVariable.findFirst({
+        where: eq(deploymentVariable.id, variableId),
+      });
+      if (variable == null) throw new Error("Variable not found");
+      const valueInsert = { ...data, variableId };
+      console.log(valueInsert);
+      // const value = await upsertVariableValue(ctx.db, valueInsert);
+      // await updateDeploymentVariableQueue.add(variableId, variable);
+      // return value;
+    }),
 
   update: protectedProcedure
     .meta({
@@ -96,9 +81,7 @@ const valueRouter = createTRPCRouter({
         });
       },
     })
-    .input(
-      z.object({ id: z.string().uuid(), data: updateDeploymentVariableValue }),
-    )
+    .input(z.object({ id: z.string().uuid(), data: z.any() }))
     .mutation(async ({ ctx, input }) => {
       const { deployment_variable: variable } = await ctx.db
         .select()
@@ -262,29 +245,9 @@ export const deploymentVariableRouter = createTRPCRouter({
         data: createDeploymentVariable,
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const variable = await ctx.db
-        .insert(deploymentVariable)
-        .values({ ...input.data, deploymentId: input.deploymentId })
-        .returning()
-        .then(takeFirst);
-
-      if (input.data.config?.default) {
-        const value = await ctx.db
-          .insert(deploymentVariableValue)
-          .values({
-            variableId: variable.id,
-            value: input.data.config.default,
-          })
-          .returning()
-          .then(takeFirst);
-
-        await ctx.db
-          .update(deploymentVariable)
-          .set({ defaultValueId: value.id })
-          .where(eq(deploymentVariable.id, variable.id));
-      }
-
+    .mutation(async ({ input }) => {
+      const { deploymentId, data } = input;
+      const variable = await upsertDeploymentVariable(deploymentId, data);
       await updateDeploymentVariableQueue.add(variable.id, variable);
       return variable;
     }),

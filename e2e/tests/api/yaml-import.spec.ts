@@ -123,13 +123,15 @@ test.describe("YAML Entity Import", () => {
     expect(variable.config.type).toBe("string");
     expect(variable.config.inputType).toBe("text");
 
-    const { values } = variable;
-    expect(values.length).toBe(1);
-    const value = values[0]!;
+    const { directValues } = variable;
+    expect(directValues.length).toBe(1);
+    const value = directValues[0]!;
     expect(value.value).toBe("sample-api-key");
 
     const defaultValue = variable.defaultValue;
     expect(defaultValue).toBeDefined();
-    expect(defaultValue?.value).toBe("sample-api-key");
+    const isDirectValue = "value" in defaultValue!;
+    expect(isDirectValue).toBe(true);
+    if (isDirectValue) expect(defaultValue?.value).toBe("sample-api-key");
   });
 });

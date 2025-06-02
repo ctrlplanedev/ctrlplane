@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -115,9 +116,13 @@ export const EditVariableDialog: React.FC<EditVariableDialogProps> = ({
                       <SelectContent>
                         {variable.values.map((v) => (
                           <SelectItem key={v.id} value={v.id}>
-                            {typeof v.value === "object"
-                              ? JSON.stringify(v.value)
-                              : v.value}
+                            {SCHEMA.isDeploymentVariableValueDirect(v) &&
+                              (typeof v.value === "object"
+                                ? JSON.stringify(v.value)
+                                : v.value)}
+
+                            {SCHEMA.isDeploymentVariableValueReference(v) &&
+                              v.reference}
                           </SelectItem>
                         ))}
                       </SelectContent>

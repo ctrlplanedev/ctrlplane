@@ -7,7 +7,6 @@ import {
   boolean,
   foreignKey,
   jsonb,
-  pgEnum,
   pgTable,
   text,
   uniqueIndex,
@@ -54,26 +53,11 @@ export type InsertDeploymentVariable = InferInsertModel<
   typeof deploymentVariable
 >;
 
-export const valueType = pgEnum("value_type", ["direct", "reference"]);
-
 export const deploymentVariableValue = pgTable(
   "deployment_variable_value",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
-
-    valueType: valueType("value_type").notNull().default("direct"), // 'direct' | 'reference'
-
-    value: jsonb("value").$type<string | number | boolean | object>(),
-    sensitive: boolean("sensitive").notNull().default(false),
-
-    // Reference fields
-    reference: text("reference"),
-    path: text("path").array(),
-    defaultValue: jsonb("default_value").$type<
-      string | number | boolean | object
-    >(),
-
     resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
@@ -85,71 +69,113 @@ export const deploymentVariableValue = pgTable(
     })
       .onUpdate("restrict")
       .onDelete("cascade"),
-
-    sql`CONSTRAINT valid_value_type CHECK (
-      (value_type = 'direct' AND value IS NOT NULL AND reference IS NULL AND path IS NULL AND default_value IS NULL) OR
-      (value_type = 'reference' AND value IS NULL AND reference IS NOT NULL AND path IS NOT NULL)
-    )`,
   ],
 );
-export type DeploymentVariableValue = InferSelectModel<
-  typeof deploymentVariableValue
->;
-export const createDeploymentVariableValue = createInsertSchema(
-  deploymentVariableValue,
+
+type BaseVariableValue = typeof deploymentVariableValue.$inferSelect;
+
+// Direct values
+export const deploymentVariableValueDirect = pgTable(
+  "deployment_variable_value_direct",
   {
-    resourceSelector: resourceCondition.refine(isValidResourceCondition),
-    value: z
-      .union([z.string(), z.number(), z.boolean(), z.object({})])
-      .optional(),
-    path: z.array(z.string()).optional(),
-    defaultValue: z
-      .union([z.string(), z.number(), z.boolean(), z.object({})])
-      .optional(),
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    variableValueId: uuid("variable_value_id")
+      .notNull()
+      .unique()
+      .references(() => deploymentVariableValue.id, { onDelete: "cascade" }),
+    value: jsonb("value").$type<string | number | boolean | object>(),
+    valueHash: text("value_hash"),
+    sensitive: boolean("sensitive").notNull().default(false),
   },
-)
-  .omit({ id: true, variableId: true })
-  .extend({ default: z.boolean().optional() });
+);
 
-export const updateDeploymentVariableValue =
-  createDeploymentVariableValue.partial();
+export const createDirectDeploymentVariableValue = z.object({
+  resourceSelector: resourceCondition
+    .optional()
+    .nullable()
+    .refine((val) => {
+      if (val == null) return true;
+      return isValidResourceCondition(val);
+    }),
+  isDefault: z.boolean().optional().default(false),
 
-type BaseVariableAttributes = {
-  id: string;
-  variableId: string;
-  valueType: "direct" | "reference";
-  resourceSelector: ResourceCondition | null;
-};
+  value: z.union([z.string(), z.number(), z.boolean(), z.object({}), z.null()]),
+  sensitive: z.boolean().optional().default(false),
+});
 
-export type DeploymentVariableValueDirect = BaseVariableAttributes & {
-  valueType: "direct";
-  value: string | number | boolean | object;
-  sensitive: boolean;
-  defaultValue: null;
-  reference: null;
-  path: null;
-};
+export type CreateDirectDeploymentVariableValue = z.infer<
+  typeof createDirectDeploymentVariableValue
+>;
 
-export type DeploymentVariableValueReference = BaseVariableAttributes & {
-  valueType: "reference";
-  reference: string;
-  path: string[];
-  defaultValue: string | number | boolean | object | null;
-  value: null;
-  sensitive: boolean;
-};
+export const updateDirectDeploymentVariableValue =
+  createDirectDeploymentVariableValue.partial();
+
+type DirectVariableValue = Pick<
+  typeof deploymentVariableValueDirect.$inferSelect,
+  "value" | "valueHash" | "sensitive"
+>;
+export type DirectDeploymentVariableValue = BaseVariableValue &
+  DirectVariableValue;
+
+// Reference values
+export const deploymentVariableValueReference = pgTable(
+  "deployment_variable_value_reference",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    variableValueId: uuid("variable_value_id")
+      .notNull()
+      .unique()
+      .references(() => deploymentVariableValue.id, { onDelete: "cascade" }),
+    reference: text("reference").notNull(),
+    path: text("path").array().notNull(),
+    defaultValue: jsonb("default_value").$type<
+      string | number | boolean | object
+    >(),
+  },
+);
+
+export const createReferenceDeploymentVariableValue = z.object({
+  resourceSelector: resourceCondition
+    .optional()
+    .nullable()
+    .refine((val) => {
+      if (val == null) return true;
+      return isValidResourceCondition(val);
+    }),
+  isDefault: z.boolean().optional().default(false),
+
+  reference: z.string(),
+  path: z.array(z.string()),
+  defaultValue: z
+    .union([z.string(), z.number(), z.boolean(), z.object({}), z.null()])
+    .optional(),
+});
+
+export const updateReferenceDeploymentVariableValue =
+  createReferenceDeploymentVariableValue.partial();
+
+export type CreateReferenceDeploymentVariableValue = z.infer<
+  typeof createReferenceDeploymentVariableValue
+>;
+
+type ReferenceVariableValue = Pick<
+  typeof deploymentVariableValueReference.$inferSelect,
+  "reference" | "path" | "defaultValue"
+>;
+export type ReferenceDeploymentVariableValue = BaseVariableValue &
+  ReferenceVariableValue;
+
+export type DeploymentVariableValue =
+  | DirectDeploymentVariableValue
+  | ReferenceDeploymentVariableValue;
 
 export const isDeploymentVariableValueDirect = (
   value: DeploymentVariableValue,
-): value is DeploymentVariableValueDirect => {
-  return value.valueType === "direct";
-};
+) => "value" in value;
 
 export const isDeploymentVariableValueReference = (
   value: DeploymentVariableValue,
-): value is DeploymentVariableValueReference => {
-  return value.valueType === "reference";
-};
+) => "reference" in value;
 
 // workaround for cirular reference - https://www.answeroverflow.com/m/1194395880523042936
 const defaultValueIdFKConstraint: {
@@ -184,18 +210,10 @@ export const createDeploymentVariable = createInsertSchema(deploymentVariable, {
 })
   .omit({ id: true, defaultValueId: true, deploymentId: true })
   .extend({
-    values: z
-      .array(createDeploymentVariableValue)
-      .optional()
-      .refine(
-        (v) => {
-          if (v == null) return true;
-          const numDefault = v.filter((val) => val.default === true).length;
-          return numDefault <= 1;
-        },
-        { message: "Only one default value is allowed" },
-      ),
+    directValues: z.array(createDirectDeploymentVariableValue).optional(),
+    referenceValues: z.array(createReferenceDeploymentVariableValue).optional(),
   });
+
 export const updateDeploymentVariable = createDeploymentVariable.partial();
 
 export const deploymentVariableRelationships = relations(
