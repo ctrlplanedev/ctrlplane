@@ -497,4 +497,313 @@ test.describe("Deployment Variables API", () => {
     expect(isDirect).toBeTruthy();
     if (isDirect) expect(receivedDefaultValue!.value).toBe(value);
   });
+
+  test("should be able to add more values to a variable", async ({ api }) => {
+    const importedDeployment = builder.cache.deployments[0]!;
+    const key = faker.string.alphanumeric(10);
+
+    const valueA = faker.string.alphanumeric(10);
+    const referenceA = faker.string.alphanumeric(10);
+    const pathA = [
+      faker.string.alphanumeric(10),
+      faker.string.alphanumeric(10),
+    ];
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+        body: {
+          key,
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          directValues: [
+            {
+              value: valueA,
+              sensitive: false,
+              resourceSelector: null,
+            },
+          ],
+          referenceValues: [
+            {
+              reference: referenceA,
+              path: pathA,
+              defaultValue: null,
+              resourceSelector: null,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(variableCreateResponse.response.status).toBe(201);
+
+    const valueB = faker.string.alphanumeric(10);
+    const referenceB = faker.string.alphanumeric(10);
+    const pathB = [
+      faker.string.alphanumeric(10),
+      faker.string.alphanumeric(10),
+    ];
+
+    const variableUpdateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+        body: {
+          key,
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          directValues: [
+            {
+              value: valueB,
+              sensitive: false,
+              resourceSelector: null,
+            },
+          ],
+          referenceValues: [
+            {
+              reference: referenceB,
+              path: pathB,
+              defaultValue: null,
+              resourceSelector: null,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(variableUpdateResponse.response.status).toBe(201);
+
+    const variableGetResponse = await api.GET(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+      },
+    );
+
+    expect(variableGetResponse.response.status).toBe(200);
+    const variables = variableGetResponse.data ?? [];
+    const receivedVariable = variables.find((v) => v.key === key);
+    expect(receivedVariable).toBeDefined();
+
+    const receivedDirectValues = receivedVariable!.directValues;
+    expect(receivedDirectValues).toBeDefined();
+    expect(receivedDirectValues?.length).toBe(2);
+
+    const receivedDirectValueA = receivedDirectValues.find(
+      (v) => v.value === valueA,
+    );
+    expect(receivedDirectValueA).toBeDefined();
+    const receivedDirectValueB = receivedDirectValues.find(
+      (v) => v.value === valueB,
+    );
+    expect(receivedDirectValueB).toBeDefined();
+
+    const receivedReferenceValues = receivedVariable!.referenceValues;
+    expect(receivedReferenceValues).toBeDefined();
+    expect(receivedReferenceValues?.length).toBe(2);
+
+    const receivedReferenceValueA = receivedReferenceValues.find(
+      (v) => v.reference === referenceA,
+    );
+    expect(receivedReferenceValueA).toBeDefined();
+    const receivedReferenceValueB = receivedReferenceValues.find(
+      (v) => v.reference === referenceB,
+    );
+    expect(receivedReferenceValueB).toBeDefined();
+  });
+
+  test("should be able to convert an insensitive value to a sensitive value", async ({
+    api,
+  }) => {
+    const importedDeployment = builder.cache.deployments[0]!;
+    const key = faker.string.alphanumeric(10);
+    const value = faker.string.alphanumeric(10);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+        body: {
+          key,
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          directValues: [
+            {
+              value,
+              sensitive: false,
+              resourceSelector: null,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(variableCreateResponse.response.status).toBe(201);
+    const variable = variableCreateResponse.data;
+    expect(variable).toBeDefined();
+    let receivedKey = variable?.key;
+    expect(receivedKey).toBe(key);
+
+    const variableUpdateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+        body: {
+          key,
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          directValues: [
+            {
+              value,
+              sensitive: true,
+              resourceSelector: null,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(variableUpdateResponse.response.status).toBe(201);
+
+    const variableGetResponse = await api.GET(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+      },
+    );
+
+    expect(variableGetResponse.response.status).toBe(200);
+    const variables = variableGetResponse.data ?? [];
+    const receivedVariable = variables.find((v) => v.key === key);
+    expect(receivedVariable).toBeDefined();
+
+    const receivedDirectValues = receivedVariable!.directValues;
+    expect(receivedDirectValues).toBeDefined();
+    expect(receivedDirectValues?.length).toBe(1);
+    const receivedDirectValue = receivedDirectValues![0]!;
+    expect(receivedDirectValue.value).toBe(value);
+    expect(receivedDirectValue.sensitive).toBe(true);
+  });
+
+  test("should be able to convert a sensitive value to an insensitive value", async ({
+    api,
+  }) => {
+    const importedDeployment = builder.cache.deployments[0]!;
+    const key = faker.string.alphanumeric(10);
+    const value = faker.string.alphanumeric(10);
+
+    const variableCreateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+        body: {
+          key,
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          directValues: [
+            {
+              value,
+              sensitive: true,
+              resourceSelector: null,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(variableCreateResponse.response.status).toBe(201);
+    const variable = variableCreateResponse.data;
+    expect(variable).toBeDefined();
+    let receivedKey = variable?.key;
+    expect(receivedKey).toBe(key);
+
+    const variableUpdateResponse = await api.POST(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+        body: {
+          key,
+          config: {
+            type: "string",
+            inputType: "text",
+          },
+          directValues: [
+            {
+              value,
+              sensitive: false,
+              resourceSelector: null,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(variableUpdateResponse.response.status).toBe(201);
+
+    const variableGetResponse = await api.GET(
+      "/v1/deployments/{deploymentId}/variables",
+      {
+        params: {
+          path: {
+            deploymentId: importedDeployment.id,
+          },
+        },
+      },
+    );
+
+    expect(variableGetResponse.response.status).toBe(200);
+    const variables = variableGetResponse.data ?? [];
+    const receivedVariable = variables.find((v) => v.key === key);
+    expect(receivedVariable).toBeDefined();
+
+    const receivedDirectValues = receivedVariable!.directValues;
+    expect(receivedDirectValues).toBeDefined();
+    expect(receivedDirectValues?.length).toBe(1);
+    const receivedDirectValue = receivedDirectValues![0]!;
+    expect(receivedDirectValue.value).toBe(value);
+    expect(receivedDirectValue.sensitive).toBe(false);
+  });
 });

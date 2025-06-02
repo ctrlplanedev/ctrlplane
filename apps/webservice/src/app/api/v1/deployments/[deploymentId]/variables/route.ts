@@ -6,6 +6,7 @@ import { CREATED, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import {
   eq,
   getDeploymentVariables,
+  getResolvedDirectValue,
   takeFirstOrNull,
   upsertDeploymentVariable,
 } from "@ctrlplane/db";
@@ -47,7 +48,16 @@ export const GET = request()
           );
 
         const variables = await getDeploymentVariables(db, deploymentId);
-        return NextResponse.json(variables);
+        const variablesWithDecryptedValues = variables.map((v) => {
+          const { directValues, ...rest } = v;
+          const resolvedDirectValues = directValues.map((dv) => ({
+            ...dv,
+            value: getResolvedDirectValue(dv),
+          }));
+          return { ...rest, directValues: resolvedDirectValues };
+        });
+
+        return NextResponse.json(variablesWithDecryptedValues);
       } catch (e) {
         log.error("Failed to fetch deployment variables", { error: e });
         return NextResponse.json(
