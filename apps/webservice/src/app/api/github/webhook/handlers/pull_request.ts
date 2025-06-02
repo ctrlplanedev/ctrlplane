@@ -152,9 +152,14 @@ const fetchAllPullRequestCommits = async (
   return commits;
 };
 
+const getCleanedCommitMessage = (message: string) =>
+  message.replace(/\n/g, " ").trim();
+
 const getCommitInfo = (commit: Commit) => ({
   [PullRequestCommitConfigKey.SHA]: commit.sha,
-  [PullRequestCommitConfigKey.Message]: commit.commit.message,
+  [PullRequestCommitConfigKey.Message]: getCleanedCommitMessage(
+    commit.commit.message,
+  ),
   [PullRequestCommitConfigKey.Author]: commit.commit.author?.name ?? null,
   [PullRequestCommitConfigKey.AuthorEmail]: commit.commit.author?.email ?? null,
   [PullRequestCommitConfigKey.URL]: commit.html_url,
