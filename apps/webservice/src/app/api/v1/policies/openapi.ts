@@ -68,10 +68,10 @@ export const openapi: Swagger.SwaggerV3 = {
         required: ["roleId", "requiredApprovalsCount"],
       },
       PolicyConcurrency: {
-        type: "number",
+        type: "integer",
         nullable: true,
-        format: "integer",
         minimum: 1,
+        format: "int32",
       },
       Policy: {
         type: "object",
