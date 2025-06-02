@@ -910,34 +910,30 @@ export interface components {
        */
       longitude: number;
     };
-    BaseVariableValue: {
-      resourceSelector?: {
+    BaseDeploymentVariableValue: {
+      resourceSelector: {
         [key: string]: unknown;
       } | null;
-      default?: boolean;
+      isDefault?: boolean;
     };
-    DeploymentVariableDirectValue: components["schemas"]["BaseVariableValue"] & {
-      /** @enum {string} */
-      valueType: "direct";
-      value: string | number | boolean | Record<string, never> | unknown[];
+    DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
+      value:
+        | (string | number | boolean | Record<string, never> | unknown[])
+        | null;
       sensitive?: boolean;
     };
-    DeploymentVariableReferenceValue: components["schemas"]["BaseVariableValue"] & {
-      /** @enum {string} */
-      valueType: "reference";
-      reference: string;
-      path: string[];
-      defaultValue?:
-        | string
-        | number
-        | boolean
-        | Record<string, never>
-        | unknown[];
+    DirectDeploymentVariableValueWithId: components["schemas"]["DirectDeploymentVariableValue"] & {
+      /** Format: uuid */
+      id: string;
     };
-    VariableValue:
-      | components["schemas"]["DeploymentVariableDirectValue"]
-      | components["schemas"]["DeploymentVariableReferenceValue"];
-    DeploymentVariableValue: components["schemas"]["VariableValue"] & {
+    ReferenceDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
+      path: string[];
+      reference: string;
+      defaultValue?:
+        | (string | number | boolean | Record<string, never> | unknown[])
+        | null;
+    };
+    ReferenceDeploymentVariableValueWithId: components["schemas"]["ReferenceDeploymentVariableValue"] & {
       /** Format: uuid */
       id: string;
     };
@@ -946,8 +942,11 @@ export interface components {
       id: string;
       key: string;
       description: string;
-      values: components["schemas"]["DeploymentVariableValue"][];
-      defaultValue?: components["schemas"]["DeploymentVariableValue"];
+      directValues: components["schemas"]["DirectDeploymentVariableValueWithId"][];
+      referenceValues: components["schemas"]["ReferenceDeploymentVariableValueWithId"][];
+      defaultValue?:
+        | components["schemas"]["DirectDeploymentVariableValueWithId"]
+        | components["schemas"]["ReferenceDeploymentVariableValueWithId"];
       config: {
         [key: string]: unknown;
       };
@@ -1314,6 +1313,8 @@ export interface components {
       roleId: string;
       requiredApprovalsCount: number;
     };
+    /** Format: integer */
+    PolicyConcurrency: number | null;
     Policy1: {
       /** Format: uuid */
       id: string;
@@ -1331,6 +1332,7 @@ export interface components {
       versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
+      concurrency?: components["schemas"]["PolicyConcurrency"];
     };
     UpdateResourceRelationshipRule: {
       name?: string;
@@ -2018,7 +2020,8 @@ export interface operations {
           config: {
             [key: string]: unknown;
           };
-          values?: components["schemas"]["VariableValue"][];
+          directValues?: components["schemas"]["DirectDeploymentVariableValue"][];
+          referenceValues?: components["schemas"]["ReferenceDeploymentVariableValue"][];
         };
       };
     };
@@ -2648,6 +2651,7 @@ export interface operations {
             roleId: string;
             requiredApprovalsCount?: number;
           }[];
+          concurrency?: components["schemas"]["PolicyConcurrency"];
         };
       };
     };
@@ -2750,6 +2754,7 @@ export interface operations {
           versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
           versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
+          concurrency?: components["schemas"]["PolicyConcurrency"];
         };
       };
     };

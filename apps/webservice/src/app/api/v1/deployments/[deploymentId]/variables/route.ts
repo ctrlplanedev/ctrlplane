@@ -2,9 +2,13 @@ import type { Tx } from "@ctrlplane/db";
 import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { CREATED, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
-import { isPresent } from "ts-is-present";
 
-import { eq, upsertDeploymentVariable } from "@ctrlplane/db";
+import {
+  eq,
+  getDeploymentVariables,
+  takeFirstOrNull,
+  upsertDeploymentVariable,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
@@ -18,14 +22,6 @@ import { request } from "~/app/api/v1/middleware";
 const log = logger.child({
   route: "/v1/deployments/[deploymentId]/variables",
 });
-
-const resolveDirectValue = (val: schema.DeploymentVariableValueDirect) => {
-  const { id, value, valueType, sensitive, resourceSelector } = val;
-  const strVal =
-    typeof value === "object" ? JSON.stringify(value) : String(value);
-  const resolvedValue = sensitive ? variablesAES256().decrypt(strVal) : value;
-  return { id, value: resolvedValue, valueType, resourceSelector, sensitive };
-};
 
 export const GET = request()
   .use(authn)
@@ -50,31 +46,7 @@ export const GET = request()
             { status: NOT_FOUND },
           );
 
-        const variablesResult = await db.query.deploymentVariable.findMany({
-          where: eq(schema.deploymentVariable.deploymentId, deploymentId),
-          with: { values: true },
-        });
-
-        const variables = variablesResult.map((v) => {
-          const { values, defaultValueId, deploymentId: _, ...rest } = v;
-          const resolvedValues = values
-            .map((val) => {
-              const isDirect = schema.isDeploymentVariableValueDirect(val);
-              if (isDirect) return resolveDirectValue(val);
-              const isReference =
-                schema.isDeploymentVariableValueReference(val);
-              if (isReference) return val;
-              log.error("Invalid variable value type", { value: val });
-              return null;
-            })
-            .filter(isPresent);
-
-          const defaultValue = resolvedValues.find(
-            (v) => v.id === defaultValueId,
-          );
-          return { ...rest, values: resolvedValues, defaultValue };
-        });
-
+        const variables = await getDeploymentVariables(db, deploymentId);
         return NextResponse.json(variables);
       } catch (e) {
         log.error("Failed to fetch deployment variables", { error: e });
@@ -90,18 +62,51 @@ const getDefaultValue = async (db: Tx, variable: schema.DeploymentVariable) => {
   const { defaultValueId } = variable;
   if (defaultValueId == null) return undefined;
 
-  const defaultValue = await db.query.deploymentVariableValue.findFirst({
-    where: eq(schema.deploymentVariableValue.id, defaultValueId),
-  });
+  const defaultDirectValue = await db
+    .select()
+    .from(schema.deploymentVariableValue)
+    .innerJoin(
+      schema.deploymentVariableValueDirect,
+      eq(
+        schema.deploymentVariableValueDirect.variableValueId,
+        schema.deploymentVariableValue.id,
+      ),
+    )
+    .where(eq(schema.deploymentVariableValue.id, defaultValueId))
+    .then(takeFirstOrNull);
 
-  if (defaultValue == null) return undefined;
+  if (defaultDirectValue != null) {
+    const value = defaultDirectValue.deployment_variable_value_direct.sensitive
+      ? variablesAES256().decrypt(
+          String(defaultDirectValue.deployment_variable_value_direct.value),
+        )
+      : defaultDirectValue.deployment_variable_value_direct.value;
+    return {
+      ...defaultDirectValue.deployment_variable_value_direct,
+      ...defaultDirectValue.deployment_variable_value,
+      value,
+    };
+  }
 
-  const { value, ...rest } = defaultValue;
+  const defaultReferenceValue = await db
+    .select()
+    .from(schema.deploymentVariableValue)
+    .innerJoin(
+      schema.deploymentVariableValueReference,
+      eq(
+        schema.deploymentVariableValueReference.variableValueId,
+        schema.deploymentVariableValue.id,
+      ),
+    )
+    .where(eq(schema.deploymentVariableValue.id, defaultValueId))
+    .then(takeFirstOrNull);
 
-  const resolvedValue = defaultValue.sensitive
-    ? variablesAES256().decrypt(String(value))
-    : value;
-  return { ...rest, value: resolvedValue };
+  if (defaultReferenceValue == null) return null;
+
+  return {
+    ...defaultReferenceValue.deployment_variable_value_reference,
+    ...defaultReferenceValue.deployment_variable_value,
+  };
 };
 
 export const POST = request()

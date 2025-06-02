@@ -1,6 +1,5 @@
 "use client";
 
-import type * as schema from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -11,6 +10,7 @@ import {
   IconLink,
 } from "@tabler/icons-react";
 
+import * as schema from "@ctrlplane/db/schema";
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -135,7 +135,7 @@ const VariableValueRow: React.FC<{
                         size="icon"
                         className="h-6 w-6 p-0"
                       >
-                        {value.valueType === "direct" ? (
+                        {schema.isDeploymentVariableValueDirect(value) ? (
                           <IconCode className="h-4 w-4 text-blue-400/70" />
                         ) : (
                           <IconLink className="h-4 w-4 text-amber-400/70" />
@@ -143,20 +143,20 @@ const VariableValueRow: React.FC<{
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      {value.valueType === "direct"
+                      {schema.isDeploymentVariableValueDirect(value)
                         ? "Static value set directly"
                         : "Computed value based on resource reference"}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
 
-                {value.valueType === "direct" ? (
+                {schema.isDeploymentVariableValueDirect(value) ? (
                   <span className="rounded-md border border-blue-800/40 bg-blue-950/20 px-2 py-0.5 font-mono text-blue-300/90">
                     {String(value.value)}
                   </span>
                 ) : (
                   <span className="flex items-center rounded-md border border-amber-800/40 bg-amber-950/20 px-2 py-0.5">
-                    {[value.reference, ...(value.path ?? [])].map((p, idx) => (
+                    {[value.reference, ...value.path].map((p, idx) => (
                       <React.Fragment key={p}>
                         {idx > 0 && (
                           <span className="mx-0.5 text-neutral-400">.</span>
@@ -208,7 +208,7 @@ const VariableValueRow: React.FC<{
                         size="icon"
                         className="h-6 w-6 p-0"
                       >
-                        {value.valueType === "direct" ? (
+                        {schema.isDeploymentVariableValueDirect(value) ? (
                           <IconCode className="h-4 w-4 text-blue-400/70" />
                         ) : (
                           <IconLink className="h-4 w-4 text-amber-400/70" />
@@ -216,20 +216,20 @@ const VariableValueRow: React.FC<{
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      {value.valueType === "direct"
+                      {schema.isDeploymentVariableValueDirect(value)
                         ? "Static value set directly"
                         : "Computed value based on resource reference"}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
 
-                {value.valueType === "direct" ? (
+                {schema.isDeploymentVariableValueDirect(value) ? (
                   <span className="rounded-md border border-blue-800/40 bg-blue-950/20 px-2 py-0.5 font-mono text-blue-300/90">
                     {String(value.value)}
                   </span>
                 ) : (
                   <span className="flex items-center rounded-md border border-amber-800/40 bg-amber-950/20 px-2 py-0.5">
-                    {[value.reference, ...(value.path ?? [])].map((p, idx) => (
+                    {[value.reference, ...value.path].map((p, idx) => (
                       <React.Fragment key={p}>
                         {idx > 0 && (
                           <span className="mx-0.5 text-neutral-400">.</span>
@@ -284,7 +284,11 @@ const VariableValueRow: React.FC<{
               key={resource.id}
               resource={resource}
               workspaceUrls={workspaceUrls}
-              valueType={value.valueType}
+              valueType={
+                schema.isDeploymentVariableValueDirect(value)
+                  ? "direct"
+                  : "reference"
+              }
             />
           ))}
           {value.resources.length !== 0 && (
@@ -406,7 +410,12 @@ export const VariableTable: React.FC<{
     keys: [
       "key",
       "description",
-      (i) => i.values.map((v) => JSON.stringify(v.value)),
+      (i) =>
+        i.values.map((v) =>
+          schema.isDeploymentVariableValueDirect(v)
+            ? JSON.stringify(v.value)
+            : JSON.stringify(v.reference),
+        ),
     ],
   });
 

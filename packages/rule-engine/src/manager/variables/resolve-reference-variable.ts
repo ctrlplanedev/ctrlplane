@@ -9,7 +9,7 @@ export const getReferenceVariableValue = async (
   resourceId: string,
   variable:
     | schema.ReferenceResourceVariable
-    | schema.DeploymentVariableValueReference,
+    | schema.ReferenceDeploymentVariableValue,
 ) => {
   try {
     const { relationships, getTargetsWithMetadata } = await getResourceParents(
