@@ -133,7 +133,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .insert(SCHEMA.policyRuleDeploymentVersionSelector)
       .values({ ...deploymentVersionSelector, policyId: policy.id })
       .onConflictDoUpdate({
-        target: [SCHEMA.policyRuleDeploymentVersionSelector.id],
+        target: [SCHEMA.policyRuleDeploymentVersionSelector.policyId],
         set: buildConflictUpdateColumns(
           SCHEMA.policyRuleDeploymentVersionSelector,
           ["deploymentVersionSelector"],
