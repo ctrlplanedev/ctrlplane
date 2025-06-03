@@ -20,14 +20,40 @@ export const DeploymentVariableFixture = z.object({
   key: z.string(),
   description: z.string().optional(),
   config: z.record(z.any()),
-  values: z
+  directValues: z
     .array(
       z.object({
-        value: z.any(),
-        valueType: z.enum(["direct", "reference"]).optional(),
+        value: z
+          .union([
+            z.string(),
+            z.number(),
+            z.boolean(),
+            z.object({}),
+            z.array(z.any()),
+          ])
+          .nullable(),
         sensitive: z.boolean().optional(),
-        resourceSelector: z.any().optional(),
-        default: z.boolean().optional(),
+        resourceSelector: z.any().nullable(),
+        isDefault: z.boolean().optional(),
+      }),
+    )
+    .optional(),
+  referenceValues: z
+    .array(
+      z.object({
+        resourceSelector: z.any().nullable(),
+        reference: z.string(),
+        path: z.array(z.string()),
+        defaultValue: z
+          .union([
+            z.string(),
+            z.number(),
+            z.boolean(),
+            z.object({}),
+            z.array(z.any()),
+          ])
+          .nullable(),
+        isDefault: z.boolean().optional(),
       }),
     )
     .optional(),
@@ -83,12 +109,9 @@ export const PolicyFixture = z.object({
     }),
   ),
   versionAnyApprovals: z
-    .array(
-      z.object({
-        requiredApprovalsCount: z.number(),
-      }),
-    )
+    .object({ requiredApprovalsCount: z.number() })
     .optional(),
+
   denyWindows: z
     .array(
       z.object({

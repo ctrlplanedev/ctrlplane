@@ -147,6 +147,15 @@ export const createPolicy = z.intersection(
       .array(createPolicyRuleRoleApproval.omit({ policyId: true }))
       .optional()
       .nullable(),
+
+    concurrency: z
+      .number()
+      .optional()
+      .nullable()
+      .refine((data) => data == null || data > 0, {
+        message: "Concurrency must be greater than 0",
+        path: ["concurrency"],
+      }),
   }),
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;
@@ -172,6 +181,15 @@ export const updatePolicy = policyInsertSchema.partial().extend({
   versionRoleApprovals: z
     .array(createPolicyRuleRoleApproval.omit({ policyId: true }))
     .optional(),
+
+  concurrency: z
+    .number()
+    .optional()
+    .nullable()
+    .refine((data) => data == null || data > 0, {
+      message: "Concurrency must be greater than 0",
+      path: ["concurrency"],
+    }),
 });
 export type UpdatePolicy = z.infer<typeof updatePolicy>;
 

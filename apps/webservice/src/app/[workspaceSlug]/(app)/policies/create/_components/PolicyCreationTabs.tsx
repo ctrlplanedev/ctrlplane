@@ -12,6 +12,7 @@ import {
   QualitySecurity,
   TimeWindows,
 } from ".";
+import { Concurrency } from "./Concurrency";
 import { usePolicyContext } from "./PolicyContext";
 
 interface TabConfig {
@@ -37,6 +38,11 @@ const POLICY_TABS: TabConfig[] = [
     description: "Control deployment progression",
   },
   {
+    id: "concurrency",
+    label: "Concurrency",
+    description: "Control the number of concurrent deployments",
+  },
+  {
     id: "quality-security",
     label: "Quality & Security",
     description: "Deployment safety measures",
@@ -56,6 +62,8 @@ export const PolicyCreationTabs: React.FC<{
         return <TimeWindows />;
       case "deployment-flow":
         return <DeploymentFlow />;
+      case "concurrency":
+        return <Concurrency />;
       case "quality-security":
         return <QualitySecurity workspaceId={workspaceId} />;
     }

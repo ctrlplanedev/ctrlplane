@@ -327,9 +327,8 @@ test.describe("Resource Variables API", () => {
           type: "string",
           inputType: "text",
         },
-        values: [
+        referenceValues: [
           {
-            valueType: "reference",
             reference,
             path: ["metadata", "e2e-test"],
             resourceSelector: {
@@ -481,9 +480,8 @@ test.describe("Resource Variables API", () => {
           type: "string",
           inputType: "text",
         },
-        values: [
+        referenceValues: [
           {
-            valueType: "reference",
             reference,
             path: ["metadata", "reference"],
             resourceSelector: {
@@ -652,9 +650,8 @@ test.describe("Resource Variables API", () => {
           type: "string",
           inputType: "text",
         },
-        values: [
+        referenceValues: [
           {
-            valueType: "reference",
             reference,
             path: ["metadata", "reference"],
             resourceSelector: {

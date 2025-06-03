@@ -509,6 +509,23 @@ export interface paths {
     patch: operations["setResourceProvidersResources"];
     trace?: never;
   };
+  "/v1/resource-relationship-rules/{ruleId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update a resource relationship rule */
+    patch: operations["updateResourceRelationshipRule"];
+    trace?: never;
+  };
   "/v1/resource-relationship-rules": {
     parameters: {
       query?: never;
@@ -519,7 +536,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Create a resource relationship rule */
-    post: operations["upsertResourceRelationshipRule"];
+    post: operations["createResourceRelationshipRule"];
     delete?: never;
     options?: never;
     head?: never;
@@ -893,23 +910,65 @@ export interface components {
        */
       longitude: number;
     };
-    DeploymentVariableValue: {
-      /** Format: uuid */
-      id: string;
-      value: unknown;
-      sensitive: boolean;
+    BaseDeploymentVariableValue: {
       resourceSelector: {
         [key: string]: unknown;
       } | null;
+    };
+    DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
+      value:
+        | (string | number | boolean | Record<string, never> | unknown[])
+        | null;
+      sensitive: boolean;
+    };
+    DirectDeploymentVariableValueWithId: components["schemas"]["DirectDeploymentVariableValue"] & {
+      /** Format: uuid */
+      id?: string;
+    };
+    ReferenceDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
+      path: string[];
+      reference: string;
+      defaultValue?:
+        | (string | number | boolean | Record<string, never> | unknown[])
+        | null;
+    };
+    ReferenceDeploymentVariableValueWithId: components["schemas"]["ReferenceDeploymentVariableValue"] & {
+      /** Format: uuid */
+      id?: string;
     };
     DeploymentVariable: {
       /** Format: uuid */
       id: string;
       key: string;
       description: string;
-      values: components["schemas"]["DeploymentVariableValue"][];
-      defaultValue?: components["schemas"]["DeploymentVariableValue"];
+      directValues: components["schemas"]["DirectDeploymentVariableValueWithId"][];
+      referenceValues: components["schemas"]["ReferenceDeploymentVariableValueWithId"][];
+      defaultValue?:
+        | components["schemas"]["DirectDeploymentVariableValueWithId"]
+        | components["schemas"]["ReferenceDeploymentVariableValueWithId"];
       config: {
+        [key: string]: unknown;
+      };
+    };
+    ExitHook: {
+      /**
+       * @description The name of the exit hook
+       * @example my-exit-hook
+       */
+      name: string;
+      /**
+       * Format: uuid
+       * @description The ID of the job agent to use for the exit hook
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      jobAgentId: string;
+      /**
+       * @description The configuration for the job agent
+       * @example {
+       *       "key": "value"
+       *     }
+       */
+      jobAgentConfig: {
         [key: string]: unknown;
       };
     };
@@ -1127,6 +1186,8 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+      /** Format: date-time */
+      deletedAt: string | null;
       /** Format: uuid */
       workspaceId: string;
       /** Format: uuid */
@@ -1140,6 +1201,19 @@ export interface components {
     };
     ResourceWithVariablesAndMetadata: components["schemas"]["ResourceWithVariables"] &
       components["schemas"]["ResourceWithMetadata"];
+    CreateResource: {
+      identifier: string;
+      name: string;
+      version: string;
+      kind: string;
+      config: {
+        [key: string]: unknown;
+      };
+      metadata: {
+        [key: string]: string;
+      };
+      variables?: components["schemas"]["Variable"][];
+    };
     /** @enum {string} */
     JobStatus:
       | "successful"
@@ -1238,6 +1312,8 @@ export interface components {
       roleId: string;
       requiredApprovalsCount: number;
     };
+    /** Format: integer */
+    PolicyConcurrency: number | null;
     Policy1: {
       /** Format: uuid */
       id: string;
@@ -1252,9 +1328,26 @@ export interface components {
       targets: components["schemas"]["PolicyTarget"][];
       denyWindows: components["schemas"]["DenyWindow"][];
       deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-      versionAnyApprovals?: components["schemas"]["VersionAnyApproval"][];
+      versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
+      concurrency?: components["schemas"]["PolicyConcurrency"];
+    };
+    UpdateResourceRelationshipRule: {
+      name?: string;
+      reference?: string;
+      dependencyType?: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyDescription?: string;
+      description?: string;
+      sourceKind?: string;
+      sourceVersion?: string;
+      targetKind?: string;
+      targetVersion?: string;
+      metadataKeysMatch?: string[];
+      targetMetadataEquals?: {
+        key: string;
+        value: string;
+      }[];
     };
     /** @enum {string} */
     ResourceRelationshipRuleDependencyType:
@@ -1265,7 +1358,9 @@ export interface components {
       | "provisioned_in"
       | "inherits_from";
     ResourceRelationshipRule: {
+      /** Format: uuid */
       id: string;
+      /** Format: uuid */
       workspaceId: string;
       name: string;
       reference: string;
@@ -1274,8 +1369,13 @@ export interface components {
       description?: string;
       sourceKind: string;
       sourceVersion: string;
-      targetKind: string;
-      targetVersion: string;
+      targetKind?: string;
+      targetVersion?: string;
+      targetMetadataEquals?: {
+        key: string;
+        value: string;
+      }[];
+      metadataKeysMatches?: string[];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;
@@ -1288,7 +1388,11 @@ export interface components {
       sourceVersion: string;
       targetKind: string;
       targetVersion: string;
-      metadataKeysMatch: string[];
+      metadataKeysMatches?: string[];
+      targetMetadataEquals?: {
+        key: string;
+        value: string;
+      }[];
     };
     ReleaseTarget: {
       /** Format: uuid */
@@ -1721,6 +1825,7 @@ export interface operations {
           resourceSelector?: {
             [key: string]: unknown;
           } | null;
+          exitHooks?: components["schemas"]["ExitHook"][];
         };
       };
     };
@@ -1914,14 +2019,8 @@ export interface operations {
           config: {
             [key: string]: unknown;
           };
-          values?: {
-            value: unknown;
-            sensitive?: boolean;
-            resourceSelector?: {
-              [key: string]: unknown;
-            } | null;
-            default?: boolean;
-          }[];
+          directValues?: components["schemas"]["DirectDeploymentVariableValue"][];
+          referenceValues?: components["schemas"]["ReferenceDeploymentVariableValue"][];
         };
       };
     };
@@ -2033,10 +2132,20 @@ export interface operations {
           resourceSelector?: {
             [key: string]: unknown;
           };
+          exitHooks?: components["schemas"]["ExitHook"][];
         };
       };
     };
     responses: {
+      /** @description Deployment updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
+        };
+      };
       /** @description Deployment created */
       201: {
         headers: {
@@ -2541,6 +2650,7 @@ export interface operations {
             roleId: string;
             requiredApprovalsCount?: number;
           }[];
+          concurrency?: components["schemas"]["PolicyConcurrency"];
         };
       };
     };
@@ -2640,14 +2750,10 @@ export interface operations {
             dtend?: string;
           }[];
           deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-          versionAnyApprovals?: {
-            requiredApprovalsCount?: number;
-          }[];
+          versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
-          versionRoleApprovals?: {
-            roleId: string;
-            requiredApprovalsCount?: number;
-          }[];
+          versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
+          concurrency?: components["schemas"]["PolicyConcurrency"];
         };
       };
     };
@@ -3103,18 +3209,7 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": {
-          resources: {
-            identifier: string;
-            name: string;
-            version: string;
-            kind: string;
-            config: {
-              [key: string]: unknown;
-            };
-            metadata: {
-              [key: string]: string;
-            };
-          }[];
+          resources: components["schemas"]["CreateResource"][];
         };
       };
     };
@@ -3192,7 +3287,55 @@ export interface operations {
       };
     };
   };
-  upsertResourceRelationshipRule: {
+  updateResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["UpdateResourceRelationshipRule"];
+      };
+    };
+    responses: {
+      /** @description The updated resource relationship rule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
+        };
+      };
+      /** @description The resource relationship rule was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An error occurred while updating the resource relationship rule */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  createResourceRelationshipRule: {
     parameters: {
       query?: never;
       header?: never;
@@ -3214,8 +3357,19 @@ export interface operations {
           "application/json": components["schemas"]["ResourceRelationshipRule"];
         };
       };
+      /** @description Resource relationship rule already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
       /** @description Failed to create resource relationship rule */
-      400: {
+      500: {
         headers: {
           [name: string]: unknown;
         };
@@ -3736,6 +3890,15 @@ export interface operations {
       };
     };
     responses: {
+      /** @description System updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["System"];
+        };
+      };
       /** @description System created successfully */
       201: {
         headers: {

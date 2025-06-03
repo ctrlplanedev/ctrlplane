@@ -66,66 +66,63 @@ const handleDeployment = async (
 
 export const redeployProcedure = protectedProcedure
   .input(
-    z.union([
-      z.object({
-        environmentId: z.string().uuid(),
+    z
+      .object({
+        environmentId: z.string().uuid().optional(),
+        deploymentId: z.string().uuid().optional(),
+        resourceId: z.string().uuid().optional(),
         force: z.boolean().optional().default(false),
-      }),
-      z.object({
-        deploymentId: z.string().uuid(),
-        force: z.boolean().optional().default(false),
-      }),
-      z.object({
-        resourceId: z.string().uuid(),
-        force: z.boolean().optional().default(false),
-      }),
-      z.object({
-        environmentId: z.string().uuid(),
-        deploymentId: z.string().uuid(),
-        force: z.boolean().optional().default(false),
-      }),
-    ]),
+      })
+      .refine(
+        ({ environmentId, deploymentId, resourceId }) =>
+          environmentId != null || deploymentId != null || resourceId != null,
+      ),
   )
   .meta({
     authorizationCheck: ({ canUser, input }) => {
-      if (input.environmentId && input.deploymentId) {
-        return canUser
-          .perform(Permission.DeploymentGet)
-          .on(
-            { type: "deployment", id: input.deploymentId },
-            { type: "environment", id: input.environmentId },
-          );
-      }
-      if (input.environmentId) {
-        return canUser
-          .perform(Permission.EnvironmentGet)
-          .on({ type: "environment", id: input.environmentId });
-      }
-      if (input.resourceId) {
-        return canUser
-          .perform(Permission.ResourceGet)
-          .on({ type: "resource", id: input.resourceId });
-      }
-      if (input.deploymentId) {
-        return canUser
-          .perform(Permission.DeploymentGet)
-          .on({ type: "deployment", id: input.deploymentId });
-      }
-      return false;
+      const { environmentId, deploymentId, resourceId } = input;
+      const environmentAuthzPromise = environmentId
+        ? canUser
+            .perform(Permission.EnvironmentGet)
+            .on({ type: "environment", id: environmentId })
+        : true;
+
+      const deploymentAuthzPromise = deploymentId
+        ? canUser
+            .perform(Permission.DeploymentGet)
+            .on(
+              { type: "deployment", id: deploymentId },
+              { type: "environment", id: environmentId },
+            )
+        : true;
+
+      const resourceAuthzPromise = resourceId
+        ? canUser
+            .perform(Permission.ResourceGet)
+            .on({ type: "resource", id: resourceId })
+        : true;
+
+      return Promise.all([
+        environmentAuthzPromise,
+        deploymentAuthzPromise,
+        resourceAuthzPromise,
+      ]).then((results) => results.every(Boolean));
     },
   })
   .mutation(async ({ ctx: { db }, input }) => {
+    const { environmentId, deploymentId, resourceId } = input;
+
     const releaseTargets = await db.query.releaseTarget.findMany({
       where: and(
-        ...("deploymentId" in input
-          ? [eq(schema.releaseTarget.deploymentId, input.deploymentId)]
-          : []),
-        ...("environmentId" in input
-          ? [eq(schema.releaseTarget.environmentId, input.environmentId)]
-          : []),
-        ...("resourceId" in input
-          ? [eq(schema.releaseTarget.resourceId, input.resourceId)]
-          : []),
+        environmentId != null
+          ? eq(schema.releaseTarget.environmentId, environmentId)
+          : undefined,
+        deploymentId != null
+          ? eq(schema.releaseTarget.deploymentId, deploymentId)
+          : undefined,
+        resourceId != null
+          ? eq(schema.releaseTarget.resourceId, resourceId)
+          : undefined,
       ),
     });
 

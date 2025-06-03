@@ -2,13 +2,17 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
+import {
+  cleanupImportedEntities,
+  ImportedEntities,
+  importEntitiesFromYaml,
+} from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployment-version.spec.yaml");
 
 test.describe("Deployment Versions API", () => {
-  let builder: EntitiesBuilder;
+  let importedEntities: ImportedEntities;
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);

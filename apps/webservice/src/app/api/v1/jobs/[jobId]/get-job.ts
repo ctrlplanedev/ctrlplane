@@ -11,10 +11,39 @@ const log = logger.child({
   function: "getJob",
 });
 
+const getRunbookJobResult = async (db: Tx, jobId: string) => {
+  const runbookJobResult = await db.query.runbookJobTrigger.findFirst({
+    where: eq(schema.runbookJobTrigger.jobId, jobId),
+    with: { job: { with: { variables: true } } },
+  });
+
+  if (runbookJobResult == null) return null;
+
+  const { job: jobResult } = runbookJobResult;
+  const { variables, ...job } = jobResult;
+
+  const jobVariables = Object.fromEntries(
+    variables.map((variable) => {
+      const { key, value, sensitive } = variable;
+      const strval =
+        typeof value === "object" ? JSON.stringify(value) : String(value);
+      const resolvedValue = sensitive
+        ? variablesAES256().decrypt(strval)
+        : value;
+      return [key, resolvedValue];
+    }),
+  );
+
+  return { ...job, variables: jobVariables };
+};
+
 export const getJob = async (db: Tx, jobId: string) => {
   log.info("Getting job", { jobId });
 
   try {
+    const runbookJobResult = await getRunbookJobResult(db, jobId);
+    if (runbookJobResult != null) return runbookJobResult;
+
     const jobResult = await db.query.job.findFirst({
       where: eq(schema.job.id, jobId),
       with: {

@@ -26,7 +26,6 @@ const getResourceByWorkspaceAndIdentifier = (
     where: and(
       eq(schema.resource.workspaceId, workspaceId),
       eq(schema.resource.identifier, identifier),
-      isNull(schema.resource.deletedAt),
     ),
     with: {
       metadata: true,

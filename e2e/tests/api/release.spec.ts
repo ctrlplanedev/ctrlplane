@@ -41,6 +41,7 @@ test.describe("Release Creation", () => {
       body: {
         deploymentId,
         tag: versionTag,
+        metadata: { e2e: "true" },
       },
     });
     expect(versionResponse.response.status).toBe(201);
@@ -136,13 +137,18 @@ test.describe("Release Creation", () => {
             type: "string",
             inputType: "text",
           },
-          values: [
+          directValues: [
             {
               value: "test-a",
-              default: true,
-              valueType: "direct",
+              sensitive: false,
+              resourceSelector: null,
+              isDefault: true,
             },
-            { value: "test-b", valueType: "direct" },
+            {
+              value: "test-b",
+              sensitive: false,
+              resourceSelector: null,
+            },
           ],
         },
       },
@@ -344,13 +350,18 @@ test.describe("Release Creation", () => {
             type: "string",
             inputType: "text",
           },
-          values: [
+          directValues: [
             {
               value: "test-a",
-              default: true,
-              valueType: "direct",
+              sensitive: false,
+              resourceSelector: null,
+              isDefault: true,
             },
-            { value: "test-b", valueType: "direct" },
+            {
+              value: "test-b",
+              sensitive: false,
+              resourceSelector: null,
+            },
           ],
         },
       },
@@ -472,13 +483,18 @@ test.describe("Release Creation", () => {
             type: "string",
             inputType: "text",
           },
-          values: [
+          directValues: [
             {
               value: "test-a",
-              default: true,
-              valueType: "direct",
+              sensitive: false,
+              resourceSelector: null,
+              isDefault: true,
             },
-            { value: "test-b", valueType: "direct" },
+            {
+              value: "test-b",
+              sensitive: false,
+              resourceSelector: null,
+            },
           ],
         },
       },
@@ -581,13 +597,18 @@ test.describe("Release Creation", () => {
             type: "string",
             inputType: "text",
           },
-          values: [
+          directValues: [
             {
               value: "test-a",
-              default: true,
-              valueType: "direct",
+              sensitive: false,
+              resourceSelector: null,
+              isDefault: true,
             },
-            { value: "test-b", valueType: "direct" },
+            {
+              value: "test-b",
+              sensitive: false,
+              resourceSelector: null,
+            },
           ],
         },
       },
@@ -701,13 +722,18 @@ test.describe("Release Creation", () => {
             type: "string",
             inputType: "text",
           },
-          values: [
+          directValues: [
             {
               value: "test-a",
-              default: true,
-              valueType: "direct",
+              sensitive: false,
+              resourceSelector: null,
+              isDefault: true,
             },
-            { value: "test-b", valueType: "direct" },
+            {
+              value: "test-b",
+              sensitive: false,
+              resourceSelector: null,
+            },
           ],
         },
       },
@@ -821,13 +847,18 @@ test.describe("Release Creation", () => {
             type: "string",
             inputType: "text",
           },
-          values: [
+          directValues: [
             {
               value: "test-a",
-              default: true,
-              valueType: "direct",
+              sensitive: false,
+              resourceSelector: null,
+              isDefault: true,
             },
-            { value: "test-b", valueType: "direct" },
+            {
+              value: "test-b",
+              sensitive: false,
+              resourceSelector: null,
+            },
           ],
         },
       },

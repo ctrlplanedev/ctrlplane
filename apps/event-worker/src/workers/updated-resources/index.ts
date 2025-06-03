@@ -59,4 +59,5 @@ export const updatedResourceWorker = createWorker(
     const affectedReleaseTargets = await getAffectedReleaseTargets(resource.id);
     await dispatchEvaluateJobs(affectedReleaseTargets);
   }),
+  { concurrency: 15 },
 );

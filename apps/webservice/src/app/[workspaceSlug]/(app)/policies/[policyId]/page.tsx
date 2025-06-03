@@ -28,12 +28,11 @@ export default async function PolicyPage(props: {
       policy.versionAnyApprovals != null ||
       policy.versionUserApprovals.length > 0 ||
       policy.versionRoleApprovals.length > 0
-    ) {
+    )
       rules.push("approval-gate");
-    }
-    if (policy.deploymentVersionSelector != null) {
+    if (policy.deploymentVersionSelector != null)
       rules.push("deployment-version-selector");
-    }
+    if (policy.concurrency != null) rules.push("concurrency");
     return rules;
   };
 
@@ -107,6 +106,14 @@ export default async function PolicyPage(props: {
                       className="border-purple-500 text-purple-500"
                     >
                       Version Conditions
+                    </Badge>
+                  )}
+                  {rules.includes("concurrency") && (
+                    <Badge
+                      variant="outline"
+                      className="border-yellow-500 text-yellow-500"
+                    >
+                      Concurrency
                     </Badge>
                   )}
                 </div>

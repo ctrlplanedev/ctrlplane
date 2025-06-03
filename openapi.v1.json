@@ -988,10 +988,16 @@
                     "type": "object",
                     "additionalProperties": true
                   },
-                  "values": {
+                  "directValues": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/VariableValue"
+                      "$ref": "#/components/schemas/DirectDeploymentVariableValue"
+                    }
+                  },
+                  "referenceValues": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ReferenceDeploymentVariableValue"
                     }
                   }
                 },
@@ -1913,6 +1919,9 @@
                         "roleId"
                       ]
                     }
+                  },
+                  "concurrency": {
+                    "$ref": "#/components/schemas/PolicyConcurrency"
                   }
                 }
               }
@@ -2136,6 +2145,9 @@
                     "items": {
                       "$ref": "#/components/schemas/VersionRoleApproval"
                     }
+                  },
+                  "concurrency": {
+                    "$ref": "#/components/schemas/PolicyConcurrency"
                   }
                 },
                 "required": [
@@ -4754,33 +4766,30 @@
           }
         }
       },
-      "BaseVariableValue": {
+      "BaseDeploymentVariableValue": {
         "type": "object",
         "properties": {
           "resourceSelector": {
             "type": "object",
-            "additionalProperties": true,
-            "nullable": true
+            "nullable": true,
+            "additionalProperties": true
           },
-          "default": {
+          "isDefault": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "resourceSelector"
+        ]
       },
-      "DeploymentVariableDirectValue": {
+      "DirectDeploymentVariableValue": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/BaseVariableValue"
+            "$ref": "#/components/schemas/BaseDeploymentVariableValue"
           },
           {
             "type": "object",
             "properties": {
-              "valueType": {
-                "type": "string",
-                "enum": [
-                  "direct"
-                ]
-              },
               "value": {
                 "oneOf": [
                   {
@@ -4798,41 +4807,54 @@
                   {
                     "type": "array"
                   }
-                ]
+                ],
+                "nullable": true
               },
               "sensitive": {
                 "type": "boolean"
               }
             },
             "required": [
-              "value",
-              "valueType"
+              "value"
             ]
           }
         ]
       },
-      "DeploymentVariableReferenceValue": {
+      "DirectDeploymentVariableValueWithId": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/BaseVariableValue"
+            "$ref": "#/components/schemas/DirectDeploymentVariableValue"
           },
           {
             "type": "object",
             "properties": {
-              "valueType": {
+              "id": {
                 "type": "string",
-                "enum": [
-                  "reference"
-                ]
-              },
-              "reference": {
-                "type": "string"
-              },
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        ]
+      },
+      "ReferenceDeploymentVariableValue": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseDeploymentVariableValue"
+          },
+          {
+            "type": "object",
+            "properties": {
               "path": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
+              },
+              "reference": {
+                "type": "string"
               },
               "defaultValue": {
                 "oneOf": [
@@ -4851,31 +4873,21 @@
                   {
                     "type": "array"
                   }
-                ]
+                ],
+                "nullable": true
               }
             },
             "required": [
-              "reference",
               "path",
-              "valueType"
+              "reference"
             ]
           }
         ]
       },
-      "VariableValue": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/DeploymentVariableDirectValue"
-          },
-          {
-            "$ref": "#/components/schemas/DeploymentVariableReferenceValue"
-          }
-        ]
-      },
-      "DeploymentVariableValue": {
+      "ReferenceDeploymentVariableValueWithId": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/VariableValue"
+            "$ref": "#/components/schemas/ReferenceDeploymentVariableValue"
           },
           {
             "type": "object",
@@ -4904,14 +4916,27 @@
           "description": {
             "type": "string"
           },
-          "values": {
+          "directValues": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DeploymentVariableValue"
+              "$ref": "#/components/schemas/DirectDeploymentVariableValueWithId"
+            }
+          },
+          "referenceValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDeploymentVariableValueWithId"
             }
           },
           "defaultValue": {
-            "$ref": "#/components/schemas/DeploymentVariableValue"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DirectDeploymentVariableValueWithId"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenceDeploymentVariableValueWithId"
+              }
+            ]
           },
           "config": {
             "type": "object",
@@ -4922,7 +4947,8 @@
           "id",
           "key",
           "description",
-          "values",
+          "directValues",
+          "referenceValues",
           "config"
         ]
       },
@@ -5467,6 +5493,11 @@
             "type": "string",
             "format": "date-time"
           },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "workspaceId": {
             "type": "string",
             "format": "uuid"
@@ -5486,6 +5517,7 @@
           "workspaceId",
           "createdAt",
           "updatedAt",
+          "deletedAt",
           "metadata"
         ]
       },
@@ -5850,6 +5882,12 @@
           "requiredApprovalsCount"
         ]
       },
+      "PolicyConcurrency": {
+        "type": "integer",
+        "nullable": true,
+        "minimum": 1,
+        "format": "int32"
+      },
       "Policy1": {
         "type": "object",
         "properties": {
@@ -5906,6 +5944,9 @@
             "items": {
               "$ref": "#/components/schemas/VersionRoleApproval"
             }
+          },
+          "concurrency": {
+            "$ref": "#/components/schemas/PolicyConcurrency"
           }
         },
         "required": [

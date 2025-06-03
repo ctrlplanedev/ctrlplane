@@ -27,10 +27,7 @@ const log = logger.child({ module: "v1/resources/[resourceId]" });
  */
 const getResourceById = (resourceId: string) => {
   return db.query.resource.findFirst({
-    where: and(
-      eq(schema.resource.id, resourceId),
-      isNull(schema.resource.deletedAt),
-    ),
+    where: eq(schema.resource.id, resourceId),
     with: {
       metadata: true,
       variables: true,

@@ -82,3 +82,10 @@ export const createRunbookJobTrigger = createInsertSchema(
   id: true,
 });
 export const updateRunbookJobTrigger = createRunbookJobTrigger.partial();
+
+export const runbookJobTriggerRelations = relations(
+  runbookJobTrigger,
+  ({ one }) => ({
+    job: one(job, { fields: [runbookJobTrigger.jobId], references: [job.id] }),
+  }),
+);

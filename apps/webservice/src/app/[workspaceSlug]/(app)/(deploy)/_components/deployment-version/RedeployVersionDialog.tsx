@@ -21,6 +21,7 @@ import { api } from "~/trpc/react";
 export const RedeployVersionDialog: React.FC<DeployProps> = ({
   deployment,
   environment,
+  resource,
   children,
 }) => {
   const router = useRouter();
@@ -29,9 +30,11 @@ export const RedeployVersionDialog: React.FC<DeployProps> = ({
 
   const environmentId = environment.id;
   const deploymentId = deployment.id;
+  const resourceId = resource?.id;
+
   const handleRedeploy = () =>
     redeploy
-      .mutateAsync({ environmentId, deploymentId })
+      .mutateAsync({ environmentId, deploymentId, resourceId })
       .then(() => setIsOpen(false))
       .then(() => router.refresh());
 
@@ -45,10 +48,12 @@ export const RedeployVersionDialog: React.FC<DeployProps> = ({
             <Badge variant="secondary" className="h-7 text-lg">
               {deployment.name}
             </Badge>{" "}
-            to {environment.name}?
+            to {resource != null ? resource.name : environment.name}?
           </DialogTitle>
           <DialogDescription>
-            This will redeploy the version to all resources in the environment.
+            {resourceId != null
+              ? "This will redeploy the version to the resource."
+              : "This will redeploy the version to all resources in the environment."}
           </DialogDescription>
         </DialogHeader>
 

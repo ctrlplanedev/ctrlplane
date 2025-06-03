@@ -1,7 +1,11 @@
 import path from "path";
 import { expect } from "@playwright/test";
 
-import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
+import {
+  cleanupImportedEntities,
+  ImportedEntities,
+  importEntitiesFromYaml,
+} from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "release-targets.spec.yaml");

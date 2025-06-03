@@ -84,9 +84,9 @@ deployments:
         config:
           type: string
           inputType: text
-        values:
+        directValues:
           - value: "sample-api-key"
-            default: true
+            isDefault: true
 
   - name: Worker Deployment
     slug: worker-deployment

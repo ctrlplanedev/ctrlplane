@@ -1,76 +1,108 @@
 import type { Tx } from "@ctrlplane/db";
 import { z } from "zod";
 
-import { and, eq, inArray, selector } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  getDeploymentVariables,
+  inArray,
+  selector,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../../trpc";
 
-type ResolvedResource = schema.Resource & {
-  resolvedValue: string | number | boolean | object | null;
-};
+const getReleaseTargets = async (db: Tx, deploymentId: string) =>
+  db
+    .select()
+    .from(schema.releaseTarget)
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseTarget.resourceId, schema.resource.id),
+    )
+    .where(eq(schema.releaseTarget.deploymentId, deploymentId));
 
-const getValueWithMatchedResources = async (
+const getVariableValueWithMatchedResources = async (
   db: Tx,
+  variableValue: schema.DeploymentVariableValue,
   resources: schema.Resource[],
-  val: schema.DeploymentVariableValue,
 ) => {
-  if (val.resourceSelector == null)
-    return {
-      ...val,
-      resources: [] as ResolvedResource[],
-    };
+  const { resourceSelector } = variableValue;
+  if (resourceSelector == null) return { ...variableValue, resources: [] };
 
-  const resourceIds = resources.map((r) => r.id);
   const matchedResources = await db.query.resource.findMany({
     where: and(
-      inArray(schema.resource.id, resourceIds),
-      selector().query().resources().where(val.resourceSelector).sql(),
+      selector().query().resources().where(resourceSelector).sql(),
+      inArray(
+        schema.resource.id,
+        resources.map((r) => r.id),
+      ),
     ),
   });
 
-  if (schema.isDeploymentVariableValueReference(val)) {
-    const resourcesWithResolvedReferences = await Promise.all(
-      matchedResources.map(async (r) => {
-        const resolvedValue = await getReferenceVariableValue(r.id, val);
-        return { ...r, resolvedValue };
-      }),
-    );
-
-    return { ...val, resources: resourcesWithResolvedReferences };
-  }
-
-  const resourcesWithDirectValues = matchedResources.map((r) => ({
-    ...r,
-    resolvedValue: val.value,
-  }));
-  return { ...val, resources: resourcesWithDirectValues };
-};
-
-const getDefaultValueWithRemainingResources = async (
-  db: Tx,
-  alreadyMatchedResourceIds: string[],
-  resources: schema.Resource[],
-  val: schema.DeploymentVariableValue,
-) => {
-  const resourcesMatchedByDefaultPromises = resources
-    .filter((r) => !alreadyMatchedResourceIds.includes(r.id))
-    .map(async (r) => {
-      if (schema.isDeploymentVariableValueReference(val)) {
-        const resolvedValue = await getReferenceVariableValue(r.id, val);
+  const resourcesWithResolvedValue = await Promise.all(
+    matchedResources.map(async (r) => {
+      if (schema.isDeploymentVariableValueDirect(variableValue)) {
+        const resolvedValue = variableValue.sensitive
+          ? "***"
+          : variableValue.value;
         return { ...r, resolvedValue };
       }
 
-      return { ...r, resolvedValue: val.value };
-    });
-
-  const resourcesMatchedByDefault = await Promise.all(
-    resourcesMatchedByDefaultPromises,
+      const resolvedReference = await getReferenceVariableValue(
+        r.id,
+        variableValue,
+      );
+      return { ...r, resolvedValue: resolvedReference };
+    }),
   );
 
-  return { ...val, resources: resourcesMatchedByDefault };
+  return { ...variableValue, resources: resourcesWithResolvedValue };
+};
+
+type Variable = Awaited<ReturnType<typeof getDeploymentVariables>>[number];
+
+const getVariableWithMatchedResources = async (
+  db: Tx,
+  variable: Variable,
+  resources: schema.Resource[],
+) => {
+  const { directValues, referenceValues } = variable;
+  const directValuesWithResources = await Promise.all(
+    directValues.map((v) =>
+      getVariableValueWithMatchedResources(db, v, resources),
+    ),
+  );
+  const referenceValuesWithResources = await Promise.all(
+    referenceValues.map((v) =>
+      getVariableValueWithMatchedResources(db, v, resources),
+    ),
+  );
+
+  const matchedResourceIds = new Set([
+    ...directValuesWithResources.flatMap((v) => v.resources.map((r) => r.id)),
+    ...referenceValuesWithResources.flatMap((v) =>
+      v.resources.map((r) => r.id),
+    ),
+  ]);
+
+  const unmatchedResources = resources.filter(
+    (r) => !matchedResourceIds.has(r.id),
+  );
+
+  const defaultValue =
+    variable.defaultValue != null
+      ? { ...variable.defaultValue, resources: unmatchedResources }
+      : undefined;
+
+  return {
+    ...variable,
+    directValues: directValuesWithResources,
+    referenceValues: referenceValuesWithResources,
+    defaultValue,
+  };
 };
 
 export const byDeploymentId = protectedProcedure
@@ -82,59 +114,15 @@ export const byDeploymentId = protectedProcedure
   })
   .input(z.string().uuid())
   .query(async ({ ctx, input }) => {
-    const releaseTargets = await ctx.db
-      .select()
-      .from(schema.releaseTarget)
-      .innerJoin(
-        schema.resource,
-        eq(schema.releaseTarget.resourceId, schema.resource.id),
-      )
-      .where(eq(schema.releaseTarget.deploymentId, input));
+    const releaseTargets = await getReleaseTargets(ctx.db, input);
+    const resources = releaseTargets.map((rt) => rt.resource);
 
-    const deploymentVariables = await ctx.db.query.deploymentVariable.findMany({
-      where: eq(schema.deploymentVariable.deploymentId, input),
-      with: { values: true },
-    });
-
-    const resolvedVarliablesPromises = deploymentVariables.map(
-      async (variable) => {
-        const nonDefaultValues = variable.values.filter(
-          (v) => v.id !== variable.defaultValueId,
-        );
-
-        const nonDefaultValuesWithResources = await Promise.all(
-          nonDefaultValues.map(async (val) =>
-            getValueWithMatchedResources(
-              ctx.db,
-              releaseTargets.map((rt) => rt.resource),
-              val,
-            ),
-          ),
-        );
-
-        const defaultValue = variable.values.find(
-          (v) => v.id === variable.defaultValueId,
-        );
-        if (defaultValue == null)
-          return { ...variable, values: nonDefaultValuesWithResources };
-
-        const matchedResourcesIds = nonDefaultValuesWithResources.flatMap((r) =>
-          r.resources.map((r) => r.id),
-        );
-        const defaultValueWithResources =
-          await getDefaultValueWithRemainingResources(
-            ctx.db,
-            matchedResourcesIds,
-            releaseTargets.map((rt) => rt.resource),
-            defaultValue,
-          );
-
-        return {
-          ...variable,
-          values: [...nonDefaultValuesWithResources, defaultValueWithResources],
-        };
-      },
+    const deploymentVariables = await getDeploymentVariables(ctx.db, input);
+    const resolvedVariables = await Promise.all(
+      deploymentVariables.map((v) =>
+        getVariableWithMatchedResources(ctx.db, v, resources),
+      ),
     );
 
-    return Promise.all(resolvedVarliablesPromises);
+    return resolvedVariables;
   });

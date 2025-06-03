@@ -83,6 +83,10 @@ export enum Permission {
   DeploymentVariableUpdate = "deploymentVariable.update",
   DeploymentVariableDelete = "deploymentVariable.delete",
 
+  DeploymentVariableValueCreate = "deploymentVariableValue.create",
+  DeploymentVariableValueUpdate = "deploymentVariableValue.update",
+  DeploymentVariableValueDelete = "deploymentVariableValue.delete",
+
   EnvironmentGet = "environment.get",
   EnvironmentUpdate = "environment.update",
   EnvironmentList = "environment.list",
