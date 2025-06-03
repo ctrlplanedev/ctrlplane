@@ -146,7 +146,9 @@ test.describe("Deployment Variables API", () => {
     expect(receivedReferenceValue.resourceSelector).toBeNull();
   });
 
-  test("should create a deployment variable with values and default value", async ({ api }) => {
+  test("should create a deployment variable with values and default value", async ({
+    api,
+  }) => {
     const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
@@ -213,7 +215,9 @@ test.describe("Deployment Variables API", () => {
     if (isDirect) expect(receivedDefaultValue!.value).toBe(valueB);
   });
 
-  test("shoudl fail if more than one default value is provided", async ({ api }) => {
+  test("shoudl fail if more than one default value is provided", async ({
+    api,
+  }) => {
     const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
@@ -386,7 +390,9 @@ test.describe("Deployment Variables API", () => {
     expect(receivedReferenceValue.resourceSelector?.value).toBe("test-a");
   });
 
-  test("should update a deployment variable's default value", async ({ api }) => {
+  test("should update a deployment variable's default value", async ({
+    api,
+  }) => {
     const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
@@ -623,7 +629,9 @@ test.describe("Deployment Variables API", () => {
     expect(receivedReferenceValueB).toBeDefined();
   });
 
-  test("should be able to convert an insensitive value to a sensitive value", async ({ api }) => {
+  test("should be able to convert an insensitive value to a sensitive value", async ({
+    api,
+  }) => {
     const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
     const value = faker.string.alphanumeric(10);
@@ -710,7 +718,9 @@ test.describe("Deployment Variables API", () => {
     expect(receivedDirectValue.sensitive).toBe(true);
   });
 
-  test("should be able to convert a sensitive value to an insensitive value", async ({ api }) => {
+  test("should be able to convert a sensitive value to an insensitive value", async ({
+    api,
+  }) => {
     const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
     const value = faker.string.alphanumeric(10);
