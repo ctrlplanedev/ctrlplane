@@ -1,13 +1,9 @@
 import path from "path";
-import { expect, TestType } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
 import { test } from "../../fixtures";
 import { Client } from "openapi-fetch";
 import _ from "lodash";
-import {
-  fetchResultHandler,
-  fetchResultListHandler,
-} from "../../../api/fetch-test-helpers";
 
 const yamlPath = path.join(__dirname, "job-flow-entities.spec.yaml");
 
@@ -17,129 +13,94 @@ test.describe("queue initial jobs", () => {
   test.beforeEach(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
 
-    fetchResultHandler(
-      test,
-      await builder.upsertSystem(),
-      /20[01]/,
-    );
+    expect((await builder.upsertSystem()).fetchResponse.response.ok).toBe(true);
 
-    fetchResultListHandler(
-      test,
-      await builder.upsertEnvironments(),
-      /20[01]/,
-    );
+    (await builder.upsertEnvironments()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
-    fetchResultListHandler(
-      test,
-      await builder.upsertDeployments(),
-      /20[01]/,
-    );
+    (await builder.upsertDeployments()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
   });
 
   test.afterEach(async ({ api, workspace }) => {
-    fetchResultListHandler(
-      test,
-      await cleanupImportedEntities(api, builder.refs, workspace.id),
-    );
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("trigger with initial deployment versions", async ({ api }) => {
-    fetchResultListHandler(
-      test,
-      await builder.upsertResources(),
-      /20[01]/,
-    );
+    (await builder.upsertResources()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
-    fetchResultListHandler(
-      test,
-      await builder.upsertAgents(),
-      /20[01]/,
-    );
+    (await builder.upsertAgents()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
     const agentId = builder.refs.oneAgent().id;
 
     // Attach agent to deployment:
-    fetchResultListHandler(
-      test,
-      await builder.upsertDeployments(agentId),
-      /20[01]/,
-    );
+    (await builder.upsertDeployments(agentId)).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
     // triggers job
-    fetchResultListHandler(
-      test,
-      await builder.createDeploymentVersions(),
-      /20[01]/,
-    );
+    (await builder.createDeploymentVersions()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
-    await nextJobs(test, api, agentId, 4);
+    await nextJobs(api, agentId, 4);
   });
 
   test("trigger with initial agent attachment", async ({ api }) => {
-    fetchResultListHandler(
-      test,
-      await builder.upsertResources(),
-      /20[01]/,
-    );
+    (await builder.upsertResources()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
-    fetchResultListHandler(
-      test,
-      await builder.upsertAgents(),
-      /20[01]/,
-    );
+    (await builder.upsertAgents()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
     const agentId = builder.refs.oneAgent().id;
 
-    fetchResultListHandler(
-      test,
-      await builder.createDeploymentVersions(),
-      /20[01]/,
-    );
+    (await builder.createDeploymentVersions()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
     // Attach agent to deployment -> triggers job
-    fetchResultListHandler(
-      test,
-      await builder.upsertDeployments(agentId),
-      /20[01]/,
-    );
+    (await builder.upsertDeployments(agentId)).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
-    await nextJobs(test, api, agentId, 4);
+    await nextJobs(api, agentId, 4);
   });
 
   test("trigger with initial resources", async ({ api }) => {
-    fetchResultListHandler(
-      test,
-      await builder.upsertAgents(),
-      /20[01]/,
-    );
+    (await builder.upsertAgents()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
     const agentId = builder.refs.oneAgent().id;
 
-    fetchResultListHandler(
-      test,
-      await builder.createDeploymentVersions(),
-      /20[01]/,
-    );
+    (await builder.createDeploymentVersions()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
     // Attach agent to deployment:
-    fetchResultListHandler(
-      test,
-      await builder.upsertDeployments(agentId),
-      /20[01]/,
-    );
+    (await builder.upsertDeployments(agentId)).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
-    fetchResultListHandler(
-      test,
-      await builder.upsertResources(), // job trigger
-      /20[01]/,
-    );
+    // triggers job
+    (await builder.upsertResources()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
 
-    await nextJobs(test, api, agentId, 4);
+    await nextJobs(api, agentId, 4);
   });
 });
 
 async function nextJobs(
-  test: TestType<any, any>,
   api: Client<paths, `${string}/${string}`>,
   agentId: string,
   expectedJobCount: number,
@@ -160,11 +121,7 @@ async function nextJobs(
       },
     );
 
-    fetchResultHandler(
-      test,
-      { fetchResponse },
-      /20[01]/,
-    );
+    expect(fetchResponse.response.ok).toBe(true);
 
     const nextJobs = fetchResponse.data;
     expect(nextJobs?.jobs).toBeDefined();

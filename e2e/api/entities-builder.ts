@@ -4,14 +4,16 @@ import { WorkspaceFixture } from "../tests/auth.setup";
 import { EntityFixtures, importEntityFixtures } from "./entity-fixtures";
 import { ApiClient } from "./index";
 import { EntityRefs } from "./entity-refs";
-import { trace } from "@opentelemetry/api";
 import { FetchResponse } from "openapi-fetch";
-import { FetchResultInfo } from "./fetch-test-helpers";
+
+export interface FetchResultInfo {
+  fetchResponse: FetchResponse<any, any, any>;
+  requestBody?: any;
+}
 
 export class EntitiesBuilder {
   public readonly refs: EntityRefs;
   private readonly fixtures: EntityFixtures;
-  private readonly tracer = trace.getTracer("EntitiesBuilder");
 
   /**
    * Import entities from a YAML file into the workspace
@@ -274,6 +276,7 @@ export class EntitiesBuilder {
         }
       }
     }
+    return results;
   }
 
   async upsertPolicies(): Promise<FetchResultInfo[]> {
