@@ -13,6 +13,7 @@ import {
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import type { Version } from "../manager/version-rule-engine.js";
 import type { FilterRule, Policy, PreValidationRule } from "../types.js";
@@ -52,16 +53,20 @@ export class VersionReleaseManager implements ReleaseManager {
   async findLatestVersionMatchingPolicy() {
     const policy = await this.getPolicy();
 
+    const sql = selector()
+      .query()
+      .deploymentVersions()
+      .where(policy?.deploymentVersionSelector?.deploymentVersionSelector)
+      .sql();
+
     const deploymentVersion = await this.db.query.deploymentVersion.findFirst({
       where: and(
         eq(
           schema.deploymentVersion.deploymentId,
           this.releaseTarget.deploymentId,
         ),
-        schema.deploymentVersionMatchesCondition(
-          this.db,
-          policy?.deploymentVersionSelector?.deploymentVersionSelector,
-        ),
+        sql,
+        eq(schema.deploymentVersion.status, DeploymentVersionStatus.Ready),
       ),
       orderBy: desc(schema.deploymentVersion.createdAt),
     });
@@ -120,6 +125,7 @@ export class VersionReleaseManager implements ReleaseManager {
           this.releaseTarget.deploymentId,
         ),
         sql,
+        eq(schema.deploymentVersion.status, DeploymentVersionStatus.Ready),
         latestDeployedVersion != null
           ? gte(
               schema.deploymentVersion.createdAt,
