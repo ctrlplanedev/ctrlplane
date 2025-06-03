@@ -47,62 +47,7 @@ services:
   #     - "8888:8888" # Telemetry
   #     - "9109:9109" # Prometheus endpoint
 
-#  grafana:
-#    image: grafana/grafana:latest
-#    container_name: ctrlplane-grafana
-#    restart: always
-#    ports:
-#      - "3333:3000"
-#
-#    environment:
-#      - GF_SECURITY_ADMIN_USER=admin
-#      - GF_SECURITY_ADMIN_PASSWORD=admin
-#    depends_on:
-#      - tempo
-#    volumes:
-#      - grafana-data:/var/lib/grafana
-#
-#  tempo:
-#    image: grafana/tempo:latest
-#    command: ["-config.file=/etc/tempo.yaml"]
-#    volumes:
-#      - ./dev/tempo-local.yaml:/etc/tempo.yaml
-#      - tempo-data:/tmp/tempo
-#    ports:
-#      - "3200:3200" # Tempo's HTTP endpoint
-#      - "4317:4317" # OTLP gRPC for traces
-#      - "4318:4318" # OTLP HTTP for traces
-#
-
-  jaeger:
-    image: jaegertracing/all-in-one:1.69.0
-    container_name: ctrlplane-jaeger
-    restart: always
-#    environment:
-#      - COLLECTOR_OTLP_ENABLED=true
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "4317:4317"
-      - "4318:4318"
-
-  # Uncomment if you want to use Grafana and Tempo
-  # grafana:
-  #   image: grafana/grafana:latest
-  #   container_name: ctrlplane-grafana
-  #   restart: always
-  #   ports:
-  #     - "3333:3000"
-  #   environment:
-  #     - GF_SECURITY_ADMIN_USER=admin
-  #     - GF_SECURITY_ADMIN_PASSWORD=admin
-  #   depends_on:
-  #     - tempo
-  #   volumes:
-  #     - grafana-data:/var/lib/grafana
-
 volumes:
   db-data:
   redis-data:
   redisinsight-data:
-#  grafana-data:
-#  tempo-data:
