@@ -2,17 +2,13 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "deployment-version.spec.yaml");
 
 test.describe("Deployment Versions API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
@@ -47,14 +43,14 @@ test.describe("Deployment Versions API", () => {
 
     expect(deploymentVersion.name).toBe(versionName);
     expect(deploymentVersion.tag).toBe(versionTag);
-    expect(deploymentVersion.deploymentId).toBe(
-      builder.refs.deployments[0].id,
-    );
+    expect(deploymentVersion.deploymentId).toBe(builder.refs.deployments[0].id);
     expect(deploymentVersion.metadata).toEqual({ enabled: "true" });
     expect(deploymentVersion.status).toBe("ready");
   });
 
-  test("name should default to version tag if name not provided", async ({ api }) => {
+  test("name should default to version tag if name not provided", async ({
+    api,
+  }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(
@@ -75,7 +71,9 @@ test.describe("Deployment Versions API", () => {
     expect(deploymentVersion.name).toBe(versionTag);
   });
 
-  test("should create a deployment version in building status", async ({ api }) => {
+  test("should create a deployment version in building status", async ({
+    api,
+  }) => {
     const versionTag = faker.string.alphanumeric(10);
 
     const deploymentVersionResponse = await api.POST(

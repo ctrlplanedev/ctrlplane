@@ -1,17 +1,13 @@
 import path from "path";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api/yaml-loader";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "yaml-import.spec.yaml");
 
 test.describe("YAML Entity Import", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
@@ -28,9 +24,7 @@ test.describe("YAML Entity Import", () => {
 
   test.afterAll(async ({ api, workspace }) => {
     // Clean up all imported entities
-    if (builder.refs) {
-      await cleanupImportedEntities(api, builder.refs, workspace.id);
-    }
+    cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("should have created a system from YAML", async ({ api }) => {
@@ -44,7 +38,10 @@ test.describe("YAML Entity Import", () => {
     expect(response.data?.description).toBe("System created from YAML fixture");
   });
 
-  test("should have created resources from YAML", async ({ api, workspace }) => {
+  test("should have created resources from YAML", async ({
+    api,
+    workspace,
+  }) => {
     // List resources in workspace
     const response = await api.GET("/v1/workspaces/{workspaceId}/resources", {
       params: { path: { workspaceId: workspace.id } },

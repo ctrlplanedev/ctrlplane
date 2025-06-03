@@ -386,10 +386,8 @@ test.describe("Deployment Variables API", () => {
     expect(receivedReferenceValue.resourceSelector?.value).toBe("test-a");
   });
 
-  test("should update a deployment variable's default value", async ({
-    api,
-  }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+  test("should update a deployment variable's default value", async ({ api }) => {
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const value = faker.string.alphanumeric(10);
@@ -495,7 +493,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should be able to add more values to a variable", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -625,10 +623,8 @@ test.describe("Deployment Variables API", () => {
     expect(receivedReferenceValueB).toBeDefined();
   });
 
-  test("should be able to convert an insensitive value to a sensitive value", async ({
-    api,
-  }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+  test("should be able to convert an insensitive value to a sensitive value", async ({ api }) => {
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
     const value = faker.string.alphanumeric(10);
 
@@ -714,10 +710,8 @@ test.describe("Deployment Variables API", () => {
     expect(receivedDirectValue.sensitive).toBe(true);
   });
 
-  test("should be able to convert a sensitive value to an insensitive value", async ({
-    api,
-  }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+  test("should be able to convert a sensitive value to an insensitive value", async ({ api }) => {
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
     const value = faker.string.alphanumeric(10);
 

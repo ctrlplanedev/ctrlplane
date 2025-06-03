@@ -1,9 +1,10 @@
 import path from "path";
 import { expect } from "@playwright/test";
+import _ from "lodash";
+import { Client } from "openapi-fetch";
+
 import { cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
 import { test } from "../../fixtures";
-import { Client } from "openapi-fetch";
-import _ from "lodash";
 
 const yamlPath = path.join(__dirname, "job-flow-entities.spec.yaml");
 
@@ -110,16 +111,13 @@ async function nextJobs(
 
   while (jobs.length < expectedJobCount && attempts < 10) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const fetchResponse = await api.GET(
-      "/v1/job-agents/{agentId}/queue/next",
-      {
-        params: {
-          path: {
-            agentId,
-          },
+    const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
+      params: {
+        path: {
+          agentId,
         },
       },
-    );
+    });
 
     expect(fetchResponse.response.ok).toBe(true);
 
@@ -127,11 +125,13 @@ async function nextJobs(
     expect(nextJobs?.jobs).toBeDefined();
 
     expect(Array.isArray(nextJobs?.jobs)).toBe(true);
-    jobs.push(...nextJobs?.jobs as Job[] || []);
+    jobs.push(...((nextJobs?.jobs as Job[]) || []));
   }
 
-  expect(jobs.every((job) => job.jobAgentId === agentId), "expected agentId")
-    .toBe(true);
+  expect(
+    jobs.every((job) => job.jobAgentId === agentId),
+    "expected agentId",
+  ).toBe(true);
   expect(
     _.uniq(jobs.map((job) => job.id)).length == jobs.length,
     "expected unique jobIds",

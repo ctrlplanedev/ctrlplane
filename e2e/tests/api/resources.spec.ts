@@ -2,17 +2,13 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "resources.spec.yaml");
 
 test.describe("Resource API", () => {
-  let importedEntities: ImportedEntities;
+  let builder: EntitiesBuilder;
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
@@ -234,7 +230,10 @@ test.describe("Resource API", () => {
     expect(releaseTarget).toBeDefined();
   });
 
-  test("updating non metadata fields should not change resource's current metadata", async ({ api, workspace }) => {
+  test("updating non metadata fields should not change resource's current metadata", async ({
+    api,
+    workspace,
+  }) => {
     // First create a resource
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
@@ -285,11 +284,9 @@ test.describe("Resource API", () => {
     // First create a resource
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
-    const resourceIdentifer = `${resourceName}/${
-      faker.string.alphanumeric(
-        10,
-      )
-    }`;
+    const resourceIdentifer = `${resourceName}/${faker.string.alphanumeric(
+      10,
+    )}`;
     const resourceResponse = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,

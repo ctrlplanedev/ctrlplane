@@ -1,11 +1,7 @@
 import path from "path";
 import { expect } from "@playwright/test";
 
-import {
-  cleanupImportedEntities,
-  ImportedEntities,
-  importEntitiesFromYaml,
-} from "../../api";
+import { cleanupImportedEntities, EntitiesBuilder } from "../../api";
 import { test } from "../fixtures";
 
 const yamlPath = path.join(__dirname, "release-targets.spec.yaml");
@@ -25,7 +21,11 @@ test.describe("Release Targets API", () => {
     await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
-  test("should fetch release targets for a resource", async ({ api, page, workspace }) => {
+  test("should fetch release targets for a resource", async ({
+    api,
+    page,
+    workspace,
+  }) => {
     await page.waitForTimeout(5_000);
     const importedResource = builder.refs.resources.at(0);
     expect(importedResource).toBeDefined();

@@ -1,10 +1,10 @@
 import { faker } from "@faker-js/faker";
+import { FetchResponse } from "openapi-fetch";
 
 import { WorkspaceFixture } from "../tests/auth.setup";
 import { EntityFixtures, importEntityFixtures } from "./entity-fixtures";
-import { ApiClient } from "./index";
 import { EntityRefs } from "./entity-refs";
-import { FetchResponse } from "openapi-fetch";
+import { ApiClient } from "./index";
 
 export interface FetchResultInfo {
   fetchResponse: FetchResponse<any, any, any>;
@@ -35,10 +35,7 @@ export class EntitiesBuilder {
         name: "",
         slug: "",
       };
-      this.refs = new EntityRefs(
-        faker.string.alphanumeric(6),
-        system,
-      );
+      this.refs = new EntityRefs(faker.string.alphanumeric(6), system);
     } else {
       this.refs = existingRefs;
     }
@@ -155,9 +152,7 @@ export class EntitiesBuilder {
   }
 
   async upsertDeployments(agentId?: string): Promise<FetchResultInfo[]> {
-    if (
-      !this.fixtures.deployments || this.fixtures.deployments.length === 0
-    ) {
+    if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
     const results: FetchResultInfo[] = [];
@@ -209,12 +204,9 @@ export class EntitiesBuilder {
             ...version,
             deploymentId: deploymentResult.id,
           };
-          const fetchResponse = await this.api.POST(
-            "/v1/deployment-versions",
-            {
-              body: requestBody,
-            },
-          );
+          const fetchResponse = await this.api.POST("/v1/deployment-versions", {
+            body: requestBody,
+          });
 
           results.push({
             fetchResponse,
