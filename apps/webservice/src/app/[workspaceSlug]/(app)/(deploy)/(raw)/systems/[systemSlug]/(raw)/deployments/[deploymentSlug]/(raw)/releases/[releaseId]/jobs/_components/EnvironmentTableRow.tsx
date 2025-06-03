@@ -3,6 +3,7 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import { IconChevronRight } from "@tabler/icons-react";
 import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -31,7 +32,8 @@ export const EnvironmentTableRow: React.FC<{
   }>;
 }> = ({ isExpanded, environment, releaseTargets }) => {
   const statusCounts = _.chain(releaseTargets)
-    .map((target) => target.jobs[0]!)
+    .map((target) => target.jobs[0])
+    .filter(isPresent)
     .countBy((job) => job.status)
     .value();
 

@@ -172,14 +172,14 @@ export const ReleaseTargetRow: React.FC<{
     createdAt: Date;
   }>;
 }> = ({ id, resource, environment, deployment, jobs }) => {
-  const latestJob = jobs.at(0)!;
+  const latestJob = jobs.at(0);
 
   return (
     <CollapsibleRow
       key={id}
       Heading={({ isExpanded }) => (
         <>
-          <TableCell className="h-10">
+          <TableCell className={cn("h-10", jobs.length === 0 && "w-[360px]")}>
             {jobs.length > 1 && (
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -194,24 +194,41 @@ export const ReleaseTargetRow: React.FC<{
               </div>
             )}
 
-            {jobs.length === 1 && (
+            {jobs.length <= 1 && (
               <div className="pl-[29px]">{resource.name}</div>
             )}
           </TableCell>
-          <JobStatusCell status={latestJob.status} />
-          <ExternalIdCell externalId={latestJob.externalId} />
-          <LinksCell links={latestJob.links} />
-          <CreatedAtCell createdAt={latestJob.createdAt} />
+          {latestJob != null && (
+            <>
+              <JobStatusCell status={latestJob.status} />
+              <ExternalIdCell externalId={latestJob.externalId} />
+              <LinksCell links={latestJob.links} />
+              <CreatedAtCell createdAt={latestJob.createdAt} />
+            </>
+          )}
+
+          {latestJob == null && (
+            <>
+              <TableCell>
+                <span className="text-sm text-muted-foreground">No jobs</span>
+              </TableCell>
+              <TableCell />
+              <TableCell />
+              <TableCell />
+            </>
+          )}
         </>
       )}
       DropdownMenu={
         <TableCell className="flex justify-end">
-          <JobActionsDropdownMenu
-            jobId={latestJob.id}
-            environment={environment}
-            deployment={deployment}
-            resource={resource}
-          />
+          {latestJob != null && (
+            <JobActionsDropdownMenu
+              jobId={latestJob.id}
+              environment={environment}
+              deployment={deployment}
+              resource={resource}
+            />
+          )}
         </TableCell>
       }
     >

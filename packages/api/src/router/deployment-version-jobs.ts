@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, desc, eq, ilike, or } from "@ctrlplane/db";
+import { and, desc, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
@@ -42,7 +42,7 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           id: input.versionId,
         }),
     })
-    .query(async ({ ctx, input: { versionId, search } }) => {
+    .query(async ({ ctx, input: { versionId } }) => {
       const version = await ctx.db.query.deploymentVersion.findFirst({
         where: eq(SCHEMA.deploymentVersion.id, versionId),
       });
@@ -52,92 +52,58 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           message: `Version not found: ${versionId}`,
         });
 
-      const jobs = await ctx.db
-        .select()
-        .from(SCHEMA.releaseTarget)
-        .innerJoin(
-          SCHEMA.environment,
-          eq(SCHEMA.releaseTarget.environmentId, SCHEMA.environment.id),
-        )
-        .innerJoin(
-          SCHEMA.deployment,
-          eq(SCHEMA.releaseTarget.deploymentId, SCHEMA.deployment.id),
-        )
-        .innerJoin(
-          SCHEMA.resource,
-          eq(SCHEMA.releaseTarget.resourceId, SCHEMA.resource.id),
-        )
-        .innerJoin(
-          SCHEMA.versionRelease,
-          eq(SCHEMA.releaseTarget.id, SCHEMA.versionRelease.releaseTargetId),
-        )
-        .innerJoin(
-          SCHEMA.release,
-          eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
-        )
-        .leftJoin(
-          SCHEMA.releaseJob,
-          eq(SCHEMA.release.id, SCHEMA.releaseJob.releaseId),
-        )
-        .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
-        .leftJoin(
-          SCHEMA.jobMetadata,
-          and(
-            eq(SCHEMA.job.id, SCHEMA.jobMetadata.jobId),
-            eq(SCHEMA.jobMetadata.key, ReservedMetadataKey.Links),
-          ),
-        )
-        .where(
-          and(
-            eq(SCHEMA.versionRelease.versionId, version.id),
-            or(
-              ilike(SCHEMA.deployment.name, `%${search}%`),
-              ilike(SCHEMA.environment.name, `%${search}%`),
-              ilike(SCHEMA.resource.name, `%${search}%`),
-            ),
-          ),
-        );
+      const releaseTargets = await ctx.db.query.releaseTarget.findMany({
+        where: eq(SCHEMA.releaseTarget.deploymentId, version.deploymentId),
+        with: {
+          environment: true,
+          resource: true,
+          deployment: true,
+          versionReleases: {
+            where: eq(SCHEMA.versionRelease.versionId, versionId),
+            with: {
+              release: {
+                with: {
+                  releaseJobs: { with: { job: { with: { metadata: true } } } },
+                },
+              },
+            },
+          },
+        },
+      });
 
-      return _.chain(jobs)
-        .groupBy((job) => job.environment.id)
-        .map((jobs) => {
-          const first = jobs[0]!;
-          const { environment } = first;
+      return _.chain(releaseTargets)
+        .groupBy(({ environmentId }) => environmentId)
+        .map((groupedReleaseTargets) => {
+          const { environment } = groupedReleaseTargets[0]!;
 
-          const releaseTargets = _.chain(jobs)
-            .groupBy((job) => job.release_target.id)
-            .map((jobs) => {
-              const first = jobs[0]!;
-              const { release_target, environment, deployment, resource } =
-                first;
-              return {
-                ...release_target,
-                environment,
-                deployment,
-                resource,
-                jobs: jobs
-                  .map(({ job, job_metadata }) => ({
-                    ...job,
-                    links:
-                      job_metadata?.value != null
-                        ? (JSON.parse(job_metadata.value) as Record<
-                            string,
-                            string
-                          >)
-                        : {},
-                  }))
-                  .sort(
-                    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+          const releaseTargets = groupedReleaseTargets
+            .map((releaseTarget) => {
+              const jobs = releaseTarget.versionReleases
+                .flatMap((vr) =>
+                  vr.release.flatMap((release) =>
+                    release.releaseJobs.map((rj) => {
+                      const { job } = rj;
+                      const linksMetadata = job.metadata.find(
+                        (m) => m.key === String(ReservedMetadataKey.Links),
+                      );
+                      const links =
+                        linksMetadata != null
+                          ? (JSON.parse(linksMetadata.value) as Record<
+                              string,
+                              string
+                            >)
+                          : {};
+                      return { ...job, links };
+                    }),
                   ),
-              };
-            })
-            .sort(sortReleaseTargetsByLatestJobStatus)
-            .value();
+                )
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-          return {
-            environment,
-            releaseTargets,
-          };
+              return { ...releaseTarget, jobs };
+            })
+            .sort(sortReleaseTargetsByLatestJobStatus);
+
+          return { environment, releaseTargets };
         })
         .sortBy(({ environment }) => environment.name)
         .value();

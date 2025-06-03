@@ -11,6 +11,7 @@ import {
   IconSwitch,
 } from "@tabler/icons-react";
 import { useDebounce } from "react-use";
+import { isPresent } from "ts-is-present";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -186,11 +187,15 @@ export const DeploymentVersionJobsTable: React.FC<
                 )}
                 DropdownMenu={
                   <TableCell className="flex justify-end bg-neutral-800/40">
-                    <JobActionsDropdownMenu
-                      jobIds={releaseTargets.map(({ jobs }) => jobs.at(0)!.id)}
-                      deployment={deployment}
-                      environment={environment}
-                    />
+                    {
+                      <JobActionsDropdownMenu
+                        jobIds={releaseTargets
+                          .map(({ jobs }) => jobs.at(0)?.id ?? null)
+                          .filter(isPresent)}
+                        deployment={deployment}
+                        environment={environment}
+                      />
+                    }
                   </TableCell>
                 }
               >
