@@ -45,6 +45,7 @@ test.describe("Release Creation", () => {
       body: {
         deploymentId,
         tag: versionTag,
+        metadata: { e2e: "true" },
       },
     });
     expect(versionResponse.response.status).toBe(201);

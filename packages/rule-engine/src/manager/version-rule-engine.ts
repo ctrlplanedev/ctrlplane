@@ -12,7 +12,6 @@ export type Version = {
   id: string;
   tag: string;
   config: Record<string, any>;
-  metadata: Record<string, string>;
   createdAt: Date;
 };
 
@@ -151,7 +150,7 @@ export class VersionRuleEngine implements RuleEngine<Version> {
   private findSequentialUpgradeReleases(versions: Version[]): Version[] {
     // Look for the standard metadata key used by SequentialUpgradeRule
     return versions.filter(
-      (v) => v.metadata.requiresSequentialUpgrade === "true",
+      (v) => v.config.requiresSequentialUpgrade === "true",
     );
   }
 }
