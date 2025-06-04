@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { IconLoader2, IconSelector } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
