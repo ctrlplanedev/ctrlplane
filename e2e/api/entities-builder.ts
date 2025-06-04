@@ -240,30 +240,46 @@ export class EntitiesBuilder {
         }
 
         for (const variable of deployment.variables) {
-          const requestBody = {
-            ...variable,
-          };
-          const fetchResponse = await this.api.POST(
+          const variableResponse = await this.api.POST(
             "/v1/deployments/{deploymentId}/variables",
             {
               params: { path: { deploymentId: deploymentResult.id } },
               body: {
-                requestBody,
+                ...variable,
+                directValues: variable.directValues?.map((dv) => ({
+                  ...dv,
+                  resourceSelector: dv.resourceSelector ?? null,
+                })),
+                referenceValues: variable.referenceValues?.map((rv) => ({
+                  ...rv,
+                  resourceSelector: rv.resourceSelector ?? null,
+                })),
               },
             },
           );
 
-          results.push({
-            fetchResponse,
-            requestBody,
-          });
+          if (variableResponse.response.status !== 201)
+            throw new Error(
+              `Failed to create deployment variable: ${JSON.stringify(
+                variableResponse.error,
+              )}`,
+            );
 
+          const variableData = variableResponse.data!;
+          const { directValues, referenceValues } = variableData;
+          directValues?.forEach((dv) => {
+            dv.id = dv.id ?? faker.string.uuid();
+          });
+          referenceValues?.forEach((rv) => {
+            rv.id = rv.id ?? faker.string.uuid();
+          });
           deploymentResult.variables!.push({
-            id: fetchResponse.data!.id,
-            key: fetchResponse.data!.key,
-            description: fetchResponse.data!.description,
-            config: fetchResponse.data!.config,
-            values: fetchResponse.data!.values,
+            id: variableData.id,
+            key: variableData.key,
+            description: variableData.description,
+            config: variableData.config,
+            directValues: directValues,
+            referenceValues: referenceValues,
           });
         }
       }
