@@ -12,12 +12,12 @@ test.describe("Deployment Versions API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createDeployments();
+    await builder.upsertSystem();
+    await builder.upsertDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("should create a deployment version", async ({ api }) => {
@@ -30,7 +30,7 @@ test.describe("Deployment Versions API", () => {
         body: {
           name: versionName,
           tag: versionTag,
-          deploymentId: builder.cache.deployments[0].id,
+          deploymentId: builder.refs.deployments[0].id,
           metadata: { enabled: "true" },
         },
       },
@@ -43,9 +43,7 @@ test.describe("Deployment Versions API", () => {
 
     expect(deploymentVersion.name).toBe(versionName);
     expect(deploymentVersion.tag).toBe(versionTag);
-    expect(deploymentVersion.deploymentId).toBe(
-      builder.cache.deployments[0].id,
-    );
+    expect(deploymentVersion.deploymentId).toBe(builder.refs.deployments[0].id);
     expect(deploymentVersion.metadata).toEqual({ enabled: "true" });
     expect(deploymentVersion.status).toBe("ready");
   });
@@ -60,7 +58,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: builder.cache.deployments[0].id,
+          deploymentId: builder.refs.deployments[0].id,
         },
       },
     );
@@ -83,7 +81,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: builder.cache.deployments[0].id,
+          deploymentId: builder.refs.deployments[0].id,
           status: "building",
         },
       },
@@ -106,7 +104,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: versionTag,
-          deploymentId: builder.cache.deployments[0].id,
+          deploymentId: builder.refs.deployments[0].id,
           name: versionName,
           metadata: { enabled: "true" },
         },
@@ -153,7 +151,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: faker.string.alphanumeric(10),
-          deploymentId: builder.cache.deployments[0].id,
+          deploymentId: builder.refs.deployments[0].id,
           status: "building",
         },
       },
@@ -194,7 +192,7 @@ test.describe("Deployment Versions API", () => {
       {
         body: {
           tag: faker.string.alphanumeric(10),
-          deploymentId: builder.cache.deployments[0].id,
+          deploymentId: builder.refs.deployments[0].id,
           status: "building",
         },
       },

@@ -12,17 +12,17 @@ test.describe("Deployment Variables API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createDeployments();
+    await builder.upsertSystem();
+    await builder.upsertDeployments();
     await new Promise((resolve) => setTimeout(resolve, 5_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("should create a deployment variable", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const variableCreateResponse = await api.POST(
@@ -69,7 +69,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should create a deployment variable with values", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -149,7 +149,7 @@ test.describe("Deployment Variables API", () => {
   test("should create a deployment variable with values and default value", async ({
     api,
   }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -218,7 +218,7 @@ test.describe("Deployment Variables API", () => {
   test("shoudl fail if more than one default value is provided", async ({
     api,
   }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -262,7 +262,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should update a deployment variable's values", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const value = faker.string.alphanumeric(10);
@@ -393,7 +393,7 @@ test.describe("Deployment Variables API", () => {
   test("should update a deployment variable's default value", async ({
     api,
   }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const value = faker.string.alphanumeric(10);
@@ -499,7 +499,7 @@ test.describe("Deployment Variables API", () => {
   });
 
   test("should be able to add more values to a variable", async ({ api }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
 
     const valueA = faker.string.alphanumeric(10);
@@ -632,7 +632,7 @@ test.describe("Deployment Variables API", () => {
   test("should be able to convert an insensitive value to a sensitive value", async ({
     api,
   }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
     const value = faker.string.alphanumeric(10);
 
@@ -721,7 +721,7 @@ test.describe("Deployment Variables API", () => {
   test("should be able to convert a sensitive value to an insensitive value", async ({
     api,
   }) => {
-    const importedDeployment = builder.cache.deployments[0]!;
+    const importedDeployment = builder.refs.deployments[0]!;
     const key = faker.string.alphanumeric(10);
     const value = faker.string.alphanumeric(10);
 

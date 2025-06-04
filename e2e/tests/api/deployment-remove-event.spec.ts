@@ -12,11 +12,11 @@ test.describe("Deployment remove event", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
+    await builder.upsertSystem();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("deleting a resource should trigger a deployment remove event", async ({
@@ -24,7 +24,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = builder.cache.system!;
+    const system = builder.refs.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -110,7 +110,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = builder.cache.system!;
+    const system = builder.refs.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -198,7 +198,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = builder.cache.system!;
+    const system = builder.refs.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -287,7 +287,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = builder.cache.system!;
+    const system = builder.refs.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {
@@ -373,7 +373,7 @@ test.describe("Deployment remove event", () => {
     workspace,
     page,
   }) => {
-    const system = builder.cache.system!;
+    const system = builder.refs.system!;
     const systemPrefix = system.slug.split("-")[0]!;
     const environmentCreateResponse = await api.POST("/v1/environments", {
       body: {

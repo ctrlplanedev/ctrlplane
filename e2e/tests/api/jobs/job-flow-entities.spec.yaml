@@ -1,34 +1,115 @@
+isQaTier: &isQaTier
+  type: metadata
+  key: instance/tier
+  operator: equals
+  value: "{{ prefix }}-qa"
+
+metaQa: &metaQa
+  instance/tier: "{{ prefix }}-qa"
+
+isDevTier: &isDevTier
+  type: metadata
+  key: instance/tier
+  operator: equals
+  value: "{{ prefix }}-dev"
+
+metaDev: &metaDev
+  instance/tier: "{{ prefix }}-dev"
+
+isKindService: &isKindService
+  type: kind
+  operator: equals
+  value: "{{ prefix }}-service"
+
+kindService: &kindService
+  kind: "{{ prefix }}-service"
+
+isKindDatabase: &isKindDatabase
+  type: kind
+  operator: equals
+  value: "{{ prefix }}-database"
+
+kindDatabase: &kindDatabase
+  kind: "{{ prefix }}-database"
+
 system:
   name: "{{ prefix }}-deployment-version"
   slug: "{{ prefix }}-deployment-version"
   description: System for testing deployment versions
 
 resources:
-  - name: "{{ prefix }}-resource"
-    kind: "service"
-    identifier: "{{ prefix }}-resource"
+  - name: "{{ prefix }}-qa-service-resource"
+    <<: *kindService
+    identifier: "{{ prefix }}-qa-service-resource"
     version: "1.0.0"
     config:
       enabled: true
+    metadata: *metaQa
+
+  - name: "{{ prefix }}-dev-service-resource"
+    <<: *kindService
+    identifier: "{{ prefix }}-dev-service-resource"
+    version: "1.0.0"
+    config:
+      enabled: true
+    metadata: *metaDev
+
+  - name: "{{ prefix }}-qa-database-resource"
+    <<: *kindService
+    identifier: "{{ prefix }}-qa-database-resource"
+    version: "1.0.0"
+    config:
+      enabled: true
+    metadata: *metaQa
+
+  - name: "{{ prefix }}-dev-database-resource"
+    <<: *kindService
+    identifier: "{{ prefix }}-dev-database-resource"
+    version: "1.0.0"
+    config:
+      enabled: true
+    metadata: *metaDev
 
 deployments:
-  - name: "{{ prefix }}-deployment"
-    slug: "{{ prefix }}-deployment"
-    description: Deployment for testing deployment versions
+  - name: "{{ prefix }}-service-deployment"
+    slug: "{{ prefix }}-service-deployment"
+    description: Deployment for testing service deployment
     versions:
       - tag: "1.0.0"
-
-environments:
-  - name: "{{ prefix }}-environment"
-    slug: "{{ prefix }}-environment"
-    description: Environment for testing deployment versions
     resourceSelector:
       type: "comparison"
       operator: "and"
       conditions:
-        - type: "identifier"
-          operator: "equals"
-          value: "{{ prefix }}-resource"
+        - *isKindService
+
+  - name: "{{ prefix }}-database-deployment"
+    slug: "{{ prefix }}-database-deployment"
+    description: Deployment for testing database deployments
+    versions:
+      - tag: "1.0.0"
+    resourceSelector:
+      type: "comparison"
+      operator: "and"
+      conditions:
+        - *isKindDatabase
+
+environments:
+  - name: "{{ prefix }}-QA-environment"
+    slug: "{{ prefix }}-QA-environment"
+    description: QA-like environment for testing deployment versions
+    resourceSelector:
+      type: "comparison"
+      operator: "and"
+      conditions:
+        - *isQaTier
+  - name: "{{ prefix }}-DEV-environment"
+    slug: "{{ prefix }}-DEV-environment"
+    description: Dev-like environment for testing deployment versions
+    resourceSelector:
+      type: "comparison"
+      operator: "and"
+      conditions:
+        - *isDevTier
 
 agents:
   - name: "{{ prefix }}-agent"

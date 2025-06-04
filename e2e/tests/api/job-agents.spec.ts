@@ -12,13 +12,13 @@ test.describe("Job Agent API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createEnvironments();
-    await builder.createDeployments();
+    await builder.upsertSystem();
+    await builder.upsertEnvironments();
+    await builder.upsertDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("create a job agent", async ({ api, workspace }) => {

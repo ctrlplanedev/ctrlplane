@@ -12,17 +12,17 @@ test.describe("Resource API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.createSystem();
-    await builder.createEnvironments();
-    await builder.createDeployments();
+    await builder.upsertSystem();
+    await builder.upsertEnvironments();
+    await builder.upsertDeployments();
   });
 
   test.afterAll(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.cache, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("create a resource", async ({ api, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName1 = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resource = await api.POST("/v1/resources", {
       body: {
@@ -49,8 +49,8 @@ test.describe("Resource API", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 5_000));
 
-    const environment = builder.cache.environments[0]!;
-    const deployment = builder.cache.deployments[0]!;
+    const environment = builder.refs.environments[0]!;
+    const deployment = builder.refs.deployments[0]!;
 
     const environmentResourcesResponse = await api.GET(
       "/v1/environments/{environmentId}/resources",
@@ -100,7 +100,7 @@ test.describe("Resource API", () => {
   });
 
   test("get a resource by identifier", async ({ api, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -134,7 +134,7 @@ test.describe("Resource API", () => {
   });
 
   test("list resources", async ({ api, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -163,7 +163,7 @@ test.describe("Resource API", () => {
 
   test("update a resource", async ({ api, workspace }) => {
     // First create a resource
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -212,8 +212,8 @@ test.describe("Resource API", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 5_000));
 
-    const environment = builder.cache.environments[0]!;
-    const deployment = builder.cache.deployments[0]!;
+    const environment = builder.refs.environments[0]!;
+    const deployment = builder.refs.deployments[0]!;
     const releaseTargetsResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
       {
@@ -235,7 +235,7 @@ test.describe("Resource API", () => {
     workspace,
   }) => {
     // First create a resource
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     await api.POST("/v1/resources", {
       body: {
@@ -282,7 +282,7 @@ test.describe("Resource API", () => {
 
   test("delete a resource", async ({ api, workspace }) => {
     // First create a resource
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resourceIdentifer = `${resourceName}/${faker.string.alphanumeric(
       10,
@@ -336,8 +336,8 @@ test.describe("Resource API", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 5_000));
 
-    const environment = builder.cache.environments[0]!;
-    const deployment = builder.cache.deployments[0]!;
+    const environment = builder.refs.environments[0]!;
+    const deployment = builder.refs.deployments[0]!;
 
     const environmentResourcesResponse = await api.GET(
       "/v1/environments/{environmentId}/resources",
@@ -365,7 +365,7 @@ test.describe("Resource API", () => {
   });
 
   test("create resource relationship", async ({ api, workspace }) => {
-    const systemPrefix = builder.cache.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     // Create two resources
     const resource1Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
     const resource2Name = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
