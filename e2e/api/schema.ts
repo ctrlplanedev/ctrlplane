@@ -41,6 +41,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployment-versions/{deploymentVersionId}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Approve a deployment version */
+    post: operations["approveDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployment-versions/{deploymentVersionId}": {
     parameters: {
       query?: never;
@@ -56,6 +73,23 @@ export interface paths {
     head?: never;
     /** Updates a deployment version */
     patch: operations["updateDeploymentVersion"];
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reject a deployment version */
+    post: operations["rejectDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/v1/deployment-versions": {
@@ -910,6 +944,23 @@ export interface components {
        */
       longitude: number;
     };
+    ApprovalRecord: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      deploymentVersionId: string;
+      /** Format: uuid */
+      userId: string;
+      /** @enum {string} */
+      status: "approved" | "rejected";
+      /** Format: date-time */
+      approvedAt: string | null;
+      reason?: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
     BaseDeploymentVariableValue: {
       resourceSelector: {
         [key: string]: unknown;
@@ -1313,7 +1364,7 @@ export interface components {
       roleId: string;
       requiredApprovalsCount: number;
     };
-    /** Format: integer */
+    /** Format: int32 */
     PolicyConcurrency: number | null;
     Policy1: {
       /** Format: uuid */
@@ -1544,6 +1595,68 @@ export interface operations {
       };
     };
   };
+  approveDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Deployment version approved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
+        };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   updateDeploymentVersion: {
     parameters: {
       query?: never;
@@ -1585,6 +1698,68 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DeploymentVersion"];
+        };
+      };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  rejectDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Deployment version rejected */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
+        };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
         };
       };
       /** @description Deployment version not found */

@@ -1,14 +1,20 @@
-export interface DeploymentVariableValueRef {
+export interface DeploymentVariableValueDirectRef {
   id: string;
-  value: any;
-  valueType?: "direct" | "reference";
+  value: string | number | boolean | object | null;
   sensitive?: boolean;
-  resourceSelector?: any;
-  default?: boolean;
+}
+
+export interface DeploymentVariableValueReferenceRef {
+  id: string;
+  reference: string;
+  path: string[];
+  defaultValue?: string | number | boolean | object | null;
 }
 
 export class DeploymentVariableRef {
-  public readonly values: Array<DeploymentVariableValueRef> = [];
+  public readonly directValues: Array<DeploymentVariableValueDirectRef> = [];
+  public readonly referenceValues: Array<DeploymentVariableValueReferenceRef> =
+    [];
 
   constructor(
     public id: string,

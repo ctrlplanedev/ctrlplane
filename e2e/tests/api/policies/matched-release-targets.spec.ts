@@ -294,8 +294,6 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(1_000);
-
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
       body: {
@@ -413,7 +411,7 @@ test.describe("Release Targets API", () => {
 
   test("should match a policy to a specific deployment", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -465,7 +463,7 @@ test.describe("Release Targets API", () => {
 
   test("should update release targets when deployment selector is updated", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
@@ -535,14 +533,14 @@ test.describe("Release Targets API", () => {
 
   test("should not match a deployment that is deleted", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-deployment-c`;
 
     const deploymentResponse = await api.POST("/v1/deployments", {
       body: {
         name: deploymentName,
         slug: deploymentName,
-        systemId: importedEntities.system.id,
+        systemId: builder.refs.system.id,
         resourceSelector: {
           type: "identifier",
           operator: "equals",
@@ -609,7 +607,7 @@ test.describe("Release Targets API", () => {
 
   test("should match a policy to a specific deployment and environment", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -684,7 +682,7 @@ test.describe("Release Targets API", () => {
 
   test("should update release targets when deployment and environment selectors are updated", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
@@ -782,7 +780,7 @@ test.describe("Release Targets API", () => {
 
   test("should match a policy to a specific resource and environment", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -857,7 +855,7 @@ test.describe("Release Targets API", () => {
 
   test("should update release targets when resource and environment selectors are updated", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
@@ -885,8 +883,6 @@ test.describe("Release Targets API", () => {
     const policyIdResponse = policyResponse.data?.id;
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
-
-    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -955,7 +951,7 @@ test.describe("Release Targets API", () => {
 
   test("should match a policy to a specific resource and deployment", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -1030,7 +1026,7 @@ test.describe("Release Targets API", () => {
 
   test("should update release targets when resource and deployment selectors are updated", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
@@ -1128,7 +1124,7 @@ test.describe("Release Targets API", () => {
 
   test("should match a policy to a specific resource and deployment and environment", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
@@ -1244,7 +1240,7 @@ test.describe("Release Targets API", () => {
 
   test("should update release targets when resource and deployment and environment selectors are updated", async ({api,workspace,page,}) => {
     const { id: workspaceId } = workspace;
-    const systemPrefix = importedEntities.system.slug.split("-")[0]!;
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
     const policyResponse = await api.POST("/v1/policies", {
       body: {
@@ -1277,8 +1273,6 @@ test.describe("Release Targets API", () => {
     const policyIdResponse = policyResponse.data?.id;
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
-
-    await page.waitForTimeout(1_000);
 
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
@@ -1384,5 +1378,98 @@ test.describe("Release Targets API", () => {
         rt.resource.identifier === `${systemPrefix}-qa`,
     ) ?? [];
     expect(qaDeploymentBEnvironmentBMatch.length).toBe(1);
+  });
+
+  test("should match a preexisting policy to a newly created resource", async ({
+    api,
+    workspace,
+    page,
+  }) => {
+    const { id: workspaceId } = workspace;
+
+    const prefix = faker.string.alphanumeric(10);
+
+    const environment = await api.POST("/v1/environments", {
+      body: {
+        name: prefix,
+        systemId: builder.refs.system.id,
+        resourceSelector: {
+          type: "identifier",
+          operator: "equals",
+          value: prefix,
+        },
+      },
+    });
+
+    expect(environment.response.status).toBe(200);
+
+    const deployment = await api.POST("/v1/deployments", {
+      body: {
+        name: prefix,
+        slug: prefix,
+        systemId: builder.refs.system.id,
+      },
+    });
+
+    expect(deployment.response.status).toBe(201);
+
+    const policy = await api.POST("/v1/policies", {
+      body: {
+        name: prefix,
+        description: "Test Policy Description",
+        workspaceId,
+        targets: [
+          {
+            environmentSelector: {
+              type: "name",
+              operator: "equals",
+              value: prefix,
+            },
+            deploymentSelector: {
+              type: "slug",
+              operator: "equals",
+              value: prefix,
+            },
+          },
+        ],
+      },
+    });
+
+    expect(policy.response.status).toBe(200);
+
+    const resource = await api.POST("/v1/resources", {
+      body: {
+        name: prefix,
+        kind: "service",
+        identifier: prefix,
+        version: "1.0.0",
+        config: {},
+        metadata: {
+          env: prefix,
+        },
+        workspaceId,
+      },
+    });
+
+    expect(resource.response.status).toBe(200);
+
+    await page.waitForTimeout(27_000);
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/policies/{policyId}/release-targets",
+      { params: { path: { policyId: policy.data?.id ?? "" } } },
+    );
+
+    expect(releaseTargetsResponse.response.status).toBe(200);
+    const releaseTargets = releaseTargetsResponse.data?.releaseTargets;
+
+    expect(releaseTargets).toBeDefined();
+    expect(releaseTargets?.length).toBe(1);
+
+    const releaseTarget = releaseTargets?.[0];
+    expect(releaseTarget).toBeDefined();
+    expect(releaseTarget?.resource.identifier).toBe(prefix);
+    expect(releaseTarget?.environment.name).toBe(prefix);
+    expect(releaseTarget?.deployment.slug).toBe(prefix);
   });
 });
