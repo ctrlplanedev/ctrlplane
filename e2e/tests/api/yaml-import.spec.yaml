@@ -109,4 +109,4 @@ policies:
               key: tier
               value: production
     versionAnyApprovals:
-      - requiredApprovalsCount: 2
+      requiredApprovalsCount: 2
