@@ -63,7 +63,7 @@ export const getJob = async (db: Tx, jobId: string) => {
                 },
                 versionRelease: {
                   with: {
-                    version: true,
+                    version: { with: { metadata: true } },
                     releaseTarget: {
                       with: {
                         resource: {
@@ -99,6 +99,11 @@ export const getJob = async (db: Tx, jobId: string) => {
     const { versionRelease, variableSetRelease } = release;
 
     const { version, releaseTarget } = versionRelease;
+    const { metadata: versionMetadata } = version;
+    const versionMetadataMap = Object.fromEntries(
+      versionMetadata.map(({ key, value }) => [key, value]),
+    );
+    const versionWithMetadata = { ...version, metadata: versionMetadataMap };
 
     const { values } = variableSetRelease;
     const jobVariables = Object.fromEntries(
@@ -144,7 +149,7 @@ export const getJob = async (db: Tx, jobId: string) => {
       resource: resourceWithMetadata,
       environment,
       deployment,
-      version,
+      version: versionWithMetadata,
       release,
     };
   } catch (error) {
