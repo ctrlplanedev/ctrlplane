@@ -159,6 +159,10 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         return { created, deleted };
       });
 
+      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+        console.log("created release targets for dev system", created);
+      }
+
       if (deleted.length > 0)
         for (const rt of deleted)
           getQueue(Channel.DeletedReleaseTarget).add(rt.id, rt, {
@@ -181,6 +185,10 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           computePolicyTargets(db, policyTarget),
         ),
       );
+
+      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+        console.log("dispatching evaluate jobs for dev system", created);
+      }
 
       await dispatchEvaluateJobs(created);
     } catch (e: any) {
