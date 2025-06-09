@@ -38,7 +38,7 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description: "should match a policy to a specific resource",
         workspaceId,
         targets: [
           {
@@ -95,7 +95,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should update release targets when resource selector is updated",
         workspaceId,
         targets: [
           {
@@ -198,7 +199,7 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description: "should match a policy to a specific resource",
         workspaceId,
         targets: [
           {
@@ -244,7 +245,7 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description: "should match a policy to a specific environment",
         workspaceId,
         targets: [
           {
@@ -301,7 +302,7 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description: "should match a policy to a specific environment",
         workspaceId,
         targets: [
           {
@@ -407,7 +408,7 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description: "should match a policy to a specific deployment",
         workspaceId,
         targets: [
           {
@@ -453,7 +454,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should update release targets when deployment selector is updated",
         workspaceId,
         targets: [
           {
@@ -619,7 +621,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should match a policy to a specific deployment and environment",
         workspaceId,
         targets: [
           {
@@ -665,7 +668,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should match a policy to a specific deployment and environment",
         workspaceId,
         targets: [
           {
@@ -747,7 +751,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should update release targets when deployment and environment selectors are updated",
         workspaceId,
         targets: [
           {
@@ -854,7 +859,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should match a policy to a specific resource and environment",
         workspaceId,
         targets: [
           {
@@ -936,7 +942,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should update release targets when resource and environment selectors are updated",
         workspaceId,
         targets: [
           {
@@ -1041,7 +1048,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should match a policy to a specific resource and deployment",
         workspaceId,
         targets: [
           {
@@ -1123,7 +1131,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should update release targets when resource and deployment selectors are updated",
         workspaceId,
         targets: [
           {
@@ -1230,7 +1239,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should match a policy to a specific resource and deployment and environment",
         workspaceId,
         targets: [
           {
@@ -1357,7 +1367,8 @@ test.describe("Release Targets API", () => {
     const policyResponse = await api.POST("/v1/policies", {
       body: {
         name: policyName,
-        description: "Test Policy Description",
+        description:
+          "should update release targets when resource and deployment and environment selectors are updated",
         workspaceId,
         targets: [
           {
@@ -1536,7 +1547,8 @@ test.describe("Release Targets API", () => {
     const policy = await api.POST("/v1/policies", {
       body: {
         name: prefix,
-        description: "Test Policy Description",
+        description:
+          "should match a preexisting policy to a newly created resource",
         workspaceId,
         targets: [
           {

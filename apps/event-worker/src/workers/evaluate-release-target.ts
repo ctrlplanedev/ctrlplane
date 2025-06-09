@@ -1,8 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
-import { isAfter } from "date-fns";
-import _ from "lodash";
 
-import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
+import { and, desc, eq, gte, isNull, or, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
@@ -76,6 +74,74 @@ const handleVariableRelease = withSpan(
   },
 );
 
+const getIsReleaseTargetEvaluatedAfterAllEntitiesInWorkspace = async (
+  tx: Tx,
+  releaseTarget: schema.ReleaseTarget & { resource: schema.Resource },
+) => {
+  const { resource, lastComputedAt } = releaseTarget;
+  const { workspaceId } = resource;
+
+  if (lastComputedAt == null) return false;
+
+  const isReleaseTargetStaleRelativeToPolicyTarget = or(
+    isNull(schema.policyTarget.lastComputedAt),
+    gte(schema.policyTarget.lastComputedAt, lastComputedAt),
+  );
+
+  const isReleaseTargetStaleRelativeToDeployment = or(
+    isNull(schema.deployment.lastComputedAt),
+    gte(schema.deployment.lastComputedAt, lastComputedAt),
+  );
+
+  const isReleaseTargetStaleRelativeToEnvironment = or(
+    isNull(schema.environment.lastComputedAt),
+    gte(schema.environment.lastComputedAt, lastComputedAt),
+  );
+
+  const staleWorkspaceRelativeToReleaseTarget = await tx
+    .select()
+    .from(schema.workspace)
+    .leftJoin(schema.policy, eq(schema.policy.workspaceId, schema.workspace.id))
+    .leftJoin(
+      schema.policyTarget,
+      eq(schema.policyTarget.policyId, schema.policy.id),
+    )
+    .leftJoin(schema.system, eq(schema.system.workspaceId, schema.workspace.id))
+    .leftJoin(
+      schema.deployment,
+      eq(schema.deployment.systemId, schema.system.id),
+    )
+    .leftJoin(
+      schema.environment,
+      eq(schema.environment.systemId, schema.system.id),
+    )
+    .where(
+      and(
+        eq(schema.workspace.id, workspaceId),
+        or(
+          isReleaseTargetStaleRelativeToPolicyTarget,
+          isReleaseTargetStaleRelativeToDeployment,
+          isReleaseTargetStaleRelativeToEnvironment,
+        ),
+      ),
+    );
+
+  if (staleWorkspaceRelativeToReleaseTarget.length > 0) {
+    for (const staleWorkspace of staleWorkspaceRelativeToReleaseTarget) {
+      console.log(
+        "staleWorkspace",
+        `releaseTarget: ${releaseTarget.id}`,
+        `workspace: ${staleWorkspace.workspace.name}`,
+        `policyTarget: ${staleWorkspace.policy_target?.id}`,
+        `deployment: ${staleWorkspace.deployment?.id}`,
+        `environment: ${staleWorkspace.environment?.id}`,
+      );
+    }
+  }
+
+  return staleWorkspaceRelativeToReleaseTarget.length === 0;
+};
+
 const EVALUATED_BEFORE_DEPENDENT_ENTITY_ERROR =
   "Release target evaluated before dependent entity";
 
@@ -123,11 +189,12 @@ export const evaluateReleaseTargetWorker = createWorker(
           `,
         );
 
-        const isEvaluatedAfterEnvironment = isAfter(
-          releaseTarget.lastComputedAt,
-          releaseTarget.environment.lastComputedAt,
-        );
-        if (!isEvaluatedAfterEnvironment)
+        const isReleaseTargetEvaluatedAfterAllEntitiesInWorkspace =
+          await getIsReleaseTargetEvaluatedAfterAllEntitiesInWorkspace(
+            tx,
+            releaseTarget,
+          );
+        if (!isReleaseTargetEvaluatedAfterAllEntitiesInWorkspace)
           throw new Error(EVALUATED_BEFORE_DEPENDENT_ENTITY_ERROR);
 
         const existingVersionRelease = await tx.query.versionRelease.findFirst({
@@ -207,7 +274,8 @@ export const evaluateReleaseTargetWorker = createWorker(
         dispatchEvaluateJobs([job.data]);
         return;
       }
-      log.error("Failed to evaluate release target", { error: e });
+      console.log("error", e);
+      log.error("Failed to evaluate release target", e);
       throw e;
     }
   }),

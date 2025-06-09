@@ -73,9 +73,9 @@ export const environment = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    lastComputedAt: timestamp("last_computed_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    lastComputedAt: timestamp("last_computed_at", {
+      withTimezone: true,
+    }).default(sql`NULL`),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.systemId, t.name),
