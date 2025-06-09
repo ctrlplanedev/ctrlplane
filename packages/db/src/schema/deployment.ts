@@ -8,6 +8,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -88,6 +89,9 @@ export const deployment = pgTable(
     resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
+    lastComputedAt: timestamp("last_computed_at", {
+      withTimezone: true,
+    }).default(sql`NULL`),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
 );

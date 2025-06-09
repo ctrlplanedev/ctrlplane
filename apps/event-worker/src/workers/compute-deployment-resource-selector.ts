@@ -35,7 +35,14 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             eq(schema.computedDeploymentResource.deploymentId, deployment.id),
           );
 
-        if (deployment.resourceSelector == null) return;
+        if (deployment.resourceSelector == null) {
+          await tx
+            .update(schema.deployment)
+            .set({ lastComputedAt: sql`now()` })
+            .where(eq(schema.deployment.id, deployment.id));
+
+          return;
+        }
 
         const resources = await tx.query.resource.findMany({
           where: and(
@@ -59,6 +66,11 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             .insert(schema.computedDeploymentResource)
             .values(computedDeploymentResources)
             .onConflictDoNothing();
+
+        await tx
+          .update(schema.deployment)
+          .set({ lastComputedAt: sql`now()` })
+          .where(eq(schema.deployment.id, deployment.id));
       });
 
       dispatchComputeSystemReleaseTargetsJobs(deployment.system);

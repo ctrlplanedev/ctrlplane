@@ -153,8 +153,31 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         if (created.length > 0)
           await tx
             .insert(schema.releaseTarget)
-            .values(created)
+            .values(
+              created.map((rt) => ({ ...rt, lastComputedAt: sql`now()` })),
+            )
             .onConflictDoNothing();
+
+        const unchanged = previousReleaseTargets.filter(
+          (prevRt) =>
+            !created.some(
+              (rt) =>
+                rt.deploymentId === prevRt.deploymentId &&
+                rt.resourceId === prevRt.resourceId &&
+                rt.environmentId === prevRt.environmentId,
+            ),
+        );
+
+        if (unchanged.length > 0)
+          await tx
+            .update(schema.releaseTarget)
+            .set({ lastComputedAt: sql`now()` })
+            .where(
+              inArray(
+                schema.releaseTarget.id,
+                unchanged.map((rt) => rt.id),
+              ),
+            );
 
         return { created, deleted };
       });

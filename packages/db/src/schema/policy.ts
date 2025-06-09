@@ -75,6 +75,9 @@ export const policyTarget = pgTable("policy_target", {
   resourceSelector: jsonb("resource_selector")
     .default(sql`NULL`)
     .$type<ResourceCondition | null>(),
+  lastComputedAt: timestamp("last_computed_at", {
+    withTimezone: true,
+  }).default(sql`NULL`),
 });
 
 export const computedPolicyTargetReleaseTarget = pgTable(
@@ -91,6 +94,9 @@ export const computedPolicyTargetReleaseTarget = pgTable(
     pk: primaryKey({ columns: [t.policyTargetId, t.releaseTargetId] }),
   }),
 );
+export type ComputedPolicyTargetReleaseTarget = InferSelectModel<
+  typeof computedPolicyTargetReleaseTarget
+>;
 
 // Create zod schemas from drizzle schemas
 const policyInsertSchema = createInsertSchema(policy, {

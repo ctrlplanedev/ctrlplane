@@ -75,11 +75,16 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           resourceId: r.id,
         }));
 
-        if (computedEnvironmentResources.length === 0) return;
+        if (computedEnvironmentResources.length > 0)
+          await tx
+            .insert(schema.computedEnvironmentResource)
+            .values(computedEnvironmentResources)
+            .onConflictDoNothing();
+
         await tx
-          .insert(schema.computedEnvironmentResource)
-          .values(computedEnvironmentResources)
-          .onConflictDoNothing();
+          .update(schema.environment)
+          .set({ lastComputedAt: sql`now()` })
+          .where(eq(schema.environment.id, environment.id));
       });
 
       dispatchComputeSystemReleaseTargetsJobs(environment.system);

@@ -89,6 +89,11 @@ export const computePolicyTargets = async (
         .values(releaseTargets)
         .onConflictDoNothing();
 
+    await tx
+      .update(schema.policyTarget)
+      .set({ lastComputedAt: sql`now()` })
+      .where(eq(schema.policyTarget.id, policyTarget.id));
+
     return [...created, ...deleted].map((rt) => rt.releaseTargetId);
   });
 };

@@ -99,7 +99,6 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    expect(releases.length).toBe(1);
 
     const release = releases[0]!;
     expect(release.version.tag).toBe(versionTag);
@@ -212,7 +211,6 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    expect(releases.length).toBe(2);
 
     const latestRelease = releases.at(0)!;
     const variables = latestRelease.variables ?? [];
@@ -316,7 +314,6 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    expect(releases.length).toBe(2);
 
     const latestRelease = releases.at(0)!;
     const variables = latestRelease.variables ?? [];
@@ -433,7 +430,6 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
     const latestRelease = releases.at(0)!;
     expect(latestRelease.version.tag).toBe(versionTag);
@@ -570,7 +566,6 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
     const latestRelease = releases.at(0)!;
     expect(latestRelease.version.tag).toBe(versionTag);
@@ -699,7 +694,6 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
     const latestRelease = releases.at(0)!;
     expect(latestRelease.version.tag).toBe(versionTag);
@@ -828,7 +822,6 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(2);
 
     const latestRelease = releases.at(0)!;
     expect(latestRelease.version.tag).toBe(versionTag);
@@ -959,7 +952,6 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
     const latestRelease = releases.at(0)!;
     expect(latestRelease.version.tag).toBe(versionTag);

@@ -35,6 +35,10 @@ export const releaseTarget = pgTable(
     desiredReleaseId: uuid("desired_release_id")
       .references((): any => release.id, { onDelete: "set null" })
       .default(sql`NULL`),
+
+    lastComputedAt: timestamp("last_computed_at", {
+      withTimezone: true,
+    }).default(sql`NULL`),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.resourceId, t.environmentId, t.deploymentId),
@@ -154,7 +158,7 @@ export const releaseTargetRelations = relations(
       references: [resource.id],
     }),
 
-    computedReleaseTargets: many(computedPolicyTargetReleaseTarget),
+    computedPolicyTargets: many(computedPolicyTargetReleaseTarget),
 
     versionReleases: many(versionRelease),
     variableReleases: many(variableSetRelease),
