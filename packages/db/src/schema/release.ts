@@ -35,6 +35,10 @@ export const releaseTarget = pgTable(
     desiredReleaseId: uuid("desired_release_id")
       .references((): any => release.id, { onDelete: "set null" })
       .default(sql`NULL`),
+
+    lastComputedAt: timestamp("last_computed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.resourceId, t.environmentId, t.deploymentId),

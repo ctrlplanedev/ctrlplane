@@ -75,6 +75,11 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           resourceId: r.id,
         }));
 
+        await tx
+          .update(schema.environment)
+          .set({ lastComputedAt: sql`now()` })
+          .where(eq(schema.environment.id, environment.id));
+
         if (computedEnvironmentResources.length === 0) return;
         await tx
           .insert(schema.computedEnvironmentResource)

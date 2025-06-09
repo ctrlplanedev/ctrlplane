@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import { isAfter } from "date-fns";
 import _ from "lodash";
 
 import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
@@ -75,6 +76,9 @@ const handleVariableRelease = withSpan(
   },
 );
 
+const EVALUATED_BEFORE_DEPENDENT_ENTITY_ERROR =
+  "Release target evaluated before dependent entity";
+
 /**
  * Worker that evaluates a release target and creates necessary releases and jobs
  * Only runs in development environment
@@ -118,6 +122,13 @@ export const evaluateReleaseTargetWorker = createWorker(
             FOR UPDATE NOWAIT
           `,
         );
+
+        const isEvaluatedAfterEnvironment = isAfter(
+          releaseTarget.lastComputedAt,
+          releaseTarget.environment.lastComputedAt,
+        );
+        if (!isEvaluatedAfterEnvironment)
+          throw new Error(EVALUATED_BEFORE_DEPENDENT_ENTITY_ERROR);
 
         const existingVersionRelease = await tx.query.versionRelease.findFirst({
           where: eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
@@ -186,7 +197,13 @@ export const evaluateReleaseTargetWorker = createWorker(
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       const isReleaseTargetNotCommittedYet = e.code === "23503";
-      if (isRowLocked || isReleaseTargetNotCommittedYet) {
+      const isReleaseTargetEvaluatedBeforeDependentEntity =
+        e.message === EVALUATED_BEFORE_DEPENDENT_ENTITY_ERROR;
+      if (
+        isRowLocked ||
+        isReleaseTargetNotCommittedYet ||
+        isReleaseTargetEvaluatedBeforeDependentEntity
+      ) {
         dispatchEvaluateJobs([job.data]);
         return;
       }
