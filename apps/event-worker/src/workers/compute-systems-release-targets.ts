@@ -215,7 +215,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             error: e,
           });
 
-          dispatchComputeSystemReleaseTargetsJobs(system, true);
+          // dispatchComputeSystemReleaseTargetsJobs(system, true);
           return;
         }
 
