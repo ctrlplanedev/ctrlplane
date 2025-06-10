@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, inArray, isNull, or, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, notInArray, or, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
@@ -70,7 +70,7 @@ const findMatchingEnvironmentDeploymentPairs = (
 export const computeSystemsReleaseTargetsWorker = createWorker(
   Channel.ComputeSystemsReleaseTargets,
   async (job) => {
-    const { id: systemId, redeployAll } = job.data;
+    const { id: systemId, redeployAll, processedPolicyTargetIds } = job.data;
 
     const system = await db.query.system.findFirst({
       where: eq(schema.system.id, systemId),
@@ -188,51 +188,39 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           schema.policy,
           eq(schema.policyTarget.policyId, schema.policy.id),
         )
-        .where(eq(schema.policy.workspaceId, workspaceId));
-
-      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("retrieved policy targets for dev system", {
-          policyTargets: policyTargets.length,
-        });
-      }
-
-      try {
-        await Promise.all(
-          policyTargets.map(({ policy_target: policyTarget }) =>
-            computePolicyTargets(db, policyTarget),
+        .where(
+          and(
+            eq(schema.policy.workspaceId, workspaceId),
+            notInArray(schema.policyTarget.id, processedPolicyTargetIds ?? []),
           ),
         );
-      } catch (e: any) {
-        if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-          log.error("error in compute policy targets", {
-            error: e,
-          });
+
+      const additionalProcessedPolicyTargetIds: string[] = [];
+
+      for (const { policy_target: policyTarget } of policyTargets) {
+        try {
+          await computePolicyTargets(db, policyTarget);
+          additionalProcessedPolicyTargetIds.push(policyTarget.id);
+        } catch (e: any) {
+          if (e.code === "55P03") {
+            log.info("re-dispatching compute system release targets job", {
+              systemId: system.id,
+              error: e,
+              policyTarget,
+            });
+            dispatchComputeSystemReleaseTargetsJobs(system, true, [
+              ...(processedPolicyTargetIds ?? []),
+              ...additionalProcessedPolicyTargetIds,
+            ]);
+            return;
+          }
+          throw e;
         }
-
-        if (e.code === "55P03") {
-          log.info("re-dispatching compute system release targets job", {
-            systemId: system.id,
-            error: e,
-          });
-
-          // dispatchComputeSystemReleaseTargetsJobs(system, true);
-          return;
-        }
-
-        throw e;
       }
 
-      if (redeployAll) {
-        log.info("dispatching evaluate jobs for redeploy all", {
-          created: created.length,
-          unchanged: unchanged.length,
-        });
+      const toEvaluate = [...created, ...(redeployAll ? unchanged : [])];
 
-        await dispatchEvaluateJobs([...created, ...unchanged]);
-        return;
-      }
-
-      await dispatchEvaluateJobs(created);
+      await dispatchEvaluateJobs(toEvaluate);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
