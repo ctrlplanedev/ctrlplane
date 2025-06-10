@@ -202,7 +202,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
 
       await Promise.all(
         policyTargets.map(({ policy_target: policyTarget }) =>
-          computePolicyTargets(db, policyTarget),
+          computePolicyTargets(db, policyTarget, system.id),
         ),
       );
 
