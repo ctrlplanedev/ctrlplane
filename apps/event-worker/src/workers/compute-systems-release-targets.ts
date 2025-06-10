@@ -5,9 +5,14 @@ import { db } from "@ctrlplane/db/client";
 import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
 
 import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
 import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+
+const log = logger.child({
+  component: "computeSystemsReleaseTargetsWorker",
+});
 
 const findMatchingEnvironmentDeploymentPairs = (
   tx: Tx,
@@ -160,7 +165,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
       });
 
       if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        console.log("created release targets for dev system", created);
+        log.info("created release targets for dev system", { created });
       }
 
       if (deleted.length > 0)
@@ -187,7 +192,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
       );
 
       if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        console.log("dispatching evaluate jobs for dev system", created);
+        log.info("dispatching evaluate jobs for dev system", { created });
       }
 
       await dispatchEvaluateJobs(created);
