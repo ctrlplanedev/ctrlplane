@@ -228,6 +228,12 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
+        if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+          log.info(
+            "re-dispatching compute system release targets job for dev system",
+            { systemId: system.id, error: e },
+          );
+        }
         dispatchComputeSystemReleaseTargetsJobs(system);
         return;
       }
