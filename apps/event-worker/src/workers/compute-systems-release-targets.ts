@@ -226,6 +226,11 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
 
       await dispatchEvaluateJobs(created);
     } catch (e: any) {
+      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+        log.info("error in compute systems release targets worker", {
+          error: e,
+        });
+      }
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
         if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
