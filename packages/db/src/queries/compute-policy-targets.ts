@@ -57,7 +57,6 @@ const findMatchingReleaseTargets = (
 export const computePolicyTargets = async (
   db: Tx,
   policyTarget: schema.PolicyTarget,
-  systemId?: string,
 ) => {
   try {
     return db.transaction(async (tx) => {
@@ -102,12 +101,6 @@ export const computePolicyTargets = async (
           .insert(schema.computedPolicyTargetReleaseTarget)
           .values(created)
           .onConflictDoNothing();
-
-      if (systemId === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("created release targets", {
-          created: created.length,
-        });
-      }
 
       return [...created, ...deleted].map((rt) => rt.releaseTargetId);
     });

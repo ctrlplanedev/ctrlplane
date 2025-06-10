@@ -75,5 +75,5 @@ export type ChannelMap = {
   [Channel.ComputeEnvironmentResourceSelector]: { id: string };
   [Channel.ComputeDeploymentResourceSelector]: { id: string };
   [Channel.ComputePolicyTargetReleaseTargetSelector]: { id: string };
-  [Channel.ComputeSystemsReleaseTargets]: { id: string };
+  [Channel.ComputeSystemsReleaseTargets]: { id: string; redeployAll?: boolean };
 };

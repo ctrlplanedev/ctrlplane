@@ -4,11 +4,12 @@ import { Channel, getQueue } from "@ctrlplane/events";
 
 export const dispatchComputeSystemReleaseTargetsJobs = async (
   system: schema.System,
+  redeployAll?: boolean,
 ) => {
   const { id } = system;
   const q = getQueue(Channel.ComputeSystemsReleaseTargets);
   const waiting = await q.getWaiting();
   const isAlreadyQueued = waiting.some((job) => job.data.id === id);
   if (isAlreadyQueued) return;
-  await q.add(id, system);
+  await q.add(id, { id, redeployAll });
 };
