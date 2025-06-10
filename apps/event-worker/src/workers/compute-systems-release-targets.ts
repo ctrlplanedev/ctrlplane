@@ -201,15 +201,29 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
       }
 
       await Promise.all(
-        policyTargets.map(({ policy_target: policyTarget }) =>
-          computePolicyTargets(db, policyTarget, system.id),
-        ),
+        policyTargets.map(({ policy_target: policyTarget }) => {
+          try {
+            if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+              log.info("computing policy target", {
+                policyTargetId: policyTarget.id,
+              });
+            }
+
+            const result = computePolicyTargets(db, policyTarget, system.id);
+            if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+              log.info("computed policy target", {
+                policyTargetId: policyTarget.id,
+                result,
+              });
+            }
+            return result;
+          } catch (e) {
+            log.error("Failed to compute policy target", { error: e });
+          }
+        }),
       );
 
-      if (
-        system.id === "54ff9e49-335c-4a66-82d8-205d1a917766" &&
-        policyTargets.length > 0
-      ) {
+      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
         log.info("computed policy targets for dev system", {
           policyTargets: policyTargets.length,
         });
