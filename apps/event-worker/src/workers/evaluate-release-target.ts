@@ -190,7 +190,9 @@ export const evaluateReleaseTargetWorker = createWorker(
         dispatchEvaluateJobs([job.data]);
         return;
       }
-      const isJobAgentError = e.message === "Deployment has no Job Agent";
+      const isJobAgentError =
+        e.message === "Deployment has no Job Agent" ||
+        e === "Deployment has no Job Agent";
       if (!isJobAgentError)
         log.error("Failed to evaluate release target", { error: e });
       throw e;
