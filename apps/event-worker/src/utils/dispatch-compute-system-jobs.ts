@@ -9,7 +9,9 @@ export const dispatchComputeSystemReleaseTargetsJobs = async (
   const { id } = system;
   const q = getQueue(Channel.ComputeSystemsReleaseTargets);
   const waiting = await q.getWaiting();
-  const isAlreadyQueued = waiting.some((job) => job.data.id === id);
+  const isAlreadyQueued = waiting.some(
+    (job) => job.data.id === id && job.data.redeployAll === redeployAll,
+  );
   if (isAlreadyQueued) return;
   await q.add(id, { id, redeployAll });
 };

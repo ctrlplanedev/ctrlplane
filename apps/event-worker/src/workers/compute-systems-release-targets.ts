@@ -218,9 +218,16 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           dispatchComputeSystemReleaseTargetsJobs(system, true);
           return;
         }
+
+        throw e;
       }
 
       if (redeployAll) {
+        log.info("dispatching evaluate jobs for redeploy all", {
+          created: created.length,
+          unchanged: unchanged.length,
+        });
+
         await dispatchEvaluateJobs([...created, ...unchanged]);
         return;
       }
