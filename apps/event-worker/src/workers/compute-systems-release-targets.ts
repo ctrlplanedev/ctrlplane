@@ -177,7 +177,17 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             deduplication: { id: rt.id },
           });
 
+      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+        log.info("deleted release targets for dev system", { deleted });
+      }
+
       if (created.length === 0) return;
+
+      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+        log.info("retrieving policy targets for dev system", {
+          systemId: system.id,
+        });
+      }
 
       const policyTargets = await db
         .select()
@@ -188,11 +198,26 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         )
         .where(eq(schema.policy.workspaceId, workspaceId));
 
+      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+        log.info("retrieved policy targets for dev system", {
+          policyTargets: policyTargets.length,
+        });
+      }
+
       await Promise.all(
         policyTargets.map(({ policy_target: policyTarget }) =>
           computePolicyTargets(db, policyTarget),
         ),
       );
+
+      if (
+        system.id === "54ff9e49-335c-4a66-82d8-205d1a917766" &&
+        policyTargets.length > 0
+      ) {
+        log.info("computed policy targets for dev system", {
+          policyTargets: policyTargets.length,
+        });
+      }
 
       if (
         system.id === "54ff9e49-335c-4a66-82d8-205d1a917766" &&
