@@ -164,7 +164,10 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         return { created, deleted };
       });
 
-      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+      if (
+        system.id === "54ff9e49-335c-4a66-82d8-205d1a917766" &&
+        created.length > 0
+      ) {
         log.info("created release targets for dev system", { created });
       }
 
@@ -191,7 +194,10 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         ),
       );
 
-      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+      if (
+        system.id === "54ff9e49-335c-4a66-82d8-205d1a917766" &&
+        created.length > 0
+      ) {
         log.info("dispatching evaluate jobs for dev system", { created });
       }
 
