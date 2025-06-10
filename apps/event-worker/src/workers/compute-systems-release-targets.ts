@@ -201,7 +201,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
       }
 
       await Promise.all(
-        policyTargets.map(({ policy_target: policyTarget }) => {
+        policyTargets.map(async ({ policy_target: policyTarget }) => {
           try {
             if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
               log.info("computing policy target", {
@@ -209,7 +209,11 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
               });
             }
 
-            const result = computePolicyTargets(db, policyTarget, system.id);
+            const result = await computePolicyTargets(
+              db,
+              policyTarget,
+              system.id,
+            );
             if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
               log.info("computed policy target", {
                 policyTargetId: policyTarget.id,
