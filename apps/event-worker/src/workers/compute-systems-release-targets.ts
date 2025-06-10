@@ -177,10 +177,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             deduplication: { id: rt.id },
           });
 
-      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("deleted release targets for dev system", { deleted });
-      }
-
       if (created.length === 0) return;
 
       if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
