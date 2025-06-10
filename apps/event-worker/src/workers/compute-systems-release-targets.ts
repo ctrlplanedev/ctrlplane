@@ -164,13 +164,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         return { created, deleted };
       });
 
-      if (
-        system.id === "54ff9e49-335c-4a66-82d8-205d1a917766" &&
-        created.length > 0
-      ) {
-        log.info("created release targets for dev system", { created });
-      }
-
       if (deleted.length > 0)
         for (const rt of deleted)
           getQueue(Channel.DeletedReleaseTarget).add(rt.id, rt, {
@@ -178,12 +171,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           });
 
       if (created.length === 0) return;
-
-      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("retrieving policy targets for dev system", {
-          systemId: system.id,
-        });
-      }
 
       const policyTargets = await db
         .select()
@@ -206,28 +193,14 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             computePolicyTargets(db, policyTarget, system.id),
           ),
         );
-      } catch (e) {
-        log.error("Failed to compute policy targets", { error: e });
-        throw new Error(`Failed to compute policy targets: ${String(e)}`);
-      }
-
-      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("computed policy targets for dev system", {
-          policyTargets: policyTargets.length,
-        });
-      }
-
-      if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("dispatching evaluate jobs for dev system", { created });
-      }
-
-      await dispatchEvaluateJobs(created);
-    } catch (e: any) {
-      if (
-        e instanceof Error &&
-        e.message.includes("Failed to compute policy targets")
-      ) {
+      } catch (e: any) {
         if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
+          log.info("error in compute policy targets", {
+            error: e,
+          });
+        }
+
+        if (e.code === "55P03") {
           log.info(
             "re-dispatching compute system release targets job for dev system",
             {
@@ -235,11 +208,13 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
               error: e,
             },
           );
-        }
 
-        return;
+          return;
+        }
       }
 
+      await dispatchEvaluateJobs(created);
+    } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
         dispatchComputeSystemReleaseTargetsJobs(system);

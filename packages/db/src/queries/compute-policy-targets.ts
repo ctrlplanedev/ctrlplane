@@ -61,12 +61,6 @@ export const computePolicyTargets = async (
 ) => {
   try {
     return db.transaction(async (tx) => {
-      if (systemId === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("locking policy target", {
-          policyTargetId: policyTarget.id,
-        });
-      }
-
       await tx.execute(
         sql`
         SELECT * from ${schema.computedPolicyTargetReleaseTarget}
@@ -86,19 +80,7 @@ export const computePolicyTargets = async (
           ),
         );
 
-      if (systemId === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("retrieved previous release targets", {
-          previous: previous.length,
-        });
-      }
-
       const releaseTargets = await findMatchingReleaseTargets(tx, policyTarget);
-
-      if (systemId === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("retrieved release targets", {
-          releaseTargets: releaseTargets.length,
-        });
-      }
 
       const prevIds = new Set(previous.map((rt) => rt.releaseTargetId));
       const nextIds = new Set(releaseTargets.map((rt) => rt.releaseTargetId));
@@ -114,12 +96,6 @@ export const computePolicyTargets = async (
             deleted.map((rt) => rt.releaseTargetId),
           ),
         );
-
-      if (systemId === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-        log.info("deleted release targets", {
-          deleted: deleted.length,
-        });
-      }
 
       if (created.length > 0)
         await tx
