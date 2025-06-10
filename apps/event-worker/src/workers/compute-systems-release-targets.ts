@@ -208,6 +208,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         dispatchComputeSystemReleaseTargetsJobs(system);
         return;
       }
+      log.error("Failed to compute release targets", { error: e });
 
       throw e;
     }
