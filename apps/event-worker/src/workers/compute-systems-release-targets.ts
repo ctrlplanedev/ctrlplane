@@ -195,20 +195,18 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         );
       } catch (e: any) {
         if (system.id === "54ff9e49-335c-4a66-82d8-205d1a917766") {
-          log.info("error in compute policy targets", {
+          log.error("error in compute policy targets", {
             error: e,
           });
         }
 
         if (e.code === "55P03") {
-          log.info(
-            "re-dispatching compute system release targets job for dev system",
-            {
-              systemId: system.id,
-              error: e,
-            },
-          );
+          log.info("re-dispatching compute system release targets job", {
+            systemId: system.id,
+            error: e,
+          });
 
+          dispatchComputeSystemReleaseTargetsJobs(system);
           return;
         }
       }
