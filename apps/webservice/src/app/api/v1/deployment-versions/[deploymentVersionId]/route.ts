@@ -95,7 +95,7 @@ export const PATCH = request()
         deploymentVersion.status === DeploymentVersionStatus.Ready;
       if (!shouldTrigger) return NextResponse.json(deploymentVersion);
 
-      await getQueue(Channel.NewDeploymentVersion).add(
+      getQueue(Channel.NewDeploymentVersion).add(
         deploymentVersion.id,
         deploymentVersion,
       );
