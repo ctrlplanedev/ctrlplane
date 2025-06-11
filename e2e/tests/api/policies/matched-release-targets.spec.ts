@@ -14,6 +14,7 @@ test.describe("Release Targets API", () => {
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
 
+    await builder.upsertPolicies();
     await builder.upsertSystem();
     await builder.upsertResources();
     await builder.upsertEnvironments();
@@ -1533,6 +1534,32 @@ test.describe("Release Targets API", () => {
 
     expect(deployment.response.status).toBe(201);
 
+    const deploymentVersion1 = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId: deployment.data?.id ?? "",
+        tag: "0.0.0",
+        config: {},
+        metadata: {
+          env: prefix,
+        },
+      },
+    });
+
+    expect(deploymentVersion1.response.status).toBe(201);
+
+    const deploymentVersion2 = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId: deployment.data?.id ?? "",
+        tag: "1.0.0",
+        config: {},
+        metadata: {
+          env: prefix,
+        },
+      },
+    });
+
+    expect(deploymentVersion2.response.status).toBe(201);
+
     const policy = await api.POST("/v1/policies", {
       body: {
         name: prefix,
@@ -1552,6 +1579,14 @@ test.describe("Release Targets API", () => {
             },
           },
         ],
+        deploymentVersionSelector: {
+          name: "deploymentVersion",
+          deploymentVersionSelector: {
+            type: "tag",
+            operator: "equals",
+            value: "0.0.0",
+          },
+        },
       },
     });
 
@@ -1591,5 +1626,19 @@ test.describe("Release Targets API", () => {
     expect(releaseTarget?.resource.identifier).toBe(prefix);
     expect(releaseTarget?.environment.name).toBe(prefix);
     expect(releaseTarget?.deployment.slug).toBe(prefix);
+
+    const releases = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      { params: { path: { releaseTargetId: releaseTarget?.id ?? "" } } },
+    );
+
+    expect(releases.response.status).toBe(200);
+    const releasesData = releases.data;
+    expect(releasesData).toBeDefined();
+    expect(releasesData?.length).toBe(1);
+
+    const release = releasesData?.[0];
+    expect(release).toBeDefined();
+    expect(release?.version.tag).toBe("0.0.0");
   });
 });
