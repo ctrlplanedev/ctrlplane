@@ -4,7 +4,7 @@ import type { PullRequestEvent } from "@octokit/webhooks-types";
 import { and, eq, takeFirstOrNull, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { dispatchUpdatedResourceJob } from "@ctrlplane/events";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import {
   getPullRequestState,
@@ -300,5 +300,5 @@ export const handlePullRequestWebhookEvent = async (
   const upsertedResource = resources.at(0);
   if (upsertedResource == null) return;
 
-  getQueue(Channel.UpdatedResource).add(upsertedResource.id, upsertedResource);
+  await dispatchUpdatedResourceJob(upsertedResource);
 };

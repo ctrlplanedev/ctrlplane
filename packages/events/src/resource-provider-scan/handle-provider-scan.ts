@@ -6,7 +6,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { getAffectedVariables } from "@ctrlplane/rule-engine";
 
-import { getQueue } from "../index.js";
+import { dispatchUpdatedResourceJob, getQueue } from "../index.js";
 import { Channel } from "../types.js";
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
 
@@ -98,12 +98,12 @@ export const handleResourceProviderScan = async (
       );
 
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
-    const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
     const deleteJobs = toDelete.map((r) => ({ name: r.id, data: r }));
 
     await getQueue(Channel.DeleteResource).addBulk(deleteJobs);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
-    await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
+    for (const resource of updatedResources)
+      await dispatchUpdatedResourceJob(resource);
 
     for (const resource of insertedResources) {
       const { variables } = resource;

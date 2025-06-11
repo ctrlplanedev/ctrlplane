@@ -5,7 +5,11 @@ import { z } from "zod";
 import { and, eq, isNull, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import {
+  Channel,
+  dispatchUpdatedResourceJob,
+  getQueue,
+} from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import {
   getAffectedVariables,
@@ -153,7 +157,7 @@ export const PATCH = request()
         metadata: Object.fromEntries(res.metadata.map((m) => [m.key, m.value])),
       };
 
-      await getQueue(Channel.UpdatedResource).add(resource.id, resource);
+      await dispatchUpdatedResourceJob(resource);
 
       const affectedVariables = getAffectedVariables(
         prevVariables,
