@@ -166,6 +166,8 @@ export const resourceMetadata = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.key, t.resourceId) }),
 );
 
+export type ResourceMetadata = InferSelectModel<typeof resourceMetadata>;
+
 export const resourceMetadataRelations = relations(
   resourceMetadata,
   ({ one }) => ({
