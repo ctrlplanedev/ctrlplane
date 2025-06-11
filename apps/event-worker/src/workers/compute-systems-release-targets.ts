@@ -191,7 +191,10 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
         .where(
           and(
             eq(schema.policy.workspaceId, workspaceId),
-            notInArray(schema.policyTarget.id, processedPolicyTargetIds ?? []),
+            processedPolicyTargetIds != null &&
+              processedPolicyTargetIds.length > 0
+              ? notInArray(schema.policyTarget.id, processedPolicyTargetIds)
+              : undefined,
           ),
         );
 
@@ -203,11 +206,6 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           additionalProcessedPolicyTargetIds.push(policyTarget.id);
         } catch (e: any) {
           if (e.code === "55P03") {
-            log.info("re-dispatching compute system release targets job", {
-              systemId: system.id,
-              error: e,
-              policyTarget,
-            });
             dispatchComputeSystemReleaseTargetsJobs(system, true, [
               ...(processedPolicyTargetIds ?? []),
               ...additionalProcessedPolicyTargetIds,
