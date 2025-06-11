@@ -41,6 +41,7 @@ export const getApplicablePolicies = withSpan(
                 versionRoleApprovals: true,
                 versionUserApprovals: true,
                 concurrency: true,
+                environmentVersionRollout: true,
               },
             },
           },

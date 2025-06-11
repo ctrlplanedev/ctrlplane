@@ -11,6 +11,7 @@ import {
   policyRuleAnyApproval,
   policyRuleDenyWindow,
   policyRuleDeploymentVersionSelector,
+  policyRuleEnvironmentVersionRollout,
   policyRuleRoleApproval,
   policyRuleUserApproval,
 } from "./rules/index.js";
@@ -30,6 +31,8 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   versionAnyApprovals: one(policyRuleAnyApproval),
 
   concurrency: one(policyRuleConcurrency),
+
+  environmentVersionRollout: one(policyRuleEnvironmentVersionRollout),
 }));
 
 export const policyTargetRelations = relations(

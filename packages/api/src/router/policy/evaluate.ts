@@ -60,6 +60,7 @@ const getApplicablePoliciesWithoutResourceScope = async (
       versionRoleApprovals: true,
       versionUserApprovals: true,
       concurrency: true,
+      environmentVersionRollout: true,
     },
   });
 };
