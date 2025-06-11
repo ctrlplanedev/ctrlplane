@@ -12,7 +12,7 @@ import { can, getUser } from "@ctrlplane/auth/utils";
 import { eq, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { dispatchUpdatedResourceJob } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
@@ -138,7 +138,7 @@ export class AgentSocket {
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
 
-    await getQueue(Channel.UpdatedResource).add(res.id, res);
+    await dispatchUpdatedResourceJob(res);
 
     const metadata = Object.fromEntries(
       res.metadata.map((m) => [m.key, m.value]),
