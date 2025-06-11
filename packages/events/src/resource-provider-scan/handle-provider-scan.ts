@@ -102,8 +102,7 @@ export const handleResourceProviderScan = async (
 
     await getQueue(Channel.DeleteResource).addBulk(deleteJobs);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
-    for (const resource of updatedResources)
-      await dispatchUpdatedResourceJob(resource);
+    await dispatchUpdatedResourceJob(updatedResources);
 
     for (const resource of insertedResources) {
       const { variables } = resource;

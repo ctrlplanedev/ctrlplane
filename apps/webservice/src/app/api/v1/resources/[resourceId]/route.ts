@@ -157,7 +157,7 @@ export const PATCH = request()
         metadata: Object.fromEntries(res.metadata.map((m) => [m.key, m.value])),
       };
 
-      await dispatchUpdatedResourceJob(resource);
+      await dispatchUpdatedResourceJob([res]);
 
       const affectedVariables = getAffectedVariables(
         prevVariables,

@@ -297,8 +297,5 @@ export const handlePullRequestWebhookEvent = async (
     upsertResources(tx, githubEntity.workspaceId, [resource]),
   );
 
-  const upsertedResource = resources.at(0);
-  if (upsertedResource == null) return;
-
-  await dispatchUpdatedResourceJob(upsertedResource);
+  await dispatchUpdatedResourceJob(resources);
 };

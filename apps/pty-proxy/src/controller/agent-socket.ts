@@ -138,7 +138,7 @@ export class AgentSocket {
     const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
 
-    await dispatchUpdatedResourceJob(res);
+    await dispatchUpdatedResourceJob([res]);
 
     const metadata = Object.fromEntries(
       res.metadata.map((m) => [m.key, m.value]),
