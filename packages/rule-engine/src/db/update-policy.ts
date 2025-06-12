@@ -178,9 +178,12 @@ const updateEnvironmentVersionRollout = async (
     .insert(SCHEMA.policyRuleEnvironmentVersionRollout)
     .values({
       policyId,
-      positionGrowthFactor: positionGrowthFactor.toString(),
+      positionGrowthFactor: positionGrowthFactor?.toString(),
       timeScaleInterval: timeScaleInterval.toString(),
-      rolloutType,
+      rolloutType:
+        rolloutType != null
+          ? SCHEMA.apiRolloutTypeToDBRolloutType[rolloutType]
+          : undefined,
     })
     .onConflictDoUpdate({
       target: [SCHEMA.policyRuleEnvironmentVersionRollout.policyId],
@@ -250,5 +253,19 @@ export const updatePolicyInTx = async (
   if (updatedPolicy == null) throw new Error("Policy not found");
 
   const updatedConcurrency = updatedPolicy.concurrency?.concurrency;
-  return { ...updatedPolicy, concurrency: updatedConcurrency };
+  const updatedEnvironmentVersionRollout =
+    updatedPolicy.environmentVersionRollout != null
+      ? {
+          ...updatedPolicy.environmentVersionRollout,
+          rolloutType:
+            SCHEMA.dbRolloutTypeToAPIRolloutType[
+              updatedPolicy.environmentVersionRollout.rolloutType
+            ],
+        }
+      : null;
+  return {
+    ...updatedPolicy,
+    concurrency: updatedConcurrency,
+    environmentVersionRollout: updatedEnvironmentVersionRollout,
+  };
 };

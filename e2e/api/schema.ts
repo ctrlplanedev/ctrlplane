@@ -1354,7 +1354,11 @@ export interface components {
        * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
        * @enum {string}
        */
-      rolloutType: "linear" | "exponential";
+      rolloutType:
+        | "linear"
+        | "linear-normalized"
+        | "exponential"
+        | "exponential-normalized";
     };
     Policy: {
       /** Format: uuid */

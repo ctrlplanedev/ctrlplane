@@ -43,13 +43,30 @@ export const GET = request()
             environmentVersionRollout: true,
           },
         });
+
+        const concurrency = policy?.concurrency?.concurrency;
+        const environmentVersionRollout =
+          policy?.environmentVersionRollout != null
+            ? {
+                ...policy.environmentVersionRollout,
+                rolloutType:
+                  SCHEMA.dbRolloutTypeToAPIRolloutType[
+                    policy.environmentVersionRollout.rolloutType
+                  ],
+              }
+            : null;
+
         if (policy == null)
           return NextResponse.json(
             { error: "Policy not found" },
             { status: NOT_FOUND },
           );
 
-        return NextResponse.json(policy);
+        return NextResponse.json({
+          ...policy,
+          concurrency,
+          environmentVersionRollout,
+        });
       } catch (error) {
         log.error("Failed to get policy", { error });
         return NextResponse.json(

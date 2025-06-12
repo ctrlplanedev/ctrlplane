@@ -196,10 +196,15 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .values({
         policyId,
         positionGrowthFactor:
-          environmentVersionRollout.positionGrowthFactor.toString(),
+          environmentVersionRollout.positionGrowthFactor?.toString(),
         timeScaleInterval:
           environmentVersionRollout.timeScaleInterval.toString(),
-        rolloutType: environmentVersionRollout.rolloutType,
+        rolloutType:
+          environmentVersionRollout.rolloutType != null
+            ? SCHEMA.apiRolloutTypeToDBRolloutType[
+                environmentVersionRollout.rolloutType
+              ]
+            : undefined,
       })
       .onConflictDoUpdate({
         target: [SCHEMA.policyRuleEnvironmentVersionRollout.policyId],
@@ -218,5 +223,6 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     versionUserApprovals,
     versionRoleApprovals,
     concurrency,
+    environmentVersionRollout,
   };
 };

@@ -785,6 +785,13 @@
       "when": 1748896977225,
       "tag": "0111_groovy_tombstone",
       "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1749766334028,
+      "tag": "0112_curved_annihilus",
+      "breakpoints": true
     }
   ]
 }

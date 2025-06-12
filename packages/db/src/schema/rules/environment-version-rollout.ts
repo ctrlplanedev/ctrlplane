@@ -17,6 +17,33 @@ export enum RolloutType {
   Exponential = "exponential",
   ExponentialNormalized = "exponential_normalized",
 }
+const ROLLOUT_TYPE_MAPPINGS = {
+  linear: {
+    api: "linear",
+    db: RolloutType.Linear,
+  },
+  "linear-normalized": {
+    api: "linear-normalized",
+    db: RolloutType.LinearNormalized,
+  },
+  exponential: {
+    api: "exponential",
+    db: RolloutType.Exponential,
+  },
+  "exponential-normalized": {
+    api: "exponential-normalized",
+    db: RolloutType.ExponentialNormalized,
+  },
+} as const;
+
+export const apiRolloutTypeToDBRolloutType: Record<string, RolloutType> =
+  Object.fromEntries(
+    Object.values(ROLLOUT_TYPE_MAPPINGS).map(({ api, db }) => [api, db]),
+  );
+
+export const dbRolloutTypeToAPIRolloutType = Object.fromEntries(
+  Object.values(ROLLOUT_TYPE_MAPPINGS).map(({ api, db }) => [db, api]),
+) as Record<RolloutType, string>;
 
 export const policyRuleEnvironmentVersionRollout = pgTable(
   "policy_rule_environment_version_rollout",
@@ -49,6 +76,11 @@ export const createPolicyRuleEnvironmentVersionRollout = createInsertSchema(
     policyId: z.string().uuid(),
     positionGrowthFactor: z.number().positive().max(100),
     timeScaleInterval: z.number().positive().max(100),
-    rolloutType: z.nativeEnum(RolloutType),
+    rolloutType: z.enum([
+      "linear",
+      "exponential",
+      "linear-normalized",
+      "exponential-normalized",
+    ]),
   },
 ).omit({ id: true });

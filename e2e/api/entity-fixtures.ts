@@ -124,9 +124,9 @@ export const PolicyFixture = z.object({
     .object({
       rolloutType: z.enum([
         "linear",
-        "linear_normalized",
+        "linear-normalized",
         "exponential",
-        "exponential_normalized",
+        "exponential-normalized",
       ]),
       positionGrowthFactor: z.number().default(1),
       timeScaleInterval: z.number(),

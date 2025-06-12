@@ -20,7 +20,7 @@ const linearDeploymentOffset: OffsetFunctionGetter =
     __: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleInterval * (x - 1);
+    timeScaleInterval * x;
 
 const linearDeploymentOffsetNormalized: OffsetFunctionGetter =
   (
@@ -29,7 +29,7 @@ const linearDeploymentOffsetNormalized: OffsetFunctionGetter =
     numReleaseTargets: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleInterval * ((x - 1) / numReleaseTargets);
+    timeScaleInterval * (x / numReleaseTargets);
 
 const exponentialDeploymentOffset: OffsetFunctionGetter =
   (
@@ -38,7 +38,7 @@ const exponentialDeploymentOffset: OffsetFunctionGetter =
     _: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleInterval * (1 - Math.exp(-(x - 1) / positionGrowthFactor));
+    timeScaleInterval * (1 - Math.exp(-x / positionGrowthFactor));
 
 const exponentialDeploymentOffsetNormalized: OffsetFunctionGetter =
   (
@@ -48,7 +48,7 @@ const exponentialDeploymentOffsetNormalized: OffsetFunctionGetter =
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
     timeScaleInterval *
-    ((1 - Math.exp(-(x - 1) / numReleaseTargets)) /
+    ((1 - Math.exp(-x / numReleaseTargets)) /
       (1 - Math.exp(-numReleaseTargets / positionGrowthFactor)));
 
 export const RolloutTypeToOffsetFunction: Record<

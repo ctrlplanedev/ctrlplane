@@ -4,12 +4,42 @@ system:
   description: System for testing environment version rollout policy
 
 deployments:
-  - name: "{{ prefix }}-linear-rollout-no-approval"
-    slug: "{{ prefix }}-linear-rollout-no-approval"
+  - name: "{{ prefix }}-linear-rollout"
+    slug: "{{ prefix }}-linear-rollout"
+  - name: "{{ prefix }}-linear-rollout-normalized"
+    slug: "{{ prefix }}-linear-rollout-normalized"
+  - name: "{{ prefix }}-exponential-rollout"
+    slug: "{{ prefix }}-exponential-rollout"
+  - name: "{{ prefix }}-exponential-rollout-normalized"
+    slug: "{{ prefix }}-exponential-rollout-normalized"
 
 environments:
-  - name: "{{ prefix }}-linear-rollout-no-approval"
+  - name: "{{ prefix }}-linear-rollout"
     description: Environment for testing environment version rollout policy
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-linear-rollout-normalized"
+    description: Environment for testing environment version rollout policy with normalized linear rollout
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-exponential-rollout"
+    description: Environment for testing environment version rollout policy with exponential rollout
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-exponential-rollout-normalized"
+    description: Environment for testing environment version rollout policy with normalized exponential rollout
     systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
     resourceSelector:
       type: identifier
@@ -52,14 +82,3 @@ resources:
       enabled: true
     metadata:
       env: prod
-
-policies:
-  - name: "{{ prefix }}-linear-rollout-no-approval"
-    targets:
-      - environmentSelector:
-          type: name
-          operator: equals
-          value: "{{ prefix }}-linear-rollout-no-approval"
-    environmentVersionRollout:
-      rolloutType: linear
-      timeScaleInterval: 10

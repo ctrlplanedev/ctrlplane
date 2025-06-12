@@ -90,7 +90,7 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           rolloutType: {
             type: "string",
-            enum: Object.values(schema.RolloutType),
+            enum: Object.keys(schema.apiRolloutTypeToDBRolloutType),
             description:
               "Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.",
           },
