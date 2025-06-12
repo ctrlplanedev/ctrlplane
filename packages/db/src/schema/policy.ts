@@ -37,6 +37,7 @@ import { createPolicyRuleRoleApproval } from "./rules/approval-role.js";
 import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
 import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
 import { createPolicyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
+import { createPolicyRuleEnvironmentVersionRollout } from "./rules/environment-version-rollout.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable(
@@ -156,6 +157,11 @@ export const createPolicy = z.intersection(
         message: "Concurrency must be greater than 0",
         path: ["concurrency"],
       }),
+
+    environmentVersionRollout: createPolicyRuleEnvironmentVersionRollout
+      .omit({ policyId: true })
+      .optional()
+      .nullable(),
   }),
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;
@@ -190,6 +196,11 @@ export const updatePolicy = policyInsertSchema.partial().extend({
       message: "Concurrency must be greater than 0",
       path: ["concurrency"],
     }),
+
+  environmentVersionRollout: createPolicyRuleEnvironmentVersionRollout
+    .omit({ policyId: true })
+    .optional()
+    .nullable(),
 });
 export type UpdatePolicy = z.infer<typeof updatePolicy>;
 

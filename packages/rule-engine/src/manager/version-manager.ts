@@ -180,7 +180,8 @@ export class VersionReleaseManager implements ReleaseManager {
 
   async evaluate(options?: VersionEvaluateOptions) {
     const policy = options?.policy ?? (await this.getPolicy());
-    const rules = (options?.rules ?? getRules)(policy, this.releaseTarget.id);
+    const ruleGetter = options?.rules ?? getRules;
+    const rules = await ruleGetter(policy, this.releaseTarget.id);
 
     const engine = new VersionRuleEngine(rules);
     const versions =

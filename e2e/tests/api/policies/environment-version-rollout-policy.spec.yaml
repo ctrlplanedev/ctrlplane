@@ -1,0 +1,65 @@
+system:
+  name: "{{ prefix }}-environment-version-rollout-policy-tester"
+  slug: "{{ prefix }}-environment-version-rollout-policy-tester"
+  description: System for testing environment version rollout policy
+
+deployments:
+  - name: "{{ prefix }}-linear-rollout-no-approval"
+    slug: "{{ prefix }}-linear-rollout-no-approval"
+
+environments:
+  - name: "{{ prefix }}-linear-rollout-no-approval"
+    description: Environment for testing environment version rollout policy
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+resources:
+  - name: "{{ prefix }}-a"
+    kind: service
+    identifier: "{{ prefix }}-a"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-b"
+    kind: service
+    identifier: "{{ prefix }}-b"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-c"
+    kind: service
+    identifier: "{{ prefix }}-c"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-d"
+    kind: service
+    identifier: "{{ prefix }}-d"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+policies:
+  - name: "{{ prefix }}-linear-rollout-no-approval"
+    targets:
+      - environmentSelector:
+          type: name
+          operator: equals
+          value: "{{ prefix }}-linear-rollout-no-approval"
+    environmentVersionRollout:
+      rolloutType: linear
+      timeScaleInterval: 10

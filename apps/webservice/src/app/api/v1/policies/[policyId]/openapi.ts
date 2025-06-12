@@ -9,6 +9,55 @@ export const openapi: Swagger.SwaggerV3 = {
 
   paths: {
     "/v1/policies/{policyId}": {
+      get: {
+        summary: "Get a policy",
+        operationId: "getPolicy",
+        parameters: [
+          {
+            name: "policyId",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          200: {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Policy" },
+              },
+            },
+          },
+          404: {
+            description: "Policy not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+
       patch: {
         summary: "Update a policy",
         operationId: "updatePolicy",
@@ -79,6 +128,9 @@ export const openapi: Swagger.SwaggerV3 = {
                   },
                   concurrency: {
                     $ref: "#/components/schemas/PolicyConcurrency",
+                  },
+                  environmentVersionRollout: {
+                    $ref: "#/components/schemas/EnvironmentVersionRollout",
                   },
                 },
               },

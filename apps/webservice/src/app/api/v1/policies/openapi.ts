@@ -1,5 +1,7 @@
 import type { Swagger } from "atlassian-openapi";
 
+import * as schema from "@ctrlplane/db/schema";
+
 export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
   info: {
@@ -73,6 +75,28 @@ export const openapi: Swagger.SwaggerV3 = {
         minimum: 1,
         format: "int32",
       },
+      EnvironmentVersionRollout: {
+        type: "object",
+        properties: {
+          positionGrowthFactor: {
+            type: "number",
+            description:
+              "Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve.",
+          },
+          timeScaleInterval: {
+            type: "number",
+            description:
+              "Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline.",
+          },
+          rolloutType: {
+            type: "string",
+            enum: Object.values(schema.RolloutType),
+            description:
+              "Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.",
+          },
+        },
+        required: ["positionGrowthFactor", "timeScaleInterval", "rolloutType"],
+      },
       Policy: {
         type: "object",
         properties: {
@@ -107,6 +131,9 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           concurrency: {
             $ref: "#/components/schemas/PolicyConcurrency",
+          },
+          environmentVersionRollout: {
+            $ref: "#/components/schemas/EnvironmentVersionRollout",
           },
         },
         required: [

@@ -10,23 +10,46 @@ type GetDeploymentOffsetMinutes = (targetPosition: number) => number;
 type OffsetFunctionGetter = (
   positionGrowthFactor: number,
   timeScaleInterval: number,
+  numReleaseTargets: number,
 ) => GetDeploymentOffsetMinutes;
 
 const linearDeploymentOffset: OffsetFunctionGetter =
   (
-    positionGrowthFactor: number,
+    _: number,
     timeScaleInterval: number,
+    __: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleInterval * (x / positionGrowthFactor);
+    timeScaleInterval * (x - 1);
+
+const linearDeploymentOffsetNormalized: OffsetFunctionGetter =
+  (
+    _: number,
+    timeScaleInterval: number,
+    numReleaseTargets: number,
+  ): GetDeploymentOffsetMinutes =>
+  (x: number) =>
+    timeScaleInterval * ((x - 1) / numReleaseTargets);
 
 const exponentialDeploymentOffset: OffsetFunctionGetter =
   (
     positionGrowthFactor: number,
     timeScaleInterval: number,
+    _: number,
   ): GetDeploymentOffsetMinutes =>
   (x: number) =>
-    timeScaleInterval * (Math.exp(x / positionGrowthFactor) - 1);
+    timeScaleInterval * (1 - Math.exp(-(x - 1) / positionGrowthFactor));
+
+const exponentialDeploymentOffsetNormalized: OffsetFunctionGetter =
+  (
+    positionGrowthFactor: number,
+    timeScaleInterval: number,
+    numReleaseTargets: number,
+  ): GetDeploymentOffsetMinutes =>
+  (x: number) =>
+    timeScaleInterval *
+    ((1 - Math.exp(-(x - 1) / numReleaseTargets)) /
+      (1 - Math.exp(-numReleaseTargets / positionGrowthFactor)));
 
 export const RolloutTypeToOffsetFunction: Record<
   schema.RolloutType,
@@ -34,6 +57,9 @@ export const RolloutTypeToOffsetFunction: Record<
 > = {
   [schema.RolloutType.Linear]: linearDeploymentOffset,
   [schema.RolloutType.Exponential]: exponentialDeploymentOffset,
+  [schema.RolloutType.LinearNormalized]: linearDeploymentOffsetNormalized,
+  [schema.RolloutType.ExponentialNormalized]:
+    exponentialDeploymentOffsetNormalized,
 };
 
 type EnvironmentVersionRolloutRuleOptions = {

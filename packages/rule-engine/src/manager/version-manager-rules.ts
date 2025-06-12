@@ -7,7 +7,10 @@ import type { Version } from "./version-rule-engine";
 import { ConcurrencyRule } from "../rules/concurrency-rule.js";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
 import { ReleaseTargetConcurrencyRule } from "../rules/release-target-concurrency-rule.js";
-import { getVersionApprovalRules } from "./version-manager-rules/index.js";
+import {
+  getEnvironmentVersionRolloutRule,
+  getVersionApprovalRules,
+} from "./version-manager-rules/index.js";
 
 export const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -52,14 +55,19 @@ export const getConcurrencyRule = (policy: Policy | null) => {
   ];
 };
 
-export const getRules = (
+export const getRules = async (
   policy: Policy | null,
   releaseTargetId: string,
-): Array<FilterRule<Version> | PreValidationRule> => {
+): Promise<Array<FilterRule<Version> | PreValidationRule>> => {
+  const environmentVersionRolloutRule = await getEnvironmentVersionRolloutRule(
+    policy,
+    releaseTargetId,
+  );
   return [
     new ReleaseTargetConcurrencyRule(releaseTargetId),
     ...getConcurrencyRule(policy),
     ...getVersionApprovalRules(policy),
+    ...(environmentVersionRolloutRule ? [environmentVersionRolloutRule] : []),
   ];
   // The rrule package is being stupid and deny windows is not top priority
   // right now so I am commenting this out

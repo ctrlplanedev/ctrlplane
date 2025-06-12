@@ -120,6 +120,18 @@ export const PolicyFixture = z.object({
       }),
     )
     .optional(),
+  environmentVersionRollout: z
+    .object({
+      rolloutType: z.enum([
+        "linear",
+        "linear_normalized",
+        "exponential",
+        "exponential_normalized",
+      ]),
+      positionGrowthFactor: z.number().default(1),
+      timeScaleInterval: z.number(),
+    })
+    .optional(),
 });
 
 export const AgentFixture = z.object({

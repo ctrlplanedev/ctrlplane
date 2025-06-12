@@ -16,6 +16,50 @@ import { request } from "../../middleware";
 
 const log = logger.child({ route: "/api/v1/policies/[policyId]" });
 
+export const GET = request()
+  .use(authn)
+  .use(
+    authz(({ can, params }) =>
+      can
+        .perform(Permission.PolicyGet)
+        .on({ type: "policy", id: params.policyId ?? "" }),
+    ),
+  )
+  .handle<unknown, { params: Promise<{ policyId: string }> }>(
+    async ({ db }, { params }) => {
+      try {
+        const { policyId } = await params;
+
+        const policy = await db.query.policy.findFirst({
+          where: eq(SCHEMA.policy.id, policyId),
+          with: {
+            targets: true,
+            denyWindows: true,
+            deploymentVersionSelector: true,
+            versionAnyApprovals: true,
+            versionUserApprovals: true,
+            versionRoleApprovals: true,
+            concurrency: true,
+            environmentVersionRollout: true,
+          },
+        });
+        if (policy == null)
+          return NextResponse.json(
+            { error: "Policy not found" },
+            { status: NOT_FOUND },
+          );
+
+        return NextResponse.json(policy);
+      } catch (error) {
+        log.error("Failed to get policy", { error });
+        return NextResponse.json(
+          { error: "Failed to get policy" },
+          { status: INTERNAL_SERVER_ERROR },
+        );
+      }
+    },
+  );
+
 export const PATCH = request()
   .use(authn)
   .use(

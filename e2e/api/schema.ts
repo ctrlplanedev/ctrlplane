@@ -58,6 +58,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the rollout information across all release targets for a given deployment version and environment */
+    get: operations["getRolloutInfo"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployment-versions/{deploymentVersionId}": {
     parameters: {
       query?: never;
@@ -379,7 +396,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** Get a policy */
+    get: operations["getPolicy"];
     put?: never;
     post?: never;
     /** Delete a policy */
@@ -1148,45 +1166,6 @@ export interface components {
       /** @enum {string} */
       status?: "building" | "ready" | "failed";
     };
-    Policy: {
-      /**
-       * Format: uuid
-       * @description The policy ID
-       */
-      id: string;
-      /**
-       * Format: uuid
-       * @description The system ID
-       */
-      systemId: string;
-      /** @description The name of the policy */
-      name: string;
-      /** @description The description of the policy */
-      description?: string | null;
-      /**
-       * @description The approval requirement of the policy
-       * @enum {string}
-       */
-      approvalRequirement: "manual" | "automatic";
-      /**
-       * @description If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment
-       * @enum {string}
-       */
-      successType: "some" | "all" | "optional";
-      /** @description If a policy depends on an environment, the minimum number of successful releases in the environment */
-      successMinimum: number;
-      /** @description The maximum number of concurrent releases in the environment */
-      concurrencyLimit?: number | null;
-      /** @description The duration of the rollout in milliseconds */
-      rolloutDuration: number;
-      /** @description The minimum interval between releases in milliseconds */
-      minimumReleaseInterval: number;
-      /**
-       * @description If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release
-       * @enum {string}
-       */
-      releaseSequencing: "wait" | "cancel";
-    };
     Environment: {
       /** Format: uuid */
       id: string;
@@ -1366,7 +1345,18 @@ export interface components {
     };
     /** Format: int32 */
     PolicyConcurrency: number | null;
-    Policy1: {
+    EnvironmentVersionRollout: {
+      /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. */
+      positionGrowthFactor: number;
+      /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
+      timeScaleInterval: number;
+      /**
+       * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
+       * @enum {string}
+       */
+      rolloutType: "linear" | "exponential";
+    };
+    Policy: {
       /** Format: uuid */
       id: string;
       name: string;
@@ -1384,6 +1374,7 @@ export interface components {
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
       concurrency?: components["schemas"]["PolicyConcurrency"];
+      environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
     };
     UpdateResourceRelationshipRule: {
       name?: string;
@@ -1634,6 +1625,57 @@ export interface operations {
         };
       };
       /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getRolloutInfo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+        /** @description The environment ID */
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rollout information */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": (components["schemas"]["ReleaseTarget"] & {
+            /** Format: date-time */
+            rolloutTime: string | null;
+            rolloutPosition: number;
+          })[];
+        };
+      };
+      /** @description The deployment version or environment was not found */
       404: {
         headers: {
           [name: string]: unknown;
@@ -2756,6 +2798,50 @@ export interface operations {
       };
     };
   };
+  getPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Policy"];
+        };
+      };
+      /** @description Policy not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   deletePolicy: {
     parameters: {
       query?: never;
@@ -2827,6 +2913,7 @@ export interface operations {
             requiredApprovalsCount?: number;
           }[];
           concurrency?: components["schemas"]["PolicyConcurrency"];
+          environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
         };
       };
     };
@@ -2940,7 +3027,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Policy1"];
+          "application/json": components["schemas"]["Policy"];
         };
       };
       /** @description Internal Server Error */
