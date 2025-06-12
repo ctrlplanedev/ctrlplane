@@ -397,4 +397,188 @@ test.describe("Environment Version Rollout Policy", () => {
       expect(Number(releaseTarget.rolloutPosition)).toBeCloseTo(i, 4);
     }
   });
+
+  test("rollout times should be null if policy requires approvals and the deployment version has no approvals", async ({
+    api,
+    workspace,
+  }) => {
+    const { prefix } = builder.refs;
+
+    const deployment = builder.refs.deployments.find(
+      (d) => d.name === `${prefix}-no-approvals`,
+    )!;
+
+    const environment = builder.refs.environments.find(
+      (e) => e.name === `${prefix}-no-approvals`,
+    )!;
+
+    const timeScaleInterval = faker.number.float({ min: 1, max: 100 });
+    const policyResponse = await api.POST("/v1/policies", {
+      body: {
+        name: `${prefix}-no-approvals`,
+        description: "No approvals rollout policy",
+        priority: 1,
+        enabled: true,
+        workspaceId: workspace.id,
+        targets: [
+          {
+            environmentSelector: {
+              type: "name",
+              operator: "equals",
+              value: `${prefix}-no-approvals`,
+            },
+          },
+        ],
+        environmentVersionRollout: {
+          rolloutType: "linear",
+          timeScaleInterval,
+        },
+        versionAnyApprovals: { requiredApprovalsCount: 1 },
+      },
+    });
+    expect(policyResponse.response.status).toBe(200);
+    expect(policyResponse.data).toBeDefined();
+    const policy = policyResponse.data!;
+    expect(policy.environmentVersionRollout).toBeDefined();
+    const environmentVersionRollout = policy.environmentVersionRollout!;
+    expect(environmentVersionRollout.rolloutType).toBe("linear");
+
+    const deploymentVersionResponse = await api.POST(
+      "/v1/deployment-versions",
+      {
+        body: {
+          deploymentId: deployment.id,
+          tag: faker.string.alphanumeric(10),
+        },
+      },
+    );
+
+    expect(deploymentVersionResponse.response.status).toBe(201);
+    expect(deploymentVersionResponse.data).toBeDefined();
+    const deploymentVersion = deploymentVersionResponse.data!;
+
+    const rolloutResponse = await api.GET(
+      `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,
+      {
+        params: {
+          path: {
+            deploymentVersionId: deploymentVersion.id,
+            environmentId: environment.id,
+          },
+        },
+      },
+    );
+
+    expect(rolloutResponse.response.status).toBe(200);
+    const releaseTargetsWithRolloutInfo = rolloutResponse.data ?? [];
+    expect(releaseTargetsWithRolloutInfo).toHaveLength(4);
+
+    for (let i = 0; i < releaseTargetsWithRolloutInfo.length; i++) {
+      const releaseTarget = releaseTargetsWithRolloutInfo[i];
+      expect(releaseTarget.rolloutTime).toBeNull();
+    }
+  });
+
+  test("should rollout versions in a linear fashion with start time being the latest approval time", async ({
+    api,
+    workspace,
+  }) => {
+    const { prefix } = builder.refs;
+
+    const deployment = builder.refs.deployments.find(
+      (d) => d.name === `${prefix}-linear-rollout-with-approvals`,
+    )!;
+
+    const environment = builder.refs.environments.find(
+      (e) => e.name === `${prefix}-linear-rollout-with-approvals`,
+    )!;
+
+    const timeScaleInterval = faker.number.float({ min: 1, max: 100 });
+    const policyResponse = await api.POST("/v1/policies", {
+      body: {
+        name: `${prefix}-linear-rollout-with-approvals`,
+        description: "Linear rollout policy with approvals",
+        priority: 1,
+        enabled: true,
+        workspaceId: workspace.id,
+        targets: [
+          {
+            environmentSelector: {
+              type: "name",
+              operator: "equals",
+              value: `${prefix}-linear-rollout-with-approvals`,
+            },
+          },
+        ],
+        environmentVersionRollout: {
+          rolloutType: "linear",
+          timeScaleInterval,
+        },
+        versionAnyApprovals: { requiredApprovalsCount: 1 },
+      },
+    });
+    expect(policyResponse.response.status).toBe(200);
+    expect(policyResponse.data).toBeDefined();
+    const policy = policyResponse.data!;
+    expect(policy.environmentVersionRollout).toBeDefined();
+    const environmentVersionRollout = policy.environmentVersionRollout!;
+    expect(environmentVersionRollout.rolloutType).toBe("linear");
+
+    const deploymentVersionResponse = await api.POST(
+      "/v1/deployment-versions",
+      {
+        body: {
+          deploymentId: deployment.id,
+          tag: faker.string.alphanumeric(10),
+        },
+      },
+    );
+
+    expect(deploymentVersionResponse.response.status).toBe(201);
+    expect(deploymentVersionResponse.data).toBeDefined();
+    const deploymentVersion = deploymentVersionResponse.data!;
+
+    const tenMinutesFromNow = addMinutes(new Date(), 10);
+    const approvalResponse = await api.POST(
+      "/v1/deployment-versions/{deploymentVersionId}/approve",
+      {
+        params: {
+          path: {
+            deploymentVersionId: deploymentVersion.id,
+          },
+        },
+        body: { approvedAt: tenMinutesFromNow.toISOString() },
+      },
+    );
+    expect(approvalResponse.response.status).toBe(200);
+
+    const rolloutResponse = await api.GET(
+      `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,
+      {
+        params: {
+          path: {
+            deploymentVersionId: deploymentVersion.id,
+            environmentId: environment.id,
+          },
+        },
+      },
+    );
+
+    expect(rolloutResponse.response.status).toBe(200);
+    const releaseTargetsWithRolloutInfo = rolloutResponse.data ?? [];
+    expect(releaseTargetsWithRolloutInfo).toHaveLength(4);
+
+    const expectedRolloutStart = startOfMinute(tenMinutesFromNow);
+
+    for (let i = 0; i < releaseTargetsWithRolloutInfo.length; i++) {
+      const releaseTarget = releaseTargetsWithRolloutInfo[i];
+      const expectedRolloutTime = addMinutes(
+        expectedRolloutStart,
+        timeScaleInterval * i,
+      );
+
+      expect(releaseTarget.rolloutTime).toBe(expectedRolloutTime.toISOString());
+      expect(Number(releaseTarget.rolloutPosition)).toBe(i);
+    }
+  });
 });

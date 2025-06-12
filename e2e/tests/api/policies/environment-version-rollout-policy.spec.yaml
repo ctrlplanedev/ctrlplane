@@ -12,6 +12,10 @@ deployments:
     slug: "{{ prefix }}-exponential-rollout"
   - name: "{{ prefix }}-exponential-rollout-normalized"
     slug: "{{ prefix }}-exponential-rollout-normalized"
+  - name: "{{ prefix }}-no-approvals"
+    slug: "{{ prefix }}-no-approvals"
+  - name: "{{ prefix }}-linear-rollout-with-approvals"
+    slug: "{{ prefix }}-linear-rollout-with-approvals"
 
 environments:
   - name: "{{ prefix }}-linear-rollout"
@@ -40,6 +44,22 @@ environments:
 
   - name: "{{ prefix }}-exponential-rollout-normalized"
     description: Environment for testing environment version rollout policy with normalized exponential rollout
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-no-approvals"
+    description: Environment for testing environment version rollout policy with no approvals
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-linear-rollout-with-approvals"
+    description: Environment for testing environment version rollout policy with linear rollout and approvals
     systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
     resourceSelector:
       type: identifier

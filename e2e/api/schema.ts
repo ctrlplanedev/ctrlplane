@@ -1604,6 +1604,8 @@ export interface operations {
       content: {
         "application/json": {
           reason?: string;
+          /** Format: date-time */
+          approvedAt?: string | null;
         };
       };
     };

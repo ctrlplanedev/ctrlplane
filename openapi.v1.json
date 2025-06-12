@@ -244,6 +244,11 @@
                 "properties": {
                   "reason": {
                     "type": "string"
+                  },
+                  "approvedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
                   }
                 }
               }

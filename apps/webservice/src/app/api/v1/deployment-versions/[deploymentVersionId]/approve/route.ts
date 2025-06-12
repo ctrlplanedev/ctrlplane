@@ -13,6 +13,7 @@ import { request } from "~/app/api/v1/middleware";
 
 const bodySchema = z.object({
   reason: z.string().optional(),
+  approvedAt: z.string().datetime().optional(),
 });
 
 export const POST = request()
@@ -42,6 +43,8 @@ export const POST = request()
         { status: NOT_FOUND },
       );
 
+    const approvedAt =
+      ctx.body.approvedAt != null ? new Date(ctx.body.approvedAt) : new Date();
     const record = await ctx.db
       .insert(schema.policyRuleAnyApprovalRecord)
       .values({
@@ -49,7 +52,7 @@ export const POST = request()
         userId: ctx.user.id,
         status: schema.ApprovalStatus.Approved,
         reason: ctx.body.reason,
-        approvedAt: new Date(),
+        approvedAt,
       })
       .onConflictDoNothing()
       .returning();
