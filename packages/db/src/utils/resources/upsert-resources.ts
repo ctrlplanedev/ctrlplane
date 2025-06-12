@@ -3,9 +3,9 @@ import _ from "lodash";
 
 import { variablesAES256 } from "@ctrlplane/secrets";
 
-import type { Tx } from "../common.js";
-import { buildConflictUpdateColumns } from "../common.js";
-import * as SCHEMA from "../schema/index.js";
+import type { Tx } from "../../common.js";
+import { buildConflictUpdateColumns } from "../../common.js";
+import * as SCHEMA from "../../schema/index.js";
 
 type ResourceWithMetadata = SCHEMA.Resource & {
   metadata?: Record<string, string>;

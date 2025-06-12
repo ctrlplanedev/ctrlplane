@@ -1,12 +1,18 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 
-import { and, eq, inArray, upsertResources } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  isResourceChanged,
+  upsertResources,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { getAffectedVariables } from "@ctrlplane/rule-engine";
 
-import { getQueue } from "../index.js";
+import { dispatchUpdatedResourceJob, getQueue } from "../index.js";
 import { Channel } from "../types.js";
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
 
@@ -23,27 +29,23 @@ export type ResourceToInsert = Omit<
   >;
 };
 
-const getPreviousVariables = async (
+const getPreviousResources = async (
   tx: Tx,
   workspaceId: string,
   toUpdate: ResourceToInsert[],
-) => {
-  const resources =
-    toUpdate.length > 0
-      ? await tx.query.resource.findMany({
-          where: and(
-            inArray(
-              schema.resource.identifier,
-              toUpdate.map((r) => r.identifier),
-            ),
-            eq(schema.resource.workspaceId, workspaceId),
+) =>
+  toUpdate.length > 0
+    ? await tx.query.resource.findMany({
+        where: and(
+          inArray(
+            schema.resource.identifier,
+            toUpdate.map((r) => r.identifier),
           ),
-          with: { variables: true },
-        })
-      : [];
-
-  return Object.fromEntries(resources.map((r) => [r.identifier, r.variables]));
-};
+          eq(schema.resource.workspaceId, workspaceId),
+        ),
+        with: { variables: true, metadata: true },
+      })
+    : [];
 
 export const handleResourceProviderScan = async (
   tx: Tx,
@@ -64,10 +66,14 @@ export const handleResourceProviderScan = async (
       `found ${toInsert.length} resources to insert and ${toUpdate.length} resources to update `,
     );
 
-    const previousVariables = await getPreviousVariables(
+    const previousResources = await getPreviousResources(
       tx,
       workspaceId,
       toUpdate,
+    );
+
+    const previousVariables = Object.fromEntries(
+      previousResources.map((r) => [r.identifier, r.variables]),
     );
 
     const [insertedResources, updatedResources] = await Promise.all([
@@ -87,23 +93,32 @@ export const handleResourceProviderScan = async (
       `inserted ${insertedResources.length} resources and updated ${updatedResources.length} resources`,
     );
 
-    await tx
-      .update(schema.resource)
-      .set({ deletedAt: new Date() })
-      .where(
-        inArray(
-          schema.resource.id,
-          toDelete.map((r) => r.id),
-        ),
-      );
+    if (toDelete.length > 0)
+      await tx
+        .update(schema.resource)
+        .set({ deletedAt: new Date() })
+        .where(
+          inArray(
+            schema.resource.id,
+            toDelete.map((r) => r.id),
+          ),
+        );
 
     const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
-    const updateJobs = updatedResources.map((r) => ({ name: r.id, data: r }));
     const deleteJobs = toDelete.map((r) => ({ name: r.id, data: r }));
+    const changedResources = updatedResources.filter((r) => {
+      const previous = previousResources.find(
+        (pr) =>
+          pr.identifier === r.identifier && pr.workspaceId === r.workspaceId,
+      );
+      if (previous == null) return true;
+      return isResourceChanged(previous, r);
+    });
 
     await getQueue(Channel.DeleteResource).addBulk(deleteJobs);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
-    await getQueue(Channel.UpdatedResource).addBulk(updateJobs);
+    if (changedResources.length > 0)
+      await dispatchUpdatedResourceJob(changedResources);
 
     for (const resource of insertedResources) {
       const { variables } = resource;

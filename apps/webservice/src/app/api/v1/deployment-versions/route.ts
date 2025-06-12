@@ -99,10 +99,7 @@ export const POST = request()
           depVersion.status === DeploymentVersionStatus.Ready);
 
       if (shouldTrigger)
-        await getQueue(Channel.NewDeploymentVersion).add(
-          depVersion.id,
-          depVersion,
-        );
+        getQueue(Channel.NewDeploymentVersion).add(depVersion.id, depVersion);
 
       return NextResponse.json(
         { ...depVersion, metadata },
