@@ -51,6 +51,11 @@ export const openapi: Swagger.SwaggerV3 = {
                 type: "object",
                 properties: {
                   reason: { type: "string" },
+                  approvedAt: {
+                    type: "string",
+                    format: "date-time",
+                    nullable: true,
+                  },
                 },
               },
             },

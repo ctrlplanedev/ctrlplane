@@ -244,6 +244,11 @@
                 "properties": {
                   "reason": {
                     "type": "string"
+                  },
+                  "approvedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
                   }
                 }
               }
@@ -278,6 +283,100 @@
           },
           "404": {
             "description": "Deployment version not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout": {
+      "get": {
+        "summary": "Get the rollout information across all release targets for a given deployment version and environment",
+        "operationId": "getRolloutInfo",
+        "parameters": [
+          {
+            "name": "deploymentVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The deployment version ID"
+          },
+          {
+            "name": "environmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The environment ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rollout information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/ReleaseTarget"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "rolloutTime": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "rolloutPosition": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "rolloutTime",
+                          "rolloutPosition"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The deployment version or environment was not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1999,6 +2098,63 @@
       }
     },
     "/v1/policies/{policyId}": {
+      "get": {
+        "summary": "Get a policy",
+        "operationId": "getPolicy",
+        "parameters": [
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Policy not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "summary": "Update a policy",
         "operationId": "updatePolicy",
@@ -2102,6 +2258,9 @@
                   },
                   "concurrency": {
                     "$ref": "#/components/schemas/PolicyConcurrency"
+                  },
+                  "environmentVersionRollout": {
+                    "$ref": "#/components/schemas/EnvironmentVersionRollout"
                   }
                 }
               }
@@ -2345,7 +2504,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Policy1"
+                  "$ref": "#/components/schemas/Policy"
                 }
               }
             }
@@ -5528,83 +5687,6 @@
           "jobAgentConfig"
         ]
       },
-      "Policy": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The policy ID"
-          },
-          "systemId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The system ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "The name of the policy"
-          },
-          "description": {
-            "type": "string",
-            "nullable": true,
-            "description": "The description of the policy"
-          },
-          "approvalRequirement": {
-            "type": "string",
-            "enum": [
-              "manual",
-              "automatic"
-            ],
-            "description": "The approval requirement of the policy"
-          },
-          "successType": {
-            "type": "string",
-            "enum": [
-              "some",
-              "all",
-              "optional"
-            ],
-            "description": "If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment"
-          },
-          "successMinimum": {
-            "type": "number",
-            "description": "If a policy depends on an environment, the minimum number of successful releases in the environment"
-          },
-          "concurrencyLimit": {
-            "type": "number",
-            "nullable": true,
-            "description": "The maximum number of concurrent releases in the environment"
-          },
-          "rolloutDuration": {
-            "type": "number",
-            "description": "The duration of the rollout in milliseconds"
-          },
-          "minimumReleaseInterval": {
-            "type": "number",
-            "description": "The minimum interval between releases in milliseconds"
-          },
-          "releaseSequencing": {
-            "type": "string",
-            "enum": [
-              "wait",
-              "cancel"
-            ],
-            "description": "If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release"
-          }
-        },
-        "required": [
-          "id",
-          "systemId",
-          "name",
-          "approvalRequirement",
-          "successType",
-          "successMinimum",
-          "rolloutDuration",
-          "minimumReleaseInterval",
-          "releaseSequencing"
-        ]
-      },
       "Environment": {
         "type": "object",
         "properties": {
@@ -6117,7 +6199,35 @@
         "minimum": 1,
         "format": "int32"
       },
-      "Policy1": {
+      "EnvironmentVersionRollout": {
+        "type": "object",
+        "properties": {
+          "positionGrowthFactor": {
+            "type": "number",
+            "description": "Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve."
+          },
+          "timeScaleInterval": {
+            "type": "number",
+            "description": "Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline."
+          },
+          "rolloutType": {
+            "type": "string",
+            "enum": [
+              "linear",
+              "linear-normalized",
+              "exponential",
+              "exponential-normalized"
+            ],
+            "description": "Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval."
+          }
+        },
+        "required": [
+          "positionGrowthFactor",
+          "timeScaleInterval",
+          "rolloutType"
+        ]
+      },
+      "Policy": {
         "type": "object",
         "properties": {
           "id": {
@@ -6176,6 +6286,9 @@
           },
           "concurrency": {
             "$ref": "#/components/schemas/PolicyConcurrency"
+          },
+          "environmentVersionRollout": {
+            "$ref": "#/components/schemas/EnvironmentVersionRollout"
           }
         },
         "required": [

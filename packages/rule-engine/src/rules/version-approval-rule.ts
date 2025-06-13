@@ -12,6 +12,7 @@ type Record = {
   status: "approved" | "rejected";
   userId: string;
   reason: string | null;
+  approvedAt: Date | null;
 };
 
 export type GetApprovalRecordsFunc = (

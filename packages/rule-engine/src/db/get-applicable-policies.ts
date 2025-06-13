@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { eq } from "@ctrlplane/db";
+import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { withSpan } from "../span.js";
@@ -41,6 +41,7 @@ export const getApplicablePolicies = withSpan(
                 versionRoleApprovals: true,
                 versionUserApprovals: true,
                 concurrency: true,
+                environmentVersionRollout: true,
               },
             },
           },
@@ -51,3 +52,54 @@ export const getApplicablePolicies = withSpan(
     return crts.map((crt) => crt.policyTarget.policy);
   },
 );
+
+export const getApplicablePoliciesWithoutResourceScope = async (
+  db: Tx,
+  environmentId: string,
+  deploymentId: string,
+) => {
+  const policyIdResults = await db
+    .selectDistinct({ policyId: schema.policy.id })
+    .from(schema.computedPolicyTargetReleaseTarget)
+    .innerJoin(
+      schema.policyTarget,
+      eq(
+        schema.computedPolicyTargetReleaseTarget.policyTargetId,
+        schema.policyTarget.id,
+      ),
+    )
+    .innerJoin(
+      schema.policy,
+      eq(schema.policyTarget.policyId, schema.policy.id),
+    )
+    .innerJoin(
+      schema.releaseTarget,
+      eq(
+        schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+        schema.releaseTarget.id,
+      ),
+    )
+    .where(
+      and(
+        isNull(schema.policyTarget.resourceSelector),
+        eq(schema.releaseTarget.environmentId, environmentId),
+        eq(schema.releaseTarget.deploymentId, deploymentId),
+        eq(schema.policy.enabled, true),
+      ),
+    );
+
+  const policyIds = policyIdResults.map((r) => r.policyId);
+  if (policyIds.length === 0) return [];
+  return db.query.policy.findMany({
+    where: inArray(schema.policy.id, policyIds),
+    with: {
+      denyWindows: true,
+      deploymentVersionSelector: true,
+      versionAnyApprovals: true,
+      versionRoleApprovals: true,
+      versionUserApprovals: true,
+      concurrency: true,
+      environmentVersionRollout: true,
+    },
+  });
+};

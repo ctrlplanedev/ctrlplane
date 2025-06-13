@@ -160,6 +160,40 @@ const updateConcurrency = async (
     });
 };
 
+const updateEnvironmentVersionRollout = async (
+  tx: Tx,
+  policyId: string,
+  environmentVersionRollout: SCHEMA.UpdatePolicy["environmentVersionRollout"],
+) => {
+  if (environmentVersionRollout === undefined) return;
+  if (environmentVersionRollout === null)
+    return tx
+      .delete(SCHEMA.policyRuleEnvironmentVersionRollout)
+      .where(eq(SCHEMA.policyRuleEnvironmentVersionRollout.policyId, policyId));
+
+  const { positionGrowthFactor, timeScaleInterval, rolloutType } =
+    environmentVersionRollout;
+
+  await tx
+    .insert(SCHEMA.policyRuleEnvironmentVersionRollout)
+    .values({
+      policyId,
+      positionGrowthFactor,
+      timeScaleInterval,
+      rolloutType:
+        rolloutType != null
+          ? SCHEMA.apiRolloutTypeToDBRolloutType[rolloutType]
+          : undefined,
+    })
+    .onConflictDoUpdate({
+      target: [SCHEMA.policyRuleEnvironmentVersionRollout.policyId],
+      set: buildConflictUpdateColumns(
+        SCHEMA.policyRuleEnvironmentVersionRollout,
+        ["positionGrowthFactor", "timeScaleInterval", "rolloutType"],
+      ),
+    });
+};
+
 export const updatePolicyInTx = async (
   tx: Tx,
   id: string,
@@ -173,6 +207,7 @@ export const updatePolicyInTx = async (
     versionUserApprovals,
     versionRoleApprovals,
     concurrency,
+    environmentVersionRollout,
     ...rest
   } = input;
 
@@ -198,6 +233,7 @@ export const updatePolicyInTx = async (
     updateVersionUserApprovals(tx, policy.id, versionUserApprovals),
     updateVersionRoleApprovals(tx, policy.id, versionRoleApprovals),
     updateConcurrency(tx, policy.id, concurrency),
+    updateEnvironmentVersionRollout(tx, policy.id, environmentVersionRollout),
   ]);
 
   const updatedPolicy = await tx.query.policy.findFirst({
@@ -210,11 +246,26 @@ export const updatePolicyInTx = async (
       versionUserApprovals: true,
       versionRoleApprovals: true,
       concurrency: true,
+      environmentVersionRollout: true,
     },
   });
 
   if (updatedPolicy == null) throw new Error("Policy not found");
 
   const updatedConcurrency = updatedPolicy.concurrency?.concurrency;
-  return { ...updatedPolicy, concurrency: updatedConcurrency };
+  const updatedEnvironmentVersionRollout =
+    updatedPolicy.environmentVersionRollout != null
+      ? {
+          ...updatedPolicy.environmentVersionRollout,
+          rolloutType:
+            SCHEMA.dbRolloutTypeToAPIRolloutType[
+              updatedPolicy.environmentVersionRollout.rolloutType
+            ],
+        }
+      : null;
+  return {
+    ...updatedPolicy,
+    concurrency: updatedConcurrency,
+    environmentVersionRollout: updatedEnvironmentVersionRollout,
+  };
 };

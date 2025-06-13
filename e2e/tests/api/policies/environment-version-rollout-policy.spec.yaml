@@ -1,0 +1,104 @@
+system:
+  name: "{{ prefix }}-environment-version-rollout-policy-tester"
+  slug: "{{ prefix }}-environment-version-rollout-policy-tester"
+  description: System for testing environment version rollout policy
+
+deployments:
+  - name: "{{ prefix }}-linear-rollout"
+    slug: "{{ prefix }}-linear-rollout"
+  - name: "{{ prefix }}-linear-rollout-normalized"
+    slug: "{{ prefix }}-linear-rollout-normalized"
+  - name: "{{ prefix }}-exponential-rollout"
+    slug: "{{ prefix }}-exponential-rollout"
+  - name: "{{ prefix }}-exponential-rollout-normalized"
+    slug: "{{ prefix }}-exponential-rollout-normalized"
+  - name: "{{ prefix }}-no-approvals"
+    slug: "{{ prefix }}-no-approvals"
+  - name: "{{ prefix }}-linear-rollout-with-approvals"
+    slug: "{{ prefix }}-linear-rollout-with-approvals"
+
+environments:
+  - name: "{{ prefix }}-linear-rollout"
+    description: Environment for testing environment version rollout policy
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-linear-rollout-normalized"
+    description: Environment for testing environment version rollout policy with normalized linear rollout
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-exponential-rollout"
+    description: Environment for testing environment version rollout policy with exponential rollout
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-exponential-rollout-normalized"
+    description: Environment for testing environment version rollout policy with normalized exponential rollout
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-no-approvals"
+    description: Environment for testing environment version rollout policy with no approvals
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+  - name: "{{ prefix }}-linear-rollout-with-approvals"
+    description: Environment for testing environment version rollout policy with linear rollout and approvals
+    systemId: "{{ prefix }}-environment-version-rollout-policy-tester"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+resources:
+  - name: "{{ prefix }}-a"
+    kind: service
+    identifier: "{{ prefix }}-a"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-b"
+    kind: service
+    identifier: "{{ prefix }}-b"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-c"
+    kind: service
+    identifier: "{{ prefix }}-c"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
+
+  - name: "{{ prefix }}-d"
+    kind: service
+    identifier: "{{ prefix }}-d"
+    version: 1.0.0
+    config:
+      enabled: true
+    metadata:
+      env: prod
