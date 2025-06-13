@@ -1,10 +1,7 @@
 import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchComputeDeploymentResourceSelectorJobs } from "../utils/dispatch-compute-deployment-jobs.js";
-import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
   Channel.ComputeDeploymentResourceSelector,
@@ -61,11 +58,14 @@ export const computeDeploymentResourceSelectorWorkerEvent = createWorker(
             .onConflictDoNothing();
       });
 
-      dispatchComputeSystemReleaseTargetsJobs(deployment.system);
+      dispatchQueueJob().toCompute().system(deployment.system).releaseTargets();
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
-        dispatchComputeDeploymentResourceSelectorJobs(deployment);
+        dispatchQueueJob()
+          .toCompute()
+          .deployment(deployment)
+          .resourceSelector();
         return;
       }
 

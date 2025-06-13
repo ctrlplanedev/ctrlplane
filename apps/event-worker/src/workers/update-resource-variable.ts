@@ -4,9 +4,7 @@ import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { getResourceChildren } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 export const updateResourceVariableWorker = createWorker(
   Channel.UpdateResourceVariable,
@@ -38,6 +36,6 @@ export const updateResourceVariableWorker = createWorker(
       )
       .then((rows) => rows.map((row) => row.release_target));
 
-    dispatchEvaluateJobs(affectedReleaseTargets);
+    dispatchQueueJob().toEvaluate().releaseTargets(affectedReleaseTargets);
   },
 );

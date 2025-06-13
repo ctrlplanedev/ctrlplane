@@ -4,11 +4,13 @@ import { and, eq, inArray, isNull, notInArray, or, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import {
+  Channel,
+  createWorker,
+  dispatchQueueJob,
+  getQueue,
+} from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
-
-import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({
   component: "computeSystemsReleaseTargetsWorker",
@@ -206,10 +208,13 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           additionalProcessedPolicyTargetIds.push(policyTarget.id);
         } catch (e: any) {
           if (e.code === "55P03") {
-            dispatchComputeSystemReleaseTargetsJobs(system, true, [
-              ...(processedPolicyTargetIds ?? []),
-              ...additionalProcessedPolicyTargetIds,
-            ]);
+            dispatchQueueJob()
+              .toCompute()
+              .system(system)
+              .releaseTargets(true, [
+                ...(processedPolicyTargetIds ?? []),
+                ...additionalProcessedPolicyTargetIds,
+              ]);
             return;
           }
           throw e;
@@ -218,11 +223,11 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
 
       const toEvaluate = [...created, ...(redeployAll ? unchanged : [])];
 
-      await dispatchEvaluateJobs(toEvaluate);
+      await dispatchQueueJob().toEvaluate().releaseTargets(toEvaluate);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
-        dispatchComputeSystemReleaseTargetsJobs(system);
+        dispatchQueueJob().toCompute().system(system).releaseTargets();
         return;
       }
       log.error("Failed to compute release targets", { error: e });

@@ -1,10 +1,7 @@
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchComputeDeploymentResourceSelectorJobs } from "../utils/dispatch-compute-deployment-jobs.js";
-import { dispatchComputeEnvironmentResourceSelectorJobs } from "../utils/dispatch-compute-env-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 /**
  * Worker that processes new resource events.
@@ -30,12 +27,18 @@ export const newResourceWorker = createWorker(
     const environments = systems.flatMap((s) => s.environments);
 
     for (const environment of environments) {
-      await dispatchComputeEnvironmentResourceSelectorJobs(environment);
+      await dispatchQueueJob()
+        .toCompute()
+        .environment(environment)
+        .resourceSelector();
     }
 
     const deployments = systems.flatMap((s) => s.deployments);
     for (const deployment of deployments) {
-      await dispatchComputeDeploymentResourceSelectorJobs(deployment);
+      await dispatchQueueJob()
+        .toCompute()
+        .deployment(deployment)
+        .resourceSelector();
     }
   },
 );

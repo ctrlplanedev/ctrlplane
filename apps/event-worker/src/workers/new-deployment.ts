@@ -1,11 +1,12 @@
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchComputeDeploymentResourceSelectorJobs } from "../utils/dispatch-compute-deployment-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 export const newDeploymentWorker = createWorker(
   Channel.NewDeployment,
   async (job) => {
     const { data: deployment } = job;
-    await dispatchComputeDeploymentResourceSelectorJobs(deployment);
+    await dispatchQueueJob()
+      .toCompute()
+      .deployment(deployment)
+      .resourceSelector();
   },
 );

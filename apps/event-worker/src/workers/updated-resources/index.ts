@@ -4,11 +4,8 @@ import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { getResourceChildren } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
-import { dispatchComputeDeploymentResourceSelectorJobs } from "../../utils/dispatch-compute-deployment-jobs.js";
-import { dispatchComputeEnvironmentResourceSelectorJobs } from "../../utils/dispatch-compute-env-jobs.js";
-import { dispatchEvaluateJobs } from "../../utils/dispatch-evaluate-jobs.js";
 import { withSpan } from "./span.js";
 
 const getAffectedReleaseTargets = async (resourceId: string) => {
@@ -51,13 +48,21 @@ export const updatedResourceWorker = createWorker(
     );
 
     for (const deployment of deployments)
-      await dispatchComputeDeploymentResourceSelectorJobs(deployment);
+      await dispatchQueueJob()
+        .toCompute()
+        .deployment(deployment)
+        .resourceSelector();
 
     for (const environment of environments)
-      await dispatchComputeEnvironmentResourceSelectorJobs(environment);
+      await dispatchQueueJob()
+        .toCompute()
+        .environment(environment)
+        .resourceSelector();
 
     const affectedReleaseTargets = await getAffectedReleaseTargets(resource.id);
-    await dispatchEvaluateJobs(affectedReleaseTargets);
+    await dispatchQueueJob()
+      .toEvaluate()
+      .releaseTargets(affectedReleaseTargets);
   }),
   { concurrency: 25 },
 );

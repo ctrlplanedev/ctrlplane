@@ -1,5 +1,40 @@
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
+
+const getReleaseTargetsAffectedByRolloutRule = (
+  limit: number,
+  offset: number,
+) =>
+  db
+    .select()
+    .from(schema.policy)
+    .innerJoin(
+      schema.policyRuleEnvironmentVersionRollout,
+      eq(schema.policyRuleEnvironmentVersionRollout.policyId, schema.policy.id),
+    )
+    .innerJoin(
+      schema.policyTarget,
+      eq(schema.policyTarget.policyId, schema.policy.id),
+    )
+    .innerJoin(
+      schema.computedPolicyTargetReleaseTarget,
+      eq(
+        schema.computedPolicyTargetReleaseTarget.policyTargetId,
+        schema.policyTarget.id,
+      ),
+    )
+    .innerJoin(
+      schema.releaseTarget,
+      eq(
+        schema.releaseTarget.id,
+        schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+      ),
+    )
+    .limit(limit)
+    .offset(offset)
+    .then((rows) => rows.map((row) => row.release_target));
 
 const triggerPolicyEvaluation = async () => {
   const PAGE_SIZE = 1000;
@@ -11,10 +46,10 @@ const triggerPolicyEvaluation = async () => {
 
   while (hasMore) {
     try {
-      const releaseTargets = await db.query.releaseTarget.findMany({
-        limit: PAGE_SIZE,
+      const releaseTargets = await getReleaseTargetsAffectedByRolloutRule(
+        PAGE_SIZE,
         offset,
-      });
+      );
 
       if (releaseTargets.length === 0) {
         hasMore = false;

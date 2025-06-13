@@ -5,14 +5,17 @@ import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
+import {
+  Channel,
+  createWorker,
+  dispatchQueueJob,
+  getQueue,
+} from "@ctrlplane/events";
 import { logger, makeWithSpan, trace } from "@ctrlplane/logger";
 import {
   VariableReleaseManager,
   VersionReleaseManager,
 } from "@ctrlplane/rule-engine";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const tracer = trace.getTracer("evaluate-release-target");
 const withSpan = makeWithSpan(tracer);
@@ -187,7 +190,7 @@ export const evaluateReleaseTargetWorker = createWorker(
       const isRowLocked = e.code === "55P03";
       const isReleaseTargetNotCommittedYet = e.code === "23503";
       if (isRowLocked || isReleaseTargetNotCommittedYet) {
-        dispatchEvaluateJobs([job.data]);
+        dispatchQueueJob().toEvaluate().releaseTargets([job.data]);
         return;
       }
       const isJobAgentError =

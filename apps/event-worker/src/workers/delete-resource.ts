@@ -5,9 +5,12 @@ import { eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { getResourceChildren } from "@ctrlplane/db/queries";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, createWorker, getQueue } from "@ctrlplane/events";
-
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import {
+  Channel,
+  createWorker,
+  dispatchQueueJob,
+  getQueue,
+} from "@ctrlplane/events";
 
 const softDeleteResource = async (tx: Tx, resource: SCHEMA.Resource) =>
   tx
@@ -47,7 +50,7 @@ const dispatchAffectedTargetJobs = async (
       ),
     );
 
-  await dispatchEvaluateJobs(affectedReleaseTargets);
+  await dispatchQueueJob().toEvaluate().releaseTargets(affectedReleaseTargets);
 };
 
 export const deleteResourceWorker = createWorker(
