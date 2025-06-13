@@ -157,6 +157,7 @@ export class EntitiesBuilder {
     }
     const results: FetchResultInfo[] = [];
     for (const deployment of this.fixtures.deployments) {
+      console.debug(`Creating deployment: ${deployment.name}`);
       const requestBody = {
         ...deployment,
         systemId: this.refs.system.id,
@@ -200,6 +201,9 @@ export class EntitiesBuilder {
         }
 
         for (const version of deployment.versions) {
+          console.debug(
+            `Creating deployment version '${version.tag}' on deployment '${deployment.name}'`,
+          );
           const requestBody = {
             ...version,
             deploymentId: deploymentResult.id,
@@ -240,6 +244,9 @@ export class EntitiesBuilder {
         }
 
         for (const variable of deployment.variables) {
+          console.debug(
+            `Creating deployment variable '${variable.key}' on deployment '${deployment.name}'`,
+          );
           const variableResponse = await this.api.POST(
             "/v1/deployments/{deploymentId}/variables",
             {
@@ -346,6 +353,41 @@ export class EntitiesBuilder {
     }
     return results;
   }
+}
+
+export async function addNewDeploymentVersion(
+  builder: EntitiesBuilder,
+  deploymentId: string,
+  tag: string,
+): Promise<FetchResultInfo> {
+  const deployment = builder.refs.deployments.find(
+    (d) => d.id === deploymentId,
+  );
+  if (!deployment) {
+    throw new Error(`Deployment ${deploymentId} not found`);
+  }
+  console.debug(
+    `Creating deployment version '${tag}' on deployment '${deployment.name}'`,
+  );
+  const requestBody = {
+    tag: tag,
+    deploymentId: deploymentId,
+  };
+  const fetchResponse = await builder.api.POST("/v1/deployment-versions", {
+    body: requestBody,
+  });
+
+  deployment.versions!.push({
+    id: fetchResponse.data!.id,
+    name: fetchResponse.data!.name,
+    tag: fetchResponse.data!.tag,
+    status: fetchResponse.data!.status ?? "ready",
+  });
+
+  return {
+    fetchResponse,
+    requestBody,
+  };
 }
 
 /**
