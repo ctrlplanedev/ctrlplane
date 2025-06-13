@@ -70,6 +70,7 @@ export type Policy = schema.Policy & {
   versionUserApprovals: schema.PolicyRuleUserApproval[];
   versionRoleApprovals: schema.PolicyRuleRoleApproval[];
   concurrency: schema.PolicyRuleConcurrency | null;
+  environmentVersionRollout: schema.PolicyRuleEnvironmentVersionRollout | null;
 };
 
 export type ReleaseTargetIdentifier = {

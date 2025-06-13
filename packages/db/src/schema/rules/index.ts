@@ -10,3 +10,4 @@ export * from "./approval-any.js";
 export * from "./rule-relations.js";
 export * from "./deployment-selector.js";
 export * from "./concurrency.js";
+export * from "./environment-version-rollout.js";

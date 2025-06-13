@@ -63,14 +63,13 @@ export class VersionRuleEngine implements RuleEngine<Version> {
     for (const rule of preValidationRules) {
       const result = await rule.passing();
 
-      if (!result.passing) {
+      if (!result.passing)
         return {
           chosenCandidate: null,
           rejectionReasons: new ConstantMap<string, string>(
             result.rejectionReason ?? "",
           ),
         };
-      }
     }
 
     let rejectionReasons = new Map<string, string>();
@@ -80,20 +79,18 @@ export class VersionRuleEngine implements RuleEngine<Version> {
       const result = await rule.filter(candidates);
 
       // If the rule yields no candidates, we must stop.
-      if (result.allowedCandidates.length === 0) {
+      if (result.allowedCandidates.length === 0)
         return {
           chosenCandidate: null,
           rejectionReasons: result.rejectionReasons ?? rejectionReasons,
         };
-      }
 
       // Merge any new rejection reasons with our tracking map
-      if (result.rejectionReasons) {
+      if (result.rejectionReasons)
         rejectionReasons = new Map([
           ...rejectionReasons,
           ...result.rejectionReasons,
         ]);
-      }
 
       candidates = result.allowedCandidates;
     }
@@ -101,14 +98,8 @@ export class VersionRuleEngine implements RuleEngine<Version> {
     // Once all rules pass, select the final version
     const chosen = this.selectFinalRelease(candidates);
     return chosen == null
-      ? {
-          chosenCandidate: null,
-          rejectionReasons,
-        }
-      : {
-          chosenCandidate: chosen,
-          rejectionReasons,
-        };
+      ? { chosenCandidate: null, rejectionReasons }
+      : { chosenCandidate: chosen, rejectionReasons };
   }
 
   /**

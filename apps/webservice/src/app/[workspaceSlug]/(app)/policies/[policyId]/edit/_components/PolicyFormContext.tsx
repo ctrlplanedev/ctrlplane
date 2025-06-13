@@ -24,6 +24,7 @@ type Policy = SCHEMA.Policy & {
   versionUserApprovals: SCHEMA.PolicyRuleUserApproval[];
   versionRoleApprovals: SCHEMA.PolicyRuleRoleApproval[];
   concurrency: SCHEMA.PolicyRuleConcurrency | null;
+  environmentVersionRollout: SCHEMA.PolicyRuleEnvironmentVersionRollout | null;
 };
 
 type PolicyFormContextType = {
@@ -47,13 +48,21 @@ export const PolicyFormContextProvider: React.FC<{
   policy: Policy;
 }> = ({ children, policy }) => {
   const concurrency = policy.concurrency?.concurrency ?? null;
-  const defaultValues = { ...policy, concurrency };
+  const environmentVersionRollout =
+    policy.environmentVersionRollout != null
+      ? {
+          ...policy.environmentVersionRollout,
+          rolloutType:
+            SCHEMA.dbRolloutTypeToAPIRolloutType[
+              policy.environmentVersionRollout.rolloutType
+            ],
+        }
+      : null;
+  const defaultValues = { ...policy, concurrency, environmentVersionRollout };
   const form = useForm({
     schema: SCHEMA.updatePolicy,
     defaultValues,
   });
-
-  console.log(form.getValues());
 
   const router = useRouter();
   const utils = api.useUtils();

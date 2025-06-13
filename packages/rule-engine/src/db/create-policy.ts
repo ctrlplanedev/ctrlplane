@@ -93,6 +93,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     versionUserApprovals,
     versionRoleApprovals,
     concurrency,
+    environmentVersionRollout,
     ...rest
   } = input;
 
@@ -189,6 +190,27 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         ]),
       });
 
+  if (environmentVersionRollout != null)
+    await tx
+      .insert(SCHEMA.policyRuleEnvironmentVersionRollout)
+      .values({
+        policyId,
+        ...environmentVersionRollout,
+        rolloutType:
+          environmentVersionRollout.rolloutType != null
+            ? SCHEMA.apiRolloutTypeToDBRolloutType[
+                environmentVersionRollout.rolloutType
+              ]
+            : undefined,
+      })
+      .onConflictDoUpdate({
+        target: [SCHEMA.policyRuleEnvironmentVersionRollout.policyId],
+        set: buildConflictUpdateColumns(
+          SCHEMA.policyRuleEnvironmentVersionRollout,
+          ["positionGrowthFactor", "timeScaleInterval", "rolloutType"],
+        ),
+      });
+
   return {
     ...policy,
     targets,
@@ -198,5 +220,6 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     versionUserApprovals,
     versionRoleApprovals,
     concurrency,
+    environmentVersionRollout,
   };
 };

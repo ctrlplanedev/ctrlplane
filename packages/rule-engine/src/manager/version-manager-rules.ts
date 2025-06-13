@@ -8,11 +8,9 @@ import { ConcurrencyRule } from "../rules/concurrency-rule.js";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
 import { ReleaseTargetConcurrencyRule } from "../rules/release-target-concurrency-rule.js";
 import {
-  getAnyApprovalRecords,
-  getRoleApprovalRecords,
-  getUserApprovalRecords,
-  VersionApprovalRule,
-} from "../rules/version-approval-rule.js";
+  getEnvironmentVersionRolloutRule,
+  getVersionApprovalRules,
+} from "./version-manager-rules/index.js";
 
 export const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -25,52 +23,6 @@ export const denyWindows = (policy: Policy | null) =>
             dtend: denyWindow.dtend,
           }),
       );
-
-export const versionAnyApprovalRule = (
-  approvalRules?: Policy["versionAnyApprovals"] | null,
-) => {
-  if (approvalRules == null) return [];
-  return [
-    new VersionApprovalRule({
-      minApprovals: approvalRules.requiredApprovalsCount,
-      getApprovalRecords: getAnyApprovalRecords,
-    }),
-  ];
-};
-
-export const versionRoleApprovalRule = (
-  approvalRules?: Policy["versionRoleApprovals"] | null,
-) => {
-  if (approvalRules == null) return [];
-  return approvalRules.map(
-    (approval) =>
-      new VersionApprovalRule({
-        minApprovals: approval.requiredApprovalsCount,
-        getApprovalRecords: getRoleApprovalRecords,
-      }),
-  );
-};
-
-export const versionUserApprovalRule = (
-  approvalRules?: Policy["versionUserApprovals"] | null,
-) => {
-  if (approvalRules == null) return [];
-  return approvalRules.map(
-    () =>
-      new VersionApprovalRule({
-        minApprovals: 1,
-        getApprovalRecords: getUserApprovalRecords,
-      }),
-  );
-};
-
-export const getVersionApprovalRules = (
-  policy: Policy | null,
-): FilterRule<Version>[] => [
-  ...versionUserApprovalRule(policy?.versionUserApprovals),
-  ...versionAnyApprovalRule(policy?.versionAnyApprovals),
-  ...versionRoleApprovalRule(policy?.versionRoleApprovals),
-];
 
 export const getConcurrencyRule = (policy: Policy | null) => {
   if (policy?.concurrency == null) return [];
@@ -103,14 +55,19 @@ export const getConcurrencyRule = (policy: Policy | null) => {
   ];
 };
 
-export const getRules = (
+export const getRules = async (
   policy: Policy | null,
   releaseTargetId: string,
-): Array<FilterRule<Version> | PreValidationRule> => {
+): Promise<Array<FilterRule<Version> | PreValidationRule>> => {
+  const environmentVersionRolloutRule = await getEnvironmentVersionRolloutRule(
+    policy,
+    releaseTargetId,
+  );
   return [
     new ReleaseTargetConcurrencyRule(releaseTargetId),
     ...getConcurrencyRule(policy),
     ...getVersionApprovalRules(policy),
+    ...(environmentVersionRolloutRule ? [environmentVersionRolloutRule] : []),
   ];
   // The rrule package is being stupid and deny windows is not top priority
   // right now so I am commenting this out

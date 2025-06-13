@@ -4,65 +4,17 @@ import { TRPCError } from "@trpc/server";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, inArray, isNull, selector } from "@ctrlplane/db";
+import { and, eq, selector } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import {
   versionAnyApprovalRule,
   versionRoleApprovalRule,
   versionUserApprovalRule,
 } from "@ctrlplane/rule-engine";
+import { getApplicablePoliciesWithoutResourceScope } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../../trpc";
-
-const getApplicablePoliciesWithoutResourceScope = async (
-  db: Tx,
-  environmentId: string,
-  deploymentId: string,
-) => {
-  const policyIdResults = await db
-    .selectDistinct({ policyId: schema.policy.id })
-    .from(schema.computedPolicyTargetReleaseTarget)
-    .innerJoin(
-      schema.policyTarget,
-      eq(
-        schema.computedPolicyTargetReleaseTarget.policyTargetId,
-        schema.policyTarget.id,
-      ),
-    )
-    .innerJoin(
-      schema.policy,
-      eq(schema.policyTarget.policyId, schema.policy.id),
-    )
-    .innerJoin(
-      schema.releaseTarget,
-      eq(
-        schema.computedPolicyTargetReleaseTarget.releaseTargetId,
-        schema.releaseTarget.id,
-      ),
-    )
-    .where(
-      and(
-        isNull(schema.policyTarget.resourceSelector),
-        eq(schema.releaseTarget.environmentId, environmentId),
-        eq(schema.releaseTarget.deploymentId, deploymentId),
-        eq(schema.policy.enabled, true),
-      ),
-    );
-
-  const policyIds = policyIdResults.map((r) => r.policyId);
-  return db.query.policy.findMany({
-    where: inArray(schema.policy.id, policyIds),
-    with: {
-      denyWindows: true,
-      deploymentVersionSelector: true,
-      versionAnyApprovals: true,
-      versionRoleApprovals: true,
-      versionUserApprovals: true,
-      concurrency: true,
-    },
-  });
-};
 
 /**
  * Evaluates whether a version matches a policy's version selector rules.
