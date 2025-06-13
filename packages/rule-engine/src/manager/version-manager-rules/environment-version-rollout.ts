@@ -87,7 +87,7 @@ const getReleaseTargetPositionGetter =
       .select({
         id: schema.releaseTarget.id,
         position:
-          sql<number>`ROW_NUMBER() OVER (ORDER BY md5(id || ${version.id}) ASC) - 1`.as(
+          sql<number>`ROW_NUMBER() OVER (ORDER BY md5(${schema.releaseTarget.id}::text || ${version.id}::text) ASC) - 1`.as(
             "position",
           ),
       })
