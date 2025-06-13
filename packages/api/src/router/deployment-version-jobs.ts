@@ -42,6 +42,7 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           id: input.versionId,
         }),
     })
+
     .query(async ({ ctx, input: { versionId } }) => {
       const version = await ctx.db.query.deploymentVersion.findFirst({
         where: eq(SCHEMA.deploymentVersion.id, versionId),
@@ -52,58 +53,72 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           message: `Version not found: ${versionId}`,
         });
 
-      const releaseTargets = await ctx.db.query.releaseTarget.findMany({
-        where: eq(SCHEMA.releaseTarget.deploymentId, version.deploymentId),
-        with: {
-          environment: true,
-          resource: true,
-          deployment: true,
-          versionReleases: {
-            where: eq(SCHEMA.versionRelease.versionId, versionId),
-            with: {
-              release: {
-                with: {
-                  releaseJobs: { with: { job: { with: { metadata: true } } } },
-                },
-              },
-            },
-          },
-        },
-      });
+      const releaseTargets = await ctx.db
+        .select()
+        .from(SCHEMA.releaseTarget)
+        .innerJoin(
+          SCHEMA.environment,
+          eq(SCHEMA.releaseTarget.environmentId, SCHEMA.environment.id),
+        )
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.releaseTarget.deploymentId, SCHEMA.deployment.id),
+        )
+        .innerJoin(
+          SCHEMA.resource,
+          eq(SCHEMA.resource.id, SCHEMA.releaseTarget.resourceId),
+        )
+        .innerJoin(
+          SCHEMA.versionRelease,
+          eq(SCHEMA.versionRelease.releaseTargetId, SCHEMA.releaseTarget.id),
+        )
+        .innerJoin(
+          SCHEMA.release,
+          eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+        )
+        .innerJoin(
+          SCHEMA.releaseJob,
+          eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+        )
+        .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
+        .innerJoin(
+          SCHEMA.jobMetadata,
+          eq(SCHEMA.jobMetadata.jobId, SCHEMA.job.id),
+        )
+        .where(
+          and(
+            eq(SCHEMA.versionRelease.versionId, versionId),
+            eq(SCHEMA.releaseTarget.deploymentId, version.deploymentId),
+            eq(SCHEMA.jobMetadata.key, ReservedMetadataKey.Links),
+          ),
+        );
 
       return _.chain(releaseTargets)
-        .groupBy(({ environmentId }) => environmentId)
-        .map((groupedReleaseTargets) => {
-          const { environment } = groupedReleaseTargets[0]!;
+        .groupBy((row) => row.release_target.id)
+        .map((rowsByTarget) => {
+          const releaseTarget = rowsByTarget[0]!.release_target;
+          const { environment, deployment, resource } = rowsByTarget[0]!;
 
-          const releaseTargets = groupedReleaseTargets
-            .map((releaseTarget) => {
-              const jobs = releaseTarget.versionReleases
-                .flatMap((vr) =>
-                  vr.release.flatMap((release) =>
-                    release.releaseJobs.map((rj) => {
-                      const { job } = rj;
-                      const linksMetadata = job.metadata.find(
-                        (m) => m.key === String(ReservedMetadataKey.Links),
-                      );
-                      const links =
-                        linksMetadata != null
-                          ? (JSON.parse(linksMetadata.value) as Record<
-                              string,
-                              string
-                            >)
-                          : {};
-                      return { ...job, links };
-                    }),
-                  ),
-                )
-                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-              return { ...releaseTarget, jobs };
+          const jobs = rowsByTarget
+            .map((row) => {
+              const { job, job_metadata } = row;
+              const links = JSON.parse(job_metadata.value) as Record<
+                string,
+                string
+              >;
+              return { ...job, links };
             })
-            .sort(sortReleaseTargetsByLatestJobStatus);
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-          return { environment, releaseTargets };
+          return { ...releaseTarget, jobs, environment, deployment, resource };
+        })
+        .groupBy((rt) => rt.environment.id)
+        .map((targetsByEnvironment) => {
+          const { environment } = targetsByEnvironment[0]!;
+          const sortedReleaseTargets = targetsByEnvironment.sort(
+            sortReleaseTargetsByLatestJobStatus,
+          );
+          return { environment, releaseTargets: sortedReleaseTargets };
         })
         .sortBy(({ environment }) => environment.name)
         .value();
