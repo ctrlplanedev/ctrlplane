@@ -205,6 +205,9 @@ export const openapi: Swagger.SwaggerV3 = {
                   concurrency: {
                     $ref: "#/components/schemas/PolicyConcurrency",
                   },
+                  environmentVersionRollout: {
+                    $ref: "#/components/schemas/EnvironmentVersionRollout",
+                  },
                 },
                 required: ["name", "workspaceId", "targets"],
               },

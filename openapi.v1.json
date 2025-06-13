@@ -456,7 +456,8 @@
                     "enum": [
                       "ready",
                       "building",
-                      "failed"
+                      "failed",
+                      "rejected"
                     ]
                   },
                   "message": {
@@ -644,7 +645,8 @@
                     "enum": [
                       "ready",
                       "building",
-                      "failed"
+                      "failed",
+                      "rejected"
                     ]
                   },
                   "message": {
@@ -2487,6 +2489,9 @@
                   },
                   "concurrency": {
                     "$ref": "#/components/schemas/PolicyConcurrency"
+                  },
+                  "environmentVersionRollout": {
+                    "$ref": "#/components/schemas/EnvironmentVersionRollout"
                   }
                 },
                 "required": [
@@ -3081,7 +3086,8 @@
                     "enum": [
                       "ready",
                       "building",
-                      "failed"
+                      "failed",
+                      "rejected"
                     ]
                   },
                   "message": {
@@ -3149,7 +3155,8 @@
                     "enum": [
                       "ready",
                       "building",
-                      "failed"
+                      "failed",
+                      "rejected"
                     ]
                   },
                   "message": {
