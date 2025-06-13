@@ -2,10 +2,15 @@ import { faker } from "@faker-js/faker";
 import { FetchResponse } from "openapi-fetch";
 
 import { WorkspaceFixture } from "../tests/auth.setup";
-import { DeploymentFixture, EntityFixtures, importEntityFixtures, ResourceFixture } from "./entity-fixtures";
+import {
+  AgentFixture,
+  DeploymentFixture,
+  EntityFixtures,
+  importEntityFixtures,
+  ResourceFixture,
+} from "./entity-fixtures";
 import { EntityRefs } from "./entity-refs";
 import { ApiClient } from "./index";
-import { clone } from "lodash";
 
 export interface FetchResultInfo {
   fetchResponse: FetchResponse<any, any, any>;
@@ -45,7 +50,7 @@ export class EntitiesBuilder {
   }
 
   async upsertSystem(): Promise<FetchResultInfo> {
-    console.log(`Creating system: ${this.fixtures.system.name}`);
+    console.log(`Upserting system: ${this.fixtures.system.name}`);
 
     const workspaceId = this.workspace.id;
     const requestBody = {
@@ -59,7 +64,7 @@ export class EntitiesBuilder {
 
     if (fetchResponse.response.status !== 201) {
       throw new Error(
-        `Failed to create system: ${JSON.stringify(fetchResponse.error)}`,
+        `Failed to upsert system: ${JSON.stringify(fetchResponse.error)}`,
       );
     }
 
@@ -79,13 +84,14 @@ export class EntitiesBuilder {
     const workspaceId = this.workspace.id;
 
     for (const resource of this.fixtures.resources) {
-      console.log(`Creating resource: ${resource.name}`);
+      console.log(`Upserting resource: ${resource.name}`);
 
       const requestBody = {
         ...resource,
         workspaceId,
         config: resource.config as Record<string, never>,
       };
+      //console.debug(JSON.stringify(requestBody, null));
       const fetchResponse = await this.api.POST("/v1/resources", {
         body: requestBody,
       });
@@ -111,7 +117,7 @@ export class EntitiesBuilder {
    * Create near-identical copies of the fixtures from the yaml file but they
    * should have distinct names and identifiers (hence they would be new copies).
    */
-  async cloneFixtureResourcesAndUpsert(): Promise<FetchResultInfo[]> {
+  async cloneFixtureResourcesAndCreate(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.resources || this.fixtures.resources.length === 0) {
       throw new Error("No resources defined in YAML file");
     }
@@ -129,7 +135,7 @@ export class EntitiesBuilder {
     const workspaceId = this.workspace.id;
 
     for (const resource of resourceClones) {
-      console.log(`Creating resource: ${resource.name}`);
+      console.log(`Creating cloned resource: ${resource.name}`);
 
       const requestBody = {
         ...resource,
@@ -174,7 +180,7 @@ export class EntitiesBuilder {
     const results: FetchResultInfo[] = [];
 
     for (const env of this.fixtures.environments) {
-      console.log(`Creating environment: ${env.name}`);
+      console.log(`Upserting environment: ${env.name}`);
 
       const requestBody = {
         ...env,
@@ -208,7 +214,9 @@ export class EntitiesBuilder {
     }
     const results: FetchResultInfo[] = [];
     for (const deployment of this.fixtures.deployments) {
-      console.debug(`Creating deployment: ${deployment.name}`);
+      console.debug(
+        `Upserting deployment: ${deployment.name} with agentId ${agentId}`,
+      );
       const requestBody = {
         ...deployment,
         systemId: this.refs.system.id,
@@ -237,7 +245,9 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async cloneDeploymentsAndUpsert(agentId?: string): Promise<FetchResultInfo[]> {
+  async cloneDeploymentsAndCreate(
+    agentId?: string,
+  ): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
@@ -251,7 +261,9 @@ export class EntitiesBuilder {
     }
 
     for (const deployment of deploymentClones) {
-      console.debug(`Creating deployment: ${deployment.name}`);
+      console.debug(
+        `Creating cloned deployment: ${deployment.name} with agentId ${agentId}`,
+      );
       const requestBody = {
         ...deployment,
         systemId: this.refs.system.id,
@@ -261,7 +273,7 @@ export class EntitiesBuilder {
       const fetchResponse = await this.api.POST(uriPath, {
         body: requestBody,
       });
-  
+
       this.refs.deployments.push({
         id: fetchResponse.data!.id,
         name: fetchResponse.data!.name,
@@ -270,7 +282,7 @@ export class EntitiesBuilder {
         versions: [],
         variables: [],
       });
-  
+
       results.push({
         fetchResponse,
         requestBody,
@@ -280,7 +292,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async createDeploymentVersions(): Promise<FetchResultInfo[]> {
+  async upsertDeploymentVersions(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
@@ -296,7 +308,7 @@ export class EntitiesBuilder {
 
         for (const version of deployment.versions) {
           console.debug(
-            `Creating deployment version '${version.tag}' on deployment '${deployment.name}'`,
+            `Upserting deployment version '${version.tag}' on deployment '${deployment.name}'`,
           );
           const requestBody = {
             ...version,
@@ -323,12 +335,10 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async cloneDeploymentVersionAndUpsert(
+  async cloneDeploymentVersionAndCreate(
     deploymentId: string,
   ): Promise<FetchResultInfo> {
-    const deployment = this.refs.deployments.find(
-      (d) => d.id === deploymentId,
-    );
+    const deployment = this.refs.deployments.find((d) => d.id === deploymentId);
     if (!deployment) {
       throw new Error(`Deployment ${deploymentId} not found`);
     }
@@ -343,21 +353,21 @@ export class EntitiesBuilder {
     const fetchResponse = await this.api.POST("/v1/deployment-versions", {
       body: requestBody,
     });
-  
+
     deployment.versions!.push({
       id: fetchResponse.data!.id,
       name: fetchResponse.data!.name,
       tag: fetchResponse.data!.tag,
       status: fetchResponse.data!.status ?? "ready",
     });
-  
+
     return {
       fetchResponse,
       requestBody,
     };
   }
 
-  async createDeploymentVariables(): Promise<FetchResultInfo[]> {
+  async upsertDeploymentVariables(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
@@ -373,7 +383,7 @@ export class EntitiesBuilder {
 
         for (const variable of deployment.variables) {
           console.debug(
-            `Creating deployment variable '${variable.key}' on deployment '${deployment.name}'`,
+            `Upserting deployment variable '${variable.key}' on deployment '${deployment.name}'`,
           );
           const variableResponse = await this.api.POST(
             "/v1/deployments/{deploymentId}/variables",
@@ -395,7 +405,7 @@ export class EntitiesBuilder {
 
           if (variableResponse.response.status !== 201)
             throw new Error(
-              `Failed to create deployment variable: ${JSON.stringify(
+              `Failed to upsert deployment variable: ${JSON.stringify(
                 variableResponse.error,
               )}`,
             );
@@ -478,11 +488,50 @@ export class EntitiesBuilder {
         id: fetchResponse.data!.id,
         name: fetchResponse.data!.name,
       });
+
+      console.debug(`Upserted agent: ${fetchResponse.data!.name}`);
+    }
+    return results;
+  }
+
+  async cloneAgentsAndCreate(): Promise<FetchResultInfo[]> {
+    if (!this.fixtures.agents || this.fixtures.agents.length === 0) {
+      throw new Error("No agents defined in YAML file");
+    }
+    const results: FetchResultInfo[] = [];
+    const workspaceId = this.workspace.id;
+    const agentClones: AgentFixture[] = [];
+    for (const agent of this.fixtures.agents) {
+      agentClones.push({
+        ...agent,
+        name: `${agent.name}-clone-${faker.string.alphanumeric(5)}`,
+      });
+    }
+
+    for (const agent of agentClones) {
+      const requestBody = {
+        ...agent,
+        workspaceId,
+      };
+      const fetchResponse = await this.api.PATCH("/v1/job-agents/name", {
+        body: requestBody,
+      });
+
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
+
+      this.refs.agents.push({
+        id: fetchResponse.data!.id,
+        name: fetchResponse.data!.name,
+      });
+
+      console.debug(`Created cloned agent: ${fetchResponse.data!.name}`);
     }
     return results;
   }
 }
-
 
 /**
  * Delete all entities created from a YAML import

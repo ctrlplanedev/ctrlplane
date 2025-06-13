@@ -27,7 +27,11 @@ test.describe("Release Targets API", () => {
     await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
-  test("should match a policy to a specific resource", async ({api,workspace,page,}) => {
+  test("should match a policy to a specific resource", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
@@ -68,18 +72,24 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(4);
 
-    const prodResourceMatch = releaseTargets?.filter(
-      (rt) => rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodResourceMatch =
+      releaseTargets?.filter(
+        (rt) => rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodResourceMatch.length).toBe(4);
 
-    const qaResourceMatch = releaseTargets?.filter(
-      (rt) => rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaResourceMatch =
+      releaseTargets?.filter(
+        (rt) => rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaResourceMatch.length).toBe(0);
   });
 
-  test("should update release targets when resource selector is updated", async ({api,workspace,page,}) => {
+  test("should update release targets when resource selector is updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
@@ -138,18 +148,24 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(4);
 
-    const qaResourceMatch = releaseTargets?.filter(
-      (rt) => rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaResourceMatch =
+      releaseTargets?.filter(
+        (rt) => rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaResourceMatch.length).toBe(4);
 
-    const prodResourceMatch = releaseTargets?.filter(
-      (rt) => rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodResourceMatch =
+      releaseTargets?.filter(
+        (rt) => rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodResourceMatch.length).toBe(0);
   });
 
-  test("should not match a resource that is deleted", async ({api,workspace,page,}) => {
+  test("should not match a resource that is deleted", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceName = `${systemPrefix}-sample`;
@@ -217,7 +233,11 @@ test.describe("Release Targets API", () => {
     expect(count).toBe(0);
   });
 
-  test("should match a policy to a specific environment", async ({api,workspace,page,}) => {
+  test("should match a policy to a specific environment", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
@@ -258,18 +278,24 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(4);
 
-    const aEnvironmentMatch = releaseTargets?.filter(
-      (rt) => rt.environment.name === `${systemPrefix}-a`,
-    ) ?? [];
+    const aEnvironmentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.environment.name === `${systemPrefix}-a`,
+      ) ?? [];
     expect(aEnvironmentMatch.length).toBe(4);
 
-    const bEnvironmentMatch = releaseTargets?.filter(
-      (rt) => rt.environment.name === `${systemPrefix}-b`,
-    ) ?? [];
+    const bEnvironmentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.environment.name === `${systemPrefix}-b`,
+      ) ?? [];
     expect(bEnvironmentMatch.length).toBe(0);
   });
 
-  test("should update release targets when environment selector is updated", async ({api,workspace,page,}) => {
+  test("should update release targets when environment selector is updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
@@ -326,18 +352,24 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(4);
 
-    const bEnvironmentMatch = releaseTargets?.filter(
-      (rt) => rt.environment.name === `${systemPrefix}-b`,
-    ) ?? [];
+    const bEnvironmentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.environment.name === `${systemPrefix}-b`,
+      ) ?? [];
     expect(bEnvironmentMatch.length).toBe(4);
 
-    const aEnvironmentMatch = releaseTargets?.filter(
-      (rt) => rt.environment.name === `${systemPrefix}-a`,
-    ) ?? [];
+    const aEnvironmentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.environment.name === `${systemPrefix}-a`,
+      ) ?? [];
     expect(aEnvironmentMatch.length).toBe(0);
   });
 
-  test("should not match an environment that is deleted", async ({api,workspace,page,}) => {
+  test("should not match an environment that is deleted", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const environmentName = `${systemPrefix}-staging`;
@@ -410,7 +442,11 @@ test.describe("Release Targets API", () => {
     expect(count).toBe(0);
   });
 
-  test("should match a policy to a specific deployment", async ({api,workspace,page,}) => {
+  test("should match a policy to a specific deployment", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
@@ -451,18 +487,24 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(4);
 
-    const aDeploymentMatch = releaseTargets?.filter(
-      (rt) => rt.deployment.slug === `${systemPrefix}-deployment-a`,
-    ) ?? [];
+    const aDeploymentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.deployment.slug === `${systemPrefix}-deployment-a`,
+      ) ?? [];
     expect(aDeploymentMatch.length).toBe(4);
 
-    const bDeploymentMatch = releaseTargets?.filter(
-      (rt) => rt.deployment.slug === `${systemPrefix}-deployment-b`,
-    ) ?? [];
+    const bDeploymentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.deployment.slug === `${systemPrefix}-deployment-b`,
+      ) ?? [];
     expect(bDeploymentMatch.length).toBe(0);
   });
 
-  test("should update release targets when deployment selector is updated", async ({api,workspace,page,}) => {
+  test("should update release targets when deployment selector is updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
@@ -521,18 +563,24 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(4);
 
-    const bDeploymentMatch = releaseTargets?.filter(
-      (rt) => rt.deployment.slug === `${systemPrefix}-deployment-b`,
-    ) ?? [];
+    const bDeploymentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.deployment.slug === `${systemPrefix}-deployment-b`,
+      ) ?? [];
     expect(bDeploymentMatch.length).toBe(4);
 
-    const aDeploymentMatch = releaseTargets?.filter(
-      (rt) => rt.deployment.slug === `${systemPrefix}-deployment-a`,
-    ) ?? [];
+    const aDeploymentMatch =
+      releaseTargets?.filter(
+        (rt) => rt.deployment.slug === `${systemPrefix}-deployment-a`,
+      ) ?? [];
     expect(aDeploymentMatch.length).toBe(0);
   });
 
-  test("should not match a deployment that is deleted", async ({api,workspace,page,}) => {
+  test("should not match a deployment that is deleted", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const deploymentName = `${systemPrefix}-deployment-c`;
@@ -606,7 +654,11 @@ test.describe("Release Targets API", () => {
     expect(count).toBe(0);
   });
 
-  test("should match a policy to a specific deployment and environment", async ({api,workspace,page,}) => {
+  test("should match a policy to a specific deployment and environment", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
@@ -652,36 +704,44 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(2);
 
-    const deploymentAEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-a`,
-    ) ?? [];
+    const deploymentAEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-a`,
+      ) ?? [];
     expect(deploymentAEnvironmentAMatch.length).toBe(2);
 
-    const deploymentBEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-a`,
-    ) ?? [];
+    const deploymentBEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-a`,
+      ) ?? [];
     expect(deploymentBEnvironmentAMatch.length).toBe(0);
 
-    const deploymentAEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-b`,
-    ) ?? [];
+    const deploymentAEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-b`,
+      ) ?? [];
     expect(deploymentAEnvironmentBMatch.length).toBe(0);
 
-    const deploymentBEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-b`,
-    ) ?? [];
+    const deploymentBEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-b`,
+      ) ?? [];
     expect(deploymentBEnvironmentBMatch.length).toBe(0);
   });
 
-  test("should update release targets when deployment and environment selectors are updated", async ({api,workspace,page,}) => {
+  test("should update release targets when deployment and environment selectors are updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
@@ -750,36 +810,44 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(2);
 
-    const deploymentAEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-a`,
-    ) ?? [];
+    const deploymentAEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-a`,
+      ) ?? [];
     expect(deploymentAEnvironmentAMatch.length).toBe(0);
 
-    const deploymentBEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-a`,
-    ) ?? [];
+    const deploymentBEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-a`,
+      ) ?? [];
     expect(deploymentBEnvironmentAMatch.length).toBe(0);
 
-    const deploymentAEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-b`,
-    ) ?? [];
+    const deploymentAEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-b`,
+      ) ?? [];
     expect(deploymentAEnvironmentBMatch.length).toBe(0);
 
-    const deploymentBEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-b`,
-    ) ?? [];
+    const deploymentBEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-b`,
+      ) ?? [];
     expect(deploymentBEnvironmentBMatch.length).toBe(2);
   });
 
-  test("should match a policy to a specific resource and environment", async ({api,workspace,page,}) => {
+  test("should match a policy to a specific resource and environment", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
@@ -825,36 +893,44 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(2);
 
-    const prodEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodEnvironmentAMatch.length).toBe(2);
 
-    const prodEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodEnvironmentBMatch.length).toBe(0);
 
-    const qaEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaEnvironmentAMatch.length).toBe(0);
 
-    const qaEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaEnvironmentBMatch.length).toBe(0);
   });
 
-  test("should update release targets when resource and environment selectors are updated", async ({api,workspace,page,}) => {
+  test("should update release targets when resource and environment selectors are updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
@@ -921,36 +997,44 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(2);
 
-    const prodEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodEnvironmentAMatch.length).toBe(0);
 
-    const prodEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodEnvironmentBMatch.length).toBe(0);
 
-    const qaEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaEnvironmentAMatch.length).toBe(0);
 
-    const qaEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaEnvironmentBMatch.length).toBe(2);
   });
 
-  test("should match a policy to a specific resource and deployment", async ({api,workspace,page,}) => {
+  test("should match a policy to a specific resource and deployment", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
@@ -996,36 +1080,44 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(2);
 
-    const prodDeploymentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentAMatch.length).toBe(2);
 
-    const prodDeploymentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentBMatch.length).toBe(0);
 
-    const qaDeploymentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentAMatch.length).toBe(0);
 
-    const qaDeploymentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentBMatch.length).toBe(0);
   });
 
-  test("should update release targets when resource and deployment selectors are updated", async ({api,workspace,page,}) => {
+  test("should update release targets when resource and deployment selectors are updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
@@ -1094,36 +1186,44 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(2);
 
-    const prodDeploymentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentAMatch.length).toBe(0);
 
-    const prodDeploymentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentBMatch.length).toBe(0);
 
-    const qaDeploymentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentAMatch.length).toBe(0);
 
-    const qaDeploymentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentBMatch.length).toBe(2);
   });
 
-  test("should match a policy to a specific resource and deployment and environment", async ({api,workspace,page,}) => {
+  test("should match a policy to a specific resource and deployment and environment", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
 
@@ -1174,72 +1274,84 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(1);
 
-    const prodDeploymentAEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentAEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentAEnvironmentAMatch.length).toBe(1);
 
-    const prodDeploymentAEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentAEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentAEnvironmentBMatch.length).toBe(0);
 
-    const prodDeploymentBEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentBEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentBEnvironmentAMatch.length).toBe(0);
 
-    const prodDeploymentBEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentBEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentBEnvironmentBMatch.length).toBe(0);
 
-    const qaDeploymentAEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentAEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentAEnvironmentAMatch.length).toBe(0);
 
-    const qaDeploymentAEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentAEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentAEnvironmentBMatch.length).toBe(0);
 
-    const qaDeploymentBEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentBEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentBEnvironmentAMatch.length).toBe(0);
 
-    const qaDeploymentBEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentBEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentBEnvironmentBMatch.length).toBe(0);
   });
 
-  test("should update release targets when resource and deployment and environment selectors are updated", async ({api,workspace,page,}) => {
+  test("should update release targets when resource and deployment and environment selectors are updated", async ({
+    api,
+    workspace,
+    page,
+  }) => {
     const { id: workspaceId } = workspace;
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const policyName = faker.string.alphanumeric(10);
@@ -1316,68 +1428,76 @@ test.describe("Release Targets API", () => {
 
     expect(count).toBe(1);
 
-    const prodDeploymentAEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentAEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentAEnvironmentAMatch.length).toBe(0);
 
-    const prodDeploymentAEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentAEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentAEnvironmentBMatch.length).toBe(0);
 
-    const prodDeploymentBEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentBEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentBEnvironmentAMatch.length).toBe(0);
 
-    const prodDeploymentBEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-prod`,
-    ) ?? [];
+    const prodDeploymentBEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-prod`,
+      ) ?? [];
     expect(prodDeploymentBEnvironmentBMatch.length).toBe(0);
 
-    const qaDeploymentAEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentAEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentAEnvironmentAMatch.length).toBe(0);
 
-    const qaDeploymentAEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-a` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentAEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-a` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentAEnvironmentBMatch.length).toBe(0);
 
-    const qaDeploymentBEnvironmentAMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-a` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentBEnvironmentAMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-a` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentBEnvironmentAMatch.length).toBe(0);
 
-    const qaDeploymentBEnvironmentBMatch = releaseTargets?.filter(
-      (rt) =>
-        rt.deployment.slug === `${systemPrefix}-deployment-b` &&
-        rt.environment.name === `${systemPrefix}-b` &&
-        rt.resource.identifier === `${systemPrefix}-qa`,
-    ) ?? [];
+    const qaDeploymentBEnvironmentBMatch =
+      releaseTargets?.filter(
+        (rt) =>
+          rt.deployment.slug === `${systemPrefix}-deployment-b` &&
+          rt.environment.name === `${systemPrefix}-b` &&
+          rt.resource.identifier === `${systemPrefix}-qa`,
+      ) ?? [];
     expect(qaDeploymentBEnvironmentBMatch.length).toBe(1);
   });
 

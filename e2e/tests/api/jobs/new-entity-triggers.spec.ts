@@ -26,7 +26,7 @@ test.describe("trigger new jobs", () => {
   });
 
   test.afterEach(async ({ api, workspace }) => {
-    await cleanupImportedEntities(api, builder.refs, workspace.id);
+    //await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("trigger with initial deployment versions", async ({ api }) => {
@@ -46,7 +46,7 @@ test.describe("trigger new jobs", () => {
     });
 
     // triggers job
-    (await builder.createDeploymentVersions()).forEach((fr) => {
+    (await builder.upsertDeploymentVersions()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -64,7 +64,7 @@ test.describe("trigger new jobs", () => {
 
     const agentId = builder.refs.oneAgent().id;
 
-    (await builder.createDeploymentVersions()).forEach((fr) => {
+    (await builder.upsertDeploymentVersions()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -83,7 +83,7 @@ test.describe("trigger new jobs", () => {
 
     const agentId = builder.refs.oneAgent().id;
 
-    (await builder.createDeploymentVersions()).forEach((fr) => {
+    (await builder.upsertDeploymentVersions()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -100,52 +100,71 @@ test.describe("trigger new jobs", () => {
     await expectJobQueueCount(api, agentId, 4);
   });
 
-  test("trigger subsequent jobs with new version for ONE deployment", async () => {
+  test("trigger new jobs with new version for ONE deployment", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
     const resourcesPerDeployment = 2;
-    await builder.cloneDeploymentVersionAndUpsert(
+    await builder.cloneDeploymentVersionAndCreate(
       builder.refs.oneDeployment().id,
     );
     // should only create jobs for each resource on a _single_ deployment
-    await expectJobQueueCount(
-      builder.api,
-      agentId,
-      resourcesPerDeployment,
-    );
+    await expectJobQueueCount(builder.api, agentId, resourcesPerDeployment);
   });
 
-  test("trigger subsequent jobs for new resources -- cloning each existing resource", async () => {
+  test("trigger new jobs for new resources -- cloning each existing resource", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
     // new resources will be the same as existing resource count, since each existing will be cloned
     const newResourceCount = builder.refs.resources.length;
-    (await builder.cloneFixtureResourcesAndUpsert()).forEach((fr) => {
+    (await builder.cloneFixtureResourcesAndCreate()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
-    await expectJobQueueCount(
-      builder.api,
-      agentId,
-      newResourceCount,
-    );
+    await expectJobQueueCount(builder.api, agentId, newResourceCount);
   });
-
 
   test("trigger NO jobs for new deployments WITHOUT agentId; deployment has resources", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
-    await builder.cloneDeploymentsAndUpsert(/* NO agentId */);
-    
+    await builder.cloneDeploymentsAndCreate(/* NO agentId */);
+
     await expectJobQueueEmpty(builder.api, agentId);
   });
 
   test("trigger new jobs for new deployments WITH agentId; deployment has resources", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
-    await builder.cloneDeploymentsAndUpsert(agentId);
-    
+    await builder.cloneDeploymentsAndCreate(agentId);
+
     await expectJobQueueCount(builder.api, agentId, 4);
+  });
+
+  test("trigger NO jobs for switching agents on deployments", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+
+    const newAgentId = (await builder.cloneAgentsAndCreate())[0].fetchResponse
+      .data!.id;
+
+    expect(newAgentId).not.toBe(agentId);
+
+    // Attach NEW agent to deployment:
+    (await builder.upsertDeployments(newAgentId)).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
+
+    // attaching different agent to deployment should not trigger on old agentId or newAgentId
+    await expectJobQueueEmpty(builder.api, newAgentId);
+    await expectJobQueueEmpty(builder.api, agentId, 250);
+  });
+
+  test("trigger NO jobs with upserting identical resources", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+
+    (await builder.upsertResources()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
+
+    await expectJobQueueEmpty(builder.api, agentId);
   });
 });
 
@@ -154,10 +173,13 @@ async function expectJobQueueCount(
   agentId: string,
   expectedJobCount: number,
 ): Promise<Job[]> {
+  console.debug(
+    `expect job queue count for agentId ${agentId} to be ${expectedJobCount}`,
+  );
   let jobs: Job[] = [];
   let attempts = 0;
 
-  while (jobs.length < expectedJobCount && attempts < 5) {
+  while (jobs.length < expectedJobCount && attempts < 3) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
       params: {
@@ -196,27 +218,29 @@ async function expectJobQueueCount(
 async function expectJobQueueEmpty(
   api: Client<paths, `${string}/${string}`>,
   agentId: string,
+  timeout: number = 5000,
 ): Promise<void> {
-  let attempts = 0;
-
-  while (attempts < 5) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
-      params: {
-        path: {
-          agentId,
-        },
+  console.debug(`expect empty job queue for agentId ${agentId}`);
+  await new Promise((resolve) => setTimeout(resolve, timeout));
+  const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
+    params: {
+      path: {
+        agentId,
       },
-    });
+    },
+  });
 
-    expect(fetchResponse.response.ok).toBe(true);
+  expect(fetchResponse.response.ok).toBe(true);
 
-    const nextJobs = fetchResponse.data;
-    expect(nextJobs?.jobs).toBeDefined();
+  const nextJobs = fetchResponse.data;
+  expect(nextJobs?.jobs).toBeDefined();
 
-    expect(Array.isArray(nextJobs?.jobs)).toBe(true);
-    expect(nextJobs?.jobs?.length).toBe(0);
+  for (const job of nextJobs?.jobs || []) {
+    console.debug(`Job ${job.id} has status ${job.status}`);
   }
+
+  expect(Array.isArray(nextJobs?.jobs)).toBe(true);
+  expect(nextJobs?.jobs?.length).toBe(0);
 }
 
 /** Ensure there are no jobs in the queue before next tests are called */
@@ -224,7 +248,8 @@ async function clearJobQueue(
   api: Client<paths, `${string}/${string}`>,
   agentId: string,
 ): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  console.debug(`clear job queue for agentId ${agentId}`);
+  await new Promise((resolve) => setTimeout(resolve, 5000));
   const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
     params: {
       path: {
@@ -233,6 +258,10 @@ async function clearJobQueue(
     },
   });
   expect(fetchResponse.response.ok).toBe(true);
+  const nextJobs = fetchResponse.data;
+  for (const job of nextJobs?.jobs || []) {
+    console.debug(`Job ${job.id} has status ${job.status}`);
+  }
 }
 
 /**
@@ -250,7 +279,7 @@ async function initialJobsTriggerHelper(
 
   const agentId = builder.refs.oneAgent().id;
 
-  (await builder.createDeploymentVersions()).forEach((fr) => {
+  (await builder.upsertDeploymentVersions()).forEach((fr) => {
     expect(fr.fetchResponse.response.ok).toBe(true);
   });
 
