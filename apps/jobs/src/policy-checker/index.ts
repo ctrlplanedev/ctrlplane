@@ -8,7 +8,7 @@ const getReleaseTargetsAffectedByRolloutRule = (
   offset: number,
 ) =>
   db
-    .select()
+    .selectDistinctOn([schema.releaseTarget.id])
     .from(schema.policy)
     .innerJoin(
       schema.policyRuleEnvironmentVersionRollout,
