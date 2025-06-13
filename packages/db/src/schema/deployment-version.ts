@@ -104,6 +104,7 @@ export const versionStatus = pgEnum("deployment_version_status", [
   "building",
   "ready",
   "failed",
+  "rejected",
 ]);
 
 export const deploymentVersion = pgTable(

@@ -297,6 +297,9 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                                 "bg-red-500/20 text-red-500 hover:bg-red-500/20":
                                   version.status ===
                                   DeploymentVersionStatus.Failed,
+                                "bg-orange-500/20 text-orange-500 hover:bg-orange-500/20":
+                                  version.status ===
+                                  DeploymentVersionStatus.Rejected,
                               })}
                             >
                               {version.status}

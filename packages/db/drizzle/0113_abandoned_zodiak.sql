@@ -1,0 +1,1 @@
+ALTER TYPE "public"."release_status" ADD VALUE 'rejected';
