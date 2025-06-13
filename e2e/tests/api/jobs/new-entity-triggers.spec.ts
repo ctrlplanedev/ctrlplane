@@ -3,13 +3,12 @@ import { expect } from "@playwright/test";
 import _ from "lodash";
 import { Client } from "openapi-fetch";
 
-import { addNewDeploymentVersion, cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
+import { cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
 import { test } from "../../fixtures";
-import { faker } from "@faker-js/faker";
 
-const yamlPath = path.join(__dirname, "job-flow-entities.spec.yaml");
+const yamlPath = path.join(__dirname, "new-entity-triggers.spec.yaml");
 
-test.describe("queue initial jobs", () => {
+test.describe("trigger new jobs", () => {
   let builder: EntitiesBuilder;
 
   test.beforeEach(async ({ api, workspace }) => {
@@ -51,9 +50,7 @@ test.describe("queue initial jobs", () => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
-    await nextJobs(api, agentId, 4);
-
-    await subsequentJobs(builder);
+    await expectJobQueueCount(api, agentId, 4);
   });
 
   test("trigger with initial agent attachment", async ({ api }) => {
@@ -76,9 +73,7 @@ test.describe("queue initial jobs", () => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
-    await nextJobs(api, agentId, 4);
-
-    await subsequentJobs(builder);
+    await expectJobQueueCount(api, agentId, 4);
   });
 
   test("trigger with initial resources", async ({ api }) => {
@@ -102,37 +97,59 @@ test.describe("queue initial jobs", () => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
-    await nextJobs(api, agentId, 4);
+    await expectJobQueueCount(api, agentId, 4);
+  });
 
-    await subsequentJobs(builder);
+  test("trigger subsequent jobs with new version for ONE deployment", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+
+    const resourcesPerDeployment = 2;
+    await builder.cloneDeploymentVersionAndUpsert(
+      builder.refs.oneDeployment().id,
+    );
+    // should only create jobs for each resource on a _single_ deployment
+    await expectJobQueueCount(
+      builder.api,
+      agentId,
+      resourcesPerDeployment,
+    );
+  });
+
+  test("trigger subsequent jobs for new resources -- cloning each existing resource", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+
+    // new resources will be the same as existing resource count, since each existing will be cloned
+    const newResourceCount = builder.refs.resources.length;
+    (await builder.cloneFixtureResourcesAndUpsert()).forEach((fr) => {
+      expect(fr.fetchResponse.response.ok).toBe(true);
+    });
+
+    await expectJobQueueCount(
+      builder.api,
+      agentId,
+      newResourceCount,
+    );
+  });
+
+
+  test("trigger NO jobs for new deployments WITHOUT agentId; deployment has resources", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+
+    await builder.cloneDeploymentsAndUpsert(/* NO agentId */);
+    
+    await expectJobQueueEmpty(builder.api, agentId);
+  });
+
+  test("trigger new jobs for new deployments WITH agentId; deployment has resources", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+
+    await builder.cloneDeploymentsAndUpsert(agentId);
+    
+    await expectJobQueueCount(builder.api, agentId, 4);
   });
 });
 
-/**
- * Given an initial run of jobs, this will test various ways that subsequent jobs may be triggered.
- * @param api
- * @param builder
- * @param curDeploymentCount is the preexisting number of deployments that will get triggered
- */
-async function subsequentJobs(
-  builder: EntitiesBuilder,
-) {
-  const jobsPerDeployment = 2; // each deployment has two resources, hence two jobs per trigger
-  await addNewDeploymentVersion(
-    builder,
-    builder.refs.oneDeployment().id,
-    faker.string.alphanumeric(5),
-  );
-  try {
-    await nextJobs(builder.api, builder.refs.oneAgent().id, jobsPerDeployment);
-  } catch (e) {
-    console.error(`Continue after error: ${e}`);
-  }
-
-  
-}
-
-async function nextJobs(
+async function expectJobQueueCount(
   api: Client<paths, `${string}/${string}`>,
   agentId: string,
   expectedJobCount: number,
@@ -140,7 +157,7 @@ async function nextJobs(
   let jobs: Job[] = [];
   let attempts = 0;
 
-  while (jobs.length < expectedJobCount && attempts < ) {
+  while (jobs.length < expectedJobCount && attempts < 5) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
       params: {
@@ -176,13 +193,13 @@ async function nextJobs(
   return jobs;
 }
 
-async function noNextJobs(
+async function expectJobQueueEmpty(
   api: Client<paths, `${string}/${string}`>,
   agentId: string,
 ): Promise<void> {
   let attempts = 0;
 
-  while (attempts < 4) {
+  while (attempts < 5) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
       params: {
@@ -200,6 +217,56 @@ async function noNextJobs(
     expect(Array.isArray(nextJobs?.jobs)).toBe(true);
     expect(nextJobs?.jobs?.length).toBe(0);
   }
+}
+
+/** Ensure there are no jobs in the queue before next tests are called */
+async function clearJobQueue(
+  api: Client<paths, `${string}/${string}`>,
+  agentId: string,
+): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
+    params: {
+      path: {
+        agentId,
+      },
+    },
+  });
+  expect(fetchResponse.response.ok).toBe(true);
+}
+
+/**
+ * Helper function to create initial jobs and clear the queue.
+ * Allows testing for subsequent job triggers.
+ * @param builder
+ * @returns the agentId that was used to create jobs
+ */
+async function initialJobsTriggerHelper(
+  builder: EntitiesBuilder,
+): Promise<string> {
+  (await builder.upsertAgents()).forEach((fr) => {
+    expect(fr.fetchResponse.response.ok).toBe(true);
+  });
+
+  const agentId = builder.refs.oneAgent().id;
+
+  (await builder.createDeploymentVersions()).forEach((fr) => {
+    expect(fr.fetchResponse.response.ok).toBe(true);
+  });
+
+  // Attach agent to deployment:
+  (await builder.upsertDeployments(agentId)).forEach((fr) => {
+    expect(fr.fetchResponse.response.ok).toBe(true);
+  });
+
+  // triggers job
+  (await builder.upsertResources()).forEach((fr) => {
+    expect(fr.fetchResponse.response.ok).toBe(true);
+  });
+
+  await clearJobQueue(builder.api, agentId);
+
+  return agentId;
 }
 
 interface Job {
