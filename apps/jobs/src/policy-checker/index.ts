@@ -1,6 +1,7 @@
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { dispatchQueueJob } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 const getReleaseTargetsAffectedByRolloutRule = (
@@ -61,13 +62,7 @@ const triggerPolicyEvaluation = async () => {
       );
       totalProcessed += releaseTargets.length;
 
-      // await getQueue(Channel.EvaluateReleaseTarget).addBulk(
-      //   releaseTargets.map((rt) => ({
-      //     name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-      //     data: rt,
-      //     priority: 10,
-      //   })),
-      // );
+      await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
 
       offset += PAGE_SIZE;
     } catch (error) {
