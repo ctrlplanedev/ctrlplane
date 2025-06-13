@@ -178,8 +178,8 @@ const updateEnvironmentVersionRollout = async (
     .insert(SCHEMA.policyRuleEnvironmentVersionRollout)
     .values({
       policyId,
-      positionGrowthFactor: positionGrowthFactor?.toString(),
-      timeScaleInterval: timeScaleInterval.toString(),
+      positionGrowthFactor,
+      timeScaleInterval,
       rolloutType:
         rolloutType != null
           ? SCHEMA.apiRolloutTypeToDBRolloutType[rolloutType]

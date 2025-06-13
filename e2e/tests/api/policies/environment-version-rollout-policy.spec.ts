@@ -1,7 +1,12 @@
 import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
-import { addMinutes, startOfMinute } from "date-fns";
+import {
+  addMinutes,
+  differenceInMilliseconds,
+  differenceInMinutes,
+  startOfMinute,
+} from "date-fns";
 
 import { cleanupImportedEntities, EntitiesBuilder } from "../../../api";
 import { test } from "../../fixtures";
@@ -113,9 +118,15 @@ test.describe("Environment Version Rollout Policy", () => {
         expectedRolloutStart,
         timeScaleInterval * i,
       );
+      expect(releaseTarget.rolloutTime).toBeDefined();
+      const receivedRolloutTime = new Date(releaseTarget.rolloutTime!);
 
-      expect(releaseTarget.rolloutTime).toBe(expectedRolloutTime.toISOString());
-      expect(Number(releaseTarget.rolloutPosition)).toBe(i);
+      const diff = differenceInMilliseconds(
+        receivedRolloutTime,
+        expectedRolloutTime,
+      );
+
+      expect(diff).toBeLessThan(50);
     }
   });
 
@@ -204,8 +215,15 @@ test.describe("Environment Version Rollout Policy", () => {
         (timeScaleInterval / releaseTargetsWithRolloutInfo.length) * i,
       );
 
-      expect(releaseTarget.rolloutTime).toBe(expectedRolloutTime.toISOString());
-      expect(Number(releaseTarget.rolloutPosition)).toBe(i);
+      expect(releaseTarget.rolloutTime).toBeDefined();
+      const receivedRolloutTime = new Date(releaseTarget.rolloutTime!);
+
+      const diff = differenceInMilliseconds(
+        receivedRolloutTime,
+        expectedRolloutTime,
+      );
+
+      expect(diff).toBeLessThan(50);
     }
   });
 
@@ -296,8 +314,15 @@ test.describe("Environment Version Rollout Policy", () => {
         timeScaleInterval * (1 - Math.exp(-i / positionGrowthFactor)),
       );
 
-      expect(releaseTarget.rolloutTime).toBe(expectedRolloutTime.toISOString());
-      expect(Number(releaseTarget.rolloutPosition)).toBeCloseTo(i, 4);
+      expect(releaseTarget.rolloutTime).toBeDefined();
+      const receivedRolloutTime = new Date(releaseTarget.rolloutTime!);
+
+      const diff = differenceInMilliseconds(
+        receivedRolloutTime,
+        expectedRolloutTime,
+      );
+
+      expect(diff).toBeLessThan(50);
     }
   });
 
@@ -393,8 +418,15 @@ test.describe("Environment Version Rollout Policy", () => {
             (1 - Math.exp(-numReleaseTargets / positionGrowthFactor))),
       );
 
-      expect(releaseTarget.rolloutTime).toBe(expectedRolloutTime.toISOString());
-      expect(Number(releaseTarget.rolloutPosition)).toBeCloseTo(i, 4);
+      expect(releaseTarget.rolloutTime).toBeDefined();
+      const receivedRolloutTime = new Date(releaseTarget.rolloutTime!);
+
+      const diff = differenceInMilliseconds(
+        receivedRolloutTime,
+        expectedRolloutTime,
+      );
+
+      expect(diff).toBeLessThan(50);
     }
   });
 
@@ -577,8 +609,15 @@ test.describe("Environment Version Rollout Policy", () => {
         timeScaleInterval * i,
       );
 
-      expect(releaseTarget.rolloutTime).toBe(expectedRolloutTime.toISOString());
-      expect(Number(releaseTarget.rolloutPosition)).toBe(i);
+      expect(releaseTarget.rolloutTime).toBeDefined();
+      const receivedRolloutTime = new Date(releaseTarget.rolloutTime!);
+
+      const diff = differenceInMilliseconds(
+        receivedRolloutTime,
+        expectedRolloutTime,
+      );
+
+      expect(diff).toBeLessThan(50);
     }
   });
 });

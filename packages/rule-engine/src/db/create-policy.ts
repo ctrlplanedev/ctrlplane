@@ -195,10 +195,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .insert(SCHEMA.policyRuleEnvironmentVersionRollout)
       .values({
         policyId,
-        positionGrowthFactor:
-          environmentVersionRollout.positionGrowthFactor?.toString(),
-        timeScaleInterval:
-          environmentVersionRollout.timeScaleInterval.toString(),
+        ...environmentVersionRollout,
         rolloutType:
           environmentVersionRollout.rolloutType != null
             ? SCHEMA.apiRolloutTypeToDBRolloutType[

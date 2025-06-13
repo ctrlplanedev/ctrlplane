@@ -43,6 +43,9 @@ const getRolloutStartTimeGetter =
       ...(await getRoleApprovalRecords([version.id])),
     ];
 
+    // technically this should never happen due to the approval rules having passed to get to this point
+    // but we check because maxBy can return undefined if the array is empty
+    if (allApprovalRecords.length === 0) return version.createdAt;
     const latestApprovalRecord = _.chain(allApprovalRecords)
       .filter((record) => record.approvedAt != null)
       .maxBy((record) => record.approvedAt)
@@ -113,8 +116,8 @@ const getDeploymentOffsetEquation = (
     envVersionRollout;
 
   return RolloutTypeToOffsetFunction[rolloutType](
-    Number.parseFloat(positionGrowthFactor),
-    Number.parseFloat(timeScaleInterval),
+    positionGrowthFactor,
+    timeScaleInterval,
     numReleaseTargets,
   );
 };
@@ -124,6 +127,10 @@ export const getEnvironmentVersionRolloutRule = async (
   releaseTargetId: string,
 ) => {
   if (policy?.environmentVersionRollout == null) return null;
+  if (policy.environmentVersionRollout.positionGrowthFactor === 0)
+    throw new Error(
+      "Position growth factor must be greater than 0 for environment version rollout",
+    );
 
   const getRolloutStartTime = getRolloutStartTimeGetter(policy);
   const getReleaseTargetPosition =

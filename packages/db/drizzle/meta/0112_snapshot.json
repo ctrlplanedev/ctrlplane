@@ -1,5 +1,5 @@
 {
-  "id": "75ac9a2f-9b0e-40d6-902b-79a504e74869",
+  "id": "a50794f5-6ce6-4e7c-af83-f54110cbbcf2",
   "prevId": "4fb51637-b3f6-4e2d-a206-b0b4232ae9c0",
   "version": "7",
   "dialect": "postgresql",
@@ -6176,14 +6176,14 @@
         },
         "position_growth_factor": {
           "name": "position_growth_factor",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
           "notNull": true,
-          "default": "'1'"
+          "default": 1
         },
         "time_scale_interval": {
           "name": "time_scale_interval",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
           "notNull": true
         },

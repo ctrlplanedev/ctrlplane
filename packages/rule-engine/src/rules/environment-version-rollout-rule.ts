@@ -63,7 +63,7 @@ export const RolloutTypeToOffsetFunction: Record<
 };
 
 type EnvironmentVersionRolloutRuleOptions = {
-  getRolloutStartTime: (version: Version) => Date | Promise<Date | null> | null;
+  getRolloutStartTime: (version: Version) => Promise<Date | null>;
   getReleaseTargetPosition: (version: Version) => number | Promise<number>;
   getDeploymentOffsetMinutes: GetDeploymentOffsetMinutes;
   skipReason?: string;

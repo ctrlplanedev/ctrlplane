@@ -1,4 +1,4 @@
-import { decimal, pgEnum, pgTable, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, real, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -43,7 +43,10 @@ export const apiRolloutTypeToDBRolloutType: Record<string, RolloutType> =
 
 export const dbRolloutTypeToAPIRolloutType = Object.fromEntries(
   Object.values(ROLLOUT_TYPE_MAPPINGS).map(({ api, db }) => [db, api]),
-) as Record<RolloutType, string>;
+) as Record<
+  RolloutType,
+  "linear" | "exponential" | "linear-normalized" | "exponential-normalized"
+>;
 
 export const policyRuleEnvironmentVersionRollout = pgTable(
   "policy_rule_environment_version_rollout",
@@ -55,11 +58,9 @@ export const policyRuleEnvironmentVersionRollout = pgTable(
       .unique()
       .references(() => policy.id, { onDelete: "cascade" }),
 
-    positionGrowthFactor: decimal("position_growth_factor")
-      .notNull()
-      .default("1"),
+    positionGrowthFactor: real("position_growth_factor").notNull().default(1),
 
-    timeScaleInterval: decimal("time_scale_interval").notNull(),
+    timeScaleInterval: real("time_scale_interval").notNull(),
 
     rolloutType: rolloutType("rollout_type")
       .notNull()
@@ -74,8 +75,8 @@ export const createPolicyRuleEnvironmentVersionRollout = createInsertSchema(
   policyRuleEnvironmentVersionRollout,
   {
     policyId: z.string().uuid(),
-    positionGrowthFactor: z.number().positive().max(100),
-    timeScaleInterval: z.number().positive().max(100),
+    positionGrowthFactor: z.number().refine((val) => val > 0 && val <= 100),
+    timeScaleInterval: z.number().refine((val) => val > 0 && val <= 100),
     rolloutType: z.enum([
       "linear",
       "exponential",

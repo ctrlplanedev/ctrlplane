@@ -89,6 +89,7 @@ export const getApplicablePoliciesWithoutResourceScope = async (
     );
 
   const policyIds = policyIdResults.map((r) => r.policyId);
+  if (policyIds.length === 0) return [];
   return db.query.policy.findMany({
     where: inArray(schema.policy.id, policyIds),
     with: {
