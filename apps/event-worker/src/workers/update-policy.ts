@@ -1,9 +1,7 @@
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchComputePolicyTargetReleaseTargetSelectorJobs } from "../utils/dispatch-compute-policy-target-selector-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 export const updatePolicyWorker = createWorker(
   Channel.UpdatePolicy,
@@ -13,6 +11,9 @@ export const updatePolicyWorker = createWorker(
     });
 
     for (const policyTarget of policyTargets)
-      dispatchComputePolicyTargetReleaseTargetSelectorJobs(policyTarget);
+      dispatchQueueJob()
+        .toCompute()
+        .policyTarget(policyTarget)
+        .releaseTargetSelector();
   },
 );

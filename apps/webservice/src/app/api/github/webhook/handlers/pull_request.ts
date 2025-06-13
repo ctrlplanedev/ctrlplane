@@ -4,7 +4,7 @@ import type { PullRequestEvent } from "@octokit/webhooks-types";
 import { and, eq, takeFirstOrNull, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchUpdatedResourceJob } from "@ctrlplane/events";
+import { dispatchQueueJob } from "@ctrlplane/events";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import {
   getPullRequestState,
@@ -297,5 +297,5 @@ export const handlePullRequestWebhookEvent = async (
     upsertResources(tx, githubEntity.workspaceId, [resource]),
   );
 
-  await dispatchUpdatedResourceJob(resources);
+  await dispatchQueueJob().toUpdatedResource(resources);
 };

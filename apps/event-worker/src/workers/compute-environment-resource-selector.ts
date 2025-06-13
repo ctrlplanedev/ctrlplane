@@ -1,10 +1,7 @@
 import { and, eq, isNull, selector, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchComputeEnvironmentResourceSelectorJobs } from "../utils/dispatch-compute-env-jobs.js";
-import { dispatchComputeSystemReleaseTargetsJobs } from "../utils/dispatch-compute-system-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 /**
  * Worker that computes and updates the resources associated with an environment
@@ -81,12 +78,17 @@ export const computeEnvironmentResourceSelectorWorkerEvent = createWorker(
           .values(computedEnvironmentResources)
           .onConflictDoNothing();
       });
-
-      dispatchComputeSystemReleaseTargetsJobs(environment.system);
+      dispatchQueueJob()
+        .toCompute()
+        .system(environment.system)
+        .releaseTargets();
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
-        dispatchComputeEnvironmentResourceSelectorJobs(environment);
+        dispatchQueueJob()
+          .toCompute()
+          .environment(environment)
+          .resourceSelector();
         return;
       }
 

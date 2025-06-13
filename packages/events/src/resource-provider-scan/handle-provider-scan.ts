@@ -12,7 +12,8 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { getAffectedVariables } from "@ctrlplane/rule-engine";
 
-import { dispatchUpdatedResourceJob, getQueue } from "../index.js";
+import { dispatchQueueJob } from "../dispatch-jobs.js";
+import { getQueue } from "../index.js";
 import { Channel } from "../types.js";
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
 
@@ -118,7 +119,7 @@ export const handleResourceProviderScan = async (
     await getQueue(Channel.DeleteResource).addBulk(deleteJobs);
     await getQueue(Channel.NewResource).addBulk(insertJobs);
     if (changedResources.length > 0)
-      await dispatchUpdatedResourceJob(changedResources);
+      await dispatchQueueJob().toUpdatedResource(changedResources);
 
     for (const resource of insertedResources) {
       const { variables } = resource;

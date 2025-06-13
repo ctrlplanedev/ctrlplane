@@ -3,11 +3,8 @@ import _ from "lodash";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
-
-import { dispatchComputeDeploymentResourceSelectorJobs } from "../utils/dispatch-compute-deployment-jobs.js";
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
 
 const log = logger.child({ module: "update-deployment" });
 
@@ -36,13 +33,16 @@ export const updateDeploymentWorker = createWorker(
           where: eq(schema.releaseTarget.deploymentId, data.new.id),
         });
 
-        await dispatchEvaluateJobs(releaseTargets);
+        await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
       }
 
       if (_.isEqual(data.old.resourceSelector, data.new.resourceSelector))
         return;
 
-      await dispatchComputeDeploymentResourceSelectorJobs(data.new);
+      await dispatchQueueJob()
+        .toCompute()
+        .deployment(data.new)
+        .resourceSelector();
     } catch (error) {
       log.error("Error updating deployment", { error });
       throw error;

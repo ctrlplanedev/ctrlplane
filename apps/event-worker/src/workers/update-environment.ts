@@ -1,9 +1,7 @@
 import _ from "lodash";
 
-import { Channel, createWorker } from "@ctrlplane/events";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
-
-import { dispatchComputeEnvironmentResourceSelectorJobs } from "../utils/dispatch-compute-env-jobs.js";
 
 const log = logger.child({
   module: "env-selector-update",
@@ -31,7 +29,10 @@ export const updateEnvironmentWorker = createWorker(
     try {
       const { oldSelector, resourceSelector } = job.data;
       if (_.isEqual(oldSelector, resourceSelector)) return;
-      await dispatchComputeEnvironmentResourceSelectorJobs(job.data);
+      await dispatchQueueJob()
+        .toCompute()
+        .environment(job.data)
+        .resourceSelector();
     } catch (error) {
       log.error("Error updating environment", { error });
       throw error;

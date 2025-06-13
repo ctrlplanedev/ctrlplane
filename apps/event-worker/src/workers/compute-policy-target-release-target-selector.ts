@@ -2,10 +2,7 @@ import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchComputePolicyTargetReleaseTargetSelectorJobs } from "../utils/dispatch-compute-policy-target-selector-jobs.js";
-import { dispatchEvaluateJobs } from "../utils/dispatch-evaluate-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
   Channel.ComputePolicyTargetReleaseTargetSelector,
@@ -39,11 +36,14 @@ export const computePolicyTargetReleaseTargetSelectorWorkerEvent = createWorker(
         )
         .then((rows) => rows.map((row) => row.release_target));
 
-      dispatchEvaluateJobs(releaseTargets);
+      dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
-        dispatchComputePolicyTargetReleaseTargetSelectorJobs(policyTarget);
+        dispatchQueueJob()
+          .toCompute()
+          .policyTarget(policyTarget)
+          .releaseTargetSelector();
         return;
       }
 

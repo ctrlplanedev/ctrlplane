@@ -1,11 +1,12 @@
-import { Channel, createWorker } from "@ctrlplane/events";
-
-import { dispatchComputeEnvironmentResourceSelectorJobs } from "../utils/dispatch-compute-env-jobs.js";
+import { Channel, createWorker, dispatchQueueJob } from "@ctrlplane/events";
 
 export const newEnvironmentWorker = createWorker(
   Channel.NewEnvironment,
   async (job) => {
     const { data: environment } = job;
-    await dispatchComputeEnvironmentResourceSelectorJobs(environment);
+    await dispatchQueueJob()
+      .toCompute()
+      .environment(environment)
+      .resourceSelector();
   },
 );
