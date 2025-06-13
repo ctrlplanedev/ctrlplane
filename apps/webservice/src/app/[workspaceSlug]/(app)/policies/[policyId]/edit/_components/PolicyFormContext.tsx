@@ -48,10 +48,20 @@ export const PolicyFormContextProvider: React.FC<{
   policy: Policy;
 }> = ({ children, policy }) => {
   const concurrency = policy.concurrency?.concurrency ?? null;
-  const defaultValues = { ...policy, concurrency };
+  const environmentVersionRollout =
+    policy.environmentVersionRollout != null
+      ? {
+          ...policy.environmentVersionRollout,
+          rolloutType:
+            SCHEMA.dbRolloutTypeToAPIRolloutType[
+              policy.environmentVersionRollout.rolloutType
+            ],
+        }
+      : null;
+  const defaultValues = { ...policy, concurrency, environmentVersionRollout };
   const form = useForm({
     schema: SCHEMA.updatePolicy,
-    defaultValues: { ...defaultValues, environmentVersionRollout: null },
+    defaultValues,
   });
 
   const router = useRouter();

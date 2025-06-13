@@ -127,7 +127,7 @@ export const getEnvironmentVersionRolloutRule = async (
   releaseTargetId: string,
 ) => {
   if (policy?.environmentVersionRollout == null) return null;
-  if (policy.environmentVersionRollout.positionGrowthFactor === 0)
+  if (policy.environmentVersionRollout.positionGrowthFactor <= 0)
     throw new Error(
       "Position growth factor must be greater than 0 for environment version rollout",
     );
