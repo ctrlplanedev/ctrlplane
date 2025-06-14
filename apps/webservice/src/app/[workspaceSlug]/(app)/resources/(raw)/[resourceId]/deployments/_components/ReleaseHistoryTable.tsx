@@ -29,6 +29,12 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
@@ -42,6 +48,19 @@ type ReleaseHistoryTableProps = {
 type VariablesCellProps = {
   variables: Record<string, any>;
 };
+
+const VersionTagCell: React.FC<{ tag: string }> = ({ tag }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="truncate">{tag}</div>
+      </TooltipTrigger>
+      <TooltipContent className="p-2" align="start">
+        <pre>{tag}</pre>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 const VariablesCell: React.FC<VariablesCellProps> = ({ variables }) => (
   <HoverCard>
@@ -262,7 +281,9 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
           <TableBody>
             {history.map((h) => (
               <TableRow key={h.job.id}>
-                <TableCell>{h.version.tag}</TableCell>
+                <TableCell>
+                  <VersionTagCell tag={h.version.tag} />
+                </TableCell>
                 <TableCell>
                   <VariablesCell variables={h.variables} />
                 </TableCell>
