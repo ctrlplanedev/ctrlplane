@@ -493,6 +493,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/release-targets/{releaseTargetId}/lock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Lock a release target */
+    post: operations["lockReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/release-targets/{releaseTargetId}/releases": {
     parameters: {
       query?: never;
@@ -504,6 +521,23 @@ export interface paths {
     get: operations["getReleaseTargetReleases"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/unlock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Unlock a release target */
+    post: operations["unlockReleaseTarget"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1380,6 +1414,22 @@ export interface components {
       concurrency?: components["schemas"]["PolicyConcurrency"];
       environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
     };
+    ReleaseTargetLockRecord: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      releaseTargetId: string;
+      /** Format: date-time */
+      lockedAt: string;
+      /** Format: date-time */
+      unlockedAt: string | null;
+      lockedBy: {
+        /** Format: uuid */
+        id: string;
+        name?: string;
+        email: string;
+      };
+    };
     UpdateResourceRelationshipRule: {
       name?: string;
       reference?: string;
@@ -1730,7 +1780,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
@@ -1856,7 +1906,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
@@ -3023,6 +3073,7 @@ export interface operations {
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
           versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
           concurrency?: components["schemas"]["PolicyConcurrency"];
+          environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
         };
       };
     };
@@ -3315,6 +3366,50 @@ export interface operations {
       };
     };
   };
+  lockReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release target locked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTargetLockRecord"];
+        };
+      };
+      /** @description Release target is already locked */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   getReleaseTargetReleases: {
     parameters: {
       query?: never;
@@ -3366,6 +3461,61 @@ export interface operations {
       };
     };
   };
+  unlockReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release target unlocked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTargetLockRecord"];
+        };
+      };
+      /** @description Release target is not locked */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Release target was not locked by the current user */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   updateRelease: {
     parameters: {
       query?: never;
@@ -3391,7 +3541,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
@@ -3433,7 +3583,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
