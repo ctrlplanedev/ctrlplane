@@ -1,6 +1,5 @@
 "use client";
 
-import type * as schema from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import Link from "next/link";
 import { IconExternalLink } from "@tabler/icons-react";
@@ -30,14 +29,14 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { api } from "~/trpc/react";
 
 type ReleaseHistoryTableProps = {
-  releaseTargets: (schema.ReleaseTarget & {
-    deployment: schema.Deployment;
-  })[];
+  resourceId: string;
+  deployments: { id: string; name: string }[];
 };
 
 type VariablesCellProps = {
@@ -159,39 +158,83 @@ const JobLinksCell: React.FC<JobLinksCellProps> = ({ job }) => {
   );
 };
 
-export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
-  releaseTargets,
-}) => {
-  const [selectedReleaseTarget, setSelectedReleaseTarget] =
-    useState<schema.ReleaseTarget | null>(releaseTargets.at(0) ?? null);
+const DeploymentSelect: React.FC<{
+  deployments: { id: string; name: string }[];
+  selectedDeploymentId: string;
+  onDeploymentIdChange: (deploymentId: string) => void;
+}> = ({ deployments, selectedDeploymentId, onDeploymentIdChange }) => (
+  <Select
+    value={selectedDeploymentId}
+    onValueChange={(value) => onDeploymentIdChange(value)}
+  >
+    <SelectTrigger className="w-60">
+      <SelectValue placeholder="All deployments" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All deployments</SelectItem>
+      {deployments.map((deployment) => (
+        <SelectItem key={deployment.id} value={deployment.id}>
+          {deployment.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+);
 
-  const { data, isLoading } = api.releaseTarget.releaseHistory.useQuery(
-    selectedReleaseTarget?.id ?? "",
+const JobStatusSelect: React.FC<{
+  selectedJobStatus: JobStatus | "all";
+  onJobStatusChange: (jobStatus: JobStatus | "all") => void;
+}> = ({ selectedJobStatus, onJobStatusChange }) => (
+  <Select
+    value={selectedJobStatus}
+    onValueChange={(value) => onJobStatusChange(value as JobStatus | "all")}
+  >
+    <SelectTrigger className="w-60">
+      <SelectValue placeholder="All job statuses" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All job statuses</SelectItem>
+      {Object.values(JobStatus).map((status) => (
+        <SelectItem key={status} value={status}>
+          {capitalCase(status)}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+);
+
+export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
+  resourceId,
+  deployments,
+}) => {
+  const [selectedDeploymentId, setSelectedDeploymentId] =
+    useState<string>("all");
+
+  const [selectedJobStatus, setSelectedJobStatus] = useState<JobStatus | "all">(
+    "all",
   );
 
+  const { data, isLoading } = api.resource.releaseHistory.useQuery({
+    resourceId,
+    deploymentId:
+      selectedDeploymentId === "all" ? undefined : selectedDeploymentId,
+    jobStatus: selectedJobStatus === "all" ? undefined : selectedJobStatus,
+  });
   const history = data ?? [];
 
   return (
     <div>
-      <div className="p-2">
-        <Select
-          value={selectedReleaseTarget?.id}
-          onValueChange={(value) => {
-            const releaseTarget = releaseTargets.find((rt) => rt.id === value);
-            setSelectedReleaseTarget(releaseTarget ?? null);
-          }}
-        >
-          <SelectTrigger className="w-60">
-            <SelectValue placeholder="Select a deployment" />
-          </SelectTrigger>
-          <SelectContent>
-            {releaseTargets.map((rt) => (
-              <SelectItem key={rt.id} value={rt.id}>
-                {rt.deployment.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex items-center justify-end gap-2 p-2">
+        <DeploymentSelect
+          deployments={deployments}
+          selectedDeploymentId={selectedDeploymentId}
+          onDeploymentIdChange={setSelectedDeploymentId}
+        />
+
+        <JobStatusSelect
+          selectedJobStatus={selectedJobStatus}
+          onJobStatusChange={setSelectedJobStatus}
+        />
       </div>
       {isLoading && (
         <div className="space-y-2 p-4">

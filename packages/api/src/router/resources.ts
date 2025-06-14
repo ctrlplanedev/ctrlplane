@@ -27,6 +27,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { releaseHistory } from "./release-history";
 import { resourceMetadataGroupRouter } from "./resource-metadata-group";
 import { resourceProviderRouter } from "./resource-provider";
 import { resourceRelationshipRulesRouter } from "./resource-relationship-rules";
@@ -73,6 +74,7 @@ export const resourceRouter = createTRPCRouter({
   view: resourceViews,
   variable: resourceVariables,
   relationshipRules: resourceRelationshipRulesRouter,
+  releaseHistory,
 
   byId: protectedProcedure
     .meta({

@@ -10,5 +10,10 @@ export default async function DeploymentsPage(props: { params: Params }) {
     resourceId,
   });
 
-  return <ReleaseHistoryTable releaseTargets={releaseTargets} />;
+  return (
+    <ReleaseHistoryTable
+      resourceId={resourceId}
+      deployments={releaseTargets.map((rt) => rt.deployment)}
+    />
+  );
 }
