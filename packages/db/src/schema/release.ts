@@ -9,6 +9,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { user } from "./auth.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
@@ -134,6 +135,20 @@ export const releaseJob = pgTable("release_job", {
   jobId: uuid("job_id")
     .notNull()
     .references(() => job.id, { onDelete: "cascade" }),
+});
+
+export const releaseTargetLockRecord = pgTable("release_target_lock_record", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  releaseTargetId: uuid("release_target_id")
+    .notNull()
+    .references(() => releaseTarget.id, { onDelete: "cascade" }),
+  lockedAt: timestamp("locked_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  unlockedAt: timestamp("unlocked_at", { withTimezone: true }),
+  lockedBy: uuid("locked_by")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
 });
 
 /* Relations */

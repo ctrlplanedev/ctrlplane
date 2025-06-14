@@ -2939,6 +2939,65 @@
         ]
       }
     },
+    "/v1/release-targets/{releaseTargetId}/lock": {
+      "post": {
+        "summary": "Lock a release target",
+        "operationId": "lockReleaseTarget",
+        "parameters": [
+          {
+            "name": "releaseTargetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Release target locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseTargetLockRecord"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Release target is already locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/release-targets/{releaseTargetId}/releases": {
       "get": {
         "summary": "Get the latest 100 releases for a release target",
@@ -3031,6 +3090,80 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/release-targets/{releaseTargetId}/unlock": {
+      "post": {
+        "summary": "Unlock a release target",
+        "operationId": "unlockReleaseTarget",
+        "parameters": [
+          {
+            "name": "releaseTargetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Release target unlocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseTargetLockRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Release target is not locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Release target was not locked by the current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -6309,6 +6442,54 @@
           "denyWindows",
           "versionUserApprovals",
           "versionRoleApprovals"
+        ]
+      },
+      "ReleaseTargetLockRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "releaseTargetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lockedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unlockedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lockedBy": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "email"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "releaseTargetId",
+          "lockedAt",
+          "unlockedAt",
+          "lockedBy"
         ]
       },
       "UpdateResourceRelationshipRule": {

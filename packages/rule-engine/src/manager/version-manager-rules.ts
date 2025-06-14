@@ -7,6 +7,7 @@ import type { Version } from "./version-rule-engine";
 import { ConcurrencyRule } from "../rules/concurrency-rule.js";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
 import { ReleaseTargetConcurrencyRule } from "../rules/release-target-concurrency-rule.js";
+import { ReleaseTargetLockRule } from "../rules/release-target-lock-rule.js";
 import {
   getEnvironmentVersionRolloutRule,
   getVersionApprovalRules,
@@ -64,6 +65,7 @@ export const getRules = async (
     releaseTargetId,
   );
   return [
+    new ReleaseTargetLockRule(releaseTargetId),
     new ReleaseTargetConcurrencyRule(releaseTargetId),
     ...getConcurrencyRule(policy),
     ...getVersionApprovalRules(policy),

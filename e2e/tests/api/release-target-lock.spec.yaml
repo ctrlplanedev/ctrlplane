@@ -1,0 +1,16 @@
+system:
+  name: "{{ prefix }}-release-target-lock"
+  slug: "{{ prefix }}-release-target-lock"
+  description: System for testing release target lock
+
+environments:
+  - name: qa-environment
+    systemId: "{{ prefix }}-release-target-lock"
+    resourceSelector:
+      type: identifier
+      operator: "contains"
+      value: "{{ prefix }}"
+
+deployments:
+  - name: qa-deployment
+    slug: "{{ prefix }}-qa-deployment"
