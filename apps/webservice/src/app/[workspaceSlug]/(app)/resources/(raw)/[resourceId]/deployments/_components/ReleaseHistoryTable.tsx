@@ -71,9 +71,10 @@ const VersionTagCell: React.FC<{
             .deployment(urlParams.deploymentSlug)
             .release(version.id)
             .jobs()}
-          className="cursor-pointer truncate underline-offset-2 hover:underline"
         >
-          {version.tag}
+          <div className="cursor-pointer truncate underline-offset-2 hover:underline">
+            {version.tag}
+          </div>
         </Link>
       </TooltipTrigger>
       <TooltipContent className="p-2" align="start">
@@ -313,9 +314,10 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
                       .system(h.system.slug)
                       .deployment(h.deployment.slug)
                       .baseUrl()}
-                    className="cursor-pointer truncate underline-offset-2 hover:underline"
                   >
-                    {h.deployment.name}
+                    <div className="cursor-pointer truncate underline-offset-2 hover:underline">
+                      {h.deployment.name}
+                    </div>
                   </Link>
                 </TableCell>
                 <TableCell>
