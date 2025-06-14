@@ -4,6 +4,7 @@ import type * as schema from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import Link from "next/link";
 import { IconExternalLink } from "@tabler/icons-react";
+import { capitalCase } from "change-case";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -29,8 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
+import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { api } from "~/trpc/react";
 
 type ReleaseHistoryTableProps = {
@@ -71,17 +72,12 @@ const VariablesCell: React.FC<VariablesCellProps> = ({ variables }) => (
   </HoverCard>
 );
 
-type JobCellProps = {
-  job: { metadata: Record<string, string> };
+type JobLinksCellProps = {
+  job: { links: Record<string, string> | null };
 };
 
-const JobCell: React.FC<JobCellProps> = ({ job }) => {
-  const linksMetadata = job.metadata[ReservedMetadataKey.Links];
-  const links =
-    linksMetadata != null
-      ? (JSON.parse(linksMetadata) as Record<string, string>)
-      : null;
-
+const JobLinksCell: React.FC<JobLinksCellProps> = ({ job }) => {
+  const { links } = job;
   if (links == null) return <TableCell />;
 
   const numLinks = Object.keys(links).length;
@@ -214,7 +210,8 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
             <TableRow>
               <TableHead>Version</TableHead>
               <TableHead>Variables</TableHead>
-              <TableHead>Job</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Links</TableHead>
               <TableHead>Released</TableHead>
             </TableRow>
           </TableHeader>
@@ -226,7 +223,13 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
                 <TableCell>
                   <VariablesCell variables={h.variables} />
                 </TableCell>
-                <JobCell job={h.job} />
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <JobTableStatusIcon status={h.job.status} />
+                    {capitalCase(h.job.status)}
+                  </div>
+                </TableCell>
+                <JobLinksCell job={h.job} />
                 <TableCell>{h.job.createdAt.toLocaleString()}</TableCell>
               </TableRow>
             ))}

@@ -6,13 +6,15 @@ import {
   count,
   desc,
   eq,
+  isNotNull,
   notInArray,
   sql,
   takeFirst,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { exitedStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -200,37 +202,6 @@ export const releaseTargetRouter = createTRPCRouter({
         }),
     })
     .query(async ({ ctx, input }) => {
-      const successfulJobs = ctx.db
-        .select({
-          jobReleaseId: schema.releaseJob.releaseId,
-          jobForRelease: {
-            id: schema.job.id,
-            jobAgentId: schema.job.jobAgentId,
-            jobAgentConfig: schema.job.jobAgentConfig,
-            externalId: schema.job.externalId,
-            startedAt: schema.job.startedAt,
-            completedAt: schema.job.completedAt,
-            updatedAt: schema.job.updatedAt,
-            createdAt: schema.job.createdAt,
-            status: schema.job.status,
-            metadata: sql<
-              Record<string, string>
-            >`COALESCE(jsonb_object_agg(${schema.jobMetadata.key}, ${schema.jobMetadata.value}), '{}'::jsonb)`.as(
-              "jobMetadata",
-            ),
-            reason: schema.job.reason,
-          },
-        })
-        .from(schema.releaseJob)
-        .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
-        .leftJoin(
-          schema.jobMetadata,
-          eq(schema.jobMetadata.jobId, schema.job.id),
-        )
-        .where(eq(schema.job.status, JobStatus.Successful))
-        .groupBy(schema.releaseJob.releaseId, schema.job.id)
-        .as("successfulJobs");
-
       const variableReleaseSubquery = ctx.db
         .select({
           variableSetReleaseId: schema.variableSetRelease.id,
@@ -259,16 +230,23 @@ export const releaseTargetRouter = createTRPCRouter({
         .groupBy(schema.variableSetRelease.id)
         .as("variableRelease");
 
-      const releases = await ctx.db
+      const completedJobs = await ctx.db
         .select()
-        .from(schema.release)
-        .innerJoin(
-          schema.versionRelease,
-          eq(schema.release.versionReleaseId, schema.versionRelease.id),
+        .from(schema.job)
+        .leftJoin(
+          schema.jobMetadata,
+          and(
+            eq(schema.jobMetadata.jobId, schema.job.id),
+            eq(schema.jobMetadata.key, ReservedMetadataKey.Links),
+          ),
         )
         .innerJoin(
-          schema.deploymentVersion,
-          eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
+          schema.releaseJob,
+          eq(schema.releaseJob.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.releaseJob.releaseId, schema.release.id),
         )
         .innerJoin(
           variableReleaseSubquery,
@@ -278,18 +256,35 @@ export const releaseTargetRouter = createTRPCRouter({
           ),
         )
         .innerJoin(
-          successfulJobs,
-          eq(schema.release.id, successfulJobs.jobReleaseId),
+          schema.versionRelease,
+          eq(schema.release.versionReleaseId, schema.versionRelease.id),
         )
-        .where(eq(schema.versionRelease.releaseTargetId, input))
-        .orderBy(desc(successfulJobs.jobForRelease.startedAt))
+        .innerJoin(
+          schema.deploymentVersion,
+          eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
+        )
+        .orderBy(desc(schema.job.startedAt))
+        .where(
+          and(
+            eq(schema.versionRelease.releaseTargetId, input),
+            isNotNull(schema.job.startedAt),
+          ),
+        )
         .limit(500);
 
-      return releases.map((rel) => ({
-        release: rel.release,
-        version: rel.deployment_version,
-        variables: rel.variableRelease.variables,
-        job: rel.successfulJobs.jobForRelease,
-      }));
+      return completedJobs.map((jobResult) => {
+        const links =
+          jobResult.job_metadata != null
+            ? (JSON.parse(jobResult.job_metadata.value) as Record<
+                string,
+                string
+              >)
+            : null;
+        const job = { ...jobResult.job, links };
+        const release = jobResult.release;
+        const version = jobResult.deployment_version;
+        const variables = jobResult.variableRelease.variables;
+        return { job, release, version, variables };
+      });
     }),
 });
