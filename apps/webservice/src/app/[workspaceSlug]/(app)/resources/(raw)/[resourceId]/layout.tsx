@@ -46,6 +46,11 @@ export default async function Layout(props: {
     .workspace(params.workspaceSlug)
     .resources()
     .baseUrl();
+
+  const resourcePageUrls = urls
+    .workspace(params.workspaceSlug)
+    .resource(params.resourceId);
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader className="justify-between">
@@ -57,9 +62,7 @@ export default async function Layout(props: {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href={`/${params.workspaceSlug}/resources`}>
-                  Resources
-                </BreadcrumbLink>
+                <BreadcrumbLink href={resourcesUrl}>Resources</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -91,25 +94,25 @@ export default async function Layout(props: {
             <SidebarGroup>
               <SidebarMenu>
                 <SidebarLink
-                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/deployments`}
+                  href={resourcePageUrls.deployments()}
                   icon={<IconHistory className="size-4" />}
                 >
                   Release History
                 </SidebarLink>
                 <SidebarLink
-                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/visualize`}
+                  href={resourcePageUrls.visualize()}
                   icon={<IconTopologyComplex className="size-4" />}
                 >
                   Visualize
                 </SidebarLink>
                 <SidebarLink
-                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/variables`}
+                  href={resourcePageUrls.variables()}
                   icon={<IconVariable className="size-4" />}
                 >
                   Variables
                 </SidebarLink>
                 <SidebarLink
-                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/properties`}
+                  href={resourcePageUrls.properties()}
                   icon={<IconSettings className="size-4" />}
                 >
                   Properties
