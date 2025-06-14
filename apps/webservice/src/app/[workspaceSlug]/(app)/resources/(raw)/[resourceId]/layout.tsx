@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconArrowLeft, IconEdit, IconLock } from "@tabler/icons-react";
+import {
+  IconArrowLeft,
+  IconEdit,
+  IconHistory,
+  IconLock,
+  IconSettings,
+  IconTopologyComplex,
+  IconVariable,
+} from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -84,21 +92,25 @@ export default async function Layout(props: {
               <SidebarMenu>
                 <SidebarLink
                   href={`/${params.workspaceSlug}/resources/${params.resourceId}/deployments`}
+                  icon={<IconHistory className="size-4" />}
                 >
-                  Deployments
+                  Deployment History
                 </SidebarLink>
                 <SidebarLink
                   href={`/${params.workspaceSlug}/resources/${params.resourceId}/visualize`}
+                  icon={<IconTopologyComplex className="size-4" />}
                 >
                   Visualize
                 </SidebarLink>
                 <SidebarLink
                   href={`/${params.workspaceSlug}/resources/${params.resourceId}/variables`}
+                  icon={<IconVariable className="size-4" />}
                 >
                   Variables
                 </SidebarLink>
                 <SidebarLink
                   href={`/${params.workspaceSlug}/resources/${params.resourceId}/properties`}
+                  icon={<IconSettings className="size-4" />}
                 >
                   Properties
                 </SidebarLink>
