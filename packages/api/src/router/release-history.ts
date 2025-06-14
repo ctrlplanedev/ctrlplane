@@ -88,6 +88,14 @@ export const releaseHistory = protectedProcedure
         schema.releaseTarget,
         eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
       )
+      .innerJoin(
+        schema.deployment,
+        eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
+      )
+      .innerJoin(
+        schema.system,
+        eq(schema.deployment.systemId, schema.system.id),
+      )
       .orderBy(desc(schema.job.startedAt))
       .where(
         and(
@@ -107,9 +115,9 @@ export const releaseHistory = protectedProcedure
           ? (JSON.parse(jobResult.job_metadata.value) as Record<string, string>)
           : null;
       const job = { ...jobResult.job, links };
-      const release = jobResult.release;
+      const { release, deployment, system } = jobResult;
       const version = jobResult.deployment_version;
       const variables = jobResult.variableRelease.variables;
-      return { job, release, version, variables };
+      return { job, release, version, variables, deployment, system };
     });
   });

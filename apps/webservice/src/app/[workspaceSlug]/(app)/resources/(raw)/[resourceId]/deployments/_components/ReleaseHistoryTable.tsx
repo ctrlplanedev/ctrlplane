@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { IconExternalLink } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 
@@ -38,6 +39,7 @@ import {
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type ReleaseHistoryTableProps = {
@@ -49,14 +51,33 @@ type VariablesCellProps = {
   variables: Record<string, any>;
 };
 
-const VersionTagCell: React.FC<{ tag: string }> = ({ tag }) => (
+const VersionTagCell: React.FC<{
+  version: { id: string; tag: string };
+  urlParams: {
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  };
+}> = ({ version, urlParams }) => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="truncate">{tag}</div>
+        <Link
+          target="_blank"
+          rel="noopener noreferrer"
+          href={urls
+            .workspace(urlParams.workspaceSlug)
+            .system(urlParams.systemSlug)
+            .deployment(urlParams.deploymentSlug)
+            .release(version.id)
+            .jobs()}
+          className="cursor-pointer truncate underline-offset-2 hover:underline"
+        >
+          {version.tag}
+        </Link>
       </TooltipTrigger>
       <TooltipContent className="p-2" align="start">
-        <pre>{tag}</pre>
+        <pre>{version.tag}</pre>
       </TooltipContent>
     </Tooltip>
   </TooltipProvider>
@@ -226,6 +247,7 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
   resourceId,
   deployments,
 }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const [selectedDeploymentId, setSelectedDeploymentId] =
     useState<string>("all");
 
@@ -270,6 +292,7 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
+              <TableHead>Deployment</TableHead>
               <TableHead>Version</TableHead>
               <TableHead>Variables</TableHead>
               <TableHead>Status</TableHead>
@@ -282,7 +305,28 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
             {history.map((h) => (
               <TableRow key={h.job.id}>
                 <TableCell>
-                  <VersionTagCell tag={h.version.tag} />
+                  <Link
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href={urls
+                      .workspace(workspaceSlug)
+                      .system(h.system.slug)
+                      .deployment(h.deployment.slug)
+                      .baseUrl()}
+                    className="cursor-pointer truncate underline-offset-2 hover:underline"
+                  >
+                    {h.deployment.name}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <VersionTagCell
+                    version={h.version}
+                    urlParams={{
+                      workspaceSlug,
+                      systemSlug: h.system.slug,
+                      deploymentSlug: h.deployment.slug,
+                    }}
+                  />
                 </TableCell>
                 <TableCell>
                   <VariablesCell variables={h.variables} />
