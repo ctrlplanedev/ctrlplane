@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { isAfter } from "date-fns";
 import { CONFLICT, INTERNAL_SERVER_ERROR } from "http-status";
 
-import { desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { desc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -31,6 +31,29 @@ const isCurrentlyLocked = async (db: Tx, releaseTargetId: string) => {
   return unlockedAt == null || isAfter(unlockedAt, now);
 };
 
+const addLockRecord = async (
+  db: Tx,
+  releaseTargetId: string,
+  lockedBy: string,
+) =>
+  db.transaction(async (tx) => {
+    await tx.execute(
+      sql`
+        SELECT ${schema.releaseTarget.id} from ${schema.releaseTarget}
+        WHERE ${eq(schema.releaseTarget.id, releaseTargetId)}
+        FOR UPDATE
+      `,
+    );
+
+    const lock = await tx
+      .insert(schema.releaseTargetLockRecord)
+      .values({ releaseTargetId, lockedBy })
+      .returning()
+      .then(takeFirst);
+
+    return lock;
+  });
+
 export const POST = request()
   .use(authn)
   .use(
@@ -55,19 +78,28 @@ export const POST = request()
           { status: CONFLICT },
         );
 
-      const lock = await db
-        .insert(schema.releaseTargetLockRecord)
-        .values({ releaseTargetId, lockedBy: user.id })
-        .returning()
-        .then(takeFirst);
-
+      const lock = await addLockRecord(db, releaseTargetId, user.id);
       const lockedBy = { id: user.id, name: user.name, email: user.email };
 
       return NextResponse.json({
         ...lock,
         lockedBy,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if ("code" in error && error.code === "55P03") {
+        return NextResponse.json(
+          { error: "Release target is currently locked" },
+          { status: CONFLICT },
+        );
+      }
+
+      if ("code" in error && error.code === "23505") {
+        return NextResponse.json(
+          { error: "Another user is already locking this release target" },
+          { status: CONFLICT },
+        );
+      }
+
       log.error(error);
       return NextResponse.json(
         { error: "Failed to lock release target" },

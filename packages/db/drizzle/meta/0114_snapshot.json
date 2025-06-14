@@ -1,5 +1,5 @@
 {
-  "id": "fb49677c-a87f-4ab1-98d9-3b6ee4430344",
+  "id": "d5ded00a-63c0-4eb5-8a74-b2bceb26f068",
   "prevId": "de5622e1-97d1-4f64-9aff-e67cfa21c1e8",
   "version": "7",
   "dialect": "postgresql",
@@ -5249,7 +5249,24 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "release_target_lock_record_release_target_id_index": {
+          "name": "release_target_lock_record_release_target_id_index",
+          "columns": [
+            {
+              "expression": "release_target_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"release_target_lock_record\".\"unlocked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "release_target_lock_record_release_target_id_release_target_id_fk": {
           "name": "release_target_lock_record_release_target_id_release_target_id_fk",

@@ -378,4 +378,74 @@ test.describe("Release Target Lock API", () => {
     );
     expect(unlockResponse.response.status).toBe(400);
   });
+
+  test("should handle concurrent lock requests", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    const prefix = builder.refs.prefix;
+    const resourceName = `${faker.string.alphanumeric(10)}-${prefix}`;
+    const resourceResponse = await api.POST("/v1/resources", {
+      body: {
+        name: resourceName,
+        kind: "service",
+        identifier: resourceName,
+        version: "1.0.0",
+        config: {},
+        workspaceId: workspace.id,
+      },
+    });
+    expect(resourceResponse.response.status).toBe(200);
+    expect(resourceResponse.data).toBeDefined();
+    const resource = resourceResponse.data!;
+
+    await page.waitForTimeout(5_000);
+
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: {
+            resourceId: resource.id,
+          },
+        },
+      },
+    );
+    expect(releaseTargetResponse.response.status).toBe(200);
+    expect(releaseTargetResponse.data).toBeDefined();
+    expect(releaseTargetResponse.data!.length).toBe(1);
+    const releaseTarget = releaseTargetResponse.data!.at(0)!;
+
+    const lockRequest1 = api.POST(
+      "/v1/release-targets/{releaseTargetId}/lock",
+      {
+        params: {
+          path: { releaseTargetId: releaseTarget.id },
+        },
+      },
+    );
+
+    const lockRequest2 = api.POST(
+      "/v1/release-targets/{releaseTargetId}/lock",
+      {
+        params: {
+          path: { releaseTargetId: releaseTarget.id },
+        },
+      },
+    );
+
+    const [lockResponse1, lockResponse2] = await Promise.all([
+      lockRequest1,
+      lockRequest2,
+    ]);
+
+    const statuses = [
+      lockResponse1.response.status,
+      lockResponse2.response.status,
+    ];
+
+    expect(statuses).toContain(200);
+    expect(statuses).toContain(409);
+  });
 });

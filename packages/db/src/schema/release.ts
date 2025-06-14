@@ -137,19 +137,23 @@ export const releaseJob = pgTable("release_job", {
     .references(() => job.id, { onDelete: "cascade" }),
 });
 
-export const releaseTargetLockRecord = pgTable("release_target_lock_record", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  releaseTargetId: uuid("release_target_id")
-    .notNull()
-    .references(() => releaseTarget.id, { onDelete: "cascade" }),
-  lockedAt: timestamp("locked_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  unlockedAt: timestamp("unlocked_at", { withTimezone: true }),
-  lockedBy: uuid("locked_by")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-});
+export const releaseTargetLockRecord = pgTable(
+  "release_target_lock_record",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    releaseTargetId: uuid("release_target_id")
+      .notNull()
+      .references(() => releaseTarget.id, { onDelete: "cascade" }),
+    lockedAt: timestamp("locked_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    unlockedAt: timestamp("unlocked_at", { withTimezone: true }),
+    lockedBy: uuid("locked_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (t) => [uniqueIndex().on(t.releaseTargetId).where(isNull(t.unlockedAt))],
+);
 
 /* Relations */
 
