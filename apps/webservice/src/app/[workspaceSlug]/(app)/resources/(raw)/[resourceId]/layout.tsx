@@ -94,7 +94,7 @@ export default async function Layout(props: {
                   href={`/${params.workspaceSlug}/resources/${params.resourceId}/deployments`}
                   icon={<IconHistory className="size-4" />}
                 >
-                  Deployment History
+                  Release History
                 </SidebarLink>
                 <SidebarLink
                   href={`/${params.workspaceSlug}/resources/${params.resourceId}/visualize`}
