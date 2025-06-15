@@ -13,7 +13,7 @@ export const jobAgent = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => workspace.id),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     type: text("type").notNull(),
     config: json("config").notNull().default("{}").$type<Record<string, any>>(),
