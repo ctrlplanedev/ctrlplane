@@ -20,7 +20,7 @@ export const resourceProvider = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => workspace.id),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
