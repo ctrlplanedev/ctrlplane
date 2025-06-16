@@ -109,11 +109,6 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           and(eq(SCHEMA.releaseTarget.deploymentId, version.deploymentId)),
         );
 
-      for (const row of releaseTargets) {
-        const { version_subquery } = row;
-        console.log("version_subquery", version_subquery);
-      }
-
       return _.chain(releaseTargets)
         .groupBy((row) => row.release_target.id)
         .map((rowsByTarget) => {
