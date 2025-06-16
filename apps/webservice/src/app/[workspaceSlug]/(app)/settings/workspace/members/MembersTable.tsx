@@ -104,8 +104,18 @@ const InviteLinkSection: React.FC<{
       </Select>
 
       <div className="flex items-center space-x-2">
-        <Input readOnly value={link} className="w-96 overflow-ellipsis" />
-        <Button variant="outline" size="icon" onClick={handleCopyClick}>
+        <Input
+          readOnly
+          value={link}
+          className="w-96 overflow-ellipsis"
+          data-testid="invite-link"
+        />
+        <Button
+          data-testid="copy-invite-link"
+          variant="outline"
+          size="icon"
+          onClick={handleCopyClick}
+        >
           {clickedCopy ? (
             <IconCheck className="h-3 w-3 text-green-600" />
           ) : (
@@ -120,12 +130,15 @@ const InviteLinkSection: React.FC<{
 const AddMembersDialog: React.FC<{
   workspace: Workspace;
 }> = ({ workspace }) => {
+  const [open, setOpen] = useState(false);
   const [inviteMode, setInviteMode] = useState<"email" | "link">("link");
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary">Add member</Button>
+        <Button variant="secondary" data-testid="add-member-button">
+          Add member
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -152,6 +165,14 @@ const AddMembersDialog: React.FC<{
           </div>
 
           {inviteMode === "email" && <Button>Invite</Button>}
+
+          <Button
+            data-testid="close-invite-dialog"
+            variant="secondary"
+            onClick={() => setOpen(false)}
+          >
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

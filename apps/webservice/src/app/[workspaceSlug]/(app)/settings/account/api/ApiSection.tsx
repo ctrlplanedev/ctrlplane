@@ -80,7 +80,11 @@ export const CreateApiKey: React.FC = () => {
           </div>
 
           <DialogFooter>
-            <Button type="submit" onClick={() => setKey("")}>
+            <Button
+              data-testid="close-key-dialog"
+              type="submit"
+              onClick={() => setKey("")}
+            >
               Close
             </Button>
           </DialogFooter>

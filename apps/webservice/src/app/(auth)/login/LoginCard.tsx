@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   IconBrandGoogleFilled,
   IconLock,
@@ -48,6 +48,9 @@ export const LoginCard: React.FC<{
     defaultValues: { email: "", password: "" },
   });
 
+  const searchParams = useSearchParams();
+  const acceptToken = searchParams.get("acceptToken");
+
   const [lastEnteredEmail, setLastEnteredEmail] = useLocalStorage(
     "lastEnteredEmail",
     "",
@@ -70,10 +73,9 @@ export const LoginCard: React.FC<{
         ...data,
         redirect: false,
       }).then((response) => {
-        if (response?.error) {
-          throw new Error(response.error);
-        }
-        router.push("/");
+        if (response?.error) throw new Error(response.error);
+        const redirectUrl = acceptToken ? `/join/${acceptToken}` : "/";
+        router.push(redirectUrl);
       });
     } catch {
       form.setError("root", {
@@ -216,8 +218,9 @@ export const LoginCard: React.FC<{
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Link
-                href="/sign-up"
+                href={`/sign-up${acceptToken ? `?acceptToken=${acceptToken}` : ""}`}
                 className="font-medium text-primary hover:text-primary/80"
+                data-testid="sign-up-redirect-link"
               >
                 Sign up for free
               </Link>

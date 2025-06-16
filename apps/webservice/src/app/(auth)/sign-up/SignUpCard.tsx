@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { IconLockAccess, IconMail, IconUser } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
@@ -34,6 +34,8 @@ import { api } from "~/trpc/react";
 
 export const SignUpCard: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const acceptToken = searchParams.get("acceptToken");
   const [loading, setLoading] = useState(false);
   const signUp = api.user.auth.signUp.useMutation();
   const form = useForm({
@@ -71,6 +73,10 @@ export const SignUpCard: React.FC = () => {
           redirect: false,
         }).then((response) => {
           if (response?.error) throw new Error(response.error);
+          if (acceptToken) {
+            router.push(`/join/${acceptToken}`);
+            return;
+          }
           router.refresh();
         }),
       )

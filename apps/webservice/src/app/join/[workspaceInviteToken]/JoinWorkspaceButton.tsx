@@ -19,7 +19,11 @@ export const JoinWorkspaceButton: React.FC<{
     router.push(urls.workspace(workspace.slug).baseUrl());
   };
   return (
-    <Button className="w-full" onClick={handleJoinWorkspace}>
+    <Button
+      className="w-full"
+      onClick={handleJoinWorkspace}
+      data-testid="accept-invite-button"
+    >
       Join Workspace
     </Button>
   );

@@ -73,7 +73,10 @@ export default function WorkspaceCreate() {
     <>
       <div className="flex justify-end p-6">
         <DropdownMenu>
-          <DropdownMenuTrigger className="ml-auto rounded-md p-2 px-4 text-left text-sm hover:bg-neutral-800/70">
+          <DropdownMenuTrigger
+            className="ml-auto rounded-md p-2 px-4 text-left text-sm hover:bg-neutral-800/70"
+            data-testid="user-email"
+          >
             <div className="text-muted-foreground">Logged in as:</div>
             <div>{session.user.email}</div>
           </DropdownMenuTrigger>
@@ -86,6 +89,7 @@ export default function WorkspaceCreate() {
             <DropdownMenuItem
               onClick={() => signOut()}
               className="text-muted-foreground"
+              data-testid="logout-button"
             >
               Log out
             </DropdownMenuItem>

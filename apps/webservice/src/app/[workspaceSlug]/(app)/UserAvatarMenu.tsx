@@ -42,7 +42,10 @@ export const UserAvatarMenu = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="size-7 cursor-pointer transition-all hover:ring-2 hover:ring-primary/20">
+        <Avatar
+          className="size-7 cursor-pointer transition-all hover:ring-2 hover:ring-primary/20"
+          data-testid="user-avatar"
+        >
           <AvatarImage
             src={viewer.image ?? undefined}
             alt={viewer.name ?? viewer.email}
@@ -75,6 +78,7 @@ export const UserAvatarMenu = ({
         <DropdownMenuItem
           className="cursor-pointer text-destructive focus:text-destructive"
           onClick={handleSignOut}
+          data-testid="logout-button"
         >
           <IconLogout className="mr-2 h-4 w-4" />
           <span>Log out</span>
