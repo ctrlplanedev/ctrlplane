@@ -33,9 +33,9 @@ kindDatabase: &kindDatabase
   kind: "{{ prefix }}-database"
 
 system:
-  name: "{{ prefix }}-deployment-version"
-  slug: "{{ prefix }}-deployment-version"
-  description: System for testing deployment versions
+  name: "{{ prefix }}-system"
+  slug: "{{ prefix }}-system"
+  description: System for testing job flow
 
 resources:
   - name: "{{ prefix }}-qa-service-resource"
@@ -55,7 +55,7 @@ resources:
     metadata: *metaDev
 
   - name: "{{ prefix }}-qa-database-resource"
-    <<: *kindService
+    <<: *kindDatabase
     identifier: "{{ prefix }}-qa-database-resource"
     version: "1.0.0"
     config:
@@ -63,7 +63,7 @@ resources:
     metadata: *metaQa
 
   - name: "{{ prefix }}-dev-database-resource"
-    <<: *kindService
+    <<: *kindDatabase
     identifier: "{{ prefix }}-dev-database-resource"
     version: "1.0.0"
     config:
