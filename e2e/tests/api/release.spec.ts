@@ -581,7 +581,106 @@ test.describe("Release Creation", () => {
     expect(variable.value).toBe("test-a");
   });
 
-  test("should not create a release when an existing resource is updated", async ({
+  test("should create a release whena resource is updated which affects its release targets", async ({
+    api,
+    page,
+    workspace,
+  }) => {
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
+    const deploymentName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const deploymentCreateResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: deploymentName,
+        slug: deploymentName,
+        systemId: builder.refs.system.id,
+        resourceSelector: {
+          type: "metadata",
+          key: "e2e-test",
+          operator: "equals",
+          value: "true",
+        },
+      },
+    });
+
+    expect(deploymentCreateResponse.response.status).toBe(201);
+    const deploymentId = deploymentCreateResponse.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+
+    const versionResponse = await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId,
+        tag: versionTag,
+      },
+    });
+    expect(versionResponse.response.status).toBe(201);
+
+    const resourceName = `${systemPrefix}-${faker.string.alphanumeric(10)}`;
+    const resourceCreateResponse = await api.POST("/v1/resources", {
+      body: {
+        name: resourceName,
+        kind: "service",
+        identifier: resourceName,
+        version: "1.0.0",
+        config: {},
+        metadata: {
+          "e2e-test": "false",
+        },
+        variables: [],
+        workspaceId: workspace.id,
+      },
+    });
+
+    expect(resourceCreateResponse.response.status).toBe(200);
+    const resourceId = resourceCreateResponse.data?.id ?? "";
+
+    await page.waitForTimeout(1_000);
+
+    const resourceUpdateResponse = await api.PATCH(
+      "/v1/resources/{resourceId}",
+      {
+        params: { path: { resourceId } },
+        body: { metadata: { "e2e-test": "true" } },
+      },
+    );
+    expect(resourceUpdateResponse.response.status).toBe(200);
+
+    await page.waitForTimeout(24_000);
+
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: { path: { resourceId } },
+      },
+    );
+    expect(releaseTargetResponse.response.status).toBe(200);
+    const releaseTargets = releaseTargetResponse.data ?? [];
+    const releaseTarget = releaseTargets.find(
+      (rt) => rt.deployment.id === deploymentId,
+    );
+    expect(releaseTarget).toBeDefined();
+
+    const releaseResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: { releaseTargetId: releaseTarget?.id ?? "" },
+        },
+      },
+    );
+
+    expect(releaseResponse.response.status).toBe(200);
+    const releases = releaseResponse.data ?? [];
+    for (const release of releases) {
+      console.log(release);
+    }
+    expect(releases.length).toBe(1);
+
+    const latestRelease = releases.at(0)!;
+    expect(latestRelease.version.tag).toBe(versionTag);
+  });
+
+  test("should not create a release when an existing resource is updated but the updates are not relevant to the deployment", async ({
     api,
     page,
     workspace,
