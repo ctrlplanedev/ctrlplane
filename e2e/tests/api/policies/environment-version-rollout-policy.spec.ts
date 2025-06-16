@@ -1,12 +1,7 @@
 import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
-import {
-  addMinutes,
-  differenceInMilliseconds,
-  differenceInMinutes,
-  startOfMinute,
-} from "date-fns";
+import { addMinutes, differenceInMilliseconds, startOfMinute } from "date-fns";
 
 import { cleanupImportedEntities, EntitiesBuilder } from "../../../api";
 import { test } from "../../fixtures";
@@ -22,10 +17,10 @@ test.describe("Environment Version Rollout Policy", () => {
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
 
-    await builder.upsertSystem();
-    await builder.upsertResources();
-    await builder.upsertEnvironments();
-    await builder.upsertDeployments();
+    await builder.upsertSystemFixture();
+    await builder.upsertResourcesFixtures();
+    await builder.upsertEnvironmentFixtures();
+    await builder.upsertDeploymentFixtures();
 
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   });

@@ -14,39 +14,41 @@ test.describe("trigger new jobs", () => {
   test.beforeEach(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
 
-    expect((await builder.upsertSystem()).fetchResponse.response.ok).toBe(true);
+    expect(
+      (await builder.upsertSystemFixture()).fetchResponse.response.ok,
+    ).toBe(true);
 
-    (await builder.upsertEnvironments()).forEach((fr) => {
+    (await builder.upsertEnvironmentFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
-    (await builder.upsertDeployments()).forEach((fr) => {
+    (await builder.upsertDeploymentFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
   });
 
   test.afterEach(async ({ api, workspace }) => {
-    //await cleanupImportedEntities(api, builder.refs, workspace.id);
+    await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
   test("trigger with initial deployment versions", async ({ api }) => {
-    (await builder.upsertResources()).forEach((fr) => {
+    (await builder.upsertResourcesFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
-    (await builder.upsertAgents()).forEach((fr) => {
+    (await builder.upsertAgentFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
     const agentId = builder.refs.oneAgent().id;
 
     // Attach agent to deployment:
-    (await builder.upsertDeployments(agentId)).forEach((fr) => {
+    (await builder.upsertDeploymentFixtures(agentId)).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
     // triggers job
-    (await builder.upsertDeploymentVersions()).forEach((fr) => {
+    (await builder.upsertDeploymentVersionFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -54,22 +56,22 @@ test.describe("trigger new jobs", () => {
   });
 
   test("trigger with initial agent attachment", async ({ api }) => {
-    (await builder.upsertResources()).forEach((fr) => {
+    (await builder.upsertResourcesFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
-    (await builder.upsertAgents()).forEach((fr) => {
+    (await builder.upsertAgentFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
     const agentId = builder.refs.oneAgent().id;
 
-    (await builder.upsertDeploymentVersions()).forEach((fr) => {
+    (await builder.upsertDeploymentVersionFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
     // Attach agent to deployment -> triggers job
-    (await builder.upsertDeployments(agentId)).forEach((fr) => {
+    (await builder.upsertDeploymentFixtures(agentId)).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -77,23 +79,23 @@ test.describe("trigger new jobs", () => {
   });
 
   test("trigger with initial resources", async ({ api }) => {
-    (await builder.upsertAgents()).forEach((fr) => {
+    (await builder.upsertAgentFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
     const agentId = builder.refs.oneAgent().id;
 
-    (await builder.upsertDeploymentVersions()).forEach((fr) => {
+    (await builder.upsertDeploymentVersionFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
     // Attach agent to deployment:
-    (await builder.upsertDeployments(agentId)).forEach((fr) => {
+    (await builder.upsertDeploymentFixtures(agentId)).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
     // triggers job
-    (await builder.upsertResources()).forEach((fr) => {
+    (await builder.upsertResourcesFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -104,7 +106,7 @@ test.describe("trigger new jobs", () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
     const resourcesPerDeployment = 2;
-    await builder.cloneDeploymentVersionAndCreate(
+    await builder.createDeploymentVersionFixtureClone(
       builder.refs.oneDeployment().id,
     );
     // should only create jobs for each resource on a _single_ deployment
@@ -116,7 +118,7 @@ test.describe("trigger new jobs", () => {
 
     // new resources will be the same as existing resource count, since each existing will be cloned
     const newResourceCount = builder.refs.resources.length;
-    (await builder.cloneFixtureResourcesAndCreate()).forEach((fr) => {
+    (await builder.createResourceFixtureClones()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -126,7 +128,7 @@ test.describe("trigger new jobs", () => {
   test("trigger NO jobs for new deployments WITHOUT agentId; deployment has resources", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
-    await builder.cloneDeploymentsAndCreate(/* NO agentId */);
+    await builder.createDeploymentFixtureClones(/* NO agentId */);
 
     await expectJobQueueEmpty(builder.api, agentId);
   });
@@ -134,7 +136,7 @@ test.describe("trigger new jobs", () => {
   test("trigger new jobs for new deployments WITH agentId; deployment has resources", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
-    await builder.cloneDeploymentsAndCreate(agentId);
+    await builder.createDeploymentFixtureClones(agentId);
 
     await expectJobQueueCount(builder.api, agentId, 4);
   });
@@ -142,13 +144,13 @@ test.describe("trigger new jobs", () => {
   test("trigger NO jobs for switching agents on deployments", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
-    const newAgentId = (await builder.cloneAgentsAndCreate())[0].fetchResponse
-      .data!.id;
+    const newAgentId = (await builder.createAgentFixtureClones())[0]
+      .fetchResponse.data!.id;
 
     expect(newAgentId).not.toBe(agentId);
 
     // Attach NEW agent to deployment:
-    (await builder.upsertDeployments(newAgentId)).forEach((fr) => {
+    (await builder.upsertDeploymentFixtures(newAgentId)).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -160,7 +162,7 @@ test.describe("trigger new jobs", () => {
   test("trigger NO jobs with upserting identical resources", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
 
-    (await builder.upsertResources()).forEach((fr) => {
+    (await builder.upsertResourcesFixtures()).forEach((fr) => {
       expect(fr.fetchResponse.response.ok).toBe(true);
     });
 
@@ -273,23 +275,23 @@ async function clearJobQueue(
 async function initialJobsTriggerHelper(
   builder: EntitiesBuilder,
 ): Promise<string> {
-  (await builder.upsertAgents()).forEach((fr) => {
+  (await builder.upsertAgentFixtures()).forEach((fr) => {
     expect(fr.fetchResponse.response.ok).toBe(true);
   });
 
   const agentId = builder.refs.oneAgent().id;
 
-  (await builder.upsertDeploymentVersions()).forEach((fr) => {
+  (await builder.upsertDeploymentVersionFixtures()).forEach((fr) => {
     expect(fr.fetchResponse.response.ok).toBe(true);
   });
 
   // Attach agent to deployment:
-  (await builder.upsertDeployments(agentId)).forEach((fr) => {
+  (await builder.upsertDeploymentFixtures(agentId)).forEach((fr) => {
     expect(fr.fetchResponse.response.ok).toBe(true);
   });
 
   // triggers job
-  (await builder.upsertResources()).forEach((fr) => {
+  (await builder.upsertResourcesFixtures()).forEach((fr) => {
     expect(fr.fetchResponse.response.ok).toBe(true);
   });
 

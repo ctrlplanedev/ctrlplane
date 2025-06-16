@@ -10,8 +10,8 @@ test.describe("Resource Provider API", () => {
   let builder: EntitiesBuilder;
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.upsertSystem();
-    await builder.upsertResources();
+    await builder.upsertSystemFixture();
+    await builder.upsertResourcesFixtures();
   });
 
   test("basic resource grouping", async ({ api, workspace }) => {

@@ -11,12 +11,12 @@ test.describe("YAML Entity Import", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.upsertSystem();
-    await builder.upsertResources();
-    await builder.upsertEnvironments();
-    await builder.upsertDeployments();
-    await builder.createDeploymentVariables();
-    await builder.upsertPolicies();
+    await builder.upsertSystemFixture();
+    await builder.upsertResourcesFixtures();
+    await builder.upsertEnvironmentFixtures();
+    await builder.upsertDeploymentFixtures();
+    await builder.upsertDeploymentVariableFixtures();
+    await builder.upsertPolicyFixtures();
 
     // Allow time for resources to be processed
     await new Promise((resolve) => setTimeout(resolve, 5000));

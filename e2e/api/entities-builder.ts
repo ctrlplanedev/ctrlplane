@@ -49,7 +49,7 @@ export class EntitiesBuilder {
     this.fixtures = importEntityFixtures(yamlFilePath, this.refs.prefix);
   }
 
-  async upsertSystem(): Promise<FetchResultInfo> {
+  async upsertSystemFixture(): Promise<FetchResultInfo> {
     console.log(`Upserting system: ${this.fixtures.system.name}`);
 
     const workspaceId = this.workspace.id;
@@ -76,7 +76,7 @@ export class EntitiesBuilder {
     return { requestBody, fetchResponse };
   }
 
-  async upsertResources(): Promise<FetchResultInfo[]> {
+  async upsertResourcesFixtures(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.resources || this.fixtures.resources.length === 0) {
       throw new Error("No resources defined in YAML file");
     }
@@ -117,7 +117,7 @@ export class EntitiesBuilder {
    * Create near-identical copies of the fixtures from the yaml file but they
    * should have distinct names and identifiers (hence they would be new copies).
    */
-  async cloneFixtureResourcesAndCreate(): Promise<FetchResultInfo[]> {
+  async createResourceFixtureClones(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.resources || this.fixtures.resources.length === 0) {
       throw new Error("No resources defined in YAML file");
     }
@@ -163,7 +163,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async upsertEnvironments(): Promise<FetchResultInfo[]> {
+  async upsertEnvironmentFixtures(): Promise<FetchResultInfo[]> {
     if (
       !this.fixtures.environments ||
       this.fixtures.environments.length === 0
@@ -208,7 +208,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async upsertDeployments(agentId?: string): Promise<FetchResultInfo[]> {
+  async upsertDeploymentFixtures(agentId?: string): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
@@ -245,7 +245,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async cloneDeploymentsAndCreate(
+  async createDeploymentFixtureClones(
     agentId?: string,
   ): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
@@ -292,7 +292,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async upsertDeploymentVersions(): Promise<FetchResultInfo[]> {
+  async upsertDeploymentVersionFixtures(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
@@ -335,7 +335,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async cloneDeploymentVersionAndCreate(
+  async createDeploymentVersionFixtureClone(
     deploymentId: string,
   ): Promise<FetchResultInfo> {
     const deployment = this.refs.deployments.find((d) => d.id === deploymentId);
@@ -367,7 +367,7 @@ export class EntitiesBuilder {
     };
   }
 
-  async upsertDeploymentVariables(): Promise<FetchResultInfo[]> {
+  async upsertDeploymentVariableFixtures(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.deployments || this.fixtures.deployments.length === 0) {
       throw new Error("No deployments defined in YAML file");
     }
@@ -432,7 +432,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async upsertPolicies(): Promise<FetchResultInfo[]> {
+  async upsertPolicyFixtures(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.policies || this.fixtures.policies.length === 0) {
       throw new Error("No policies defined in YAML file");
     }
@@ -463,7 +463,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async upsertAgents(): Promise<FetchResultInfo[]> {
+  async upsertAgentFixtures(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.agents || this.fixtures.agents.length === 0) {
       throw new Error("No agents defined in YAML file");
     }
@@ -494,7 +494,7 @@ export class EntitiesBuilder {
     return results;
   }
 
-  async cloneAgentsAndCreate(): Promise<FetchResultInfo[]> {
+  async createAgentFixtureClones(): Promise<FetchResultInfo[]> {
     if (!this.fixtures.agents || this.fixtures.agents.length === 0) {
       throw new Error("No agents defined in YAML file");
     }

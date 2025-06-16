@@ -15,8 +15,8 @@ test.describe("Resource Relationships API", () => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
     prefix = builder.refs.prefix;
 
-    await builder.upsertSystem();
-    await builder.upsertResources();
+    await builder.upsertSystemFixture();
+    await builder.upsertResourcesFixtures();
   });
 
   test.afterAll(async ({ api, workspace }) => {
