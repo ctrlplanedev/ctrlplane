@@ -6,10 +6,15 @@ import * as schema from "@ctrlplane/db/schema";
 
 import type { PreValidationRule } from "../types";
 
+type ReleaseTargetLockRuleOptions = {
+  releaseTargetId: string;
+  evaluationRequestedById?: string;
+};
+
 export class ReleaseTargetLockRule implements PreValidationRule {
   public readonly name = "ReleaseTargetLockRule";
 
-  constructor(private readonly releaseTargetId: string) {}
+  constructor(private readonly opts: ReleaseTargetLockRuleOptions) {}
 
   protected getCurrentTime() {
     return new Date();
@@ -22,7 +27,7 @@ export class ReleaseTargetLockRule implements PreValidationRule {
       .where(
         eq(
           schema.releaseTargetLockRecord.releaseTargetId,
-          this.releaseTargetId,
+          this.opts.releaseTargetId,
         ),
       )
       .orderBy(desc(schema.releaseTargetLockRecord.lockedAt))
@@ -39,9 +44,13 @@ export class ReleaseTargetLockRule implements PreValidationRule {
     const isUnlocked = unlockedAt != null && isAfter(now, unlockedAt);
     if (isUnlocked) return { passing: true };
 
+    const isLockedByCurrentUser =
+      latestLockRecord.lockedBy === this.opts.evaluationRequestedById;
+    if (isLockedByCurrentUser) return { passing: true };
+
     return {
       passing: false,
-      rejectionReason: `Release target ${this.releaseTargetId} is locked.`,
+      rejectionReason: `Release target ${this.opts.releaseTargetId} is locked.`,
     };
   }
 }

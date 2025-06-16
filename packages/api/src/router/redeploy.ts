@@ -6,7 +6,7 @@ import { z } from "zod";
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { Channel, dispatchQueueJob, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../trpc";
@@ -57,11 +57,7 @@ const handleDeployment = async (
     return;
   }
 
-  for (const releaseTarget of releaseTargets)
-    getQueue(Channel.EvaluateReleaseTarget).add(releaseTarget.id, {
-      ...releaseTarget,
-      skipDuplicateCheck: true,
-    });
+  await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
 };
 
 export const redeployProcedure = protectedProcedure

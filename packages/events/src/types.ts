@@ -42,6 +42,7 @@ export type EvaluateReleaseTargetJob = {
   resourceId: string;
   deploymentId: string;
   skipDuplicateCheck?: boolean;
+  evaluationRequestedById?: string;
 };
 
 export type ChannelMap = {

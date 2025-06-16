@@ -11,7 +11,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { dispatchQueueJob } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
@@ -214,18 +214,13 @@ export const updateJob = async (
 
   const releaseTarget = await getReleaseTarget(db, jobId);
   if (releaseTarget == null) return updatedJob;
-  await getQueue(Channel.EvaluateReleaseTarget).add(
-    `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`,
-    releaseTarget,
-  );
+  await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
 
   const releaseTargetsInConcurrencyGroup =
     await getReleaseTargetsInConcurrencyGroup(db, releaseTarget);
-  for (const releaseTarget of releaseTargetsInConcurrencyGroup)
-    await getQueue(Channel.EvaluateReleaseTarget).add(
-      `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`,
-      releaseTarget,
-    );
+  await dispatchQueueJob()
+    .toEvaluate()
+    .releaseTargets(releaseTargetsInConcurrencyGroup);
 
   return updatedJob;
 };

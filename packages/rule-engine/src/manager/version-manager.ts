@@ -18,15 +18,19 @@ import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 import type { Version } from "../manager/version-rule-engine.js";
 import type { FilterRule, Policy, PreValidationRule } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
+import type { GetRuleOptions } from "./version-manager-rules.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getRules } from "./version-manager-rules.js";
 
 type VersionEvaluateOptions = {
-  rules?: (p: Policy | null) => Array<FilterRule<Version> | PreValidationRule>;
+  rules?: (
+    opts: GetRuleOptions,
+  ) => Promise<Array<FilterRule<Version> | PreValidationRule>>;
   versions?: Version[];
   policy?: Policy;
+  evaluationRequestedById?: string;
 };
 
 export class VersionReleaseManager implements ReleaseManager {
@@ -181,7 +185,11 @@ export class VersionReleaseManager implements ReleaseManager {
   async evaluate(options?: VersionEvaluateOptions) {
     const policy = options?.policy ?? (await this.getPolicy());
     const ruleGetter = options?.rules ?? getRules;
-    const rules = await ruleGetter(policy, this.releaseTarget.id);
+    const rules = await ruleGetter({
+      policy,
+      releaseTargetId: this.releaseTarget.id,
+      evaluationRequestedById: options?.evaluationRequestedById,
+    });
 
     const engine = new VersionRuleEngine(rules);
     const versions =

@@ -15,7 +15,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { Channel, dispatchQueueJob, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { jobCondition } from "@ctrlplane/validators/jobs";
 import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
@@ -387,13 +387,7 @@ export const versionRouter = createTRPCRouter({
         );
 
       const targets = rows.map((row) => row.release_target);
-      if (targets.length > 0)
-        await getQueue(Channel.EvaluateReleaseTarget).addBulk(
-          targets.map((rt) => ({
-            name: `${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`,
-            data: rt,
-          })),
-        );
+      await dispatchQueueJob().toEvaluate().releaseTargets(targets);
 
       return record;
     }),

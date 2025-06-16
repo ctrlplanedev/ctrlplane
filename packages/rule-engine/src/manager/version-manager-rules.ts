@@ -56,16 +56,25 @@ export const getConcurrencyRule = (policy: Policy | null) => {
   ];
 };
 
+export type GetRuleOptions = {
+  policy: Policy | null;
+  releaseTargetId: string;
+  evaluationRequestedById?: string;
+};
+
 export const getRules = async (
-  policy: Policy | null,
-  releaseTargetId: string,
+  opts: GetRuleOptions,
 ): Promise<Array<FilterRule<Version> | PreValidationRule>> => {
+  const { policy, releaseTargetId, evaluationRequestedById } = opts;
   const environmentVersionRolloutRule = await getEnvironmentVersionRolloutRule(
     policy,
     releaseTargetId,
   );
   return [
-    new ReleaseTargetLockRule(releaseTargetId),
+    new ReleaseTargetLockRule({
+      releaseTargetId,
+      evaluationRequestedById,
+    }),
     new ReleaseTargetConcurrencyRule(releaseTargetId),
     ...getConcurrencyRule(policy),
     ...getVersionApprovalRules(policy),

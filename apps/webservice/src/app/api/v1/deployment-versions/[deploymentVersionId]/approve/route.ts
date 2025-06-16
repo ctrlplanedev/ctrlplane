@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { dispatchQueueJob } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -64,11 +64,9 @@ export const POST = request()
         eq(schema.releaseTarget.deploymentId, deploymentVersion.deploymentId),
       );
 
-    for (const releaseTarget of affectedReleaseTargets)
-      await getQueue(Channel.EvaluateReleaseTarget).add(
-        `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`,
-        releaseTarget,
-      );
+    await dispatchQueueJob()
+      .toEvaluate()
+      .releaseTargets(affectedReleaseTargets);
 
     return NextResponse.json(record);
   });

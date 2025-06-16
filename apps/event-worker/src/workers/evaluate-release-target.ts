@@ -29,7 +29,12 @@ const log = logger.child({ module: "evaluate-release-target" });
  */
 const handleVersionRelease = withSpan(
   "handleVersionRelease",
-  async (span, tx: Tx, releaseTarget: any) => {
+  async (
+    span,
+    tx: Tx,
+    releaseTarget: any,
+    evaluationRequestedById?: string,
+  ) => {
     const workspaceId = releaseTarget.resource.workspaceId;
 
     span.setAttribute("releaseTarget.id", String(releaseTarget.id));
@@ -40,7 +45,7 @@ const handleVersionRelease = withSpan(
       workspaceId,
     });
 
-    const { chosenCandidate } = await vrm.evaluate();
+    const { chosenCandidate } = await vrm.evaluate({ evaluationRequestedById });
 
     if (!chosenCandidate) return null;
 
@@ -88,6 +93,7 @@ export const evaluateReleaseTargetWorker = createWorker(
   withSpan("evaluateReleaseTarget", async (span, job) => {
     const data = job.data;
     const skipDuplicateCheck = data.skipDuplicateCheck ?? false;
+    const { evaluationRequestedById } = data;
 
     span.setAttribute("resource.id", data.resourceId);
     span.setAttribute("environment.id", data.environmentId);
@@ -137,7 +143,7 @@ export const evaluateReleaseTargetWorker = createWorker(
           });
 
         const [versionRelease, variableRelease] = await Promise.all([
-          handleVersionRelease(tx, releaseTarget),
+          handleVersionRelease(tx, releaseTarget, evaluationRequestedById),
           handleVariableRelease(tx, releaseTarget),
         ]);
 
