@@ -1,5 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
+import _ from "lodash";
 
 import { Channel, getQueue } from "./index.js";
 
@@ -96,6 +97,14 @@ const dispatchComputeWorkspacePolicyTargetsJobs = async (
   releaseTargetsToEvaluate?: ReleaseTargetIdentifier[],
 ) => {
   const q = getQueue(Channel.ComputeWorkspacePolicyTargets);
+  const waiting = await q.getWaiting();
+  const isAlreadyQueued = waiting.some(
+    (job) =>
+      job.data.workspaceId === workspaceId &&
+      _.isEqual(job.data.releaseTargetsToEvaluate, releaseTargetsToEvaluate) &&
+      _.isEqual(job.data.processedPolicyTargetIds, processedPolicyTargetIds),
+  );
+  if (isAlreadyQueued) return;
   await q.add(workspaceId, {
     workspaceId,
     processedPolicyTargetIds,
