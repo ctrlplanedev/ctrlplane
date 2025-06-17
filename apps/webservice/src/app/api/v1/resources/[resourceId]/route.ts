@@ -154,7 +154,7 @@ export const PATCH = request()
       });
 
       const all = await upsertResources(db, resource.workspaceId, [
-        _.merge(resource, body),
+        _.merge(_.cloneDeep(resource), body),
       ]);
       const res = all.at(0);
 
