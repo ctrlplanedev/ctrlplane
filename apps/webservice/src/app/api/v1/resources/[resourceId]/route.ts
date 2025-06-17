@@ -153,8 +153,15 @@ export const PATCH = request()
         where: eq(schema.resourceVariable.resourceId, resource.id),
       });
 
+      const resourceCopy = _.cloneDeep(resource);
+      const resourceCopyWithMetadata = {
+        ...resourceCopy,
+        metadata: Object.fromEntries(
+          resourceCopy.metadata.map((m) => [m.key, m.value]),
+        ),
+      };
       const all = await upsertResources(db, resource.workspaceId, [
-        _.merge(_.cloneDeep(resource), body),
+        _.merge(resourceCopyWithMetadata, body),
       ]);
       const res = all.at(0);
 
