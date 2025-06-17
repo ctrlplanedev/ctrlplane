@@ -81,17 +81,26 @@ const dispatchComputePolicyTargetReleaseTargetSelectorJobs = async (
 
 const dispatchComputeSystemReleaseTargetsJobs = async (
   system: schema.System,
-  redeployAll?: boolean,
-  processedPolicyTargetIds?: string[],
 ) => {
   const { id } = system;
   const q = getQueue(Channel.ComputeSystemsReleaseTargets);
   const waiting = await q.getWaiting();
-  const isAlreadyQueued = waiting.some(
-    (job) => job.data.id === id && job.data.redeployAll === redeployAll,
-  );
+  const isAlreadyQueued = waiting.some((job) => job.data.id === id);
   if (isAlreadyQueued) return;
-  await q.add(id, { id, redeployAll, processedPolicyTargetIds });
+  await q.add(id, { id });
+};
+
+const dispatchComputeWorkspacePolicyTargetsJobs = async (
+  workspaceId: string,
+  processedPolicyTargetIds?: string[],
+  releaseTargetsToEvaluate?: ReleaseTargetIdentifier[],
+) => {
+  const q = getQueue(Channel.ComputeWorkspacePolicyTargets);
+  await q.add(workspaceId, {
+    workspaceId,
+    processedPolicyTargetIds,
+    releaseTargetsToEvaluate,
+  });
 };
 
 const toEvaluate = () => ({
@@ -118,14 +127,17 @@ const toCompute = () => ({
       dispatchComputePolicyTargetReleaseTargetSelectorJobs(policyTarget),
   }),
   system: (system: schema.System) => ({
-    releaseTargets: (
-      redeployAll?: boolean,
-      processedPolicyTargetIds?: string[],
-    ) =>
-      dispatchComputeSystemReleaseTargetsJobs(
-        system,
-        redeployAll,
-        processedPolicyTargetIds,
+    releaseTargets: () => dispatchComputeSystemReleaseTargetsJobs(system),
+  }),
+  workspace: (workspaceId: string) => ({
+    policyTargets: (opts?: {
+      processedPolicyTargetIds?: string[];
+      releaseTargetsToEvaluate?: ReleaseTargetIdentifier[];
+    }) =>
+      dispatchComputeWorkspacePolicyTargetsJobs(
+        workspaceId,
+        opts?.processedPolicyTargetIds,
+        opts?.releaseTargetsToEvaluate,
       ),
   }),
 });

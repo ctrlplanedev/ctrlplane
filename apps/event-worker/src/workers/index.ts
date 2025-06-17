@@ -7,6 +7,7 @@ import { computeDeploymentResourceSelectorWorkerEvent } from "./compute-deployme
 import { computeEnvironmentResourceSelectorWorkerEvent } from "./compute-environment-resource-selector.js";
 import { computePolicyTargetReleaseTargetSelectorWorkerEvent } from "./compute-policy-target-release-target-selector.js";
 import { computeSystemsReleaseTargetsWorker } from "./compute-systems-release-targets.js";
+import { computeWorkspacePolicyTargetsWorker } from "./compute-workspace-policy-targets.js";
 import { deleteDeploymentWorker } from "./delete-deployment.js";
 import { deleteEnvironmentWorker } from "./delete-environment.js";
 import { deleteResourceWorker } from "./delete-resource.js";
@@ -59,6 +60,6 @@ export const workers: Workers<keyof ChannelMap> = {
     computeDeploymentResourceSelectorWorkerEvent,
   [Channel.ComputePolicyTargetReleaseTargetSelector]:
     computePolicyTargetReleaseTargetSelectorWorkerEvent,
-
+  [Channel.ComputeWorkspacePolicyTargets]: computeWorkspacePolicyTargetsWorker,
   [Channel.ComputeSystemsReleaseTargets]: computeSystemsReleaseTargetsWorker,
 };

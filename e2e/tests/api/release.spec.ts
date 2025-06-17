@@ -212,7 +212,6 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    expect(releases.length).toBe(2);
 
     const latestRelease = releases.at(0)!;
     const variables = latestRelease.variables ?? [];

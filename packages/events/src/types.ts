@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 export enum Channel {
@@ -34,6 +35,7 @@ export enum Channel {
   ComputeSystemsReleaseTargets = "compute-systems-release-targets",
   ComputeEnvironmentResourceSelector = "compute-environment-resource-selector",
   ComputeDeploymentResourceSelector = "compute-deployment-resource-selector",
+  ComputeWorkspacePolicyTargets = "compute-workspace-policy-targets",
   ComputePolicyTargetReleaseTargetSelector = "compute-policy-target-release-target-selector",
 }
 
@@ -76,9 +78,10 @@ export type ChannelMap = {
   [Channel.ComputeEnvironmentResourceSelector]: { id: string };
   [Channel.ComputeDeploymentResourceSelector]: { id: string };
   [Channel.ComputePolicyTargetReleaseTargetSelector]: { id: string };
-  [Channel.ComputeSystemsReleaseTargets]: {
-    id: string;
-    redeployAll?: boolean;
+  [Channel.ComputeWorkspacePolicyTargets]: {
+    workspaceId: string;
     processedPolicyTargetIds?: string[];
+    releaseTargetsToEvaluate?: ReleaseTargetIdentifier[];
   };
+  [Channel.ComputeSystemsReleaseTargets]: { id: string };
 };
