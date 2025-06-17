@@ -6,6 +6,7 @@ import {
   IconHistory,
   IconLock,
   IconSettings,
+  IconShieldCheck,
   IconTopologyComplex,
   IconVariable,
 } from "@tabler/icons-react";
@@ -116,6 +117,12 @@ export default async function Layout(props: {
                   icon={<IconSettings className="size-4" />}
                 >
                   Properties
+                </SidebarLink>
+                <SidebarLink
+                  href={resourcePageUrls.policies()}
+                  icon={<IconShieldCheck className="size-4" />}
+                >
+                  Policies
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
