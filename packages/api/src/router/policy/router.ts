@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, asc, desc, eq, ilike, isNull, takeFirst } from "@ctrlplane/db";
+import { and, asc, desc, eq, ilike, isNull, takeFirst, inArray } from "@ctrlplane/db";
 import { createPolicy, policy, updatePolicy } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -98,16 +98,43 @@ export const policyRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Verify resource exists and get workspace info
       const resource = await ctx.db.query.resource.findFirst({
         where: and(eq(schema.resource.id, input.resourceId), isNull(schema.resource.deletedAt)),
       });
 
       if (!resource) return [];
 
-      // Get all policies in the workspace with their targets
-      const allPolicies = await ctx.db.query.policy.findMany({
-        where: eq(schema.policy.workspaceId, resource.workspaceId),
+      const policyIds = await ctx.db
+        .selectDistinct({
+          policyId: schema.policy.id,
+        })
+        .from(schema.policy)
+        .innerJoin(
+          schema.policyTarget,
+          eq(schema.policy.id, schema.policyTarget.policyId)
+        )
+        .innerJoin(
+          schema.computedPolicyTargetReleaseTarget,
+          eq(schema.policyTarget.id, schema.computedPolicyTargetReleaseTarget.policyTargetId)
+        )
+        .innerJoin(
+          schema.releaseTarget,
+          eq(schema.computedPolicyTargetReleaseTarget.releaseTargetId, schema.releaseTarget.id)
+        )
+        .where(
+          and(
+            eq(schema.releaseTarget.resourceId, input.resourceId),
+            eq(schema.policy.workspaceId, resource.workspaceId)
+          )
+        );
+
+      if (policyIds.length === 0) return [];
+
+      const policies = await ctx.db.query.policy.findMany({
+        where: and(
+          eq(schema.policy.workspaceId, resource.workspaceId),
+          inArray(schema.policy.id, policyIds.map(p => p.policyId))
+        ),
         with: {
           targets: true,
           denyWindows: true,
@@ -118,41 +145,10 @@ export const policyRouter = createTRPCRouter({
           concurrency: true,
           environmentVersionRollout: true,
         },
+        orderBy: [desc(schema.policy.priority), asc(schema.policy.name)],
       });
 
-      // Filter policies by checking if resource matches any of their targets using built-in logic
-      const matchingPolicies = await Promise.all(
-        allPolicies.map(async (policy) => {
-          const hasMatchingTarget = await Promise.all(
-            policy.targets.map(async (target) => {
-              // Policy with no resource selector applies to all resources
-              if (!target.resourceSelector) return true;
-
-              // Use built-in resource matching logic - check if resource matches the selector
-              const matchingResource = await ctx.db.query.resource.findFirst({
-                where: and(
-                  eq(schema.resource.id, input.resourceId),
-                  schema.resourceMatchesMetadata(ctx.db, target.resourceSelector),
-                  isNull(schema.resource.deletedAt),
-                ),
-              });
-
-              return matchingResource != null;
-            }),
-          );
-
-          return hasMatchingTarget.some(Boolean) ? policy : null;
-        }),
-      );
-
-      return matchingPolicies
-        .filter((p) => p != null)
-        .sort((a, b) => {
-          if (a.priority !== b.priority) {
-            return b.priority - a.priority; // Higher priority first
-          }
-          return a.name.localeCompare(b.name);
-        });
+      return policies;
     }),
 
   releaseTargets: protectedProcedure

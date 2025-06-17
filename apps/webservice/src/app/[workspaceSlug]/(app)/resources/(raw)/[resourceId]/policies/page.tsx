@@ -28,52 +28,47 @@ export default async function ResourcePoliciesPage(props: {
   const policies = await api.policy.byResourceId({ resourceId });
 
   return (
-    <div className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconTarget className="h-5 w-5" />
-            Resource Policies
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Policy rules and governance controls that apply to resource "{resource.name}"
+    <div className="container space-y-4 p-8">
+      <div className="space-y-2">
+        <div className="text-sm">Policies</div>
+        <p className="text-xs text-muted-foreground">
+          Policy rules and governance controls that apply to resource "{resource.name}"
+        </p>
+      </div>
+
+      {policies.length === 0 ? (
+        <div className="text-center py-8">
+          <IconInfoCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            No Matching Policies
+          </h3>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            This resource is not currently targeted by any policies. Policies control deployment behavior, approvals, and release gates.
           </p>
-        </CardHeader>
-        <CardContent>
-          {policies.length === 0 ? (
-            <div className="text-center py-8">
-              <IconInfoCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                No Matching Policies
-              </h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                This resource is not currently targeted by any policies. Policies control deployment behavior, approvals, and release gates.
-              </p>
-              <div className="mt-6">
-                <Button asChild>
-                  <Link href={urls.workspace(workspaceSlug).policies().baseUrl()}>
-                    <IconShield className="h-4 w-4 mr-2" />
-                    View All Policies
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <IconInfoCircle className="h-4 w-4" />
-                <span>
-                  Found {policies.length} {policies.length === 1 ? 'policy' : 'policies'} that {policies.length === 1 ? 'applies' : 'apply'} to this resource
-                </span>
-              </div>
-              
-              <PolicyCard policies={policies} workspaceSlug={workspaceSlug} cardConfigs={policyCardConfigs} />
-              
-              {/* Individual Policy List */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Individual Policies</h3>
-                <div className="space-y-3">
-                  {policies.map((policy) => {
+          <div className="mt-6">
+            <Button asChild>
+              <Link href={urls.workspace(workspaceSlug).policies().baseUrl()}>
+                <IconShield className="h-4 w-4 mr-2" />
+                View All Policies
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <IconInfoCircle className="h-4 w-4" />
+            <span>
+              Found {policies.length} {policies.length === 1 ? 'policy' : 'policies'} that {policies.length === 1 ? 'applies' : 'apply'} to this resource
+            </span>
+          </div>
+          
+          <PolicyCard policies={policies} workspaceSlug={workspaceSlug} cardConfigs={policyCardConfigs} />
+          
+          <div>
+            <div className="mb-2 text-sm">Individual Policies</div>
+            <div className="space-y-3">
+              {policies.map((policy) => {
                     const hasDenyWindows = policy.denyWindows.length > 0;
                     const hasApprovals =
                       policy.versionAnyApprovals != null ||
@@ -163,12 +158,10 @@ export default async function ResourcePoliciesPage(props: {
                       </Card>
                     );
                   })}
-                </div>
-              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }
