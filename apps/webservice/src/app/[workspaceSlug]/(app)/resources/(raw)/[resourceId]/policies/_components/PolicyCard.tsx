@@ -1,13 +1,14 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import Link from "next/link";
 import {
-  IconShieldCheck,
-  IconClock,
-  IconShield,
   IconAdjustments,
-  IconHelpCircle,
   IconArrowUpRight,
+  IconClock,
+  IconHelpCircle,
+  IconShield,
+  IconShieldCheck,
 } from "@tabler/icons-react";
+
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -44,7 +45,9 @@ type PolicySummaryCardProps = {
   workspaceSlug: string;
 };
 
-const PolicySummaryCard: React.FC<PolicySummaryCardProps & { data: { isActive: boolean; count: number } }> = ({ config, workspaceSlug, data }) => {
+const PolicySummaryCard: React.FC<
+  PolicySummaryCardProps & { data: { isActive: boolean; count: number } }
+> = ({ config, workspaceSlug, data }) => {
   const { isActive, count } = data;
   const Icon = config.icon;
 
@@ -76,20 +79,21 @@ const PolicySummaryCard: React.FC<PolicySummaryCardProps & { data: { isActive: b
           <div className="text-right font-medium">
             <Badge
               variant={isActive ? "default" : "secondary"}
-              className={isActive 
-                ? `${config.badgeConfig.activeColor} text-white` 
-                : "text-muted-foreground"
+              className={
+                isActive
+                  ? `${config.badgeConfig.activeColor} text-white`
+                  : "text-muted-foreground"
               }
             >
-              {isActive ? config.badgeConfig.activeText : config.badgeConfig.inactiveText}
+              {isActive
+                ? config.badgeConfig.activeText
+                : config.badgeConfig.inactiveText}
             </Badge>
           </div>
           <div className="flex items-center gap-2 text-neutral-400">
             Policies Count
           </div>
-          <div className="text-right font-medium text-neutral-100">
-            {count}
-          </div>
+          <div className="text-right font-medium text-neutral-100">{count}</div>
         </div>
       </div>
       <div className="mt-auto border-t bg-neutral-900/60 p-2 text-right">
@@ -114,10 +118,14 @@ type PolicyCardProps = {
   cardConfigs: PolicySummaryCardConfig[];
 };
 
-export const PolicyCard: React.FC<PolicyCardProps> = ({ policies, workspaceSlug, cardConfigs }) => {
+export const PolicyCard: React.FC<PolicyCardProps> = ({
+  policies,
+  workspaceSlug,
+  cardConfigs,
+}) => {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-      {cardConfigs.map(config => (
+      {cardConfigs.map((config) => (
         <PolicySummaryCard
           key={config.id}
           config={config}
@@ -135,7 +143,8 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     title: "Approval & Governance",
     icon: IconShieldCheck,
     iconColor: "text-blue-400",
-    tooltip: "Shows policies that require manual approvals or have governance rules for deployments to this resource.",
+    tooltip:
+      "Shows policies that require manual approvals or have governance rules for deployments to this resource.",
     badgeConfig: {
       activeText: "Yes",
       inactiveText: "No",
@@ -143,10 +152,11 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     },
     countLabel: "Approval Required",
     dataSelector: (policies: Policy[]) => {
-      const approvalPolicies = policies.filter(p => 
-        p.versionAnyApprovals != null ||
-        p.versionUserApprovals.length > 0 ||
-        p.versionRoleApprovals.length > 0
+      const approvalPolicies = policies.filter(
+        (p) =>
+          p.versionAnyApprovals != null ||
+          p.versionUserApprovals.length > 0 ||
+          p.versionRoleApprovals.length > 0,
       );
       return {
         isActive: approvalPolicies.length > 0,
@@ -159,7 +169,8 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     title: "Deny Windows",
     icon: IconClock,
     iconColor: "text-red-400",
-    tooltip: "Time-based restrictions that prevent deployments during specific periods, like maintenance windows or business hours.",
+    tooltip:
+      "Time-based restrictions that prevent deployments during specific periods, like maintenance windows or business hours.",
     badgeConfig: {
       activeText: "Active",
       inactiveText: "None",
@@ -167,7 +178,9 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     },
     countLabel: "Time Restrictions",
     dataSelector: (policies: Policy[]) => {
-      const denyWindowPolicies = policies.filter(p => p.denyWindows.length > 0);
+      const denyWindowPolicies = policies.filter(
+        (p) => p.denyWindows.length > 0,
+      );
       return {
         isActive: denyWindowPolicies.length > 0,
         count: denyWindowPolicies.length,
@@ -179,7 +192,8 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     title: "Version Conditions",
     icon: IconShield,
     iconColor: "text-purple-400",
-    tooltip: "Rules that control which deployment versions are allowed based on version criteria, tags, or other metadata.",
+    tooltip:
+      "Rules that control which deployment versions are allowed based on version criteria, tags, or other metadata.",
     badgeConfig: {
       activeText: "Active",
       inactiveText: "None",
@@ -187,7 +201,9 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     },
     countLabel: "Version Rules",
     dataSelector: (policies: Policy[]) => {
-      const versionConditionPolicies = policies.filter(p => p.deploymentVersionSelector != null);
+      const versionConditionPolicies = policies.filter(
+        (p) => p.deploymentVersionSelector != null,
+      );
       return {
         isActive: versionConditionPolicies.length > 0,
         count: versionConditionPolicies.length,
@@ -199,7 +215,8 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     title: "Concurrency Control",
     icon: IconAdjustments,
     iconColor: "text-yellow-400",
-    tooltip: "Limits on how many deployments can run simultaneously for this resource, helping to control system load and deployment conflicts.",
+    tooltip:
+      "Limits on how many deployments can run simultaneously for this resource, helping to control system load and deployment conflicts.",
     badgeConfig: {
       activeText: "Yes",
       inactiveText: "Unlimited",
@@ -207,7 +224,7 @@ export const policyCardConfigs: PolicySummaryCardConfig[] = [
     },
     countLabel: "Limits Configured",
     dataSelector: (policies: Policy[]) => {
-      const concurrencyPolicies = policies.filter(p => p.concurrency != null);
+      const concurrencyPolicies = policies.filter((p) => p.concurrency != null);
       return {
         isActive: concurrencyPolicies.length > 0,
         count: concurrencyPolicies.length,
