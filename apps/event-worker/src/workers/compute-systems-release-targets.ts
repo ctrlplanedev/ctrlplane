@@ -171,6 +171,8 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             deduplication: { id: rt.id },
           });
 
+      if (created.length === 0) return;
+
       const policyTargets = await db
         .select()
         .from(schema.policyTarget)
