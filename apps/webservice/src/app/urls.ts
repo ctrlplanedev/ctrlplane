@@ -123,6 +123,7 @@ const resource = (workspaceSlug: string, resourceId: string) => {
     variables: () => buildUrl(...base, "variables"),
     properties: () => buildUrl(...base, "properties"),
     visualize: () => buildUrl(...base, "visualize"),
+    policies: () => buildUrl(...base, "policies"),
   };
 };
 
