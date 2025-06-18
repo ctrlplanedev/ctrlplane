@@ -6,6 +6,7 @@ import { Loading, Passing, Waiting } from "../StatusIcons";
 
 export const ApprovalCheck: React.FC<{
   workspaceId: string;
+  systemId: string;
   environmentId: string;
   versionId: string;
   versionTag: string;

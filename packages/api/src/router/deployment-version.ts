@@ -342,7 +342,7 @@ export const versionRouter = createTRPCRouter({
     .input(
       z.object({
         deploymentVersionId: z.string().uuid(),
-        environmentId: z.string().uuid(),
+        environmentIds: z.array(z.string().uuid()),
         status: z.nativeEnum(SCHEMA.ApprovalStatus),
         reason: z.string().optional(),
       }),
@@ -355,21 +355,25 @@ export const versionRouter = createTRPCRouter({
         }),
     })
     .mutation(async ({ ctx, input }) => {
-      const { deploymentVersionId, environmentId, status, reason } = input;
+      const { deploymentVersionId, environmentIds, status, reason } = input;
+
+      const recordsToInsert = environmentIds.map((environmentId) => ({
+        deploymentVersionId,
+        environmentId,
+        userId: ctx.session.user.id,
+        status,
+        reason,
+        approvedAt:
+          status === SCHEMA.ApprovalStatus.Approved ? new Date() : null,
+      }));
 
       const record = await ctx.db
         .insert(SCHEMA.policyRuleAnyApprovalRecord)
-        .values({
-          deploymentVersionId,
-          userId: ctx.session.user.id,
-          status,
-          reason,
-          approvedAt:
-            status === SCHEMA.ApprovalStatus.Approved ? new Date() : null,
-        })
+        .values(recordsToInsert)
+        .onConflictDoNothing()
         .returning();
 
-      const rows = await ctx.db
+      const affectedReleaseTargets = await ctx.db
         .select()
         .from(SCHEMA.deploymentVersion)
         .innerJoin(
@@ -382,12 +386,16 @@ export const versionRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.deploymentVersion.id, deploymentVersionId),
-            eq(SCHEMA.releaseTarget.environmentId, environmentId),
+            environmentIds.length > 0
+              ? inArray(SCHEMA.releaseTarget.environmentId, environmentIds)
+              : undefined,
           ),
-        );
+        )
+        .then((rows) => rows.map((row) => row.release_target));
 
-      const targets = rows.map((row) => row.release_target);
-      await dispatchQueueJob().toEvaluate().releaseTargets(targets);
+      await dispatchQueueJob()
+        .toEvaluate()
+        .releaseTargets(affectedReleaseTargets);
 
       return record;
     }),

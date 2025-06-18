@@ -11,9 +11,7 @@ import {
 } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
-const log = logger.child({
-  component: "computeSystemsReleaseTargetsWorker",
-});
+const log = logger.child({ component: "computeSystemsReleaseTargetsWorker" });
 
 const findMatchingEnvironmentDeploymentPairs = (
   tx: Tx,

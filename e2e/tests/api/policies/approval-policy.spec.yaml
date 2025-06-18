@@ -12,6 +12,14 @@ environments:
       operator: contains
       value: "{{ prefix }}"
 
+  - name: "{{ prefix }}-prod"
+    description: Prod environment
+    systemId: "{{ prefix }}-system"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
 deployments:
   - name: "{{ prefix }}"
     slug: "{{ prefix }}"
@@ -31,7 +39,7 @@ policies:
     targets:
       - environmentSelector:
           type: name
-          operator: equals
+          operator: contains
           value: "{{ prefix }}"
     versionAnyApprovals:
       requiredApprovalsCount: 1

@@ -22,9 +22,10 @@ const markerEnd = {
 
 export const FlowDiagram: React.FC<{
   workspace: SCHEMA.Workspace;
+  system: { id: string };
   deploymentVersion: SCHEMA.DeploymentVersion;
   envs: Array<SCHEMA.Environment>;
-}> = ({ workspace, deploymentVersion, envs }) => {
+}> = ({ workspace, system, deploymentVersion, envs }) => {
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>([
     {
       id: "trigger",
@@ -44,6 +45,7 @@ export const FlowDiagram: React.FC<{
           deploymentId: deploymentVersion.deploymentId,
           environmentId: env.id,
           environmentName: env.name,
+          systemId: system.id,
           label: env.name,
         },
       };

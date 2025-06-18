@@ -70,14 +70,15 @@ export const getRules = async (
     policy,
     releaseTargetId,
   );
+  const versionApprovalRules = await getVersionApprovalRules(
+    policy,
+    releaseTargetId,
+  );
   return [
-    new ReleaseTargetLockRule({
-      releaseTargetId,
-      evaluationRequestedById,
-    }),
+    new ReleaseTargetLockRule({ releaseTargetId, evaluationRequestedById }),
     new ReleaseTargetConcurrencyRule(releaseTargetId),
     ...getConcurrencyRule(policy),
-    ...getVersionApprovalRules(policy),
+    ...versionApprovalRules,
     ...(environmentVersionRolloutRule ? [environmentVersionRolloutRule] : []),
   ];
   // The rrule package is being stupid and deny windows is not top priority

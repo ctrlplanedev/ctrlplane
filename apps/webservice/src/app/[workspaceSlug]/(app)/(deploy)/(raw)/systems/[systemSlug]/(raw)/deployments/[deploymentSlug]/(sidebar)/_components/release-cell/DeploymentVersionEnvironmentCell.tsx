@@ -114,7 +114,7 @@ const NoJobAgentCell: React.FC<{
 };
 
 type DeploymentVersionEnvironmentCellProps = {
-  system: { slug: string };
+  system: { id: string; slug: string };
   environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
   deploymentVersion: SCHEMA.DeploymentVersion;

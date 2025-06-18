@@ -18,6 +18,7 @@ type EnvironmentNodeProps = NodeProps<{
   deploymentId: string;
   environmentId: string;
   environmentName: string;
+  systemId: string;
 }>;
 
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
