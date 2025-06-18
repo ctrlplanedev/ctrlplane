@@ -7,9 +7,9 @@ import { useInView } from "react-intersection-observer";
 
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
+import { LazyDeploymentVersionEnvironmentCell } from "~/app/[workspaceSlug]/(app)/(deploy)/(raw)/systems/[systemSlug]/(raw)/deployments/[deploymentSlug]/(sidebar)/_components/release-cell/DeploymentVersionEnvironmentCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { LazyDeploymentVersionEnvironmentCell } from "../../../(raw)/systems/[systemSlug]/(raw)/deployments/[deploymentSlug]/(sidebar)/_components/release-cell/DeploymentVersionEnvironmentCell";
 
 const CellSkeleton: React.FC = () => (
   <div className="flex h-full w-full items-center gap-2">
@@ -24,7 +24,7 @@ const CellSkeleton: React.FC = () => (
 type DeploymentEnvironmentCellProps = {
   environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
-  system: { slug: string };
+  system: { id: string; slug: string };
 };
 
 const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({

@@ -41,6 +41,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployment-versions/{deploymentVersionId}/approve/environment/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Approve a deployment version for an environment */
+    post: operations["approveDeploymentVersionForEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployment-versions/{deploymentVersionId}/approve": {
     parameters: {
       query?: never;
@@ -90,6 +107,23 @@ export interface paths {
     head?: never;
     /** Updates a deployment version */
     patch: operations["updateDeploymentVersion"];
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/reject/environment/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reject a deployment version for an environment */
+    post: operations["rejectDeploymentVersionForEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/v1/deployment-versions/{deploymentVersionId}/reject": {
@@ -1002,6 +1036,8 @@ export interface components {
       /** Format: uuid */
       deploymentVersionId: string;
       /** Format: uuid */
+      environmentId: string;
+      /** Format: uuid */
       userId: string;
       /** @enum {string} */
       status: "approved" | "rejected";
@@ -1640,6 +1676,70 @@ export interface operations {
       };
     };
   };
+  approveDeploymentVersionForEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentVersionId: string;
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason: string;
+          /** Format: date-time */
+          approvedAt?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Approval record created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version or environment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   approveDeploymentVersion: {
     parameters: {
       query?: never;
@@ -1799,6 +1899,70 @@ export interface operations {
         };
       };
       /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  rejectDeploymentVersionForEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentVersionId: string;
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason: string;
+          /** Format: date-time */
+          approvedAt?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Rejection record created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version or environment not found */
       404: {
         headers: {
           [name: string]: unknown;

@@ -122,21 +122,24 @@ export const evaluate = protectedProcedure
       policies,
       [version],
       versionId,
-      (policy) => versionUserApprovalRule(policy.versionUserApprovals),
+      (policy) =>
+        versionUserApprovalRule(environmentId, policy.versionUserApprovals),
     );
 
     const roleApprovals = await getApprovalReasons(
       policies,
       [version],
       versionId,
-      (policy) => versionRoleApprovalRule(policy.versionRoleApprovals),
+      (policy) =>
+        versionRoleApprovalRule(environmentId, policy.versionRoleApprovals),
     );
 
     const anyApprovals = await getApprovalReasons(
       policies,
       [version],
       versionId,
-      (policy) => versionAnyApprovalRule(policy.versionAnyApprovals),
+      (policy) =>
+        versionAnyApprovalRule(environmentId, policy.versionAnyApprovals),
     );
 
     // Return all evaluation results

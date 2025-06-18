@@ -10,6 +10,7 @@ export const openapi: Swagger.SwaggerV3 = {
         properties: {
           id: { type: "string", format: "uuid" },
           deploymentVersionId: { type: "string", format: "uuid" },
+          environmentId: { type: "string", format: "uuid" },
           userId: { type: "string", format: "uuid" },
           status: { type: "string", enum: ["approved", "rejected"] },
           approvedAt: { type: "string", format: "date-time", nullable: true },
@@ -20,6 +21,7 @@ export const openapi: Swagger.SwaggerV3 = {
         required: [
           "id",
           "deploymentVersionId",
+          "environmentId",
           "userId",
           "status",
           "approvedAt",

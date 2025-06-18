@@ -3,6 +3,8 @@ import { pgEnum, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { user } from "../auth.js";
+import { deploymentVersion } from "../deployment-version.js";
+import { environment } from "../environment.js";
 
 // Approval status enum
 export const approvalStatus = pgEnum("approval_status", [
@@ -15,7 +17,13 @@ export const baseApprovalRecordFields = {
   id: uuid("id").primaryKey().defaultRandom(),
 
   // Link to the deployment version being approved
-  deploymentVersionId: uuid("deployment_version_id").notNull(),
+  deploymentVersionId: uuid("deployment_version_id")
+    .notNull()
+    .references(() => deploymentVersion.id, { onDelete: "cascade" }),
+
+  environmentId: uuid("environment_id")
+    .notNull()
+    .references(() => environment.id, { onDelete: "cascade" }),
 
   // User who performed the approval/rejection action
   userId: uuid("user_id")

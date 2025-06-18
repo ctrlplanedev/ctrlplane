@@ -35,6 +35,11 @@ export const POST = request()
 
     const deploymentVersion = await ctx.db.query.deploymentVersion.findFirst({
       where: eq(schema.deploymentVersion.id, deploymentVersionId),
+      with: {
+        deployment: {
+          with: { system: { with: { environments: true } } },
+        },
+      },
     });
 
     if (deploymentVersion == null)
@@ -43,17 +48,24 @@ export const POST = request()
         { status: NOT_FOUND },
       );
 
+    const { deployment } = deploymentVersion;
+    const { system } = deployment;
+    const { environments } = system;
+
     const approvedAt =
       ctx.body.approvedAt != null ? new Date(ctx.body.approvedAt) : new Date();
+    const recordsToInsert = environments.map((environment) => ({
+      deploymentVersionId,
+      userId: ctx.user.id,
+      status: schema.ApprovalStatus.Approved,
+      reason: ctx.body.reason,
+      approvedAt,
+      environmentId: environment.id,
+    }));
+
     const record = await ctx.db
       .insert(schema.policyRuleAnyApprovalRecord)
-      .values({
-        deploymentVersionId,
-        userId: ctx.user.id,
-        status: schema.ApprovalStatus.Approved,
-        reason: ctx.body.reason,
-        approvedAt,
-      })
+      .values(recordsToInsert)
       .onConflictDoNothing()
       .returning();
 
