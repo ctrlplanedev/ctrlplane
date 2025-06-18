@@ -57,7 +57,9 @@ const handleDeployment = async (
     return;
   }
 
-  await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
+  await dispatchQueueJob()
+    .toEvaluate()
+    .releaseTargets(releaseTargets, { skipDuplicateCheck: true });
 };
 
 export const redeployProcedure = protectedProcedure

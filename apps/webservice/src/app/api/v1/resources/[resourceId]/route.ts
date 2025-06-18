@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, eq, isNull, upsertResources } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  isNull,
+  isResourceChanged,
+  upsertResources,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, dispatchQueueJob, getQueue } from "@ctrlplane/events";
@@ -127,7 +133,13 @@ export const PATCH = request()
       const isResource = eq(schema.resource.id, resourceId);
       const isNotDeleted = isNull(schema.resource.deletedAt);
       const where = and(isResource, isNotDeleted);
-      const resource = await db.query.resource.findFirst({ where });
+      const resource = await db.query.resource.findFirst({
+        where,
+        with: {
+          metadata: true,
+          variables: true,
+        },
+      });
 
       if (resource == null)
         return NextResponse.json(
@@ -141,8 +153,15 @@ export const PATCH = request()
         where: eq(schema.resourceVariable.resourceId, resource.id),
       });
 
+      const resourceCopy = _.cloneDeep(resource);
+      const resourceCopyWithMetadata = {
+        ...resourceCopy,
+        metadata: Object.fromEntries(
+          resourceCopy.metadata.map((m) => [m.key, m.value]),
+        ),
+      };
       const all = await upsertResources(db, resource.workspaceId, [
-        _.merge(resource, body),
+        _.merge(resourceCopyWithMetadata, body),
       ]);
       const res = all.at(0);
 
@@ -153,7 +172,8 @@ export const PATCH = request()
         metadata: Object.fromEntries(res.metadata.map((m) => [m.key, m.value])),
       };
 
-      await dispatchQueueJob().toUpdatedResource([res]);
+      const isChanged = isResourceChanged(resource, res);
+      if (isChanged) await dispatchQueueJob().toUpdatedResource([res]);
 
       const affectedVariables = getAffectedVariables(
         prevVariables,

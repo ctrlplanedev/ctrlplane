@@ -1,7 +1,16 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, asc, desc, eq, ilike, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  takeFirst,
+} from "@ctrlplane/db";
 import { createPolicy, policy, updatePolicy } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -84,6 +93,84 @@ export const policyRouter = createTRPCRouter({
         },
       }),
     ),
+
+  byResourceId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceGet)
+          .on({ type: "resource", id: input.resourceId }),
+    })
+    .input(
+      z.object({
+        resourceId: z.string().uuid(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const resource = await ctx.db.query.resource.findFirst({
+        where: and(
+          eq(schema.resource.id, input.resourceId),
+          isNull(schema.resource.deletedAt),
+        ),
+      });
+
+      if (!resource) return [];
+
+      const policyIds = await ctx.db
+        .selectDistinct({
+          policyId: schema.policy.id,
+        })
+        .from(schema.policy)
+        .innerJoin(
+          schema.policyTarget,
+          eq(schema.policy.id, schema.policyTarget.policyId),
+        )
+        .innerJoin(
+          schema.computedPolicyTargetReleaseTarget,
+          eq(
+            schema.policyTarget.id,
+            schema.computedPolicyTargetReleaseTarget.policyTargetId,
+          ),
+        )
+        .innerJoin(
+          schema.releaseTarget,
+          eq(
+            schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+            schema.releaseTarget.id,
+          ),
+        )
+        .where(
+          and(
+            eq(schema.releaseTarget.resourceId, input.resourceId),
+            eq(schema.policy.workspaceId, resource.workspaceId),
+          ),
+        );
+
+      if (policyIds.length === 0) return [];
+
+      const policies = await ctx.db.query.policy.findMany({
+        where: and(
+          eq(schema.policy.workspaceId, resource.workspaceId),
+          inArray(
+            schema.policy.id,
+            policyIds.map((p) => p.policyId),
+          ),
+        ),
+        with: {
+          targets: true,
+          denyWindows: true,
+          deploymentVersionSelector: true,
+          versionAnyApprovals: true,
+          versionUserApprovals: true,
+          versionRoleApprovals: true,
+          concurrency: true,
+          environmentVersionRollout: true,
+        },
+        orderBy: [desc(schema.policy.priority), asc(schema.policy.name)],
+      });
+
+      return policies;
+    }),
 
   releaseTargets: protectedProcedure
     .meta({

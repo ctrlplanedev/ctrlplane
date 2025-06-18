@@ -1,6 +1,7 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useRouter } from "next/navigation";
 import { IconDotsVertical } from "@tabler/icons-react";
 
@@ -16,10 +17,16 @@ import {
 
 import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceConditionBadge";
 import { ResourceViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/resources/condition/ResourceViewActionsDropdown";
+import { urls } from "~/app/urls";
+
+const getFilteredResourcesUrl = (
+  workspaceSlug: string,
+  filter: ResourceCondition,
+) => urls.workspace(workspaceSlug).resources().filtered(filter);
 
 export const ResourceViewsTable: React.FC<{
   workspace: schema.Workspace;
-  views: (schema.ResourceView & { total: number; hash: string })[];
+  views: (schema.ResourceView & { total: number })[];
 }> = ({ views, workspace }) => {
   const router = useRouter();
 
@@ -38,9 +45,7 @@ export const ResourceViewsTable: React.FC<{
           <TableRow
             key={view.id}
             onClick={() =>
-              router.push(
-                `/${workspace.slug}/resources?condition=${view.hash}&view=${view.id}`,
-              )
+              router.push(getFilteredResourcesUrl(workspace.slug, view.filter))
             }
             className="cursor-pointer"
           >

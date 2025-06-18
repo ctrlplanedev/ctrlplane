@@ -33,11 +33,11 @@ import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_com
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
 
-const JobActionsDropdownMenu: React.FC<{
-  jobId: string;
+const ReleaseTargetActionsDropdownMenu: React.FC<{
   environment: { id: string; name: string };
   deployment: { id: string; name: string };
   resource: { id: string; name: string };
+  jobId?: string;
 }> = ({ jobId, environment, deployment, resource }) => {
   const utils = api.useUtils();
   const [, copy] = useCopyToClipboard();
@@ -50,28 +50,32 @@ const JobActionsDropdownMenu: React.FC<{
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem
-          onSelect={() => {
-            copy(jobId);
-            toast.success("Job ID copied to clipboard");
-          }}
-          className="flex items-center gap-2"
-        >
-          <IconCopy className="h-4 w-4" />
-          Copy job ID
-        </DropdownMenuItem>
-        <OverrideJobStatusDialog
-          jobIds={[jobId]}
-          onClose={() => utils.deployment.version.job.list.invalidate()}
-        >
+        {jobId != null && (
           <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
+            onSelect={() => {
+              copy(jobId);
+              toast.success("Job ID copied to clipboard");
+            }}
             className="flex items-center gap-2"
           >
-            <IconSwitch className="h-4 w-4" />
-            Override status
+            <IconCopy className="h-4 w-4" />
+            Copy job ID
           </DropdownMenuItem>
-        </OverrideJobStatusDialog>
+        )}
+        {jobId != null && (
+          <OverrideJobStatusDialog
+            jobIds={[jobId]}
+            onClose={() => utils.deployment.version.job.list.invalidate()}
+          >
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="flex items-center gap-2"
+            >
+              <IconSwitch className="h-4 w-4" />
+              Override status
+            </DropdownMenuItem>
+          </OverrideJobStatusDialog>
+        )}
         <RedeployVersionDialog
           environment={environment}
           deployment={deployment}
@@ -221,14 +225,12 @@ export const ReleaseTargetRow: React.FC<{
       )}
       DropdownMenu={
         <TableCell className="flex justify-end">
-          {latestJob != null && (
-            <JobActionsDropdownMenu
-              jobId={latestJob.id}
-              environment={environment}
-              deployment={deployment}
-              resource={resource}
-            />
-          )}
+          <ReleaseTargetActionsDropdownMenu
+            jobId={latestJob?.id}
+            environment={environment}
+            deployment={deployment}
+            resource={resource}
+          />
         </TableCell>
       }
     >

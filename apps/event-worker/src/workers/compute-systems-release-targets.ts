@@ -1,8 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, inArray, isNull, notInArray, or, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, or, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { computePolicyTargets } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import {
   Channel,
@@ -72,7 +71,7 @@ const findMatchingEnvironmentDeploymentPairs = (
 export const computeSystemsReleaseTargetsWorker = createWorker(
   Channel.ComputeSystemsReleaseTargets,
   async (job) => {
-    const { id: systemId, redeployAll, processedPolicyTargetIds } = job.data;
+    const { id: systemId } = job.data;
 
     const system = await db.query.system.findFirst({
       where: eq(schema.system.id, systemId),
@@ -89,10 +88,9 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
     if (deploymentIds.length === 0 || environmentIds.length === 0) return;
 
     try {
-      const { created, unchanged, deleted } = await db.transaction(
-        async (tx) => {
-          await tx.execute(
-            sql`
+      const { created, deleted } = await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`
             SELECT ${schema.releaseTarget.id} FROM ${schema.releaseTarget}
             WHERE ${or(
               inArray(schema.releaseTarget.deploymentId, deploymentIds),
@@ -100,88 +98,80 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             )}
             FOR UPDATE NOWAIT
           `,
-          );
+        );
 
-          await tx.execute(
-            sql`
+        await tx.execute(
+          sql`
             SELECT * FROM ${schema.computedEnvironmentResource}
             WHERE ${inArray(schema.computedEnvironmentResource.environmentId, environmentIds)}
             FOR UPDATE NOWAIT
           `,
-          );
+        );
 
-          await tx.execute(
-            sql`
+        await tx.execute(
+          sql`
             SELECT * FROM ${schema.computedDeploymentResource}
             WHERE ${inArray(schema.computedDeploymentResource.deploymentId, deploymentIds)}
             FOR UPDATE NOWAIT
           `,
-          );
+        );
 
-          const previousReleaseTargets = await tx.query.releaseTarget.findMany({
-            where: or(
-              inArray(schema.releaseTarget.deploymentId, deploymentIds),
-              inArray(schema.releaseTarget.environmentId, environmentIds),
+        const previousReleaseTargets = await tx.query.releaseTarget.findMany({
+          where: or(
+            inArray(schema.releaseTarget.deploymentId, deploymentIds),
+            inArray(schema.releaseTarget.environmentId, environmentIds),
+          ),
+        });
+
+        const releaseTargets = await findMatchingEnvironmentDeploymentPairs(
+          tx,
+          system,
+        );
+
+        const deleted = previousReleaseTargets.filter(
+          (prevRt) =>
+            !releaseTargets.some(
+              (rt) =>
+                rt.deploymentId === prevRt.deploymentId &&
+                rt.resourceId === prevRt.resourceId &&
+                rt.environmentId === prevRt.environmentId,
             ),
-          });
+        );
 
-          const releaseTargets = await findMatchingEnvironmentDeploymentPairs(
-            tx,
-            system,
+        if (deleted.length > 0)
+          await tx.delete(schema.releaseTarget).where(
+            inArray(
+              schema.releaseTarget.id,
+              deleted.map((rt) => rt.id),
+            ),
           );
 
-          const deleted = previousReleaseTargets.filter(
-            (prevRt) =>
-              !releaseTargets.some(
-                (rt) =>
-                  rt.deploymentId === prevRt.deploymentId &&
-                  rt.resourceId === prevRt.resourceId &&
-                  rt.environmentId === prevRt.environmentId,
-              ),
-          );
-
-          if (deleted.length > 0)
-            await tx.delete(schema.releaseTarget).where(
-              inArray(
-                schema.releaseTarget.id,
-                deleted.map((rt) => rt.id),
-              ),
-            );
-
-          const created = releaseTargets.filter(
-            (rt) =>
-              !previousReleaseTargets.some(
-                (prevRt) =>
-                  prevRt.deploymentId === rt.deploymentId &&
-                  prevRt.resourceId === rt.resourceId &&
-                  prevRt.environmentId === rt.environmentId,
-              ),
-          );
-
-          const unchanged = releaseTargets.filter((rt) =>
-            previousReleaseTargets.some(
+        const created = releaseTargets.filter(
+          (rt) =>
+            !previousReleaseTargets.some(
               (prevRt) =>
                 prevRt.deploymentId === rt.deploymentId &&
                 prevRt.resourceId === rt.resourceId &&
                 prevRt.environmentId === rt.environmentId,
             ),
-          );
+        );
 
-          if (created.length > 0)
-            await tx
-              .insert(schema.releaseTarget)
-              .values(created)
-              .onConflictDoNothing();
+        if (created.length > 0)
+          await tx
+            .insert(schema.releaseTarget)
+            .values(created)
+            .onConflictDoNothing();
 
-          return { created, unchanged, deleted };
-        },
-      );
+        return { created, deleted };
+      });
 
       if (deleted.length > 0)
         for (const rt of deleted)
           getQueue(Channel.DeletedReleaseTarget).add(rt.id, rt, {
             deduplication: { id: rt.id },
           });
+
+      if (created.length === 0) return;
 
       const policyTargets = await db
         .select()
@@ -190,40 +180,20 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
           schema.policy,
           eq(schema.policyTarget.policyId, schema.policy.id),
         )
-        .where(
-          and(
-            eq(schema.policy.workspaceId, workspaceId),
-            processedPolicyTargetIds != null &&
-              processedPolicyTargetIds.length > 0
-              ? notInArray(schema.policyTarget.id, processedPolicyTargetIds)
-              : undefined,
-          ),
-        );
+        .where(and(eq(schema.policy.workspaceId, workspaceId)));
 
-      const additionalProcessedPolicyTargetIds: string[] = [];
-
-      for (const { policy_target: policyTarget } of policyTargets) {
-        try {
-          await computePolicyTargets(db, policyTarget);
-          additionalProcessedPolicyTargetIds.push(policyTarget.id);
-        } catch (e: any) {
-          if (e.code === "55P03") {
-            dispatchQueueJob()
-              .toCompute()
-              .system(system)
-              .releaseTargets(true, [
-                ...(processedPolicyTargetIds ?? []),
-                ...additionalProcessedPolicyTargetIds,
-              ]);
-            return;
-          }
-          throw e;
-        }
+      if (policyTargets.length === 0) {
+        await dispatchQueueJob().toEvaluate().releaseTargets(created);
+        return;
       }
 
-      const toEvaluate = [...created, ...(redeployAll ? unchanged : [])];
-
-      await dispatchQueueJob().toEvaluate().releaseTargets(toEvaluate);
+      await dispatchQueueJob()
+        .toCompute()
+        .workspace(workspaceId)
+        .policyTargets({
+          processedPolicyTargetIds: [],
+          releaseTargetsToEvaluate: created,
+        });
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
