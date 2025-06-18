@@ -3,49 +3,27 @@
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { IconSearch } from "@tabler/icons-react";
 import { formatDistanceToNow } from "date-fns";
 import LZString from "lz-string";
 import prettyMilliseconds from "pretty-ms";
 import { useDebounce } from "react-use";
 
-import { Input } from "@ctrlplane/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
-import { Skeleton } from "@ctrlplane/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@ctrlplane/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import { JobConditionType } from "@ctrlplane/validators/jobs";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { StatusBadge } from "./_components/StatusBadge";
-import { AverageDuration } from "./_components/summary-card/AverageDuration";
-import { DeploymentFrequency } from "./_components/summary-card/DeploymentFrequency";
-import { SuccessRate } from "./_components/summary-card/SuccessRate";
-import { TotalDeployments } from "./_components/summary-card/TotalDeployments";
-
-const SkeletonRow: React.FC = () => (
-  <TableRow className="h-12">
-    {Array.from({ length: 8 }).map((_, index) => (
-      <TableCell key={index}>
-        <Skeleton className="h-4 w-20" />
-      </TableCell>
-    ))}
-  </TableRow>
-);
+import {
+  AverageDuration,
+  DeploymentFrequency,
+  DeploymentSkeletonRow,
+  DeploymentTableHeader,
+  SearchAndFilters,
+  StatusBadge,
+  SuccessRate,
+  TotalDeployments,
+} from "./_components/index";
 
 type Version = {
   id: string;
@@ -180,86 +158,22 @@ export const EnvironmentDeploymentsPageContent: React.FC<{
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row">
-        <div className="relative">
-          <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search deployments..."
-            className="w-full pl-8 md:w-80"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            value={statusFilter}
-            onValueChange={(status: StatusFilter) => setStatusFilter(status)}
-            defaultValue="all"
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue placeholder="Select Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="deploying">Deploying</SelectItem>
-              <SelectItem value="success">Successful</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={orderBy}
-            onValueChange={(
-              orderBy: "recent" | "oldest" | "duration" | "success",
-            ) => setOrderBy(orderBy)}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select Order By" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Most Recent</SelectItem>
-              <SelectItem value="oldest">Oldest First</SelectItem>
-              <SelectItem value="duration">Duration (longest)</SelectItem>
-              <SelectItem value="success">Success Rate</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <SearchAndFilters
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        orderBy={orderBy}
+        onOrderByChange={setOrderBy}
+      />
 
       <div className="rounded-md border border-neutral-800">
-        <Table className="table-fixed">
-          <TableHeader>
-            <TableRow className="border-b border-neutral-800 hover:bg-transparent">
-              <TableHead className="w-1/5 font-medium text-neutral-400">
-                Component
-              </TableHead>
-              <TableHead className="w-1/6 font-medium text-neutral-400">
-                Version
-              </TableHead>
-              <TableHead className="w-1/12 font-medium text-neutral-400">
-                Status
-              </TableHead>
-              <TableHead className="w-1/12 font-medium text-neutral-400">
-                Resources
-              </TableHead>
-              <TableHead className="w-1/12 font-medium text-neutral-400">
-                Duration
-              </TableHead>
-              <TableHead className="w-1/8 font-medium text-neutral-400">
-                Success Rate
-              </TableHead>
-              <TableHead className="w-1/8 truncate font-medium text-neutral-400">
-                Deployed By
-              </TableHead>
-              <TableHead className="w-1/12 font-medium text-neutral-400">
-                Timestamp
-              </TableHead>
-            </TableRow>
-          </TableHeader>
+        <Table>
+          <DeploymentTableHeader />
           <TableBody>
             {deploymentStatsQ.isLoading &&
               Array.from({ length: 3 }).map((_, index) => (
-                <SkeletonRow key={index} />
+                <DeploymentSkeletonRow key={index} />
               ))}
             {deploymentStats.map((deploymentStat) => (
               <DeploymentRow
