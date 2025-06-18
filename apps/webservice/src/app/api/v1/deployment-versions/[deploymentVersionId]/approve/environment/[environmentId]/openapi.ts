@@ -24,6 +24,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           ],
           requestBody: {
+            required: false,
             content: {
               "application/json": {
                 schema: {
@@ -32,7 +33,6 @@ export const openapi: Swagger.SwaggerV3 = {
                     reason: { type: "string" },
                     approvedAt: { type: "string", format: "date-time" },
                   },
-                  required: ["reason"],
                 },
               },
             },
