@@ -16,6 +16,7 @@ import {
 
 import * as schema from "@ctrlplane/db/schema";
 import { Input } from "@ctrlplane/ui/input";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { usePolicyFormContext } from "../../_components/PolicyFormContext";
 import { RolloutTypeToOffsetFunction } from "./equations";
@@ -92,7 +93,14 @@ export const RolloutPreview: React.FC = () => {
         <Input
           type="number"
           value={numResources}
-          onChange={(e) => setNumResources(e.target.valueAsNumber)}
+          onChange={(e) => {
+            const { valueAsNumber } = e.target;
+            if (Number.isNaN(valueAsNumber)) {
+              toast.error("Invalid number of resources for preview widget");
+              return;
+            }
+            setNumResources(valueAsNumber);
+          }}
           min={1}
           className="w-24"
         />
