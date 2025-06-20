@@ -65,6 +65,7 @@ export default async function ChecksPage(props: PageProps) {
       <ReactFlowProvider>
         <FlowDiagram
           workspace={system.workspace}
+          system={system}
           deploymentVersion={deploymentVersion}
           envs={environments}
         />

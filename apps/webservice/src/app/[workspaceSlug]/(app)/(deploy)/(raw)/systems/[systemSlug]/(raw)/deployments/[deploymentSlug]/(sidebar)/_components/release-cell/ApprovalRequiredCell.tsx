@@ -74,7 +74,7 @@ export const ApprovalRequiredCell: React.FC<{
   deploymentVersion: { id: string; tag: string };
   deployment: { id: string; name: string; slug: string };
   environment: { id: string; name: string };
-  system: { slug: string };
+  system: { id: string; slug: string };
 }> = ({ policies, deploymentVersion, deployment, environment, system }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
@@ -143,6 +143,7 @@ export const ApprovalRequiredCell: React.FC<{
           <ApprovalDialog
             versionId={deploymentVersion.id}
             versionTag={deploymentVersion.tag}
+            systemId={system.id}
             environmentId={environment.id}
           >
             <DropdownMenuItem

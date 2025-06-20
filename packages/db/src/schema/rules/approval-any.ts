@@ -30,12 +30,13 @@ export const policyRuleAnyApproval = pgTable(
 export const policyRuleAnyApprovalRecord = pgTable(
   "policy_rule_any_approval_record",
   baseApprovalRecordFields,
-  (t) => ({
-    uniqueRuleIdUserId: uniqueIndex("unique_rule_id_user_id").on(
+  (t) => [
+    uniqueIndex("unique_deployment_version_id_environment_id_user_id").on(
       t.deploymentVersionId,
+      t.environmentId,
       t.userId,
     ),
-  }),
+  ],
 );
 
 // Validation schemas

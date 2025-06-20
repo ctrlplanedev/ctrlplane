@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { inArray } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -38,6 +38,9 @@ export class VersionApprovalRule implements FilterRule<Version> {
       .value();
     const approvalRecords = await this.options.getApprovalRecords(versionIds);
 
+    console.log("num approval records", approvalRecords.length);
+    console.log("min required", this.options.minApprovals);
+
     const allowedCandidates = candidates.filter((release) => {
       const records = approvalRecords.filter((r) => r.versionId === release.id);
 
@@ -65,6 +68,24 @@ export class VersionApprovalRule implements FilterRule<Version> {
   }
 }
 
+export const getAnyApprovalRecordsGetter =
+  (environmentId: string) => async (versionIds: string[]) => {
+    const records = await db.query.policyRuleAnyApprovalRecord.findMany({
+      where: and(
+        inArray(
+          schema.policyRuleAnyApprovalRecord.deploymentVersionId,
+          versionIds,
+        ),
+        eq(schema.policyRuleAnyApprovalRecord.environmentId, environmentId),
+      ),
+    });
+
+    return records.map((record) => ({
+      ...record,
+      versionId: record.deploymentVersionId,
+    }));
+  };
+
 export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
   versionIds: string[],
 ) => {
@@ -80,6 +101,24 @@ export const getAnyApprovalRecords: GetApprovalRecordsFunc = async (
   }));
 };
 
+export const getRoleApprovalRecordsGetter =
+  (environmentId: string) => async (versionIds: string[]) => {
+    const records = await db.query.policyRuleRoleApprovalRecord.findMany({
+      where: and(
+        inArray(
+          schema.policyRuleRoleApprovalRecord.deploymentVersionId,
+          versionIds,
+        ),
+        eq(schema.policyRuleRoleApprovalRecord.environmentId, environmentId),
+      ),
+    });
+
+    return records.map((record) => ({
+      ...record,
+      versionId: record.deploymentVersionId,
+    }));
+  };
+
 export const getRoleApprovalRecords: GetApprovalRecordsFunc = async (
   versionIds: string[],
 ) => {
@@ -94,6 +133,24 @@ export const getRoleApprovalRecords: GetApprovalRecordsFunc = async (
     versionId: record.deploymentVersionId,
   }));
 };
+
+export const getUserApprovalRecordsGetter =
+  (environmentId: string) => async (versionIds: string[]) => {
+    const records = await db.query.policyRuleUserApprovalRecord.findMany({
+      where: and(
+        inArray(
+          schema.policyRuleUserApprovalRecord.deploymentVersionId,
+          versionIds,
+        ),
+        eq(schema.policyRuleUserApprovalRecord.environmentId, environmentId),
+      ),
+    });
+
+    return records.map((record) => ({
+      ...record,
+      versionId: record.deploymentVersionId,
+    }));
+  };
 
 export const getUserApprovalRecords: GetApprovalRecordsFunc = async (
   versionIds: string[],
