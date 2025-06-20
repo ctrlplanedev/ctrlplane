@@ -5,6 +5,8 @@ import { Client } from "openapi-fetch";
 
 import { cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
 import { test } from "../../fixtures";
+import { EnvironmentFixture } from "../../../api/entity-fixtures";
+import { faker } from "@faker-js/faker";
 
 const yamlPath = path.join(__dirname, "new-entity-triggers.spec.yaml");
 
@@ -171,11 +173,34 @@ test.describe("trigger new jobs", () => {
 
   test("trigger NO jobs with upserting new environments with NO resource selectors", async () => {
     const agentId = await initialJobsTriggerHelper(builder);
+    const randomResourceSelBuilder = (_original: EnvironmentFixture) => {
+      return undefined;
+    };
 
-    (await builder.createEnvironmentFixtureClones()).forEach((f) => {
-      expect(f.fetchResponse.response.ok).toBe(true);
-      expect(f.requestBody.resourceSelector).not.toBeDefined();
-    });
+    (await builder.createEnvironmentFixtureClones(randomResourceSelBuilder))
+      .forEach((f) => {
+        expect(f.fetchResponse.response.ok).toBe(true);
+        expect(f.requestBody.resourceSelector).not.toBeDefined();
+      });
+
+    await expectJobQueueEmpty(builder.api, agentId);
+  });
+
+  test("trigger NO jobs with upserting new environments with NON-MATCHING resource selectors", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+    const randomResourceSelBuilder = (_original: EnvironmentFixture) => {
+      return {
+        type: "metadata",
+        key: "instance/tier",
+        operator: "equals",
+        value: faker.string.alphanumeric(5),
+      };
+    };
+    (await builder.createEnvironmentFixtureClones(randomResourceSelBuilder))
+      .forEach((f) => {
+        expect(f.fetchResponse.response.ok).toBe(true);
+        expect(f.requestBody.resourceSelector).toBeDefined();
+      });
 
     await expectJobQueueEmpty(builder.api, agentId);
   });
@@ -192,7 +217,7 @@ async function expectJobQueueCount(
   let jobs: Job[] = [];
   let attempts = 0;
 
-  while (jobs.length < expectedJobCount && attempts < 3) {
+  while (jobs.length < expectedJobCount && attempts < 5) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
       params: {
@@ -250,6 +275,7 @@ async function expectJobQueueEmpty(
 
   for (const job of nextJobs?.jobs || []) {
     console.debug(`Job ${job.id} has status ${job.status}`);
+    expect(job.jobAgentId).toBe(agentId);
   }
 
   expect(Array.isArray(nextJobs?.jobs)).toBe(true);
@@ -273,7 +299,8 @@ async function clearJobQueue(
   expect(fetchResponse.response.ok).toBe(true);
   const nextJobs = fetchResponse.data;
   for (const job of nextJobs?.jobs || []) {
-    console.debug(`Job ${job.id} has status ${job.status}`);
+    console.debug(`Clearing Job Queue: ${job.id} has status ${job.status}`);
+    expect(job.jobAgentId).toBe(agentId);
   }
 }
 
