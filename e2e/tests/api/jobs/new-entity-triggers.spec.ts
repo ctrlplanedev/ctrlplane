@@ -168,6 +168,17 @@ test.describe("trigger new jobs", () => {
 
     await expectJobQueueEmpty(builder.api, agentId);
   });
+
+  test("trigger NO jobs with upserting new environments with NO resource selectors", async () => {
+    const agentId = await initialJobsTriggerHelper(builder);
+
+    (await builder.createEnvironmentFixtureClones()).forEach((f) => {
+      expect(f.fetchResponse.response.ok).toBe(true);
+      expect(f.requestBody.resourceSelector).not.toBeDefined();
+    });
+
+    await expectJobQueueEmpty(builder.api, agentId);
+  });
 });
 
 async function expectJobQueueCount(

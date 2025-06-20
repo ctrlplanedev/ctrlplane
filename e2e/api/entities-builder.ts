@@ -6,6 +6,7 @@ import {
   AgentFixture,
   DeploymentFixture,
   EntityFixtures,
+  EnvironmentFixture,
   importEntityFixtures,
   ResourceFixture,
 } from "./entity-fixtures";
@@ -205,6 +206,43 @@ export class EntitiesBuilder {
       });
     }
 
+    return results;
+  }
+
+  async createEnvironmentFixtureClones(): Promise<FetchResultInfo[]> {
+    if (!this.fixtures.environments || this.fixtures.environments.length === 0) {
+      throw new Error("No environments defined in YAML file");
+    }
+    const results: FetchResultInfo[] = [];
+    const environmentClones: EnvironmentFixture[] = [];
+    for (const environment of this.fixtures.environments) {
+      environmentClones.push({
+        ...environment,
+        name: `${environment.name}-clone-${faker.string.alphanumeric(5)}`,
+      });
+    }
+
+    for (const environment of environmentClones) {
+      console.debug(`Creating cloned environment: ${environment.name}`);
+      const requestBody = {
+        ...environment,
+        systemId: this.refs.system.id,
+      };
+      const fetchResponse = await this.api.POST("/v1/environments", {
+        body: requestBody,
+      });
+
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
+
+      this.refs.environments.push({
+        id: fetchResponse.data!.id,
+        name: fetchResponse.data!.name,
+        originalName: environment.name,
+      });
+    }
     return results;
   }
 
