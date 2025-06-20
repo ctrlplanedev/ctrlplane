@@ -85,10 +85,7 @@ export const PolicyFormContextProvider: React.FC<{
     }
 
     return updatePolicy
-      .mutateAsync({
-        id: policy.id,
-        data: { ...data, targets },
-      })
+      .mutateAsync({ id: policy.id, data: { ...data, targets } })
       .then(() => {
         toast.success("Policy updated successfully");
         form.reset(data);
@@ -96,11 +93,11 @@ export const PolicyFormContextProvider: React.FC<{
         utils.policy.byId.invalidate();
         utils.policy.list.invalidate();
       })
-      .catch((error) => {
+      .catch((error) =>
         toast.error("Failed to update policy", {
           description: error.message,
-        });
-      });
+        }),
+      );
   });
 
   return (

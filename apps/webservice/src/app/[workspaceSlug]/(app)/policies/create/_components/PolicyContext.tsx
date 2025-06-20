@@ -22,7 +22,8 @@ export type PolicyTab =
   | "time-windows"
   | "deployment-flow"
   | "concurrency"
-  | "quality-security";
+  | "quality-security"
+  | "rollouts";
 
 type PolicyContextType = {
   form: UseFormReturn<CreatePolicy>;

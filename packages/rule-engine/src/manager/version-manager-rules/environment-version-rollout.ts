@@ -20,11 +20,11 @@ import {
 import { getVersionApprovalRules } from "./version-approval.js";
 
 const getRolloutStartTimeGetter =
-  (policy: Policy | null, environmentId: string) =>
+  (policy: Policy | null, releaseTargetId: string) =>
   async (version: Version) => {
     const versionApprovalRules = await getVersionApprovalRules(
       policy,
-      environmentId,
+      releaseTargetId,
     );
     if (versionApprovalRules.length === 0) return version.createdAt;
 
@@ -126,14 +126,6 @@ const getDeploymentOffsetEquation = (
   );
 };
 
-const getEnvironmentId = async (db: Tx, releaseTargetId: string) =>
-  db
-    .select()
-    .from(schema.releaseTarget)
-    .where(eq(schema.releaseTarget.id, releaseTargetId))
-    .then(takeFirst)
-    .then((r) => r.environmentId);
-
 export const getEnvironmentVersionRolloutRule = async (
   policy: Policy | null,
   releaseTargetId: string,
@@ -144,8 +136,10 @@ export const getEnvironmentVersionRolloutRule = async (
       "Position growth factor must be greater than 0 for environment version rollout",
     );
 
-  const environmentId = await getEnvironmentId(db, releaseTargetId);
-  const getRolloutStartTime = getRolloutStartTimeGetter(policy, environmentId);
+  const getRolloutStartTime = getRolloutStartTimeGetter(
+    policy,
+    releaseTargetId,
+  );
   const getReleaseTargetPosition =
     getReleaseTargetPositionGetter(releaseTargetId);
   const numReleaseTargets = await getNumReleaseTargets(db, releaseTargetId);
@@ -183,10 +177,9 @@ export const getRolloutInfoForReleaseTarget = async (
       rolloutPosition: 0,
     };
 
-  const { environmentId } = releaseTarget;
   const rolloutStartTime = await getRolloutStartTimeGetter(
     policy,
-    environmentId,
+    releaseTarget.id,
   )(deploymentVersion);
   const rolloutPosition = await getReleaseTargetPositionGetter(
     releaseTarget.id,

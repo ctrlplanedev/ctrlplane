@@ -89,10 +89,10 @@ const updateVersionAnyApprovals = async (
       .delete(SCHEMA.policyRuleAnyApproval)
       .where(eq(SCHEMA.policyRuleAnyApproval.policyId, policyId));
 
-  await tx.update(SCHEMA.policyRuleAnyApproval).set({
-    ...versionAnyApprovals,
-    policyId,
-  });
+  await tx
+    .update(SCHEMA.policyRuleAnyApproval)
+    .set({ ...versionAnyApprovals, policyId })
+    .where(eq(SCHEMA.policyRuleAnyApproval.policyId, policyId));
 };
 
 const updateVersionUserApprovals = async (

@@ -75,8 +75,8 @@ export const createPolicyRuleEnvironmentVersionRollout = createInsertSchema(
   policyRuleEnvironmentVersionRollout,
   {
     policyId: z.string().uuid(),
-    positionGrowthFactor: z.number().refine((val) => val > 0 && val <= 100),
-    timeScaleInterval: z.number().refine((val) => val > 0 && val <= 100),
+    positionGrowthFactor: z.number().refine((val) => val > 0),
+    timeScaleInterval: z.number().refine((val) => val > 0),
     rolloutType: z.enum([
       "linear",
       "exponential",

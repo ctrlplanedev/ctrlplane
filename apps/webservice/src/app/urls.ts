@@ -61,6 +61,7 @@ const workspacePolicyEdit = (slug: string, policyId: string) => {
     qualitySecurity: () => buildUrl(...base, "quality-security"),
     concurrency: () => buildUrl(...base, "concurrency"),
     approvalGates: () => buildUrl(...base, "approval-gates"),
+    rollouts: () => buildUrl(...base, "rollouts"),
   };
 };
 
