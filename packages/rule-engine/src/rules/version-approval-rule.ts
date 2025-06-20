@@ -38,9 +38,6 @@ export class VersionApprovalRule implements FilterRule<Version> {
       .value();
     const approvalRecords = await this.options.getApprovalRecords(versionIds);
 
-    console.log("num approval records", approvalRecords.length);
-    console.log("min required", this.options.minApprovals);
-
     const allowedCandidates = candidates.filter((release) => {
       const records = approvalRecords.filter((r) => r.versionId === release.id);
 
