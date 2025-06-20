@@ -551,7 +551,7 @@ export class EntitiesBuilder {
         name: fetchResponse.data!.name,
       });
 
-      console.debug(`Upserted agent: ${fetchResponse.data!.name}`);
+      console.debug(`Upserted agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`);
     }
     return results;
   }
@@ -589,7 +589,7 @@ export class EntitiesBuilder {
         name: fetchResponse.data!.name,
       });
 
-      console.debug(`Created cloned agent: ${fetchResponse.data!.name}`);
+      console.debug(`Created cloned agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`);
     }
     return results;
   }

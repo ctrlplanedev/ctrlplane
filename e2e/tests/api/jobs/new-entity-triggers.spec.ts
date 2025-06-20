@@ -218,6 +218,7 @@ async function expectJobQueueCount(
   let attempts = 0;
 
   while (jobs.length < expectedJobCount && attempts < 5) {
+    attempts++;
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const fetchResponse = await api.GET("/v1/job-agents/{agentId}/queue/next", {
       params: {
@@ -238,6 +239,8 @@ async function expectJobQueueCount(
 
   for (const job of jobs) {
     console.debug(`Job ${job.id} has status ${job.status}`);
+    expect(job.jobAgentId).toBe(agentId);
+    await updateJobStatus(api, job.id, "successful");
   }
 
   expect(
@@ -276,6 +279,7 @@ async function expectJobQueueEmpty(
   for (const job of nextJobs?.jobs || []) {
     console.debug(`Job ${job.id} has status ${job.status}`);
     expect(job.jobAgentId).toBe(agentId);
+    await updateJobStatus(api, job.id, "successful");
   }
 
   expect(Array.isArray(nextJobs?.jobs)).toBe(true);
@@ -301,8 +305,10 @@ async function clearJobQueue(
   for (const job of nextJobs?.jobs || []) {
     console.debug(`Clearing Job Queue: ${job.id} has status ${job.status}`);
     expect(job.jobAgentId).toBe(agentId);
+    await updateJobStatus(api, job.id, "successful");
   }
 }
+
 
 /**
  * Helper function to create initial jobs and clear the queue.
@@ -338,8 +344,30 @@ async function initialJobsTriggerHelper(
   return agentId;
 }
 
+type JobStatus = "successful" | "cancelled" | "skipped" | "in_progress" | "action_required" | "pending" | "failure" | "invalid_job_agent" | "invalid_integration" | "external_run_not_found";
+
+
 interface Job {
   id: string;
   jobAgentId: string;
-  status: string;
+  status: JobStatus;
+}
+
+
+async function updateJobStatus(
+  api: Client<paths, `${string}/${string}`>,
+  jobId: string,
+  status: JobStatus,
+): Promise<void> {
+  const fetchResponse = await api.PATCH(`/v1/jobs/{jobId}`, {
+    params: {
+      path: {
+        jobId,
+      },
+    },
+    body: {
+      status,
+    },
+  });
+  expect(fetchResponse.response.ok).toBe(true);
 }
