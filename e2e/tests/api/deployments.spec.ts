@@ -12,9 +12,9 @@ test.describe("Deployments API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.upsertSystem();
-    await builder.upsertEnvironments();
-    await builder.upsertResources();
+    await builder.upsertSystemFixture();
+    await builder.upsertEnvironmentFixtures();
+    await builder.upsertResourcesFixtures();
   });
 
   test.afterAll(async ({ api, workspace }) => {

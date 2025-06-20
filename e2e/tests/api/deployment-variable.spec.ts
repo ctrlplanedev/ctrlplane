@@ -12,8 +12,8 @@ test.describe("Deployment Variables API", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.upsertSystem();
-    await builder.upsertDeployments();
+    await builder.upsertSystemFixture();
+    await builder.upsertDeploymentFixtures();
     await new Promise((resolve) => setTimeout(resolve, 5_000));
   });
 

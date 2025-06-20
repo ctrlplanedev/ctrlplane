@@ -12,7 +12,7 @@ test.describe("Deployment remove event", () => {
 
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
-    await builder.upsertSystem();
+    await builder.upsertSystemFixture();
   });
 
   test.afterAll(async ({ api, workspace }) => {
