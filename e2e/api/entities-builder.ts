@@ -6,6 +6,7 @@ import {
   AgentFixture,
   DeploymentFixture,
   EntityFixtures,
+  EnvironmentFixture,
   importEntityFixtures,
   ResourceFixture,
 } from "./entity-fixtures";
@@ -127,7 +128,9 @@ export class EntitiesBuilder {
       resourceClones.push({
         ...resource,
         name: `${resource.name}-clone-${faker.string.alphanumeric(5)}`,
-        identifier: `${resource.identifier}-clone-${faker.string.alphanumeric(5)}`,
+        identifier: `${resource.identifier}-clone-${
+          faker.string.alphanumeric(5)
+        }`,
       });
     }
 
@@ -205,6 +208,60 @@ export class EntitiesBuilder {
       });
     }
 
+    return results;
+  }
+
+  /**
+   * Create near-identical copies of the fixtures from the yaml file but they
+   * should have distinct names and identifiers (hence they would be new copies).
+   * A resourceSelBuilder, if provided, may override the resource selector for the clone;
+   * otherwise, the default builder will maintain the original resource selector.
+   */
+  async createEnvironmentFixtureClones(
+    resourceSelBuilder: (original: EnvironmentFixture) => any = (original) =>
+      original.resourceSelector,
+  ): Promise<FetchResultInfo[]> {
+    if (
+      !this.fixtures.environments || this.fixtures.environments.length === 0
+    ) {
+      throw new Error("No environments defined in YAML file");
+    }
+    const results: FetchResultInfo[] = [];
+    const environmentClones: EnvironmentFixture[] = [];
+    for (const environment of this.fixtures.environments) {
+      const resourceSelector = resourceSelBuilder(environment);
+      environmentClones.push({
+        ...environment,
+        resourceSelector,
+        name: `${environment.name}-clone-${faker.string.alphanumeric(5)}`,
+      });
+    }
+
+    for (const environment of environmentClones) {
+      console.debug(
+        `Creating cloned environment: ${environment.name} with resSel: ${
+          JSON.stringify(environment.resourceSelector)
+        } `,
+      );
+      const requestBody = {
+        ...environment,
+        systemId: this.refs.system.id,
+      };
+      const fetchResponse = await this.api.POST("/v1/environments", {
+        body: requestBody,
+      });
+
+      results.push({
+        fetchResponse,
+        requestBody,
+      });
+
+      this.refs.environments.push({
+        id: fetchResponse.data!.id,
+        name: fetchResponse.data!.name,
+        originalName: environment.name,
+      });
+    }
     return results;
   }
 
@@ -342,7 +399,9 @@ export class EntitiesBuilder {
     if (!deployment) {
       throw new Error(`Deployment ${deploymentId} not found`);
     }
-    const clonedTag = `${deployment.versions![0].tag}-clone-${faker.string.alphanumeric(5)}`;
+    const clonedTag = `${deployment.versions![0].tag}-clone-${
+      faker.string.alphanumeric(5)
+    }`;
     console.debug(
       `Creating deployment version '${clonedTag}' on deployment '${deployment.name}'`,
     );
@@ -403,12 +462,15 @@ export class EntitiesBuilder {
             },
           );
 
-          if (variableResponse.response.status !== 201)
+          if (variableResponse.response.status !== 201) {
             throw new Error(
-              `Failed to upsert deployment variable: ${JSON.stringify(
-                variableResponse.error,
-              )}`,
+              `Failed to upsert deployment variable: ${
+                JSON.stringify(
+                  variableResponse.error,
+                )
+              }`,
             );
+          }
 
           const variableData = variableResponse.data!;
           const { directValues, referenceValues } = variableData;
@@ -489,7 +551,7 @@ export class EntitiesBuilder {
         name: fetchResponse.data!.name,
       });
 
-      console.debug(`Upserted agent: ${fetchResponse.data!.name}`);
+      console.debug(`Upserted agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`);
     }
     return results;
   }
@@ -527,7 +589,7 @@ export class EntitiesBuilder {
         name: fetchResponse.data!.name,
       });
 
-      console.debug(`Created cloned agent: ${fetchResponse.data!.name}`);
+      console.debug(`Created cloned agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`);
     }
     return results;
   }
