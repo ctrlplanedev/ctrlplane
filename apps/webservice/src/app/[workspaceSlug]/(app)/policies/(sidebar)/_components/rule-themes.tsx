@@ -6,6 +6,7 @@ import {
 } from "@radix-ui/react-icons";
 import {
   IconArrowsSplit,
+  IconCalendar,
   IconCalendarTime,
   IconFilter,
   IconUserCheck,
@@ -21,7 +22,8 @@ export type RuleType =
   | "release-dependency"
   | "approval-gate"
   | "deployment-version-selector"
-  | "concurrency";
+  | "concurrency"
+  | "environment-version-rollout";
 
 export const ruleTypeIcons: Record<
   RuleType,
@@ -29,6 +31,9 @@ export const ruleTypeIcons: Record<
 > = {
   "deny-window": (props) => (
     <IconCalendarTime className={cn("size-3 text-blue-400", props.className)} />
+  ),
+  "environment-version-rollout": (props) => (
+    <IconCalendar className={cn("size-3 text-blue-400", props.className)} />
   ),
   "gradual-rollout": (props) => (
     <ArrowDownIcon className={cn("size-3 text-green-400", props.className)} />
@@ -68,6 +73,7 @@ export const ruleTypeLabels: Record<RuleType, string> = {
   "approval-gate": "Approval Gate",
   "deployment-version-selector": "Deployment Version Selector",
   concurrency: "Concurrency",
+  "environment-version-rollout": "Gradual Rollout",
 } as const;
 
 export const getRuleTypeLabel = (type: RuleType) => {
@@ -91,6 +97,8 @@ export const ruleTypeColors: Record<RuleType, string> = {
     "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border-purple-500/50",
   concurrency:
     "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 border-yellow-500/50",
+  "environment-version-rollout":
+    "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border-blue-500/50",
 } as const;
 
 export const getTypeColorClass = (type: RuleType): string => {

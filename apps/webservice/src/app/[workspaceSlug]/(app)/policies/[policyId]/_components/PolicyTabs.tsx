@@ -3,7 +3,12 @@
 import type React from "react";
 import { useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { IconCircleCheck, IconClock, IconTag } from "@tabler/icons-react";
+import {
+  IconCalendar,
+  IconCircleCheck,
+  IconClock,
+  IconTag,
+} from "@tabler/icons-react";
 
 import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
@@ -25,6 +30,7 @@ export const PolicyTabs: React.FC = () => {
   const deploymentFlowUrl = editUrls.deploymentFlow();
   const qualitySecurityUrl = editUrls.qualitySecurity();
   const concurrencyUrl = editUrls.concurrency();
+  const rolloutsUrl = editUrls.rollouts();
 
   const pathname = usePathname();
 
@@ -35,6 +41,7 @@ export const PolicyTabs: React.FC = () => {
     if (pathname === deploymentFlowUrl) return "deployment-flow";
     if (pathname === qualitySecurityUrl) return "quality-security";
     if (pathname === concurrencyUrl) return "concurrency";
+    if (pathname === rolloutsUrl) return "rollouts";
     return "overview";
   };
 
@@ -49,6 +56,7 @@ export const PolicyTabs: React.FC = () => {
     if (value === "deployment-flow") router.push(deploymentFlowUrl);
     if (value === "quality-security") router.push(qualitySecurityUrl);
     if (value === "concurrency") router.push(concurrencyUrl);
+    if (value === "rollouts") router.push(rolloutsUrl);
     setActiveTab(value);
   };
 
@@ -78,6 +86,10 @@ export const PolicyTabs: React.FC = () => {
         >
           <IconCircleCheck className="h-4 w-4" />
           Approval Gates
+        </TabsTrigger>
+        <TabsTrigger value="rollouts" className="flex items-center gap-1">
+          <IconCalendar className="h-4 w-4" />
+          Rollouts
         </TabsTrigger>
       </TabsList>
     </Tabs>

@@ -52,6 +52,8 @@ const getRules = (policy: Policy) => {
     rules.push("deployment-version-selector");
 
   if (policy.concurrency != null) rules.push("concurrency");
+  if (policy.environmentVersionRollout != null)
+    rules.push("environment-version-rollout");
 
   return rules;
 };

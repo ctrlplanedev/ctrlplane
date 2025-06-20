@@ -59,6 +59,7 @@ export const policyRouter = createTRPCRouter({
           versionUserApprovals: true,
           versionRoleApprovals: true,
           concurrency: true,
+          environmentVersionRollout: true,
         },
         orderBy: [desc(policy.priority), asc(policy.name)],
         limit: input.limit,

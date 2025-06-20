@@ -14,6 +14,7 @@ import {
 } from ".";
 import { Concurrency } from "./Concurrency";
 import { usePolicyContext } from "./PolicyContext";
+import { Rollout } from "./rollouts/Rollout";
 
 interface TabConfig {
   id: PolicyTab;
@@ -47,6 +48,11 @@ const POLICY_TABS: TabConfig[] = [
     label: "Quality & Security",
     description: "Deployment safety measures",
   },
+  {
+    id: "rollouts",
+    label: "Rollouts",
+    description: "Control the rollout of deployments",
+  },
 ];
 
 export const PolicyCreationTabs: React.FC<{
@@ -66,6 +72,8 @@ export const PolicyCreationTabs: React.FC<{
         return <Concurrency />;
       case "quality-security":
         return <QualitySecurity workspaceId={workspaceId} />;
+      case "rollouts":
+        return <Rollout />;
     }
   };
 
