@@ -3,7 +3,7 @@ import type {
   NameType,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
-import { useState } from "react";
+import React, { useState } from "react";
 import prettyMilliseconds from "pretty-ms";
 import {
   Line,
@@ -60,22 +60,46 @@ const PrettyTooltip = (props: TooltipProps<ValueType, NameType>) => {
   );
 };
 
-export const RolloutPreview: React.FC = () => {
+const NumResourcesInput: React.FC<{
+  value: number;
+  setValue: (value: number) => void;
+}> = ({ value, setValue }) => (
+  <Input
+    type="number"
+    value={value}
+    onChange={(e) => {
+      const { valueAsNumber } = e.target;
+      if (Number.isNaN(valueAsNumber)) {
+        toast.error("Invalid number of resources for preview widget");
+        return;
+      }
+      setValue(valueAsNumber);
+    }}
+    min={1}
+    className="w-24"
+  />
+);
+
+const RolloutCurveChart: React.FC<{
+  numResources: number;
+}> = ({ numResources }) => {
   const { form } = usePolicyContext();
-  const [numResources, setNumResources] = useState<number>(10);
+  const rolloutType =
+    form.watch("environmentVersionRollout.rolloutType") ?? "linear";
+  const positionGrowthFactor =
+    form.watch("environmentVersionRollout.positionGrowthFactor") ?? 1;
+  const timeScaleInterval = form.watch(
+    "environmentVersionRollout.timeScaleInterval",
+  );
 
-  const environmentVersionRollout = form.watch("environmentVersionRollout");
-  if (!environmentVersionRollout) return null;
-
-  const rolloutType = environmentVersionRollout.rolloutType ?? "linear";
   const dbRolloutType =
     schema.apiRolloutTypeToDBRolloutType[rolloutType] ??
     schema.RolloutType.Linear;
 
   const offsetFunction = RolloutTypeToOffsetFunction[dbRolloutType](
-    environmentVersionRollout.positionGrowthFactor ?? 1,
-    environmentVersionRollout.timeScaleInterval,
-    10,
+    positionGrowthFactor,
+    timeScaleInterval,
+    numResources,
   );
 
   const chartData = Array.from({ length: numResources }, (_, i) => ({
@@ -84,53 +108,52 @@ export const RolloutPreview: React.FC = () => {
   }));
 
   return (
+    <ResponsiveContainer width="100%" height={400}>
+      <LineChart
+        data={chartData}
+        margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+      >
+        <XAxis
+          dataKey="x"
+          label={{
+            value: "Rollout position (0-indexed)",
+            dy: 20,
+          }}
+          tick={{ fontSize: 14 }}
+        />
+        <YAxis
+          label={{
+            value: "Time (minutes)",
+            angle: -90,
+            dx: -20,
+          }}
+          tick={PrettyYAxisTick}
+        />
+        <Line type="monotone" dataKey="y" stroke="#8884d8" dot={false} />
+        <Tooltip content={PrettyTooltip} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+};
+
+export const RolloutPreview: React.FC = () => {
+  const { form } = usePolicyContext();
+  const [numResources, setNumResources] = useState<number>(10);
+
+  const environmentVersionRollout = form.watch("environmentVersionRollout");
+  if (!environmentVersionRollout) return null;
+
+  return (
     <div className="flex w-1/2 flex-col gap-4">
       <h2 className="text-lg font-medium">Preview Rollout</h2>
       <div className="flex items-center gap-2">
         <span className="text-nowrap text-sm text-muted-foreground">
           Number of resources:{" "}
         </span>
-        <Input
-          type="number"
-          value={numResources}
-          onChange={(e) => {
-            const { valueAsNumber } = e.target;
-            if (Number.isNaN(valueAsNumber)) {
-              toast.error("Invalid number of resources for preview widget");
-              return;
-            }
-            setNumResources(valueAsNumber);
-          }}
-          min={1}
-          className="w-24"
-        />
+        <NumResourcesInput value={numResources} setValue={setNumResources} />
       </div>
       <div className="rounded-md border p-4">
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart
-            data={chartData}
-            margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-          >
-            <XAxis
-              dataKey="x"
-              label={{
-                value: "Rollout position (0-indexed)",
-                dy: 20,
-              }}
-              tick={{ fontSize: 14 }}
-            />
-            <YAxis
-              label={{
-                value: "Time (minutes)",
-                angle: -90,
-                dx: -20,
-              }}
-              tick={PrettyYAxisTick}
-            />
-            <Line type="monotone" dataKey="y" stroke="#8884d8" dot={false} />
-            <Tooltip content={PrettyTooltip} />
-          </LineChart>
-        </ResponsiveContainer>
+        <RolloutCurveChart numResources={numResources} />
       </div>
     </div>
   );
