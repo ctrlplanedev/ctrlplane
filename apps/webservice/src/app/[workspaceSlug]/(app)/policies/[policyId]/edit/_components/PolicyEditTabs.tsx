@@ -60,6 +60,12 @@ export const PolicyEditTabs: React.FC = () => {
       description: "Deployment safety measures",
       href: policyEditUrls.qualitySecurity(),
     },
+    {
+      id: "rollouts",
+      label: "Rollouts",
+      description: "Control the rollout of deployments",
+      href: policyEditUrls.rollouts(),
+    },
   ];
 
   return (
