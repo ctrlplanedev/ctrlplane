@@ -2,6 +2,7 @@ import _ from "lodash";
 import { z } from "zod";
 
 import {
+  allRules,
   and,
   asc,
   desc,
@@ -10,7 +11,6 @@ import {
   inArray,
   isNull,
   takeFirst,
-  withAllRules,
 } from "@ctrlplane/db";
 import { createPolicy, policy, updatePolicy } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
@@ -52,7 +52,7 @@ export const policyRouter = createTRPCRouter({
             ? ilike(policy.name, `%${input.search}%`)
             : undefined,
         ),
-        ...withAllRules,
+        with: { targets: true, ...allRules },
         orderBy: [desc(policy.priority), asc(policy.name)],
         limit: input.limit,
       }),
@@ -74,7 +74,7 @@ export const policyRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db.query.policy.findFirst({
         where: eq(policy.id, input.policyId),
-        ...withAllRules,
+        with: { targets: true, ...allRules },
       }),
     ),
 
@@ -140,7 +140,7 @@ export const policyRouter = createTRPCRouter({
             policyIds.map((p) => p.policyId),
           ),
         ),
-        ...withAllRules,
+        with: { targets: true, ...allRules },
         orderBy: [desc(schema.policy.priority), asc(schema.policy.name)],
       });
 

@@ -1,10 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
 
 import {
+  allRules,
   buildConflictUpdateColumns,
   eq,
   takeFirst,
-  withAllRules,
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
@@ -243,7 +243,7 @@ export const updatePolicyInTx = async (
 
   const updatedPolicy = await tx.query.policy.findFirst({
     where: eq(SCHEMA.policy.id, id),
-    ...withAllRules,
+    with: { targets: true, ...allRules },
   });
 
   if (updatedPolicy == null) throw new Error("Policy not found");

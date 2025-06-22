@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, inArray, isNull, withAllRules } from "@ctrlplane/db";
+import { allRules, and, eq, inArray, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { withSpan } from "../span.js";
@@ -91,5 +91,5 @@ export const getApplicablePoliciesWithoutResourceScope = async (
   const policyIds = policyIdResults.map((r) => r.policyId);
   if (policyIds.length === 0) return [];
   const where = inArray(schema.policy.id, policyIds);
-  return db.query.policy.findMany({ where, ...withAllRules });
+  return db.query.policy.findMany({ where, with: allRules });
 };
