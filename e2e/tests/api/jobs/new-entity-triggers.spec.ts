@@ -1,12 +1,12 @@
 import path from "path";
+import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 import _ from "lodash";
 import { Client } from "openapi-fetch";
 
 import { cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
-import { test } from "../../fixtures";
 import { EnvironmentFixture } from "../../../api/entity-fixtures";
-import { faker } from "@faker-js/faker";
+import { test } from "../../fixtures";
 
 const yamlPath = path.join(__dirname, "new-entity-triggers.spec.yaml");
 
@@ -177,11 +177,12 @@ test.describe("trigger new jobs", () => {
       return undefined;
     };
 
-    (await builder.createEnvironmentFixtureClones(randomResourceSelBuilder))
-      .forEach((f) => {
-        expect(f.fetchResponse.response.ok).toBe(true);
-        expect(f.requestBody.resourceSelector).not.toBeDefined();
-      });
+    (
+      await builder.createEnvironmentFixtureClones(randomResourceSelBuilder)
+    ).forEach((f) => {
+      expect(f.fetchResponse.response.ok).toBe(true);
+      expect(f.requestBody.resourceSelector).not.toBeDefined();
+    });
 
     await expectJobQueueEmpty(builder.api, agentId);
   });
@@ -196,11 +197,12 @@ test.describe("trigger new jobs", () => {
         value: faker.string.alphanumeric(5),
       };
     };
-    (await builder.createEnvironmentFixtureClones(randomResourceSelBuilder))
-      .forEach((f) => {
-        expect(f.fetchResponse.response.ok).toBe(true);
-        expect(f.requestBody.resourceSelector).toBeDefined();
-      });
+    (
+      await builder.createEnvironmentFixtureClones(randomResourceSelBuilder)
+    ).forEach((f) => {
+      expect(f.fetchResponse.response.ok).toBe(true);
+      expect(f.requestBody.resourceSelector).toBeDefined();
+    });
 
     await expectJobQueueEmpty(builder.api, agentId);
   });
@@ -309,7 +311,6 @@ async function clearJobQueue(
   }
 }
 
-
 /**
  * Helper function to create initial jobs and clear the queue.
  * Allows testing for subsequent job triggers.
@@ -344,15 +345,23 @@ async function initialJobsTriggerHelper(
   return agentId;
 }
 
-type JobStatus = "successful" | "cancelled" | "skipped" | "in_progress" | "action_required" | "pending" | "failure" | "invalid_job_agent" | "invalid_integration" | "external_run_not_found";
-
+type JobStatus =
+  | "successful"
+  | "cancelled"
+  | "skipped"
+  | "in_progress"
+  | "action_required"
+  | "pending"
+  | "failure"
+  | "invalid_job_agent"
+  | "invalid_integration"
+  | "external_run_not_found";
 
 interface Job {
   id: string;
   jobAgentId: string;
   status: JobStatus;
 }
-
 
 async function updateJobStatus(
   api: Client<paths, `${string}/${string}`>,

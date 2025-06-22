@@ -128,9 +128,9 @@ export class EntitiesBuilder {
       resourceClones.push({
         ...resource,
         name: `${resource.name}-clone-${faker.string.alphanumeric(5)}`,
-        identifier: `${resource.identifier}-clone-${
-          faker.string.alphanumeric(5)
-        }`,
+        identifier: `${resource.identifier}-clone-${faker.string.alphanumeric(
+          5,
+        )}`,
       });
     }
 
@@ -222,7 +222,8 @@ export class EntitiesBuilder {
       original.resourceSelector,
   ): Promise<FetchResultInfo[]> {
     if (
-      !this.fixtures.environments || this.fixtures.environments.length === 0
+      !this.fixtures.environments ||
+      this.fixtures.environments.length === 0
     ) {
       throw new Error("No environments defined in YAML file");
     }
@@ -239,9 +240,9 @@ export class EntitiesBuilder {
 
     for (const environment of environmentClones) {
       console.debug(
-        `Creating cloned environment: ${environment.name} with resSel: ${
-          JSON.stringify(environment.resourceSelector)
-        } `,
+        `Creating cloned environment: ${environment.name} with resSel: ${JSON.stringify(
+          environment.resourceSelector,
+        )} `,
       );
       const requestBody = {
         ...environment,
@@ -399,9 +400,9 @@ export class EntitiesBuilder {
     if (!deployment) {
       throw new Error(`Deployment ${deploymentId} not found`);
     }
-    const clonedTag = `${deployment.versions![0].tag}-clone-${
-      faker.string.alphanumeric(5)
-    }`;
+    const clonedTag = `${deployment.versions![0].tag}-clone-${faker.string.alphanumeric(
+      5,
+    )}`;
     console.debug(
       `Creating deployment version '${clonedTag}' on deployment '${deployment.name}'`,
     );
@@ -464,11 +465,9 @@ export class EntitiesBuilder {
 
           if (variableResponse.response.status !== 201) {
             throw new Error(
-              `Failed to upsert deployment variable: ${
-                JSON.stringify(
-                  variableResponse.error,
-                )
-              }`,
+              `Failed to upsert deployment variable: ${JSON.stringify(
+                variableResponse.error,
+              )}`,
             );
           }
 
@@ -551,7 +550,9 @@ export class EntitiesBuilder {
         name: fetchResponse.data!.name,
       });
 
-      console.debug(`Upserted agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`);
+      console.debug(
+        `Upserted agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`,
+      );
     }
     return results;
   }
@@ -589,7 +590,9 @@ export class EntitiesBuilder {
         name: fetchResponse.data!.name,
       });
 
-      console.debug(`Created cloned agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`);
+      console.debug(
+        `Created cloned agent: ${fetchResponse.data!.name} with agentId ${fetchResponse.data!.id}`,
+      );
     }
     return results;
   }
