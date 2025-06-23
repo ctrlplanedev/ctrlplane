@@ -2,7 +2,7 @@ import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 
-import { eq } from "@ctrlplane/db";
+import { eq, rulesAndTargets } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -32,16 +32,7 @@ export const GET = request()
 
         const policy = await db.query.policy.findFirst({
           where: eq(SCHEMA.policy.id, policyId),
-          with: {
-            targets: true,
-            denyWindows: true,
-            deploymentVersionSelector: true,
-            versionAnyApprovals: true,
-            versionUserApprovals: true,
-            versionRoleApprovals: true,
-            concurrency: true,
-            environmentVersionRollout: true,
-          },
+          with: rulesAndTargets,
         });
 
         const concurrency = policy?.concurrency?.concurrency;

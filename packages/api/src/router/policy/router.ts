@@ -9,6 +9,7 @@ import {
   ilike,
   inArray,
   isNull,
+  rulesAndTargets,
   takeFirst,
 } from "@ctrlplane/db";
 import { createPolicy, policy, updatePolicy } from "@ctrlplane/db/schema";
@@ -51,16 +52,7 @@ export const policyRouter = createTRPCRouter({
             ? ilike(policy.name, `%${input.search}%`)
             : undefined,
         ),
-        with: {
-          targets: true,
-          denyWindows: true,
-          deploymentVersionSelector: true,
-          versionAnyApprovals: true,
-          versionUserApprovals: true,
-          versionRoleApprovals: true,
-          concurrency: true,
-          environmentVersionRollout: true,
-        },
+        with: rulesAndTargets,
         orderBy: [desc(policy.priority), asc(policy.name)],
         limit: input.limit,
       }),
@@ -82,16 +74,7 @@ export const policyRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db.query.policy.findFirst({
         where: eq(policy.id, input.policyId),
-        with: {
-          targets: true,
-          denyWindows: true,
-          deploymentVersionSelector: true,
-          versionAnyApprovals: true,
-          versionUserApprovals: true,
-          versionRoleApprovals: true,
-          concurrency: true,
-          environmentVersionRollout: true,
-        },
+        with: rulesAndTargets,
       }),
     ),
 
@@ -157,16 +140,7 @@ export const policyRouter = createTRPCRouter({
             policyIds.map((p) => p.policyId),
           ),
         ),
-        with: {
-          targets: true,
-          denyWindows: true,
-          deploymentVersionSelector: true,
-          versionAnyApprovals: true,
-          versionUserApprovals: true,
-          versionRoleApprovals: true,
-          concurrency: true,
-          environmentVersionRollout: true,
-        },
+        with: rulesAndTargets,
         orderBy: [desc(schema.policy.priority), asc(schema.policy.name)],
       });
 
@@ -182,9 +156,7 @@ export const policyRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const policy = await ctx.db.query.policy.findFirst({
         where: eq(schema.policy.id, input),
-        with: {
-          targets: true,
-        },
+        with: { targets: true },
       });
       if (policy == null) throw new Error("Policy not found");
 

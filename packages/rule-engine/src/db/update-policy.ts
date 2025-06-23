@@ -1,6 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { buildConflictUpdateColumns, eq, takeFirst } from "@ctrlplane/db";
+import {
+  buildConflictUpdateColumns,
+  eq,
+  rulesAndTargets,
+  takeFirst,
+} from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { getLocalDateAsUTC } from "../utils/time-utils.js";
@@ -238,16 +243,7 @@ export const updatePolicyInTx = async (
 
   const updatedPolicy = await tx.query.policy.findFirst({
     where: eq(SCHEMA.policy.id, id),
-    with: {
-      targets: true,
-      denyWindows: true,
-      deploymentVersionSelector: true,
-      versionAnyApprovals: true,
-      versionUserApprovals: true,
-      versionRoleApprovals: true,
-      concurrency: true,
-      environmentVersionRollout: true,
-    },
+    with: rulesAndTargets,
   });
 
   if (updatedPolicy == null) throw new Error("Policy not found");
