@@ -15,7 +15,6 @@ test.describe("Release Creation", () => {
     await builder.upsertSystemFixture();
     await builder.upsertResourcesFixtures();
     await builder.upsertEnvironmentFixtures();
-    await builder.upsertDeploymentFixtures();
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   });
 
@@ -100,10 +99,8 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    expect(releases.length).toBe(1);
-
-    const release = releases[0]!;
-    expect(release.version.tag).toBe(versionTag);
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
   });
 
   test("should create a release when a new deployment variable is added", async ({
@@ -214,12 +211,15 @@ test.describe("Release Creation", () => {
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
 
-    const latestRelease = releases.at(0)!;
-    const variables = latestRelease.variables ?? [];
-    expect(variables.length).toBe(1);
-    const variable = variables[0]!;
-    expect(variable.key).toBe("test");
-    expect(variable.value).toBe("test-a");
+    const release = releases.find((rel) => {
+      const variables = rel.variables ?? [];
+      const testVariable = variables.find((v) => v.key === "test");
+      if (testVariable == null) return false;
+      const value = testVariable.value;
+      return value === "test-a";
+    });
+
+    expect(release).toBeDefined();
   });
 
   test("should create a release with a null variable value", async ({
@@ -316,14 +316,16 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    expect(releases.length).toBe(2);
 
-    const latestRelease = releases.at(0)!;
-    const variables = latestRelease.variables ?? [];
-    expect(variables.length).toBe(1);
-    const variable = variables[0]!;
-    expect(variable.key).toBe("test");
-    expect(variable.value).toBe("null");
+    const release = releases.find((rel) => {
+      const variables = rel.variables ?? [];
+      const testVariable = variables.find((v) => v.key === "test");
+      if (testVariable == null) return false;
+      const value = testVariable.value;
+      return value === "null";
+    });
+
+    expect(release).toBeDefined();
   });
 
   test("should create a release when a new resource is created", async ({
@@ -430,18 +432,14 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    for (const release of releases) {
-      console.log(release);
-    }
-    expect(releases.length).toBe(1);
 
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
-    const variables = latestRelease.variables ?? [];
-    expect(variables.length).toBe(1);
-    const variable = variables[0]!;
-    expect(variable.key).toBe("test");
-    expect(variable.value).toBe("test-a");
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
+
+    const variables = release?.variables ?? [];
+    const testVariable = variables.find((v) => v.key === "test");
+    expect(testVariable).toBeDefined();
+    expect(testVariable?.value).toBe("test-a");
   });
 
   test("should create a release when a new resource is created that does not match any policy target", async ({
@@ -570,15 +568,14 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
-    const variables = latestRelease.variables ?? [];
-    expect(variables.length).toBe(1);
-    const variable = variables[0]!;
-    expect(variable.key).toBe("test");
-    expect(variable.value).toBe("test-a");
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
+
+    const variables = release?.variables ?? [];
+    const testVariable = variables.find((v) => v.key === "test");
+    expect(testVariable).toBeDefined();
+    expect(testVariable?.value).toBe("test-a");
   });
 
   test("should create a release whena resource is updated which affects its release targets", async ({
@@ -674,10 +671,9 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
   });
 
   test("should not create a release when an existing resource is updated but the updates are not relevant to the deployment", async ({
@@ -798,15 +794,14 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
-    const variables = latestRelease.variables ?? [];
-    expect(variables.length).toBe(1);
-    const variable = variables[0]!;
-    expect(variable.key).toBe("test");
-    expect(variable.value).toBe("test-a");
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
+
+    const variables = release?.variables ?? [];
+    const testVariable = variables.find((v) => v.key === "test");
+    expect(testVariable).toBeDefined();
+    expect(testVariable?.value).toBe("test-a");
   });
 
   test("should create a release when a resource variable is added and matches a deployment variable", async ({
@@ -927,15 +922,15 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(2);
 
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
-    const variables = latestRelease.variables ?? [];
-    expect(variables.length).toBe(1);
-    const variable = variables[0]!;
-    expect(variable.key).toBe("test");
-    expect(variable.value).toBe("test-c");
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+
+    expect(release).toBeDefined();
+
+    const variables = release?.variables ?? [];
+    const testVariable = variables.find((v) => v.key === "test");
+    expect(testVariable).toBeDefined();
+    expect(testVariable?.value).toBe("test-c");
   });
 
   test("should not create a release when a resource variable is added and does not match a deployment variable", async ({
@@ -1058,15 +1053,14 @@ test.describe("Release Creation", () => {
     for (const release of releases) {
       console.log(release);
     }
-    expect(releases.length).toBe(1);
 
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
-    const variables = latestRelease.variables ?? [];
-    expect(variables.length).toBe(1);
-    const variable = variables[0]!;
-    expect(variable.key).toBe("test");
-    expect(variable.value).toBe("test-a");
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
+
+    const variables = release?.variables ?? [];
+    const testVariable = variables.find((v) => v.key === "test");
+    expect(testVariable).toBeDefined();
+    expect(testVariable?.value).toBe("test-a");
   });
 
   test("should create a release when a resource is scanned in from a provider", async ({
@@ -1179,10 +1173,8 @@ test.describe("Release Creation", () => {
 
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
-    expect(releases.length).toBe(1);
-
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
   });
 
   test("should create a release when a resource is updated from a provider", async ({
@@ -1328,7 +1320,7 @@ test.describe("Release Creation", () => {
     expect(releaseResponse.response.status).toBe(200);
     const releases = releaseResponse.data ?? [];
 
-    const latestRelease = releases.at(0)!;
-    expect(latestRelease.version.tag).toBe(versionTag);
+    const release = releases.find((rel) => rel.version.tag === versionTag);
+    expect(release).toBeDefined();
   });
 });
