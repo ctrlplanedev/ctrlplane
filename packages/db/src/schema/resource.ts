@@ -488,7 +488,7 @@ const baseVariableSchema = createInsertSchema(resourceVariable);
 export const directVariableSchema = baseVariableSchema.extend({
   id: z.string().uuid(),
   valueType: z.literal("direct"),
-  value: z.union([z.string(), z.number(), z.boolean()]),
+  value: z.union([z.string(), z.number(), z.boolean(), z.record(z.any())]),
   reference: z.null().or(z.undefined()),
   path: z.null().or(z.undefined()),
   defaultValue: z.any().optional(),
