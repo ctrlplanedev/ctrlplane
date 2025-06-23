@@ -61,7 +61,7 @@ export const EditResourceVariableDialog: React.FC<
       }),
     type: z.enum(["string", "number", "boolean"]),
     value: z
-      .union([z.string(), z.number(), z.boolean()])
+      .union([z.string(), z.number(), z.boolean(), z.record(z.any())])
       .refine((v) => (typeof v === "string" ? v.length > 0 : true), {
         message: "Value is required",
       }),
