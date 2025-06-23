@@ -91,7 +91,7 @@ export default async function VariablesPage(props: {
                         <span className="rounded-md p-0.5 px-1 font-mono text-red-400">
                           {typeof v.value === "object"
                             ? JSON.stringify(v.value)
-                            : v.value}
+                            : String(v.value)}
                         </span>
                       )}
                     </TableCell>
