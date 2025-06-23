@@ -3,7 +3,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, desc, eq } from "@ctrlplane/db";
+import { and, desc, eq, isNull, or } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
@@ -74,14 +74,17 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
           eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
         )
         .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
-        .innerJoin(
+        .leftJoin(
           SCHEMA.jobMetadata,
           eq(SCHEMA.jobMetadata.jobId, SCHEMA.job.id),
         )
         .where(
           and(
             eq(SCHEMA.versionRelease.versionId, versionId),
-            eq(SCHEMA.jobMetadata.key, ReservedMetadataKey.Links),
+            or(
+              eq(SCHEMA.jobMetadata.key, ReservedMetadataKey.Links),
+              isNull(SCHEMA.jobMetadata.key),
+            ),
           ),
         )
         .as("version_subquery");
@@ -120,9 +123,11 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
               const { version_subquery } = row;
               if (version_subquery == null) return null;
 
-              const links = JSON.parse(
-                version_subquery.jobMetadataValue,
-              ) as Record<string, string>;
+              const { jobMetadataValue } = version_subquery;
+              const links =
+                jobMetadataValue == null
+                  ? ({} as Record<string, string>)
+                  : (JSON.parse(jobMetadataValue) as Record<string, string>);
               return {
                 id: version_subquery.jobId,
                 createdAt: version_subquery.jobCreatedAt,
