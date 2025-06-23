@@ -38,6 +38,7 @@ import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
 import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
 import { createPolicyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { createPolicyRuleEnvironmentVersionRollout } from "./rules/environment-version-rollout.js";
+import { createPolicyRuleRetry } from "./rules/retry.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable(
@@ -162,6 +163,8 @@ export const createPolicy = z.intersection(
       .omit({ policyId: true })
       .optional()
       .nullable(),
+
+    retry: createPolicyRuleRetry.omit({ policyId: true }).optional().nullable(),
   }),
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;
