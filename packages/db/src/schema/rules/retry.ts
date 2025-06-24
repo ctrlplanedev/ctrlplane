@@ -18,3 +18,5 @@ export const policyRuleRetry = pgTable("policy_rule_retry", {
 export const createPolicyRuleRetry = createInsertSchema(policyRuleRetry, {
   policyId: z.string().uuid(),
 }).omit({ id: true });
+
+export type PolicyRuleMaxRetries = typeof policyRuleRetry.$inferSelect;

@@ -86,6 +86,7 @@ export const PolicyContextProvider: React.FC<{
       versionUserApprovals: [],
       versionRoleApprovals: [],
       concurrency: null,
+      maxRetries: null,
     },
   });
   const [activeTab, setActiveTab] = useState<PolicyTab>("config");
