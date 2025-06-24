@@ -7,7 +7,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
-import type { MaybeVariable } from "./variables/types.js";
+import type { MaybeVariable, Variable } from "./variables/types.js";
 import { VariableManager } from "./variables/variables.js";
 
 const log = logger.child({
@@ -19,6 +19,71 @@ export class VariableReleaseManager implements ReleaseManager {
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
   ) {}
+
+  private async insertRelease(tx: Tx, releaseTargetId: string) {
+    return tx
+      .insert(schema.variableSetRelease)
+      .values({ releaseTargetId })
+      .returning()
+      .then(takeFirst);
+  }
+
+  private async getExistingValueSnapshots(tx: Tx, variables: Variable<any>[]) {
+    const { workspaceId } = this.releaseTarget;
+
+    const variableEqualityChecks = variables.map((v) => {
+      const valueCheck =
+        v.value == null
+          ? isNull(schema.variableValueSnapshot.value)
+          : eq(schema.variableValueSnapshot.value, v.value);
+      return and(eq(schema.variableValueSnapshot.key, v.key), valueCheck);
+    });
+
+    return tx
+      .select()
+      .from(schema.variableValueSnapshot)
+      .where(
+        and(
+          eq(schema.variableValueSnapshot.workspaceId, workspaceId),
+          or(...variableEqualityChecks),
+        ),
+      );
+  }
+
+  private async insertNewValueSnapshots(tx: Tx, variables: Variable<any>[]) {
+    const { workspaceId } = this.releaseTarget;
+    const newSnapshotInserts = variables.map((v) => ({
+      workspaceId,
+      key: v.key,
+      value: v.value,
+      sensitive: v.sensitive,
+    }));
+
+    return tx
+      .insert(schema.variableValueSnapshot)
+      .values(newSnapshotInserts)
+      .onConflictDoNothing()
+      .returning();
+  }
+
+  private async getValueSnapshotsForRelease(
+    tx: Tx,
+    variables: Variable<any>[],
+  ) {
+    const existingSnapshots = await this.getExistingValueSnapshots(
+      tx,
+      variables,
+    );
+    const newVarsToInsert = variables.filter(
+      (v) => !existingSnapshots.some((s) => s.key === v.key),
+    );
+    if (newVarsToInsert.length === 0) return existingSnapshots;
+    const newSnapshots = await this.insertNewValueSnapshots(
+      tx,
+      newVarsToInsert,
+    );
+    return [...existingSnapshots, ...newSnapshots];
+  }
 
   async upsertRelease(variables: MaybeVariable[]) {
     const latestRelease = await this.findLatestRelease();
@@ -39,62 +104,22 @@ export class VariableReleaseManager implements ReleaseManager {
       return { created: false, release: latestRelease };
 
     return this.db.transaction(async (tx) => {
-      const release = await tx
-        .insert(schema.variableSetRelease)
-        .values({ releaseTargetId: this.releaseTarget.id })
-        .returning()
-        .then(takeFirst);
+      const release = await this.insertRelease(tx, this.releaseTarget.id);
 
       const vars = _.compact(variables);
       if (vars.length === 0) return { created: true, release };
 
-      await tx
-        .insert(schema.variableValueSnapshot)
-        .values(
-          vars.map((v) => ({
-            workspaceId: this.releaseTarget.workspaceId,
-            key: v.key,
-            value: v.value,
-            sensitive: v.sensitive,
-          })),
-        )
-        .onConflictDoNothing();
-
-      // since the upsert can do onConflictDoNothing, if a variable was already in the db, it will not be included in the result
-      // return. Hence we need to re-query the db to get the snapshots
-      const variableValueSnapshots = await tx
-        .select()
-        .from(schema.variableValueSnapshot)
-        .where(
-          or(
-            ...vars.map((v) =>
-              and(
-                eq(schema.variableValueSnapshot.key, v.key),
-                v.value === null
-                  ? isNull(schema.variableValueSnapshot.value)
-                  : eq(schema.variableValueSnapshot.value, v.value),
-                eq(
-                  schema.variableValueSnapshot.workspaceId,
-                  this.releaseTarget.workspaceId,
-                ),
-              ),
-            ),
-          ),
-        );
-
-      if (variableValueSnapshots.length === 0) {
+      const valueSnapshots = await this.getValueSnapshotsForRelease(tx, vars);
+      if (valueSnapshots.length === 0) {
         log.error(
           "upsert variable release had variables to insert, but no snapshots were found",
-          {
-            releaseTargetId: this.releaseTarget.id,
-            variables,
-          },
+          { releaseTargetId: this.releaseTarget.id, variables },
         );
         return { created: true, release };
       }
 
       await tx.insert(schema.variableSetReleaseValue).values(
-        variableValueSnapshots.map((v) => ({
+        valueSnapshots.map((v) => ({
           variableSetReleaseId: release.id,
           variableValueSnapshotId: v.id,
         })),
