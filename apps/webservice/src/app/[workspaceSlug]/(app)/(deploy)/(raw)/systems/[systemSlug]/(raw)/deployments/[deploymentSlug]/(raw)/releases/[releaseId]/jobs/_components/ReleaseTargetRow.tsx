@@ -135,6 +135,9 @@ const LinksCell: React.FC<{
 }> = ({ links }) => (
   <TableCell onClick={(e) => e.stopPropagation()} className="py-0">
     <div className="flex items-center gap-1">
+      {Object.entries(links).length === 0 && (
+        <span className="text-sm text-muted-foreground">No links</span>
+      )}
       {Object.entries(links).map(([label, url]) => (
         <Link
           key={label}

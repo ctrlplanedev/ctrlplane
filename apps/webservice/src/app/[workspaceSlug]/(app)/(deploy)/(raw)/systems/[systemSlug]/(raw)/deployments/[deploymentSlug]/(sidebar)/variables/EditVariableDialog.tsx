@@ -119,7 +119,7 @@ export const EditVariableDialog: React.FC<EditVariableDialogProps> = ({
                             {SCHEMA.isDeploymentVariableValueDirect(v) &&
                               (typeof v.value === "object"
                                 ? JSON.stringify(v.value)
-                                : v.value)}
+                                : String(v.value))}
 
                             {SCHEMA.isDeploymentVariableValueReference(v) &&
                               v.reference}

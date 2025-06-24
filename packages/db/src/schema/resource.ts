@@ -460,10 +460,14 @@ export const createResourceVariable = createInsertSchema(resourceVariable, {
 // For updates, we'll create a new schema that makes all fields optional
 export const updateResourceVariable = z
   .object({
-    value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    value: z
+      .union([z.string(), z.number(), z.boolean(), z.record(z.any())])
+      .optional(),
     reference: z.string().optional(),
     path: z.array(z.string()).optional(),
-    defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    defaultValue: z
+      .union([z.string(), z.number(), z.boolean(), z.record(z.any())])
+      .optional(),
     valueType: z.enum(["direct", "reference"]).optional(),
     sensitive: z.boolean().optional(),
   })
@@ -488,7 +492,7 @@ const baseVariableSchema = createInsertSchema(resourceVariable);
 export const directVariableSchema = baseVariableSchema.extend({
   id: z.string().uuid(),
   valueType: z.literal("direct"),
-  value: z.union([z.string(), z.number(), z.boolean()]),
+  value: z.union([z.string(), z.number(), z.boolean(), z.record(z.any())]),
   reference: z.null().or(z.undefined()),
   path: z.null().or(z.undefined()),
   defaultValue: z.any().optional(),

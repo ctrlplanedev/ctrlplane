@@ -14,7 +14,6 @@ test.describe("Release Targets API", () => {
   test.beforeAll(async ({ api, workspace }) => {
     builder = new EntitiesBuilder(api, workspace, yamlPath);
 
-    await builder.upsertPolicyFixtures();
     await builder.upsertSystemFixture();
     await builder.upsertResourcesFixtures();
     await builder.upsertEnvironmentFixtures();
