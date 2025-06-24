@@ -75,6 +75,12 @@ export const openapi: Swagger.SwaggerV3 = {
         minimum: 1,
         format: "int32",
       },
+      MaxRetries: {
+        type: "integer",
+        nullable: true,
+        minimum: 1,
+        format: "int32",
+      },
       EnvironmentVersionRollout: {
         type: "object",
         properties: {
@@ -134,6 +140,9 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           environmentVersionRollout: {
             $ref: "#/components/schemas/EnvironmentVersionRollout",
+          },
+          maxRetries: {
+            $ref: "#/components/schemas/MaxRetries",
           },
         },
         required: [
@@ -207,6 +216,9 @@ export const openapi: Swagger.SwaggerV3 = {
                   },
                   environmentVersionRollout: {
                     $ref: "#/components/schemas/EnvironmentVersionRollout",
+                  },
+                  maxRetries: {
+                    $ref: "#/components/schemas/MaxRetries",
                   },
                 },
                 required: ["name", "workspaceId", "targets"],

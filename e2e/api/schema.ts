@@ -1415,6 +1415,8 @@ export interface components {
     };
     /** Format: int32 */
     PolicyConcurrency: number | null;
+    /** Format: int32 */
+    MaxRetries: number | null;
     EnvironmentVersionRollout: {
       /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. */
       positionGrowthFactor: number;
@@ -1449,6 +1451,7 @@ export interface components {
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
       concurrency?: components["schemas"]["PolicyConcurrency"];
       environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
+      maxRetries?: components["schemas"]["MaxRetries"];
     };
     ReleaseTargetLockRecord: {
       /** Format: uuid */
@@ -1689,7 +1692,7 @@ export interface operations {
     requestBody?: {
       content: {
         "application/json": {
-          reason: string;
+          reason?: string;
           /** Format: date-time */
           approvedAt?: string;
         };
@@ -1750,7 +1753,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
+    requestBody?: {
       content: {
         "application/json": {
           reason?: string;
@@ -1935,9 +1938,7 @@ export interface operations {
     requestBody?: {
       content: {
         "application/json": {
-          reason: string;
-          /** Format: date-time */
-          approvedAt?: string;
+          reason?: string;
         };
       };
     };
@@ -1996,7 +1997,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody: {
+    requestBody?: {
       content: {
         "application/json": {
           reason?: string;
@@ -3134,6 +3135,7 @@ export interface operations {
           }[];
           concurrency?: components["schemas"]["PolicyConcurrency"];
           environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
+          maxRetries?: components["schemas"]["MaxRetries"];
         };
       };
     };
@@ -3238,6 +3240,7 @@ export interface operations {
           versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
           concurrency?: components["schemas"]["PolicyConcurrency"];
           environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
+          maxRetries?: components["schemas"]["MaxRetries"];
         };
       };
     };

@@ -38,7 +38,6 @@ import { createPolicyRuleUserApproval } from "./rules/approval-user.js";
 import { createPolicyRuleDenyWindow } from "./rules/deny-window.js";
 import { createPolicyRuleDeploymentVersionSelector } from "./rules/deployment-selector.js";
 import { createPolicyRuleEnvironmentVersionRollout } from "./rules/environment-version-rollout.js";
-import { createPolicyRuleRetry } from "./rules/retry.js";
 import { workspace } from "./workspace.js";
 
 export const policy = pgTable(
@@ -164,7 +163,14 @@ export const createPolicy = z.intersection(
       .optional()
       .nullable(),
 
-    retry: createPolicyRuleRetry.omit({ policyId: true }).optional().nullable(),
+    maxRetries: z
+      .number()
+      .optional()
+      .nullable()
+      .refine((data) => data == null || data > 0, {
+        message: "Retry must be greater than 0 or null",
+        path: ["retry"],
+      }),
   }),
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;
@@ -198,6 +204,15 @@ export const updatePolicy = policyInsertSchema.partial().extend({
     .refine((data) => data == null || data > 0, {
       message: "Concurrency must be greater than 0",
       path: ["concurrency"],
+    }),
+
+  maxRetries: z
+    .number()
+    .optional()
+    .nullable()
+    .refine((data) => data == null || data > 0, {
+      message: "Max retries must be greater than 0 or null",
+      path: ["maxRetries"],
     }),
 
   environmentVersionRollout: createPolicyRuleEnvironmentVersionRollout

@@ -1,0 +1,31 @@
+system:
+  name: "{{ prefix }}-retry-policy"
+  slug: "{{ prefix }}-retry-policy"
+  description: System for testing retry policy
+
+environments:
+  - name: "{{ prefix }}"
+    description: Prod environment
+    systemId: "{{ prefix }}-system"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+resources:
+  - name: "{{ prefix }}-resource"
+    kind: service
+    identifier: "{{ prefix }}-resource"
+    version: "1.0.0"
+    config: {}
+    metadata:
+      env: prod
+
+policies:
+  - name: "{{ prefix }}-retry-policy"
+    targets:
+      - environmentSelector:
+          type: name
+          operator: contains
+          value: "{{ prefix }}"
+    maxRetries: 3

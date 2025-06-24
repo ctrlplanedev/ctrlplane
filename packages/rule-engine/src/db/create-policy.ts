@@ -93,6 +93,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     versionUserApprovals,
     versionRoleApprovals,
     concurrency,
+    maxRetries,
     environmentVersionRollout,
     ...rest
   } = input;
@@ -211,6 +212,15 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         ),
       });
 
+  if (maxRetries != null)
+    await tx
+      .insert(SCHEMA.policyRuleRetry)
+      .values({ maxRetries, policyId })
+      .onConflictDoUpdate({
+        target: [SCHEMA.policyRuleRetry.policyId],
+        set: buildConflictUpdateColumns(SCHEMA.policyRuleRetry, ["maxRetries"]),
+      });
+
   return {
     ...policy,
     targets,
@@ -221,5 +231,6 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
     versionRoleApprovals,
     concurrency,
     environmentVersionRollout,
+    maxRetries,
   };
 };

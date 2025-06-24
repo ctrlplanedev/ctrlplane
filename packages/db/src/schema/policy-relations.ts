@@ -33,7 +33,7 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
 
   concurrency: one(policyRuleConcurrency),
   environmentVersionRollout: one(policyRuleEnvironmentVersionRollout),
-  retry: one(policyRuleRetry),
+  maxRetries: one(policyRuleRetry),
 }));
 
 export const policyTargetRelations = relations(

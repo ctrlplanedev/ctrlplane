@@ -148,7 +148,7 @@ const getMatchedPolicies = async (
   releaseTarget: schema.ReleaseTarget,
 ) =>
   db
-    .selectDistinctOn([schema.policy.id], {
+    .select({
       policyId: schema.policy.id,
       concurrency: schema.policyRuleConcurrency,
       retry: schema.policyRuleRetry,

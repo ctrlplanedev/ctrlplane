@@ -132,6 +132,9 @@ export const openapi: Swagger.SwaggerV3 = {
                   environmentVersionRollout: {
                     $ref: "#/components/schemas/EnvironmentVersionRollout",
                   },
+                  maxRetries: {
+                    $ref: "#/components/schemas/MaxRetries",
+                  },
                 },
               },
             },

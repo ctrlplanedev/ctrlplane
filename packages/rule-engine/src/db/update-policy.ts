@@ -199,6 +199,26 @@ const updateEnvironmentVersionRollout = async (
     });
 };
 
+const updateMaxRetries = async (
+  tx: Tx,
+  policyId: string,
+  maxRetries: SCHEMA.UpdatePolicy["maxRetries"],
+) => {
+  if (maxRetries === undefined) return;
+  if (maxRetries === null)
+    return tx
+      .delete(SCHEMA.policyRuleRetry)
+      .where(eq(SCHEMA.policyRuleRetry.policyId, policyId));
+
+  await tx
+    .insert(SCHEMA.policyRuleRetry)
+    .values({ maxRetries, policyId })
+    .onConflictDoUpdate({
+      target: [SCHEMA.policyRuleRetry.policyId],
+      set: buildConflictUpdateColumns(SCHEMA.policyRuleRetry, ["maxRetries"]),
+    });
+};
+
 export const updatePolicyInTx = async (
   tx: Tx,
   id: string,
@@ -212,6 +232,7 @@ export const updatePolicyInTx = async (
     versionUserApprovals,
     versionRoleApprovals,
     concurrency,
+    maxRetries,
     environmentVersionRollout,
     ...rest
   } = input;
@@ -239,6 +260,7 @@ export const updatePolicyInTx = async (
     updateVersionRoleApprovals(tx, policy.id, versionRoleApprovals),
     updateConcurrency(tx, policy.id, concurrency),
     updateEnvironmentVersionRollout(tx, policy.id, environmentVersionRollout),
+    updateMaxRetries(tx, policy.id, maxRetries),
   ]);
 
   const updatedPolicy = await tx.query.policy.findFirst({
@@ -259,9 +281,11 @@ export const updatePolicyInTx = async (
             ],
         }
       : null;
+  const updatedMaxRetries = updatedPolicy.maxRetries?.maxRetries;
   return {
     ...updatedPolicy,
     concurrency: updatedConcurrency,
     environmentVersionRollout: updatedEnvironmentVersionRollout,
+    maxRetries: updatedMaxRetries,
   };
 };
