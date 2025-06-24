@@ -168,8 +168,7 @@ export const createPolicy = z.intersection(
       .optional()
       .nullable()
       .refine((data) => data == null || data > 0, {
-        message: "Retry must be greater than 0 or null",
-        path: ["retry"],
+        message: "Max retries must be greater than 0 or null",
       }),
   }),
 );
@@ -212,7 +211,6 @@ export const updatePolicy = policyInsertSchema.partial().extend({
     .nullable()
     .refine((data) => data == null || data > 0, {
       message: "Max retries must be greater than 0 or null",
-      path: ["maxRetries"],
     }),
 
   environmentVersionRollout: createPolicyRuleEnvironmentVersionRollout
