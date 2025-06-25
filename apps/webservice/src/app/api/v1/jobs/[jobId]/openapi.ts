@@ -159,11 +159,10 @@ export const openapi: Swagger.SwaggerV3 = {
                 schema: {
                   type: "object",
                   properties: {
-                    id: {
-                      type: "string",
-                    },
+                    success: { type: "boolean" },
+                    message: { type: "string" },
                   },
-                  required: ["id"],
+                  required: ["success", "message"],
                 },
               },
             },

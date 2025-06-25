@@ -2285,12 +2285,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "id"
+                    "success",
+                    "message"
                   ]
                 }
               }

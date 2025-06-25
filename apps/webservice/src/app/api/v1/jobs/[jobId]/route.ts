@@ -43,7 +43,6 @@ export const PATCH = async (
   const response = await req.json();
   const body = bodySchema.parse(response);
 
-  const job = await updateJob(params.jobId, body);
-
-  return NextResponse.json(job);
+  await updateJob(params.jobId, body);
+  return NextResponse.json({ success: true, message: "Job update queued" });
 };
