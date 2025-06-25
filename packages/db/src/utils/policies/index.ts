@@ -7,6 +7,7 @@ export const allRules = {
   versionRoleApprovals: _true,
   concurrency: _true,
   environmentVersionRollout: _true,
+  maxRetries: _true,
 };
 
 export const rulesAndTargets = { targets: _true, ...allRules };

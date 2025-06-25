@@ -15,6 +15,7 @@ import {
   policyRuleRoleApproval,
   policyRuleUserApproval,
 } from "./rules/index.js";
+import { policyRuleRetry } from "./rules/retry.js";
 import { workspace } from "./workspace.js";
 
 export const policyRelations = relations(policy, ({ many, one }) => ({
@@ -31,8 +32,8 @@ export const policyRelations = relations(policy, ({ many, one }) => ({
   versionAnyApprovals: one(policyRuleAnyApproval),
 
   concurrency: one(policyRuleConcurrency),
-
   environmentVersionRollout: one(policyRuleEnvironmentVersionRollout),
+  maxRetries: one(policyRuleRetry),
 }));
 
 export const policyTargetRelations = relations(

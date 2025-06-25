@@ -25,6 +25,7 @@ type Policy = SCHEMA.Policy & {
   versionRoleApprovals: SCHEMA.PolicyRuleRoleApproval[];
   concurrency: SCHEMA.PolicyRuleConcurrency | null;
   environmentVersionRollout: SCHEMA.PolicyRuleEnvironmentVersionRollout | null;
+  maxRetries: SCHEMA.PolicyRuleMaxRetries | null;
 };
 
 type PolicyFormContextType = {
@@ -58,7 +59,13 @@ export const PolicyFormContextProvider: React.FC<{
             ],
         }
       : null;
-  const defaultValues = { ...policy, concurrency, environmentVersionRollout };
+  const maxRetries = policy.maxRetries?.maxRetries ?? null;
+  const defaultValues = {
+    ...policy,
+    concurrency,
+    environmentVersionRollout,
+    maxRetries,
+  };
   const form = useForm({
     schema: SCHEMA.updatePolicy,
     defaultValues,

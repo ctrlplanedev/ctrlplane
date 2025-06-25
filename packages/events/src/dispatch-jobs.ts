@@ -151,8 +151,16 @@ const toCompute = () => ({
   }),
 });
 
+const toDispatch = () => ({
+  ctrlplaneJob: (jobId: string) =>
+    getQueue(Channel.DispatchJob).add(jobId, {
+      jobId,
+    }),
+});
+
 export const dispatchQueueJob = () => ({
   toUpdatedResource: dispatchUpdatedResourceJob,
   toEvaluate,
   toCompute,
+  toDispatch,
 });

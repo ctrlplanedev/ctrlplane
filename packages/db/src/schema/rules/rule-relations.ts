@@ -19,6 +19,7 @@ import { policyRuleConcurrency } from "./concurrency.js";
 import { policyRuleDenyWindow } from "./deny-window.js";
 import { policyRuleDeploymentVersionSelector } from "./deployment-selector.js";
 import { policyRuleEnvironmentVersionRollout } from "./environment-version-rollout.js";
+import { policyRuleRetry } from "./retry.js";
 
 // User relations to approval records
 export const userApprovalRelations = relations(user, ({ many }) => ({
@@ -145,6 +146,16 @@ export const policyRuleEnvironmentVersionRolloutRelations = relations(
   ({ one }) => ({
     policy: one(policy, {
       fields: [policyRuleEnvironmentVersionRollout.policyId],
+      references: [policy.id],
+    }),
+  }),
+);
+
+export const policyRuleRetryRelations = relations(
+  policyRuleRetry,
+  ({ one }) => ({
+    policy: one(policy, {
+      fields: [policyRuleRetry.policyId],
       references: [policy.id],
     }),
   }),

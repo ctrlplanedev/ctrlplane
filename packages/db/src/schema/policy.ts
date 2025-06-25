@@ -162,6 +162,14 @@ export const createPolicy = z.intersection(
       .omit({ policyId: true })
       .optional()
       .nullable(),
+
+    maxRetries: z
+      .number()
+      .optional()
+      .nullable()
+      .refine((data) => data == null || data > 0, {
+        message: "Max retries must be greater than 0 or null",
+      }),
   }),
 );
 export type CreatePolicy = z.infer<typeof createPolicy>;
@@ -195,6 +203,14 @@ export const updatePolicy = policyInsertSchema.partial().extend({
     .refine((data) => data == null || data > 0, {
       message: "Concurrency must be greater than 0",
       path: ["concurrency"],
+    }),
+
+  maxRetries: z
+    .number()
+    .optional()
+    .nullable()
+    .refine((data) => data == null || data > 0, {
+      message: "Max retries must be greater than 0 or null",
     }),
 
   environmentVersionRollout: createPolicyRuleEnvironmentVersionRollout

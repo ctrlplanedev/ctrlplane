@@ -46,6 +46,7 @@ export const GET = request()
                   ],
               }
             : null;
+        const maxRetries = policy?.maxRetries?.maxRetries;
 
         if (policy == null)
           return NextResponse.json(
@@ -57,6 +58,7 @@ export const GET = request()
           ...policy,
           concurrency,
           environmentVersionRollout,
+          maxRetries,
         });
       } catch (error) {
         log.error("Failed to get policy", { error });

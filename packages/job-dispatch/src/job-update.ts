@@ -2,6 +2,8 @@ import type { Tx } from "@ctrlplane/db";
 
 import {
   and,
+  count,
+  desc,
   eq,
   inArray,
   ne,
@@ -10,11 +12,16 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { dispatchQueueJob } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
+import {
+  exitedStatus,
+  failedStatuses,
+  JobStatus,
+} from "@ctrlplane/validators/jobs";
 
 const log = logger.child({ module: "job-update" });
 
@@ -89,6 +96,24 @@ const getCompletedAt = (
   return null;
 };
 
+const dbUpdateJob = async (
+  db: Tx,
+  jobId: string,
+  jobBeforeUpdate: schema.Job,
+  data: schema.UpdateJob,
+) => {
+  const startedAt = getStartedAt(jobBeforeUpdate, data);
+  const completedAt = getCompletedAt(jobBeforeUpdate, data);
+  const updates = { ...data, startedAt, completedAt };
+
+  return db
+    .update(schema.job)
+    .set(updates)
+    .where(eq(schema.job.id, jobId))
+    .returning()
+    .then(takeFirst);
+};
+
 const getIsJobJustCompleted = (
   previousStatus: JobStatus,
   newStatus: JobStatus,
@@ -118,17 +143,17 @@ const getReleaseTarget = (db: Tx, jobId: string) =>
     .then(takeFirstOrNull)
     .then((row) => row?.release_target ?? null);
 
-const getReleaseTargetsInConcurrencyGroup = async (
+const getMatchedPolicies = async (
   db: Tx,
-  jobReleaseTarget: schema.ReleaseTarget,
-) => {
-  const policiesMatchingTargetWithConcurrency = await db
-    .select()
+  releaseTarget: schema.ReleaseTarget,
+) =>
+  db
+    .select({
+      policyId: schema.policy.id,
+      concurrency: schema.policyRuleConcurrency,
+      retry: schema.policyRuleRetry,
+    })
     .from(schema.policy)
-    .innerJoin(
-      schema.policyRuleConcurrency,
-      eq(schema.policyRuleConcurrency.policyId, schema.policy.id),
-    )
     .innerJoin(
       schema.policyTarget,
       eq(schema.policyTarget.policyId, schema.policy.id),
@@ -140,15 +165,28 @@ const getReleaseTargetsInConcurrencyGroup = async (
         schema.policyTarget.id,
       ),
     )
+    .leftJoin(
+      schema.policyRuleRetry,
+      eq(schema.policyRuleRetry.policyId, schema.policy.id),
+    )
+    .leftJoin(
+      schema.policyRuleConcurrency,
+      eq(schema.policyRuleConcurrency.policyId, schema.policy.id),
+    )
     .where(
       eq(
         schema.computedPolicyTargetReleaseTarget.releaseTargetId,
-        jobReleaseTarget.id,
+        releaseTarget.id,
       ),
     )
-    .then((rows) => rows.map((row) => row.policy));
+    .orderBy(desc(schema.policy.priority));
 
-  return db
+const getReleaseTargetsInConcurrencyGroup = async (
+  db: Tx,
+  policyIds: string[],
+  jobReleaseTargetId: string,
+) =>
+  db
     .select()
     .from(schema.releaseTarget)
     .innerJoin(
@@ -167,14 +205,71 @@ const getReleaseTargetsInConcurrencyGroup = async (
     )
     .where(
       and(
-        ne(schema.releaseTarget.id, jobReleaseTarget.id),
-        inArray(
-          schema.policyTarget.policyId,
-          policiesMatchingTargetWithConcurrency.map((p) => p.id),
-        ),
+        ne(schema.releaseTarget.id, jobReleaseTargetId),
+        inArray(schema.policyTarget.policyId, policyIds),
       ),
     )
     .then((rows) => rows.map((row) => row.release_target));
+
+const getNumRetryAttempts = async (db: Tx, jobId: string) => {
+  const releaseResult = await db
+    .select()
+    .from(schema.release)
+    .innerJoin(
+      schema.releaseJob,
+      eq(schema.releaseJob.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.versionRelease,
+      eq(schema.release.versionReleaseId, schema.versionRelease.id),
+    )
+    .innerJoin(
+      schema.variableSetRelease,
+      eq(schema.release.variableReleaseId, schema.variableSetRelease.id),
+    )
+    .where(eq(schema.releaseJob.jobId, jobId))
+    .then(takeFirst);
+
+  return db
+    .select({ count: count() })
+    .from(schema.releaseJob)
+    .where(eq(schema.releaseJob.releaseId, releaseResult.release.id))
+    .then(takeFirst)
+    .then((row) => row.count);
+};
+
+const retryJob = async (db: Tx, jobId: string) => {
+  const releaseResult = await db
+    .select()
+    .from(schema.release)
+    .innerJoin(
+      schema.releaseJob,
+      eq(schema.releaseJob.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.versionRelease,
+      eq(schema.release.versionReleaseId, schema.versionRelease.id),
+    )
+    .innerJoin(
+      schema.variableSetRelease,
+      eq(schema.release.variableReleaseId, schema.variableSetRelease.id),
+    )
+    .where(eq(schema.releaseJob.jobId, jobId))
+    .then(takeFirst);
+
+  const releaseId = releaseResult.release.id;
+  const versionReleaseId = releaseResult.version_release.id;
+  const variableReleaseId = releaseResult.variable_set_release.id;
+
+  const newReleaseJob = await db.transaction((tx) =>
+    createReleaseJob(tx, {
+      id: releaseId,
+      versionReleaseId,
+      variableReleaseId,
+    }),
+  );
+
+  await dispatchQueueJob().toDispatch().ctrlplaneJob(newReleaseJob.id);
 };
 
 export const updateJob = async (
@@ -189,20 +284,9 @@ export const updateJob = async (
     where: eq(schema.job.id, jobId),
     with: { metadata: true },
   });
-
   if (jobBeforeUpdate == null) throw new Error(`Job not found: id=${jobId}`);
 
-  const startedAt = getStartedAt(jobBeforeUpdate, data);
-  const completedAt = getCompletedAt(jobBeforeUpdate, data);
-  const updates = { ...data, startedAt, completedAt };
-
-  const updatedJob = await db
-    .update(schema.job)
-    .set(updates)
-    .where(eq(schema.job.id, jobId))
-    .returning()
-    .then(takeFirst);
-
+  const updatedJob = await dbUpdateJob(db, jobId, jobBeforeUpdate, data);
   if (metadata != null)
     await updateJobMetadata(jobId, jobBeforeUpdate.metadata, metadata);
 
@@ -214,10 +298,31 @@ export const updateJob = async (
 
   const releaseTarget = await getReleaseTarget(db, jobId);
   if (releaseTarget == null) return updatedJob;
-  await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
 
+  const matchedPolicies = await getMatchedPolicies(db, releaseTarget);
+  const isJobFailed = failedStatuses.includes(updatedJob.status as JobStatus);
+  const firstRetryPolicy = matchedPolicies.find((p) => p.retry != null)?.retry;
+  const numRetryAttempts = await getNumRetryAttempts(db, jobId);
+  const shouldRetry =
+    isJobFailed &&
+    firstRetryPolicy != null &&
+    numRetryAttempts < firstRetryPolicy.maxRetries;
+
+  if (shouldRetry) {
+    await retryJob(db, jobId);
+    return updatedJob;
+  }
+
+  await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
+  const policiesWithConcurrency = matchedPolicies.filter(
+    (p) => p.concurrency != null,
+  );
   const releaseTargetsInConcurrencyGroup =
-    await getReleaseTargetsInConcurrencyGroup(db, releaseTarget);
+    await getReleaseTargetsInConcurrencyGroup(
+      db,
+      policiesWithConcurrency.map((p) => p.policyId),
+      releaseTarget.id,
+    );
   await dispatchQueueJob()
     .toEvaluate()
     .releaseTargets(releaseTargetsInConcurrencyGroup);

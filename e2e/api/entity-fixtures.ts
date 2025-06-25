@@ -132,6 +132,7 @@ export const PolicyFixture = z.object({
       timeScaleInterval: z.number(),
     })
     .optional(),
+  maxRetries: z.number().optional(),
 });
 
 export const AgentFixture = z.object({
