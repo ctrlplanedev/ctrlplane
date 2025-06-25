@@ -220,7 +220,7 @@ export const jobRouter = createTRPCRouter({
         canUser.perform(Permission.JobUpdate).on({ type: "job", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: schema.updateJob }))
-    .mutation(({ ctx, input }) => updateJob(ctx.db, input.id, input.data)),
+    .mutation(({ input }) => updateJob(input.id, input.data)),
 
   updateMany: protectedProcedure
     .input(
@@ -237,8 +237,8 @@ export const jobRouter = createTRPCRouter({
         );
       },
     })
-    .mutation(({ ctx, input }) =>
-      Promise.all(input.ids.map((id) => updateJob(ctx.db, id, input.data))),
+    .mutation(({ input }) =>
+      Promise.all(input.ids.map((id) => updateJob(id, input.data))),
     ),
 
   agent: jobAgentRouter,

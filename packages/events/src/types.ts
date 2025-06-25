@@ -24,6 +24,7 @@ export enum Channel {
   UpdateDeployment = "update-deployment",
   UpdateDeploymentVariable = "update-deployment-variable",
   UpdatePolicy = "update-policy",
+  UpdateJob = "update-job",
 
   DeleteDeployment = "delete-deployment",
   DeleteEnvironment = "delete-environment",
@@ -65,6 +66,11 @@ export type ChannelMap = {
   };
   [Channel.UpdatedResource]: schema.Resource;
   [Channel.UpdatePolicy]: schema.Policy;
+  [Channel.UpdateJob]: {
+    jobId: string;
+    data: schema.UpdateJob;
+    metadata?: Record<string, any>;
+  };
 
   [Channel.DeleteDeployment]: { id: string };
   [Channel.DeleteEnvironment]: { id: string };

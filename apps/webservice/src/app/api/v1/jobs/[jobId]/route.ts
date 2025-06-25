@@ -2,7 +2,6 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { NOT_FOUND } from "http-status";
 
-import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -44,7 +43,6 @@ export const PATCH = async (
   const response = await req.json();
   const body = bodySchema.parse(response);
 
-  const job = await updateJob(db, params.jobId, body);
-
-  return NextResponse.json(job);
+  await updateJob(params.jobId, body);
+  return NextResponse.json({ success: true, message: "Job update queued" });
 };

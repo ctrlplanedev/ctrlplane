@@ -148,7 +148,6 @@ export const updateJob = createInsertSchema(job)
     id: true,
     jobAgentConfig: true,
     createdAt: true,
-    updatedAt: true,
   })
   .partial();
 export type UpdateJob = z.infer<typeof updateJob>;

@@ -26,7 +26,7 @@ export const dispatchJobWorker = createWorker(
     const { agent } = job;
     if (agent == null) {
       queueJob.log(`Job ${jobId} has no agent`);
-      updateJob(db, job.id, {
+      updateJob(job.id, {
         status: JobStatus.InvalidJobAgent,
         message: `Job has no agent`,
       });
@@ -38,7 +38,7 @@ export const dispatchJobWorker = createWorker(
       try {
         await dispatchGithubJob(job);
       } catch (error: any) {
-        await updateJob(db, job.id, {
+        await updateJob(job.id, {
           status: JobStatus.InvalidIntegration,
           message: `Error dispatching job to GitHub app: ${error}`,
         });
