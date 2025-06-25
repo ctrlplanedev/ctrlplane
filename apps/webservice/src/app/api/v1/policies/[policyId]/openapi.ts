@@ -130,7 +130,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     $ref: "#/components/schemas/PolicyConcurrency",
                   },
                   environmentVersionRollout: {
-                    $ref: "#/components/schemas/EnvironmentVersionRollout",
+                    $ref: "#/components/schemas/InsertEnvironmentVersionRollout",
                   },
                   maxRetries: {
                     $ref: "#/components/schemas/MaxRetries",

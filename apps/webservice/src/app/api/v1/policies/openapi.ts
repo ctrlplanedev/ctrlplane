@@ -103,6 +103,28 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         required: ["positionGrowthFactor", "timeScaleInterval", "rolloutType"],
       },
+      InsertEnvironmentVersionRollout: {
+        type: "object",
+        properties: {
+          positionGrowthFactor: {
+            type: "number",
+            description:
+              "Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. Defaults to 1 if not specified.",
+          },
+          timeScaleInterval: {
+            type: "number",
+            description:
+              "Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline.",
+          },
+          rolloutType: {
+            type: "string",
+            enum: Object.keys(schema.apiRolloutTypeToDBRolloutType),
+            description:
+              "Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.",
+          },
+        },
+        required: ["timeScaleInterval"],
+      },
       Policy: {
         type: "object",
         properties: {
@@ -215,7 +237,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     $ref: "#/components/schemas/PolicyConcurrency",
                   },
                   environmentVersionRollout: {
-                    $ref: "#/components/schemas/EnvironmentVersionRollout",
+                    $ref: "#/components/schemas/InsertEnvironmentVersionRollout",
                   },
                   maxRetries: {
                     $ref: "#/components/schemas/MaxRetries",

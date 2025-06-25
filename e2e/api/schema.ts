@@ -1432,6 +1432,21 @@ export interface components {
         | "exponential"
         | "exponential-normalized";
     };
+    InsertEnvironmentVersionRollout: {
+      /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. Defaults to 1 if not specified. */
+      positionGrowthFactor?: number;
+      /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
+      timeScaleInterval: number;
+      /**
+       * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
+       * @enum {string}
+       */
+      rolloutType?:
+        | "linear"
+        | "linear-normalized"
+        | "exponential"
+        | "exponential-normalized";
+    };
     Policy: {
       /** Format: uuid */
       id: string;
@@ -3134,7 +3149,7 @@ export interface operations {
             requiredApprovalsCount?: number;
           }[];
           concurrency?: components["schemas"]["PolicyConcurrency"];
-          environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
+          environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
           maxRetries?: components["schemas"]["MaxRetries"];
         };
       };
@@ -3239,7 +3254,7 @@ export interface operations {
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
           versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
           concurrency?: components["schemas"]["PolicyConcurrency"];
-          environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
+          environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
           maxRetries?: components["schemas"]["MaxRetries"];
         };
       };
