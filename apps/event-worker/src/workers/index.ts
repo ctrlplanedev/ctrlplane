@@ -14,6 +14,7 @@ import { deleteResourceWorker } from "./delete-resource.js";
 import { deletedReleaseTargetWorker } from "./deleted-release-target.js";
 import { evaluateReleaseTargetWorker } from "./evaluate-release-target.js";
 import { dispatchJobWorker } from "./job-dispatch/index.js";
+import { updateJobWorker } from "./job-update/index.js";
 import { newDeploymentVersionWorker } from "./new-deployment-version.js";
 import { newDeploymentWorker } from "./new-deployment.js";
 import { newEnvironmentWorker } from "./new-environment.js";
@@ -44,6 +45,7 @@ export const workers: Workers<keyof ChannelMap> = {
   [Channel.UpdateDeploymentVariable]: updateDeploymentVariableWorker,
   [Channel.UpdateResourceVariable]: updateResourceVariableWorker,
   [Channel.UpdatePolicy]: updatePolicyWorker,
+  [Channel.UpdateJob]: updateJobWorker,
 
   [Channel.EvaluateReleaseTarget]: evaluateReleaseTargetWorker,
   [Channel.DispatchJob]: dispatchJobWorker,

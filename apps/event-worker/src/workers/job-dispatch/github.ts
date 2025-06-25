@@ -114,7 +114,7 @@ export const dispatchGithubJob = async (je: Job) => {
     log.error(
       `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
     );
-    await updateJob(db, je.id, {
+    await updateJob(je.id, {
       status: JobStatus.InvalidJobAgent,
       message: `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
     });
@@ -132,7 +132,7 @@ export const dispatchGithubJob = async (je: Job) => {
   );
   if (ghEntity == null) {
     log.error(`GitHub entity not found for job ${je.id}`);
-    return updateJob(db, je.id, {
+    return updateJob(je.id, {
       status: JobStatus.InvalidIntegration,
       message: `GitHub entity not found for job ${je.id}`,
     });
@@ -141,7 +141,7 @@ export const dispatchGithubJob = async (je: Job) => {
   const octokit = getInstallationOctokit(ghEntity.installationId);
   if (octokit == null) {
     log.error(`GitHub bot not configured for job ${je.id}`);
-    return updateJob(db, je.id, {
+    return updateJob(je.id, {
       status: JobStatus.InvalidJobAgent,
       message: "GitHub bot not configured",
     });
@@ -171,7 +171,7 @@ export const dispatchGithubJob = async (je: Job) => {
 
   if (ref == null) {
     log.error(`Failed to get ref for github action job ${je.id}`);
-    return updateJob(db, je.id, {
+    return updateJob(je.id, {
       status: JobStatus.InvalidJobAgent,
       message: "Failed to get ref for github action job",
     });
@@ -199,7 +199,7 @@ export const dispatchGithubJob = async (je: Job) => {
     log.error(`Failed to create workflow dispatch for job ${je.id}`, {
       error,
     });
-    return updateJob(db, je.id, {
+    return updateJob(je.id, {
       status: JobStatus.InvalidJobAgent,
       message: `Failed to dispatch github action job ${je.id}: ${error} to agent (installation: ${ghEntity.installationId}, owner: ${ghEntity.slug}, repo: ${mergedConfig.repo}, workflow: ${mergedConfig.workflowId}, ref: ${ref})`,
     });
