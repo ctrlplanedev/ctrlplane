@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ctrlplane -d ctrlplane"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     platform: linux/amd64
@@ -23,14 +28,17 @@ services:
       - redis_data:/data
 
   migrations:
-    platform: linux/amd64
-    image: ctrlplane/migrations:75685e0
+    build:
+      context: .
+      dockerfile: ./packages/db/Dockerfile
+
     container_name: ctrlplane-migrations
     restart: "no"
     environment:
       POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   webservice:
     # platform: linux/amd64
@@ -49,6 +57,7 @@ services:
 
       AUTH_GOOGLE_CLIENT_ID: ${AUTH_GOOGLE_CLIENT_ID}
       AUTH_GOOGLE_CLIENT_SECRET: ${AUTH_GOOGLE_CLIENT_SECRET}
+      AUTH_CREDENTIALS_ENABLED: "true"
 
       NEXTAUTH_URL: ${BASE_URL}
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
@@ -62,8 +71,10 @@ services:
       - "3000:3000"
 
   jobs:
-    platform: linux/amd64
-    image: ctrlplane/jobs:75685e0
+    build:
+      context: .
+      dockerfile: ./apps/jobs/Dockerfile
+
     container_name: ctrlplane-jobs
     environment:
       POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
@@ -73,8 +84,10 @@ services:
       - postgres
 
   event-worker:
-    platform: linux/amd64
-    image: ctrlplane/event-worker:75685e0
+    build:
+      context: .
+      dockerfile: ./apps/event-worker/Dockerfile
+
     container_name: ctrlplane-event-worker
     environment:
       POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
