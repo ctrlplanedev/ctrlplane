@@ -39,7 +39,11 @@ export default async function VariablesPage(props: {
   );
   const variables = variablesResult.map((variable) => ({
     ...variable,
-    values: [...variable.directValues, ...variable.referenceValues],
+    values: [
+      ...variable.directValues,
+      ...variable.referenceValues,
+      ...(variable.defaultValue != null ? [variable.defaultValue] : []),
+    ],
   }));
 
   return (

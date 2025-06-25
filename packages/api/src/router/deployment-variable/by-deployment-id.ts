@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { z } from "zod";
 
 import {
@@ -24,39 +25,62 @@ const getReleaseTargets = async (db: Tx, deploymentId: string) =>
     )
     .where(eq(schema.releaseTarget.deploymentId, deploymentId));
 
+const getMatchedResources = async (
+  db: Tx,
+  resourceSelector: ResourceCondition | null,
+  resourceIds: string[],
+) =>
+  resourceSelector == null || resourceIds.length === 0
+    ? []
+    : db.query.resource.findMany({
+        where: and(
+          selector().query().resources().where(resourceSelector).sql(),
+          inArray(schema.resource.id, resourceIds),
+        ),
+      });
+
+const resolveValueForResource = async (
+  db: Tx,
+  resource: schema.Resource,
+  variableValue: schema.DeploymentVariableValue,
+) => {
+  if (schema.isDeploymentVariableValueDirect(variableValue)) {
+    const resolvedValue = variableValue.sensitive ? "***" : variableValue.value;
+    return { ...resource, resolvedValue };
+  }
+
+  const resolvedReference = await getReferenceVariableValue(
+    resource.id,
+    variableValue,
+  );
+  return { ...resource, resolvedValue: resolvedReference };
+};
+
 const getVariableValueWithMatchedResources = async (
   db: Tx,
   variableValue: schema.DeploymentVariableValue,
   resources: schema.Resource[],
 ) => {
-  const { resourceSelector } = variableValue;
-  if (resourceSelector == null) return { ...variableValue, resources: [] };
-
-  const matchedResources = await db.query.resource.findMany({
-    where: and(
-      selector().query().resources().where(resourceSelector).sql(),
-      inArray(
-        schema.resource.id,
-        resources.map((r) => r.id),
-      ),
-    ),
-  });
+  const matchedResources = await getMatchedResources(
+    db,
+    variableValue.resourceSelector,
+    resources.map((r) => r.id),
+  );
 
   const resourcesWithResolvedValue = await Promise.all(
-    matchedResources.map(async (r) => {
-      if (schema.isDeploymentVariableValueDirect(variableValue)) {
-        const resolvedValue = variableValue.sensitive
-          ? "***"
-          : variableValue.value;
-        return { ...r, resolvedValue };
-      }
+    matchedResources.map((r) => resolveValueForResource(db, r, variableValue)),
+  );
 
-      const resolvedReference = await getReferenceVariableValue(
-        r.id,
-        variableValue,
-      );
-      return { ...r, resolvedValue: resolvedReference };
-    }),
+  return { ...variableValue, resources: resourcesWithResolvedValue };
+};
+
+const getDefaultValueWithMatchedResources = async (
+  db: Tx,
+  variableValue: schema.DeploymentVariableValue,
+  resources: schema.Resource[],
+) => {
+  const resourcesWithResolvedValue = await Promise.all(
+    resources.map((r) => resolveValueForResource(db, r, variableValue)),
   );
 
   return { ...variableValue, resources: resourcesWithResolvedValue };
@@ -71,14 +95,14 @@ const getVariableWithMatchedResources = async (
 ) => {
   const { directValues, referenceValues } = variable;
   const directValuesWithResources = await Promise.all(
-    directValues.map((v) =>
-      getVariableValueWithMatchedResources(db, v, resources),
-    ),
+    directValues
+      .filter((v) => v.id !== variable.defaultValue?.id)
+      .map((v) => getVariableValueWithMatchedResources(db, v, resources)),
   );
   const referenceValuesWithResources = await Promise.all(
-    referenceValues.map((v) =>
-      getVariableValueWithMatchedResources(db, v, resources),
-    ),
+    referenceValues
+      .filter((v) => v.id !== variable.defaultValue?.id)
+      .map((v) => getVariableValueWithMatchedResources(db, v, resources)),
   );
 
   const matchedResourceIds = new Set([
@@ -94,7 +118,11 @@ const getVariableWithMatchedResources = async (
 
   const defaultValue =
     variable.defaultValue != null
-      ? { ...variable.defaultValue, resources: unmatchedResources }
+      ? await getDefaultValueWithMatchedResources(
+          db,
+          variable.defaultValue,
+          unmatchedResources,
+        )
       : undefined;
 
   return {
