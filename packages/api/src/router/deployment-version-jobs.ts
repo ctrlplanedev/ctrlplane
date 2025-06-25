@@ -11,9 +11,9 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-const sortReleaseTargetsByLatestJobStatus = (
-  a: { jobs: { status: SCHEMA.JobStatus }[] },
-  b: { jobs: { status: SCHEMA.JobStatus }[] },
+const sortReleaseTargetsByLatestJobStatusAndStartedAt = (
+  a: { jobs: { status: SCHEMA.JobStatus; createdAt: Date }[] },
+  b: { jobs: { status: SCHEMA.JobStatus; createdAt: Date }[] },
 ) => {
   const statusA = a.jobs.at(0)?.status;
   const statusB = b.jobs.at(0)?.status;
@@ -24,6 +24,12 @@ const sortReleaseTargetsByLatestJobStatus = (
 
   if (statusA === JobStatus.Failure && statusB !== JobStatus.Failure) return -1;
   if (statusA !== JobStatus.Failure && statusB === JobStatus.Failure) return 1;
+
+  if (statusA === statusB) {
+    const createdAtA = a.jobs.at(0)?.createdAt ?? new Date(0);
+    const createdAtB = b.jobs.at(0)?.createdAt ?? new Date(0);
+    return createdAtA.getTime() - createdAtB.getTime();
+  }
 
   return statusA.localeCompare(statusB);
 };
@@ -145,7 +151,7 @@ export const deploymentVersionJobsRouter = createTRPCRouter({
         .map((targetsByEnvironment) => {
           const { environment } = targetsByEnvironment[0]!;
           const sortedReleaseTargets = targetsByEnvironment.sort(
-            sortReleaseTargetsByLatestJobStatus,
+            sortReleaseTargetsByLatestJobStatusAndStartedAt,
           );
           return { environment, releaseTargets: sortedReleaseTargets };
         })
