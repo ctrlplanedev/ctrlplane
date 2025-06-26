@@ -20,6 +20,7 @@ import {
   BlockedByVersionSelectorCell,
   getPoliciesBlockingByVersionSelector,
 } from "./BlockedByVersionSelectorCell";
+import { VersionStatusCell } from "./VersionStatusCell";
 
 const SkeletonCell: React.FC = () => (
   <div className="flex h-full w-full items-center gap-2">
@@ -163,10 +164,6 @@ const DeploymentVersionEnvironmentCell: React.FC<
   if (hasJobs)
     return <ActiveJobsCell statuses={jobs.map((j) => j.status)} {...props} />;
 
-  const hasNoReleaseTargets = numReleaseTargets === 0;
-  if (hasNoReleaseTargets)
-    return <NoReleaseTargetsCell tag={deploymentVersion.tag} />;
-
   const policiesWithBlockingVersionSelector =
     policyEvaluations != null
       ? getPoliciesBlockingByVersionSelector(policyEvaluations)
@@ -181,6 +178,13 @@ const DeploymentVersionEnvironmentCell: React.FC<
         {...props}
       />
     );
+
+  const isNotReady = deploymentVersion.status !== "ready";
+  if (isNotReady) return <VersionStatusCell {...props} />;
+
+  const hasNoReleaseTargets = numReleaseTargets === 0;
+  if (hasNoReleaseTargets)
+    return <NoReleaseTargetsCell tag={deploymentVersion.tag} />;
 
   const policiesWithApprovalRequired =
     policyEvaluations != null
@@ -206,7 +210,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
   if (hasNoJobAgent)
     return <NoJobAgentCell tag={deploymentVersion.tag} {...props} />;
 
-  return <NoReleaseTargetsCell tag={deploymentVersion.tag} />;
+  return <VersionStatusCell {...props} />;
 };
 
 export const LazyDeploymentVersionEnvironmentCell: React.FC<
