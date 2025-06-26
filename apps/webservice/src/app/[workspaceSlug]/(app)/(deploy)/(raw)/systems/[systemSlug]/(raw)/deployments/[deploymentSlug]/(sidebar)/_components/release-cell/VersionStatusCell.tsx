@@ -177,7 +177,7 @@ const StatusIcon: React.FC<{
   const isBuilding = versionStatus === "building";
   if (isBuilding)
     return (
-      <div className="rounded-full bg-yellow-500 p-1 dark:text-black">
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
         <IconTool strokeWidth={2} className="h-4 w-4" />
       </div>
     );
