@@ -224,7 +224,9 @@ const useVersionSearchQuery = () => {
   const otherConditions =
     selector?.type === DeploymentVersionConditionType.Comparison
       ? selector.conditions.filter((c) => !isSearchQuery(c))
-      : [];
+      : selector != null
+        ? [selector]
+        : [];
 
   useDebounce(
     () => {
@@ -236,7 +238,7 @@ const useVersionSearchQuery = () => {
         }
         setSelector({
           type: DeploymentVersionConditionType.Comparison,
-          operator: ComparisonOperator.And,
+          operator: selector.operator,
           conditions: otherConditions,
         });
         return;
