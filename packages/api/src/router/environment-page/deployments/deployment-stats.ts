@@ -3,7 +3,14 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, desc, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  isNull,
+  selector,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   ComparisonOperator,
@@ -134,7 +141,7 @@ export const getDeploymentStats = async (
     .where(
       and(
         eq(SCHEMA.deploymentVersion.deploymentId, deployment.id),
-        SCHEMA.deploymentVersionMatchesCondition(db, versionSelector),
+        selector().query().deploymentVersions().where(versionSelector).sql(),
       ),
     )
     .orderBy(desc(SCHEMA.deploymentVersion.createdAt))

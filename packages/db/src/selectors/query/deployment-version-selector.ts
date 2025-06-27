@@ -132,6 +132,8 @@ const buildCondition = (tx: Tx, cond: DeploymentVersionCondition): SQL => {
     return ColumnOperatorFn[cond.operator](deploymentVersion.tag, cond.value);
   if (cond.type === DeploymentVersionConditionType.Tag)
     return ColumnOperatorFn[cond.operator](deploymentVersion.tag, cond.value);
+  if (cond.type === DeploymentVersionConditionType.Name)
+    return ColumnOperatorFn[cond.operator](deploymentVersion.name, cond.value);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 

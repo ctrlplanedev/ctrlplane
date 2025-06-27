@@ -3,12 +3,17 @@ import { z } from "zod";
 import type { CreatedAtCondition } from "../../conditions/date-condition.js";
 import type {
   MetadataCondition,
+  NameCondition,
   VersionCondition,
 } from "../../conditions/index.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
 import type { TagCondition } from "./tag-condition.js";
 import { createdAtCondition } from "../../conditions/date-condition.js";
-import { metadataCondition, versionCondition } from "../../conditions/index.js";
+import {
+  metadataCondition,
+  nameCondition,
+  versionCondition,
+} from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
 import { tagCondition } from "./tag-condition.js";
 
@@ -17,7 +22,8 @@ export type DeploymentVersionCondition =
   | MetadataCondition
   | VersionCondition
   | CreatedAtCondition
-  | TagCondition;
+  | TagCondition
+  | NameCondition;
 
 export const deploymentVersionCondition = z.union([
   comparisonCondition,
@@ -25,6 +31,7 @@ export const deploymentVersionCondition = z.union([
   versionCondition,
   createdAtCondition,
   tagCondition,
+  nameCondition,
 ]);
 
 export enum DeploymentVersionOperator {
@@ -45,6 +52,7 @@ export enum DeploymentVersionConditionType {
   Tag = "tag",
   Comparison = "comparison",
   CreatedAt = "created-at",
+  Name = "name",
 }
 
 export const defaultCondition: DeploymentVersionCondition = {

@@ -96,7 +96,7 @@ const versionChannelRouter = createTRPCRouter({
             .where(
               and(
                 eq(SCHEMA.deploymentVersion.deploymentId, channel.deploymentId),
-                SCHEMA.deploymentVersionMatchesCondition(ctx.db, filter),
+                selector().query().deploymentVersions().where(filter).sql(),
               ),
             )
             .then(takeFirst)

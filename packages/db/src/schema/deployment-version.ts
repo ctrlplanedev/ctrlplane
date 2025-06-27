@@ -1,28 +1,6 @@
-import type {
-  CreatedAtCondition,
-  MetadataCondition,
-  VersionCondition,
-} from "@ctrlplane/validators/conditions";
-import type {
-  DeploymentVersionCondition,
-  TagCondition,
-} from "@ctrlplane/validators/releases";
-import type { InferSelectModel, SQL } from "drizzle-orm";
-import {
-  and,
-  eq,
-  exists,
-  gt,
-  gte,
-  ilike,
-  lt,
-  lte,
-  not,
-  notExists,
-  or,
-  relations,
-  sql,
-} from "drizzle-orm";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+import type { InferSelectModel } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   index,
   jsonb,
@@ -37,18 +15,10 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import {
-  ColumnOperator,
-  DateOperator,
-  MetadataOperator,
-} from "@ctrlplane/validators/conditions";
-import {
   deploymentVersionCondition,
-  DeploymentVersionConditionType,
-  DeploymentVersionOperator,
   DeploymentVersionStatus,
 } from "@ctrlplane/validators/releases";
 
-import type { Tx } from "../common.js";
 import { deployment } from "./deployment.js";
 
 export const deploymentVersionChannel = pgTable(
@@ -175,141 +145,6 @@ export const deploymentVersionMetadata = pgTable(
     ),
   }),
 );
-
-const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
-  if (cond.operator === MetadataOperator.Null)
-    return notExists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(deploymentVersionMetadata)
-        .where(
-          and(
-            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
-            eq(deploymentVersionMetadata.key, cond.key),
-          ),
-        )
-        .limit(1),
-    );
-
-  if (cond.operator === MetadataOperator.StartsWith)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(deploymentVersionMetadata)
-        .where(
-          and(
-            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
-            eq(deploymentVersionMetadata.key, cond.key),
-            ilike(deploymentVersionMetadata.value, `${cond.value}%`),
-          ),
-        )
-        .limit(1),
-    );
-
-  if (cond.operator === MetadataOperator.EndsWith)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(deploymentVersionMetadata)
-        .where(
-          and(
-            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
-            eq(deploymentVersionMetadata.key, cond.key),
-            ilike(deploymentVersionMetadata.value, `%${cond.value}`),
-          ),
-        )
-        .limit(1),
-    );
-
-  if (cond.operator === MetadataOperator.Contains)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(deploymentVersionMetadata)
-        .where(
-          and(
-            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
-            eq(deploymentVersionMetadata.key, cond.key),
-            ilike(deploymentVersionMetadata.value, `%${cond.value}%`),
-          ),
-        )
-        .limit(1),
-    );
-
-  return exists(
-    tx
-      .select({ value: sql<number>`1` })
-      .from(deploymentVersionMetadata)
-      .where(
-        and(
-          eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
-          eq(deploymentVersionMetadata.key, cond.key),
-          eq(deploymentVersionMetadata.value, cond.value),
-        ),
-      )
-      .limit(1),
-  );
-};
-
-const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
-  const date = new Date(cond.value);
-  if (cond.operator === DateOperator.Before)
-    return lt(deploymentVersion.createdAt, date);
-  if (cond.operator === DateOperator.After)
-    return gt(deploymentVersion.createdAt, date);
-  if (cond.operator === DateOperator.BeforeOrOn)
-    return lte(deploymentVersion.createdAt, date);
-  return gte(deploymentVersion.createdAt, date);
-};
-
-const buildVersionCondition = (cond: VersionCondition): SQL => {
-  if (cond.operator === ColumnOperator.Equals)
-    return eq(deploymentVersion.tag, cond.value);
-  if (cond.operator === ColumnOperator.StartsWith)
-    return ilike(deploymentVersion.tag, `${cond.value}%`);
-  if (cond.operator === ColumnOperator.EndsWith)
-    return ilike(deploymentVersion.tag, `%${cond.value}`);
-  return ilike(deploymentVersion.tag, `%${cond.value}%`);
-};
-
-const buildTagCondition = (cond: TagCondition): SQL => {
-  if (cond.operator === ColumnOperator.Equals)
-    return eq(deploymentVersion.tag, cond.value);
-  if (cond.operator === ColumnOperator.StartsWith)
-    return ilike(deploymentVersion.tag, `${cond.value}%`);
-  if (cond.operator === ColumnOperator.EndsWith)
-    return ilike(deploymentVersion.tag, `%${cond.value}`);
-  return ilike(deploymentVersion.tag, `%${cond.value}%`);
-};
-
-const buildCondition = (tx: Tx, cond: DeploymentVersionCondition): SQL => {
-  if (cond.type === DeploymentVersionConditionType.Metadata)
-    return buildMetadataCondition(tx, cond);
-  if (cond.type === DeploymentVersionConditionType.CreatedAt)
-    return buildCreatedAtCondition(cond);
-  if (cond.type === DeploymentVersionConditionType.Version)
-    return buildVersionCondition(cond);
-  if (cond.type === DeploymentVersionConditionType.Tag)
-    return buildTagCondition(cond);
-
-  if (cond.conditions.length === 0) return sql`FALSE`;
-
-  const subCon = cond.conditions.map((c) => buildCondition(tx, c));
-  const con =
-    cond.operator === DeploymentVersionOperator.And
-      ? and(...subCon)!
-      : or(...subCon)!;
-  return cond.not ? not(con) : con;
-};
-
-export function deploymentVersionMatchesCondition(
-  tx: Tx,
-  condition?: DeploymentVersionCondition | null,
-): SQL<unknown> | undefined {
-  return condition == null || Object.keys(condition).length === 0
-    ? undefined
-    : buildCondition(tx, condition);
-}
 
 export const deploymentVersionRelations = relations(
   deploymentVersion,

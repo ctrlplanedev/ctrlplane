@@ -2,9 +2,12 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
+import { useState } from "react";
 import { IconFilter, IconFolder, IconLoader2 } from "@tabler/icons-react";
 import _ from "lodash";
+import { useDebounce } from "react-use";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
@@ -19,10 +22,16 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 import {
+  ColumnOperator,
   ComparisonOperator,
   ConditionType,
 } from "@ctrlplane/validators/conditions";
+import {
+  DeploymentVersionConditionType,
+  isComparisonCondition,
+} from "@ctrlplane/validators/releases";
 
+import { CollapsibleSearchInput } from "~/app/[workspaceSlug]/(app)/_components/CollapsibleSearchInput";
 import { DeploymentVersionConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionBadge";
 import { DeploymentVersionConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionDialog";
 import { useDeploymentVersionSelector } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/useDeploymentVersionSelector";
@@ -153,6 +162,101 @@ const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
   );
 };
 
+const VersionFilter: React.FC = () => {
+  const { selector, setSelector } = useDeploymentVersionSelector();
+
+  return (
+    <DeploymentVersionConditionDialog
+      condition={selector}
+      onChange={setSelector}
+    >
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+        >
+          <IconFilter className="h-4 w-4" />
+        </Button>
+
+        {selector != null && (
+          <DeploymentVersionConditionBadge condition={selector} />
+        )}
+      </div>
+    </DeploymentVersionConditionDialog>
+  );
+};
+
+const isSearchQuery = (condition: DeploymentVersionCondition) => {
+  if (condition.type !== DeploymentVersionConditionType.Comparison)
+    return false;
+  const { conditions, operator } = condition;
+  return (
+    conditions.every(
+      (c) =>
+        c.type === DeploymentVersionConditionType.Name ||
+        c.type === DeploymentVersionConditionType.Tag,
+    ) && operator === ComparisonOperator.Or
+  );
+};
+
+const getSearchCondition = (search: string): DeploymentVersionCondition => ({
+  type: DeploymentVersionConditionType.Comparison,
+  operator: ComparisonOperator.Or,
+  conditions: [
+    {
+      type: DeploymentVersionConditionType.Name,
+      operator: ColumnOperator.Contains,
+      value: search,
+    },
+    {
+      type: DeploymentVersionConditionType.Tag,
+      operator: ColumnOperator.Contains,
+      value: search,
+    },
+  ],
+});
+
+const useVersionSearchQuery = () => {
+  const [search, setSearch] = useState("");
+  const { selector, setSelector } = useDeploymentVersionSelector();
+
+  const otherConditions =
+    selector?.type === DeploymentVersionConditionType.Comparison
+      ? selector.conditions.filter((c) => !isSearchQuery(c))
+      : selector != null
+        ? [selector]
+        : [];
+
+  useDebounce(
+    () => {
+      if (search === "") {
+        if (selector == null || !isComparisonCondition(selector)) return;
+        if (otherConditions.length === 0) {
+          setSelector(null);
+          return;
+        }
+        setSelector({
+          type: DeploymentVersionConditionType.Comparison,
+          operator: selector.operator,
+          conditions: otherConditions,
+        });
+        return;
+      }
+
+      setSelector({
+        type: DeploymentVersionConditionType.Comparison,
+        operator: ComparisonOperator.And,
+        conditions: [...otherConditions, getSearchCondition(search)],
+      });
+    },
+    500,
+    [search],
+  );
+
+  return { search, setSearch };
+};
+
 type DeploymentPageContentProps = {
   workspace: schema.Workspace;
   deployment: Deployment;
@@ -166,7 +270,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   environments,
   directories,
 }) => {
-  const { selector, setSelector } = useDeploymentVersionSelector();
+  const { selector } = useDeploymentVersionSelector();
+  const { search, setSearch } = useVersionSearchQuery();
 
   const versions = api.deployment.version.list.useQuery(
     { deploymentId: deployment.id, filter: selector ?? undefined, limit: 30 },
@@ -179,25 +284,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     <div className="flex flex-col">
       <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2 text-sm">
         <div className="flex flex-grow items-center gap-2">
-          <DeploymentVersionConditionDialog
-            condition={selector}
-            onChange={setSelector}
-            deploymentVersionChannels={deployment.versionChannels}
-          >
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-              >
-                <IconFilter className="h-4 w-4" />
-              </Button>
-
-              {selector != null && (
-                <DeploymentVersionConditionBadge condition={selector} />
-              )}
-            </div>
-          </DeploymentVersionConditionDialog>
+          <VersionFilter />
+          <CollapsibleSearchInput value={search} onChange={setSearch} />
         </div>
 
         <TotalBadge total={versions.data?.total} />
