@@ -3,11 +3,16 @@ import { z } from "zod";
 import type { CreatedAtCondition } from "../../conditions/date-condition.js";
 import type {
   MetadataCondition,
+  NameCondition,
   VersionCondition,
 } from "../../conditions/index.js";
 import type { TagCondition } from "./tag-condition.js";
 import { createdAtCondition } from "../../conditions/date-condition.js";
-import { metadataCondition, versionCondition } from "../../conditions/index.js";
+import {
+  metadataCondition,
+  nameCondition,
+  versionCondition,
+} from "../../conditions/index.js";
 import { tagCondition } from "./tag-condition.js";
 
 export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
@@ -22,6 +27,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         versionCondition,
         createdAtCondition,
         tagCondition,
+        nameCondition,
       ]),
     ),
   }),
@@ -37,5 +43,6 @@ export type ComparisonCondition = {
     | VersionCondition
     | CreatedAtCondition
     | TagCondition
+    | NameCondition
   >;
 };
