@@ -3,9 +3,7 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import { useParams, useRouter } from "next/navigation";
 import { IconFilter, IconFolder, IconLoader2 } from "@tabler/icons-react";
-import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
@@ -16,30 +14,20 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@ctrlplane/ui/tooltip";
-import {
   ComparisonOperator,
   ConditionType,
 } from "@ctrlplane/validators/conditions";
-import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import { DeploymentVersionConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionBadge";
 import { DeploymentVersionConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionDialog";
 import { useDeploymentVersionSelector } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/useDeploymentVersionSelector";
-import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
-import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { LazyDeploymentVersionEnvironmentCell } from "./_components/release-cell/DeploymentVersionEnvironmentCell";
+import { VersionRow } from "./_components/VersionRow";
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
@@ -180,20 +168,12 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 }) => {
   const { selector, setSelector } = useDeploymentVersionSelector();
 
-  const { systemSlug } = useParams<{ systemSlug: string }>();
-
   const versions = api.deployment.version.list.useQuery(
     { deploymentId: deployment.id, filter: selector ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );
 
   const loading = versions.isLoading;
-  const router = useRouter();
-
-  const versionUrl = urls
-    .workspace(workspace.slug)
-    .system(systemSlug)
-    .deployment(deployment.slug).release;
 
   return (
     <div className="flex flex-col">
@@ -265,89 +245,12 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             <TableBody>
               {versions.data.items.map((version) => {
                 return (
-                  <TableRow
+                  <VersionRow
                     key={version.id}
-                    className="cursor-pointer hover:bg-transparent"
-                    onClick={() =>
-                      router.push(versionUrl(version.id).baseUrl())
-                    }
-                  >
-                    <TableCell className="sticky left-0 z-10 flex h-[70px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 py-0 pl-4 text-base">
-                      <span className="truncate">{version.name}</span>{" "}
-                      <Badge
-                        variant="secondary"
-                        className="flex-shrink-0 text-xs hover:bg-secondary"
-                      >
-                        {formatDistanceToNowStrict(version.createdAt, {
-                          addSuffix: true,
-                        })}
-                      </Badge>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              variant="secondary"
-                              className={cn({
-                                "bg-green-500/20 text-green-500 hover:bg-green-500/20":
-                                  version.status ===
-                                  DeploymentVersionStatus.Ready,
-                                "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20":
-                                  version.status ===
-                                  DeploymentVersionStatus.Building,
-                                "bg-red-500/20 text-red-500 hover:bg-red-500/20":
-                                  version.status ===
-                                  DeploymentVersionStatus.Failed,
-                                "bg-orange-500/20 text-orange-500 hover:bg-orange-500/20":
-                                  version.status ===
-                                  DeploymentVersionStatus.Rejected,
-                              })}
-                            >
-                              {version.status}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            align="start"
-                            className="bg-neutral-800 px-2 py-1 text-sm"
-                          >
-                            <span>
-                              {version.status}
-                              {version.message && `: ${version.message}`}
-                            </span>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    {environments.map((env) => (
-                      <TableCell
-                        className="h-[70px] w-[220px] border-l px-2 py-0"
-                        onClick={(e) => e.stopPropagation()}
-                        key={env.id}
-                      >
-                        <LazyDeploymentVersionEnvironmentCell
-                          environment={env}
-                          deployment={deployment}
-                          deploymentVersion={version}
-                          system={{ id: deployment.systemId, slug: systemSlug }}
-                        />
-                      </TableCell>
-                    ))}
-                    {directories.map((dir) => (
-                      <TableCell
-                        key={dir.path}
-                        className="h-[70px] w-[220px] border-l"
-                      >
-                        <div className="w-[220px] shrink-0">
-                          <DeploymentDirectoryCell
-                            key={dir.path}
-                            directory={dir}
-                            deployment={deployment}
-                            deploymentVersion={version}
-                            systemSlug={systemSlug}
-                          />
-                        </div>
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                    version={version}
+                    deployment={deployment}
+                    environments={environments}
+                  />
                 );
               })}
             </TableBody>
