@@ -544,6 +544,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/release-targets/{releaseTargetId}/pin": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Pin a version to a release target */
+    post: operations["pinReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/release-targets/{releaseTargetId}/releases": {
     parameters: {
       query?: never;
@@ -3028,7 +3045,8 @@ export interface operations {
         };
         content: {
           "application/json": {
-            id: string;
+            success: boolean;
+            message: string;
           };
         };
       };
@@ -3570,6 +3588,74 @@ export interface operations {
       };
       /** @description Release target is already locked */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  pinReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json":
+          | {
+              /** Format: uuid */
+              versionId: string | null;
+            }
+          | {
+              versionTag: string | null;
+            };
+      };
+    };
+    responses: {
+      /** @description Version pinned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Version not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

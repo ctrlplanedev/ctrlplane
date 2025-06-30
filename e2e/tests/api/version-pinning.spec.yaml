@@ -1,0 +1,31 @@
+system:
+  name: "{{ prefix }}-version-pinning"
+  slug: "{{ prefix }}-version-pinning"
+  description: System for testing version pinning
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing version pinning
+    systemId: "{{ prefix }}-version-pinning"
+    resourceSelector:
+      type: identifier
+      operator: "contains"
+      value: "{{ prefix }}"
+
+deployments:
+  - name: "{{ prefix }}-deployment"
+    slug: "{{ prefix }}-deployment"
+    description: Deployment for testing version pinning
+    versions:
+      - tag: "1.0.0"
+      - tag: "2.0.0"
+      - tag: "3.0.0"
+
+resources:
+  - name: "{{ prefix }}-resource"
+    identifier: "{{ prefix }}-resource"
+    kind: "service"
+    version: "1.0.0"
+    config:
+      enabled: true

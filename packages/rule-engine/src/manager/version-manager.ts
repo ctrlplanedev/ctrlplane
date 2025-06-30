@@ -112,53 +112,87 @@ export class VersionReleaseManager implements ReleaseManager {
     return result;
   }
 
-  async findVersionsForEvaluate() {
-    const [latestVersionMatchingPolicy, latestDeployedVersion] =
-      await Promise.all([
-        this.findLatestVersionMatchingPolicy(),
-        this.findLastestDeployedVersion(),
-      ]);
-
+  async getPolicySelectorSql() {
     const policy = await this.getPolicy();
-
-    const isMatchingPolicySelector = selector()
+    return selector()
       .query()
       .deploymentVersions()
       .where(policy?.deploymentVersionSelector?.deploymentVersionSelector)
       .sql();
+  }
+
+  async findDesiredVersion() {
+    const isMatchingPolicySelector = await this.getPolicySelectorSql();
+
+    const { desiredVersionId } = this.releaseTarget;
+    if (desiredVersionId == null) return null;
+    return this.db
+      .select()
+      .from(schema.deploymentVersion)
+      .where(
+        and(
+          eq(schema.deploymentVersion.id, desiredVersionId),
+          isMatchingPolicySelector,
+        ),
+      )
+      .then(takeFirst);
+  }
+
+  async getMinVersionCreatedAtSql() {
+    const latestDeployedVersion = await this.findLastestDeployedVersion();
+    if (latestDeployedVersion == null) return undefined;
+
+    return gte(
+      schema.deploymentVersion.createdAt,
+      latestDeployedVersion.createdAt,
+    );
+  }
+
+  async getMaxVersionCreatedAtSql() {
+    const latestVersionMatchingPolicy =
+      await this.findLatestVersionMatchingPolicy();
+    if (latestVersionMatchingPolicy == null) return undefined;
+
+    return lte(
+      schema.deploymentVersion.createdAt,
+      latestVersionMatchingPolicy.createdAt,
+    );
+  }
+
+  async getDeploymentVersionChecks() {
+    const [
+      isAfterLatestDeployedVersion,
+      isBeforeLatestVersionMatchingPolicy,
+      isMatchingPolicySelector,
+    ] = await Promise.all([
+      this.getMinVersionCreatedAtSql(),
+      this.getMaxVersionCreatedAtSql(),
+      this.getPolicySelectorSql(),
+    ]);
 
     const isReleaseTargetInDeployment = eq(
       schema.deploymentVersion.deploymentId,
       this.releaseTarget.deploymentId,
     );
 
-    const isAfterLatestDeployedVersion =
-      latestDeployedVersion != null
-        ? gte(
-            schema.deploymentVersion.createdAt,
-            latestDeployedVersion.createdAt,
-          )
-        : undefined;
+    return and(
+      isReleaseTargetInDeployment,
+      isAfterLatestDeployedVersion,
+      isBeforeLatestVersionMatchingPolicy,
+      isMatchingPolicySelector,
+    );
+  }
 
-    const isBeforeLatestVersionMatchingPolicy =
-      latestVersionMatchingPolicy != null
-        ? lte(
-            schema.deploymentVersion.createdAt,
-            latestVersionMatchingPolicy.createdAt,
-          )
-        : undefined;
+  async findVersionsForEvaluate() {
+    const desiredVersion = await this.findDesiredVersion();
+    if (desiredVersion != null) return [desiredVersion];
+
+    const deploymentVersionChecks = await this.getDeploymentVersionChecks();
 
     return this.db
       .select()
       .from(schema.deploymentVersion)
-      .where(
-        and(
-          isReleaseTargetInDeployment,
-          isAfterLatestDeployedVersion,
-          isBeforeLatestVersionMatchingPolicy,
-          isMatchingPolicySelector,
-        ),
-      )
+      .where(deploymentVersionChecks)
       .orderBy(desc(schema.deploymentVersion.createdAt))
       .limit(1_000);
   }

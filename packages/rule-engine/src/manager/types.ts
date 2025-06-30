@@ -4,6 +4,7 @@ export interface ReleaseTarget {
   environmentId: string;
   resourceId: string;
   workspaceId: string;
+  desiredVersionId: string | null;
 }
 
 export type ReleaseManager<T = { id: string; createdAt: Date }> = {

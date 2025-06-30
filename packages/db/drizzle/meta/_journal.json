@@ -834,6 +834,13 @@
       "when": 1750804305102,
       "tag": "0118_aromatic_polaris",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1751313612861,
+      "tag": "0119_majestic_devos",
+      "breakpoints": true
     }
   ]
 }
