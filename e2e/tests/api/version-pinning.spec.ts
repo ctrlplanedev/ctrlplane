@@ -95,8 +95,8 @@ test.describe("Version Pinning API", () => {
     await validateLatestRelease(api, releaseTargetId, "1.0.0");
 
     const unpinResponse = await api.POST(
-      "/v1/release-targets/{releaseTargetId}/pin",
-      { params: { path: { releaseTargetId } }, body: { versionId: null } },
+      "/v1/release-targets/{releaseTargetId}/unpin",
+      { params: { path: { releaseTargetId } } },
     );
 
     expect(unpinResponse.response.status).toBe(200);

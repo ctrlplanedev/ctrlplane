@@ -7,10 +7,10 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/release-targets/{releaseTargetId}/pin": {
+    "/v1/release-targets/{releaseTargetId}/unpin": {
       post: {
-        summary: "Pin a version to a release target",
-        operationId: "pinReleaseTarget",
+        summary: "Unpin a version from a release target",
+        operationId: "unpinReleaseTarget",
         parameters: [
           {
             name: "releaseTargetId",
@@ -19,43 +19,9 @@ export const openapi: Swagger.SwaggerV3 = {
             schema: { type: "string", format: "uuid" },
           },
         ],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                oneOf: [
-                  {
-                    type: "object",
-                    properties: {
-                      versionId: {
-                        type: "string",
-                        format: "uuid",
-                        example: "123e4567-e89b-12d3-a456-426614174000",
-                        description: "The ID of the version to pin",
-                      },
-                    },
-                    required: ["versionId"],
-                  },
-                  {
-                    type: "object",
-                    properties: {
-                      versionTag: {
-                        type: "string",
-                        example: "1.0.0",
-                        description: "The tag of the version to pin",
-                      },
-                    },
-                    required: ["versionTag"],
-                  },
-                ],
-              },
-            },
-          },
-        },
         responses: {
           200: {
-            description: "Version pinned",
+            description: "Success",
             content: {
               "application/json": {
                 schema: {
@@ -66,7 +32,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           400: {
-            description: "Bad request",
+            description: "Bad Request",
             content: {
               "application/json": {
                 schema: {
@@ -77,7 +43,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           404: {
-            description: "Version not found",
+            description: "Not Found",
             content: {
               "application/json": {
                 schema: {
@@ -88,7 +54,7 @@ export const openapi: Swagger.SwaggerV3 = {
             },
           },
           500: {
-            description: "Internal server error",
+            description: "Internal Server Error",
             content: {
               "application/json": {
                 schema: {

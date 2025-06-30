@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import { NextResponse } from "next/server";
-import { BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
+import { INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import { z } from "zod";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -18,39 +18,32 @@ const log = logger.child({
 });
 
 const bodySchema = z.union([
-  z.object({ versionId: z.string().uuid().nullable() }),
-  z.object({ versionTag: z.string().nullable() }),
+  z.object({ versionId: z.string().uuid() }),
+  z.object({ versionTag: z.string() }),
 ]);
-
-const getIsVersionSetNull = (body: z.infer<typeof bodySchema>) =>
-  ("versionId" in body && body.versionId == null) ||
-  ("versionTag" in body && body.versionTag == null);
 
 const getVersion = async (
   db: Tx,
   body: z.infer<typeof bodySchema>,
   releaseTarget: schema.ReleaseTarget,
 ) => {
-  if ("versionId" in body && body.versionId != null)
+  if ("versionId" in body)
     return db
       .select()
       .from(schema.deploymentVersion)
       .where(eq(schema.deploymentVersion.id, body.versionId))
       .then(takeFirstOrNull);
 
-  if ("versionTag" in body && body.versionTag != null)
-    return db
-      .select()
-      .from(schema.deploymentVersion)
-      .where(
-        and(
-          eq(schema.deploymentVersion.deploymentId, releaseTarget.deploymentId),
-          eq(schema.deploymentVersion.tag, body.versionTag),
-        ),
-      )
-      .then(takeFirstOrNull);
-
-  return null;
+  return db
+    .select()
+    .from(schema.deploymentVersion)
+    .where(
+      and(
+        eq(schema.deploymentVersion.deploymentId, releaseTarget.deploymentId),
+        eq(schema.deploymentVersion.tag, body.versionTag),
+      ),
+    )
+    .then(takeFirstOrNull);
 };
 
 const getReleaseTarget = async (db: Tx, releaseTargetId: string) =>
@@ -66,22 +59,22 @@ const pinVersion = async (db: Tx, releaseTargetId: string, versionId: string) =>
     .set({ desiredVersionId: versionId })
     .where(eq(schema.releaseTarget.id, releaseTargetId));
 
-const unpinVersion = async (db: Tx, releaseTarget: schema.ReleaseTarget) => {
-  if (releaseTarget.desiredVersionId == null)
-    return NextResponse.json(
-      { error: "No version pinned" },
-      { status: BAD_REQUEST },
-    );
+// const unpinVersion = async (db: Tx, releaseTarget: schema.ReleaseTarget) => {
+//   if (releaseTarget.desiredVersionId == null)
+//     return NextResponse.json(
+//       { error: "No version pinned" },
+//       { status: BAD_REQUEST },
+//     );
 
-  await db
-    .update(schema.releaseTarget)
-    .set({ desiredVersionId: null })
-    .where(eq(schema.releaseTarget.id, releaseTarget.id));
+//   await db
+//     .update(schema.releaseTarget)
+//     .set({ desiredVersionId: null })
+//     .where(eq(schema.releaseTarget.id, releaseTarget.id));
 
-  await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
+//   await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
 
-  return NextResponse.json({ success: true });
-};
+//   return NextResponse.json({ success: true });
+// };
 
 export const POST = request()
   .use(authn)
@@ -107,9 +100,6 @@ export const POST = request()
           { error: "Release target not found" },
           { status: NOT_FOUND },
         );
-
-      const isVersionSetNull = getIsVersionSetNull(body);
-      if (isVersionSetNull) return unpinVersion(db, releaseTarget);
 
       const version = await getVersion(db, body, releaseTarget);
       if (version == null)
