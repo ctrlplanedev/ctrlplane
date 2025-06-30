@@ -1,0 +1,2 @@
+ALTER TABLE "release_target" ADD COLUMN "desired_version_id" uuid DEFAULT NULL;--> statement-breakpoint
+ALTER TABLE "release_target" ADD CONSTRAINT "release_target_desired_version_id_deployment_version_id_fk" FOREIGN KEY ("desired_version_id") REFERENCES "public"."deployment_version"("id") ON DELETE set null ON UPDATE no action;

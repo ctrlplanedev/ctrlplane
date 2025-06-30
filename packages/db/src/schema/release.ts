@@ -36,6 +36,10 @@ export const releaseTarget = pgTable(
     desiredReleaseId: uuid("desired_release_id")
       .references((): any => release.id, { onDelete: "set null" })
       .default(sql`NULL`),
+
+    desiredVersionId: uuid("desired_version_id")
+      .references(() => deploymentVersion.id, { onDelete: "set null" })
+      .default(sql`NULL`),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.resourceId, t.environmentId, t.deploymentId),
