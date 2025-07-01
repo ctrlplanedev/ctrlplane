@@ -38,15 +38,6 @@ export const openapi: Swagger.SwaggerV3 = {
                     type: "object",
                     additionalProperties: true,
                   },
-                  policyId: {
-                    type: "string",
-                  },
-                  releaseChannels: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
                   metadata: {
                     type: "object",
                     additionalProperties: { type: "string" },

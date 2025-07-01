@@ -1,4 +1,3 @@
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
 import { IconPlant } from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
@@ -12,7 +11,6 @@ import { VersionSelectorCheck } from "../checks/VersionSelector";
 
 type EnvironmentNodeProps = NodeProps<{
   workspaceId: string;
-  policy?: SCHEMA.EnvironmentPolicy;
   versionId: string;
   versionTag: string;
   deploymentId: string;

@@ -5,7 +5,6 @@ import {
   IconChartBar,
   IconClipboardCopy,
   IconExternalLink,
-  IconLock,
   IconRefresh,
   IconSettings,
   IconTrash,
@@ -94,14 +93,6 @@ export const EnvironmentDropdown: React.FC<EnvironmentDropdownProps> = ({
           >
             <IconSettings className="h-4 w-4" />
             Settings
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="flex cursor-pointer items-center gap-2"
-            onClick={() => router.push(environmentUrls.policies())}
-          >
-            <IconLock className="h-4 w-4" />
-            Policies
           </DropdownMenuItem>
 
           <DropdownMenuItem
