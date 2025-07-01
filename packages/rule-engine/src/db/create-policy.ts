@@ -147,7 +147,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .insert(SCHEMA.policyRuleAnyApproval)
       .values({ ...versionAnyApprovals, policyId })
       .onConflictDoUpdate({
-        target: [SCHEMA.policyRuleAnyApproval.id],
+        target: [SCHEMA.policyRuleAnyApproval.policyId],
         set: buildConflictUpdateColumns(SCHEMA.policyRuleAnyApproval, [
           "requiredApprovalsCount",
         ]),
@@ -160,7 +160,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         versionUserApprovals.map((approval) => ({ ...approval, policyId })),
       )
       .onConflictDoUpdate({
-        target: [SCHEMA.policyRuleUserApproval.id],
+        target: [SCHEMA.policyRuleUserApproval.policyId],
         set: buildConflictUpdateColumns(SCHEMA.policyRuleUserApproval, [
           "userId",
         ]),
@@ -173,7 +173,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
         versionRoleApprovals.map((approval) => ({ ...approval, policyId })),
       )
       .onConflictDoUpdate({
-        target: [SCHEMA.policyRuleRoleApproval.id],
+        target: [SCHEMA.policyRuleRoleApproval.policyId],
         set: buildConflictUpdateColumns(SCHEMA.policyRuleRoleApproval, [
           "roleId",
           "requiredApprovalsCount",
@@ -185,7 +185,7 @@ export const createPolicyInTx = async (tx: Tx, input: CreatePolicyInput) => {
       .insert(SCHEMA.policyRuleConcurrency)
       .values({ concurrency, policyId })
       .onConflictDoUpdate({
-        target: [SCHEMA.policyRuleConcurrency.id],
+        target: [SCHEMA.policyRuleConcurrency.policyId],
         set: buildConflictUpdateColumns(SCHEMA.policyRuleConcurrency, [
           "concurrency",
         ]),
