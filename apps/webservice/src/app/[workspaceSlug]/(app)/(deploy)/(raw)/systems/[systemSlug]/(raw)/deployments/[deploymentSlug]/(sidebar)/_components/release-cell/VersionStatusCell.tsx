@@ -210,6 +210,7 @@ export const VersionStatusCell: React.FC<{
   deployment: { id: string; name: string; slug: string };
   environment: { id: string; name: string };
   deploymentVersion: SCHEMA.DeploymentVersion;
+  isVersionPinned?: boolean;
 }> = (props) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const versionUrl = urls
@@ -225,6 +226,7 @@ export const VersionStatusCell: React.FC<{
       url={versionUrl}
       tag={props.deploymentVersion.tag}
       label={props.deploymentVersion.status}
+      isVersionPinned={props.isVersionPinned}
       Dropdown={<VersionStatusDropdown {...props} />}
     />
   );
