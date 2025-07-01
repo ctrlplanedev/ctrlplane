@@ -63,7 +63,11 @@ const BlockedByActiveJobsCell: React.FC<{
 
   return (
     <Cell
-      Icon={<IconClock className="h-4 w-4" strokeWidth={2} />}
+      Icon={
+        <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+          <IconClock className="h-4 w-4" strokeWidth={2} />
+        </div>
+      }
       url={deploymentUrl}
       tag={deploymentVersion.tag}
       label="Waiting on another release"
@@ -86,7 +90,11 @@ const NoJobAgentCell: React.FC<{
 
   return (
     <Cell
-      Icon={<IconBoltOff className="h-4 w-4" strokeWidth={2} />}
+      Icon={
+        <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+          <IconBoltOff className="h-4 w-4" strokeWidth={2} />
+        </div>
+      }
       url={workflowConfigUrl}
       tag={tag}
       label="No job agent"
