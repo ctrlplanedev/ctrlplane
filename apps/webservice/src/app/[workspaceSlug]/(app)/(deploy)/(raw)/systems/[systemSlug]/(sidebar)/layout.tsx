@@ -3,7 +3,6 @@ import {
   IconBook,
   IconPlant,
   IconSettings,
-  IconShield,
   IconShip,
   IconVariable,
 } from "@tabler/icons-react";
@@ -86,12 +85,6 @@ export default async function SystemsLayout(props: {
                   href={`/${workspace.slug}/systems/${params.systemSlug}/variables`}
                 >
                   Variables
-                </SidebarLink>
-                <SidebarLink
-                  icon={<IconShield />}
-                  href={`/${workspace.slug}/systems/${params.systemSlug}/policies`}
-                >
-                  Policies
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
