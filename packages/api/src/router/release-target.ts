@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { and, count, eq, notInArray, takeFirst } from "@ctrlplane/db";
@@ -157,15 +158,17 @@ export const releaseTargetRouter = createTRPCRouter({
         .where(
           and(
             notInArray(schema.job.status, exitedStatus),
-            resourceId != null
-              ? eq(schema.releaseTarget.resourceId, resourceId)
-              : undefined,
-            environmentId != null
-              ? eq(schema.releaseTarget.environmentId, environmentId)
-              : undefined,
-            deploymentId != null
-              ? eq(schema.releaseTarget.deploymentId, deploymentId)
-              : undefined,
+            ...[
+              resourceId != null
+                ? eq(schema.releaseTarget.resourceId, resourceId)
+                : undefined,
+              environmentId != null
+                ? eq(schema.releaseTarget.environmentId, environmentId)
+                : undefined,
+              deploymentId != null
+                ? eq(schema.releaseTarget.deploymentId, deploymentId)
+                : undefined,
+            ].filter(isPresent),
           ),
         );
 
