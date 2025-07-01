@@ -1,9 +1,7 @@
-import type { MetadataCondition } from "@ctrlplane/validators/conditions";
-import type { EnvironmentCondition } from "@ctrlplane/validators/environments";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import type { InferSelectModel, SQL } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
-import { and, eq, exists, ilike, not, notExists, or, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   bigint,
   foreignKey,
@@ -21,16 +19,10 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import {
-  ComparisonOperator,
-  MetadataOperator,
-} from "@ctrlplane/validators/conditions";
-import {
   isValidResourceCondition,
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
-import type { Tx } from "../common.js";
-import { ColumnOperatorFn } from "../common.js";
 import { user } from "./auth.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { resource } from "./resource.js";
@@ -286,115 +278,3 @@ export const environmentPolicyApproval = pgTable(
 export type EnvironmentPolicyApproval = InferSelectModel<
   typeof environmentPolicyApproval
 >;
-
-const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
-  if (cond.operator === MetadataOperator.Null)
-    return notExists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(environmentMetadata)
-        .where(
-          and(
-            eq(environmentMetadata.environmentId, environment.id),
-            eq(environmentMetadata.key, cond.key),
-          ),
-        ),
-    );
-
-  if (cond.operator === MetadataOperator.StartsWith)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(environmentMetadata)
-        .where(
-          and(
-            eq(environmentMetadata.environmentId, environment.id),
-            eq(environmentMetadata.key, cond.key),
-            ilike(environmentMetadata.value, `${cond.value}%`),
-          ),
-        ),
-    );
-
-  if (cond.operator === MetadataOperator.EndsWith)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(environmentMetadata)
-        .where(
-          and(
-            eq(environmentMetadata.environmentId, environment.id),
-            eq(environmentMetadata.key, cond.key),
-            ilike(environmentMetadata.value, `%${cond.value}`),
-          ),
-        ),
-    );
-
-  if (cond.operator === MetadataOperator.Contains)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(environmentMetadata)
-        .where(
-          and(
-            eq(environmentMetadata.environmentId, environment.id),
-            eq(environmentMetadata.key, cond.key),
-            ilike(environmentMetadata.value, `%${cond.value}%`),
-          ),
-        ),
-    );
-
-  if ("value" in cond)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(environmentMetadata)
-        .where(
-          and(
-            eq(environmentMetadata.environmentId, environment.id),
-            eq(environmentMetadata.key, cond.key),
-            eq(environmentMetadata.value, cond.value),
-          ),
-        ),
-    );
-
-  throw Error("invalid metadata conditions");
-};
-
-const buildCondition = (
-  tx: Tx,
-  condition: EnvironmentCondition,
-): SQL<unknown> => {
-  if (condition.type === "name")
-    return ColumnOperatorFn[condition.operator](
-      environment.name,
-      condition.value,
-    );
-  if (condition.type === "directory")
-    return ColumnOperatorFn[condition.operator](
-      environment.directory,
-      condition.value,
-    );
-  if (condition.type === "system")
-    return eq(environment.systemId, condition.value);
-  if (condition.type === "id") return eq(environment.id, condition.value);
-  if (condition.type === "metadata")
-    return buildMetadataCondition(tx, condition);
-
-  if (condition.conditions.length === 0) return sql`FALSE`;
-
-  const subCon = condition.conditions.map((c) => buildCondition(tx, c));
-  const con =
-    condition.operator === ComparisonOperator.And
-      ? and(...subCon)!
-      : or(...subCon)!;
-  return condition.not ? not(con) : con;
-};
-
-export function environmentMatchSelector(
-  tx: Tx,
-  condition?: EnvironmentCondition | null,
-): SQL<unknown> | undefined {
-  return condition == null || Object.keys(condition).length === 0
-    ? undefined
-    : buildCondition(tx, condition);
-}
