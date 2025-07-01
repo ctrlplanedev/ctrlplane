@@ -2,7 +2,7 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   IconAlertTriangle,
   IconBolt,
@@ -42,9 +42,9 @@ import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
-import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { Cell } from "./Cell";
+import { useDeploymentVersionEnvironmentContext } from "./DeploymentVersionEnvironmentContext";
 
 const OverrideStatusDialog: React.FC<{
   deploymentVersion: SCHEMA.DeploymentVersion;
@@ -118,11 +118,10 @@ const OverrideStatusDialog: React.FC<{
   );
 };
 
-const VersionStatusDropdown: React.FC<{
-  deploymentVersion: SCHEMA.DeploymentVersion;
-  deployment: { id: string; name: string; slug: string };
-  environment: { id: string; name: string };
-}> = ({ deploymentVersion, deployment, environment }) => {
+const VersionStatusDropdown: React.FC = () => {
+  const { deploymentVersion, deployment, environment } =
+    useDeploymentVersionEnvironmentContext();
+
   const [open, setOpen] = useState(false);
   const isReady = deploymentVersion.status === "ready";
 
@@ -205,29 +204,14 @@ const StatusIcon: React.FC<{
   );
 };
 
-export const VersionStatusCell: React.FC<{
-  system: { id: string; slug: string };
-  deployment: { id: string; name: string; slug: string };
-  environment: { id: string; name: string };
-  deploymentVersion: SCHEMA.DeploymentVersion;
-  isVersionPinned?: boolean;
-}> = (props) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(props.system.slug)
-    .deployment(props.deployment.slug)
-    .release(props.deploymentVersion.id)
-    .jobs();
+export const VersionStatusCell: React.FC = () => {
+  const { deploymentVersion } = useDeploymentVersionEnvironmentContext();
 
   return (
     <Cell
-      Icon={<StatusIcon versionStatus={props.deploymentVersion.status} />}
-      url={versionUrl}
-      tag={props.deploymentVersion.tag}
-      label={props.deploymentVersion.status}
-      isVersionPinned={props.isVersionPinned}
-      Dropdown={<VersionStatusDropdown {...props} />}
+      Icon={<StatusIcon versionStatus={deploymentVersion.status} />}
+      label={deploymentVersion.status}
+      Dropdown={<VersionStatusDropdown />}
     />
   );
 };

@@ -29,6 +29,7 @@ import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { urls } from "~/app/urls";
 import { Cell } from "./Cell";
+import { useDeploymentVersionEnvironmentContext } from "./DeploymentVersionEnvironmentContext";
 
 export const getPoliciesWithApprovalRequired = (
   policyEvaluations: PolicyEvaluationResult,
@@ -78,29 +79,17 @@ const YellowShieldIcon: React.FC = () => (
 
 export const ApprovalRequiredCell: React.FC<{
   policies: { id: string; name: string }[];
-  deploymentVersion: { id: string; tag: string };
-  deployment: { id: string; name: string; slug: string };
-  environment: { id: string; name: string };
-  system: { id: string; slug: string };
-}> = ({ policies, deploymentVersion, deployment, environment, system }) => {
+}> = ({ policies }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(system.slug)
-    .deployment(deployment.slug)
-    .release(deploymentVersion.id)
-    .jobs();
+  const { deploymentVersion, deployment, environment, system } =
+    useDeploymentVersionEnvironmentContext();
+
   return (
     <>
       <HoverCard>
         <HoverCardTrigger asChild>
-          <Cell
-            Icon={<YellowShieldIcon />}
-            url={versionUrl}
-            tag={deploymentVersion.tag}
-            label="Approval required"
-          />
+          <Cell Icon={<YellowShieldIcon />} label="Approval required" />
         </HoverCardTrigger>
         <HoverCardContent className="w-80">
           <div className="flex flex-col gap-2 text-sm">
