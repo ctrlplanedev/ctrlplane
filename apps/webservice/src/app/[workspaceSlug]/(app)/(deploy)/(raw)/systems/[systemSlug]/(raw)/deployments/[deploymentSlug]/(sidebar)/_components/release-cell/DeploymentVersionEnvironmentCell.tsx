@@ -52,7 +52,8 @@ const BlockedByActiveJobsCell: React.FC<{
   deploymentVersion: { id: string; tag: string };
   deployment: { id: string; name: string; slug: string };
   system: { slug: string };
-}> = ({ deploymentVersion, deployment, system }) => {
+  isVersionPinned?: boolean;
+}> = ({ deploymentVersion, deployment, system, isVersionPinned }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
   const deploymentUrl = urls
@@ -71,6 +72,7 @@ const BlockedByActiveJobsCell: React.FC<{
       url={deploymentUrl}
       tag={deploymentVersion.tag}
       label="Waiting on another release"
+      isVersionPinned={isVersionPinned}
     />
   );
 };
@@ -109,6 +111,17 @@ type DeploymentVersionEnvironmentCellProps = {
   deploymentVersion: SCHEMA.DeploymentVersion;
 };
 
+const useIsPinned = (environmentId: string, versionId: string) => {
+  const { data, isLoading } =
+    api.environment.versionPinning.pinnedVersions.useQuery({
+      environmentId,
+    });
+
+  const isPinned = data != null && data.length === 1 && data[0] === versionId;
+
+  return { isPinned, isPinnedVersionsLoading: isLoading };
+};
+
 const DeploymentVersionEnvironmentCell: React.FC<
   DeploymentVersionEnvironmentCellProps
 > = (props) => {
@@ -141,16 +154,28 @@ const DeploymentVersionEnvironmentCell: React.FC<
       environmentId: environment.id,
     });
 
+  const { isPinned, isPinnedVersionsLoading } = useIsPinned(
+    environment.id,
+    deploymentVersion.id,
+  );
+
   const isLoading =
     isReleaseTargetsLoading ||
     isPolicyEvaluationsLoading ||
     isJobsLoading ||
-    isTargetsWithActiveJobsLoading;
+    isTargetsWithActiveJobsLoading ||
+    isPinnedVersionsLoading;
   if (isLoading) return <SkeletonCell />;
 
   const hasJobs = jobs != null && jobs.length > 0;
   if (hasJobs)
-    return <ActiveJobsCell statuses={jobs.map((j) => j.status)} {...props} />;
+    return (
+      <ActiveJobsCell
+        isVersionPinned={isPinned}
+        statuses={jobs.map((j) => j.status)}
+        {...props}
+      />
+    );
 
   const policiesWithBlockingVersionSelector =
     policyEvaluations != null
@@ -168,7 +193,8 @@ const DeploymentVersionEnvironmentCell: React.FC<
     );
 
   const isNotReady = deploymentVersion.status !== "ready";
-  if (isNotReady) return <VersionStatusCell {...props} />;
+  if (isNotReady)
+    return <VersionStatusCell isVersionPinned={isPinned} {...props} />;
 
   const hasNoReleaseTargets = numReleaseTargets === 0;
   if (hasNoReleaseTargets)
@@ -192,13 +218,14 @@ const DeploymentVersionEnvironmentCell: React.FC<
   const isWaitingOnActiveJobs = allActiveJobs.some(
     ({ versionId }) => versionId !== deploymentVersion.id,
   );
-  if (isWaitingOnActiveJobs) return <BlockedByActiveJobsCell {...props} />;
+  if (isWaitingOnActiveJobs)
+    return <BlockedByActiveJobsCell isVersionPinned={isPinned} {...props} />;
 
   const hasNoJobAgent = deployment.jobAgentId == null;
   if (hasNoJobAgent)
     return <NoJobAgentCell tag={deploymentVersion.tag} {...props} />;
 
-  return <VersionStatusCell {...props} />;
+  return <VersionStatusCell isVersionPinned={isPinned} {...props} />;
 };
 
 export const LazyDeploymentVersionEnvironmentCell: React.FC<

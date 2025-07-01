@@ -18,10 +18,12 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { environmentPageRouter } from "./environment-page/router";
 import { environmentStatsRouter } from "./environment-stats";
+import { versionPinningRouter } from "./version-pinning";
 
 export const environmentRouter = createTRPCRouter({
   stats: environmentStatsRouter,
   page: environmentPageRouter,
+  versionPinning: versionPinningRouter,
 
   byId: protectedProcedure
     .meta({
