@@ -16,7 +16,6 @@ import {
   deploymentVersion,
   entityRole,
   environment,
-  environmentPolicy,
   job,
   jobAgent,
   policy,
@@ -125,22 +124,6 @@ const getEnvironmentScopes = async (id: string) => {
 
   return [
     { type: "environment" as const, id: result.environment.id },
-    { type: "system" as const, id: result.system.id },
-    { type: "workspace" as const, id: result.workspace.id },
-  ];
-};
-
-const getEnvironmentPolicyScopes = async (id: string) => {
-  const result = await db
-    .select()
-    .from(workspace)
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(environmentPolicy, eq(environmentPolicy.systemId, system.id))
-    .where(eq(environmentPolicy.id, id))
-    .then(takeFirst);
-
-  return [
-    { type: "environmentPolicy" as const, id: result.environment_policy.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
@@ -471,7 +454,6 @@ export const scopeHandlers: Record<
   system: getSystemScopes,
   workspace: getWorkspaceScopes,
   environment: getEnvironmentScopes,
-  environmentPolicy: getEnvironmentPolicyScopes,
   deploymentVersion: getDeploymentVersionScopes,
   resourceMetadataGroup: getResourceMetadataGroupScopes,
   variableSet: getVariableSetScopes,

@@ -85,20 +85,7 @@ export const getDeploymentStats = async (
   const row = await db
     .select()
     .from(SCHEMA.deploymentVersion)
-    .leftJoin(
-      SCHEMA.environmentPolicyApproval,
-      and(
-        eq(
-          SCHEMA.environmentPolicyApproval.deploymentVersionId,
-          SCHEMA.deploymentVersion.id,
-        ),
-        eq(SCHEMA.environmentPolicyApproval.policyId, environment.policyId),
-      ),
-    )
-    .leftJoin(
-      SCHEMA.user,
-      eq(SCHEMA.environmentPolicyApproval.userId, SCHEMA.user.id),
-    )
+    .leftJoin(SCHEMA.user, eq(SCHEMA.user.id, SCHEMA.user.id))
     .where(and(eq(SCHEMA.deploymentVersion.deploymentId, deployment.id)))
     .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
     .limit(1)
