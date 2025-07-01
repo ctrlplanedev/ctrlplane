@@ -12,7 +12,7 @@ import { urls } from "~/app/urls";
 import { useActiveJobs } from "./_hooks/useActiveJobs";
 import { useHasReleaseTargets } from "./_hooks/useHasReleaseTargets";
 import { usePolicyEvaluations } from "./_hooks/useIsBlockedByPolicyVersionSelector";
-import { useIsWaitingOnAnotherRelease } from "./_hooks/useIsWaitingOnAnotherRelease";
+import { useBlockingRelease } from "./_hooks/useIsWaitingOnAnotherRelease";
 import { ActiveJobsCell } from "./ActiveJobsCell";
 import { ApprovalRequiredCell } from "./ApprovalRequiredCell";
 import { BlockedByVersionSelectorCell } from "./BlockedByVersionSelectorCell";
@@ -52,7 +52,9 @@ const NoReleaseTargetsCell: React.FC = () => {
   );
 };
 
-const BlockedByActiveJobsCell: React.FC = () => {
+const BlockedByActiveJobsCell: React.FC<{ blockingVersionId: string }> = ({
+  blockingVersionId,
+}) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
   const { deployment, system } = useDeploymentVersionEnvironmentContext();
@@ -61,7 +63,8 @@ const BlockedByActiveJobsCell: React.FC = () => {
     .workspace(workspaceSlug)
     .system(system.slug)
     .deployment(deployment.slug)
-    .releases();
+    .release(blockingVersionId)
+    .jobs();
 
   return (
     <Cell
@@ -106,8 +109,7 @@ const DeploymentVersionEnvironmentCell: React.FC = () => {
 
   const { hasNoReleaseTargets, isReleaseTargetsLoading } =
     useHasReleaseTargets();
-  const { isWaitingOnAnotherRelease, isWaitingOnAnotherReleaseLoading } =
-    useIsWaitingOnAnotherRelease();
+  const { blockingRelease, isBlockingReleaseLoading } = useBlockingRelease();
 
   const { isPolicyEvaluationsLoading, versionSelector, approvalRequired } =
     usePolicyEvaluations();
@@ -118,7 +120,7 @@ const DeploymentVersionEnvironmentCell: React.FC = () => {
     isReleaseTargetsLoading ||
     isPolicyEvaluationsLoading ||
     isStatusesLoading ||
-    isWaitingOnAnotherReleaseLoading;
+    isBlockingReleaseLoading;
 
   if (isLoading) return <SkeletonCell />;
 
@@ -135,7 +137,10 @@ const DeploymentVersionEnvironmentCell: React.FC = () => {
   if (approvalRequired.isRequired)
     return <ApprovalRequiredCell policies={approvalRequired.policies} />;
 
-  if (isWaitingOnAnotherRelease) return <BlockedByActiveJobsCell />;
+  if (blockingRelease != null)
+    return (
+      <BlockedByActiveJobsCell blockingVersionId={blockingRelease.versionId} />
+    );
 
   const hasNoJobAgent = deployment.jobAgentId == null;
   if (hasNoJobAgent) return <NoJobAgentCell />;

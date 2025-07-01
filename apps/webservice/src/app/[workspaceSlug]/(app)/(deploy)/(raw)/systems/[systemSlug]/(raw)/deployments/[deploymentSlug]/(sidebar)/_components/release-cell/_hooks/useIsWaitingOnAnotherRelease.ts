@@ -3,7 +3,7 @@
 import { api } from "~/trpc/react";
 import { useDeploymentVersionEnvironmentContext } from "../DeploymentVersionEnvironmentContext";
 
-export const useIsWaitingOnAnotherRelease = () => {
+export const useBlockingRelease = () => {
   const { environment, deployment, deploymentVersion } =
     useDeploymentVersionEnvironmentContext();
 
@@ -15,12 +15,13 @@ export const useIsWaitingOnAnotherRelease = () => {
   } = api.releaseTarget.activeJobs.useQuery({ environmentId, deploymentId });
 
   const allActiveJobs = (targetsWithActiveJobs ?? []).flatMap((t) => t.jobs);
-  const isWaitingOnAnotherRelease = allActiveJobs.some(
+
+  const blockingRelease = allActiveJobs.find(
     ({ versionId }) => versionId !== deploymentVersion.id,
   );
 
   return {
-    isWaitingOnAnotherRelease,
-    isWaitingOnAnotherReleaseLoading: isTargetsWithActiveJobsLoading,
+    isBlockingReleaseLoading: isTargetsWithActiveJobsLoading,
+    blockingRelease,
   };
 };
