@@ -28,6 +28,7 @@ import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components
 import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { urls } from "~/app/urls";
+import { Cell } from "./Cell";
 
 export const getPoliciesWithApprovalRequired = (
   policyEvaluations: PolicyEvaluationResult,
@@ -69,6 +70,12 @@ export const getPoliciesWithApprovalRequired = (
   );
 };
 
+const YellowShieldIcon: React.FC = () => (
+  <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
+    <IconShield className="h-4 w-4" strokeWidth={2} />
+  </div>
+);
+
 export const ApprovalRequiredCell: React.FC<{
   policies: { id: string; name: string }[];
   deploymentVersion: { id: string; tag: string };
@@ -88,24 +95,12 @@ export const ApprovalRequiredCell: React.FC<{
     <>
       <HoverCard>
         <HoverCardTrigger asChild>
-          <div className="flex h-full w-full items-center justify-center p-1">
-            <Link
-              href={versionUrl}
-              className="flex w-full items-center gap-2 rounded-md p-2"
-            >
-              <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
-                <IconShield className="h-4 w-4" strokeWidth={2} />
-              </div>
-              <div className="flex flex-col">
-                <div className="max-w-36 truncate font-semibold">
-                  {deploymentVersion.tag}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Approval required
-                </div>
-              </div>
-            </Link>
-          </div>
+          <Cell
+            Icon={<YellowShieldIcon />}
+            url={versionUrl}
+            tag={deploymentVersion.tag}
+            label="Approval required"
+          />
         </HoverCardTrigger>
         <HoverCardContent className="w-80">
           <div className="flex flex-col gap-2 text-sm">

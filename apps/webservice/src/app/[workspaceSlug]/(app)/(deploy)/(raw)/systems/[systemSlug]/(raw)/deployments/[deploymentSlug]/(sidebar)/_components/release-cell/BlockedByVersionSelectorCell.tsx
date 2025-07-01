@@ -25,6 +25,7 @@ import type { PolicyEvaluationResult } from "./policy-evaluation";
 import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { urls } from "~/app/urls";
+import { Cell } from "./Cell";
 
 export const getPoliciesBlockingByVersionSelector = (
   policyEvaluations: PolicyEvaluationResult,
@@ -35,6 +36,12 @@ export const getPoliciesBlockingByVersionSelector = (
       policyEvaluations.policies.find((p) => p.id === policyId),
     )
     .filter(isPresent);
+
+const GreyFilterIcon: React.FC = () => (
+  <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+    <IconFilterX className="h-4 w-4" strokeWidth={2} />
+  </div>
+);
 
 export const BlockedByVersionSelectorCell: React.FC<{
   policies: { id: string; name: string }[];
@@ -55,24 +62,12 @@ export const BlockedByVersionSelectorCell: React.FC<{
     <>
       <HoverCard>
         <HoverCardTrigger asChild>
-          <div className="flex h-full w-full items-center justify-center p-1">
-            <Link
-              href={versionUrl}
-              className="flex w-full items-center gap-2 rounded-md p-2"
-            >
-              <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-                <IconFilterX className="h-4 w-4" strokeWidth={2} />
-              </div>
-              <div className="flex flex-col">
-                <div className="max-w-36 truncate font-semibold">
-                  {deploymentVersion.tag}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Blocked by version selector
-                </div>
-              </div>
-            </Link>
-          </div>
+          <Cell
+            Icon={<GreyFilterIcon />}
+            url={versionUrl}
+            tag={deploymentVersion.tag}
+            label="Blocked by policy"
+          />
         </HoverCardTrigger>
         <HoverCardContent className="w-80">
           <div className="flex flex-col gap-2 text-sm">

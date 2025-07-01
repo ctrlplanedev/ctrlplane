@@ -1,7 +1,6 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   IconAlertTriangle,
@@ -23,6 +22,43 @@ import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { StatusIcon } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/StatusIcon";
 import { urls } from "~/app/urls";
+import { Cell } from "./Cell";
+
+const ActiveJobsDropdown: React.FC<{
+  deployment: { id: string; name: string; slug: string };
+  environment: { id: string; name: string };
+  hasActiveJobs: boolean;
+}> = ({ deployment, environment, hasActiveJobs }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0 text-muted-foreground"
+      >
+        <IconDotsVertical className="h-4 w-4" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent>
+      {!hasActiveJobs && (
+        <DropdownAction
+          deployment={deployment}
+          environment={environment}
+          icon={<IconReload className="h-4 w-4" />}
+          label="Redeploy"
+          Dialog={RedeployVersionDialog}
+        />
+      )}
+      <DropdownAction
+        deployment={deployment}
+        environment={environment}
+        icon={<IconAlertTriangle className="h-4 w-4" />}
+        label="Force deploy"
+        Dialog={ForceDeployVersionDialog}
+      />
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
 
 export const ActiveJobsCell: React.FC<{
   statuses: SCHEMA.JobStatus[];
@@ -43,50 +79,18 @@ export const ActiveJobsCell: React.FC<{
   const hasActiveJobs = statuses.some((s) => s === JobStatus.InProgress);
 
   return (
-    <div className="flex h-full w-full items-center justify-between p-1">
-      <Link
-        href={versionUrl}
-        className="flex w-full items-center gap-2 rounded-md p-2"
-      >
-        <StatusIcon statuses={statuses} />
-        <div className="flex flex-col">
-          <div className="max-w-36 truncate font-semibold">
-            {deploymentVersion.tag}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {format(deploymentVersion.createdAt, "MMM d, hh:mm aa")}
-          </div>
-        </div>
-      </Link>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0 text-muted-foreground"
-          >
-            <IconDotsVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          {!hasActiveJobs && (
-            <DropdownAction
-              deployment={deployment}
-              environment={environment}
-              icon={<IconReload className="h-4 w-4" />}
-              label="Redeploy"
-              Dialog={RedeployVersionDialog}
-            />
-          )}
-          <DropdownAction
-            deployment={deployment}
-            environment={environment}
-            icon={<IconAlertTriangle className="h-4 w-4" />}
-            label="Force deploy"
-            Dialog={ForceDeployVersionDialog}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <Cell
+      Icon={<StatusIcon statuses={statuses} />}
+      url={versionUrl}
+      tag={deploymentVersion.tag}
+      label={format(deploymentVersion.createdAt, "MMM d, hh:mm aa")}
+      Dropdown={
+        <ActiveJobsDropdown
+          deployment={deployment}
+          environment={environment}
+          hasActiveJobs={hasActiveJobs}
+        />
+      }
+    />
   );
 };
