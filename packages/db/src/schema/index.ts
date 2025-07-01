@@ -3,7 +3,6 @@ export * from "./resource.js";
 export * from "./resource-provider.js";
 export * from "./deployment.js";
 export * from "./environment.js";
-export * from "./environment-policy-deployment.js";
 export * from "./deployment-version.js";
 export * from "./system.js";
 export * from "./runbook.js";
@@ -25,6 +24,5 @@ export * from "./release.js";
 export * from "./rules/index.js";
 
 export * from "./environment-relations.js";
-export * from "./environment-policy-relations.js";
 export * from "./policy-relations.js";
 export * from "./resource-relationship-rule.js";

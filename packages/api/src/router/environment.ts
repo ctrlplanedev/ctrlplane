@@ -8,8 +8,6 @@ import {
   createEnvironment,
   environment,
   environmentMetadata,
-  environmentPolicy,
-  environmentPolicyReleaseWindow,
   resource,
   system,
   updateEnvironment,
@@ -19,11 +17,9 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { environmentPageRouter } from "./environment-page/router";
-import { policyRouter } from "./environment-policy";
 import { environmentStatsRouter } from "./environment-stats";
 
 export const environmentRouter = createTRPCRouter({
-  policy: policyRouter,
   stats: environmentStatsRouter,
   page: environmentPageRouter,
 
@@ -39,14 +35,6 @@ export const environmentRouter = createTRPCRouter({
       return ctx.db
         .select()
         .from(environment)
-        .innerJoin(
-          environmentPolicy,
-          eq(environment.policyId, environmentPolicy.id),
-        )
-        .leftJoin(
-          environmentPolicyReleaseWindow,
-          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
-        )
         .innerJoin(system, eq(environment.systemId, system.id))
         .leftJoin(
           environmentMetadata,
@@ -56,17 +44,6 @@ export const environmentRouter = createTRPCRouter({
         .then((rows) => {
           const env = rows.at(0);
           if (env == null) return null;
-
-          const policy = {
-            ...env.environment_policy,
-            releaseWindows: _.chain(rows)
-              .map((r) => r.environment_policy_release_window)
-              .filter(isPresent)
-              .uniqBy((r) => r.id)
-              .value(),
-            isDefaultPolicy:
-              env.environment_policy.environmentId === env.environment.id,
-          };
 
           const metadata = _.chain(rows)
             .map((r) => r.environment_metadata)
@@ -78,7 +55,6 @@ export const environmentRouter = createTRPCRouter({
 
           return {
             ...env.environment,
-            policy,
             system: env.system,
             metadata,
           };
@@ -225,11 +201,9 @@ export const environmentRouter = createTRPCRouter({
         .where(eq(environment.id, input.id))
         .then(takeFirst);
 
-      const policyId = oldEnv.environment.policyId;
-
       const updatedEnv = await ctx.db
         .update(environment)
-        .set({ ...input.data, policyId })
+        .set({ ...input.data })
         .where(eq(environment.id, input.id))
         .returning()
         .then(takeFirst);

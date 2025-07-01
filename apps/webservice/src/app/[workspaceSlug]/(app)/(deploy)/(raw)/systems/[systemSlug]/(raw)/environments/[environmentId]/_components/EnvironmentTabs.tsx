@@ -23,12 +23,10 @@ export const EnvironmentTabs: React.FC = () => {
   const overviewUrl = environmentUrls.overview();
   const deploymentsUrl = environmentUrls.deployments();
   const resourcesUrl = environmentUrls.resources();
-  const policiesUrl = environmentUrls.policies();
   const settingsUrl = environmentUrls.settings();
 
   const pathname = usePathname();
   const getInitialTab = () => {
-    if (pathname === policiesUrl) return "policies";
     if (pathname === resourcesUrl) return "resources";
     if (pathname === deploymentsUrl) return "deployments";
     if (pathname === baseUrl) return "overview";
@@ -44,7 +42,6 @@ export const EnvironmentTabs: React.FC = () => {
     if (value === "overview") router.push(overviewUrl);
     if (value === "deployments") router.push(deploymentsUrl);
     if (value === "resources") router.push(resourcesUrl);
-    if (value === "policies") router.push(policiesUrl);
     if (value === "settings") router.push(settingsUrl);
     setActiveTab(value);
   };
@@ -55,7 +52,6 @@ export const EnvironmentTabs: React.FC = () => {
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="deployments">Deployments</TabsTrigger>
         <TabsTrigger value="resources">Resources</TabsTrigger>
-        <TabsTrigger value="policies">Policies</TabsTrigger>
         <TabsTrigger value="settings">Settings</TabsTrigger>
       </TabsList>
     </Tabs>

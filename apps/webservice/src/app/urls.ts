@@ -190,7 +190,6 @@ const environment = (params: EnvironmentParams) => {
   return {
     baseUrl: () => buildUrl(...base),
     deployments: () => buildUrl(...base, "deployments"),
-    policies: () => buildUrl(...base, "policies"),
     resources: () => buildUrl(...base, "resources"),
     variables: () => buildUrl(...base, "variables"),
     settings: () => buildUrl(...base, "settings"),

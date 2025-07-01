@@ -23,7 +23,7 @@ export const GET = request()
       const { environmentId } = await params;
       const environment = await ctx.db.query.environment.findFirst({
         where: eq(schema.environment.id, environmentId),
-        with: { policy: true, metadata: true },
+        with: { metadata: true },
       });
       if (environment == null)
         return NextResponse.json(

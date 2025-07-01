@@ -4,7 +4,6 @@ import {
   computedEnvironmentResource,
   environment,
   environmentMetadata,
-  environmentPolicy,
 } from "./environment.js";
 import { releaseTarget } from "./release.js";
 import { resource } from "./resource.js";
@@ -12,10 +11,6 @@ import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";
 
 export const environmentRelations = relations(environment, ({ many, one }) => ({
-  policy: one(environmentPolicy, {
-    fields: [environment.policyId],
-    references: [environmentPolicy.id],
-  }),
   environments: many(variableSetEnvironment),
   system: one(system, {
     fields: [environment.systemId],

@@ -82,31 +82,15 @@ export const getDeploymentStats = async (
     ].filter(isPresent),
   };
 
-  const row = await db
+  const version = await db
     .select()
     .from(SCHEMA.deploymentVersion)
-    .leftJoin(
-      SCHEMA.environmentPolicyApproval,
-      and(
-        eq(
-          SCHEMA.environmentPolicyApproval.deploymentVersionId,
-          SCHEMA.deploymentVersion.id,
-        ),
-        eq(SCHEMA.environmentPolicyApproval.policyId, environment.policyId),
-      ),
-    )
-    .leftJoin(
-      SCHEMA.user,
-      eq(SCHEMA.environmentPolicyApproval.userId, SCHEMA.user.id),
-    )
     .where(and(eq(SCHEMA.deploymentVersion.deploymentId, deployment.id)))
     .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
     .limit(1)
     .then(takeFirstOrNull);
 
-  if (row == null) return null;
-
-  const { deployment_version: version, user } = row;
+  if (version == null) return null;
 
   const resources = await db
     .select()
@@ -157,7 +141,7 @@ export const getDeploymentStats = async (
     status,
     resourceCount,
     duration,
-    deployedBy: user?.name ?? null,
+    deployedBy: null,
     successRate,
     deployedAt: version.createdAt,
   };
