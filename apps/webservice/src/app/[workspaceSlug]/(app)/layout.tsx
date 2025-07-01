@@ -7,10 +7,7 @@ import {
   IconShieldCheck,
 } from "@tabler/icons-react";
 
-import { EnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment/drawer/EnvironmentDrawer";
-import { EnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
 import { urls } from "~/app/urls";
-import { DeploymentVersionChannelDrawer } from "./_components/channel/drawer/DeploymentVersionChannelDrawer";
 import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
 import { TopNav } from "./TopNav";
 import { TopSidebarIcon } from "./TopSidebarIcon";
@@ -70,10 +67,7 @@ export default async function Layout(props: {
         </div>
       </div>
 
-      <EnvironmentDrawer />
-      <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
-      <DeploymentVersionChannelDrawer />
     </>
   );
 }

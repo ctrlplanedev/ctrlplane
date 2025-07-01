@@ -35,7 +35,6 @@ import { Input } from "@ctrlplane/ui/input";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
-import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment/drawer/EnvironmentDrawer";
 import { api } from "~/trpc/react";
 import { DeleteNodeDialog, useDeleteNodeDialog } from "./DeleteNodeDialog";
 import { useHandleEdgeDelete } from "./edges";
@@ -66,7 +65,6 @@ const AddEnvironmentButton: React.FC<{
 
   const { addNodes, addEdges } = useReactFlow();
   const { x, y } = useViewport();
-  const { setEnvironmentId } = useEnvironmentDrawer();
   const onSubmit = form.handleSubmit(async (values) => {
     setOpen(false);
 
@@ -89,7 +87,6 @@ const AddEnvironmentButton: React.FC<{
         color: colors.neutral[700],
       },
     });
-    setEnvironmentId(env.id);
     window.requestAnimationFrame(() => setSelectedNodeId(env.id));
     form.reset();
   });

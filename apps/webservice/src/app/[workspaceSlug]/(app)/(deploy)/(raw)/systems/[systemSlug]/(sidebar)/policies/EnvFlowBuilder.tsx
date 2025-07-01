@@ -22,8 +22,6 @@ import ReactFlow, {
 import colors from "tailwindcss/colors";
 import { isPresent } from "ts-is-present";
 
-import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment/drawer/EnvironmentDrawer";
-import { useEnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
 import { ArrowEdge } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ArrowEdge";
 import {
   createEdgesFromPolicyDeployment,
@@ -239,9 +237,6 @@ export const EnvFlowBuilder: React.FC<{
     setOpen,
   ]);
 
-  const { setEnvironmentId } = useEnvironmentDrawer();
-  const { setEnvironmentPolicyId } = useEnvironmentPolicyDrawer();
-
   return (
     <ReactFlow
       nodes={nodes}
@@ -260,11 +255,7 @@ export const EnvFlowBuilder: React.FC<{
       fitView
       nodesDraggable
       proOptions={{ hideAttribution: true }}
-      onNodeClick={(_, node) => {
-        if (node.type === NodeType.Environment) setEnvironmentId(node.id);
-        if (node.type === NodeType.Policy) setEnvironmentPolicyId(node.id);
-        setSelectedNodeId(node.id);
-      }}
+      onNodeClick={(_, node) => setSelectedNodeId(node.id)}
       onEdgeClick={(_, edge) => {
         onEdgeClick(edge);
       }}

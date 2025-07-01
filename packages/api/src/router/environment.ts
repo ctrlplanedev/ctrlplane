@@ -6,11 +6,9 @@ import { and, count, eq, ilike, takeFirst, upsertEnv } from "@ctrlplane/db";
 import {
   computedEnvironmentResource,
   createEnvironment,
-  deploymentVersionChannel,
   environment,
   environmentMetadata,
   environmentPolicy,
-  environmentPolicyDeploymentVersionChannel,
   environmentPolicyReleaseWindow,
   resource,
   system,
@@ -38,29 +36,6 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const policyRCSubquery = ctx.db
-        .select({
-          deploymentVersionChannelPolicyId:
-            environmentPolicyDeploymentVersionChannel.policyId,
-          deploymentVersionChannelDeploymentId:
-            environmentPolicyDeploymentVersionChannel.deploymentId,
-          deploymentVersionChannelDescription:
-            deploymentVersionChannel.description,
-          deploymentVersionChannelSelector:
-            deploymentVersionChannel.versionSelector,
-          deploymentVersionChannelId: deploymentVersionChannel.id,
-          deploymentVersionChannelName: deploymentVersionChannel.name,
-        })
-        .from(environmentPolicyDeploymentVersionChannel)
-        .innerJoin(
-          deploymentVersionChannel,
-          eq(
-            environmentPolicyDeploymentVersionChannel.channelId,
-            deploymentVersionChannel.id,
-          ),
-        )
-        .as("policyRCSubquery");
-
       return ctx.db
         .select()
         .from(environment)
@@ -74,13 +49,6 @@ export const environmentRouter = createTRPCRouter({
         )
         .innerJoin(system, eq(environment.systemId, system.id))
         .leftJoin(
-          policyRCSubquery,
-          eq(
-            environmentPolicy.id,
-            policyRCSubquery.deploymentVersionChannelPolicyId,
-          ),
-        )
-        .leftJoin(
           environmentMetadata,
           eq(environmentMetadata.environmentId, environment.id),
         )
@@ -91,18 +59,6 @@ export const environmentRouter = createTRPCRouter({
 
           const policy = {
             ...env.environment_policy,
-            versionChannels: _.chain(rows)
-              .map((r) => r.policyRCSubquery)
-              .filter(isPresent)
-              .uniqBy((r) => r.deploymentVersionChannelId)
-              .map((r) => ({
-                deploymentId: r.deploymentVersionChannelDeploymentId,
-                description: r.deploymentVersionChannelDescription,
-                versionSelector: r.deploymentVersionChannelSelector,
-                id: r.deploymentVersionChannelId,
-                name: r.deploymentVersionChannelName,
-              }))
-              .value(),
             releaseWindows: _.chain(rows)
               .map((r) => r.environment_policy_release_window)
               .filter(isPresent)

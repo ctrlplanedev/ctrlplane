@@ -7,11 +7,9 @@ import { and, eq, sql, takeFirst } from "@ctrlplane/db";
 import {
   createEnvironmentPolicy,
   createEnvironmentPolicyDeployment,
-  deploymentVersionChannel,
   environment,
   environmentPolicy,
   environmentPolicyDeployment,
-  environmentPolicyDeploymentVersionChannel,
   environmentPolicyReleaseWindow,
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
@@ -24,20 +22,6 @@ const basePolicyQuery = (db: Tx) =>
   db
     .select()
     .from(environmentPolicy)
-    .leftJoin(
-      environmentPolicyDeploymentVersionChannel,
-      eq(
-        environmentPolicyDeploymentVersionChannel.policyId,
-        environmentPolicy.id,
-      ),
-    )
-    .leftJoin(
-      deploymentVersionChannel,
-      eq(
-        environmentPolicyDeploymentVersionChannel.channelId,
-        deploymentVersionChannel.id,
-      ),
-    )
     .leftJoin(
       environmentPolicyReleaseWindow,
       eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
@@ -154,11 +138,6 @@ export const policyRouter = createTRPCRouter({
         .where(eq(environmentPolicy.environmentId, input))
         .then((rows) => {
           const policy = rows.at(0)!;
-          const versionChannels = _.chain(rows)
-            .map((r) => r.deployment_version_channel)
-            .filter(isPresent)
-            .uniqBy((r) => r.id)
-            .value();
 
           const releaseWindows = _.chain(rows)
             .map((r) => r.environment_policy_release_window)
@@ -173,7 +152,6 @@ export const policyRouter = createTRPCRouter({
 
           return {
             ...policy.environment_policy,
-            versionChannels,
             releaseWindows,
           };
         }),
@@ -193,11 +171,6 @@ export const policyRouter = createTRPCRouter({
         .where(eq(environmentPolicy.id, input))
         .then((rows) => {
           const policy = rows.at(0)!;
-          const versionChannels = _.chain(rows)
-            .map((r) => r.deployment_version_channel)
-            .filter(isPresent)
-            .uniqBy((r) => r.id)
-            .value();
 
           const releaseWindows = _.chain(rows)
             .map((r) => r.environment_policy_release_window)
@@ -218,7 +191,6 @@ export const policyRouter = createTRPCRouter({
 
           return {
             ...policy.environment_policy,
-            versionChannels,
             releaseWindows,
             environments,
           };
