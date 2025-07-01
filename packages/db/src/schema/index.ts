@@ -20,13 +20,11 @@ export * from "./runbook-variables.js";
 export * from "./rbac.js";
 export * from "./job-agent.js";
 export * from "./event.js";
-export * from "./release-channel.js";
 export * from "./policy.js";
 export * from "./release.js";
 export * from "./rules/index.js";
 
 export * from "./environment-relations.js";
 export * from "./environment-policy-relations.js";
-export * from "./release-channel-relations.js";
 export * from "./policy-relations.js";
 export * from "./resource-relationship-rule.js";

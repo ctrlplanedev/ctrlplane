@@ -94,19 +94,6 @@ export const createEnvironment = createInsertSchema(environment, {
 })
   .omit({ id: true, policyId: true })
   .extend({
-    versionChannels: z
-      .array(
-        z.object({
-          channelId: z.string().uuid(),
-          deploymentId: z.string().uuid(),
-        }),
-      )
-      .optional()
-      .refine((channels) => {
-        if (channels == null) return true;
-        const deploymentIds = new Set(channels.map((c) => c.deploymentId));
-        return deploymentIds.size === channels.length;
-      }),
     metadata: z.record(z.string()).optional(),
     policyId: z.string().uuid().optional(),
   });
@@ -226,7 +213,6 @@ const overridePolicyFKConstraint: {
 export const createEnvironmentPolicy = createInsertSchema(environmentPolicy)
   .omit({ id: true })
   .extend({
-    versionChannels: z.record(z.string().uuid().nullable()).optional(),
     releaseWindows: z
       .array(
         z.object({

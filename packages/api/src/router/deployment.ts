@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
@@ -334,13 +333,6 @@ export const deploymentRouter = createTRPCRouter({
           SCHEMA.jobAgent,
           eq(SCHEMA.jobAgent.id, SCHEMA.deployment.jobAgentId),
         )
-        .leftJoin(
-          SCHEMA.deploymentVersionChannel,
-          eq(
-            SCHEMA.deploymentVersionChannel.deploymentId,
-            SCHEMA.deployment.id,
-          ),
-        )
         .where(
           and(
             eq(SCHEMA.deployment.slug, deploymentSlug),
@@ -355,9 +347,6 @@ export const deploymentRouter = createTRPCRouter({
                 ...r[0].deployment,
                 system: { ...r[0].system, workspace: r[0].workspace },
                 agent: r[0].job_agent,
-                versionChannels: r
-                  .map((r) => r.deployment_version_channel)
-                  .filter(isPresent),
               },
         ),
     ),
@@ -374,13 +363,6 @@ export const deploymentRouter = createTRPCRouter({
       return ctx.db
         .select()
         .from(SCHEMA.deployment)
-        .leftJoin(
-          SCHEMA.deploymentVersionChannel,
-          eq(
-            SCHEMA.deploymentVersionChannel.deploymentId,
-            SCHEMA.deployment.id,
-          ),
-        )
         .innerJoin(
           SCHEMA.system,
           eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
@@ -390,15 +372,7 @@ export const deploymentRouter = createTRPCRouter({
         .then((ts) =>
           _.chain(ts)
             .groupBy((t) => t.deployment.id)
-            .map((t) => ({
-              ...t[0]!.deployment,
-              system: t[0]!.system,
-              versionChannels: _.chain(t)
-                .map((a) => a.deployment_version_channel)
-                .filter(isPresent)
-                .uniqBy((a) => a.id)
-                .value(),
-            }))
+            .map((t) => ({ ...t[0]!.deployment, system: t[0]!.system }))
             .value(),
         );
     }),

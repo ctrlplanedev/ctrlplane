@@ -4,15 +4,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
 
 const selectorParam = "selector";
-const deploymentVersionChannelParam = "deployment_version_channel_id_filter";
 export const useDeploymentVersionSelector = () => {
   const urlParams = useSearchParams();
   const router = useRouter();
 
   const selectorHash = urlParams.get(selectorParam);
-  const deploymentVersionChannelId = urlParams.get(
-    deploymentVersionChannelParam,
-  );
 
   const selector = useMemo<DeploymentVersionCondition | null>(() => {
     if (selectorHash == null) return null;
@@ -26,23 +22,12 @@ export const useDeploymentVersionSelector = () => {
   }, [selectorHash]);
 
   const setSelector = useCallback(
-    (
-      selector: DeploymentVersionCondition | null,
-      deploymentVersionChannelId?: string | null,
-    ) => {
+    (selector: DeploymentVersionCondition | null) => {
       const url = new URL(window.location.href);
       const selectorHash =
         selector != null
           ? LZString.compressToEncodedURIComponent(JSON.stringify(selector))
           : null;
-
-      if (deploymentVersionChannelId == null)
-        url.searchParams.delete(deploymentVersionChannelParam);
-      if (deploymentVersionChannelId != null)
-        url.searchParams.set(
-          deploymentVersionChannelParam,
-          deploymentVersionChannelId,
-        );
 
       if (selectorHash != null)
         url.searchParams.set(selectorParam, selectorHash);
@@ -57,6 +42,5 @@ export const useDeploymentVersionSelector = () => {
   return {
     selector,
     setSelector,
-    deploymentVersionChannelId,
   };
 };

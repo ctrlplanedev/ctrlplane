@@ -21,32 +21,6 @@ import {
 
 import { deployment } from "./deployment.js";
 
-export const deploymentVersionChannel = pgTable(
-  "deployment_version_channel",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    name: text("name").notNull(),
-    description: text("description").default(""),
-    deploymentId: uuid("deployment_id")
-      .notNull()
-      .references(() => deployment.id, { onDelete: "cascade" }),
-    versionSelector: jsonb("deployment_version_selector")
-      .$type<DeploymentVersionCondition | null>()
-      .default(sql`NULL`),
-  },
-  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.name) }),
-);
-
-export type DeploymentVersionChannel = InferSelectModel<
-  typeof deploymentVersionChannel
->;
-export const createDeploymentVersionChannel = createInsertSchema(
-  deploymentVersionChannel,
-  { versionSelector: deploymentVersionCondition },
-).omit({ id: true });
-export const updateDeploymentVersionChannel =
-  createDeploymentVersionChannel.partial();
-
 export const versionDependency = pgTable(
   "deployment_version_dependency",
   {
@@ -155,16 +129,6 @@ export const deploymentVersionRelations = relations(
     }),
     metadata: many(deploymentVersionMetadata),
     dependencies: many(versionDependency),
-  }),
-);
-
-export const deploymentVersionChannelRelations = relations(
-  deploymentVersionChannel,
-  ({ one }) => ({
-    deployment: one(deployment, {
-      fields: [deploymentVersionChannel.deploymentId],
-      references: [deployment.id],
-    }),
   }),
 );
 

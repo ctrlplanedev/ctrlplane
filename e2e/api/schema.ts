@@ -24,23 +24,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/deployment-version-channels": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Create a deployment version channel */
-    post: operations["createDeploymentVersionChannel"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/deployment-versions/{deploymentVersionId}/approve/environment/{environmentId}": {
     parameters: {
       query?: never;
@@ -160,23 +143,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/deployments/{deploymentId}/deployment-version-channels/name/{name}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Delete a deployment version channel */
-    delete: operations["deleteDeploymentVersionChannel"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/deployments/{deploymentId}": {
     parameters: {
       query?: never;
@@ -194,23 +160,6 @@ export interface paths {
     head?: never;
     /** Update a deployment */
     patch: operations["updateDeployment"];
-    trace?: never;
-  };
-  "/v1/deployments/{deploymentId}/release-channels/name/{name}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Delete a release channel */
-    delete: operations["deleteReleaseChannel"];
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   "/v1/deployments/{deploymentId}/resources": {
@@ -504,23 +453,6 @@ export interface paths {
     put?: never;
     /** Create a relationship between two resources */
     post: operations["createResourceToResourceRelationship"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/release-channels": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Create a release channel */
-    post: operations["createReleaseChannel"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1642,92 +1574,6 @@ export interface operations {
       };
     };
   };
-  createDeploymentVersionChannel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          deploymentId: string;
-          name: string;
-          description?: string | null;
-          versionSelector: {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-    responses: {
-      /** @description Deployment version channel created successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            id: string;
-            deploymentId: string;
-            name: string;
-            description?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            versionSelector?: {
-              [key: string]: unknown;
-            };
-          };
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Forbidden */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Deployment version channel already exists */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-            id: string;
-          };
-        };
-      };
-      /** @description Failed to create deployment version channel */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-    };
-  };
   approveDeploymentVersionForEnvironment: {
     parameters: {
       query?: never;
@@ -2151,64 +1997,6 @@ export interface operations {
       };
     };
   };
-  deleteDeploymentVersionChannel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        deploymentId: string;
-        name: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Deployment version channel deleted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            message: string;
-          };
-        };
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Deployment version channel not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Failed to delete deployment version channel */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-    };
-  };
   getDeployment: {
     parameters: {
       query?: never;
@@ -2339,64 +2127,6 @@ export interface operations {
         };
       };
       /** @description Failed to update deployment */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-    };
-  };
-  deleteReleaseChannel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        deploymentId: string;
-        name: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Release channel deleted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            message: string;
-          };
-        };
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Release channel not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Failed to delete release channel */
       500: {
         headers: {
           [name: string]: unknown;
@@ -2786,7 +2516,6 @@ export interface operations {
           };
           policyId?: string;
           releaseChannels?: string[];
-          deploymentVersionChannels?: string[];
           metadata?: {
             [key: string]: string;
           };
@@ -3492,92 +3221,6 @@ export interface operations {
         content: {
           "application/json": {
             error?: string;
-          };
-        };
-      };
-    };
-  };
-  createReleaseChannel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          deploymentId: string;
-          name: string;
-          description?: string | null;
-          releaseSelector: {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-    responses: {
-      /** @description Release channel created successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            id: string;
-            deploymentId: string;
-            name: string;
-            description?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            releaseSelector?: {
-              [key: string]: unknown;
-            };
-          };
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Forbidden */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Release channel already exists */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-            id: string;
-          };
-        };
-      };
-      /** @description Failed to create release channel */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
           };
         };
       };

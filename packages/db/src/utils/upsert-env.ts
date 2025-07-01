@@ -6,36 +6,11 @@ import { buildConflictUpdateColumns, takeFirst } from "../common.js";
 import * as SCHEMA from "../schema/index.js";
 import { environment, environmentPolicy } from "../schema/index.js";
 
-const upsertVersionChannels = (
-  db: Tx,
-  policyId: string,
-  deploymentVersionChannels: { channelId: string; deploymentId: string }[],
-) =>
-  db
-    .insert(SCHEMA.environmentPolicyDeploymentVersionChannel)
-    .values(
-      deploymentVersionChannels.map(({ channelId, deploymentId }) => ({
-        policyId,
-        channelId,
-        deploymentId,
-      })),
-    )
-    .onConflictDoUpdate({
-      target: [
-        SCHEMA.environmentPolicyDeploymentVersionChannel.policyId,
-        SCHEMA.environmentPolicyDeploymentVersionChannel.deploymentId,
-      ],
-      set: buildConflictUpdateColumns(
-        SCHEMA.environmentPolicyDeploymentVersionChannel,
-        ["channelId"],
-      ),
-    });
-
 export const upsertEnv = async (
   db: Tx,
   input: z.infer<typeof SCHEMA.createEnvironment>,
 ) => {
-  const { metadata, versionChannels } = input;
+  const { metadata } = input;
   const overridePolicyId = await db
     .insert(environmentPolicy)
     .values({ name: input.name, systemId: input.systemId })
@@ -67,9 +42,6 @@ export const upsertEnv = async (
         value,
       })),
     );
-
-  if (versionChannels != null && versionChannels.length > 0)
-    await upsertVersionChannels(db, policyId, versionChannels);
 
   await db
     .update(environmentPolicy)

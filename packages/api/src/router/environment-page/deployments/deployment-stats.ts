@@ -3,14 +3,7 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import {
-  and,
-  desc,
-  eq,
-  isNull,
-  selector,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { and, desc, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   ComparisonOperator,
@@ -21,36 +14,6 @@ import {
   failedStatuses,
   JobStatus,
 } from "@ctrlplane/validators/jobs";
-
-const getVersionSelector = async (
-  db: Tx,
-  environment: SCHEMA.Environment,
-  deployment: SCHEMA.Deployment,
-) =>
-  db
-    .select()
-    .from(SCHEMA.environmentPolicyDeploymentVersionChannel)
-    .innerJoin(
-      SCHEMA.deploymentVersionChannel,
-      eq(
-        SCHEMA.environmentPolicyDeploymentVersionChannel.channelId,
-        SCHEMA.deploymentVersionChannel.id,
-      ),
-    )
-    .where(
-      and(
-        eq(
-          SCHEMA.environmentPolicyDeploymentVersionChannel.policyId,
-          environment.policyId,
-        ),
-        eq(
-          SCHEMA.environmentPolicyDeploymentVersionChannel.deploymentId,
-          deployment.id,
-        ),
-      ),
-    )
-    .then(takeFirstOrNull)
-    .then((row) => row?.deployment_version_channel.versionSelector ?? null);
 
 const getStatus = (
   jobs: SCHEMA.Job[],
@@ -110,8 +73,6 @@ export const getDeploymentStats = async (
   workspaceId: string,
   statusFilter?: "pending" | "failed" | "deploying" | "success",
 ) => {
-  const versionSelector = await getVersionSelector(db, environment, deployment);
-
   const resourceSelector: ResourceCondition = {
     type: ConditionType.Comparison,
     operator: ComparisonOperator.And,
@@ -138,12 +99,7 @@ export const getDeploymentStats = async (
       SCHEMA.user,
       eq(SCHEMA.environmentPolicyApproval.userId, SCHEMA.user.id),
     )
-    .where(
-      and(
-        eq(SCHEMA.deploymentVersion.deploymentId, deployment.id),
-        selector().query().deploymentVersions().where(versionSelector).sql(),
-      ),
-    )
+    .where(and(eq(SCHEMA.deploymentVersion.deploymentId, deployment.id)))
     .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
     .limit(1)
     .then(takeFirstOrNull);

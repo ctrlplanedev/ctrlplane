@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { eq, inArray, takeFirstOrNull, upsertEnv } from "@ctrlplane/db";
+import { eq, takeFirstOrNull, upsertEnv } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -15,7 +15,6 @@ import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
   releaseChannels: z.array(z.string()).optional(),
-  deploymentVersionChannels: z.array(z.string()).optional(),
 });
 
 export const POST = request()
@@ -36,34 +35,7 @@ export const POST = request()
         .where(eq(schema.environment.name, body.name))
         .then(takeFirstOrNull);
 
-      const environment = await db.transaction(async (tx) => {
-        const releaseChannels = body.releaseChannels?.length ?? 0;
-        const deploymentVersionChannels =
-          body.deploymentVersionChannels?.length ?? 0;
-        const versionChannels =
-          releaseChannels + deploymentVersionChannels > 0
-            ? await tx
-                .select()
-                .from(schema.deploymentVersionChannel)
-                .where(
-                  inArray(schema.deploymentVersionChannel.id, [
-                    ...(body.releaseChannels ?? []),
-                    ...(body.deploymentVersionChannels ?? []),
-                  ]),
-                )
-                .then((rows) =>
-                  _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
-                    channelId: r.id,
-                    deploymentId: r.deploymentId,
-                  })),
-                )
-            : [];
-
-        const environment = await upsertEnv(tx, { ...body, versionChannels });
-
-        const { metadata } = body;
-        return { ...environment, metadata };
-      });
+      const environment = await upsertEnv(db, body);
 
       if (existingEnv != null)
         await getQueue(Channel.UpdateEnvironment).add(environment.id, {

@@ -25,7 +25,7 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell } from "@ctrlplane/ui/table";
 import { failedStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
-import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
+import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/OverrideJobStatusDialog";
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";

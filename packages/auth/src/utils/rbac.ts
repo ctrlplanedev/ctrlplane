@@ -14,7 +14,6 @@ import {
   deploymentVariable,
   deploymentVariableValue,
   deploymentVersion,
-  deploymentVersionChannel,
   entityRole,
   environment,
   environmentPolicy,
@@ -109,30 +108,6 @@ const getDeploymentVersionScopes = async (id: string) => {
 
   return [
     { type: "deploymentVersion" as const, id: result.deployment_version.id },
-    { type: "deployment" as const, id: result.deployment.id },
-    { type: "system" as const, id: result.system.id },
-    { type: "workspace" as const, id: result.workspace.id },
-  ];
-};
-
-const getDeploymentVersionChannelScopes = async (id: string) => {
-  const result = await db
-    .select()
-    .from(workspace)
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(deployment, eq(deployment.systemId, system.id))
-    .innerJoin(
-      deploymentVersionChannel,
-      eq(deploymentVersionChannel.deploymentId, deployment.id),
-    )
-    .where(eq(deploymentVersionChannel.id, id))
-    .then(takeFirst);
-
-  return [
-    {
-      type: "deploymentVersionChannel" as const,
-      id: result.deployment_version_channel.id,
-    },
     { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
@@ -498,7 +473,6 @@ export const scopeHandlers: Record<
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
   deploymentVersion: getDeploymentVersionScopes,
-  deploymentVersionChannel: getDeploymentVersionChannelScopes,
   resourceMetadataGroup: getResourceMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
