@@ -25,7 +25,7 @@ export const Cell: React.FC<{
         <div className="flex flex-col">
           <div className="flex max-w-36 items-center gap-1 truncate font-semibold">
             {isVersionPinned && (
-              <IconPinFilled className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+              <IconPinFilled className="h-4 w-4 flex-shrink-0 text-orange-400" />
             )}
             <span className="truncate">{tag}</span>
           </div>
