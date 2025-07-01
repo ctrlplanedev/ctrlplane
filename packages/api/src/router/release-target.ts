@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { and, count, eq, notInArray, takeFirst } from "@ctrlplane/db";
@@ -91,50 +90,32 @@ export const releaseTargetRouter = createTRPCRouter({
 
   activeJobs: protectedProcedure
     .input(
-      z
-        .object({
-          resourceId: z.string().uuid().optional(),
-          environmentId: z.string().uuid().optional(),
-          deploymentId: z.string().uuid().optional(),
-        })
-        .refine(
-          (data) =>
-            data.resourceId != null ||
-            data.environmentId != null ||
-            data.deploymentId != null,
-        ),
+      z.object({
+        environmentId: z.string().uuid(),
+        deploymentId: z.string().uuid(),
+      }),
     )
     .meta({
       authorizationCheck: async ({ canUser, input }) => {
-        const resourceResult =
-          input.resourceId != null
-            ? await canUser.perform(Permission.ResourceGet).on({
-                type: "resource",
-                id: input.resourceId,
-              })
-            : true;
+        const environmentResult = await canUser
+          .perform(Permission.EnvironmentGet)
+          .on({
+            type: "environment",
+            id: input.environmentId,
+          });
 
-        const environmentResult =
-          input.environmentId != null
-            ? await canUser.perform(Permission.EnvironmentGet).on({
-                type: "environment",
-                id: input.environmentId,
-              })
-            : true;
+        const deploymentResult = await canUser
+          .perform(Permission.DeploymentGet)
+          .on({
+            type: "deployment",
+            id: input.deploymentId,
+          });
 
-        const deploymentResult =
-          input.deploymentId != null
-            ? await canUser.perform(Permission.DeploymentGet).on({
-                type: "deployment",
-                id: input.deploymentId,
-              })
-            : true;
-
-        return resourceResult && environmentResult && deploymentResult;
+        return environmentResult && deploymentResult;
       },
     })
     .query(async ({ ctx, input }) => {
-      const { resourceId, environmentId, deploymentId } = input;
+      const { environmentId, deploymentId } = input;
 
       const activeJobs = await ctx.db
         .select()
@@ -158,17 +139,8 @@ export const releaseTargetRouter = createTRPCRouter({
         .where(
           and(
             notInArray(schema.job.status, exitedStatus),
-            ...[
-              resourceId != null
-                ? eq(schema.releaseTarget.resourceId, resourceId)
-                : undefined,
-              environmentId != null
-                ? eq(schema.releaseTarget.environmentId, environmentId)
-                : undefined,
-              deploymentId != null
-                ? eq(schema.releaseTarget.deploymentId, deploymentId)
-                : undefined,
-            ].filter(isPresent),
+            eq(schema.releaseTarget.environmentId, environmentId),
+            eq(schema.releaseTarget.deploymentId, deploymentId),
           ),
         );
 
