@@ -2,7 +2,6 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   IconAlertTriangle,
@@ -45,6 +44,7 @@ import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { Cell } from "./Cell";
 
 const OverrideStatusDialog: React.FC<{
   deploymentVersion: SCHEMA.DeploymentVersion;
@@ -205,45 +205,27 @@ const StatusIcon: React.FC<{
   );
 };
 
-const StatusCell: React.FC<{
-  deploymentVersion: SCHEMA.DeploymentVersion;
-  deployment: { id: string; name: string; slug: string };
-  system: { id: string; slug: string };
-}> = ({ deploymentVersion, deployment, system }) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(system.slug)
-    .deployment(deployment.slug)
-    .release(deploymentVersion.id)
-    .jobs();
-
-  return (
-    <Link
-      href={versionUrl}
-      className="flex w-full items-center gap-2 rounded-md p-2"
-    >
-      <StatusIcon versionStatus={deploymentVersion.status} />
-      <div className="flex flex-col">
-        <div className="max-w-36 truncate font-semibold">
-          {deploymentVersion.tag}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          Version {deploymentVersion.status}
-        </div>
-      </div>
-    </Link>
-  );
-};
-
 export const VersionStatusCell: React.FC<{
   system: { id: string; slug: string };
   deployment: { id: string; name: string; slug: string };
   environment: { id: string; name: string };
   deploymentVersion: SCHEMA.DeploymentVersion;
-}> = (props) => (
-  <div className="flex h-full w-full items-center justify-between p-1">
-    <StatusCell {...props} />
-    <VersionStatusDropdown {...props} />
-  </div>
-);
+}> = (props) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(props.system.slug)
+    .deployment(props.deployment.slug)
+    .release(props.deploymentVersion.id)
+    .jobs();
+
+  return (
+    <Cell
+      Icon={<StatusIcon versionStatus={props.deploymentVersion.status} />}
+      url={versionUrl}
+      tag={props.deploymentVersion.tag}
+      label={props.deploymentVersion.status}
+      Dropdown={<VersionStatusDropdown {...props} />}
+    />
+  );
+};

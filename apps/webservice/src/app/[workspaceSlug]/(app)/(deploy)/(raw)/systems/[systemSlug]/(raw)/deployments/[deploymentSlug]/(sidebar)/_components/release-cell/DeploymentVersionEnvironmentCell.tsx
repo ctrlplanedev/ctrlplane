@@ -2,7 +2,6 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconBoltOff, IconClock, IconCubeOff } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
@@ -20,6 +19,7 @@ import {
   BlockedByVersionSelectorCell,
   getPoliciesBlockingByVersionSelector,
 } from "./BlockedByVersionSelectorCell";
+import { Cell } from "./Cell";
 import { VersionStatusCell } from "./VersionStatusCell";
 
 const SkeletonCell: React.FC = () => (
@@ -62,24 +62,12 @@ const BlockedByActiveJobsCell: React.FC<{
     .releases();
 
   return (
-    <div className="flex h-full w-full items-center justify-center p-1">
-      <Link
-        href={deploymentUrl}
-        className="flex w-full items-center gap-2 rounded-md p-2"
-      >
-        <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-          <IconClock className="h-4 w-4" strokeWidth={2} />
-        </div>
-        <div className="flex flex-col">
-          <div className="max-w-36 truncate font-semibold">
-            {deploymentVersion.tag}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Waiting on another release
-          </div>
-        </div>
-      </Link>
-    </div>
+    <Cell
+      Icon={<IconClock className="h-4 w-4" strokeWidth={2} />}
+      url={deploymentUrl}
+      tag={deploymentVersion.tag}
+      label="Waiting on another release"
+    />
   );
 };
 
@@ -97,20 +85,12 @@ const NoJobAgentCell: React.FC<{
     .workflow();
 
   return (
-    <div className="flex h-full w-full items-center justify-center p-1">
-      <Link
-        href={workflowConfigUrl}
-        className="flex w-full items-center gap-2 rounded-md p-2 hover:bg-accent"
-      >
-        <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-          <IconBoltOff className="h-4 w-4" strokeWidth={2} />
-        </div>
-        <div className="flex flex-col">
-          <div className="max-w-36 truncate font-semibold">{tag}</div>
-          <div className="text-xs text-muted-foreground">No job agent</div>
-        </div>
-      </Link>
-    </div>
+    <Cell
+      Icon={<IconBoltOff className="h-4 w-4" strokeWidth={2} />}
+      url={workflowConfigUrl}
+      tag={tag}
+      label="No job agent"
+    />
   );
 };
 
