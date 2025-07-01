@@ -4,7 +4,6 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import {
   IconAlertTriangle,
   IconDotsVertical,
-  IconPin,
   IconReload,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
@@ -13,7 +12,6 @@ import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 import { JobStatus } from "@ctrlplane/validators/jobs";
@@ -22,7 +20,7 @@ import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { StatusIcon } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/StatusIcon";
-import { PinEnvToVersionDialog } from "../version-pinning/PinEnvToVersionDialog";
+import { VersionPinningDropdownItems } from "../version-pinning/VersionPinningDropdownItems";
 import { Cell } from "./Cell";
 import { useDeploymentVersionEnvironmentContext } from "./DeploymentVersionEnvironmentContext";
 
@@ -44,20 +42,11 @@ const ActiveJobsDropdown: React.FC<{
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        {!isVersionPinned && (
-          <PinEnvToVersionDialog
-            environment={environment}
-            version={deploymentVersion}
-          >
-            <DropdownMenuItem
-              onSelect={(e) => e.preventDefault()}
-              className="flex items-center gap-2"
-            >
-              <IconPin className="h-4 w-4" />
-              Pin version
-            </DropdownMenuItem>
-          </PinEnvToVersionDialog>
-        )}
+        <VersionPinningDropdownItems
+          environment={environment}
+          version={deploymentVersion}
+          isVersionPinned={isVersionPinned}
+        />
         {!hasActiveJobs && (
           <DropdownAction
             deployment={deployment}

@@ -7,7 +7,6 @@ import {
   IconAlertTriangle,
   IconBolt,
   IconDotsVertical,
-  IconPin,
   IconReload,
   IconSettings,
   IconTool,
@@ -44,7 +43,7 @@ import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { api } from "~/trpc/react";
-import { PinEnvToVersionDialog } from "../version-pinning/PinEnvToVersionDialog";
+import { VersionPinningDropdownItems } from "../version-pinning/VersionPinningDropdownItems";
 import { Cell } from "./Cell";
 import { useDeploymentVersionEnvironmentContext } from "./DeploymentVersionEnvironmentContext";
 
@@ -139,20 +138,11 @@ const VersionStatusDropdown: React.FC = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        {!isVersionPinned && (
-          <PinEnvToVersionDialog
-            environment={environment}
-            version={deploymentVersion}
-          >
-            <DropdownMenuItem
-              onSelect={(e) => e.preventDefault()}
-              className="flex items-center gap-2"
-            >
-              <IconPin className="h-4 w-4" />
-              Pin version
-            </DropdownMenuItem>
-          </PinEnvToVersionDialog>
-        )}
+        <VersionPinningDropdownItems
+          environment={environment}
+          version={deploymentVersion}
+          isVersionPinned={isVersionPinned}
+        />
         <OverrideStatusDialog
           deploymentVersion={deploymentVersion}
           onClose={() => setOpen(false)}
