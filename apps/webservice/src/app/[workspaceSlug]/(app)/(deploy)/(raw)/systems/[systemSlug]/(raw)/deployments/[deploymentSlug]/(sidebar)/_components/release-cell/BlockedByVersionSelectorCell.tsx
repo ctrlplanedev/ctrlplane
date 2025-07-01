@@ -26,6 +26,7 @@ import { DropdownAction } from "~/app/[workspaceSlug]/(app)/(deploy)/_components
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { urls } from "~/app/urls";
 import { Cell } from "./Cell";
+import { useDeploymentVersionEnvironmentContext } from "./DeploymentVersionEnvironmentContext";
 
 export const getPoliciesBlockingByVersionSelector = (
   policyEvaluations: PolicyEvaluationResult,
@@ -45,29 +46,16 @@ const GreyFilterIcon: React.FC = () => (
 
 export const BlockedByVersionSelectorCell: React.FC<{
   policies: { id: string; name: string }[];
-  deploymentVersion: { id: string; tag: string };
-  deployment: { id: string; name: string; slug: string };
-  environment: { id: string; name: string };
-  system: { slug: string };
-}> = ({ policies, deploymentVersion, deployment, environment, system }) => {
+}> = ({ policies }) => {
+  const { deployment, environment } = useDeploymentVersionEnvironmentContext();
+
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(system.slug)
-    .deployment(deployment.slug)
-    .release(deploymentVersion.id)
-    .checks();
   return (
     <>
       <HoverCard>
         <HoverCardTrigger asChild>
-          <Cell
-            Icon={<GreyFilterIcon />}
-            url={versionUrl}
-            tag={deploymentVersion.tag}
-            label="Blocked by policy"
-          />
+          <Cell Icon={<GreyFilterIcon />} label="Blocked by policy" />
         </HoverCardTrigger>
         <HoverCardContent className="w-80">
           <div className="flex flex-col gap-2 text-sm">
