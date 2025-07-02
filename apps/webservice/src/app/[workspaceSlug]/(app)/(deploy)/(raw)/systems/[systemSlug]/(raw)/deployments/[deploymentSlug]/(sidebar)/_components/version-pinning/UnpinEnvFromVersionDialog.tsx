@@ -17,9 +17,10 @@ import { api } from "~/trpc/react";
 
 export const UnpinEnvFromVersionDialog: React.FC<{
   environment: { id: string; name: string };
+  deployment: { id: string };
   version: { id: string; tag: string };
   children: React.ReactNode;
-}> = ({ environment, version, children }) => {
+}> = ({ environment, deployment, version, children }) => {
   const [open, setOpen] = useState(false);
 
   const unpinVersion =
@@ -30,7 +31,7 @@ export const UnpinEnvFromVersionDialog: React.FC<{
 
   const onSubmit = () =>
     unpinVersion
-      .mutateAsync({ environmentId })
+      .mutateAsync({ environmentId, deploymentId: deployment.id })
       .then(() => router.refresh())
       .then(() => setOpen(false));
 

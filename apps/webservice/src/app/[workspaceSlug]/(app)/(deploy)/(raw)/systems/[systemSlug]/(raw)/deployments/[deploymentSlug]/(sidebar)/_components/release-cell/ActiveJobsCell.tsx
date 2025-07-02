@@ -44,6 +44,7 @@ const ActiveJobsDropdown: React.FC<{
       <DropdownMenuContent>
         <VersionPinningDropdownItems
           environment={environment}
+          deployment={deployment}
           version={deploymentVersion}
           isVersionPinned={isVersionPinned}
         />

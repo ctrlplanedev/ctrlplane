@@ -43,7 +43,7 @@ export default async function DeploymentsPage(props: {
     api.deployment.bySystemId(system.id),
   ]);
 
-  const { directories, rootEnvironments } = roots;
+  const { rootEnvironments } = roots;
   const hasDeployments = deployments.length > 0;
 
   return (
@@ -67,7 +67,6 @@ export default async function DeploymentsPage(props: {
           workspace={workspace}
           systemSlug={params.systemSlug}
           rootEnvironments={rootEnvironments}
-          directories={directories}
           deployments={deployments}
           className="border-b"
         />

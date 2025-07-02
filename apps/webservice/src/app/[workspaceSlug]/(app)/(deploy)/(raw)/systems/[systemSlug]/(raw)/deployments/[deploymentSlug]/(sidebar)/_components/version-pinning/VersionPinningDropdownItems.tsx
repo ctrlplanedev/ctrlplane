@@ -9,13 +9,14 @@ import { UnpinEnvFromVersionDialog } from "./UnpinEnvFromVersionDialog";
 
 export const VersionPinningDropdownItems: React.FC<{
   environment: { id: string; name: string };
+  deployment: { id: string };
   version: { id: string; tag: string };
   isVersionPinned: boolean;
-}> = ({ environment, version, isVersionPinned }) => {
+}> = ({ isVersionPinned, ...props }) => {
   return (
     <>
       {isVersionPinned && (
-        <UnpinEnvFromVersionDialog environment={environment} version={version}>
+        <UnpinEnvFromVersionDialog {...props}>
           <DropdownMenuItem
             onSelect={(e) => e.preventDefault()}
             className="flex items-center gap-2"
@@ -26,7 +27,7 @@ export const VersionPinningDropdownItems: React.FC<{
         </UnpinEnvFromVersionDialog>
       )}
       {!isVersionPinned && (
-        <PinEnvToVersionDialog environment={environment} version={version}>
+        <PinEnvToVersionDialog {...props}>
           <DropdownMenuItem
             onSelect={(e) => e.preventDefault()}
             className="flex items-center gap-2"
