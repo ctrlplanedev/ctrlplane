@@ -2,24 +2,28 @@ import type { Tx } from "@ctrlplane/db";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, isNotNull } from "@ctrlplane/db";
+import { and, eq, isNotNull, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { dispatchQueueJob } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-const updateReleaseTargets = async (
+const pinReleaseTargetsToVersion = async (
   db: Tx,
-  input: {
-    environmentId: string;
-    versionId: string | null;
-  },
+  environmentId: string,
+  deploymentId: string,
+  versionId: string | null,
 ) => {
   const releaseTargets = await db
     .update(schema.releaseTarget)
-    .set({ desiredVersionId: input.versionId })
-    .where(eq(schema.releaseTarget.environmentId, input.environmentId))
+    .set({ desiredVersionId: versionId })
+    .where(
+      and(
+        eq(schema.releaseTarget.environmentId, environmentId),
+        eq(schema.releaseTarget.deploymentId, deploymentId),
+      ),
+    )
     .returning();
 
   await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
@@ -41,12 +45,28 @@ const pinVersion = protectedProcedure
         id: input.environmentId,
       }),
   })
-  .mutation(({ ctx, input }) => updateReleaseTargets(ctx.db, input));
+  .mutation(async ({ ctx, input: { environmentId, versionId } }) => {
+    const version = await ctx.db
+      .select()
+      .from(schema.deploymentVersion)
+      .where(eq(schema.deploymentVersion.id, versionId))
+      .then(takeFirst);
+
+    const { deploymentId } = version;
+
+    return pinReleaseTargetsToVersion(
+      ctx.db,
+      environmentId,
+      deploymentId,
+      versionId,
+    );
+  });
 
 const unpinVersion = protectedProcedure
   .input(
     z.object({
       environmentId: z.string().uuid(),
+      deploymentId: z.string().uuid(),
     }),
   )
   .meta({
@@ -56,8 +76,8 @@ const unpinVersion = protectedProcedure
         id: input.environmentId,
       }),
   })
-  .mutation(({ ctx, input }) =>
-    updateReleaseTargets(ctx.db, { ...input, versionId: null }),
+  .mutation(({ ctx, input: { environmentId, deploymentId } }) =>
+    pinReleaseTargetsToVersion(ctx.db, environmentId, deploymentId, null),
   );
 
 const pinnedVersions = protectedProcedure

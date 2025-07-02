@@ -59,23 +59,6 @@ const pinVersion = async (db: Tx, releaseTargetId: string, versionId: string) =>
     .set({ desiredVersionId: versionId })
     .where(eq(schema.releaseTarget.id, releaseTargetId));
 
-// const unpinVersion = async (db: Tx, releaseTarget: schema.ReleaseTarget) => {
-//   if (releaseTarget.desiredVersionId == null)
-//     return NextResponse.json(
-//       { error: "No version pinned" },
-//       { status: BAD_REQUEST },
-//     );
-
-//   await db
-//     .update(schema.releaseTarget)
-//     .set({ desiredVersionId: null })
-//     .where(eq(schema.releaseTarget.id, releaseTarget.id));
-
-//   await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
-
-//   return NextResponse.json({ success: true });
-// };
-
 export const POST = request()
   .use(authn)
   .use(
