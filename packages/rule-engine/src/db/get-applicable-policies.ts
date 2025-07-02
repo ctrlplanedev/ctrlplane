@@ -25,31 +25,35 @@ export const getApplicablePolicies = withSpan(
   async (span, tx: Tx, releaseTargetId: string) => {
     span.setAttribute("release.target.id", releaseTargetId);
 
-    const crts = await tx.query.computedPolicyTargetReleaseTarget.findMany({
-      where: eq(
-        schema.computedPolicyTargetReleaseTarget.releaseTargetId,
-        releaseTargetId,
-      ),
-      with: {
-        policyTarget: {
-          with: {
-            policy: {
-              with: {
-                denyWindows: true,
-                deploymentVersionSelector: true,
-                versionAnyApprovals: true,
-                versionRoleApprovals: true,
-                versionUserApprovals: true,
-                concurrency: true,
-                environmentVersionRollout: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const policyIds = await tx
+      .selectDistinctOn([schema.policy.id])
+      .from(schema.computedPolicyTargetReleaseTarget)
+      .innerJoin(
+        schema.policyTarget,
+        eq(
+          schema.computedPolicyTargetReleaseTarget.policyTargetId,
+          schema.policyTarget.id,
+        ),
+      )
+      .innerJoin(
+        schema.policy,
+        eq(schema.policyTarget.policyId, schema.policy.id),
+      )
+      .where(
+        and(
+          eq(
+            schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+            releaseTargetId,
+          ),
+          eq(schema.policy.enabled, true),
+        ),
+      )
+      .then((rows) => rows.map((row) => row.policy.id));
 
-    return crts.map((crt) => crt.policyTarget.policy);
+    return tx.query.policy.findMany({
+      where: inArray(schema.policy.id, policyIds),
+      with: allRules,
+    });
   },
 );
 
