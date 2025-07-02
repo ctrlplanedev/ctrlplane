@@ -2,21 +2,14 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 import Link from "next/link";
-import { IconDotsVertical, IconFolder, IconLoader2 } from "@tabler/icons-react";
-import { isPresent } from "ts-is-present";
+import { IconDotsVertical, IconLoader2 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  ComparisonOperator,
-  ConditionType,
-} from "@ctrlplane/validators/conditions";
 
-import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/dropdown/DeploymentOptionsDropdown";
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
@@ -75,79 +68,13 @@ const EnvIcon: React.FC<{
   );
 };
 
-const DirectoryHeader: React.FC<{
-  directory: {
-    path: string;
-    environments: SCHEMA.Environment[];
-  };
-  workspace: SCHEMA.Workspace;
-}> = ({ directory, workspace }) => {
-  const resourceSelectors = directory.environments
-    .map((env) => env.resourceSelector)
-    .filter(isPresent);
-  const filter: ResourceCondition | undefined =
-    resourceSelectors.length > 0
-      ? {
-          type: ConditionType.Comparison,
-          operator: ComparisonOperator.Or,
-          conditions: resourceSelectors,
-        }
-      : undefined;
-
-  const { data: resourcesResult, isLoading } =
-    api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId: workspace.id, filter, limit: 0 },
-      { enabled: filter != null },
-    );
-
-  const total = resourcesResult?.total ?? 0;
-
-  return (
-    <Icon key={directory.path}>
-      <div className="flex items-center justify-between">
-        {directory.path}
-
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="rounded-full text-muted-foreground"
-          >
-            {isLoading && (
-              <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-            )}
-            {!isLoading && total}
-          </Badge>
-
-          <Badge
-            variant="outline"
-            className="rounded-full text-muted-foreground"
-          >
-            <IconFolder className="h-4 w-4" strokeWidth={1.5} />
-          </Badge>
-        </div>
-      </div>
-    </Icon>
-  );
-};
-
 const DeploymentTable: React.FC<{
   workspace: SCHEMA.Workspace;
   systemSlug: string;
   className?: string;
   rootEnvironments: SCHEMA.Environment[];
-  directories: {
-    path: string;
-    environments: SCHEMA.Environment[];
-  }[];
   deployments: Deployment[];
-}> = ({
-  systemSlug,
-  deployments,
-  rootEnvironments,
-  directories,
-  workspace,
-  className,
-}) => {
+}> = ({ systemSlug, deployments, rootEnvironments, workspace, className }) => {
   return (
     <div
       className={cn(
@@ -168,17 +95,8 @@ const DeploymentTable: React.FC<{
                 workspace={workspace}
                 systemSlug={systemSlug}
                 className={cn({
-                  "border-r":
-                    directories.length > 0 ||
-                    idx !== rootEnvironments.length - 1,
+                  "border-r": idx !== rootEnvironments.length - 1,
                 })}
-              />
-            ))}
-            {directories.map((dir) => (
-              <DirectoryHeader
-                key={dir.path}
-                directory={dir}
-                workspace={workspace}
               />
             ))}
           </tr>
@@ -221,9 +139,7 @@ const DeploymentTable: React.FC<{
                   <td
                     key={env.id}
                     className={cn("h-[70px] w-[220px] px-2 py-1", {
-                      "border-r":
-                        directories.length > 0 ||
-                        idx !== rootEnvironments.length - 1,
+                      "border-r": idx !== rootEnvironments.length - 1,
                       "border-b": didx !== deployments.length - 1,
                     })}
                   >
@@ -231,24 +147,6 @@ const DeploymentTable: React.FC<{
                       environment={env}
                       deployment={r}
                       system={{ id: r.systemId, slug: systemSlug }}
-                    />
-                  </td>
-                );
-              })}
-
-              {directories.map((dir, dirIdx) => {
-                return (
-                  <td
-                    key={dir.path}
-                    className={cn("h-[70px] w-[220px] px-2 py-1", {
-                      "border-r": dirIdx !== directories.length - 1,
-                      "border-b": didx !== deployments.length - 1,
-                    })}
-                  >
-                    <DeploymentDirectoryCell
-                      directory={dir}
-                      deployment={r}
-                      systemSlug={systemSlug}
                     />
                   </td>
                 );

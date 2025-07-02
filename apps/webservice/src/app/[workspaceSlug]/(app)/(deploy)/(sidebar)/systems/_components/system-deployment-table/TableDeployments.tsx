@@ -1,10 +1,8 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import Link from "next/link";
-import { IconDotsVertical, IconFolder, IconLoader2 } from "@tabler/icons-react";
-import { isPresent } from "ts-is-present";
+import { IconDotsVertical, IconLoader2 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -17,12 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import {
-  ComparisonOperator,
-  ConditionType,
-} from "@ctrlplane/validators/conditions";
 
-import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/dropdown/DeploymentOptionsDropdown";
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
@@ -57,55 +50,6 @@ const EnvHeader: React.FC<{
           {!isLoading && total}
         </Badge>
       </Link>
-    </TableHead>
-  );
-};
-
-type Directory = {
-  path: string;
-  environments: SCHEMA.Environment[];
-};
-
-const DirectoryHeader: React.FC<{
-  directory: Directory;
-  workspaceId: string;
-}> = ({ directory, workspaceId }) => {
-  const resourceSelectors = directory.environments
-    .map((env) => env.resourceSelector)
-    .filter(isPresent);
-  const filter: ResourceCondition | undefined =
-    resourceSelectors.length > 0
-      ? {
-          type: ConditionType.Comparison,
-          operator: ComparisonOperator.Or,
-          conditions: resourceSelectors,
-        }
-      : undefined;
-
-  const { data: resourcesResult, isLoading } =
-    api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId, filter, limit: 0 },
-      { enabled: filter != null },
-    );
-
-  const total = resourcesResult?.total ?? 0;
-
-  return (
-    <TableHead className="w-[220px] p-2" key={directory.path}>
-      <div className="flex w-fit items-center gap-2 px-2 py-1 text-white">
-        <span className=" max-w-32 truncate">{directory.path}</span>
-
-        <Badge variant="outline" className="rounded-full text-muted-foreground">
-          {isLoading && (
-            <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-          )}
-          {!isLoading && total}
-        </Badge>
-
-        <Badge variant="outline" className="rounded-full text-muted-foreground">
-          <IconFolder className="h-4 w-4" strokeWidth={1.5} />
-        </Badge>
-      </div>
     </TableHead>
   );
 };
@@ -153,8 +97,6 @@ const DeploymentTable: React.FC<{
 }> = ({ workspace, system }) => {
   const { data: rootDirsResult, isLoading } =
     api.system.directory.listRoots.useQuery(system.id);
-
-  const directories = rootDirsResult?.directories ?? [];
   const environments = rootDirsResult?.rootEnvironments ?? [];
 
   const { deployments } = system;
@@ -176,13 +118,6 @@ const DeploymentTable: React.FC<{
                 systemSlug={system.slug}
                 environment={env}
                 workspace={workspace}
-              />
-            ))}
-            {directories.map((dir) => (
-              <DirectoryHeader
-                key={dir.path}
-                directory={dir}
-                workspaceId={workspace.id}
               />
             ))}
             <TableCell className="flex-grow" />
@@ -209,17 +144,6 @@ const DeploymentTable: React.FC<{
                     deployment={r}
                     system={system}
                   />
-                </TableCell>
-              ))}
-              {directories.map((dir) => (
-                <TableCell key={dir.path} className="h-[70px] w-[220px]">
-                  <div className="flex h-full w-full justify-center">
-                    <DeploymentDirectoryCell
-                      directory={dir}
-                      deployment={r}
-                      systemSlug={system.slug}
-                    />
-                  </div>
                 </TableCell>
               ))}
               <TableCell className="flex-grow" />
