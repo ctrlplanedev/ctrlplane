@@ -11,6 +11,7 @@ import {
   like,
   or,
   selector,
+  sql,
   takeFirst,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -93,6 +94,68 @@ export const versionRouter = createTRPCRouter({
         items,
         total,
       }));
+    }),
+
+  latestForEnvironment: protectedProcedure
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVersionGet).on({
+          type: "deployment",
+          id: input.deploymentId,
+        }),
+    })
+    .query(async ({ ctx, input }) => {
+      const jobSubquery = ctx.db
+        .select({
+          versionId: SCHEMA.versionRelease.versionId,
+          createdAt: SCHEMA.job.createdAt,
+        })
+        .from(SCHEMA.job)
+        .innerJoin(
+          SCHEMA.releaseJob,
+          eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id),
+        )
+        .innerJoin(
+          SCHEMA.release,
+          eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
+        )
+        .innerJoin(
+          SCHEMA.versionRelease,
+          eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
+        )
+        .innerJoin(
+          SCHEMA.releaseTarget,
+          eq(SCHEMA.releaseTarget.id, SCHEMA.versionRelease.releaseTargetId),
+        )
+        .where(
+          and(
+            eq(SCHEMA.releaseTarget.deploymentId, input.deploymentId),
+            eq(SCHEMA.releaseTarget.environmentId, input.environmentId),
+          ),
+        )
+        .as("jobSubquery");
+
+      return ctx.db
+        .select()
+        .from(SCHEMA.deploymentVersion)
+        .leftJoin(
+          jobSubquery,
+          eq(SCHEMA.deploymentVersion.id, jobSubquery.versionId),
+        )
+        .where(eq(SCHEMA.deploymentVersion.deploymentId, input.deploymentId))
+        .orderBy(
+          sql`${jobSubquery.createdAt} DESC NULLS LAST`,
+          desc(SCHEMA.deploymentVersion.createdAt),
+        )
+        .limit(1)
+        .then(takeFirst)
+        .then((v) => v.deployment_version);
     }),
 
   byId: protectedProcedure

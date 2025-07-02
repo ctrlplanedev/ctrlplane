@@ -34,10 +34,11 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
-  const { data, isLoading } = api.deployment.version.list.useQuery({
-    deploymentId: deployment.id,
-    limit: 1,
-  });
+  const { data: version, isLoading } =
+    api.deployment.version.latestForEnvironment.useQuery({
+      deploymentId: deployment.id,
+      environmentId: environment.id,
+    });
 
   const deploymentUrls = urls
     .workspace(workspaceSlug)
@@ -46,7 +47,6 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
 
   if (isLoading) return <CellSkeleton />;
 
-  const version = data?.items.at(0);
   if (version == null)
     return (
       <Link
