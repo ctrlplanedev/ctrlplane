@@ -200,6 +200,24 @@ const isSearchQuery = (condition: DeploymentVersionCondition) => {
   );
 };
 
+const getSearchTermFromSelector = (
+  selector: DeploymentVersionCondition | null,
+): string => {
+  if (selector == null) return "";
+  if (selector.type !== DeploymentVersionConditionType.Comparison) return "";
+  const searchCondition = selector.conditions.find(isSearchQuery);
+  if (searchCondition == null) return "";
+  if (searchCondition.type !== DeploymentVersionConditionType.Comparison)
+    return "";
+  return (
+    searchCondition.conditions.find(
+      (c) =>
+        c.type === DeploymentVersionConditionType.Name ||
+        c.type === DeploymentVersionConditionType.Tag,
+    )?.value ?? ""
+  );
+};
+
 const getSearchCondition = (search: string): DeploymentVersionCondition => ({
   type: DeploymentVersionConditionType.Comparison,
   operator: ComparisonOperator.Or,
@@ -218,8 +236,9 @@ const getSearchCondition = (search: string): DeploymentVersionCondition => ({
 });
 
 const useVersionSearchQuery = () => {
-  const [search, setSearch] = useState("");
   const { selector, setSelector } = useDeploymentVersionSelector();
+  const searchTerm = getSearchTermFromSelector(selector);
+  const [search, setSearch] = useState(searchTerm);
 
   const otherConditions =
     selector?.type === DeploymentVersionConditionType.Comparison
