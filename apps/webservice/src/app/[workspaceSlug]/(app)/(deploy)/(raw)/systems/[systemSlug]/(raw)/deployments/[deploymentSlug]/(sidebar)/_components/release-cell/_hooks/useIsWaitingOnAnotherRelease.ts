@@ -12,7 +12,10 @@ export const useBlockingRelease = () => {
   const {
     data: targetsWithActiveJobs,
     isLoading: isTargetsWithActiveJobsLoading,
-  } = api.releaseTarget.activeJobs.useQuery({ environmentId, deploymentId });
+  } = api.releaseTarget.activeJobs.useQuery(
+    { environmentId, deploymentId },
+    { refetchInterval: 2_000 },
+  );
 
   const allActiveJobs = (targetsWithActiveJobs ?? []).flatMap((t) => t.jobs);
 

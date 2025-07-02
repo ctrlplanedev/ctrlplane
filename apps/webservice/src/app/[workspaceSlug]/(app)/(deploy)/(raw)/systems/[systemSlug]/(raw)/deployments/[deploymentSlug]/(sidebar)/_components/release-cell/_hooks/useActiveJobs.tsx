@@ -7,11 +7,13 @@ export const useActiveJobs = () => {
   const { environment, deploymentVersion } =
     useDeploymentVersionEnvironmentContext();
 
+  const versionId = deploymentVersion.id;
+  const environmentId = environment.id;
   const { data: jobs, isLoading: isJobsLoading } =
-    api.deployment.version.job.byEnvironment.useQuery({
-      versionId: deploymentVersion.id,
-      environmentId: environment.id,
-    });
+    api.deployment.version.job.byEnvironment.useQuery(
+      { versionId, environmentId },
+      { refetchInterval: 2_000 },
+    );
 
   const statuses = jobs?.map((j) => j.status) ?? [];
 

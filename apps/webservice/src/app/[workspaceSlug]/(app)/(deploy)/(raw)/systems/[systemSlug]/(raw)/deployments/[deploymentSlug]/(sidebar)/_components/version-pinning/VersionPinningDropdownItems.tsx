@@ -10,7 +10,7 @@ import { UnpinEnvFromVersionDialog } from "./UnpinEnvFromVersionDialog";
 export const VersionPinningDropdownItems: React.FC<{
   environment: { id: string; name: string };
   deployment: { id: string };
-  version: { id: string; tag: string };
+  version: { id: string; tag: string; deploymentId: string };
   isVersionPinned: boolean;
 }> = ({ isVersionPinned, ...props }) => {
   return (

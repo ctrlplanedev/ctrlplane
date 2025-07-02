@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -25,15 +24,21 @@ export const UnpinEnvFromVersionDialog: React.FC<{
 
   const unpinVersion =
     api.environment.versionPinning.unpinVersion.useMutation();
-  const router = useRouter();
+  const utils = api.useUtils();
 
   const environmentId = environment.id;
+  const deploymentId = deployment.id;
+  const invalidatePinnedVersions = () =>
+    utils.environment.versionPinning.pinnedVersions.invalidate({
+      environmentId,
+      deploymentId,
+    });
 
   const onSubmit = () =>
     unpinVersion
-      .mutateAsync({ environmentId, deploymentId: deployment.id })
-      .then(() => router.refresh())
-      .then(() => setOpen(false));
+      .mutateAsync({ environmentId, deploymentId })
+      .then(() => setOpen(false))
+      .then(() => invalidatePinnedVersions());
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
