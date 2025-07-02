@@ -13,6 +13,7 @@ import {
   selector,
   sql,
   takeFirst,
+  takeFirstOrNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
@@ -154,8 +155,8 @@ export const versionRouter = createTRPCRouter({
           desc(SCHEMA.deploymentVersion.createdAt),
         )
         .limit(1)
-        .then(takeFirst)
-        .then((v) => v.deployment_version);
+        .then(takeFirstOrNull)
+        .then((v) => v?.deployment_version ?? null);
     }),
 
   byId: protectedProcedure

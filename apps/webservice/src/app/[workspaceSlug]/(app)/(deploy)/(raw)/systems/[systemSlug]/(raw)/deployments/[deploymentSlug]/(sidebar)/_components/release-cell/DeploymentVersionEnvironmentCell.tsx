@@ -163,7 +163,7 @@ export const LazyDeploymentVersionEnvironmentCell: React.FC<
   return (
     <DeploymentVersionEnvironmentProvider {...props}>
       <div className="flex h-full w-full items-center justify-center" ref={ref}>
-        {!inView && <p className="text-xs text-muted-foreground">Loading...</p>}
+        {!inView && <SkeletonCell />}
         {inView && <DeploymentVersionEnvironmentCell />}
       </div>
     </DeploymentVersionEnvironmentProvider>
