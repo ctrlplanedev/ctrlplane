@@ -61,7 +61,34 @@ const unpinVersion = protectedProcedure
   );
 
 const pinnedVersions = protectedProcedure
-  .input(z.object({ environmentId: z.string().uuid() }))
+  .input(
+    z.object({
+      environmentId: z.string().uuid(),
+      deploymentId: z.string().uuid(),
+    }),
+  )
+  .meta({
+    authorizationCheck: async ({ canUser, input }) => {
+      const envAuthzPromise = canUser.perform(Permission.EnvironmentGet).on({
+        type: "environment",
+        id: input.environmentId,
+      });
+
+      const deploymentAuthzPromise = canUser
+        .perform(Permission.DeploymentGet)
+        .on({
+          type: "deployment",
+          id: input.deploymentId,
+        });
+
+      const [envAuthzResult, deploymentAuthzResult] = await Promise.all([
+        envAuthzPromise,
+        deploymentAuthzPromise,
+      ]);
+
+      return envAuthzResult && deploymentAuthzResult;
+    },
+  })
   .query(({ ctx, input }) =>
     ctx.db
       .selectDistinct({ versionId: schema.releaseTarget.desiredVersionId })
@@ -69,6 +96,7 @@ const pinnedVersions = protectedProcedure
       .where(
         and(
           eq(schema.releaseTarget.environmentId, input.environmentId),
+          eq(schema.releaseTarget.deploymentId, input.deploymentId),
           isNotNull(schema.releaseTarget.desiredVersionId),
         ),
       )

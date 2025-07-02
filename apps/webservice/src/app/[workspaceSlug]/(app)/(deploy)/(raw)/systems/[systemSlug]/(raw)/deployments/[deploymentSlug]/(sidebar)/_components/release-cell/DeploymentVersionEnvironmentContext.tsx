@@ -26,10 +26,15 @@ export const useDeploymentVersionEnvironmentContext = () => {
   return ctx;
 };
 
-const useIsPinned = (environmentId: string, versionId: string) => {
+const useIsPinned = (
+  deploymentId: string,
+  environmentId: string,
+  versionId: string,
+) => {
   const { data, isLoading } =
     api.environment.versionPinning.pinnedVersions.useQuery({
       environmentId,
+      deploymentId,
     });
 
   const isPinned = data != null && data.length === 1 && data[0] === versionId;
@@ -53,7 +58,11 @@ export const DeploymentVersionEnvironmentProvider: React.FC<{
     .release(deploymentVersion.id)
     .jobs();
 
-  const { isPinned } = useIsPinned(environment.id, deploymentVersion.id);
+  const { isPinned } = useIsPinned(
+    deployment.id,
+    environment.id,
+    deploymentVersion.id,
+  );
 
   return (
     <DeploymentVersionEnvironmentContext.Provider
