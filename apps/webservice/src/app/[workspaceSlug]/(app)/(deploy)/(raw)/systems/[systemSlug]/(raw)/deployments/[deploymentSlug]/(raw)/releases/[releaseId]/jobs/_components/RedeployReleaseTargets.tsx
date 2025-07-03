@@ -187,7 +187,10 @@ export const RedeployReleaseTargetsDialog: React.FC<{
             <Button variant="outline">Cancel</Button>
           </DialogClose>
 
-          <Button onClick={handleRedeploy} disabled={isPending}>
+          <Button
+            onClick={handleRedeploy}
+            disabled={isPending || filteredReleaseTargets.length === 0}
+          >
             Redeploy
           </Button>
         </DialogFooter>
@@ -242,7 +245,7 @@ export const ForceDeployReleaseTargetsDialog: React.FC<{
           <Button
             variant="destructive"
             onClick={handleRedeploy}
-            disabled={isPending}
+            disabled={isPending || filteredReleaseTargets.length === 0}
           >
             Force deploy
           </Button>

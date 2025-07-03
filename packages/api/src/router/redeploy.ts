@@ -146,9 +146,13 @@ const redeployToEnvironmentProcedure = protectedProcedure
   })
   .mutation(async ({ ctx: { db }, input }) => {
     const { releaseTargetIds, force } = input;
+    if (releaseTargetIds.length === 0) return 0;
 
     const releaseTargets = await db.query.releaseTarget.findMany({
-      where: inArray(schema.releaseTarget.id, releaseTargetIds),
+      where: and(
+        inArray(schema.releaseTarget.id, releaseTargetIds),
+        eq(schema.releaseTarget.environmentId, input.environmentId),
+      ),
     });
 
     if (releaseTargets.length === 0) return 0;
