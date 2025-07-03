@@ -5,7 +5,7 @@ import type * as schema from "@ctrlplane/db/schema";
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
-import { IconFilter, IconFolder, IconLoader2 } from "@tabler/icons-react";
+import { IconFilter, IconLoader2 } from "@tabler/icons-react";
 import _ from "lodash";
 import { useDebounce } from "react-use";
 import { isPresent } from "ts-is-present";
@@ -108,54 +108,6 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({
             <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
           )}
           {!isLoading && total}
-        </Badge>
-      </div>
-    </TableHead>
-  );
-};
-
-type DirectoryHeaderProps = {
-  directory: { path: string; environments: schema.Environment[] };
-  workspace: schema.Workspace;
-};
-
-const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
-  directory,
-  workspace,
-}) => {
-  const resourceSelectors = directory.environments
-    .map((env) => env.resourceSelector)
-    .filter(isPresent);
-  const condition: ResourceCondition | undefined =
-    resourceSelectors.length > 0
-      ? {
-          type: ConditionType.Comparison,
-          operator: ComparisonOperator.Or,
-          conditions: resourceSelectors,
-        }
-      : undefined;
-
-  const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: workspace.id, filter: condition, limit: 0 },
-    { enabled: condition != null },
-  );
-
-  const total = data?.total ?? 0;
-
-  return (
-    <TableHead className="w-[220px] border-l p-2" key={directory.path}>
-      <div className="flex w-fit items-center gap-2 px-2 py-1 text-white">
-        <span className="max-w-32 truncate">{directory.path}</span>
-
-        <Badge variant="outline" className="rounded-full text-muted-foreground">
-          {isLoading && (
-            <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-          )}
-          {!isLoading && total}
-        </Badge>
-
-        <Badge variant="outline" className="rounded-full text-muted-foreground">
-          <IconFolder className="h-4 w-4" strokeWidth={1.5} />
         </Badge>
       </div>
     </TableHead>
@@ -280,14 +232,12 @@ type DeploymentPageContentProps = {
   workspace: schema.Workspace;
   deployment: Deployment;
   environments: schema.Environment[];
-  directories: { path: string; environments: schema.Environment[] }[];
 };
 
 export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   workspace,
   deployment,
   environments,
-  directories,
 }) => {
   const { selector } = useDeploymentVersionSelector();
   const { search, setSearch } = useVersionSearchQuery();
@@ -337,13 +287,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     key={env.id}
                     environment={env}
                     deployment={deployment}
-                    workspace={workspace}
-                  />
-                ))}
-                {directories.map((dir) => (
-                  <DirectoryHeader
-                    key={dir.path}
-                    directory={dir}
                     workspace={workspace}
                   />
                 ))}

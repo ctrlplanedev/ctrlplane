@@ -34,17 +34,14 @@ export default async function DeploymentPage(props: PageProps) {
   const deployment = await api.deployment.bySlug(resolvedParams);
   if (!deployment) return notFound();
 
-  // Fetch system roots
   const { system } = deployment;
-  const roots = await api.system.directory.listRoots(system.id);
-  const { rootEnvironments: environments, directories } = roots;
+  const environments = await api.environment.bySystemId(system.id);
 
   return (
     <DeploymentPageContent
       workspace={workspace}
       deployment={deployment}
       environments={environments}
-      directories={directories}
     />
   );
 }

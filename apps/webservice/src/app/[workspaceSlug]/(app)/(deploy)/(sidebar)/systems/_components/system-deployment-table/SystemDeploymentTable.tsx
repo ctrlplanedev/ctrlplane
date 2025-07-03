@@ -86,18 +86,10 @@ const EnvironmentsTooltip: React.FC<{
     .system(systemSlug)
     .environments();
 
-  const { data: rootDirsResult, isLoading } =
-    api.system.directory.listRoots.useQuery(systemId);
+  const { data: environments, isLoading } =
+    api.environment.bySystemId.useQuery(systemId);
 
-  const rootDirs = rootDirsResult?.directories ?? [];
-  const rootEnvironments = rootDirsResult?.rootEnvironments ?? [];
-
-  const numNestedEnvironments = _.sumBy(
-    rootDirs,
-    (dir) => dir.environments.length,
-  );
-
-  const numEnvironments = numNestedEnvironments + rootEnvironments.length;
+  const numEnvironments = environments?.length ?? 0;
 
   return (
     <TooltipProvider>

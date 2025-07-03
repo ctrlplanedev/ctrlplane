@@ -95,9 +95,9 @@ const DeploymentTable: React.FC<{
   workspace: SCHEMA.Workspace;
   system: System;
 }> = ({ workspace, system }) => {
-  const { data: rootDirsResult, isLoading } =
-    api.system.directory.listRoots.useQuery(system.id);
-  const environments = rootDirsResult?.rootEnvironments ?? [];
+  const { data: environments, isLoading } = api.environment.bySystemId.useQuery(
+    system.id,
+  );
 
   const { deployments } = system;
 
@@ -112,7 +112,7 @@ const DeploymentTable: React.FC<{
             <TableHead className="sticky left-0 z-10 w-[350px] rounded-md py-4 pl-6 backdrop-blur-lg">
               Deployments
             </TableHead>
-            {environments.map((env) => (
+            {environments?.map((env) => (
               <EnvHeader
                 key={env.id}
                 systemSlug={system.slug}
@@ -137,7 +137,7 @@ const DeploymentTable: React.FC<{
                   idx === deployments.length - 1 ? "rounded-b-md" : undefined
                 }
               />
-              {environments.map((env) => (
+              {environments?.map((env) => (
                 <TableCell key={env.id} className="h-[70px] w-[220px]">
                   <LazyDeploymentEnvironmentCell
                     environment={env}

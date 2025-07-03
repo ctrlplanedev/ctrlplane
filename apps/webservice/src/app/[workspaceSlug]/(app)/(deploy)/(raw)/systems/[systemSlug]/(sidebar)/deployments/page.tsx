@@ -38,12 +38,11 @@ export default async function DeploymentsPage(props: {
   ]);
   if (workspace == null) notFound();
 
-  const [roots, deployments] = await Promise.all([
-    api.system.directory.listRoots(system.id),
+  const [environments, deployments] = await Promise.all([
+    api.environment.bySystemId(system.id),
     api.deployment.bySystemId(system.id),
   ]);
 
-  const { rootEnvironments } = roots;
   const hasDeployments = deployments.length > 0;
 
   return (
@@ -66,7 +65,7 @@ export default async function DeploymentsPage(props: {
         <DeploymentTable
           workspace={workspace}
           systemSlug={params.systemSlug}
-          rootEnvironments={rootEnvironments}
+          environments={environments}
           deployments={deployments}
           className="border-b"
         />

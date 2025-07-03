@@ -72,9 +72,9 @@ const DeploymentTable: React.FC<{
   workspace: SCHEMA.Workspace;
   systemSlug: string;
   className?: string;
-  rootEnvironments: SCHEMA.Environment[];
+  environments: SCHEMA.Environment[];
   deployments: Deployment[];
-}> = ({ systemSlug, deployments, rootEnvironments, workspace, className }) => {
+}> = ({ systemSlug, deployments, environments, workspace, className }) => {
   return (
     <div
       className={cn(
@@ -88,14 +88,14 @@ const DeploymentTable: React.FC<{
             <Icon className="sticky left-0 z-10 rounded-tl border-r backdrop-blur-lg">
               Deployment
             </Icon>
-            {rootEnvironments.map((env, idx) => (
+            {environments.map((env, idx) => (
               <EnvIcon
                 key={env.id}
                 environment={env}
                 workspace={workspace}
                 systemSlug={systemSlug}
                 className={cn({
-                  "border-r": idx !== rootEnvironments.length - 1,
+                  "border-r": idx !== environments.length - 1,
                 })}
               />
             ))}
@@ -134,12 +134,12 @@ const DeploymentTable: React.FC<{
                 </div>
               </td>
 
-              {rootEnvironments.map((env, idx) => {
+              {environments.map((env, idx) => {
                 return (
                   <td
                     key={env.id}
                     className={cn("h-[70px] w-[220px] px-2 py-1", {
-                      "border-r": idx !== rootEnvironments.length - 1,
+                      "border-r": idx !== environments.length - 1,
                       "border-b": didx !== deployments.length - 1,
                     })}
                   >
