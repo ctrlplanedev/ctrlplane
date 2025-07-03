@@ -23,7 +23,7 @@ export const RedeployJobsDialog: React.FC<{
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  const redeployJobs = api.redeploy.useMutation();
+  const redeployJobs = api.redeploy.toReleaseTargets.useMutation();
 
   const handleRedeploy = () =>
     redeployJobs

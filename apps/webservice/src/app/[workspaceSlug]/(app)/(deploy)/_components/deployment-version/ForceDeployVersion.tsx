@@ -22,7 +22,7 @@ export const ForceDeployVersionDialog: React.FC<DeployProps> = ({
   resource,
   children,
 }) => {
-  const redeploy = api.redeploy.useMutation();
+  const redeploy = api.redeploy.toReleaseTargets.useMutation();
   const router = useRouter();
 
   const environmentId = environment.id;
