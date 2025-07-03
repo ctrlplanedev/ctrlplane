@@ -25,7 +25,7 @@ export const RedeployVersionDialog: React.FC<DeployProps> = ({
   children,
 }) => {
   const router = useRouter();
-  const redeploy = api.redeploy.useMutation();
+  const redeploy = api.redeploy.toReleaseTargets.useMutation();
   const [isOpen, setIsOpen] = useState(false);
 
   const environmentId = environment.id;

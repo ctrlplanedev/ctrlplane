@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import { TRPCError } from "@trpc/server";
-import { desc } from "drizzle-orm";
+import { desc, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -9,7 +9,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { Channel, dispatchQueueJob, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const createForceDeployment = async (
   db: Tx,
@@ -62,7 +62,7 @@ const handleDeployment = async (
     .releaseTargets(releaseTargets, { skipDuplicateCheck: true });
 };
 
-export const redeployProcedure = protectedProcedure
+const redeployProcedure = protectedProcedure
   .input(
     z
       .object({
@@ -128,3 +128,39 @@ export const redeployProcedure = protectedProcedure
     await handleDeployment(db, releaseTargets, input.force);
     return releaseTargets.length;
   });
+
+const redeployToEnvironmentProcedure = protectedProcedure
+  .input(
+    z.object({
+      environmentId: z.string().uuid(),
+      releaseTargetIds: z.array(z.string().uuid()),
+      force: z.boolean().optional().default(false),
+    }),
+  )
+  .meta({
+    authorizationCheck: ({ canUser, input }) =>
+      canUser.perform(Permission.EnvironmentUpdate).on({
+        type: "environment",
+        id: input.environmentId,
+      }),
+  })
+  .mutation(async ({ ctx: { db }, input }) => {
+    const { releaseTargetIds, force } = input;
+    if (releaseTargetIds.length === 0) return 0;
+
+    const releaseTargets = await db.query.releaseTarget.findMany({
+      where: and(
+        inArray(schema.releaseTarget.id, releaseTargetIds),
+        eq(schema.releaseTarget.environmentId, input.environmentId),
+      ),
+    });
+
+    if (releaseTargets.length === 0) return 0;
+    await handleDeployment(db, releaseTargets, force);
+    return releaseTargets.length;
+  });
+
+export const redeployRouter = createTRPCRouter({
+  toEnvironment: redeployToEnvironmentProcedure,
+  toReleaseTargets: redeployProcedure,
+});
