@@ -64,7 +64,7 @@ const SearchInput: React.FC<{
 );
 
 type JobActionsDropdownMenuProps = {
-  jobIds: string[];
+  jobs: { id: string; status: SCHEMA.Job["status"] }[];
   deployment: { id: string; name: string };
   environment: { id: string; name: string };
   resource?: { id: string; name: string };
@@ -73,7 +73,7 @@ type JobActionsDropdownMenuProps = {
 const JobActionsDropdownMenu: React.FC<JobActionsDropdownMenuProps> = (
   props,
 ) => {
-  const { jobIds } = props;
+  const { jobs } = props;
   const utils = api.useUtils();
 
   return (
@@ -103,7 +103,7 @@ const JobActionsDropdownMenu: React.FC<JobActionsDropdownMenuProps> = (
           </DropdownMenuItem>
         </ForceDeployVersionDialog>
         <OverrideJobStatusDialog
-          jobIds={jobIds}
+          jobs={jobs}
           onClose={() => utils.deployment.version.job.list.invalidate()}
         >
           <DropdownMenuItem
@@ -189,8 +189,8 @@ export const DeploymentVersionJobsTable: React.FC<
                   <TableCell className="flex justify-end bg-neutral-800/40">
                     {
                       <JobActionsDropdownMenu
-                        jobIds={releaseTargets
-                          .map(({ jobs }) => jobs.at(0)?.id ?? null)
+                        jobs={releaseTargets
+                          .map(({ jobs }) => jobs.at(0) ?? null)
                           .filter(isPresent)}
                         deployment={deployment}
                         environment={environment}

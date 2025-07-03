@@ -37,8 +37,8 @@ const ReleaseTargetActionsDropdownMenu: React.FC<{
   environment: { id: string; name: string };
   deployment: { id: string; name: string };
   resource: { id: string; name: string };
-  jobId?: string;
-}> = ({ jobId, environment, deployment, resource }) => {
+  job: { id: string; status: SCHEMA.Job["status"] } | null;
+}> = ({ job, environment, deployment, resource }) => {
   const utils = api.useUtils();
   const [, copy] = useCopyToClipboard();
 
@@ -50,10 +50,10 @@ const ReleaseTargetActionsDropdownMenu: React.FC<{
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        {jobId != null && (
+        {job != null && (
           <DropdownMenuItem
             onSelect={() => {
-              copy(jobId);
+              copy(job.id);
               toast.success("Job ID copied to clipboard");
             }}
             className="flex items-center gap-2"
@@ -62,9 +62,10 @@ const ReleaseTargetActionsDropdownMenu: React.FC<{
             Copy job ID
           </DropdownMenuItem>
         )}
-        {jobId != null && (
+        {job != null && (
           <OverrideJobStatusDialog
-            jobIds={[jobId]}
+            jobs={[job]}
+            enableStatusFilter={false}
             onClose={() => utils.deployment.version.job.list.invalidate()}
           >
             <DropdownMenuItem
@@ -229,7 +230,7 @@ export const ReleaseTargetRow: React.FC<{
       DropdownMenu={
         <TableCell className="flex justify-end">
           <ReleaseTargetActionsDropdownMenu
-            jobId={latestJob?.id}
+            job={latestJob ?? null}
             environment={environment}
             deployment={deployment}
             resource={resource}
