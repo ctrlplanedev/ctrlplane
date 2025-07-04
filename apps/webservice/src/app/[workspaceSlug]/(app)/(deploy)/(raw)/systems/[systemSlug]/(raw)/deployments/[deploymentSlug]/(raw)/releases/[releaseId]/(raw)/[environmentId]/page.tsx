@@ -27,9 +27,9 @@ export default async function EnvironmentVersionPage(props: {
   return (
     <div className="container flex max-w-5xl flex-col gap-4 p-8">
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold">Gratual rollout</h2>
+        <h2 className="text-2xl font-bold">Gradual rollout</h2>
         <p className="text-sm text-muted-foreground">
-          Rollout out the version {version.tag} to the environment{" "}
+          Rolling out the version {version.tag} to the environment{" "}
           {environment.name}
         </p>
       </div>
