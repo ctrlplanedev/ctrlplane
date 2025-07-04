@@ -5,7 +5,7 @@ export const VersionSelectorCheck: React.FC<{
   versionId: string;
   environmentId: string;
 }> = ({ versionId, environmentId }) => {
-  const { data, isLoading } = api.policy.evaluate.useQuery({
+  const { data, isLoading } = api.policy.evaluate.environment.useQuery({
     environmentId,
     versionId,
   });
