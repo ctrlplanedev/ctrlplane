@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "@ctrlplane/api";
-import React, { useMemo } from "react";
+import React from "react";
 import { IconCheck } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 
@@ -73,10 +73,24 @@ const VersionSelectorCheck: React.FC<{
 };
 
 const RolloutCheck: React.FC<{
-  policyEvaluations: PolicyEvaluation;
-}> = ({ policyEvaluations }) => {
-  const rolloutTime = policyEvaluations.rules.rolloutInfo.rolloutTime;
-  const now = useMemo(() => new Date(), []);
+  releaseTargetId: string;
+  versionId: string;
+}> = ({ releaseTargetId, versionId }) => {
+  const { data: policyEvaluations, isLoading } =
+    api.policy.evaluate.releaseTarget.useQuery(
+      { releaseTargetId, versionId },
+      { refetchInterval: 5_000 },
+    );
+
+  const rolloutTime = policyEvaluations?.rules.rolloutInfo.rolloutTime;
+  const now = new Date();
+
+  if (isLoading)
+    return (
+      <div className="flex items-center gap-2">
+        <Waiting /> Loading rollout information
+      </div>
+    );
 
   if (rolloutTime == null)
     return (
@@ -143,9 +157,7 @@ export const PolicyEvaluationHover: React.FC<{
             {hasVersionSelectorRule && (
               <VersionSelectorCheck policyEvaluations={policyEvaluations} />
             )}
-            {hasRolloutRule && (
-              <RolloutCheck policyEvaluations={policyEvaluations} />
-            )}
+            {hasRolloutRule && <RolloutCheck {...props} />}
           </div>
         )}
       </HoverCardContent>
