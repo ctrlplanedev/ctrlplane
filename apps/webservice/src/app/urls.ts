@@ -243,6 +243,7 @@ const release = (params: ReleaseParams) => {
     baseUrl: () => buildUrl(...base),
     jobs: () => buildUrl(...base, "jobs"),
     checks: () => buildUrl(...base, "checks"),
+    environment: (environmentId: string) => buildUrl(...base, environmentId),
   };
 };
 

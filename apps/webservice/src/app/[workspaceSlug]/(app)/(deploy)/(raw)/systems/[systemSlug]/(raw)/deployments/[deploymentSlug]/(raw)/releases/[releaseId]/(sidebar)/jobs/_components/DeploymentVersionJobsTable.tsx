@@ -94,6 +94,7 @@ export const DeploymentVersionJobsTable: React.FC<
               <EnvironmentCollapsibleRow
                 key={env.environment.id}
                 deployment={deployment}
+                version={deploymentVersion}
                 {...env}
               >
                 {env.releaseTargets.map((releaseTarget) => {

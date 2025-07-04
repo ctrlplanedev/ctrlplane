@@ -1,37 +1,19 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import React, { useState } from "react";
-import {
-  IconAlertTriangle,
-  IconChevronRight,
-  IconDots,
-  IconReload,
-  IconSwitch,
-} from "@tabler/icons-react";
+import React from "react";
+import { IconChevronRight } from "@tabler/icons-react";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
-import { Button } from "@ctrlplane/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
 import { TableCell } from "@ctrlplane/ui/table";
 import { failedStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
-import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/OverrideJobStatusDialog";
-import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
-import {
-  ForceDeployReleaseTargetsDialog,
-  RedeployReleaseTargetsDialog,
-} from "./RedeployReleaseTargets";
+import { EnvironmentRowDropdown } from "./EnvironmentRowDropdown";
 
 const JobStatusBadge: React.FC<{
   status: SCHEMA.JobStatus;
@@ -85,70 +67,6 @@ export const EnvironmentTableRow: React.FC<{
   );
 };
 
-type JobActionsDropdownMenuProps = {
-  jobs: { id: string; status: SCHEMA.Job["status"] }[];
-  deployment: { id: string; name: string };
-  environment: { id: string; name: string };
-  releaseTargets: {
-    id: string;
-    resource: { id: string; name: string };
-    latestJob: { id: string; status: JobStatus };
-  }[];
-};
-
-const JobActionsDropdownMenu: React.FC<JobActionsDropdownMenuProps> = (
-  props,
-) => {
-  const [open, setOpen] = useState(false);
-  const { jobs } = props;
-  const utils = api.useUtils();
-
-  return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6">
-          <IconDots className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-        <RedeployReleaseTargetsDialog {...props} onClose={() => setOpen(false)}>
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="flex items-center gap-2"
-          >
-            <IconReload className="h-4 w-4" />
-            Redeploy
-          </DropdownMenuItem>
-        </RedeployReleaseTargetsDialog>
-        <ForceDeployReleaseTargetsDialog
-          {...props}
-          onClose={() => setOpen(false)}
-        >
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="flex items-center gap-2"
-          >
-            <IconAlertTriangle className="h-4 w-4" />
-            Force deploy
-          </DropdownMenuItem>
-        </ForceDeployReleaseTargetsDialog>
-        <OverrideJobStatusDialog
-          jobs={jobs}
-          onClose={() => utils.deployment.version.job.list.invalidate()}
-        >
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="flex items-center gap-2"
-          >
-            <IconSwitch className="h-4 w-4" />
-            Override status
-          </DropdownMenuItem>
-        </OverrideJobStatusDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
 type Job = Pick<SCHEMA.Job, "id" | "createdAt" | "status" | "externalId"> & {
   links: Record<string, string>;
 };
@@ -163,9 +81,10 @@ type ReleaseTarget = SCHEMA.ReleaseTarget & {
 export const EnvironmentCollapsibleRow: React.FC<{
   environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
+  version: { id: string };
   releaseTargets: ReleaseTarget[];
   children: React.ReactNode;
-}> = ({ environment, deployment, releaseTargets, children }) => {
+}> = ({ environment, deployment, version, releaseTargets, children }) => {
   const isInitiallyExpanded =
     releaseTargets.length <= 5 ||
     releaseTargets.some(({ jobs }) =>
@@ -204,10 +123,11 @@ export const EnvironmentCollapsibleRow: React.FC<{
       DropdownMenu={
         <TableCell className="flex justify-end bg-neutral-800/40">
           {
-            <JobActionsDropdownMenu
+            <EnvironmentRowDropdown
               jobs={latestJobs}
               deployment={deployment}
               environment={environment}
+              version={version}
               releaseTargets={releaseTargetsWithLatestJob}
             />
           }

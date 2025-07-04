@@ -8,7 +8,7 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { ReactFlowProvider } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ReactFlowProvider";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
-import { FlowDiagram } from "../checks/_components/flow-diagram/FlowDiagram";
+import { FlowDiagram } from "./_components/flow-diagram/FlowDiagram";
 
 type PageProps = {
   params: Promise<{
