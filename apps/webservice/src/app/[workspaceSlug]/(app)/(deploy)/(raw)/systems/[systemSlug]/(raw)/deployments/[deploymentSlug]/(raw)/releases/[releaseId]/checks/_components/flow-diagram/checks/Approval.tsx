@@ -11,9 +11,9 @@ export const ApprovalCheck: React.FC<{
   versionId: string;
   versionTag: string;
 }> = (props) => {
-  const { data, isLoading } = api.policy.evaluate.useQuery(props);
+  const { data, isLoading } = api.policy.evaluate.environment.useQuery(props);
   const utils = api.useUtils();
-  const invalidate = () => utils.policy.evaluate.invalidate(props);
+  const invalidate = () => utils.policy.evaluate.environment.invalidate(props);
 
   const isAnyApprovalSatisfied = Object.values(
     data?.rules.anyApprovals ?? {},

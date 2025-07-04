@@ -9,6 +9,7 @@ import {
   IconDots,
   IconExternalLink,
   IconReload,
+  IconShieldFilled,
   IconSwitch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -32,6 +33,7 @@ import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
+import { PolicyEvaluationHover } from "./PolicyEvaluationHover";
 
 const ReleaseTargetActionsDropdownMenu: React.FC<{
   environment: { id: string; name: string };
@@ -172,6 +174,7 @@ export const ReleaseTargetRow: React.FC<{
   resource: { id: string; name: string };
   environment: { id: string; name: string };
   deployment: { id: string; name: string };
+  version: { id: string };
   jobs: Array<{
     id: string;
     status: SCHEMA.JobStatus;
@@ -179,7 +182,7 @@ export const ReleaseTargetRow: React.FC<{
     links: Record<string, string>;
     createdAt: Date;
   }>;
-}> = ({ id, resource, environment, deployment, jobs }) => {
+}> = ({ id, resource, environment, deployment, jobs, version }) => {
   const latestJob = jobs.at(0);
 
   return (
@@ -218,7 +221,15 @@ export const ReleaseTargetRow: React.FC<{
           {latestJob == null && (
             <>
               <TableCell>
-                <span className="text-sm text-muted-foreground">No jobs</span>
+                <PolicyEvaluationHover
+                  releaseTargetId={id}
+                  versionId={version.id}
+                >
+                  <div className="flex w-fit cursor-pointer items-center gap-1">
+                    <IconShieldFilled className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-sm">Blocked by policy</span>
+                  </div>
+                </PolicyEvaluationHover>
               </TableCell>
               <TableCell />
               <TableCell />

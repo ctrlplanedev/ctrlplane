@@ -10,7 +10,7 @@ export const usePolicyEvaluations = () => {
     useDeploymentVersionEnvironmentContext();
 
   const { data: policyEvaluations, isLoading: isPolicyEvaluationsLoading } =
-    api.policy.evaluate.useQuery({
+    api.policy.evaluate.environment.useQuery({
       environmentId: environment.id,
       versionId: deploymentVersion.id,
     });

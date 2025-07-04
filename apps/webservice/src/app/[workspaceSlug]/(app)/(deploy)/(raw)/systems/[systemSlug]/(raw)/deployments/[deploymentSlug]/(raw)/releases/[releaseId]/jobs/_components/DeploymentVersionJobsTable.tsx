@@ -230,6 +230,7 @@ export const DeploymentVersionJobsTable: React.FC<
                       environment={environment}
                       deployment={deployment}
                       jobs={jobs}
+                      version={deploymentVersion}
                     />
                   );
                 })}
