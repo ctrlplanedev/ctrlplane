@@ -22,6 +22,7 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { policyAiRouter } from "./ai";
 import { policyDenyWindowRouter } from "./deny-window";
 import { evaluateRouter } from "./evaluate";
+import { rolloutRouter } from "./rollout";
 import { policyTargetRouter } from "./target";
 
 export const policyRouter = createTRPCRouter({
@@ -29,6 +30,7 @@ export const policyRouter = createTRPCRouter({
   target: policyTargetRouter,
   denyWindow: policyDenyWindowRouter,
   evaluate: evaluateRouter,
+  rollout: rolloutRouter,
 
   list: protectedProcedure
     .meta({
