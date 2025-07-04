@@ -2,38 +2,16 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
-import {
-  IconAlertTriangle,
-  IconDots,
-  IconMenu2,
-  IconReload,
-  IconSearch,
-  IconSwitch,
-} from "@tabler/icons-react";
+import { IconMenu2, IconSearch } from "@tabler/icons-react";
 import { useDebounce } from "react-use";
-import { isPresent } from "ts-is-present";
 
-import { Button } from "@ctrlplane/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import { Table, TableBody, TableCell } from "@ctrlplane/ui/table";
-import { failedStatuses, JobStatus } from "@ctrlplane/validators/jobs";
+import { Table, TableBody } from "@ctrlplane/ui/table";
 
-import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/OverrideJobStatusDialog";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
-import { CollapsibleRow } from "./CollapsibleRow";
-import { EnvironmentTableRow } from "./EnvironmentTableRow";
-import {
-  ForceDeployReleaseTargetsDialog,
-  RedeployReleaseTargetsDialog,
-} from "./RedeployReleaseTargets";
+import { EnvironmentCollapsibleRow } from "./EnvironmentTableRow";
 import { ReleaseTargetRow } from "./ReleaseTargetRow";
 
 type DeploymentVersionJobsTableProps = {
@@ -64,70 +42,6 @@ const SearchInput: React.FC<{
     />
   </div>
 );
-
-type JobActionsDropdownMenuProps = {
-  jobs: { id: string; status: SCHEMA.Job["status"] }[];
-  deployment: { id: string; name: string };
-  environment: { id: string; name: string };
-  releaseTargets: {
-    id: string;
-    resource: { id: string; name: string };
-    latestJob: { id: string; status: JobStatus };
-  }[];
-};
-
-const JobActionsDropdownMenu: React.FC<JobActionsDropdownMenuProps> = (
-  props,
-) => {
-  const [open, setOpen] = useState(false);
-  const { jobs } = props;
-  const utils = api.useUtils();
-
-  return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6">
-          <IconDots className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-        <RedeployReleaseTargetsDialog {...props} onClose={() => setOpen(false)}>
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="flex items-center gap-2"
-          >
-            <IconReload className="h-4 w-4" />
-            Redeploy
-          </DropdownMenuItem>
-        </RedeployReleaseTargetsDialog>
-        <ForceDeployReleaseTargetsDialog
-          {...props}
-          onClose={() => setOpen(false)}
-        >
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="flex items-center gap-2"
-          >
-            <IconAlertTriangle className="h-4 w-4" />
-            Force deploy
-          </DropdownMenuItem>
-        </ForceDeployReleaseTargetsDialog>
-        <OverrideJobStatusDialog
-          jobs={jobs}
-          onClose={() => utils.deployment.version.job.list.invalidate()}
-        >
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="flex items-center gap-2"
-          >
-            <IconSwitch className="h-4 w-4" />
-            Override status
-          </DropdownMenuItem>
-        </OverrideJobStatusDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
 
 export const DeploymentVersionJobsTable: React.FC<
   DeploymentVersionJobsTableProps
@@ -176,65 +90,22 @@ export const DeploymentVersionJobsTable: React.FC<
       {environmentsWithJobs.length > 0 && (
         <Table>
           <TableBody>
-            {environmentsWithJobs.map(({ environment, releaseTargets }) => (
-              <CollapsibleRow
-                key={environment.id}
-                isInitiallyExpanded={
-                  releaseTargets.length <= 5 ||
-                  releaseTargets.some(({ jobs }) =>
-                    [...failedStatuses, JobStatus.ActionRequired].includes(
-                      (jobs.at(0)?.status ?? JobStatus.Pending) as JobStatus,
-                    ),
-                  )
-                }
-                Heading={({ isExpanded }) => (
-                  <EnvironmentTableRow
-                    isExpanded={isExpanded}
-                    environment={environment}
-                    deployment={deployment}
-                    releaseTargets={releaseTargets}
-                  />
-                )}
-                DropdownMenu={
-                  <TableCell className="flex justify-end bg-neutral-800/40">
-                    {
-                      <JobActionsDropdownMenu
-                        jobs={releaseTargets
-                          .map(({ jobs }) => jobs.at(0) ?? null)
-                          .filter(isPresent)}
-                        deployment={deployment}
-                        environment={environment}
-                        releaseTargets={releaseTargets
-                          .filter(({ jobs }) => jobs.length > 0)
-                          .map((rt) => {
-                            const latestJob = rt.jobs.at(0)!;
-                            return {
-                              ...rt,
-                              latestJob: {
-                                id: latestJob.id,
-                                status: latestJob.status as JobStatus,
-                              },
-                            };
-                          })}
-                      />
-                    }
-                  </TableCell>
-                }
+            {environmentsWithJobs.map((env) => (
+              <EnvironmentCollapsibleRow
+                key={env.environment.id}
+                deployment={deployment}
+                {...env}
               >
-                {releaseTargets.map(({ id, resource, jobs }) => {
+                {env.releaseTargets.map((releaseTarget) => {
                   return (
                     <ReleaseTargetRow
-                      key={id}
-                      id={id}
-                      resource={resource}
-                      environment={environment}
-                      deployment={deployment}
-                      jobs={jobs}
+                      key={releaseTarget.id}
                       version={deploymentVersion}
+                      {...releaseTarget}
                     />
                   );
                 })}
-              </CollapsibleRow>
+              </EnvironmentCollapsibleRow>
             ))}
           </TableBody>
         </Table>
