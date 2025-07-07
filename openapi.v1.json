@@ -1203,6 +1203,74 @@
         }
       }
     },
+    "/v1/deployments/{deploymentId}/versions": {
+      "get": {
+        "summary": "List deployment versions",
+        "operationId": "listDeploymentVersions",
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deployment versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeploymentVersion"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Deployment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/deployments": {
       "post": {
         "summary": "Create a deployment",
@@ -1502,15 +1570,6 @@
                   "resourceSelector": {
                     "type": "object",
                     "additionalProperties": true
-                  },
-                  "policyId": {
-                    "type": "string"
-                  },
-                  "releaseChannels": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
                   },
                   "metadata": {
                     "type": "object",
