@@ -37,6 +37,24 @@ const getRunbookJobResult = async (db: Tx, jobId: string) => {
   return { ...job, variables: jobVariables };
 };
 
+export const getJobLinks = (
+  metadata: Record<string, string>,
+): Record<string, string> => {
+  try {
+    const links = JSON.parse(metadata["ctrlplane/links"] ?? "{}") as Record<
+      string,
+      string
+    >;
+    return links;
+  } catch (error) {
+    log.error("Error getting job links", {
+      error,
+      metadata,
+    });
+    return {};
+  }
+};
+
 export const getJob = async (db: Tx, jobId: string) => {
   log.info("Getting job", { jobId });
 
@@ -48,6 +66,7 @@ export const getJob = async (db: Tx, jobId: string) => {
       where: eq(schema.job.id, jobId),
       with: {
         variables: true,
+        metadata: true,
         releaseJob: {
           with: {
             release: {
@@ -118,6 +137,12 @@ export const getJob = async (db: Tx, jobId: string) => {
       }),
     );
 
+    const jobMetadata = Object.fromEntries(
+      job.metadata.map(({ key, value }) => [key, value]),
+    );
+
+    const links = getJobLinks(jobMetadata);
+
     const { environment, resource, deployment } = releaseTarget;
     const { relationships } = await getResourceParents(db, resource.id);
     const metadata = Object.fromEntries(
@@ -145,7 +170,9 @@ export const getJob = async (db: Tx, jobId: string) => {
 
     return {
       ...job,
+      links,
       variables: jobVariables,
+      metadata: jobMetadata,
       resource: resourceWithMetadata,
       environment,
       deployment,

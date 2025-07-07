@@ -5590,6 +5590,18 @@
           {
             "type": "object",
             "properties": {
+              "links": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
               "release": {
                 "$ref": "#/components/schemas/Release"
               },

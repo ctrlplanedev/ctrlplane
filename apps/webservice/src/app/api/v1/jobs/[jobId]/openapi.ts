@@ -14,6 +14,14 @@ export const openapi: Swagger.SwaggerV3 = {
           {
             type: "object",
             properties: {
+              links: {
+                type: "object",
+                additionalProperties: { type: "string" },
+              },
+              metadata: {
+                type: "object",
+                additionalProperties: { type: "string" },
+              },
               release: { $ref: "#/components/schemas/Release" },
               version: {
                 $ref: "#/components/schemas/DeploymentVersion",
