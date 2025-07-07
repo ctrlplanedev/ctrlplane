@@ -1,5 +1,7 @@
 import type { Swagger } from "atlassian-openapi";
 
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
+
 export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
   info: {
@@ -19,6 +21,15 @@ export const openapi: Swagger.SwaggerV3 = {
             schema: {
               type: "string",
               format: "uuid",
+            },
+          },
+          {
+            name: "status",
+            in: "query",
+            required: false,
+            schema: {
+              type: "string",
+              enum: Object.values(DeploymentVersionStatus),
             },
           },
         ],

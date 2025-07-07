@@ -1216,6 +1216,20 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ready",
+                "building",
+                "failed",
+                "rejected"
+              ]
+            }
           }
         ],
         "responses": {
