@@ -24,7 +24,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/deployment-version-channels": {
+  "/v1/deployment-versions/{deploymentVersionId}/approve/environment/{environmentId}": {
     parameters: {
       query?: never;
       header?: never;
@@ -33,8 +33,42 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Create a deployment version channel */
-    post: operations["createDeploymentVersionChannel"];
+    /** Approve a deployment version for an environment */
+    post: operations["approveDeploymentVersionForEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Approve a deployment version */
+    post: operations["approveDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the rollout information across all release targets for a given deployment version and environment */
+    get: operations["getRolloutInfo"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -58,6 +92,40 @@ export interface paths {
     patch: operations["updateDeploymentVersion"];
     trace?: never;
   };
+  "/v1/deployment-versions/{deploymentVersionId}/reject/environment/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reject a deployment version for an environment */
+    post: operations["rejectDeploymentVersionForEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reject a deployment version */
+    post: operations["rejectDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployment-versions": {
     parameters: {
       query?: never;
@@ -70,23 +138,6 @@ export interface paths {
     /** Upserts a deployment version */
     post: operations["upsertDeploymentVersion"];
     delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/deployments/{deploymentId}/deployment-version-channels/name/{name}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Delete a deployment version channel */
-    delete: operations["deleteDeploymentVersionChannel"];
     options?: never;
     head?: never;
     patch?: never;
@@ -109,23 +160,6 @@ export interface paths {
     head?: never;
     /** Update a deployment */
     patch: operations["updateDeployment"];
-    trace?: never;
-  };
-  "/v1/deployments/{deploymentId}/release-channels/name/{name}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Delete a release channel */
-    delete: operations["deleteReleaseChannel"];
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   "/v1/deployments/{deploymentId}/resources": {
@@ -157,6 +191,23 @@ export interface paths {
     put?: never;
     /** Create a new variable for a deployment */
     post: operations["createDeploymentVariable"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployments/{deploymentId}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List deployment versions */
+    get: operations["listDeploymentVersions"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -345,7 +396,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** Get a policy */
+    get: operations["getPolicy"];
     put?: never;
     post?: never;
     /** Delete a policy */
@@ -424,7 +476,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/release-channels": {
+  "/v1/release-targets/{releaseTargetId}/lock": {
     parameters: {
       query?: never;
       header?: never;
@@ -433,8 +485,25 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Create a release channel */
-    post: operations["createReleaseChannel"];
+    /** Lock a release target */
+    post: operations["lockReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/pin": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Pin a version to a release target */
+    post: operations["pinReleaseTarget"];
     delete?: never;
     options?: never;
     head?: never;
@@ -452,6 +521,40 @@ export interface paths {
     get: operations["getReleaseTargetReleases"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/unlock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Unlock a release target */
+    post: operations["unlockReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/unpin": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Unpin a version from a release target */
+    post: operations["unpinReleaseTarget"];
     delete?: never;
     options?: never;
     head?: never;
@@ -910,20 +1013,40 @@ export interface components {
        */
       longitude: number;
     };
+    ApprovalRecord: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      deploymentVersionId: string;
+      /** Format: uuid */
+      environmentId: string;
+      /** Format: uuid */
+      userId: string;
+      /** @enum {string} */
+      status: "approved" | "rejected";
+      /** Format: date-time */
+      approvedAt: string | null;
+      reason?: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
     BaseDeploymentVariableValue: {
       resourceSelector: {
         [key: string]: unknown;
       } | null;
+      isDefault?: boolean;
     };
     DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
       value:
         | (string | number | boolean | Record<string, never> | unknown[])
         | null;
-      sensitive: boolean;
+      sensitive?: boolean;
     };
     DirectDeploymentVariableValueWithId: components["schemas"]["DirectDeploymentVariableValue"] & {
       /** Format: uuid */
-      id?: string;
+      id: string;
     };
     ReferenceDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
       path: string[];
@@ -934,7 +1057,7 @@ export interface components {
     };
     ReferenceDeploymentVariableValueWithId: components["schemas"]["ReferenceDeploymentVariableValue"] & {
       /** Format: uuid */
-      id?: string;
+      id: string;
     };
     DeploymentVariable: {
       /** Format: uuid */
@@ -1095,45 +1218,6 @@ export interface components {
       };
       /** @enum {string} */
       status?: "building" | "ready" | "failed";
-    };
-    Policy: {
-      /**
-       * Format: uuid
-       * @description The policy ID
-       */
-      id: string;
-      /**
-       * Format: uuid
-       * @description The system ID
-       */
-      systemId: string;
-      /** @description The name of the policy */
-      name: string;
-      /** @description The description of the policy */
-      description?: string | null;
-      /**
-       * @description The approval requirement of the policy
-       * @enum {string}
-       */
-      approvalRequirement: "manual" | "automatic";
-      /**
-       * @description If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment
-       * @enum {string}
-       */
-      successType: "some" | "all" | "optional";
-      /** @description If a policy depends on an environment, the minimum number of successful releases in the environment */
-      successMinimum: number;
-      /** @description The maximum number of concurrent releases in the environment */
-      concurrencyLimit?: number | null;
-      /** @description The duration of the rollout in milliseconds */
-      rolloutDuration: number;
-      /** @description The minimum interval between releases in milliseconds */
-      minimumReleaseInterval: number;
-      /**
-       * @description If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release
-       * @enum {string}
-       */
-      releaseSequencing: "wait" | "cancel";
     };
     Environment: {
       /** Format: uuid */
@@ -1312,9 +1396,41 @@ export interface components {
       roleId: string;
       requiredApprovalsCount: number;
     };
-    /** Format: integer */
+    /** Format: int32 */
     PolicyConcurrency: number | null;
-    Policy1: {
+    /** Format: int32 */
+    MaxRetries: number | null;
+    EnvironmentVersionRollout: {
+      /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. */
+      positionGrowthFactor: number;
+      /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
+      timeScaleInterval: number;
+      /**
+       * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
+       * @enum {string}
+       */
+      rolloutType:
+        | "linear"
+        | "linear-normalized"
+        | "exponential"
+        | "exponential-normalized";
+    };
+    InsertEnvironmentVersionRollout: {
+      /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. Defaults to 1 if not specified. */
+      positionGrowthFactor?: number;
+      /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
+      timeScaleInterval: number;
+      /**
+       * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
+       * @enum {string}
+       */
+      rolloutType?:
+        | "linear"
+        | "linear-normalized"
+        | "exponential"
+        | "exponential-normalized";
+    };
+    Policy: {
       /** Format: uuid */
       id: string;
       name: string;
@@ -1332,6 +1448,24 @@ export interface components {
       versionUserApprovals: components["schemas"]["VersionUserApproval"][];
       versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
       concurrency?: components["schemas"]["PolicyConcurrency"];
+      environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
+      maxRetries?: components["schemas"]["MaxRetries"];
+    };
+    ReleaseTargetLockRecord: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      releaseTargetId: string;
+      /** Format: date-time */
+      lockedAt: string;
+      /** Format: date-time */
+      unlockedAt: string | null;
+      lockedBy: {
+        /** Format: uuid */
+        id: string;
+        name?: string;
+        email: string;
+      };
     };
     UpdateResourceRelationshipRule: {
       name?: string;
@@ -1457,54 +1591,33 @@ export interface operations {
       };
     };
   };
-  createDeploymentVersionChannel: {
+  approveDeploymentVersionForEnvironment: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        deploymentVersionId: string;
+        environmentId: string;
+      };
       cookie?: never;
     };
-    requestBody: {
+    requestBody?: {
       content: {
         "application/json": {
-          deploymentId: string;
-          name: string;
-          description?: string | null;
-          versionSelector: {
-            [key: string]: unknown;
-          };
+          reason?: string;
+          /** Format: date-time */
+          approvedAt?: string;
         };
       };
     };
     responses: {
-      /** @description Deployment version channel created successfully */
+      /** @description Approval record created */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            id: string;
-            deploymentId: string;
-            name: string;
-            description?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            versionSelector?: {
-              [key: string]: unknown;
-            };
-          };
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
+          "application/json": components["schemas"]["ApprovalRecord"];
         };
       };
       /** @description Forbidden */
@@ -1514,30 +1627,144 @@ export interface operations {
         };
         content: {
           "application/json": {
-            error: string;
+            error?: string;
           };
         };
       };
-      /** @description Deployment version channel already exists */
-      409: {
+      /** @description Deployment version or environment not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            error: string;
-            id: string;
+            error?: string;
           };
         };
       };
-      /** @description Failed to create deployment version channel */
+      /** @description Internal server error */
       500: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            error: string;
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  approveDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
+          /** Format: date-time */
+          approvedAt?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description Deployment version approved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
+        };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getRolloutInfo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+        /** @description The environment ID */
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rollout information */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": (components["schemas"]["ReleaseTarget"] & {
+            /** Format: date-time */
+            rolloutTime: string | null;
+            rolloutPosition: number;
+          })[];
+        };
+      };
+      /** @description The deployment version or environment was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
           };
         };
       };
@@ -1568,7 +1795,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
@@ -1584,6 +1811,130 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DeploymentVersion"];
+        };
+      };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  rejectDeploymentVersionForEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentVersionId: string;
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Rejection record created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version or environment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  rejectDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Deployment version rejected */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
+        };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
         };
       };
       /** @description Deployment version not found */
@@ -1632,7 +1983,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
@@ -1658,64 +2009,6 @@ export interface operations {
         content: {
           "application/json": {
             error?: string;
-          };
-        };
-      };
-    };
-  };
-  deleteDeploymentVersionChannel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        deploymentId: string;
-        name: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Deployment version channel deleted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            message: string;
-          };
-        };
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Deployment version channel not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Failed to delete deployment version channel */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
           };
         };
       };
@@ -1851,64 +2144,6 @@ export interface operations {
         };
       };
       /** @description Failed to update deployment */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-    };
-  };
-  deleteReleaseChannel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        deploymentId: string;
-        name: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Release channel deleted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            message: string;
-          };
-        };
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Release channel not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Failed to delete release channel */
       500: {
         headers: {
           [name: string]: unknown;
@@ -2057,6 +2292,50 @@ export interface operations {
         };
       };
       /** @description Failed to create variable */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  listDeploymentVersions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deployment versions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVersion"][];
+        };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Internal server error */
       500: {
         headers: {
           [name: string]: unknown;
@@ -2296,9 +2575,6 @@ export interface operations {
           resourceSelector?: {
             [key: string]: unknown;
           };
-          policyId?: string;
-          releaseChannels?: string[];
-          deploymentVersionChannels?: string[];
           metadata?: {
             [key: string]: string;
           };
@@ -2574,7 +2850,52 @@ export interface operations {
         };
         content: {
           "application/json": {
-            id: string;
+            success: boolean;
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  getPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Policy"];
+        };
+      };
+      /** @description Policy not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
           };
         };
       };
@@ -2651,6 +2972,8 @@ export interface operations {
             requiredApprovalsCount?: number;
           }[];
           concurrency?: components["schemas"]["PolicyConcurrency"];
+          environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
+          maxRetries?: components["schemas"]["MaxRetries"];
         };
       };
     };
@@ -2754,6 +3077,8 @@ export interface operations {
           versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
           versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
           concurrency?: components["schemas"]["PolicyConcurrency"];
+          environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
+          maxRetries?: components["schemas"]["MaxRetries"];
         };
       };
     };
@@ -2764,7 +3089,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Policy1"];
+          "application/json": components["schemas"]["Policy"];
         };
       };
       /** @description Internal Server Error */
@@ -2960,87 +3285,121 @@ export interface operations {
       };
     };
   };
-  createReleaseChannel: {
+  lockReleaseTarget: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        releaseTargetId: string;
+      };
       cookie?: never;
     };
-    requestBody: {
-      content: {
-        "application/json": {
-          deploymentId: string;
-          name: string;
-          description?: string | null;
-          releaseSelector: {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
+    requestBody?: never;
     responses: {
-      /** @description Release channel created successfully */
+      /** @description Release target locked */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            id: string;
-            deploymentId: string;
-            name: string;
-            description?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            releaseSelector?: {
-              [key: string]: unknown;
-            };
-          };
+          "application/json": components["schemas"]["ReleaseTargetLockRecord"];
         };
       };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Forbidden */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-      /** @description Release channel already exists */
+      /** @description Release target is already locked */
       409: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            error: string;
-            id: string;
+            error?: string;
           };
         };
       };
-      /** @description Failed to create release channel */
+      /** @description Internal server error */
       500: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            error: string;
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  pinReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json":
+          | {
+              /**
+               * Format: uuid
+               * @description The ID of the version to pin
+               * @example 123e4567-e89b-12d3-a456-426614174000
+               */
+              versionId: string;
+            }
+          | {
+              /**
+               * @description The tag of the version to pin
+               * @example 1.0.0
+               */
+              versionTag: string;
+            };
+      };
+    };
+    responses: {
+      /** @description Version pinned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
           };
         };
       };
@@ -3097,6 +3456,118 @@ export interface operations {
       };
     };
   };
+  unlockReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release target unlocked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTargetLockRecord"];
+        };
+      };
+      /** @description Release target is not locked */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Release target was not locked by the current user */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  unpinReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   updateRelease: {
     parameters: {
       query?: never;
@@ -3122,7 +3593,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
@@ -3164,7 +3635,7 @@ export interface operations {
             [key: string]: unknown;
           };
           /** @enum {string} */
-          status?: "ready" | "building" | "failed";
+          status?: "ready" | "building" | "failed" | "rejected";
           message?: string;
           metadata?: {
             [key: string]: string;
