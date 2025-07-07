@@ -1,11 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 import { NextResponse } from "next/server";
 import { NOT_FOUND } from "http-status";
+import { isPresent } from "ts-is-present";
 
-import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { authn, authz } from "~/app/api/v1/auth";
 import { getJob } from "~/app/api/v1/jobs/[jobId]/get-job";
@@ -18,7 +18,7 @@ const getReleaseTarget = async (db: Tx, releaseTargetId: string) =>
     .where(eq(schema.releaseTarget.id, releaseTargetId))
     .then(takeFirstOrNull);
 
-const getLatestSuccessfulJob = async (db: Tx, releaseTargetId: string) =>
+const getLatestJobs = async (db: Tx, releaseTargetId: string) =>
   db
     .select()
     .from(schema.job)
@@ -31,16 +31,10 @@ const getLatestSuccessfulJob = async (db: Tx, releaseTargetId: string) =>
       schema.versionRelease,
       eq(schema.release.versionReleaseId, schema.versionRelease.id),
     )
-    .where(
-      and(
-        eq(schema.job.status, JobStatus.Successful),
-        eq(schema.releaseTarget.id, releaseTargetId),
-      ),
-    )
+    .where(eq(schema.releaseTarget.id, releaseTargetId))
     .orderBy(desc(schema.job.createdAt))
-    .limit(1)
-    .then(takeFirstOrNull)
-    .then((row) => row?.job ?? null);
+    .limit(10)
+    .then((rows) => rows.map((row) => row.job));
 
 export const GET = request()
   .use(authn)
@@ -62,23 +56,12 @@ export const GET = request()
           { status: NOT_FOUND },
         );
 
-      const latestSuccessfulJob = await getLatestSuccessfulJob(
-        db,
-        releaseTargetId,
-      );
-      if (latestSuccessfulJob == null)
-        return NextResponse.json(
-          { error: "No successful job found" },
-          { status: NOT_FOUND },
-        );
+      const latestJobs = await getLatestJobs(db, releaseTargetId);
 
-      const job = await getJob(db, latestSuccessfulJob.id);
-      if (job == null)
-        return NextResponse.json(
-          { error: "Job not found" },
-          { status: NOT_FOUND },
-        );
+      const fullJobs = await Promise.all(
+        latestJobs.map((job) => getJob(db, job.id)),
+      ).then((jobs) => jobs.filter(isPresent));
 
-      return NextResponse.json(job);
+      return NextResponse.json(fullJobs);
     },
   );

@@ -7,10 +7,10 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/release-targets/{releaseTargetId}/latest-job": {
+    "/v1/release-targets/{releaseTargetId}/latest-jobs": {
       get: {
-        summary: "Get the latest successful job for a release target",
-        operationId: "getLatestJob",
+        summary: "Get the 10 latest jobs for a release target",
+        operationId: "getLatestJobs",
         parameters: [
           {
             name: "releaseTargetId",
@@ -26,7 +26,10 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  $ref: "#/components/schemas/JobWithTrigger",
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/JobWithTrigger",
+                  },
                 },
               },
             },
