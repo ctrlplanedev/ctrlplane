@@ -2826,6 +2826,50 @@
         }
       }
     },
+    "/v1/release-targets/{releaseTargetId}": {
+      "get": {
+        "summary": "Get a release target",
+        "operationId": "getReleaseTarget",
+        "parameters": [
+          {
+            "name": "releaseTargetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The release target",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Release target not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/release-targets/{releaseTargetId}/pin": {
       "post": {
         "summary": "Pin a version to a release target",
