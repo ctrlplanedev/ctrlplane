@@ -36,7 +36,7 @@ const getLatestJobs = async (db: Tx, releaseTargetId: string) =>
       schema.versionRelease,
       eq(schema.release.versionReleaseId, schema.versionRelease.id),
     )
-    .where(eq(schema.releaseTarget.id, releaseTargetId))
+    .where(eq(schema.versionRelease.releaseTargetId, releaseTargetId))
     .orderBy(desc(schema.job.createdAt))
     .limit(10)
     .then((rows) => rows.map((row) => row.job));
