@@ -117,6 +117,9 @@ export const deploymentVersionMetadata = pgTable(
     versionIdIdx: index("deployment_version_metadata_version_id_idx").on(
       t.versionId,
     ),
+    versionIdKeyValueIdx: index(
+      "deployment_version_metadata_version_id_key_value_idx",
+    ).on(t.versionId, t.key, t.value),
   }),
 );
 
