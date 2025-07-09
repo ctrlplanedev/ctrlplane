@@ -152,7 +152,14 @@ export const TopNavSearch: React.FC<{
                           {result.type === "environment" && (
                             <IconPlanet className="mr-2 h-4 w-4 text-neutral-300" />
                           )}
-                          <span>{result.name}</span>
+                          <span>
+                            {result.name}{" "}
+                            {result.version !== "" && (
+                              <span className="ml-1 text-xs text-neutral-500">
+                                {result.version} {result.kind}
+                              </span>
+                            )}
+                          </span>
                         </CommandItem>
                       );
                     })}

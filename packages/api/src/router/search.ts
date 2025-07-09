@@ -26,6 +26,8 @@ export const searchRouter = createTRPCRouter({
             ${schema.system.description} as description,
             ${schema.system.slug} as "slug",
             '' as "systemSlug",
+            '' as "kind",
+            '' as "version",
             CASE
               WHEN LENGTH(${search}) = 36 AND ${schema.system.id}::text = ${search} THEN 1
               ELSE (
@@ -53,6 +55,8 @@ export const searchRouter = createTRPCRouter({
             ${schema.environment.description} as description,
             '' as "slug",
             ${schema.system.slug} as "systemSlug",
+            '' as "kind",
+            '' as "version",
             CASE
               WHEN LENGTH(${search}) = 36 AND ${schema.environment.id}::text = ${search} THEN 1
               ELSE (
@@ -79,6 +83,8 @@ export const searchRouter = createTRPCRouter({
             '' as description,
             ${schema.resource.identifier} as "slug",
             '' as "systemSlug",
+            ${schema.resource.kind} as "kind",
+            ${schema.resource.version} as "version",
             CASE
               WHEN LENGTH(${search}) = 36 AND ${schema.resource.id}::text = ${search} THEN 1
               ELSE (
@@ -105,6 +111,8 @@ export const searchRouter = createTRPCRouter({
             ${schema.deployment.description} as description,
             ${schema.deployment.slug} as "slug",
             ${schema.system.slug} as "systemSlug",
+            '' as "kind",
+            '' as "version",
             CASE
               WHEN LENGTH(${search}) = 36 AND ${schema.deployment.id}::text = ${search} THEN 1
               ELSE (
@@ -135,7 +143,9 @@ export const searchRouter = createTRPCRouter({
         name: string;
         description: string;
         slug: string;
-        systemSlug?: string;
+        systemSlug: string;
+        version: string;
+        kind: string;
       }>(query);
 
       return results.rows;
