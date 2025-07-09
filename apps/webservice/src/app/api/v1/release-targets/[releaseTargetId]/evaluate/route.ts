@@ -30,6 +30,9 @@ const logErr = (releaseTargetId: string, e: any) => {
 
 const handleVersionRelease = async (tx: Tx, releaseTarget: any) => {
   try {
+    log.info("Evaluating version release", {
+      releaseTargetId: releaseTarget.id,
+    });
     const workspaceId = releaseTarget.resource.workspaceId;
 
     const vrm = new VersionReleaseManager(tx, {
@@ -39,10 +42,18 @@ const handleVersionRelease = async (tx: Tx, releaseTarget: any) => {
 
     const { chosenCandidate } = await vrm.evaluate();
 
+    log.info(
+      `Version release evaluated: ${JSON.stringify(chosenCandidate, null, 2)}`,
+    );
+
     if (!chosenCandidate) return null;
 
     const { release: versionRelease } = await vrm.upsertRelease(
       chosenCandidate.id,
+    );
+
+    log.info(
+      `Version release upserted: ${JSON.stringify(versionRelease, null, 2)}`,
     );
 
     return versionRelease;
@@ -54,6 +65,10 @@ const handleVersionRelease = async (tx: Tx, releaseTarget: any) => {
 
 const handleVariableRelease = async (tx: Tx, releaseTarget: any) => {
   try {
+    log.info("Evaluating variable release", {
+      releaseTargetId: releaseTarget.id,
+    });
+
     const workspaceId = releaseTarget.resource.workspaceId;
 
     const varrm = new VariableReleaseManager(tx, {
@@ -63,8 +78,16 @@ const handleVariableRelease = async (tx: Tx, releaseTarget: any) => {
 
     const { chosenCandidate: variableValues } = await varrm.evaluate();
 
+    log.info(
+      `Variable release evaluated: ${JSON.stringify(variableValues, null, 2)}`,
+    );
+
     const { release: variableRelease } =
       await varrm.upsertRelease(variableValues);
+
+    log.info(
+      `Variable release upserted: ${JSON.stringify(variableRelease, null, 2)}`,
+    );
 
     return variableRelease;
   } catch (e: any) {
