@@ -11,6 +11,15 @@ const buildUrl = (...segments: string[]) => {
   return `/${path}`;
 };
 
+const accountSettings = (slug: string) => {
+  const base = [slug, "settings", "account"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    profile: () => buildUrl(...base, "profile"),
+    api: () => buildUrl(...base, "api"),
+  };
+};
+
 const workspaceSettings = (slug: string) => {
   const base = [slug, "settings", "workspace"];
   return {
@@ -19,10 +28,6 @@ const workspaceSettings = (slug: string) => {
     members: () => buildUrl(...base, "members"),
     general: () => buildUrl(...base, "general"),
     integrations: () => workspaceSettingsIntegrations(slug),
-    account: () => ({
-      profile: () => buildUrl(...base, "account", "profile"),
-      api: () => buildUrl(...base, "account", "api"),
-    }),
   };
 };
 
@@ -77,7 +82,8 @@ const workspace = (slug: string) => {
     resources: () => resources(slug),
     resource: (resourceId: string) => resource(slug, resourceId),
     policies: () => workspacePolicies(slug),
-    settings: () => workspaceSettings(slug),
+    workspaceSettings: () => workspaceSettings(slug),
+    accountSettings: () => accountSettings(slug),
     dashboards: () => buildUrl(slug, "dashboards"),
     dashboard: (dashboardId: string) =>
       dashboard({ workspaceSlug: slug, dashboardId }),

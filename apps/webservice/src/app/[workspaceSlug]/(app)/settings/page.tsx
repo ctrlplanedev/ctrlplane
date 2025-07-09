@@ -15,6 +15,9 @@ export default async function SettingsPage(props: {
   const { workspaceSlug } = await props.params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
-  const overviewUrl = urls.workspace(workspaceSlug).settings().overview();
+  const overviewUrl = urls
+    .workspace(workspaceSlug)
+    .workspaceSettings()
+    .overview();
   return redirect(overviewUrl);
 }

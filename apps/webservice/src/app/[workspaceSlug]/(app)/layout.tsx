@@ -57,7 +57,7 @@ export default async function Layout(props: {
             <TopSidebarIcon
               icon={<IconSettings />}
               label="Settings"
-              href={workspaceUrls.settings().baseUrl()}
+              href={workspaceUrls.workspaceSettings().baseUrl()}
             />
           </aside>
 

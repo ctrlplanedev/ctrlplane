@@ -42,7 +42,7 @@ export default async function IntegrationsPage(props: {
 
   const integrationsUrls = urls
     .workspace(workspaceSlug)
-    .settings()
+    .workspaceSettings()
     .integrations();
 
   return (

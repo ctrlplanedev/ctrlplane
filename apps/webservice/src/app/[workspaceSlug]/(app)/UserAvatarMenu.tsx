@@ -33,11 +33,7 @@ export const UserAvatarMenu = ({
     await signOut({ callbackUrl: "/login" });
   };
 
-  const profileUrl = urls
-    .workspace(workspaceSlug)
-    .settings()
-    .account()
-    .profile();
+  const profileUrl = urls.workspace(workspaceSlug).accountSettings().profile();
 
   return (
     <DropdownMenu>

@@ -41,10 +41,14 @@ export const WorkspaceDropdown: React.FC<{
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-neutral-900">
-        <Link href={urls.workspace(workspace.slug).settings().baseUrl()}>
+        <Link
+          href={urls.workspace(workspace.slug).workspaceSettings().baseUrl()}
+        >
           <DropdownMenuItem>Workspace settings</DropdownMenuItem>
         </Link>
-        <Link href={urls.workspace(workspace.slug).settings().members()}>
+        <Link
+          href={urls.workspace(workspace.slug).workspaceSettings().members()}
+        >
           <DropdownMenuItem>Invite and manage users</DropdownMenuItem>
         </Link>
 

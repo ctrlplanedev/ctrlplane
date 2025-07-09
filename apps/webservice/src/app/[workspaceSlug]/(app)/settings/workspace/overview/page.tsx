@@ -144,7 +144,12 @@ export default async function OverviewPage(props: {
                   repos.
                 </div>
                 <div>
-                  <Link href={workspaceUrls.settings().integrations().github()}>
+                  <Link
+                    href={workspaceUrls
+                      .workspaceSettings()
+                      .integrations()
+                      .github()}
+                  >
                     <Button variant="secondary" size="sm">
                       Open
                     </Button>
@@ -162,7 +167,12 @@ export default async function OverviewPage(props: {
                   Sync deployment resource, trigger google workflows and more.
                 </div>
                 <div>
-                  <Link href={workspaceUrls.settings().integrations().google()}>
+                  <Link
+                    href={workspaceUrls
+                      .workspaceSettings()
+                      .integrations()
+                      .google()}
+                  >
                     <Button variant="secondary" size="sm">
                       Open
                     </Button>
@@ -181,7 +191,12 @@ export default async function OverviewPage(props: {
                     Sync deployment resources, trigger AWS workflows and more.
                   </div>
                   <div>
-                    <Link href={workspaceUrls.settings().integrations().aws()}>
+                    <Link
+                      href={workspaceUrls
+                        .workspaceSettings()
+                        .integrations()
+                        .aws()}
+                    >
                       <Button variant="secondary" size="sm">
                         Open
                       </Button>
