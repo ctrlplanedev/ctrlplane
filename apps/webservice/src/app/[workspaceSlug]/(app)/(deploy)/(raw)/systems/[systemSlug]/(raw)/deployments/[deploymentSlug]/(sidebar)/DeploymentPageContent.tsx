@@ -244,7 +244,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   const versions = api.deployment.version.list.useQuery(
     { deploymentId: deployment.id, filter: selector ?? undefined, limit: 30 },
-    { refetchInterval: 2_000 },
+    { refetchInterval: 60_000 },
   );
 
   const loading = versions.isLoading;
