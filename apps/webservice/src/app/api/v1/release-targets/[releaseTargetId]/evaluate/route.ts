@@ -16,6 +16,18 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "~/app/api/v1/auth";
 import { request } from "~/app/api/v1/middleware";
 
+const log = logger.child({
+  component: "release-target-evaluate-route",
+});
+
+const logErr = (releaseTargetId: string, e: any) => {
+  const estr = JSON.stringify(e, null, 2);
+  console.error(
+    `Failed to evaluate release target ${releaseTargetId}: ${estr}`,
+  );
+  log.error(`Failed to evaluate release target ${releaseTargetId}: ${estr}`);
+};
+
 const handleVersionRelease = async (tx: Tx, releaseTarget: any) => {
   try {
     const workspaceId = releaseTarget.resource.workspaceId;
@@ -35,8 +47,7 @@ const handleVersionRelease = async (tx: Tx, releaseTarget: any) => {
 
     return versionRelease;
   } catch (e: any) {
-    console.error("Failed to evaluate version release", releaseTarget.id, e);
-    logger.error("Failed to evaluate version release", releaseTarget.id, e);
+    logErr(releaseTarget.id, e);
     return null;
   }
 };
@@ -57,8 +68,7 @@ const handleVariableRelease = async (tx: Tx, releaseTarget: any) => {
 
     return variableRelease;
   } catch (e: any) {
-    console.error("Failed to evaluate variable release", releaseTarget.id, e);
-    logger.error("Failed to evaluate variable release", releaseTarget.id, e);
+    logErr(releaseTarget.id, e);
     return null;
   }
 };
@@ -86,11 +96,13 @@ export const POST = request()
         },
       });
 
-      if (rt == null)
+      if (rt == null) {
+        log.error("Release target not found", { releaseTargetId });
         return NextResponse.json(
           { error: "Release target not found" },
           { status: NOT_FOUND },
         );
+      }
 
       try {
         const release = await db.transaction(async (tx) => {
@@ -147,18 +159,32 @@ export const POST = request()
             .then(takeFirst);
         });
 
-        if (release == null)
+        if (release == null) {
+          log.error(
+            "Failed to evaluate release target because release was null",
+            {
+              releaseTargetId,
+              release,
+            },
+          );
           return NextResponse.json(
             { error: "Failed to evaluate release target" },
             { status: INTERNAL_SERVER_ERROR },
           );
+        }
 
         // Check if a job already exists for this release
         const existingReleaseJob = await db.query.releaseJob.findFirst({
           where: eq(schema.releaseJob.releaseId, release.id),
         });
 
-        if (existingReleaseJob != null) return NextResponse.json(release);
+        if (existingReleaseJob != null) {
+          log.info("Release job already exists for release", {
+            releaseTargetId,
+            releaseId: release.id,
+          });
+          return NextResponse.json(release);
+        }
 
         const newReleaseJob = await db.transaction(async (tx) =>
           createReleaseJob(tx, release),
@@ -170,6 +196,7 @@ export const POST = request()
 
         return NextResponse.json(release);
       } catch (e: any) {
+        const estr = JSON.stringify(e, null, 2);
         const isRowLocked = e.code === "55P03";
         const isReleaseTargetNotCommittedYet = e.code === "23503";
         if (isRowLocked || isReleaseTargetNotCommittedYet) {
@@ -179,11 +206,10 @@ export const POST = request()
           });
         }
 
-        console.error("Failed to evaluate release target", e);
-        logger.error("Failed to evaluate release target", e);
+        logErr(releaseTargetId, e);
 
         return NextResponse.json(
-          { error: "Failed to evaluate release target" },
+          { error: `Failed to evaluate release target: ${estr}` },
           { status: INTERNAL_SERVER_ERROR },
         );
       }
