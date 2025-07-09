@@ -207,5 +207,5 @@ export const evaluateReleaseTargetWorker = createWorker(
     }
   }),
   // Member intensive work, attemp to reduce crashing
-  { concurrency: 20 },
+  { concurrency: 10 },
 );
