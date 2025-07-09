@@ -129,18 +129,25 @@ export const PolicyEvaluationHover: React.FC<{
       versionId: props.versionId,
     });
 
-  const hasApprovalRules = policyEvaluations?.policies.some(
-    (p) =>
-      p.versionAnyApprovals != null ||
-      p.versionUserApprovals.length > 0 ||
-      p.versionRoleApprovals.length > 0,
-  );
-  const hasVersionSelectorRule = policyEvaluations?.policies.some(
-    (p) => p.deploymentVersionSelector != null,
-  );
-  const hasRolloutRule = policyEvaluations?.policies.some(
-    (p) => p.environmentVersionRollout != null,
-  );
+  const hasApprovalRules =
+    policyEvaluations?.policies.some(
+      (p) =>
+        p.versionAnyApprovals != null ||
+        p.versionUserApprovals.length > 0 ||
+        p.versionRoleApprovals.length > 0,
+    ) ?? false;
+  const hasVersionSelectorRule =
+    policyEvaluations?.policies.some(
+      (p) => p.deploymentVersionSelector != null,
+    ) ?? false;
+  const hasRolloutRule =
+    policyEvaluations?.policies.some(
+      (p) => p.environmentVersionRollout != null,
+    ) ?? false;
+
+  const hasRules = hasApprovalRules || hasVersionSelectorRule || hasRolloutRule;
+
+  if (!hasRules) return <span className="text-sm">No jobs</span>;
 
   return (
     <HoverCard>
