@@ -1,6 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
+import { isPresent } from "ts-is-present";
 
-import { eq } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
@@ -55,6 +56,119 @@ export const getJobLinks = (
   }
 };
 
+const getJobVariables = (
+  rows: { job_variable: schema.JobVariable | null }[],
+) => {
+  const variablesList = rows.map((row) => row.job_variable).filter(isPresent);
+  return Object.fromEntries(
+    variablesList.map((variable) => {
+      const { key, value, sensitive } = variable;
+      const strval =
+        typeof value === "object" ? JSON.stringify(value) : String(value);
+      const resolvedValue = sensitive
+        ? variablesAES256().decrypt(strval)
+        : value;
+      return [key, resolvedValue];
+    }),
+  );
+};
+
+const getJobMetadata = (
+  rows: { job_metadata: schema.JobMetadata | null }[],
+) => {
+  const metadataList = rows.map((row) => row.job_metadata).filter(isPresent);
+  return Object.fromEntries(metadataList.map(({ key, value }) => [key, value]));
+};
+
+const getJobFromDb = async (db: Tx, jobId: string) =>
+  db
+    .select()
+    .from(schema.job)
+    .leftJoin(schema.jobMetadata, eq(schema.jobMetadata.jobId, schema.job.id))
+    .leftJoin(schema.jobVariable, eq(schema.jobVariable.jobId, schema.job.id))
+    .where(eq(schema.job.id, jobId))
+    .then((rows) => {
+      const [first] = rows;
+      if (first == null) return null;
+
+      const { job } = first;
+      const variables = getJobVariables(rows);
+      const metadata = getJobMetadata(rows);
+      const links = getJobLinks(metadata);
+
+      return { ...job, variables, metadata, links };
+    });
+
+const getReleaseInfo = async (db: Tx, jobId: string) =>
+  db
+    .select()
+    .from(schema.releaseJob)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJob.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.versionRelease,
+      eq(schema.release.versionReleaseId, schema.versionRelease.id),
+    )
+    .innerJoin(
+      schema.deploymentVersion,
+      eq(schema.versionRelease.versionId, schema.deploymentVersion.id),
+    )
+    .innerJoin(
+      schema.releaseTarget,
+      eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseTarget.environmentId, schema.environment.id),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+    )
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseTarget.resourceId, schema.resource.id),
+    )
+    .where(eq(schema.releaseJob.jobId, jobId))
+    .then(takeFirst);
+
+const getResourceWithMetadataAndRelationships = async (
+  db: Tx,
+  resource: schema.Resource,
+) => {
+  const metadataList = await db
+    .select()
+    .from(schema.resourceMetadata)
+    .where(eq(schema.resourceMetadata.resourceId, resource.id));
+  const metadata = Object.fromEntries(
+    metadataList.map(({ key, value }) => [key, value]),
+  );
+  const { relationships } = await getResourceParents(db, resource.id);
+  const resourceRelationships = Object.fromEntries(
+    Object.entries(relationships).map(([key, { target, ...rule }]) => [
+      key,
+      { ...target, rule },
+    ]),
+  );
+  return { ...resource, metadata, relationships: resourceRelationships };
+};
+
+const getVersionWithMetadata = async (
+  db: Tx,
+  version: schema.DeploymentVersion,
+) => {
+  const metadataList = await db
+    .select()
+    .from(schema.deploymentVersionMetadata)
+    .where(eq(schema.deploymentVersionMetadata.versionId, version.id));
+  const metadata = Object.fromEntries(
+    metadataList.map(({ key, value }) => [key, value]),
+  );
+  return { ...version, metadata };
+};
+
 export const getJob = async (db: Tx, jobId: string) => {
   log.info("Getting job", { jobId });
 
@@ -62,122 +176,32 @@ export const getJob = async (db: Tx, jobId: string) => {
     const runbookJobResult = await getRunbookJobResult(db, jobId);
     if (runbookJobResult != null) return runbookJobResult;
 
-    const jobResult = await db.query.job.findFirst({
-      where: eq(schema.job.id, jobId),
-      with: {
-        variables: true,
-        metadata: true,
-        releaseJob: {
-          with: {
-            release: {
-              with: {
-                variableSetRelease: {
-                  with: {
-                    values: {
-                      with: {
-                        variableValueSnapshot: true,
-                      },
-                    },
-                  },
-                },
-                versionRelease: {
-                  with: {
-                    version: { with: { metadata: true } },
-                    releaseTarget: {
-                      with: {
-                        resource: {
-                          with: { metadata: true },
-                        },
-                        deployment: true,
-                        environment: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (jobResult == null) {
+    const job = await getJobFromDb(db, jobId);
+    if (job == null) {
       log.warn("Job not found", { jobId });
       return null;
     }
 
-    log.debug("Found job", {
-      jobId,
-      status: jobResult.status,
-    });
+    const {
+      resource,
+      environment,
+      deployment,
+      deployment_version: version,
+    } = await getReleaseInfo(db, jobId);
 
-    const { releaseJob, ...job } = jobResult;
-
-    const { release } = releaseJob;
-
-    const { versionRelease, variableSetRelease } = release;
-
-    const { version, releaseTarget } = versionRelease;
-    const { metadata: versionMetadata } = version;
-    const versionMetadataMap = Object.fromEntries(
-      versionMetadata.map(({ key, value }) => [key, value]),
+    const resourceWithMetadata = await getResourceWithMetadataAndRelationships(
+      db,
+      resource,
     );
-    const versionWithMetadata = { ...version, metadata: versionMetadataMap };
-
-    const { values } = variableSetRelease;
-    const jobVariables = Object.fromEntries(
-      job.variables.map((variable) => {
-        const { key, value, sensitive } = variable;
-        const strval =
-          typeof value === "object" ? JSON.stringify(value) : String(value);
-        const resolvedValue = sensitive
-          ? variablesAES256().decrypt(strval)
-          : value;
-        return [key, resolvedValue];
-      }),
-    );
-
-    const jobMetadata = Object.fromEntries(
-      job.metadata.map(({ key, value }) => [key, value]),
-    );
-
-    const links = getJobLinks(jobMetadata);
-
-    const { environment, resource, deployment } = releaseTarget;
-    const { relationships } = await getResourceParents(db, resource.id);
-    const metadata = Object.fromEntries(
-      resource.metadata.map(({ key, value }) => [key, value]),
-    );
-    const resourceWithMetadata = {
-      ...resource,
-      metadata,
-      relationships: Object.fromEntries(
-        Object.entries(relationships).map(([key, { target, ...rule }]) => [
-          key,
-          { ...target, rule },
-        ]),
-      ),
-    };
-
-    log.debug("Successfully processed job data", {
-      jobId,
-      variableCount: values.length,
-      resourceId: resource.id,
-      environmentId: environment.id,
-      deploymentId: deployment.id,
-      versionId: version.id,
-    });
+    const versionWithMetadata = await getVersionWithMetadata(db, version);
 
     return {
       ...job,
-      links,
-      variables: jobVariables,
-      metadata: jobMetadata,
       resource: resourceWithMetadata,
       environment,
       deployment,
       version: versionWithMetadata,
-      release,
+      release: versionWithMetadata,
     };
   } catch (error) {
     log.error("Error getting job", {
