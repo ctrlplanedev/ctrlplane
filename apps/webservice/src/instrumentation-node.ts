@@ -14,7 +14,7 @@ const sdk = new NodeSDK({
   resource: new Resource({
     [ATTR_SERVICE_NAME]: "ctrlplane/webservice",
   }),
-  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
+  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter()) as any],
   logRecordProcessors: [new BatchLogRecordProcessor(new OTLPLogExporter())],
   instrumentations: [
     getNodeAutoInstrumentations({
