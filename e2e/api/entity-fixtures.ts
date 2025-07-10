@@ -133,6 +133,13 @@ export const PolicyFixture = z.object({
     })
     .optional(),
   maxRetries: z.number().optional(),
+  deploymentVersionSelector: z
+    .object({
+      name: z.string(),
+      description: z.string().optional(),
+      deploymentVersionSelector: z.object({}).passthrough(),
+    })
+    .optional(),
 });
 
 export const AgentFixture = z.object({
