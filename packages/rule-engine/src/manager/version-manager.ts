@@ -17,7 +17,7 @@ import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 import type { Version } from "../manager/version-rule-engine.js";
 import type { FilterRule, Policy, PreValidationRule } from "../types.js";
 import type { ReleaseManager, ReleaseTarget } from "./types.js";
-import type { GetRuleOptions } from "./version-manager-rules.js";
+import type { GetAllRulesOptions } from "./version-manager-rules.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
 import { mergePolicies } from "../utils/merge-policies.js";
@@ -25,7 +25,7 @@ import { getAllRules } from "./version-manager-rules.js";
 
 type VersionEvaluateOptions = {
   rules?: (
-    opts: GetRuleOptions,
+    opts: GetAllRulesOptions,
   ) => Promise<Array<FilterRule<Version> | PreValidationRule>>;
   versions?: Version[];
   policy?: Policy;
