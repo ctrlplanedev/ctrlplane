@@ -29,12 +29,7 @@ const log = logger.child({ module: "evaluate-release-target" });
  */
 const handleVersionRelease = withSpan(
   "handleVersionRelease",
-  async (
-    span,
-    tx: Tx,
-    releaseTarget: any,
-    evaluationRequestedById?: string,
-  ) => {
+  async (span, tx: Tx, releaseTarget: any) => {
     const workspaceId = releaseTarget.resource.workspaceId;
 
     span.setAttribute("releaseTarget.id", String(releaseTarget.id));
@@ -45,7 +40,7 @@ const handleVersionRelease = withSpan(
       workspaceId,
     });
 
-    const { chosenCandidate } = await vrm.evaluate({ evaluationRequestedById });
+    const { chosenCandidate } = await vrm.evaluate();
 
     if (!chosenCandidate) return null;
 
@@ -83,6 +78,26 @@ const handleVariableRelease = withSpan(
   },
 );
 
+const acquireReleaseTargetLock = async (tx: Tx, releaseTargetId: string) =>
+  tx.execute(
+    sql`
+    SELECT * FROM ${schema.releaseTarget}
+    INNER JOIN ${schema.computedPolicyTargetReleaseTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.releaseTargetId, schema.releaseTarget.id)}
+    INNER JOIN ${schema.policyTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, schema.policyTarget.id)}
+    WHERE ${eq(schema.releaseTarget.id, releaseTargetId)}
+    FOR UPDATE NOWAIT
+  `,
+  );
+
+/**
+ * Gets the latest version release for a specific release target
+ */
+const getLatestVersionRelease = (tx: Tx, releaseTargetId: string) =>
+  tx.query.versionRelease.findFirst({
+    where: eq(schema.versionRelease.releaseTargetId, releaseTargetId),
+    orderBy: desc(schema.versionRelease.createdAt),
+  });
+
 /**
  * Worker that evaluates a release target and creates necessary releases and jobs
  * Only runs in development environment
@@ -93,7 +108,6 @@ export const evaluateReleaseTargetWorker = createWorker(
   withSpan("evaluateReleaseTarget", async (span, job) => {
     const data = job.data;
     const skipDuplicateCheck = data.skipDuplicateCheck ?? false;
-    const { evaluationRequestedById } = data;
 
     span.setAttribute("resource.id", data.resourceId);
     span.setAttribute("environment.id", data.environmentId);
@@ -114,23 +128,16 @@ export const evaluateReleaseTargetWorker = createWorker(
             deployment: true,
           },
         });
+
         if (releaseTarget == null)
           throw new Error("Failed to get release target");
 
-        await tx.execute(
-          sql`
-            SELECT * FROM ${schema.releaseTarget}
-            INNER JOIN ${schema.computedPolicyTargetReleaseTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.releaseTargetId, schema.releaseTarget.id)}
-            INNER JOIN ${schema.policyTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, schema.policyTarget.id)}
-            WHERE ${eq(schema.releaseTarget.id, releaseTarget.id)}
-            FOR UPDATE NOWAIT
-          `,
-        );
+        await acquireReleaseTargetLock(tx, releaseTarget.id);
 
-        const existingVersionRelease = await tx.query.versionRelease.findFirst({
-          where: eq(schema.versionRelease.releaseTargetId, releaseTarget.id),
-          orderBy: desc(schema.versionRelease.createdAt),
-        });
+        const latestVersionRelease = await getLatestVersionRelease(
+          tx,
+          releaseTarget.id,
+        );
 
         const existingVariableRelease =
           await tx.query.variableSetRelease.findFirst({
@@ -142,17 +149,23 @@ export const evaluateReleaseTargetWorker = createWorker(
           });
 
         const [versionRelease, variableRelease] = await Promise.all([
-          handleVersionRelease(tx, releaseTarget, evaluationRequestedById),
+          handleVersionRelease(tx, releaseTarget),
           handleVariableRelease(tx, releaseTarget),
         ]);
 
         if (versionRelease == null) return;
 
-        const hasSameVersion = existingVersionRelease?.id === versionRelease.id;
-        const hasSameVariables =
+        // Check if version and variables are unchanged from previous release
+        const isVersionUnchanged =
+          latestVersionRelease?.id === versionRelease.id;
+        const areVariablesUnchanged =
           existingVariableRelease?.id === variableRelease.id;
 
-        if (hasSameVersion && hasSameVariables) {
+        const hasAnythingChanged =
+          !isVersionUnchanged || !areVariablesUnchanged;
+
+        // If nothing changed, return existing release
+        if (!hasAnythingChanged) {
           return tx.query.release.findFirst({
             where: and(
               eq(schema.release.versionReleaseId, versionRelease.id),
@@ -161,12 +174,15 @@ export const evaluateReleaseTargetWorker = createWorker(
           });
         }
 
+        // Otherwise create new release with updated version/variables
+        const newRelease = {
+          versionReleaseId: versionRelease.id,
+          variableReleaseId: variableRelease.id,
+        };
+
         return tx
           .insert(schema.release)
-          .values({
-            versionReleaseId: versionRelease.id,
-            variableReleaseId: variableRelease.id,
-          })
+          .values(newRelease)
           .returning()
           .then(takeFirst);
       });

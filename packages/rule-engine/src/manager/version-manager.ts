@@ -29,7 +29,6 @@ type VersionEvaluateOptions = {
   ) => Promise<Array<FilterRule<Version> | PreValidationRule>>;
   versions?: Version[];
   policy?: Policy;
-  evaluationRequestedById?: string;
 };
 
 export class VersionReleaseManager implements ReleaseManager {
@@ -177,7 +176,6 @@ export class VersionReleaseManager implements ReleaseManager {
     const rules = await ruleGetter({
       policy,
       releaseTargetId: this.releaseTarget.id,
-      evaluationRequestedById: options?.evaluationRequestedById,
     });
 
     const engine = new VersionRuleEngine(rules);
