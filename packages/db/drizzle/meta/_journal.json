@@ -869,6 +869,13 @@
       "when": 1752171103258,
       "tag": "0123_even_vengeance",
       "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1752171784936,
+      "tag": "0124_exotic_pride",
+      "breakpoints": true
     }
   ]
 }

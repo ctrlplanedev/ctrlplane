@@ -1,0 +1,1 @@
+CREATE INDEX "job_metadata_job_id_idx" ON "job_metadata" USING btree ("job_id");

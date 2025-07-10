@@ -135,7 +135,10 @@ export const jobMetadata = pgTable(
     key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.jobId) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.key, t.jobId),
+    jobIdIdx: index("job_metadata_job_id_idx").on(t.jobId),
+  }),
 );
 
 export type JobMetadata = InferSelectModel<typeof jobMetadata>;
