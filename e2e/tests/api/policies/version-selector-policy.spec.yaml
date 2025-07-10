@@ -1,0 +1,36 @@
+system:
+  name: "{{ prefix }}-version-selector-policy"
+  slug: "{{ prefix }}-version-selector-policy"
+  description: System for testing version selector policy
+
+environments:
+  - name: "{{ prefix }}"
+    description: Prod environment
+    systemId: "{{ prefix }}-version-selector-policy"
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+resources:
+  - name: "{{ prefix }}-resource"
+    kind: service
+    identifier: "{{ prefix }}-resource"
+    version: "1.0.0"
+    config: {}
+    metadata:
+      env: prod
+
+policies:
+  - name: "{{ prefix }}-version-selector-policy"
+    targets:
+      - environmentSelector:
+          type: name
+          operator: contains
+          value: "{{ prefix }}"
+    deploymentVersionSelector:
+      name: "{{ prefix }}-version-selector"
+      deploymentVersionSelector:
+        type: tag
+        operator: contains
+        value: "{{ prefix }}"
