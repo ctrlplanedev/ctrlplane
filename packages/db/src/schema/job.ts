@@ -103,6 +103,7 @@ export const job = pgTable(
   (t) => ({
     idx: index("job_created_at_idx").on(t.createdAt),
     statusIdx: index("job_status_idx").on(t.status),
+    externalIdIdx: index("job_external_id_idx").on(t.externalId),
   }),
 );
 

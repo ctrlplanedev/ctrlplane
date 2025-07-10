@@ -1,0 +1,1 @@
+CREATE INDEX "job_external_id_idx" ON "job" USING btree ("external_id");
