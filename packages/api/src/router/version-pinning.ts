@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import type { VersionEvaluateOptions } from "@ctrlplane/rule-engine";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -13,8 +14,9 @@ const pinReleaseTargetsToVersion = async (
   db: Tx,
   environmentId: string,
   deploymentId: string,
-  versionId: string | null,
+  version: schema.DeploymentVersion | null,
 ) => {
+  const versionId = version?.id ?? null;
   const releaseTargets = await db
     .update(schema.releaseTarget)
     .set({ desiredVersionId: versionId })
@@ -26,7 +28,11 @@ const pinReleaseTargetsToVersion = async (
     )
     .returning();
 
-  await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
+  const versionEvaluateOptions: VersionEvaluateOptions | undefined =
+    version != null ? { versions: [version] } : undefined;
+  await dispatchQueueJob()
+    .toEvaluate()
+    .releaseTargets(releaseTargets, { versionEvaluateOptions });
 
   return releaseTargets;
 };
@@ -58,7 +64,7 @@ const pinVersion = protectedProcedure
       ctx.db,
       environmentId,
       deploymentId,
-      versionId,
+      version,
     );
   });
 

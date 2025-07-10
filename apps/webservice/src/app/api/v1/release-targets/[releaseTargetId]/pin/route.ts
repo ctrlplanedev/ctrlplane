@@ -92,7 +92,10 @@ export const POST = request()
         );
 
       await pinVersion(db, releaseTargetId, version.id);
-      await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
+      const versionEvaluateOptions = { versions: [version] };
+      await dispatchQueueJob()
+        .toEvaluate()
+        .releaseTargets([releaseTarget], { versionEvaluateOptions });
 
       return NextResponse.json({ success: true });
     } catch (error) {
