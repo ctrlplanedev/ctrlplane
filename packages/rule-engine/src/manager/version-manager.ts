@@ -172,6 +172,10 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async prevalidateProvidedVersions(versions: Version[]) {
+    const desiredVersion = await this.findDesiredVersion();
+    if (desiredVersion != null)
+      return versions.filter((version) => version.id === desiredVersion.id);
+
     const policy = await this.getPolicy();
     const deploymentVersionSelector =
       policy?.deploymentVersionSelector?.deploymentVersionSelector;
