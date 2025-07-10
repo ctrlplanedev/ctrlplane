@@ -179,7 +179,6 @@ export class VersionReleaseManager implements ReleaseManager {
     const policy = await this.getPolicy();
     const deploymentVersionSelector =
       policy?.deploymentVersionSelector?.deploymentVersionSelector;
-    if (deploymentVersionSelector == null) return versions;
 
     const isMatchingSelector = selector()
       .query()
@@ -195,10 +194,21 @@ export class VersionReleaseManager implements ReleaseManager {
             versions.map((v) => v.id),
           );
 
+    const isReady = eq(
+      schema.deploymentVersion.status,
+      DeploymentVersionStatus.Ready,
+    );
+
+    const checks = [
+      ...(deploymentVersionSelector != null ? [isMatchingSelector] : []),
+      isTargetedId,
+      isReady,
+    ];
+
     const validVersions = await this.db
       .select()
       .from(schema.deploymentVersion)
-      .where(and(isMatchingSelector, isTargetedId))
+      .where(and(...checks))
       .orderBy(desc(schema.deploymentVersion.createdAt));
 
     return validVersions;
