@@ -1,11 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
+import { isAfter, isBefore } from "date-fns";
 
 import {
   and,
   desc,
   eq,
-  gte,
-  lte,
   selector,
   takeFirst,
   takeFirstOrNull,
@@ -122,40 +121,14 @@ export class VersionReleaseManager implements ReleaseManager {
       .then(takeFirst);
   }
 
-  async getMinVersionCreatedAtSql() {
+  async getMinVersionCreatedAt() {
     const latestDeployedVersion = await this.findLastestDeployedVersion();
-    if (latestDeployedVersion == null) return undefined;
-
-    return gte(
-      schema.deploymentVersion.createdAt,
-      latestDeployedVersion.createdAt,
-    );
+    return latestDeployedVersion?.createdAt;
   }
 
-  getMaxVersionCreatedAtSql() {
+  getMaxVersionCreatedAt() {
     const [latestVersion] = this.versions;
-    if (latestVersion == null) return undefined;
-
-    return lte(schema.deploymentVersion.createdAt, latestVersion.createdAt);
-  }
-
-  async getDeploymentVersionChecks() {
-    const [isAfterLatestDeployedVersion, isBeforeLatestVersionMatchingPolicy] =
-      await Promise.all([
-        this.getMinVersionCreatedAtSql(),
-        this.getMaxVersionCreatedAtSql(),
-      ]);
-
-    const isReleaseTargetInDeployment = eq(
-      schema.deploymentVersion.deploymentId,
-      this.releaseTarget.deploymentId,
-    );
-
-    return and(
-      isReleaseTargetInDeployment,
-      isAfterLatestDeployedVersion,
-      isBeforeLatestVersionMatchingPolicy,
-    );
+    return latestVersion?.createdAt;
   }
 
   async findLatestRelease() {
@@ -177,6 +150,31 @@ export class VersionReleaseManager implements ReleaseManager {
     return this.cachedPolicy;
   }
 
+  async getVersionsForEvaluate() {
+    await this.getVersionsMatchingTarget();
+
+    const desiredVersion = await this.findDesiredVersion();
+    if (desiredVersion != null) return [desiredVersion];
+
+    const versions = await this.getVersionsMatchingTarget();
+    const minVersionCreatedAt = await this.getMinVersionCreatedAt();
+    const maxVersionCreatedAt = this.getMaxVersionCreatedAt();
+
+    return versions.filter((version) => {
+      if (
+        minVersionCreatedAt != null &&
+        isBefore(version.createdAt, minVersionCreatedAt)
+      )
+        return false;
+      if (
+        maxVersionCreatedAt != null &&
+        isAfter(version.createdAt, maxVersionCreatedAt)
+      )
+        return false;
+      return true;
+    });
+  }
+
   async evaluate(options?: VersionEvaluateOptions) {
     const policy = options?.policy ?? (await this.getPolicy());
     const ruleGetter = options?.rules ?? getRules;
@@ -187,8 +185,7 @@ export class VersionReleaseManager implements ReleaseManager {
     });
 
     const engine = new VersionRuleEngine(rules);
-    const versions =
-      options?.versions ?? (await this.getVersionsMatchingTarget());
+    const versions = options?.versions ?? (await this.getVersionsForEvaluate());
 
     const result = await engine.evaluate(versions);
     return result;
