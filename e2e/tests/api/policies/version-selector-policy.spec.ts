@@ -121,6 +121,7 @@ test.describe("Version selector policy", () => {
     page,
   }) => {
     const deploymentId = await initDeployment(api, builder);
+    await page.waitForTimeout(2_000);
     const versionTag = `${faker.string.alphanumeric(10)}-${builder.refs.prefix}`;
     await initVersion(api, versionTag, deploymentId);
     const releaseTarget = await getTestReleaseTarget(
@@ -142,6 +143,7 @@ test.describe("Version selector policy", () => {
     page,
   }) => {
     const deploymentId = await initDeployment(api, builder);
+    await page.waitForTimeout(2_000);
     const versionTag = faker.string.alphanumeric(10);
     await initVersion(api, versionTag, deploymentId);
     const releaseTarget = await getTestReleaseTarget(

@@ -5,6 +5,7 @@ import {
   and,
   desc,
   eq,
+  inArray,
   selector,
   takeFirst,
   takeFirstOrNull,
@@ -170,6 +171,35 @@ export class VersionReleaseManager implements ReleaseManager {
     });
   }
 
+  async prevalidateProvidedVersions(versions: Version[]) {
+    const policy = await this.getPolicy();
+    const deploymentVersionSelector =
+      policy?.deploymentVersionSelector?.deploymentVersionSelector;
+    if (deploymentVersionSelector == null) return versions;
+
+    const isMatchingSelector = selector()
+      .query()
+      .deploymentVersions()
+      .where(deploymentVersionSelector)
+      .sql();
+
+    const isTargetedId =
+      versions.length === 1
+        ? eq(schema.deploymentVersion.id, versions.at(0)!.id)
+        : inArray(
+            schema.deploymentVersion.id,
+            versions.map((v) => v.id),
+          );
+
+    const validVersions = await this.db
+      .select()
+      .from(schema.deploymentVersion)
+      .where(and(isMatchingSelector, isTargetedId))
+      .orderBy(desc(schema.deploymentVersion.createdAt));
+
+    return validVersions;
+  }
+
   async evaluate(options?: VersionEvaluateOptions) {
     const policy = options?.policy ?? (await this.getPolicy());
     const getRules = options?.rules ?? getAllRules;
@@ -179,7 +209,9 @@ export class VersionReleaseManager implements ReleaseManager {
     });
 
     const engine = new VersionRuleEngine(rules);
-    const versions = options?.versions ?? (await this.getVersionsForEvaluate());
+    const versions = options?.versions
+      ? await this.prevalidateProvidedVersions(options.versions)
+      : await this.getVersionsForEvaluate();
 
     const result = await engine.evaluate(versions);
     return result;
