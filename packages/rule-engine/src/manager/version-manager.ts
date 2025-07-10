@@ -21,7 +21,7 @@ import type { GetRuleOptions } from "./version-manager-rules.js";
 import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
 import { mergePolicies } from "../utils/merge-policies.js";
-import { getRules } from "./version-manager-rules.js";
+import { getAllRules } from "./version-manager-rules.js";
 
 type VersionEvaluateOptions = {
   rules?: (
@@ -172,8 +172,8 @@ export class VersionReleaseManager implements ReleaseManager {
 
   async evaluate(options?: VersionEvaluateOptions) {
     const policy = options?.policy ?? (await this.getPolicy());
-    const ruleGetter = options?.rules ?? getRules;
-    const rules = await ruleGetter({
+    const getRules = options?.rules ?? getAllRules;
+    const rules = await getRules({
       policy,
       releaseTargetId: this.releaseTarget.id,
     });
