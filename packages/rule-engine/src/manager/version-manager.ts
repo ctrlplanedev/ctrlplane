@@ -34,7 +34,6 @@ type VersionEvaluateOptions = {
 
 export class VersionReleaseManager implements ReleaseManager {
   private cachedPolicy: Policy | null = null;
-  private versions: schema.DeploymentVersion[] = [];
   constructor(
     private readonly db: Tx = dbClient,
     private readonly releaseTarget: ReleaseTarget,
@@ -78,7 +77,6 @@ export class VersionReleaseManager implements ReleaseManager {
       .orderBy(desc(schema.deploymentVersion.createdAt))
       .limit(500);
 
-    this.versions = versions;
     return versions;
   }
 
@@ -126,8 +124,8 @@ export class VersionReleaseManager implements ReleaseManager {
     return latestDeployedVersion?.createdAt;
   }
 
-  getMaxVersionCreatedAt() {
-    const [latestVersion] = this.versions;
+  getMaxVersionCreatedAt(versions: schema.DeploymentVersion[]) {
+    const [latestVersion] = versions;
     return latestVersion?.createdAt;
   }
 
@@ -151,14 +149,12 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async getVersionsForEvaluate() {
-    await this.getVersionsMatchingTarget();
-
     const desiredVersion = await this.findDesiredVersion();
     if (desiredVersion != null) return [desiredVersion];
 
     const versions = await this.getVersionsMatchingTarget();
     const minVersionCreatedAt = await this.getMinVersionCreatedAt();
-    const maxVersionCreatedAt = this.getMaxVersionCreatedAt();
+    const maxVersionCreatedAt = this.getMaxVersionCreatedAt(versions);
 
     return versions.filter((version) => {
       if (
