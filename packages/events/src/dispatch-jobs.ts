@@ -23,10 +23,9 @@ const dispatchEvaluateJobs = async (
   rts: ReleaseTargetIdentifier[],
   opts?: {
     skipDuplicateCheck?: boolean;
-    evaluationRequestedById?: string;
   },
 ) => {
-  const { skipDuplicateCheck, evaluationRequestedById } = opts ?? {};
+  const { skipDuplicateCheck } = opts ?? {};
   const q = getQueue(Channel.EvaluateReleaseTarget);
   const waiting = await q.getWaiting();
   const rtsToEvaluate = rts.filter(
@@ -42,7 +41,6 @@ const dispatchEvaluateJobs = async (
   for (const rt of rtsToEvaluate)
     await q.add(`${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`, {
       ...rt,
-      evaluationRequestedById,
       skipDuplicateCheck,
     });
 };
@@ -115,10 +113,7 @@ const dispatchComputeWorkspacePolicyTargetsJobs = async (
 const toEvaluate = () => ({
   releaseTargets: (
     releaseTargets: ReleaseTargetIdentifier[],
-    opts?: {
-      skipDuplicateCheck?: boolean;
-      evaluationRequestedById?: string;
-    },
+    opts?: { skipDuplicateCheck?: boolean },
   ) => dispatchEvaluateJobs(releaseTargets, opts),
 });
 

@@ -8,7 +8,6 @@ import type { PreValidationRule } from "../types";
 
 type ReleaseTargetLockRuleOptions = {
   releaseTargetId: string;
-  evaluationRequestedById?: string;
 };
 
 export class ReleaseTargetLockRule implements PreValidationRule {
@@ -43,10 +42,6 @@ export class ReleaseTargetLockRule implements PreValidationRule {
     const { unlockedAt } = latestLockRecord;
     const isUnlocked = unlockedAt != null && isAfter(now, unlockedAt);
     if (isUnlocked) return { passing: true };
-
-    const isLockedByCurrentUser =
-      latestLockRecord.lockedBy === this.opts.evaluationRequestedById;
-    if (isLockedByCurrentUser) return { passing: true };
 
     return {
       passing: false,
