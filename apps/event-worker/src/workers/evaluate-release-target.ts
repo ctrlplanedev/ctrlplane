@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import type { VersionEvaluateOptions } from "@ctrlplane/rule-engine";
 import _ from "lodash";
 
 import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
@@ -29,7 +30,12 @@ const log = logger.child({ module: "evaluate-release-target" });
  */
 const handleVersionRelease = withSpan(
   "handleVersionRelease",
-  async (span, tx: Tx, releaseTarget: any) => {
+  async (
+    span,
+    tx: Tx,
+    releaseTarget: any,
+    versionEvaluateOptions?: VersionEvaluateOptions,
+  ) => {
     const workspaceId = releaseTarget.resource.workspaceId;
 
     span.setAttribute("releaseTarget.id", String(releaseTarget.id));
@@ -40,7 +46,7 @@ const handleVersionRelease = withSpan(
       workspaceId,
     });
 
-    const { chosenCandidate } = await vrm.evaluate();
+    const { chosenCandidate } = await vrm.evaluate(versionEvaluateOptions);
 
     if (!chosenCandidate) return null;
 
@@ -148,8 +154,9 @@ export const evaluateReleaseTargetWorker = createWorker(
             orderBy: desc(schema.variableSetRelease.createdAt),
           });
 
+        const { versionEvaluateOptions } = data;
         const [versionRelease, variableRelease] = await Promise.all([
-          handleVersionRelease(tx, releaseTarget),
+          handleVersionRelease(tx, releaseTarget, versionEvaluateOptions),
           handleVariableRelease(tx, releaseTarget),
         ]);
 

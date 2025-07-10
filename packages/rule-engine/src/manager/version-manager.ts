@@ -23,7 +23,7 @@ import { VersionRuleEngine } from "../manager/version-rule-engine.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getAllRules } from "./version-manager-rules.js";
 
-type VersionEvaluateOptions = {
+export type VersionEvaluateOptions = {
   rules?: (
     opts: GetAllRulesOptions,
   ) => Promise<Array<FilterRule<Version> | PreValidationRule>>;

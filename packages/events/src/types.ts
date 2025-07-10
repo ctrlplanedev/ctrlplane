@@ -1,5 +1,8 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
+import type {
+  ReleaseTargetIdentifier,
+  VersionEvaluateOptions,
+} from "@ctrlplane/rule-engine";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 export enum Channel {
@@ -45,6 +48,7 @@ export type EvaluateReleaseTargetJob = {
   resourceId: string;
   deploymentId: string;
   skipDuplicateCheck?: boolean;
+  versionEvaluateOptions?: VersionEvaluateOptions;
 };
 
 export type ChannelMap = {
