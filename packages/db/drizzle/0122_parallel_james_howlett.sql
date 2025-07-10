@@ -1,1 +1,1 @@
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "deployment_version_metadata_version_id_key_value_idx" ON "deployment_version_metadata" USING btree ("deployment_version_id","key","value");
+CREATE INDEX IF NOT EXISTS "deployment_version_metadata_version_id_key_value_idx" ON "deployment_version_metadata" USING btree ("deployment_version_id","key","value");
