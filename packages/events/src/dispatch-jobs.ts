@@ -1,5 +1,8 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { ReleaseTargetIdentifier } from "@ctrlplane/rule-engine";
+import type {
+  ReleaseTargetIdentifier,
+  VersionEvaluateOptions,
+} from "@ctrlplane/rule-engine";
 import _ from "lodash";
 
 import { Channel, getQueue } from "./index.js";
@@ -23,9 +26,9 @@ const dispatchEvaluateJobs = async (
   rts: ReleaseTargetIdentifier[],
   opts?: {
     skipDuplicateCheck?: boolean;
+    versionEvaluateOptions?: VersionEvaluateOptions;
   },
 ) => {
-  const { skipDuplicateCheck } = opts ?? {};
   const q = getQueue(Channel.EvaluateReleaseTarget);
   const waiting = await q.getWaiting();
   const rtsToEvaluate = rts.filter(
@@ -41,7 +44,7 @@ const dispatchEvaluateJobs = async (
   for (const rt of rtsToEvaluate)
     await q.add(`${rt.resourceId}-${rt.environmentId}-${rt.deploymentId}`, {
       ...rt,
-      skipDuplicateCheck,
+      ...opts,
     });
 };
 
@@ -113,7 +116,10 @@ const dispatchComputeWorkspacePolicyTargetsJobs = async (
 const toEvaluate = () => ({
   releaseTargets: (
     releaseTargets: ReleaseTargetIdentifier[],
-    opts?: { skipDuplicateCheck?: boolean },
+    opts?: {
+      skipDuplicateCheck?: boolean;
+      versionEvaluateOptions?: VersionEvaluateOptions;
+    },
   ) => dispatchEvaluateJobs(releaseTargets, opts),
 });
 
