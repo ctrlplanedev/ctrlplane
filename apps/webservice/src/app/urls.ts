@@ -122,11 +122,38 @@ const resources = (workspaceSlug: string) => ({
     buildUrl(workspaceSlug, "resources", "relationship-rules"),
 });
 
+const releaseTarget = (
+  workspaceSlug: string,
+  resourceId: string,
+  releaseTargetId: string,
+) => {
+  const base = [
+    workspaceSlug,
+    "resources",
+    resourceId,
+    "deployments",
+    releaseTargetId,
+  ];
+  return {
+    baseUrl: () => buildUrl(...base),
+    history: () => buildUrl(...base, "history"),
+  };
+};
+
+const resourceDeployments = (workspaceSlug: string, resourceId: string) => {
+  const base = [workspaceSlug, "resources", resourceId, "deployments"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    releaseTarget: (releaseTargetId: string) =>
+      releaseTarget(workspaceSlug, resourceId, releaseTargetId),
+  };
+};
+
 const resource = (workspaceSlug: string, resourceId: string) => {
   const base = [workspaceSlug, "resources", resourceId];
   return {
     baseUrl: () => buildUrl(...base),
-    deployments: () => buildUrl(...base, "deployments"),
+    deployments: () => resourceDeployments(workspaceSlug, resourceId),
     variables: () => buildUrl(...base, "variables"),
     properties: () => buildUrl(...base, "properties"),
     visualize: () => buildUrl(...base, "visualize"),

@@ -1,13 +1,15 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import React from "react";
-import { IconCheck } from "@tabler/icons-react";
-import { formatDistanceToNowStrict } from "date-fns";
+import { IconCheck, IconShieldFilled } from "@tabler/icons-react";
+import { formatDistanceToNowStrict, isBefore } from "date-fns";
 
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@ctrlplane/ui/hover-card";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { api } from "~/trpc/react";
 import {
@@ -118,7 +120,45 @@ const RolloutCheck: React.FC<{
   );
 };
 
-export const PolicyEvaluationHover: React.FC<{
+const getIsPassingAllRules = (policyEvaluations?: PolicyEvaluation) => {
+  if (policyEvaluations == null) return true;
+
+  const isFailingAnyApprovalRules =
+    Object.values(policyEvaluations.rules.anyApprovals).flat().length > 0;
+  if (isFailingAnyApprovalRules) return false;
+
+  const isFailingUserApprovalRules =
+    Object.values(policyEvaluations.rules.userApprovals).flat().length > 0;
+  if (isFailingUserApprovalRules) return false;
+
+  const isFailingRoleApprovalRules =
+    Object.values(policyEvaluations.rules.roleApprovals).flat().length > 0;
+  if (isFailingRoleApprovalRules) return false;
+
+  const isFailingVersionSelectorRules = Object.values(
+    policyEvaluations.rules.versionSelector,
+  )
+    .flat()
+    .some((v) => v === false);
+  if (isFailingVersionSelectorRules) return false;
+
+  const now = new Date();
+  const { rolloutTime } = policyEvaluations.rules.rolloutInfo;
+  const isFailingRolloutRule =
+    rolloutTime == null || isBefore(now, rolloutTime);
+  if (isFailingRolloutRule) return false;
+
+  return true;
+};
+
+const PolicyBlockCell: React.FC = () => (
+  <div className="flex w-fit cursor-pointer items-center gap-1">
+    <IconShieldFilled className="h-3 w-3 text-muted-foreground" />
+    <span className="text-sm">Blocked by policy</span>
+  </div>
+);
+
+export const PolicyEvaluationTooltip: React.FC<{
   releaseTargetId: string;
   versionId: string;
   children: React.ReactNode;
@@ -146,28 +186,30 @@ export const PolicyEvaluationHover: React.FC<{
     ) ?? false;
 
   const hasRules = hasApprovalRules || hasVersionSelectorRule || hasRolloutRule;
-
-  if (!hasRules) return <span className="text-sm">No jobs</span>;
+  const isPassingAllRules = getIsPassingAllRules(policyEvaluations);
 
   return (
-    <HoverCard>
-      <HoverCardTrigger asChild onMouseEnter={(e) => e.stopPropagation()}>
-        {props.children}
-      </HoverCardTrigger>
-      <HoverCardContent side="right" className="p-2">
-        {isLoading && <div>Loading...</div>}
-        {!isLoading && policyEvaluations != null && (
-          <div className="flex flex-col gap-2">
-            {hasApprovalRules && (
-              <ApprovalCheck policyEvaluations={policyEvaluations} />
-            )}
-            {hasVersionSelectorRule && (
-              <VersionSelectorCheck policyEvaluations={policyEvaluations} />
-            )}
-            {hasRolloutRule && <RolloutCheck {...props} />}
-          </div>
-        )}
-      </HoverCardContent>
-    </HoverCard>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild onMouseEnter={(e) => e.stopPropagation()}>
+          {isPassingAllRules ? props.children : <PolicyBlockCell />}
+        </TooltipTrigger>
+        <TooltipContent side="right" className="border bg-neutral-950 p-2">
+          {isLoading && <Skeleton className="h-4 w-24" />}
+          {!isLoading && policyEvaluations != null && (
+            <div className="flex flex-col gap-2">
+              {hasApprovalRules && (
+                <ApprovalCheck policyEvaluations={policyEvaluations} />
+              )}
+              {hasVersionSelectorRule && (
+                <VersionSelectorCheck policyEvaluations={policyEvaluations} />
+              )}
+              {hasRolloutRule && <RolloutCheck {...props} />}
+            </div>
+          )}
+          {!isLoading && !hasRules && "No policies applied"}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
