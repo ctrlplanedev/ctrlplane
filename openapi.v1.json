@@ -6788,7 +6788,19 @@
           "metadataKeysMatches": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "sourceKey": {
+                  "type": "string"
+                },
+                "targetKey": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sourceKey",
+                "targetKey"
+              ]
             }
           },
           "targetMetadataEquals": {

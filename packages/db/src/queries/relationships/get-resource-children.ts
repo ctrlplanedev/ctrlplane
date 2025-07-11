@@ -1,8 +1,15 @@
-import { and, eq, isNull, ne, notExists, or } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { and, eq, isNull, ne, notExists } from "drizzle-orm";
 
 import type { Tx } from "../../common.js";
 import * as schema from "../../schema/index.js";
+import {
+  ruleMatchesSource,
+  ruleMatchesTarget,
+  sourceResource,
+  targetResource,
+  unsatisfiedMetadataMatchRule,
+  unsatisfiedTargetMetadataEqualsRule,
+} from "./queries.js";
 
 /**
  * Gets the children of a resource based on relationship rules
@@ -10,98 +17,12 @@ import * as schema from "../../schema/index.js";
  * @returns Array of children resources
  */
 export const getResourceChildren = async (tx: Tx, resourceId: string) => {
-  // Create aliases for tables we'll join multiple times to avoid naming conflicts
-  const sourceResource = alias(schema.resource, "sourceResource");
-  const sourceMetadata = alias(schema.resourceMetadata, "sourceMetadata");
-  const targetResource = alias(schema.resource, "targetResource");
-  const targetMetadata = alias(schema.resourceMetadata, "targetMetadata");
-
-  const isMetadataMatchSatisfied = notExists(
-    tx
-      .select()
-      .from(schema.resourceRelationshipRuleMetadataMatch)
-      .where(
-        and(
-          eq(
-            schema.resourceRelationshipRuleMetadataMatch
-              .resourceRelationshipRuleId,
-            schema.resourceRelationshipRule.id,
-          ),
-          notExists(
-            tx
-              .select()
-              .from(sourceMetadata)
-              .innerJoin(
-                targetMetadata,
-                eq(sourceMetadata.key, targetMetadata.key),
-              )
-              .where(
-                and(
-                  eq(sourceMetadata.resourceId, sourceResource.id),
-                  eq(targetMetadata.resourceId, targetResource.id),
-                  eq(sourceMetadata.value, targetMetadata.value),
-                  eq(
-                    sourceMetadata.key,
-                    schema.resourceRelationshipRuleMetadataMatch.key,
-                  ),
-                ),
-              ),
-          ),
-        ),
-      ),
-  );
-
+  const isMetadataMatchSatisfied = notExists(unsatisfiedMetadataMatchRule(tx));
   const isMetadataEqualsSatisfied = notExists(
-    tx
-      .select()
-      .from(schema.resourceRelationshipTargetRuleMetadataEquals)
-      .where(
-        and(
-          eq(
-            schema.resourceRelationshipTargetRuleMetadataEquals
-              .resourceRelationshipRuleId,
-            schema.resourceRelationshipRule.id,
-          ),
-          notExists(
-            tx
-              .select()
-              .from(targetMetadata)
-              .where(
-                and(
-                  eq(targetMetadata.resourceId, targetResource.id),
-                  eq(
-                    targetMetadata.key,
-                    schema.resourceRelationshipTargetRuleMetadataEquals.key,
-                  ),
-                  eq(
-                    targetMetadata.value,
-                    schema.resourceRelationshipTargetRuleMetadataEquals.value,
-                  ),
-                ),
-              ),
-          ),
-        ),
-      ),
+    unsatisfiedTargetMetadataEqualsRule(tx),
   );
 
-  const ruleMatchesSource = [
-    eq(schema.resourceRelationshipRule.workspaceId, sourceResource.workspaceId),
-    eq(schema.resourceRelationshipRule.sourceKind, sourceResource.kind),
-    eq(schema.resourceRelationshipRule.sourceVersion, sourceResource.version),
-  ];
-
-  const ruleMatchesTarget = [
-    or(
-      isNull(schema.resourceRelationshipRule.targetKind),
-      eq(schema.resourceRelationshipRule.targetKind, targetResource.kind),
-    ),
-    or(
-      isNull(schema.resourceRelationshipRule.targetVersion),
-      eq(schema.resourceRelationshipRule.targetVersion, targetResource.version),
-    ),
-  ];
-
-  const relationships = await tx
+  return tx
     .selectDistinctOn([sourceResource.id, schema.resourceRelationshipRule.id], {
       ruleId: schema.resourceRelationshipRule.id,
       type: schema.resourceRelationshipRule.dependencyType,
@@ -148,6 +69,4 @@ export const getResourceChildren = async (tx: Tx, resourceId: string) => {
         isMetadataMatchSatisfied,
       ),
     );
-
-  return relationships;
 };

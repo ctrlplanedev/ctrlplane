@@ -18,7 +18,7 @@ const log = logger.child({ route: "/v1/resource-relationship-rules/[ruleId]" });
 const replaceMetadataMatchRules = async (
   tx: Tx,
   ruleId: string,
-  metadataKeysMatch?: string[],
+  metadataKeysMatch?: { sourceKey: string; targetKey: string }[],
 ) => {
   await tx
     .delete(schema.resourceRelationshipRuleMetadataMatch)
@@ -29,12 +29,16 @@ const replaceMetadataMatchRules = async (
       ),
     );
 
-  const metadataKeys = _.uniq(metadataKeysMatch ?? []);
+  const metadataKeys = _.uniqBy(
+    metadataKeysMatch ?? [],
+    ({ sourceKey, targetKey }) => `${sourceKey}-${targetKey}`,
+  );
   if (metadataKeys.length > 0)
     await tx.insert(schema.resourceRelationshipRuleMetadataMatch).values(
-      metadataKeys.map((key) => ({
+      metadataKeys.map(({ sourceKey, targetKey }) => ({
         resourceRelationshipRuleId: ruleId,
-        key,
+        sourceKey,
+        targetKey,
       })),
     );
 

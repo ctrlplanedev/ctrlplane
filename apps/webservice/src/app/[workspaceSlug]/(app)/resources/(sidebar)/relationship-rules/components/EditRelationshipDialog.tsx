@@ -51,17 +51,14 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
 
   const form = useForm({
     schema: SCHEMA.updateResourceRelationshipRule.extend({
-      metadataKeysMatches: z.array(z.object({ key: z.string() })).optional(),
+      metadataKeysMatches: z
+        .array(z.object({ sourceKey: z.string(), targetKey: z.string() }))
+        .optional(),
       targetMetadataEquals: z
         .array(z.object({ key: z.string(), value: z.string() }))
         .optional(),
     }),
-    defaultValues: {
-      ...rule,
-      metadataKeysMatches: rule.metadataKeysMatches.map((match) => ({
-        key: match.key,
-      })),
-    },
+    defaultValues: rule,
   });
 
   const utils = api.useUtils();
@@ -89,25 +86,14 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
     control: form.control,
   });
 
-  const onSubmit = form.handleSubmit((data) => {
-    const { metadataKeysMatches, targetMetadataEquals } = data;
-    const keys = metadataKeysMatches?.map((item) => item.key);
-    updateRule
-      .mutateAsync({
-        id: rule.id,
-        data: {
-          ...data,
-          metadataKeysMatches: keys,
-          targetMetadataEquals: targetMetadataEquals,
-        },
-      })
-      .then(() => setOpen(false));
-  });
+  const onSubmit = form.handleSubmit((data) =>
+    updateRule.mutateAsync({ id: rule.id, data }).then(() => setOpen(false)),
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Relationship Rule</DialogTitle>
         </DialogHeader>
@@ -324,9 +310,26 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
                         <FormControl>
                           <div className="flex items-center gap-1 rounded-md border border-neutral-800 px-2 py-1">
                             <Input
-                              value={field.value.key}
+                              value={field.value.sourceKey}
                               onChange={(e) =>
-                                field.onChange({ key: e.target.value })
+                                field.onChange({
+                                  ...field.value,
+                                  sourceKey: e.target.value,
+                                })
+                              }
+                              placeholder="Enter key..."
+                              className="h-6 w-32 border-0 ring-0 focus-visible:ring-0"
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              matches
+                            </span>
+                            <Input
+                              value={field.value.targetKey}
+                              onChange={(e) =>
+                                field.onChange({
+                                  ...field.value,
+                                  targetKey: e.target.value,
+                                })
                               }
                               placeholder="Enter key..."
                               className="h-6 w-32 border-0 ring-0 focus-visible:ring-0"
@@ -350,7 +353,9 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
                   type="button"
                   variant="secondary"
                   size="sm"
-                  onClick={() => appendMetadataKeysMatch({ key: "" })}
+                  onClick={() =>
+                    appendMetadataKeysMatch({ sourceKey: "", targetKey: "" })
+                  }
                 >
                   Add
                 </Button>

@@ -46,7 +46,12 @@ export const CreateRelationshipDialog: React.FC<
 
   const form = useForm({
     schema: SCHEMA.createResourceRelationshipRule.extend({
-      metadataKeysMatches: z.array(z.object({ key: z.string() })),
+      metadataKeysMatches: z.array(
+        z.object({
+          sourceKey: z.string(),
+          targetKey: z.string(),
+        }),
+      ),
       targetMetadataEquals: z.array(
         z.object({ value: z.string(), key: z.string() }),
       ),
@@ -71,10 +76,8 @@ export const CreateRelationshipDialog: React.FC<
   const createRule = api.resource.relationshipRules.create.useMutation();
 
   const onSubmit = form.handleSubmit((data) => {
-    const { metadataKeysMatches } = data;
-    const keys = metadataKeysMatches.map((item) => item.key);
     createRule
-      .mutateAsync({ ...data, metadataKeysMatches: keys })
+      .mutateAsync(data)
       .then(() => utils.resource.relationshipRules.list.invalidate())
       .then(() => setOpen(false));
   });
@@ -105,7 +108,7 @@ export const CreateRelationshipDialog: React.FC<
           Add Relationship Rule
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Relationship Rule</DialogTitle>
         </DialogHeader>
@@ -323,9 +326,26 @@ export const CreateRelationshipDialog: React.FC<
                         <FormControl>
                           <div className="flex items-center gap-1 rounded-md border border-neutral-800 px-2 py-1">
                             <Input
-                              value={field.value.key}
+                              value={field.value.sourceKey}
                               onChange={(e) =>
-                                field.onChange({ key: e.target.value })
+                                field.onChange({
+                                  ...field.value,
+                                  sourceKey: e.target.value,
+                                })
+                              }
+                              placeholder="Enter key..."
+                              className="h-6 w-32 border-0 ring-0 focus-visible:ring-0"
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              matches
+                            </span>
+                            <Input
+                              value={field.value.targetKey}
+                              onChange={(e) =>
+                                field.onChange({
+                                  ...field.value,
+                                  targetKey: e.target.value,
+                                })
                               }
                               placeholder="Enter key..."
                               className="h-6 w-32 border-0 ring-0 focus-visible:ring-0"
@@ -349,7 +369,9 @@ export const CreateRelationshipDialog: React.FC<
                   type="button"
                   variant="secondary"
                   size="sm"
-                  onClick={() => appendMetadataKeysMatch({ key: "" })}
+                  onClick={() =>
+                    appendMetadataKeysMatch({ sourceKey: "", targetKey: "" })
+                  }
                 >
                   Add
                 </Button>

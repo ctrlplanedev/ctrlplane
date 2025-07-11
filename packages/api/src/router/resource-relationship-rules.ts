@@ -73,9 +73,10 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         await ctx.db
           .insert(schema.resourceRelationshipRuleMetadataMatch)
           .values(
-            metadataKeysMatches.map((key) => ({
+            metadataKeysMatches.map(({ sourceKey, targetKey }) => ({
               resourceRelationshipRuleId: rule.id,
-              key,
+              sourceKey,
+              targetKey,
             })),
           );
 
@@ -133,9 +134,10 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
             await tx
               .insert(schema.resourceRelationshipRuleMetadataMatch)
               .values(
-                metadataKeysMatches.map((key) => ({
+                metadataKeysMatches.map(({ sourceKey, targetKey }) => ({
                   resourceRelationshipRuleId: id,
-                  key,
+                  sourceKey,
+                  targetKey,
                 })),
               );
         }

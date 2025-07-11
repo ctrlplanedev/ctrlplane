@@ -197,6 +197,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployments/{deploymentId}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List deployment versions */
+    get: operations["listDeploymentVersions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployments": {
     parameters: {
       query?: never;
@@ -459,6 +476,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/release-targets/{releaseTargetId}/latest-jobs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the 10 latest jobs for a release target */
+    get: operations["getLatestJobs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/release-targets/{releaseTargetId}/lock": {
     parameters: {
       query?: never;
@@ -470,6 +504,23 @@ export interface paths {
     put?: never;
     /** Lock a release target */
     post: operations["lockReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a release target */
+    get: operations["getReleaseTarget"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1079,6 +1130,12 @@ export interface components {
       };
     };
     JobWithTrigger: components["schemas"]["Job"] & {
+      links?: {
+        [key: string]: string;
+      };
+      metadata?: {
+        [key: string]: string;
+      };
       release?: components["schemas"]["Release"];
       version?: components["schemas"]["DeploymentVersion"];
       deployment?: components["schemas"]["Deployment"];
@@ -1505,7 +1562,10 @@ export interface components {
       sourceVersion: string;
       targetKind: string;
       targetVersion: string;
-      metadataKeysMatches?: string[];
+      metadataKeysMatches?: {
+        sourceKey: string;
+        targetKey: string;
+      }[];
       targetMetadataEquals?: {
         key: string;
         value: string;
@@ -2287,6 +2347,52 @@ export interface operations {
       };
     };
   };
+  listDeploymentVersions: {
+    parameters: {
+      query?: {
+        status?: "ready" | "building" | "failed" | "rejected";
+      };
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deployment versions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeploymentVersion"][];
+        };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
   createDeployment: {
     parameters: {
       query?: never;
@@ -2514,8 +2620,6 @@ export interface operations {
           resourceSelector?: {
             [key: string]: unknown;
           };
-          policyId?: string;
-          releaseChannels?: string[];
           metadata?: {
             [key: string]: string;
           };
@@ -3226,6 +3330,53 @@ export interface operations {
       };
     };
   };
+  getLatestJobs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The release target ID */
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobWithTrigger"][];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Job not found. */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal server error. */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   lockReleaseTarget: {
     parameters: {
       query?: never;
@@ -3259,6 +3410,39 @@ export interface operations {
       };
       /** @description Internal server error */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The release target */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTarget"];
+        };
+      };
+      /** @description Release target not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

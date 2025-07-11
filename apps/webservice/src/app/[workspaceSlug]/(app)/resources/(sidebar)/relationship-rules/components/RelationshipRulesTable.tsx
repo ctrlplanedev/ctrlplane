@@ -62,9 +62,9 @@ export const RelationshipRulesTable: React.FC<RelationshipRulesTableProps> = ({
                       <Badge
                         variant="outline"
                         className="font-mono"
-                        key={match.key}
+                        key={`${match.sourceKey}-${match.targetKey}`}
                       >
-                        {match.key}
+                        {match.sourceKey} matches {match.targetKey}
                       </Badge>
                     ))}
                   </div>

@@ -228,7 +228,9 @@ test.describe("Resource Variables API", () => {
         sourceVersion: `${systemPrefix}-version/v1`,
         targetKind: "Target",
         targetVersion: `${systemPrefix}-version/v1`,
-        metadataKeysMatches: ["e2e-test", systemPrefix],
+        metadataKeysMatches: [
+          { sourceKey: "e2e-test", targetKey: systemPrefix },
+        ],
       },
     });
 
@@ -316,7 +318,9 @@ test.describe("Resource Variables API", () => {
         sourceVersion: `${systemPrefix}-version/v1`,
         targetKind: "Target",
         targetVersion: `${systemPrefix}-version/v1`,
-        metadataKeysMatches: ["e2e-test", systemPrefix],
+        metadataKeysMatches: [
+          { sourceKey: "e2e-test", targetKey: systemPrefix },
+        ],
       },
     });
 
@@ -471,7 +475,9 @@ test.describe("Resource Variables API", () => {
         sourceVersion: `${systemPrefix}-version/v1`,
         targetKind: "Target",
         targetVersion: `${systemPrefix}-version/v1`,
-        metadataKeysMatches: ["e2e-test", systemPrefix],
+        metadataKeysMatches: [
+          { sourceKey: "e2e-test", targetKey: systemPrefix },
+        ],
       },
     });
 
@@ -645,7 +651,9 @@ test.describe("Resource Variables API", () => {
         sourceVersion: `${systemPrefix}-version/v1`,
         targetKind: "Target",
         targetVersion: `${systemPrefix}-version/v1`,
-        metadataKeysMatches: ["e2e-test", systemPrefix],
+        metadataKeysMatches: [
+          { sourceKey: "e2e-test", targetKey: systemPrefix },
+        ],
       },
     });
 
