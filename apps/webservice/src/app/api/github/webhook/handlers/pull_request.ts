@@ -84,6 +84,7 @@ const getPullRequestMetadata = (
     [PullRequestMetadataKey.GitOwner]: organization.login,
     [PullRequestMetadataKey.GitRepo]: repository.name,
     [PullRequestMetadataKey.GitNumber]: pullRequest.number.toString(),
+    [PullRequestMetadataKey.GitRepoAndNumber]: `${repository.name}-${pullRequest.number}`,
     [PullRequestMetadataKey.GitTitle]: pullRequest.title,
     [PullRequestMetadataKey.GitState]: pullRequest.state,
     [PullRequestMetadataKey.GitStatus]: normalizedState,

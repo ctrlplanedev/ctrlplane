@@ -39,6 +39,7 @@ export enum PullRequestMetadataKey {
   GitOwner = "git/owner",
   GitRepo = "git/repo",
   GitNumber = "git/number",
+  GitRepoAndNumber = "git/repo-and-number",
   GitTitle = "git/title",
   GitState = "git/state",
   GitStatus = "git/status",
