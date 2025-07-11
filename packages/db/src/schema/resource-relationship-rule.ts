@@ -126,12 +126,14 @@ export const resourceRelationshipRuleMetadataMatch = pgTable(
         onDelete: "cascade",
       }),
 
-    key: text("key").notNull(),
+    sourceKey: text("source_key").notNull(),
+    targetKey: text("target_key").notNull(),
   },
   (t) => [
     uniqueIndex("unique_resource_relationship_rule_metadata_match").on(
       t.resourceRelationshipRuleId,
-      t.key,
+      t.sourceKey,
+      t.targetKey,
     ),
   ],
 );
@@ -188,8 +190,13 @@ export const createResourceRelationshipRule = createInsertSchema(
       ),
     metadataKeysMatches: z
       .array(
-        z.string().refine((val) => val.trim().length > 0, {
-          message: "Metadata match key cannot be empty",
+        z.object({
+          sourceKey: z.string().refine((val) => val.trim().length > 0, {
+            message: "Source metadata match key cannot be empty",
+          }),
+          targetKey: z.string().refine((val) => val.trim().length > 0, {
+            message: "Target metadata match key cannot be empty",
+          }),
         }),
       )
       .optional(),

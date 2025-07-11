@@ -13,7 +13,7 @@ function createLogger(level: string) {
     winston.format.colorize(),
     winston.format.timestamp(),
     winston.format.align(),
-    winston.format.printf((info) => {
+    winston.format.printf((info: winston.Logform.TransformableInfo) => {
       const { timestamp, level, message, durationMs, label, ...other } =
         info as {
           timestamp: string | undefined;

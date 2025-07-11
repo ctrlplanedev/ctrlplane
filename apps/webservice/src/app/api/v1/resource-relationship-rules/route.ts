@@ -62,7 +62,8 @@ export const POST = request()
               .values(
                 metadataKeysMatches.map((key) => ({
                   resourceRelationshipRuleId: rule.id,
-                  key,
+                  sourceKey: key.sourceKey,
+                  targetKey: key.targetKey,
                 })),
               );
 
