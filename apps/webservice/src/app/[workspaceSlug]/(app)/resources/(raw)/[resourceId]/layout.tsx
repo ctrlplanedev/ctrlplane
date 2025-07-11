@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import {
   IconArrowLeft,
   IconEdit,
-  IconHistory,
   IconLock,
+  IconRocket,
   IconSettings,
   IconShieldCheck,
   IconTopologyComplex,
@@ -95,10 +95,10 @@ export default async function Layout(props: {
             <SidebarGroup>
               <SidebarMenu>
                 <SidebarLink
-                  href={resourcePageUrls.deployments()}
-                  icon={<IconHistory className="size-4" />}
+                  href={resourcePageUrls.deployments().baseUrl()}
+                  icon={<IconRocket className="size-4" />}
                 >
-                  Release History
+                  Deployments
                 </SidebarLink>
                 <SidebarLink
                   href={resourcePageUrls.visualize()}
