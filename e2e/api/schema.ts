@@ -1517,7 +1517,10 @@ export interface components {
       sourceVersion?: string;
       targetKind?: string;
       targetVersion?: string;
-      metadataKeysMatch?: string[];
+      metadataKeysMatches?: {
+        sourceKey: string;
+        targetKey: string;
+      }[];
       targetMetadataEquals?: {
         key: string;
         value: string;

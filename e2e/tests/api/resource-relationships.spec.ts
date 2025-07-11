@@ -189,7 +189,9 @@ test.describe("Resource Relationships API", () => {
           targetKind: "TargetB",
           targetVersion: "test-version/v2",
           description: "Updated description",
-          metadataKeysMatch: ["e2e/test", "additional-key"],
+          metadataKeysMatches: [
+            { sourceKey: "e2e/test", targetKey: "additional-key" },
+          ],
         },
       },
     );

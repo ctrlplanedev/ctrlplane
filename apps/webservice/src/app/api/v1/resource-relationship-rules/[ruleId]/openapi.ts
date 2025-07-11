@@ -22,9 +22,16 @@ export const openapi: Swagger.SwaggerV3 = {
           sourceVersion: { type: "string" },
           targetKind: { type: "string" },
           targetVersion: { type: "string" },
-          metadataKeysMatch: {
+          metadataKeysMatches: {
             type: "array",
-            items: { type: "string" },
+            items: {
+              type: "object",
+              properties: {
+                sourceKey: { type: "string" },
+                targetKey: { type: "string" },
+              },
+              required: ["sourceKey", "targetKey"],
+            },
           },
           targetMetadataEquals: {
             type: "array",
