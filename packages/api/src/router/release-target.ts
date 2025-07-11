@@ -1,59 +1,14 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import {
-  and,
-  count,
-  eq,
-  notInArray,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { and, count, eq, notInArray, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import { exitedStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { releaseTargetVersionRouter } from "./release-target-version/router";
 
 export const releaseTargetRouter = createTRPCRouter({
-  version: releaseTargetVersionRouter,
-
-  byId: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseTargetGet).on({
-          type: "releaseTarget",
-          id: input,
-        }),
-    })
-    .query(async ({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(schema.releaseTarget)
-        .innerJoin(
-          schema.resource,
-          eq(schema.releaseTarget.resourceId, schema.resource.id),
-        )
-        .innerJoin(
-          schema.environment,
-          eq(schema.releaseTarget.environmentId, schema.environment.id),
-        )
-        .innerJoin(
-          schema.deployment,
-          eq(schema.releaseTarget.deploymentId, schema.deployment.id),
-        )
-        .where(eq(schema.releaseTarget.id, input))
-        .then(takeFirstOrNull)
-        .then((dbResult) => {
-          if (dbResult == null) return null;
-          const { release_target, resource, environment, deployment } =
-            dbResult;
-          return { ...release_target, resource, environment, deployment };
-        }),
-    ),
-
   list: protectedProcedure
     .input(
       z

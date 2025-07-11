@@ -1,5 +1,5 @@
 import { api } from "~/trpc/server";
-import { ReleaseTargetTile } from "./_components/ReleaseTargetTile";
+import { ReleaseHistoryTable } from "./_components/ReleaseHistoryTable";
 
 type Params = Promise<{ resourceId: string }>;
 
@@ -11,10 +11,9 @@ export default async function DeploymentsPage(props: { params: Params }) {
   });
 
   return (
-    <div className="grid grid-cols-3 gap-4 p-6">
-      {releaseTargets.map((rt) => (
-        <ReleaseTargetTile key={rt.id} releaseTarget={rt} />
-      ))}
-    </div>
+    <ReleaseHistoryTable
+      resourceId={resourceId}
+      deployments={releaseTargets.map((rt) => rt.deployment)}
+    />
   );
 }

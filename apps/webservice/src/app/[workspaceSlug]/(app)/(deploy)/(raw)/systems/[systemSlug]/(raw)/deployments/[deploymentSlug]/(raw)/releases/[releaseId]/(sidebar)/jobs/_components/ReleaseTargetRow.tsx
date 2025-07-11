@@ -1,12 +1,15 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import Link from "next/link";
 import {
   IconAlertTriangle,
   IconChevronRight,
   IconCopy,
   IconDots,
+  IconExternalLink,
   IconReload,
+  IconShieldFilled,
   IconSwitch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -14,7 +17,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,14 +27,13 @@ import {
 import { TableCell, TableRow } from "@ctrlplane/ui/table";
 import { toast } from "@ctrlplane/ui/toast";
 
-import { CollapsibleRow } from "~/app/[workspaceSlug]/(app)/_components/CollapsibleRow";
-import { JobLinks } from "~/app/[workspaceSlug]/(app)/_components/job/JobLinks";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/OverrideJobStatusDialog";
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { api } from "~/trpc/react";
-import { PolicyEvaluationTooltip } from "./PolicyEvaluationTooltip";
+import { CollapsibleRow } from "./CollapsibleRow";
+import { PolicyEvaluationHover } from "./PolicyEvaluationHover";
 
 const ReleaseTargetActionsDropdownMenu: React.FC<{
   environment: { id: string; name: string };
@@ -110,19 +112,12 @@ const ReleaseTargetActionsDropdownMenu: React.FC<{
 
 const JobStatusCell: React.FC<{
   status: SCHEMA.JobStatus;
-  releaseTargetId: string;
-  versionId: string;
-}> = ({ status, releaseTargetId, versionId }) => (
+}> = ({ status }) => (
   <TableCell className="w-26">
-    <PolicyEvaluationTooltip
-      releaseTargetId={releaseTargetId}
-      versionId={versionId}
-    >
-      <div className="flex w-fit items-center gap-1">
-        <JobTableStatusIcon status={status} />
-        {capitalCase(status)}
-      </div>
-    </PolicyEvaluationTooltip>
+    <div className="flex items-center gap-1">
+      <JobTableStatusIcon status={status} />
+      {capitalCase(status)}
+    </div>
   </TableCell>
 );
 
@@ -140,9 +135,29 @@ const ExternalIdCell: React.FC<{
 
 const LinksCell: React.FC<{
   links: Record<string, string>;
-}> = (props) => (
+}> = ({ links }) => (
   <TableCell onClick={(e) => e.stopPropagation()} className="py-0">
-    <JobLinks {...props} />
+    <div className="flex items-center gap-1">
+      {Object.entries(links).length === 0 && (
+        <span className="text-sm text-muted-foreground">No links</span>
+      )}
+      {Object.entries(links).map(([label, url]) => (
+        <Link
+          key={label}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants({
+            variant: "secondary",
+            size: "xs",
+            className: "gap-1",
+          })}
+        >
+          <IconExternalLink className="h-4 w-4" />
+          {label}
+        </Link>
+      ))}
+    </div>
   </TableCell>
 );
 
@@ -196,11 +211,7 @@ export const ReleaseTargetRow: React.FC<{
           </TableCell>
           {latestJob != null && (
             <>
-              <JobStatusCell
-                status={latestJob.status}
-                releaseTargetId={id}
-                versionId={version.id}
-              />
+              <JobStatusCell status={latestJob.status} />
               <ExternalIdCell externalId={latestJob.externalId} />
               <LinksCell links={latestJob.links} />
               <CreatedAtCell createdAt={latestJob.createdAt} />
@@ -210,12 +221,15 @@ export const ReleaseTargetRow: React.FC<{
           {latestJob == null && (
             <>
               <TableCell>
-                <PolicyEvaluationTooltip
+                <PolicyEvaluationHover
                   releaseTargetId={id}
                   versionId={version.id}
                 >
-                  <span>No jobs</span>
-                </PolicyEvaluationTooltip>
+                  <div className="flex w-fit cursor-pointer items-center gap-1">
+                    <IconShieldFilled className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-sm">Blocked by policy</span>
+                  </div>
+                </PolicyEvaluationHover>
               </TableCell>
               <TableCell />
               <TableCell />
@@ -244,11 +258,7 @@ export const ReleaseTargetRow: React.FC<{
                 <div className="h-10 border-l border-neutral-700/50" />
               </div>
             </TableCell>
-            <JobStatusCell
-              status={job.status}
-              releaseTargetId={id}
-              versionId={version.id}
-            />
+            <JobStatusCell status={job.status} />
             <ExternalIdCell externalId={job.externalId} />
             <LinksCell links={job.links} />
             <CreatedAtCell createdAt={job.createdAt} />
