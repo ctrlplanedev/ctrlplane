@@ -1,7 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 import React from "react";
 import {
-  IconAlertTriangle,
   IconDots,
   IconPin,
   IconPinnedOff,
@@ -20,7 +19,6 @@ import { TableCell } from "@ctrlplane/ui/table";
 import type { ReleaseTarget } from "../types";
 import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/OverrideJobStatusDialog";
 import { api } from "~/trpc/react";
-import { ForceDeployVersion } from "./ForceDeployVersion";
 import { PinVersionDialog, UnpinVersionDialog } from "./VersionPinning";
 
 export const VersionDropdown: React.FC<{
@@ -88,17 +86,6 @@ export const VersionDropdown: React.FC<{
               </DropdownMenuItem>
             </OverrideJobStatusDialog>
           )}
-          <ForceDeployVersion
-            releaseTarget={releaseTarget}
-            deploymentVersion={deploymentVersion}
-          >
-            <DropdownMenuItem
-              onSelect={(e) => e.preventDefault()}
-              className="flex items-center gap-2"
-            >
-              <IconAlertTriangle className="h-4 w-4" /> Force deploy
-            </DropdownMenuItem>
-          </ForceDeployVersion>
         </DropdownMenuContent>
       </DropdownMenu>
     </TableCell>
