@@ -11,8 +11,8 @@ import { Badge } from "@ctrlplane/ui/badge";
 import { TableCell } from "@ctrlplane/ui/table";
 import { failedStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
+import { CollapsibleRow } from "~/app/[workspaceSlug]/(app)/_components/CollapsibleRow";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
-import { CollapsibleRow } from "../../../../../../../../../../../../../_components/CollapsibleRow";
 import { EnvironmentRowDropdown } from "./EnvironmentRowDropdown";
 
 const JobStatusBadge: React.FC<{

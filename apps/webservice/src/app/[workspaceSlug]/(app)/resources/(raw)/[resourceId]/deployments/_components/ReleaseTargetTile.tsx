@@ -17,8 +17,8 @@ import {
 } from "@ctrlplane/ui/tooltip";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { urls } from "../../../../../../../urls";
 
 type ReleaseTarget = schema.ReleaseTarget & {
   deployment: schema.Deployment;

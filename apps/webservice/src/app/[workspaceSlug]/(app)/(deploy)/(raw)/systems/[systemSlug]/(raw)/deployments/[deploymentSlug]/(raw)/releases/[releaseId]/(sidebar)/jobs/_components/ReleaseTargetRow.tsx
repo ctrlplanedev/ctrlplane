@@ -169,7 +169,6 @@ export const ReleaseTargetRow: React.FC<{
   }>;
 }> = ({ id, resource, environment, deployment, jobs, version }) => {
   const latestJob = jobs.at(0);
-  console.log(jobs);
 
   return (
     <CollapsibleRow
