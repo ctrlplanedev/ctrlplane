@@ -1549,7 +1549,10 @@ export interface components {
         key: string;
         value: string;
       }[];
-      metadataKeysMatches?: string[];
+      metadataKeysMatches?: {
+        sourceKey: string;
+        targetKey: string;
+      }[];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;

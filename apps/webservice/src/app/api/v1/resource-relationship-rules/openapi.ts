@@ -105,7 +105,14 @@ export const openapi: Swagger.SwaggerV3 = {
 
           metadataKeysMatches: {
             type: "array",
-            items: { type: "string" },
+            items: {
+              type: "object",
+              properties: {
+                sourceKey: { type: "string" },
+                targetKey: { type: "string" },
+              },
+              required: ["sourceKey", "targetKey"],
+            },
           },
         },
         required: [
