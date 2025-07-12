@@ -17,8 +17,8 @@ export const openapi: Swagger.SwaggerV3 = {
             additionalProperties: true,
           },
           isDefault: { type: "boolean" },
+          priority: { type: "number" },
         },
-        required: ["resourceSelector"],
       },
       DirectDeploymentVariableValue: {
         allOf: [

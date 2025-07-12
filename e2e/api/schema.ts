@@ -1067,10 +1067,11 @@ export interface components {
       updatedAt: string;
     };
     BaseDeploymentVariableValue: {
-      resourceSelector: {
+      resourceSelector?: {
         [key: string]: unknown;
       } | null;
       isDefault?: boolean;
+      priority?: number;
     };
     DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
       value:

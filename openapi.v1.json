@@ -5377,11 +5377,11 @@
           },
           "isDefault": {
             "type": "boolean"
+          },
+          "priority": {
+            "type": "number"
           }
-        },
-        "required": [
-          "resourceSelector"
-        ]
+        }
       },
       "DirectDeploymentVariableValue": {
         "allOf": [

@@ -34,17 +34,7 @@ export default async function VariablesPage(props: {
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) notFound();
 
-  const variablesResult = await api.deployment.variable.byDeploymentId(
-    deployment.id,
-  );
-  const variables = variablesResult.map((variable) => ({
-    ...variable,
-    values: [
-      ...variable.directValues,
-      ...variable.referenceValues,
-      ...(variable.defaultValue != null ? [variable.defaultValue] : []),
-    ],
-  }));
+  const variables = await api.deployment.variable.byDeploymentId(deployment.id);
 
   return (
     <div className="h-full overflow-y-auto pb-[100px]">

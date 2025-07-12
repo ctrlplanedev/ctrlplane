@@ -1,20 +1,13 @@
 import type { Tx } from "@ctrlplane/db";
 import type { VariableSetValue } from "@ctrlplane/db/schema";
 
-import {
-  and,
-  asc,
-  eq,
-  getDeploymentVariables,
-  getResolvedDirectValue,
-  selector,
-} from "@ctrlplane/db";
+import { and, asc, eq, getDeploymentVariables, selector } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, Variable, VariableProvider } from "./types.js";
-import { getReferenceVariableValue } from "./resolve-reference-variable.js";
+import { resolveVariableValue } from "./resolve-variable-value.js";
 
 export type DatabaseResourceVariableOptions = {
   resourceId: string;
@@ -60,9 +53,8 @@ export type DatabaseDeploymentVariableOptions = {
 type DeploymentVariable = {
   id: string;
   key: string;
-  directValues: schema.DirectDeploymentVariableValue[];
-  referenceValues: schema.ReferenceDeploymentVariableValue[];
-  defaultValue?: schema.DeploymentVariableValue | null;
+  values: schema.DeploymentVariableValue[];
+  defaultValue?: schema.DeploymentVariableValue;
 };
 
 export class DatabaseDeploymentVariableProvider implements VariableProvider {
@@ -107,60 +99,30 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     const variable = variables.find((v) => v.key === key) ?? null;
     if (variable == null) return null;
 
-    const { directValues, referenceValues, defaultValue } = variable;
+    const { values, defaultValue } = variable;
+    const sortedValues = values.sort((a, b) => b.priority - a.priority);
 
-    for (const directValue of directValues) {
-      const isSelectingResource = await this.isSelectingResource(directValue);
-      if (!isSelectingResource) continue;
-
-      const resolvedValue = getResolvedDirectValue(directValue);
-      return {
-        id: variable.id,
-        key,
-        value: resolvedValue,
-        sensitive: directValue.sensitive,
-      };
-    }
-
-    for (const referenceValue of referenceValues) {
-      const isSelectingResource =
-        await this.isSelectingResource(referenceValue);
-      if (!isSelectingResource) continue;
-
-      const resolvedValue = await getReferenceVariableValue(
+    for (const value of sortedValues) {
+      const resolvedValue = await resolveVariableValue(
+        this.db,
         this.options.resourceId,
-        referenceValue,
+        value,
       );
-      return {
-        id: variable.id,
-        key,
-        value: resolvedValue,
-        sensitive: false,
-      };
+      if (resolvedValue == null) continue;
+
+      return { id: variable.id, key, ...resolvedValue };
     }
 
-    if (defaultValue == null) return null;
-    if (schema.isDeploymentVariableValueDirect(defaultValue)) {
-      const resolvedValue = getResolvedDirectValue(defaultValue);
-      return {
-        id: variable.id,
-        key,
-        value: resolvedValue,
-        sensitive: defaultValue.sensitive,
-      };
-    }
-
-    if (schema.isDeploymentVariableValueReference(defaultValue)) {
-      const resolvedValue = await getReferenceVariableValue(
+    if (defaultValue != null) {
+      const resolvedValue = await resolveVariableValue(
+        this.db,
         this.options.resourceId,
         defaultValue,
+        true,
       );
-      return {
-        id: variable.id,
-        key,
-        value: resolvedValue,
-        sensitive: false,
-      };
+
+      if (resolvedValue != null)
+        return { id: variable.id, key, ...resolvedValue };
     }
 
     return {
