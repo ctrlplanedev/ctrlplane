@@ -33,6 +33,7 @@ import { resourceProviderRouter } from "./resource-provider";
 import { resourceRelationshipRulesRouter } from "./resource-relationship-rules";
 import { resourceVariables } from "./resource-variables";
 import { resourceViews } from "./resource-views";
+import { resourceVisualization } from "./resource-visualization";
 
 const isNotDeleted = isNull(schema.resource.deletedAt);
 
@@ -75,6 +76,7 @@ export const resourceRouter = createTRPCRouter({
   variable: resourceVariables,
   relationshipRules: resourceRelationshipRulesRouter,
   releaseHistory,
+  visualize: resourceVisualization,
 
   byId: protectedProcedure
     .meta({
