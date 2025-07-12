@@ -417,6 +417,166 @@ test.describe("Resource Variables API", () => {
     });
   });
 
+  test("reference variables from related resources' variables when the deployment variable value is reference type", async ({
+    api,
+    workspace,
+    page,
+  }) => {
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const reference = faker.string.alphanumeric(10).toLowerCase();
+    // Create target resource
+    const targetResource = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-target`,
+        kind: "Target",
+        identifier: `${systemPrefix}-target`,
+        version: `${systemPrefix}-version/v1`,
+        config: { "e2e-test": true } as any,
+        metadata: {
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+        },
+        variables: [
+          {
+            key: `${systemPrefix}-ref-var`,
+            value: "true",
+          },
+        ],
+      },
+    });
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.id).toBeDefined();
+
+    // Create source resource
+    const sourceResource = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-source`,
+        kind: "Source",
+        identifier: `${systemPrefix}-source`,
+        version: `${systemPrefix}-version/v1`,
+        config: { "e2e-test": true } as any,
+        metadata: {
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+        },
+      },
+    });
+    expect(sourceResource.response.status).toBe(200);
+    expect(sourceResource.data?.id).toBeDefined();
+    const sourceResourceId = sourceResource.data?.id;
+
+    // Create relationship rule
+    const relationship = await api.POST("/v1/resource-relationship-rules", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-relationship`,
+        reference,
+        dependencyType: "depends_on",
+        sourceKind: "Source",
+        sourceVersion: `${systemPrefix}-version/v1`,
+        targetKind: "Target",
+        targetVersion: `${systemPrefix}-version/v1`,
+        metadataKeysMatches: [
+          { sourceKey: "e2e-test", targetKey: systemPrefix },
+        ],
+      },
+    });
+
+    expect(relationship.response.status).toBe(200);
+
+    // Create a deployment variable with reference type
+    const deployment = builder.refs.deployments[0]!;
+
+    await api.POST("/v1/deployments/{deploymentId}/variables", {
+      params: {
+        path: {
+          deploymentId: deployment.id,
+        },
+      },
+      body: {
+        key: "ref-var",
+        config: {
+          type: "string",
+          inputType: "text",
+        },
+        referenceValues: [
+          {
+            reference,
+            path: ["variables", `${systemPrefix}-ref-var`],
+            resourceSelector: {
+              type: "identifier",
+              operator: "contains",
+              value: systemPrefix,
+            },
+          },
+        ],
+      },
+    });
+
+    await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId: deployment.id,
+        tag: faker.string.alphanumeric(10),
+      },
+    });
+
+    await page.waitForTimeout(5_000);
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: {
+            resourceId: sourceResourceId ?? "",
+          },
+        },
+      },
+    );
+
+    const releaseTargets = releaseTargetsResponse.data ?? [];
+
+    const releaseTarget = releaseTargets.find(
+      (rt) =>
+        rt.resource.id === sourceResourceId &&
+        rt.deployment.id === deployment.id,
+    );
+
+    expect(releaseTarget).toBeDefined();
+
+    const releaseTargetId = releaseTarget?.id ?? "";
+
+    const releasesResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: {
+            releaseTargetId: releaseTargetId,
+          },
+        },
+      },
+    );
+
+    const latestRelease = releasesResponse.data?.at(0);
+
+    expect(latestRelease).toBeDefined();
+
+    const variables = latestRelease?.variables ?? [];
+
+    const refVar = variables.find((v) => v.key === "ref-var");
+    expect(refVar).toBeDefined();
+    expect(refVar?.value).toBe("true");
+
+    // Cleanup
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: sourceResource.data?.id ?? "" } },
+    });
+    await api.DELETE("/v1/resources/{resourceId}", {
+      params: { path: { resourceId: targetResource.data?.id ?? "" } },
+    });
+  });
+
   test("should trigger a release target evaluation if a referenced resource is updated", async ({
     api,
     workspace,

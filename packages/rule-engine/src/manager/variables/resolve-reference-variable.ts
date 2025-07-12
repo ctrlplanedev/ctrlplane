@@ -12,11 +12,9 @@ export const getReferenceVariableValue = async (
     | schema.ReferenceDeploymentVariableValue,
 ) => {
   try {
-    const { relationships, getTargetsWithMetadata } = await getResourceParents(
-      db,
-      resourceId,
-    );
-    const relationshipTargets = await getTargetsWithMetadata();
+    const { relationships, getTargetsWithMetadataAndVars } =
+      await getResourceParents(db, resourceId);
+    const relationshipTargets = await getTargetsWithMetadataAndVars();
 
     const targetId = relationships[variable.reference]?.target.id ?? "";
     const targetResource = relationshipTargets[targetId];

@@ -1,6 +1,8 @@
 import { and, eq, inArray, isNull, ne, notExists } from "drizzle-orm";
 import _ from "lodash";
 
+import { variablesAES256 } from "@ctrlplane/secrets";
+
 import type { Tx } from "../../common.js";
 import * as schema from "../../schema/index.js";
 import {
@@ -11,6 +13,23 @@ import {
   unsatisfiedMetadataMatchRule,
   unsatisfiedTargetMetadataEqualsRule,
 } from "./queries.js";
+
+const formatResourceVariables = (
+  variables: {
+    key: string;
+    value: string | number | boolean | object | null;
+    sensitive: boolean;
+  }[],
+): Record<string, string | number | boolean | object | null> => {
+  const keyValuePairs = variables.map((variable) => {
+    const { key, value, sensitive } = variable;
+    const strval =
+      typeof value === "object" ? JSON.stringify(value) : String(value);
+    const resolvedValue = sensitive ? variablesAES256().decrypt(strval) : value;
+    return [key, resolvedValue];
+  });
+  return Object.fromEntries(keyValuePairs);
+};
 
 /**
  * Gets relationships for a resource based on relationship rules
@@ -59,6 +78,9 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
         ),
         with: {
           metadata: true,
+          variables: {
+            where: eq(schema.resourceVariable.valueType, "direct"),
+          },
         },
       })
       .then((r) =>
@@ -70,6 +92,7 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
               metadata: Object.fromEntries(
                 t.metadata.map((m) => [m.key, m.value]),
               ),
+              variables: formatResourceVariables(t.variables),
             },
           ]),
         ),
@@ -79,7 +102,7 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
     relationships: Object.fromEntries(
       relationships.map((t) => [t.reference, t]),
     ),
-    getTargetsWithMetadata: relatipnshipTargets,
+    getTargetsWithMetadataAndVars: relatipnshipTargets,
   };
 };
 
