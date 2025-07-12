@@ -10,35 +10,28 @@ import ReactFlow, {
 } from "reactflow";
 import colors from "tailwindcss/colors";
 
+import type { ResourceNodeData } from "./ResourceNode";
 import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
 import { DepEdge } from "./DepEdge";
 import { ResourceNode } from "./ResourceNode";
 
-type ParentRelationship = {
-  ruleId: string;
-  type: schema.ResourceDependencyType;
-  target: schema.Resource;
-  reference: string;
-};
-
-type ChildRelationship = {
-  ruleId: string;
-  type: schema.ResourceDependencyType;
-  source: schema.Resource;
-  reference: string;
+type Edge = {
+  sourceId: string;
+  targetId: string;
+  relationshipType: schema.ResourceRelationshipRule["dependencyType"];
 };
 
 type RelationshipsDiagramProps = {
-  resource: schema.Resource;
-  parents: ParentRelationship[];
-  children: ChildRelationship[];
+  baseResource: schema.Resource;
+  resources: ResourceNodeData[];
+  edges: Edge[];
 };
 
-const getNodes = (resources: schema.Resource[]) =>
+const getNodes = (resources: ResourceNodeData[], baseResourceId: string) =>
   resources.map((r) => ({
     id: r.id,
     type: "resource",
-    data: { ...r, label: r.identifier },
+    data: { data: { ...r, label: r.name, baseResourceId }, label: r.name },
     position: { x: 0, y: 0 },
   }));
 
@@ -47,63 +40,44 @@ const markerEnd = {
   color: colors.neutral[800],
 };
 
+/**
+ * NOTE: we reverse the source and the target because for ctrlplane's logic,
+ * the target of the relationship is the parent, and the source is the child
+ */
+const getEdges = (edges: Edge[]) =>
+  edges.map((e) => ({
+    id: `${e.targetId}-${e.sourceId}`,
+    source: e.targetId,
+    target: e.sourceId,
+    style: { stroke: colors.neutral[800] },
+    label: e.relationshipType,
+    markerEnd,
+  }));
+
 const nodeTypes: NodeTypes = { resource: ResourceNode };
 const edgeTypes: EdgeTypes = { default: DepEdge };
 
-const getParentEdges = (
-  parents: ParentRelationship[],
-  resource: schema.Resource,
-) =>
-  parents.map((p) => ({
-    id: `${p.ruleId}-${p.target.id}`,
-    source: p.target.id,
-    target: resource.id,
-    style: { stroke: colors.neutral[800] },
-    markerEnd,
-    label: p.type,
-  }));
-
-const getChildEdges = (
-  children: ChildRelationship[],
-  resource: schema.Resource,
-) =>
-  children.map((c) => ({
-    id: `${c.ruleId}-${c.source.id}`,
-    source: resource.id,
-    target: c.source.id,
-    style: { stroke: colors.neutral[800] },
-    markerEnd,
-    label: c.type,
-  }));
-
 export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
-  resource,
-  parents,
-  children,
+  baseResource,
+  resources,
+  edges,
 }) => {
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>(
-    getNodes([
-      resource,
-      ...parents.map((p) => p.target),
-      ...children.map((c) => c.source),
-    ]),
+    getNodes(resources, baseResource.id),
   );
 
-  const [edges, __, onEdgesChange] = useEdgesState([
-    ...getParentEdges(parents, resource),
-    ...getChildEdges(children, resource),
-  ]);
+  const [flowEdges, __, onEdgesChange] = useEdgesState(getEdges(edges));
 
   const { setReactFlowInstance } = useLayoutAndFitView(nodes, {
     direction: "LR",
     extraEdgeLength: 50,
-    focusedNodeId: resource.id,
+    focusedNodeId: baseResource.id,
   });
 
   return (
     <ReactFlow
       nodes={nodes}
-      edges={edges}
+      edges={flowEdges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       fitView
@@ -118,14 +92,8 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
 
 export const RelationshipsDiagramProvider: React.FC<
   RelationshipsDiagramProps
-> = ({ resource, parents, children }) => {
-  return (
-    <ReactFlowProvider>
-      <RelationshipsDiagram
-        resource={resource}
-        parents={parents}
-        children={children}
-      />
-    </ReactFlowProvider>
-  );
-};
+> = (props) => (
+  <ReactFlowProvider>
+    <RelationshipsDiagram {...props} />
+  </ReactFlowProvider>
+);

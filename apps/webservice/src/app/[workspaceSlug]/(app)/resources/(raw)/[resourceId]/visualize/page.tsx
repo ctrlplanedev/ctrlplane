@@ -1,4 +1,3 @@
-import type * as schema from "@ctrlplane/db/schema";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -25,24 +24,15 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function RelationshipsPage(props: PageProps) {
   const { resourceId } = await props.params;
-  const { resource, ...relationships } =
-    await api.resource.relationships(resourceId);
-
-  const parents = Object.values(relationships.parents).map((p) => ({
-    ...p,
-    type: p.type as schema.ResourceDependencyType,
-  }));
-
-  const children = relationships.children.map((c) => ({
-    ...c,
-    type: c.type as schema.ResourceDependencyType,
-  }));
+  const resource = await api.resource.byId(resourceId);
+  if (resource == null) return notFound();
+  const { resources, edges } = await api.resource.visualize(resourceId);
 
   return (
     <RelationshipsDiagramProvider
-      resource={resource}
-      parents={parents}
-      children={children}
+      baseResource={resource}
+      resources={resources}
+      edges={edges}
     />
   );
 }
