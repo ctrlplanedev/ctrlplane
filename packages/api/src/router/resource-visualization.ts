@@ -41,16 +41,17 @@ class TreeBuilder {
     this.edges.push({ sourceId, targetId, relationshipType });
   }
 
-  async getParents() {
-    const parentRelationships = await getResourceParents(
-      db,
-      this.baseResource.id,
-    );
+  async getParents(resource: schema.Resource) {
+    const parentRelationships = await getResourceParents(db, resource.id);
+    const hasParents =
+      Object.values(parentRelationships.relationships).length > 0;
+    if (!hasParents) return;
     for (const { target, type } of Object.values(
       parentRelationships.relationships,
     )) {
-      this.addEdge(this.baseResource.id, target.id, type);
+      this.addEdge(resource.id, target.id, type);
       this.resources.push(target);
+      await this.getParents(target);
     }
   }
 
@@ -100,7 +101,7 @@ class TreeBuilder {
   }
 
   async build() {
-    await this.getParents();
+    await this.getParents(this.baseResource);
     await this.getChildren(this.baseResource);
     const resourceNodes = await Promise.all(
       this.resources.map((r) => this.buildResourceNode(r)),
