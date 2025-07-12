@@ -100,7 +100,7 @@ export const createDirectDeploymentVariableValue = z.object({
       return isValidResourceCondition(val);
     }),
   isDefault: z.boolean().optional().default(false),
-  priority: z.number().optional().default(0),
+  priority: z.number().optional(),
 
   value: z.union([z.string(), z.number(), z.boolean(), z.object({}), z.null()]),
   sensitive: z.boolean().optional().default(false),
@@ -146,7 +146,7 @@ export const createReferenceDeploymentVariableValue = z.object({
       return isValidResourceCondition(val);
     }),
   isDefault: z.boolean().optional().default(false),
-  priority: z.number().optional().default(0),
+  priority: z.number().optional(),
 
   reference: z.string(),
   path: z.array(z.string()),

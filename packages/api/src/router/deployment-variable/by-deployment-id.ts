@@ -50,8 +50,13 @@ const getVariableWithMatchedResources = async (
   resources: schema.Resource[],
 ) => {
   const { values, defaultValue } = variable;
+  const nonDefaultValues = values.filter(
+    (v) => variable.defaultValueId !== v.id,
+  );
   const valuesWithResources = await Promise.all(
-    values.map((v) => getVariableValueWithMatchedResources(db, v, resources)),
+    nonDefaultValues.map((v) =>
+      getVariableValueWithMatchedResources(db, v, resources),
+    ),
   );
   const matchedResourceIds = new Set(
     valuesWithResources.flatMap((v) => v.resources.map((r) => r.id)),
@@ -69,9 +74,13 @@ const getVariableWithMatchedResources = async (
         )
       : undefined;
 
+  const defaultValueArray =
+    defaultValueWithResources != null ? [defaultValueWithResources] : [];
+  const valuesWithDefaultAtEnd = [...valuesWithResources, ...defaultValueArray];
+
   return {
     ...variable,
-    values: valuesWithResources,
+    values: valuesWithDefaultAtEnd,
     defaultValue: defaultValueWithResources,
   };
 };
