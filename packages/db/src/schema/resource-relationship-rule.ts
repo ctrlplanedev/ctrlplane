@@ -62,6 +62,18 @@ export enum ResourceDependencyType {
   InheritsFrom = "inherits_from",
 }
 
+export const ResourceDependencyTypeFlipped: Record<
+  ResourceDependencyType,
+  string
+> = {
+  [ResourceDependencyType.DependsOn]: "required_by",
+  [ResourceDependencyType.DependsIndirectlyOn]: "indirectly_required_by",
+  [ResourceDependencyType.UsesAtRuntime]: "used_by_at_runtime",
+  [ResourceDependencyType.CreatedAfter]: "created_before",
+  [ResourceDependencyType.ProvisionedIn]: "hosts",
+  [ResourceDependencyType.InheritsFrom]: "inherited_by",
+};
+
 export const resourceRelationshipRule = pgTable(
   "resource_relationship_rule",
   {

@@ -1,6 +1,5 @@
 "use client";
 
-import type * as schema from "@ctrlplane/db/schema";
 import type { EdgeTypes, NodeTypes } from "reactflow";
 import ReactFlow, {
   MarkerType,
@@ -9,6 +8,8 @@ import ReactFlow, {
   useNodesState,
 } from "reactflow";
 import colors from "tailwindcss/colors";
+
+import * as schema from "@ctrlplane/db/schema";
 
 import type { ResourceNodeData } from "./ResourceNode";
 import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
@@ -50,7 +51,7 @@ const getEdges = (edges: Edge[]) =>
     source: e.targetId,
     target: e.sourceId,
     style: { stroke: colors.neutral[800] },
-    label: e.relationshipType,
+    label: schema.ResourceDependencyTypeFlipped[e.relationshipType],
     markerEnd,
   }));
 
