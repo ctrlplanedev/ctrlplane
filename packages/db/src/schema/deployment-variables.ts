@@ -6,6 +6,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -61,6 +62,7 @@ export const deploymentVariableValue = pgTable(
     resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
+    priority: integer("priority").notNull().default(0),
   },
   (t) => [
     foreignKey({
@@ -98,6 +100,7 @@ export const createDirectDeploymentVariableValue = z.object({
       return isValidResourceCondition(val);
     }),
   isDefault: z.boolean().optional().default(false),
+  priority: z.number().optional().default(0),
 
   value: z.union([z.string(), z.number(), z.boolean(), z.object({}), z.null()]),
   sensitive: z.boolean().optional().default(false),
@@ -143,6 +146,7 @@ export const createReferenceDeploymentVariableValue = z.object({
       return isValidResourceCondition(val);
     }),
   isDefault: z.boolean().optional().default(false),
+  priority: z.number().optional().default(0),
 
   reference: z.string(),
   path: z.array(z.string()),

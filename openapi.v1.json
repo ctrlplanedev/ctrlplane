@@ -5377,11 +5377,14 @@
           },
           "isDefault": {
             "type": "boolean"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Higher numbers take precedence when multiple values select the same resource. Must be a non-negative whole number."
           }
-        },
-        "required": [
-          "resourceSelector"
-        ]
+        }
       },
       "DirectDeploymentVariableValue": {
         "allOf": [

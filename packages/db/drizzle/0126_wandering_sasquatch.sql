@@ -1,0 +1,1 @@
+ALTER TABLE "deployment_variable_value" ADD COLUMN "priority" integer DEFAULT 0 NOT NULL;

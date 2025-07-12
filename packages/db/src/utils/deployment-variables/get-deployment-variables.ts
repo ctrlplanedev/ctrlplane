@@ -1,52 +1,59 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
+import { isPresent } from "ts-is-present";
 
-import { variablesAES256 } from "@ctrlplane/secrets";
+import { logger } from "@ctrlplane/logger";
 
 import type { Tx } from "../../common.js";
 import * as schema from "../../schema/index.js";
 
-export const getResolvedDirectValue = (
-  directValue: schema.DirectDeploymentVariableValue,
-) => {
-  const { value, sensitive } = directValue;
-  if (!sensitive) return value;
+const log = logger.child({ module: "get-deployment-variables" });
 
-  const strVal =
-    typeof value === "object" ? JSON.stringify(value) : String(value);
-  return variablesAES256().decrypt(strVal);
+type VariableValueDbResult = {
+  deployment_variable_value: typeof schema.deploymentVariableValue.$inferSelect;
+  deployment_variable_value_direct:
+    | typeof schema.deploymentVariableValueDirect.$inferSelect
+    | null;
+  deployment_variable_value_reference:
+    | typeof schema.deploymentVariableValueReference.$inferSelect
+    | null;
 };
 
-const getDirectValues = async (tx: Tx, variable: schema.DeploymentVariable) => {
-  const directValues = await tx
+const formatVariableValueDbResult = (
+  result: VariableValueDbResult,
+): schema.DeploymentVariableValue | null => {
+  if (result.deployment_variable_value_direct != null)
+    return {
+      ...result.deployment_variable_value_direct,
+      ...result.deployment_variable_value,
+    };
+
+  if (result.deployment_variable_value_reference != null)
+    return {
+      ...result.deployment_variable_value_reference,
+      ...result.deployment_variable_value,
+    };
+
+  log.error("Found variable value with no direct or reference value", {
+    variableValueId: result.deployment_variable_value.id,
+  });
+  return null;
+};
+
+const getVariableValues = async (
+  tx: Tx,
+  variable: schema.DeploymentVariable,
+) => {
+  const variableValueResults = await tx
     .select()
     .from(schema.deploymentVariableValue)
-    .innerJoin(
+    .leftJoin(
       schema.deploymentVariableValueDirect,
       eq(
         schema.deploymentVariableValue.id,
         schema.deploymentVariableValueDirect.variableValueId,
       ),
     )
-    .where(eq(schema.deploymentVariableValue.variableId, variable.id));
-
-  return directValues.map((v) => {
-    const {
-      deployment_variable_value_direct: directValue,
-      deployment_variable_value: variableValue,
-    } = v;
-
-    return { ...directValue, ...variableValue };
-  });
-};
-
-const getReferenceValues = async (
-  tx: Tx,
-  variable: schema.DeploymentVariable,
-) => {
-  const referenceValues = await tx
-    .select()
-    .from(schema.deploymentVariableValue)
-    .innerJoin(
+    .leftJoin(
       schema.deploymentVariableValueReference,
       eq(
         schema.deploymentVariableValue.id,
@@ -54,27 +61,11 @@ const getReferenceValues = async (
       ),
     )
     .where(eq(schema.deploymentVariableValue.variableId, variable.id))
-    .orderBy(asc(schema.deploymentVariableValueReference.reference));
+    .orderBy(desc(schema.deploymentVariableValue.priority));
 
-  return referenceValues.map((v) => {
-    const {
-      deployment_variable_value_reference: referenceValue,
-      deployment_variable_value: variableValue,
-    } = v;
-    return { ...referenceValue, ...variableValue };
-  });
-};
-
-const getVariableValues = async (
-  tx: Tx,
-  variable: schema.DeploymentVariable,
-) => {
-  const [directValues, referenceValues] = await Promise.all([
-    getDirectValues(tx, variable),
-    getReferenceValues(tx, variable),
-  ]);
-
-  return { directValues, referenceValues };
+  return variableValueResults
+    .map(formatVariableValueDbResult)
+    .filter(isPresent);
 };
 
 export const getDeploymentVariables = async (tx: Tx, deploymentId: string) => {
@@ -87,11 +78,9 @@ export const getDeploymentVariables = async (tx: Tx, deploymentId: string) => {
   const variablesWithValues = await Promise.all(
     variables.map(async (v) => {
       const { defaultValueId } = v;
-      const { directValues, referenceValues } = await getVariableValues(tx, v);
-      const defaultValue = [...directValues, ...referenceValues].find(
-        (v) => v.id === defaultValueId,
-      );
-      return { ...v, directValues, referenceValues, defaultValue };
+      const values = await getVariableValues(tx, v);
+      const defaultValue = values.find((v) => v.id === defaultValueId);
+      return { ...v, values, defaultValue };
     }),
   );
 

@@ -39,6 +39,7 @@ const insertNewReferenceVariableValue = async (
     .values({
       variableId,
       resourceSelector: insertReferenceValue.resourceSelector,
+      priority: insertReferenceValue.priority,
     })
     .returning()
     .then(takeFirst);
@@ -64,7 +65,10 @@ const updateExistingReferenceVariableValue = async (
 ) => {
   const updatedVariableValue = await tx
     .update(schema.deploymentVariableValue)
-    .set({ resourceSelector: updateReferenceValue.resourceSelector })
+    .set({
+      resourceSelector: updateReferenceValue.resourceSelector,
+      priority: updateReferenceValue.priority,
+    })
     .where(eq(schema.deploymentVariableValue.id, variableValueId))
     .returning()
     .then(takeFirst);

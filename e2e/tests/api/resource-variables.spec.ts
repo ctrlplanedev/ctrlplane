@@ -577,6 +577,126 @@ test.describe("Resource Variables API", () => {
     });
   });
 
+  test("should break a tie between two deployment variable values matching a resource with different priorities", async ({
+    api,
+    workspace,
+    page,
+  }) => {
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const resourceIdentifier = faker.string.alphanumeric(10).toLowerCase();
+
+    const resourceResponse = await api.POST("/v1/resources", {
+      body: {
+        workspaceId: workspace.id,
+        name: `${systemPrefix}-resource`,
+        kind: "Target",
+        identifier: `${systemPrefix}-${resourceIdentifier}`,
+        version: `${systemPrefix}-version/v1`,
+        config: { "e2e-test": true } as any,
+        metadata: {
+          "e2e-test": "true",
+          [systemPrefix]: "true",
+        },
+      },
+    });
+    expect(resourceResponse.response.status).toBe(200);
+    expect(resourceResponse.data?.id).toBeDefined();
+    const resourceId = resourceResponse.data?.id;
+
+    const deployment = builder.refs.deployments[0]!;
+    const key = faker.string.alphanumeric(10);
+    const lowerPriorityValue = faker.string.alphanumeric(10);
+    const higherPriorityValue = faker.string.alphanumeric(10);
+
+    await api.POST("/v1/deployments/{deploymentId}/variables", {
+      params: {
+        path: {
+          deploymentId: deployment.id,
+        },
+      },
+      body: {
+        key,
+        config: {
+          type: "string",
+          inputType: "text",
+        },
+        directValues: [
+          {
+            value: lowerPriorityValue,
+            priority: 1,
+            resourceSelector: {
+              type: "identifier",
+              operator: "contains",
+              value: resourceIdentifier,
+            },
+          },
+          {
+            value: higherPriorityValue,
+            priority: 2,
+            resourceSelector: {
+              type: "identifier",
+              operator: "contains",
+              value: resourceIdentifier,
+            },
+          },
+        ],
+      },
+    });
+
+    const tag = faker.string.alphanumeric(10);
+    await api.POST("/v1/deployment-versions", {
+      body: {
+        deploymentId: deployment.id,
+        tag,
+      },
+    });
+
+    await page.waitForTimeout(5_000);
+
+    const releaseTargetsResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      {
+        params: {
+          path: {
+            resourceId: resourceId ?? "",
+          },
+        },
+      },
+    );
+
+    const releaseTargets = releaseTargetsResponse.data ?? [];
+
+    const releaseTarget = releaseTargets.find(
+      (rt) =>
+        rt.resource.id === resourceId && rt.deployment.id === deployment.id,
+    );
+
+    expect(releaseTarget).toBeDefined();
+
+    const releaseTargetId = releaseTarget?.id ?? "";
+
+    const releasesResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      {
+        params: {
+          path: {
+            releaseTargetId: releaseTargetId,
+          },
+        },
+      },
+    );
+
+    const releaseForTag = releasesResponse.data?.find(
+      (r) => r.version.tag === tag,
+    );
+    expect(releaseForTag).toBeDefined();
+
+    const variables = releaseForTag?.variables ?? [];
+    const varForKey = variables.find((v) => v.key === key);
+    expect(varForKey).toBeDefined();
+    expect(varForKey?.value).toBe(higherPriorityValue);
+  });
+
   test("should trigger a release target evaluation if a referenced resource is updated", async ({
     api,
     workspace,
