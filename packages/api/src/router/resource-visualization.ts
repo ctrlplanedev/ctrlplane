@@ -16,22 +16,6 @@ const getResource = (id: string) =>
     .where(eq(schema.resource.id, id))
     .then(takeFirst);
 
-const getRootsOfTree = async (
-  resource: schema.Resource,
-  roots: schema.Resource[],
-): Promise<schema.Resource[]> => {
-  const parents = await getResourceParents(db, resource.id);
-  const hasNoParents = Object.keys(parents.relationships).length === 0;
-  if (hasNoParents) return [...roots, resource];
-
-  const retrievedRoots = await Promise.all(
-    Object.values(parents.relationships).map((r) =>
-      getRootsOfTree(r.target, roots),
-    ),
-  ).then((roots) => roots.flat());
-  return [...retrievedRoots, ...roots];
-};
-
 type Edge = {
   targetId: string;
   sourceId: string;
@@ -41,7 +25,27 @@ type Edge = {
 class TreeBuilder {
   private resources: schema.Resource[] = [];
   private edges: Edge[] = [];
-  constructor() {}
+  constructor(private baseResource: schema.Resource) {}
+
+  private async getRoots(
+    resource: schema.Resource,
+    roots: schema.Resource[],
+    seen: Set<string>,
+  ): Promise<schema.Resource[]> {
+    if (seen.has(resource.id)) return [];
+    seen.add(resource.id);
+
+    const parents = await getResourceParents(db, resource.id);
+    const hasNoParents = Object.keys(parents.relationships).length === 0;
+    if (hasNoParents) return [...roots, resource];
+
+    const retrievedRoots = await Promise.all(
+      Object.values(parents.relationships).map((r) =>
+        this.getRoots(r.target, roots, seen),
+      ),
+    ).then((roots) => roots.flat());
+    return [...retrievedRoots, ...roots];
+  }
 
   private addEdge(
     sourceId: string,
@@ -65,43 +69,51 @@ class TreeBuilder {
     }
   }
 
-  async buildFromRoots(roots: schema.Resource[]) {
+  private async getReleaseTargets(resource: schema.Resource) {
+    return db
+      .select()
+      .from(schema.releaseTarget)
+      .innerJoin(
+        schema.deployment,
+        eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+      )
+      .innerJoin(
+        schema.system,
+        eq(schema.deployment.systemId, schema.system.id),
+      )
+      .where(eq(schema.releaseTarget.resourceId, resource.id))
+      .orderBy(schema.system.slug)
+      .then((rows) =>
+        rows.map((row) => ({
+          ...row.release_target,
+          deployment: row.deployment,
+          system: row.system,
+        })),
+      );
+  }
+
+  private async buildResourceNode(resource: schema.Resource) {
+    const releaseTargets = await this.getReleaseTargets(resource);
+    const systemsWithReleaseTargets = _.chain(releaseTargets)
+      .groupBy((rt) => rt.system.id)
+      .map((groupedTargets) => ({
+        ...groupedTargets[0]!.system,
+        releaseTargets: groupedTargets,
+      }))
+      .value();
+    return { ...resource, systems: systemsWithReleaseTargets };
+  }
+
+  async build() {
+    const roots = await this.getRoots(this.baseResource, [], new Set());
     this.resources = roots;
     for (const root of roots) await this.getChildren(root);
-    return { resources: this.resources, edges: this.edges };
+    const resourceNodes = await Promise.all(
+      this.resources.map((r) => this.buildResourceNode(r)),
+    );
+    return { resources: resourceNodes, edges: this.edges };
   }
 }
-
-const getReleaseTargets = async (resource: schema.Resource) =>
-  db
-    .select()
-    .from(schema.releaseTarget)
-    .innerJoin(
-      schema.deployment,
-      eq(schema.releaseTarget.deploymentId, schema.deployment.id),
-    )
-    .innerJoin(schema.system, eq(schema.deployment.systemId, schema.system.id))
-    .where(eq(schema.releaseTarget.resourceId, resource.id))
-    .orderBy(schema.system.slug)
-    .then((rows) =>
-      rows.map((row) => ({
-        ...row.release_target,
-        deployment: row.deployment,
-        system: row.system,
-      })),
-    );
-
-const buildResourceNode = async (resource: schema.Resource) => {
-  const releaseTargets = await getReleaseTargets(resource);
-  const systemsWithReleaseTargets = _.chain(releaseTargets)
-    .groupBy((rt) => rt.system.id)
-    .map((groupedTargets) => ({
-      ...groupedTargets[0]!.system,
-      releaseTargets: groupedTargets,
-    }))
-    .value();
-  return { ...resource, systems: systemsWithReleaseTargets };
-};
 
 export const resourceVisualization = protectedProcedure
   .input(z.string().uuid())
@@ -114,8 +126,5 @@ export const resourceVisualization = protectedProcedure
   })
   .query(async ({ input }) => {
     const baseResource = await getResource(input);
-    const roots = await getRootsOfTree(baseResource, []);
-    const { resources, edges } = await new TreeBuilder().buildFromRoots(roots);
-    const resourceNodes = await Promise.all(resources.map(buildResourceNode));
-    return { resources: resourceNodes, edges };
+    return new TreeBuilder(baseResource).build();
   });

@@ -16,7 +16,6 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
-  getResourceChildren,
   getResourceParents,
   getResourceRelationshipRules,
 } from "@ctrlplane/db/queries";
@@ -131,30 +130,6 @@ export const resourceRouter = createTRPCRouter({
         metadata,
         rules: await getResourceRelationshipRules(ctx.db, resource.id),
       };
-    }),
-
-  relationships: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceGet)
-          .on({ type: "resource", id: input }),
-    })
-    .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const resource = await ctx.db
-        .select()
-        .from(schema.resource)
-        .where(eq(schema.resource.id, input))
-        .then(takeFirst);
-
-      const { relationships: parents } = await getResourceParents(
-        ctx.db,
-        resource.id,
-      );
-      const children = await getResourceChildren(ctx.db, resource.id);
-
-      return { resource, parents, children };
     }),
 
   byWorkspaceId: createTRPCRouter({
