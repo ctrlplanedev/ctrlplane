@@ -6,13 +6,13 @@ import { CREATED, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import {
   eq,
   getDeploymentVariables,
-  getResolvedDirectValue,
   takeFirstOrNull,
   upsertDeploymentVariable,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
+import { getResolvedDirectValue } from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -23,6 +23,15 @@ import { request } from "~/app/api/v1/middleware";
 const log = logger.child({
   route: "/v1/deployments/[deploymentId]/variables",
 });
+
+const formatDefaultValue = (v?: schema.DeploymentVariableValue) => {
+  if (v == null) return undefined;
+  if (schema.isDeploymentVariableValueReference(v)) return v;
+  return {
+    ...v,
+    value: getResolvedDirectValue(v),
+  };
+};
 
 export const GET = request()
   .use(authn)
@@ -49,12 +58,31 @@ export const GET = request()
 
         const variables = await getDeploymentVariables(db, deploymentId);
         const variablesWithDecryptedValues = variables.map((v) => {
-          const { directValues, ...rest } = v;
-          const resolvedDirectValues = directValues.map((dv) => ({
-            ...dv,
-            value: getResolvedDirectValue(dv),
+          const { values, defaultValue, ...rest } = v;
+          const directValues = values.filter(
+            schema.isDeploymentVariableValueDirect,
+          );
+          const referenceValues = values.filter(
+            schema.isDeploymentVariableValueReference,
+          );
+
+          const formattedDirectValues = directValues.map((v) => ({
+            ...v,
+            value: getResolvedDirectValue(v),
+            isDefault: rest.id === defaultValue?.id,
           }));
-          return { ...rest, directValues: resolvedDirectValues };
+
+          const formattedReferenceValues = referenceValues.map((v) => ({
+            ...v,
+            isDefault: rest.id === defaultValue?.id,
+          }));
+
+          return {
+            ...rest,
+            directValues: formattedDirectValues,
+            referenceValues: formattedReferenceValues,
+            defaultValue: formatDefaultValue(defaultValue),
+          };
         });
 
         return NextResponse.json(variablesWithDecryptedValues);

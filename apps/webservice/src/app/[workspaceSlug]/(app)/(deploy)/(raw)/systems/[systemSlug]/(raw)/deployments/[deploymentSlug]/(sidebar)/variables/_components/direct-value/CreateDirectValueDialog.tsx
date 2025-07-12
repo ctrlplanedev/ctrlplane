@@ -159,6 +159,49 @@ const SensitiveFormField: React.FC<{
   />
 );
 
+const PriorityFormField: React.FC<{
+  form: UseFormReturn<z.infer<typeof formSchema>>;
+}> = ({ form }) => (
+  <FormField
+    control={form.control}
+    name="priority"
+    render={({ field: { value, onChange } }) => (
+      <FormItem>
+        <FormControl>
+          <div className="flex items-center gap-4">
+            <FormLabel className="flex items-center gap-1">
+              Priority
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <IconInfoCircle className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="text-muted-foreground">
+                    Higher numbers take precedence when multiple values select
+                    the same resource.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </FormLabel>
+            <Input
+              type="number"
+              value={value}
+              onChange={(e) =>
+                onChange(
+                  Number.isNaN(e.target.valueAsNumber)
+                    ? undefined
+                    : e.target.valueAsNumber,
+                )
+              }
+              className="w-16"
+            />
+          </div>
+        </FormControl>
+      </FormItem>
+    )}
+  />
+);
+
 const ResourceSelectorFormField: React.FC<{
   form: UseFormReturn<z.infer<typeof formSchema>>;
 }> = ({ form }) => (
@@ -229,6 +272,7 @@ export const CreateDirectValueDialog: React.FC<{
             <ValueFormField variable={variable} form={form} />
             <DefaultValueFormField form={form} />
             <SensitiveFormField form={form} />
+            <PriorityFormField form={form} />
             <ResourceSelectorFormField form={form} />
 
             <Button type="submit" disabled={createDirectMutation.isPending}>

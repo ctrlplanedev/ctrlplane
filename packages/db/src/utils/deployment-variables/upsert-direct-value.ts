@@ -63,6 +63,7 @@ const insertNewDirectVariableValue = async (
     .values({
       variableId,
       resourceSelector: insertDirectValue.resourceSelector,
+      priority: insertDirectValue.priority,
     })
     .returning()
     .then(takeFirst);
@@ -93,7 +94,10 @@ const updateExistingDirectVariableValue = async (
 
   const updatedVariableValue = await tx
     .update(schema.deploymentVariableValue)
-    .set({ resourceSelector: updateDirectValue.resourceSelector })
+    .set({
+      resourceSelector: updateDirectValue.resourceSelector,
+      priority: updateDirectValue.priority,
+    })
     .where(eq(schema.deploymentVariableValue.id, variableValueId))
     .returning()
     .then(takeFirst);
