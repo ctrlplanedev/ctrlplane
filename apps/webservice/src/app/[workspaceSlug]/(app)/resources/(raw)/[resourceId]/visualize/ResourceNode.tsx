@@ -12,6 +12,12 @@ import { Handle, Position } from "reactflow";
 import { cn } from "@ctrlplane/ui";
 import { buttonVariants } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/resources/ResourceIcon";
@@ -60,16 +66,29 @@ const ReleaseTargetStatus: React.FC<{ releaseTarget: ReleaseTarget }> = ({
     .jobs();
 
   return (
-    <Link
-      href={versionUrl}
-      className={cn(
-        "flex h-6 items-center gap-1 truncate",
-        buttonVariants({ variant: "ghost", className: "h-6" }),
-      )}
-    >
-      <JobTableStatusIcon status={data.job.status} className="flex-shrink-0" />
-      <div className="min-w-0 truncate">{data.version.tag}</div>
-    </Link>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            href={versionUrl}
+            className={cn(
+              "flex h-6 items-center gap-1 truncate",
+              buttonVariants({ variant: "ghost", className: "h-6" }),
+            )}
+          >
+            <JobTableStatusIcon
+              status={data.job.status}
+              className="flex-shrink-0"
+            />
+            <div className="min-w-0 truncate">{data.version.tag}</div>
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent className="flex flex-col gap-1 border bg-neutral-950 p-2 text-xs">
+          <span>Tag: {data.version.tag}</span>
+          <span>Name: {data.version.name}</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
