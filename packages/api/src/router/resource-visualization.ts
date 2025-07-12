@@ -25,26 +25,8 @@ type Edge = {
 class TreeBuilder {
   private resources: schema.Resource[] = [];
   private edges: Edge[] = [];
-  constructor(private baseResource: schema.Resource) {}
-
-  private async getRoots(
-    resource: schema.Resource,
-    roots: schema.Resource[],
-    seen: Set<string>,
-  ): Promise<schema.Resource[]> {
-    if (seen.has(resource.id)) return [];
-    seen.add(resource.id);
-
-    const parents = await getResourceParents(db, resource.id);
-    const hasNoParents = Object.keys(parents.relationships).length === 0;
-    if (hasNoParents) return [...roots, resource];
-
-    const retrievedRoots = await Promise.all(
-      Object.values(parents.relationships).map((r) =>
-        this.getRoots(r.target, roots, seen),
-      ),
-    ).then((roots) => roots.flat());
-    return [...retrievedRoots, ...roots];
+  constructor(private baseResource: schema.Resource) {
+    this.resources.push(baseResource);
   }
 
   private addEdge(
@@ -59,8 +41,23 @@ class TreeBuilder {
     this.edges.push({ sourceId, targetId, relationshipType });
   }
 
+  async getParents() {
+    const parentRelationships = await getResourceParents(
+      db,
+      this.baseResource.id,
+    );
+    console.log(parentRelationships);
+    for (const { target, type } of Object.values(
+      parentRelationships.relationships,
+    )) {
+      this.addEdge(target.id, this.baseResource.id, type);
+      this.resources.push(target);
+    }
+  }
+
   private async getChildren(resource: schema.Resource) {
     const resourceChildren = await getResourceChildren(db, resource.id);
+    console.log(resourceChildren);
     if (resourceChildren.length === 0) return;
     for (const { source, type } of resourceChildren) {
       this.addEdge(resource.id, source.id, type);
@@ -105,9 +102,8 @@ class TreeBuilder {
   }
 
   async build() {
-    const roots = await this.getRoots(this.baseResource, [], new Set());
-    this.resources = roots;
-    for (const root of roots) await this.getChildren(root);
+    await this.getParents();
+    await this.getChildren(this.baseResource);
     const resourceNodes = await Promise.all(
       this.resources.map((r) => this.buildResourceNode(r)),
     );
