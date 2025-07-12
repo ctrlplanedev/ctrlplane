@@ -46,21 +46,19 @@ class TreeBuilder {
       db,
       this.baseResource.id,
     );
-    console.log(parentRelationships);
     for (const { target, type } of Object.values(
       parentRelationships.relationships,
     )) {
-      this.addEdge(target.id, this.baseResource.id, type);
+      this.addEdge(this.baseResource.id, target.id, type);
       this.resources.push(target);
     }
   }
 
   private async getChildren(resource: schema.Resource) {
     const resourceChildren = await getResourceChildren(db, resource.id);
-    console.log(resourceChildren);
     if (resourceChildren.length === 0) return;
     for (const { source, type } of resourceChildren) {
-      this.addEdge(resource.id, source.id, type);
+      this.addEdge(source.id, resource.id, type);
       this.resources.push(source);
       await this.getChildren(source);
     }

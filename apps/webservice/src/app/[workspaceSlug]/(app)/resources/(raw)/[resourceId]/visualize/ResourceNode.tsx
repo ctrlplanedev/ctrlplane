@@ -68,7 +68,7 @@ const ReleaseTargetStatus: React.FC<{ releaseTarget: ReleaseTarget }> = ({
       )}
     >
       <JobTableStatusIcon status={data.job.status} className="flex-shrink-0" />
-      {data.version.tag}
+      <div className="min-w-0 truncate">{data.version.tag}</div>
     </Link>
   );
 };
