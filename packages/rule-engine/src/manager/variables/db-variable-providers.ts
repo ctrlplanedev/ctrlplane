@@ -100,9 +100,7 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     if (variable == null) return null;
 
     const { values, defaultValue } = variable;
-    const sortedValues = values.sort((a, b) => b.priority - a.priority);
-
-    for (const value of sortedValues) {
+    for (const value of values) {
       const resolvedValue = await resolveVariableValue(
         this.db,
         this.options.resourceId,

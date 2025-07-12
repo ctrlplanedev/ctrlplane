@@ -17,7 +17,7 @@ export const openapi: Swagger.SwaggerV3 = {
             additionalProperties: true,
           },
           isDefault: { type: "boolean" },
-          priority: { type: "number" },
+          priority: { type: "integer", minimum: 0, maximum: 1000 },
         },
       },
       DirectDeploymentVariableValue: {

@@ -1,8 +1,12 @@
 import { asc, desc, eq } from "drizzle-orm";
 import { isPresent } from "ts-is-present";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { Tx } from "../../common.js";
 import * as schema from "../../schema/index.js";
+
+const log = logger.child({ module: "get-deployment-variables" });
 
 type VariableValueDbResult = {
   deployment_variable_value: typeof schema.deploymentVariableValue.$inferSelect;
@@ -29,6 +33,9 @@ const formatVariableValueDbResult = (
       ...result.deployment_variable_value,
     };
 
+  log.error("Found variable value with no direct or reference value", {
+    variableValueId: result.deployment_variable_value.id,
+  });
   return null;
 };
 
