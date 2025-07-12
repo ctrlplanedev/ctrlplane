@@ -56,7 +56,11 @@ const ReleaseTargetStatus: React.FC<{ releaseTarget: ReleaseTarget }> = ({
 
   if (isLoading) return <Skeleton className="h-4 w-20" />;
   if (!data)
-    return <span className="text-xs text-muted-foreground">Not deployed</span>;
+    return (
+      <span className="flex justify-end pl-1 text-xs text-muted-foreground">
+        Not deployed
+      </span>
+    );
 
   const versionUrl = urls
     .workspace(workspaceSlug)
@@ -72,18 +76,21 @@ const ReleaseTargetStatus: React.FC<{ releaseTarget: ReleaseTarget }> = ({
           <Link
             href={versionUrl}
             className={cn(
-              "flex h-6 items-center gap-1 truncate",
-              buttonVariants({ variant: "ghost", className: "h-6" }),
+              "flex min-w-0 items-center gap-1",
+              buttonVariants({
+                variant: "ghost",
+                className: "h-6 w-fit px-1",
+              }),
             )}
           >
             <JobTableStatusIcon
               status={data.job.status}
               className="flex-shrink-0"
             />
-            <div className="min-w-0 truncate">{data.version.tag}</div>
+            <div className="truncate">{data.version.tag}</div>
           </Link>
         </TooltipTrigger>
-        <TooltipContent className="flex flex-col gap-1 border bg-neutral-950 p-2 text-xs">
+        <TooltipContent className="flex flex-col gap-2 border bg-neutral-950 p-2 text-xs">
           <span>Tag: {data.version.tag}</span>
           <span>Name: {data.version.name}</span>
         </TooltipContent>
@@ -96,11 +103,13 @@ const ReleaseTargetRow: React.FC<{ releaseTarget: ReleaseTarget }> = ({
   releaseTarget,
 }) => {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="max-w-40 flex-shrink-0 truncate text-sm">
+    <div className="grid grid-cols-2 gap-4">
+      <span className="col-span-1 truncate text-sm">
         {releaseTarget.deployment.slug}
       </span>
-      <ReleaseTargetStatus releaseTarget={releaseTarget} />
+      <div className="col-span-1 flex items-center justify-end">
+        <ReleaseTargetStatus releaseTarget={releaseTarget} />
+      </div>
     </div>
   );
 };
@@ -109,7 +118,7 @@ const SystemSection: React.FC<{
   system: System;
 }> = ({ system }) => {
   return (
-    <div className="flex flex-col gap-2 rounded-md border bg-neutral-900/30 px-3 py-2">
+    <div className="flex flex-col gap-2 rounded-md border bg-neutral-800/50 px-3 py-2">
       <span>{capitalCase(system.name)}</span>
       <div className="flex flex-col gap-1">
         {system.releaseTargets.map((releaseTarget) => (
@@ -130,10 +139,10 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node.data;
   return (
     <>
-      <div className="flex w-[450px] flex-col gap-4 rounded-md border bg-background p-3">
+      <div className="flex w-[450px] flex-col gap-4 rounded-md border bg-neutral-900/50 p-3">
         <NodeHeader resource={data} />
         {data.systems.length === 0 && (
-          <div className="flex h-10 items-center justify-center rounded-md border bg-neutral-900/30 text-muted-foreground">
+          <div className="flex h-10 items-center justify-center rounded-md border bg-neutral-800/50 text-muted-foreground">
             Not part of any system
           </div>
         )}
