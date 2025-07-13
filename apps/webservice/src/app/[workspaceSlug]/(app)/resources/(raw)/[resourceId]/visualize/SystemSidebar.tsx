@@ -101,8 +101,8 @@ export const SystemSidebarContent: React.FC = () => {
   const { system, setSystem } = useSystemSidebarContext();
   const { toggleSidebar } = useSidebar();
   const closeSidebar = () => {
-    setSystem(null);
     toggleSidebar(["resource-visualization"]);
+    setSystem(null);
   };
 
   if (!system) return null;

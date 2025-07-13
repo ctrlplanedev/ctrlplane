@@ -118,8 +118,8 @@ const useHandleSystemClick = (system: System) => {
 
   return () => {
     if (isSystemSelected && isSidebarOpen) {
-      setSystem(null);
       toggleSidebar(["resource-visualization"]);
+      setSystem(null);
       return;
     }
 

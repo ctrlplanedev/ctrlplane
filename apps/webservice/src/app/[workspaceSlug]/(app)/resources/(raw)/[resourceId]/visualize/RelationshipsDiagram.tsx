@@ -66,8 +66,8 @@ const useCloseSidebar = () => {
 
   return () => {
     if (open.includes("resource-visualization")) {
-      setSystem(null);
       toggleSidebar(["resource-visualization"]);
+      setSystem(null);
     }
   };
 };
