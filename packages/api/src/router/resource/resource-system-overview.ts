@@ -24,7 +24,7 @@ export const resourceSystemOverview = protectedProcedure
   .query(async ({ ctx, input }) => {
     const { resourceId, systemId } = input;
     const jobStatusSubquery = ctx.db
-      .select({
+      .selectDistinctOn([schema.versionRelease.releaseTargetId], {
         releaseTargetId: schema.versionRelease.releaseTargetId,
         status: schema.job.status,
       })
@@ -38,8 +38,10 @@ export const resourceSystemOverview = protectedProcedure
         eq(schema.releaseJob.releaseId, schema.release.id),
       )
       .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
-      .orderBy(desc(schema.job.createdAt))
-      .limit(1)
+      .orderBy(
+        schema.versionRelease.releaseTargetId,
+        desc(schema.job.createdAt),
+      )
       .as("jobStatus");
 
     const releaseTargetsWithJobStatus = await ctx.db

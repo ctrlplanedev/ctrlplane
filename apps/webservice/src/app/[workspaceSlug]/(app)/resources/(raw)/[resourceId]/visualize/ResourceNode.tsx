@@ -48,7 +48,6 @@ const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => (
 
 const getStatusInfo = (statuses: (JobStatus | null)[]) => {
   const nonNullStatuses = statuses.filter(isPresent);
-  console.log(statuses);
 
   const numFailed = nonNullStatuses.filter((s) =>
     failedStatuses.includes(s),
