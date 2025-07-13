@@ -30,6 +30,7 @@ import { releaseHistory } from "../release-history";
 import { resourceMetadataGroupRouter } from "./resource-metadata-group";
 import { resourceProviderRouter } from "./resource-provider";
 import { resourceRelationshipRulesRouter } from "./resource-relationship-rules";
+import { resourceSystemOverview } from "./resource-system-overview";
 import { resourceVariables } from "./resource-variables";
 import { resourceViews } from "./resource-views";
 import { resourceVisualization } from "./resource-visualization";
@@ -76,6 +77,7 @@ export const resourceRouter = createTRPCRouter({
   relationshipRules: resourceRelationshipRulesRouter,
   releaseHistory,
   visualize: resourceVisualization,
+  systemOverview: resourceSystemOverview,
 
   byId: protectedProcedure
     .meta({

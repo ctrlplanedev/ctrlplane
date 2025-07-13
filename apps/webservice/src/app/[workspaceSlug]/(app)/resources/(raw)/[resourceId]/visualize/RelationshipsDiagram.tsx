@@ -10,11 +10,13 @@ import ReactFlow, {
 import colors from "tailwindcss/colors";
 
 import * as schema from "@ctrlplane/db/schema";
+import { useSidebar } from "@ctrlplane/ui/sidebar";
 
 import type { ResourceNodeData } from "./ResourceNode";
 import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
 import { DepEdge } from "./DepEdge";
 import { ResourceNode } from "./ResourceNode";
+import { useSystemSidebarContext } from "./SystemSidebarContext";
 
 type Edge = {
   sourceId: string;
@@ -63,6 +65,8 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
   resources,
   edges,
 }) => {
+  const { toggleSidebar, open } = useSidebar();
+  const { setSystem } = useSystemSidebarContext();
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>(
     getNodes(resources, baseResource.id),
   );
@@ -72,8 +76,14 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
   const { setReactFlowInstance } = useLayoutAndFitView(nodes, {
     direction: "LR",
     extraEdgeLength: 50,
-    focusedNodeId: baseResource.id,
   });
+
+  const handlePaneClick = () => {
+    if (open.includes("resource-visualization")) {
+      setSystem(null);
+      toggleSidebar(["resource-visualization"]);
+    }
+  };
 
   return (
     <ReactFlow
@@ -85,6 +95,7 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
       proOptions={{ hideAttribution: true }}
       onInit={setReactFlowInstance}
       nodesDraggable
+      onPaneClick={handlePaneClick}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
     />
