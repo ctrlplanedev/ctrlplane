@@ -60,13 +60,23 @@ const getEdges = (edges: Edge[]) =>
 const nodeTypes: NodeTypes = { resource: ResourceNode };
 const edgeTypes: EdgeTypes = { default: DepEdge };
 
+const useCloseSidebar = () => {
+  const { toggleSidebar, open } = useSidebar();
+  const { setSystem } = useSystemSidebarContext();
+
+  return () => {
+    if (open.includes("resource-visualization")) {
+      setSystem(null);
+      toggleSidebar(["resource-visualization"]);
+    }
+  };
+};
+
 export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
   baseResource,
   resources,
   edges,
 }) => {
-  const { toggleSidebar, open } = useSidebar();
-  const { setSystem } = useSystemSidebarContext();
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>(
     getNodes(resources, baseResource.id),
   );
@@ -78,12 +88,7 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
     extraEdgeLength: 50,
   });
 
-  const handlePaneClick = () => {
-    if (open.includes("resource-visualization")) {
-      setSystem(null);
-      toggleSidebar(["resource-visualization"]);
-    }
-  };
+  const closeSidebar = useCloseSidebar();
 
   return (
     <ReactFlow
@@ -95,7 +100,7 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
       proOptions={{ hideAttribution: true }}
       onInit={setReactFlowInstance}
       nodesDraggable
-      onPaneClick={handlePaneClick}
+      onPaneClick={closeSidebar}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
     />
