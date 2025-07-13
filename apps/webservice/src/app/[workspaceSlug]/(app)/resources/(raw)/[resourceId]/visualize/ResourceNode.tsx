@@ -148,7 +148,7 @@ const SystemSection: React.FC<{
 };
 
 type ResourceNodeProps = NodeProps<{
-  data: ResourceNodeData & { baseResourceId: string };
+  data: ResourceNodeData;
 }>;
 export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node.data;

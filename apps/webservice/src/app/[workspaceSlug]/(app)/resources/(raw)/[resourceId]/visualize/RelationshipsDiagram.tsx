@@ -25,16 +25,15 @@ type Edge = {
 };
 
 type RelationshipsDiagramProps = {
-  baseResource: schema.Resource;
   resources: ResourceNodeData[];
   edges: Edge[];
 };
 
-const getNodes = (resources: ResourceNodeData[], baseResourceId: string) =>
+const getNodes = (resources: ResourceNodeData[]) =>
   resources.map((r) => ({
     id: r.id,
     type: "resource",
-    data: { data: { ...r, label: r.name, baseResourceId }, label: r.name },
+    data: { data: { ...r, label: r.name }, label: r.name },
     position: { x: 0, y: 0 },
   }));
 
@@ -73,12 +72,11 @@ const useCloseSidebar = () => {
 };
 
 export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
-  baseResource,
   resources,
   edges,
 }) => {
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>(
-    getNodes(resources, baseResource.id),
+    getNodes(resources),
   );
 
   const [flowEdges, __, onEdgesChange] = useEdgesState(getEdges(edges));
