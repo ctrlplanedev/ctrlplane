@@ -9,7 +9,7 @@ import {
   dashboardWidget,
 } from "@ctrlplane/db/schema";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { dashboardWidgetRouter } from "./dashboard-widgets";
 
 export const dashboardRouter = createTRPCRouter({

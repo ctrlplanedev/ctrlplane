@@ -1,4 +1,4 @@
-import { dashboardRouter } from "./router/dashboard";
+import { dashboardRouter } from "./router/dashboard/dashboard";
 import { deploymentRouter } from "./router/deployment";
 import { environmentRouter } from "./router/environment";
 import { githubRouter } from "./router/github";
