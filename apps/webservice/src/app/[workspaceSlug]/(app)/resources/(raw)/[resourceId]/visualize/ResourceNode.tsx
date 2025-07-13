@@ -14,6 +14,7 @@ import { capitalCase } from "change-case";
 import { Handle, Position } from "reactflow";
 import { isPresent } from "ts-is-present";
 
+import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { useSidebar } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
@@ -109,7 +110,7 @@ const SystemStatus: React.FC<{
   );
 };
 
-const useHandleSystemClick = (system: System) => {
+const useHandleSystemClick = (system: System, resource: schema.Resource) => {
   const { toggleSidebar, open } = useSidebar();
   const { system: sidebarSystem, setSystem } = useSystemSidebarContext();
 
@@ -123,28 +124,44 @@ const useHandleSystemClick = (system: System) => {
       return;
     }
 
-    const newSystem = isSystemSelected ? null : system;
+    const newSystem = isSystemSelected ? null : { ...system, resource };
     setSystem(newSystem);
     if (!isSidebarOpen) toggleSidebar(["resource-visualization"]);
   };
 };
 
+const useIsSystemSelected = (system: System, resource: schema.Resource) => {
+  const { system: sidebarSystem } = useSystemSidebarContext();
+  return (
+    sidebarSystem?.id === system.id && sidebarSystem.resource.id === resource.id
+  );
+};
+
 const SystemSection: React.FC<{
-  resourceId: string;
+  resource: schema.Resource;
   system: System;
-}> = ({ resourceId, system }) => {
-  const handleClick = useHandleSystemClick(system);
+}> = ({ resource, system }) => {
+  const handleClick = useHandleSystemClick(system, resource);
+  const isSystemSelected = useIsSystemSelected(system, resource);
 
   return (
     <Button
       variant="ghost"
-      className="flex cursor-pointer items-center justify-between rounded-md border bg-neutral-800/50 px-3 py-2 hover:bg-neutral-800/80"
+      className={cn(
+        "flex cursor-pointer items-center justify-between rounded-md border bg-neutral-800/50 px-3 py-2 hover:border-neutral-600 hover:bg-neutral-800",
+        isSystemSelected && "border-neutral-600 bg-neutral-800",
+      )}
       onClick={handleClick}
     >
       <span>{capitalCase(system.name)}</span>
-      <SystemStatus resourceId={resourceId} systemId={system.id} />
+      <SystemStatus resourceId={resource.id} systemId={system.id} />
     </Button>
   );
+};
+
+const useIsResourceSelected = (resource: schema.Resource) => {
+  const { system: sidebarSystem } = useSystemSidebarContext();
+  return sidebarSystem?.resource.id === resource.id;
 };
 
 type ResourceNodeProps = NodeProps<{
@@ -152,9 +169,16 @@ type ResourceNodeProps = NodeProps<{
 }>;
 export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node.data;
+  const isResourceSelected = useIsResourceSelected(data);
+
   return (
     <>
-      <div className="flex w-[400px] flex-col gap-4 rounded-md border bg-neutral-900/50 p-3">
+      <div
+        className={cn(
+          "flex w-[400px] flex-col gap-4 rounded-md border bg-neutral-900/30 p-3",
+          isResourceSelected && "border-neutral-600",
+        )}
+      >
         <NodeHeader resource={data} />
         {data.systems.length === 0 && (
           <div className="flex h-10 items-center justify-center rounded-md border bg-neutral-800/50 text-muted-foreground">
@@ -162,7 +186,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
           </div>
         )}
         {data.systems.map((system) => (
-          <SystemSection key={system.id} resourceId={data.id} system={system} />
+          <SystemSection key={system.id} resource={data} system={system} />
         ))}
       </div>
 

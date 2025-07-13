@@ -1,13 +1,16 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
+import type * as schema from "@ctrlplane/db/schema";
 import type { Dispatch, SetStateAction } from "react";
 import { createContext, useContext, useState } from "react";
 
 type ResourceNodeData =
   RouterOutputs["resource"]["visualize"]["resources"][number];
 
-type System = ResourceNodeData["systems"][number];
+type System = ResourceNodeData["systems"][number] & {
+  resource: schema.Resource;
+};
 
 type SystemSidebarContextType = {
   system: System | null;
