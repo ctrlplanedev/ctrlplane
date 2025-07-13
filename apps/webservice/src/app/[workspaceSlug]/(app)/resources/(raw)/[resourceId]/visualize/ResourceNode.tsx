@@ -117,6 +117,12 @@ const useHandleSystemClick = (system: System) => {
   const isSidebarOpen = open.includes("resource-visualization");
 
   return () => {
+    if (isSystemSelected && isSidebarOpen) {
+      setSystem(null);
+      toggleSidebar(["resource-visualization"]);
+      return;
+    }
+
     const newSystem = isSystemSelected ? null : system;
     setSystem(newSystem);
     if (!isSidebarOpen) toggleSidebar(["resource-visualization"]);
