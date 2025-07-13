@@ -6,7 +6,7 @@ import { Channel, getQueue } from "@ctrlplane/events";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
 
 const updateResourceVariableQueue = getQueue(Channel.UpdateResourceVariable);
 

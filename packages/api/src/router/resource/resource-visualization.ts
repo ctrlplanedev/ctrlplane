@@ -7,7 +7,7 @@ import { getResourceChildren, getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { protectedProcedure } from "../trpc";
+import { protectedProcedure } from "../../trpc";
 
 const getResource = (id: string) =>
   db

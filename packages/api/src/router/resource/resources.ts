@@ -25,8 +25,8 @@ import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { releaseHistory } from "./release-history";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import { releaseHistory } from "../release-history";
 import { resourceMetadataGroupRouter } from "./resource-metadata-group";
 import { resourceProviderRouter } from "./resource-provider";
 import { resourceRelationshipRulesRouter } from "./resource-relationship-rules";

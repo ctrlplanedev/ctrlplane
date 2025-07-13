@@ -4,7 +4,7 @@ import { and, eq } from "@ctrlplane/db";
 import { resourceSchema } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
 
 export const resourceSchemaRouter = createTRPCRouter({
   list: protectedProcedure

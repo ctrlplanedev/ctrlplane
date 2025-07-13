@@ -27,8 +27,8 @@ import {
 import { Channel, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { resourceProviderPageRouter } from "./resource-provider-page/router";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import { resourceProviderPageRouter } from "../resource-provider-page/router";
 
 const resourceScanQueue = getQueue(Channel.ResourceScan);
 
