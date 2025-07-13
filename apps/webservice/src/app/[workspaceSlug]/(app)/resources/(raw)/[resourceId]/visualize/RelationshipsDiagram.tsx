@@ -61,12 +61,12 @@ const edgeTypes: EdgeTypes = { default: DepEdge };
 
 const useCloseSidebar = () => {
   const { toggleSidebar, open } = useSidebar();
-  const { setSystem } = useSystemSidebarContext();
+  const { setResourceAndSystem } = useSystemSidebarContext();
 
   return () => {
     if (open.includes("resource-visualization")) {
       toggleSidebar(["resource-visualization"]);
-      setSystem(null);
+      setResourceAndSystem(null);
     }
   };
 };

@@ -8,13 +8,13 @@ import { createContext, useContext, useState } from "react";
 type ResourceNodeData =
   RouterOutputs["resource"]["visualize"]["resources"][number];
 
-type System = ResourceNodeData["systems"][number] & {
-  resource: schema.Resource;
-};
+type System = ResourceNodeData["systems"][number];
+
+type ResourceAndSystem = { resource: schema.Resource; system: System };
 
 type SystemSidebarContextType = {
-  system: System | null;
-  setSystem: Dispatch<SetStateAction<System | null>>;
+  resourceAndSystem: ResourceAndSystem | null;
+  setResourceAndSystem: Dispatch<SetStateAction<ResourceAndSystem | null>>;
 };
 
 const SystemSidebarContext = createContext<SystemSidebarContextType | null>(
@@ -34,10 +34,13 @@ export const useSystemSidebarContext = () => {
 export const SystemSidebarProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [system, setSystem] = useState<System | null>(null);
+  const [resourceAndSystem, setResourceAndSystem] =
+    useState<ResourceAndSystem | null>(null);
 
   return (
-    <SystemSidebarContext.Provider value={{ system, setSystem }}>
+    <SystemSidebarContext.Provider
+      value={{ resourceAndSystem, setResourceAndSystem }}
+    >
       {children}
     </SystemSidebarContext.Provider>
   );

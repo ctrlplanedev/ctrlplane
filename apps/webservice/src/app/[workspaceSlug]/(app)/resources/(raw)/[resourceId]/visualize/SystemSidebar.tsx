@@ -98,14 +98,15 @@ const ReleaseTargetRow: React.FC<{ releaseTarget: ReleaseTarget }> = ({
 };
 
 export const SystemSidebarContent: React.FC = () => {
-  const { system, setSystem } = useSystemSidebarContext();
+  const { resourceAndSystem, setResourceAndSystem } = useSystemSidebarContext();
   const { toggleSidebar } = useSidebar();
   const closeSidebar = () => {
-    setSystem(null);
+    setResourceAndSystem(null);
     toggleSidebar(["resource-visualization"]);
   };
 
-  if (!system) return null;
+  if (!resourceAndSystem) return null;
+  const { system } = resourceAndSystem;
 
   return (
     <div className="space-y-10 p-6">
