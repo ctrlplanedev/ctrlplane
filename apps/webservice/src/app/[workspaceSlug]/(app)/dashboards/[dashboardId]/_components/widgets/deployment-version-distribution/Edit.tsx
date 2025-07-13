@@ -45,7 +45,7 @@ const useGetDeployments = () => {
   return { deployments, isDeploymentsLoading };
 };
 
-export const WidgetEdit: React.FC<{
+export const DeploymentVersionDistributionEdit: React.FC<{
   widget: SCHEMA.DashboardWidget;
   deploymentId: string;
   environmentIds?: string[];

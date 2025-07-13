@@ -166,20 +166,23 @@ export const WidgetFullscreen: React.FC<WidgetFullscreenProps> = ({
 };
 
 export const DashboardWidgetCard: React.FC<{
-  widget: { id: string; name: string };
-  WidgetFullscreen: React.ReactNode;
+  widget: SCHEMA.DashboardWidget;
+  WidgetExpandedComp: React.ReactNode;
+  WidgetEditingComp: React.ReactNode;
   children: React.ReactNode;
-}> = ({ widget, WidgetFullscreen, children }) => {
-  return (
-    <div className="flex h-full w-full flex-col rounded-sm border bg-background">
-      <div className="flex items-center gap-2 border-b p-2">
-        <div className="widget-drag-handle min-w-0 flex-grow cursor-move truncate">
-          {widget.name}
-        </div>
-        <WidgetActions widgetId={widget.id} />
+}> = ({ widget, WidgetExpandedComp, WidgetEditingComp, children }) => (
+  <div className="flex h-full w-full flex-col rounded-sm border bg-background">
+    <div className="flex items-center gap-2 border-b p-2">
+      <div className="widget-drag-handle min-w-0 flex-grow cursor-move truncate">
+        {widget.name}
       </div>
-      <div className="flex-1 overflow-y-auto p-2">{children}</div>
-      {WidgetFullscreen}
+      <WidgetActions widgetId={widget.id} />
     </div>
-  );
-};
+    <div className="flex-1 overflow-y-auto p-2">{children}</div>
+    <WidgetFullscreen
+      widget={widget}
+      WidgetExpanded={WidgetExpandedComp}
+      WidgetEditing={WidgetEditingComp}
+    />
+  </div>
+);

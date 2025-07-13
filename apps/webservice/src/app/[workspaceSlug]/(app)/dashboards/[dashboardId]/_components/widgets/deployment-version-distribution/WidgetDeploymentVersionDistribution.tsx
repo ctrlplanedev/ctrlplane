@@ -10,8 +10,8 @@ import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 
 import type { DashboardWidget } from "../../DashboardWidget";
 import { api } from "~/trpc/react";
-import { DashboardWidgetCard, WidgetFullscreen } from "../../DashboardWidget";
-import { WidgetEdit } from "./Edit";
+import { DashboardWidgetCard } from "../../DashboardWidget";
+import { DeploymentVersionDistributionEdit } from "./Edit";
 
 export const schema = z.object({
   deploymentId: z.string().uuid(),
@@ -86,17 +86,12 @@ export const WidgetDeploymentVersionDistribution: DashboardWidget = {
       return (
         <DashboardWidgetCard
           widget={widget}
-          WidgetFullscreen={
-            <WidgetFullscreen
+          WidgetExpandedComp={<DistroChart versionCounts={versionCounts} />}
+          WidgetEditingComp={
+            <DeploymentVersionDistributionEdit
               widget={widget}
-              WidgetExpanded={<DistroChart versionCounts={versionCounts} />}
-              WidgetEditing={
-                <WidgetEdit
-                  widget={widget}
-                  deploymentId={parsedConfig.data?.deploymentId ?? ""}
-                  environmentIds={parsedConfig.data?.environmentIds}
-                />
-              }
+              deploymentId={parsedConfig.data?.deploymentId ?? ""}
+              environmentIds={parsedConfig.data?.environmentIds}
             />
           }
         >
@@ -109,17 +104,12 @@ export const WidgetDeploymentVersionDistribution: DashboardWidget = {
     return (
       <DashboardWidgetCard
         widget={widget}
-        WidgetFullscreen={
-          <WidgetFullscreen
+        WidgetExpandedComp={<DistroChart versionCounts={versionCounts} />}
+        WidgetEditingComp={
+          <DeploymentVersionDistributionEdit
             widget={widget}
-            WidgetExpanded={<DistroChart versionCounts={versionCounts} />}
-            WidgetEditing={
-              <WidgetEdit
-                widget={widget}
-                deploymentId={parsedConfig.data.deploymentId}
-                environmentIds={parsedConfig.data.environmentIds}
-              />
-            }
+            deploymentId={parsedConfig.data.deploymentId}
+            environmentIds={parsedConfig.data.environmentIds}
           />
         }
       >
