@@ -46,11 +46,7 @@ export default async function RelationshipsPage(props: PageProps) {
       >
         <div className="relative flex h-full w-full">
           <SidebarInset className="h-[calc(100vh-56px-64px-2px)] min-w-0">
-            <RelationshipsDiagramProvider
-              baseResource={resource}
-              resources={resources}
-              edges={edges}
-            />
+            <RelationshipsDiagramProvider resources={resources} edges={edges} />
           </SidebarInset>
           <Sidebar
             name="resource-visualization"
