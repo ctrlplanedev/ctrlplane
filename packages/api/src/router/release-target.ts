@@ -12,7 +12,7 @@ import {
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
+import { exitedStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -122,12 +122,7 @@ export const releaseTargetRouter = createTRPCRouter({
           eq(schema.releaseJob.releaseId, schema.release.id),
         )
         .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
-        .where(
-          and(
-            eq(schema.versionRelease.releaseTargetId, input),
-            eq(schema.job.status, JobStatus.Successful),
-          ),
-        )
+        .where(eq(schema.versionRelease.releaseTargetId, input))
         .orderBy(desc(schema.job.createdAt))
         .limit(1)
         .then(takeFirstOrNull)

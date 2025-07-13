@@ -4,31 +4,33 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
 import React from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import {
+  IconCircleCheck,
+  IconCircleX,
+  IconClock,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { Handle, Position } from "reactflow";
+import { isPresent } from "ts-is-present";
 
-import { cn } from "@ctrlplane/ui";
-import { buttonVariants } from "@ctrlplane/ui/button";
+import { Button } from "@ctrlplane/ui/button";
+import { useSidebar } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@ctrlplane/ui/tooltip";
+  activeStatus,
+  failedStatuses,
+  JobStatus,
+} from "@ctrlplane/validators/jobs";
 
-import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/resources/ResourceIcon";
-import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { useSystemSidebarContext } from "./SystemSidebarContext";
 
 export type ResourceNodeData =
   RouterOutputs["resource"]["visualize"]["resources"][number];
 
 type System = ResourceNodeData["systems"][number];
-type ReleaseTarget = System["releaseTargets"][number];
 
 const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => (
   <div className="flex items-center gap-2">
@@ -44,91 +46,98 @@ const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => (
   </div>
 );
 
-const ReleaseTargetStatus: React.FC<{ releaseTarget: ReleaseTarget }> = ({
-  releaseTarget,
-}) => {
-  const { data, isLoading } = api.releaseTarget.latestJob.useQuery(
-    releaseTarget.id,
-    { refetchInterval: 10_000 },
+const getStatusInfo = (statuses: (JobStatus | null)[]) => {
+  const nonNullStatuses = statuses.filter(isPresent);
+  console.log(statuses);
+
+  const numFailed = nonNullStatuses.filter((s) =>
+    failedStatuses.includes(s),
+  ).length;
+  const numActive = nonNullStatuses.filter((s) =>
+    activeStatus.includes(s),
+  ).length;
+  const numPending = nonNullStatuses.filter(
+    (s) => s === JobStatus.Pending,
+  ).length;
+  const numSuccessful = nonNullStatuses.filter(
+    (s) => s === JobStatus.Successful,
+  ).length;
+
+  if (numFailed > 0)
+    return {
+      numSuccessful,
+      Icon: <IconCircleX className="h-4 w-4 text-red-500" />,
+    };
+  if (numActive > 0)
+    return {
+      numSuccessful,
+      Icon: <IconLoader2 className="h-4 w-4 animate-spin text-blue-500" />,
+    };
+  if (numPending > 0)
+    return {
+      numSuccessful,
+      Icon: <IconClock className="h-4 w-4 text-neutral-400" />,
+    };
+  return {
+    numSuccessful,
+    Icon: <IconCircleCheck className="h-4 w-4 text-green-500" />,
+  };
+};
+
+const SystemStatus: React.FC<{
+  resourceId: string;
+  systemId: string;
+}> = ({ resourceId, systemId }) => {
+  const { data, isLoading } = api.resource.systemOverview.useQuery({
+    resourceId,
+    systemId,
+  });
+
+  if (isLoading) return <Skeleton className="h-4 w-16" />;
+
+  const statuses = (data ?? []).map((d) => d.status);
+  const { numSuccessful, Icon } = getStatusInfo(
+    statuses as (JobStatus | null)[],
   );
 
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-
-  if (isLoading) return <Skeleton className="h-4 w-20" />;
-  if (!data)
-    return (
-      <span className="flex justify-end pl-1 text-xs text-muted-foreground">
-        Not deployed
-      </span>
-    );
-
-  const versionUrl = urls
-    .workspace(workspaceSlug)
-    .system(releaseTarget.system.slug)
-    .deployment(releaseTarget.deployment.slug)
-    .release(data.version.id)
-    .jobs();
-
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link
-            href={versionUrl}
-            className={cn(
-              "flex min-w-0 items-center gap-1",
-              buttonVariants({
-                variant: "ghost",
-                className: "h-6 w-fit px-1",
-              }),
-            )}
-          >
-            <JobTableStatusIcon
-              status={data.job.status}
-              className="flex-shrink-0"
-            />
-            <div className="truncate">{data.version.tag}</div>
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent className="flex flex-col gap-2 border bg-neutral-950 p-2 text-xs">
-          <span>Tag: {data.version.tag}</span>
-          <span>Name: {data.version.name}</span>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div className="flex items-center gap-2">
+      {Icon}
+      <span>
+        {numSuccessful}/{statuses.length}
+      </span>
+    </div>
   );
 };
 
-const ReleaseTargetRow: React.FC<{ releaseTarget: ReleaseTarget }> = ({
-  releaseTarget,
-}) => {
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      <span className="col-span-1 truncate text-sm">
-        {releaseTarget.deployment.slug}
-      </span>
-      <div className="col-span-1 flex items-center justify-end">
-        <ReleaseTargetStatus releaseTarget={releaseTarget} />
-      </div>
-    </div>
-  );
+const useHandleSystemClick = (system: System) => {
+  const { toggleSidebar } = useSidebar();
+  const { system: sidebarSystem, setSystem } = useSystemSidebarContext();
+
+  const isSystemSelected = sidebarSystem?.id === system.id;
+
+  return () => {
+    const newSystem = isSystemSelected ? null : system;
+    setSystem(newSystem);
+    toggleSidebar(["resource-visualization"]);
+  };
 };
 
 const SystemSection: React.FC<{
+  resourceId: string;
   system: System;
-}> = ({ system }) => {
+}> = ({ resourceId, system }) => {
+  const handleClick = useHandleSystemClick(system);
+
   return (
-    <div className="flex flex-col gap-2 rounded-md border bg-neutral-800/50 px-3 py-2">
+    <Button
+      variant="ghost"
+      className="flex cursor-pointer items-center justify-between rounded-md border bg-neutral-800/50 px-3 py-2 hover:bg-neutral-800/80"
+      onClick={handleClick}
+    >
       <span>{capitalCase(system.name)}</span>
-      <div className="flex flex-col gap-1">
-        {system.releaseTargets.map((releaseTarget) => (
-          <ReleaseTargetRow
-            key={releaseTarget.id}
-            releaseTarget={releaseTarget}
-          />
-        ))}
-      </div>
-    </div>
+      <SystemStatus resourceId={resourceId} systemId={system.id} />
+    </Button>
   );
 };
 
@@ -139,7 +148,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node.data;
   return (
     <>
-      <div className="flex w-[450px] flex-col gap-4 rounded-md border bg-neutral-900/50 p-3">
+      <div className="flex w-[400px] flex-col gap-4 rounded-md border bg-neutral-900/50 p-3">
         <NodeHeader resource={data} />
         {data.systems.length === 0 && (
           <div className="flex h-10 items-center justify-center rounded-md border bg-neutral-800/50 text-muted-foreground">
@@ -147,7 +156,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
           </div>
         )}
         {data.systems.map((system) => (
-          <SystemSection key={system.id} system={system} />
+          <SystemSection key={system.id} resourceId={data.id} system={system} />
         ))}
       </div>
 
