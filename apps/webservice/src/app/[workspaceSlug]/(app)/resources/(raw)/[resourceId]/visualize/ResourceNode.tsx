@@ -110,15 +110,16 @@ const SystemStatus: React.FC<{
 };
 
 const useHandleSystemClick = (system: System) => {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, open } = useSidebar();
   const { system: sidebarSystem, setSystem } = useSystemSidebarContext();
 
   const isSystemSelected = sidebarSystem?.id === system.id;
+  const isSidebarOpen = open.includes("resource-visualization");
 
   return () => {
     const newSystem = isSystemSelected ? null : system;
     setSystem(newSystem);
-    toggleSidebar(["resource-visualization"]);
+    if (!isSidebarOpen) toggleSidebar(["resource-visualization"]);
   };
 };
 
