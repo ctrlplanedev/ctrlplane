@@ -139,8 +139,6 @@ export const WidgetDeploymentVersionDistribution: Widget<WidgetSchema> = {
 
     const versionCounts = data ?? [];
 
-    console.log("versionCounts", versionCounts);
-
     return (
       <>
         <div className="flex h-full w-full flex-col rounded-md border p-2">
