@@ -24,7 +24,7 @@ export const ReleaseTargetTile: React.FC<{
           variant="default"
           size="sm"
           onClick={() => {
-            setExpandedWidget(widgetId, false);
+            setExpandedWidget(widgetId);
           }}
         >
           Deploy

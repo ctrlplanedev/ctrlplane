@@ -13,14 +13,16 @@ import {
 } from "@ctrlplane/ui/drawer";
 
 import { WidgetComponents } from "../../[dashboardId]/_components/widgets/WidgetKinds";
+import { useDashboard } from "../../[dashboardId]/DashboardContext";
 
 export const CreateWidgetDrawer: React.FC = () => {
+  const { isEditMode } = useDashboard();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
-      <DrawerTrigger asChild>
-        <Button variant="outline" size="sm">
+      <DrawerTrigger disabled={!isEditMode} asChild>
+        <Button variant="outline" size="sm" disabled={!isEditMode}>
           Create widget
         </Button>
       </DrawerTrigger>
@@ -45,7 +47,7 @@ export const CreateWidgetDrawer: React.FC = () => {
                   }}
                   className="flex cursor-grab flex-col items-center justify-center gap-2 rounded-md border p-2"
                 >
-                  <Icon className="h-10 w-10 stroke-1" />
+                  <Icon />
                 </div>
                 <div className="text-sm">{displayName}</div>
               </div>

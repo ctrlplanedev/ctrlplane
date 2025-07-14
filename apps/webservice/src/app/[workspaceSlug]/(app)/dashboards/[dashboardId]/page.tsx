@@ -15,6 +15,7 @@ import { Separator } from "@ctrlplane/ui/separator";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
+import { SetEditModeButton } from "../_components/SetEditModeButton";
 import { CreateWidgetDrawer } from "../_components/widget-drawer/CreateWidgetDrawer";
 import { PageHeader } from "../../_components/PageHeader";
 import { Dashboard } from "./_components/Dashboard";
@@ -68,7 +69,10 @@ export default async function DashboardPage(props: PageProps) {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <CreateWidgetDrawer />
+          <div className="flex w-fit items-center gap-2">
+            <SetEditModeButton />
+            <CreateWidgetDrawer />
+          </div>
         </PageHeader>
 
         <div className="h-[calc(100vh-64px-56px-2px)] w-full overflow-y-auto">

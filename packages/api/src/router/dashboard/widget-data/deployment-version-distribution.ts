@@ -21,6 +21,8 @@ export const deploymentVersionDistribution = protectedProcedure
     }),
   )
   .query(async ({ ctx, input: { deploymentId, environmentIds } }) => {
+    const envIds = environmentIds ?? [];
+
     const latestJobsSubquery = ctx.db
       .selectDistinctOn([schema.releaseTarget.id], {
         versionId: schema.deploymentVersion.id,
@@ -48,8 +50,8 @@ export const deploymentVersionDistribution = protectedProcedure
       .where(
         and(
           eq(schema.releaseTarget.deploymentId, deploymentId),
-          environmentIds != null
-            ? inArray(schema.releaseTarget.environmentId, environmentIds)
+          envIds.length > 0
+            ? inArray(schema.releaseTarget.environmentId, envIds)
             : undefined,
           eq(schema.job.status, JobStatus.Successful),
         ),

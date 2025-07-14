@@ -5,17 +5,22 @@ import type { Layout, Layouts } from "react-grid-layout";
 import { createContext, useContext, useState } from "react";
 
 import { api } from "~/trpc/react";
-import { useExpandedWidget } from "./_hooks/useExpandedWidget";
 
 type Dashboard = schema.Dashboard & {
   widgets: schema.DashboardWidget[];
 };
 
+export const MOVE_BUTTON_CLASS_NAME = "widget-drag-handle";
+
 type DashboardContextType = {
   widgets: schema.DashboardWidget[];
   layout: Layouts;
-  setLayout: (currentLayout: Layout[], allLayouts: Layouts) => void;
-  addWidgetCreationPlaceholder: (widget: schema.DashboardWidget) => void;
+  isEditMode: boolean;
+  setIsEditMode: (isEditMode: boolean) => void;
+  setLayout: (
+    currentLayout: Layout[],
+    placeholderWidget?: schema.DashboardWidget,
+  ) => void;
   createWidget: (widget: schema.DashboardWidgetInsert) => Promise<void>;
   isCreatingWidget: boolean;
   updateWidget: (
@@ -39,26 +44,27 @@ export const DashboardContextProvider: React.FC<{
     dashboard.widgets,
   );
 
+  const [isEditMode, setIsEditMode] = useState(false);
+  const onEditModeChange = (isEditMode: boolean) => {
+    setIsEditMode(isEditMode);
+    if (isEditMode) return;
+    setWidgets((prevWidgets) => {
+      const newWidgets = prevWidgets.filter(
+        (widget) => widget.id !== NEW_WIDGET_ID,
+      );
+      return newWidgets;
+    });
+  };
+
   const layout: Layouts = {
     lg: widgets.map((widget) => ({ i: widget.id, ...widget })),
   };
 
-  const { setExpandedWidget, clearExpandedWidget } = useExpandedWidget();
-
-  const addWidgetCreationPlaceholder = (widget: schema.DashboardWidget) => {
-    setWidgets((prevWidgets) => {
-      const prevWithoutPlaceholder = prevWidgets.filter(
-        (widget) => widget.id !== NEW_WIDGET_ID,
-      );
-      const newWidgets = [...prevWithoutPlaceholder, widget];
-      return newWidgets;
-    });
-    setExpandedWidget(widget.id, true);
-  };
-
   const updateWidgetMutation = api.dashboard.widget.update.useMutation();
-
-  const handleLayoutChange = (currentLayout: Layout[]) =>
+  const handleLayoutChange = (
+    currentLayout: Layout[],
+    placeholderWidget?: schema.DashboardWidget,
+  ) =>
     setWidgets((prevWidgets) => {
       const newWidgets = prevWidgets.map((widget) => {
         const layoutItem = currentLayout.find((item) => item.i === widget.id);
@@ -90,7 +96,8 @@ export const DashboardContextProvider: React.FC<{
         });
       }
 
-      return newWidgets;
+      if (placeholderWidget == null) return newWidgets;
+      return [...newWidgets, placeholderWidget];
     });
 
   const createWidgetMutation = api.dashboard.widget.create.useMutation();
@@ -105,7 +112,6 @@ export const DashboardContextProvider: React.FC<{
       const newWidgets = [...prevWithoutPlaceholder, newWidget];
       return newWidgets;
     });
-    clearExpandedWidget();
   };
 
   const updateWidget = async (
@@ -120,7 +126,6 @@ export const DashboardContextProvider: React.FC<{
       return newWidgets;
     });
     await updateWidgetMutation.mutateAsync({ id: widgetId, data: widget });
-    clearExpandedWidget();
   };
 
   const deleteWidgetMutation = api.dashboard.widget.delete.useMutation();
@@ -130,7 +135,6 @@ export const DashboardContextProvider: React.FC<{
       const newWidgets = prevWidgets.filter((widget) => widget.id !== widgetId);
       return newWidgets;
     });
-    clearExpandedWidget();
     utils.dashboard.get.invalidate();
   };
 
@@ -139,8 +143,9 @@ export const DashboardContextProvider: React.FC<{
       value={{
         widgets,
         layout,
+        isEditMode,
+        setIsEditMode: onEditModeChange,
         setLayout: handleLayoutChange,
-        addWidgetCreationPlaceholder,
         createWidget,
         isCreatingWidget: createWidgetMutation.isPending,
         updateWidget,
