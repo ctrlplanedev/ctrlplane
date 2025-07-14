@@ -85,12 +85,36 @@ export const releaseTargetRouter = createTRPCRouter({
         .then(takeFirst)
         .then(({ count }) => count);
 
-      const itemsPromise = ctx.db.query.releaseTarget.findMany({
-        where,
-        with: { resource: true, environment: true, deployment: true },
-        limit,
-        offset,
-      });
+      const itemsPromise = ctx.db
+        .select()
+        .from(schema.releaseTarget)
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseTarget.resourceId, schema.resource.id),
+        )
+        .innerJoin(
+          schema.deployment,
+          eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+        )
+        .innerJoin(
+          schema.system,
+          eq(schema.deployment.systemId, schema.system.id),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(schema.releaseTarget.environmentId, schema.environment.id),
+        )
+        .where(where)
+        .limit(limit)
+        .offset(offset)
+        .then((r) =>
+          r.map((row) => ({
+            ...row.release_target,
+            resource: row.resource,
+            deployment: { ...row.deployment, system: row.system },
+            environment: row.environment,
+          })),
+        );
 
       const [total, items] = await Promise.all([totalPromise, itemsPromise]);
       return { total, items };

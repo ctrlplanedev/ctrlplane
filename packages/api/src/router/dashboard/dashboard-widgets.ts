@@ -9,6 +9,7 @@ import {
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { deploymentVersionDistribution } from "./widget-data/deployment-version-distribution";
+import { releaseTargetModule } from "./widget-data/release-target-module";
 
 export const dashboardWidgetRouter = createTRPCRouter({
   create: protectedProcedure
@@ -39,5 +40,6 @@ export const dashboardWidgetRouter = createTRPCRouter({
 
   data: createTRPCRouter({
     deploymentVersionDistribution,
+    releaseTargetModule,
   }),
 });

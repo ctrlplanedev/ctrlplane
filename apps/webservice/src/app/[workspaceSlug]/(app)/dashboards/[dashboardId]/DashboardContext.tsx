@@ -17,11 +17,14 @@ type DashboardContextType = {
   setLayout: (currentLayout: Layout[], allLayouts: Layouts) => void;
   addWidgetCreationPlaceholder: (widget: schema.DashboardWidget) => void;
   createWidget: (widget: schema.DashboardWidgetInsert) => Promise<void>;
+  isCreatingWidget: boolean;
   updateWidget: (
     widgetId: string,
     widget: schema.DashboardWidgetUpdate,
   ) => Promise<void>;
+  isUpdatingWidget: boolean;
   deleteWidget: (widgetId: string) => void;
+  isDeletingWidget: boolean;
 };
 
 export const NEW_WIDGET_ID = "new_widget";
@@ -139,8 +142,11 @@ export const DashboardContextProvider: React.FC<{
         setLayout: handleLayoutChange,
         addWidgetCreationPlaceholder,
         createWidget,
+        isCreatingWidget: createWidgetMutation.isPending,
         updateWidget,
+        isUpdatingWidget: updateWidgetMutation.isPending,
         deleteWidget,
+        isDeletingWidget: deleteWidgetMutation.isPending,
       }}
     >
       {children}
