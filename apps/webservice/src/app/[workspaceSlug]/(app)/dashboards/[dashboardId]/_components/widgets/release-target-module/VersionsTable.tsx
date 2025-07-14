@@ -16,7 +16,7 @@ import { api } from "~/trpc/react";
 export const VersionsTable: React.FC<{
   releaseTarget: ReleaseTargetModuleInfo;
 }> = ({ releaseTarget }) => {
-  const { data, isLoading } =
+  const { data } =
     api.dashboard.widget.data.releaseTargetModule.deployableVersions.useQuery({
       releaseTargetId: releaseTarget.id,
     });
