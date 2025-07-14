@@ -26,7 +26,7 @@ export const CreateWidgetDrawer: React.FC = () => {
           Create widget
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="left-auto right-0 top-0 mt-0 h-screen w-1/3 overflow-auto rounded-none focus-visible:outline-none">
         <DrawerHeader>
           <DrawerTitle>Create widget</DrawerTitle>
           <DrawerDescription>
