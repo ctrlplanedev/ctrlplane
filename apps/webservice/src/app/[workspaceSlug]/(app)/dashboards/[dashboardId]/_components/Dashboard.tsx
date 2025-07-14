@@ -1,6 +1,5 @@
 "use client";
 
-import type * as schema from "@ctrlplane/db/schema";
 import React from "react";
 import { useParams } from "next/navigation";
 import { Responsive, WidthProvider } from "react-grid-layout";
@@ -11,16 +10,6 @@ import { NEW_WIDGET_ID, useDashboard } from "../DashboardContext";
 import { RenderWidget } from "./widgets/RenderWidget";
 
 const ReactGridLayout = WidthProvider(Responsive);
-
-type Dashboard = schema.Dashboard & {
-  widgets: schema.DashboardWidget[];
-};
-
-const CreateWidgetPlaceholder: React.FC<{
-  widgetBeingCreated: schema.DashboardWidget;
-}> = ({ widgetBeingCreated }) => {
-  return <RenderWidget widget={widgetBeingCreated} />;
-};
 
 export const Dashboard: React.FC = () => {
   const { dashboardId } = useParams<{ dashboardId: string }>();
@@ -67,7 +56,7 @@ export const Dashboard: React.FC = () => {
     >
       {widgetBeingCreated != null && (
         <div key={NEW_WIDGET_ID} data-grid={{ ...widgetBeingCreated }}>
-          <CreateWidgetPlaceholder widgetBeingCreated={widgetBeingCreated} />
+          <RenderWidget widget={widgetBeingCreated} />
         </div>
       )}
       {widgets.map((widget) => {
