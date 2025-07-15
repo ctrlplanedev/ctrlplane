@@ -67,6 +67,7 @@ export const RenderWidget: React.FC<{
       isExpanded={expandedWidgetId === widget.id}
       isEditing={editingWidgetId === widget.id}
       onDelete={() => dashboard.deleteWidget(widget.id)}
+      isUpdating={dashboard.isUpdating}
     />
   );
 };

@@ -102,10 +102,7 @@ const pinnedVersions = protectedProcedure
 
       const deploymentAuthzPromise = canUser
         .perform(Permission.DeploymentGet)
-        .on({
-          type: "deployment",
-          id: input.deploymentId,
-        });
+        .on({ type: "deployment", id: input.deploymentId });
 
       const [envAuthzResult, deploymentAuthzResult] = await Promise.all([
         envAuthzPromise,

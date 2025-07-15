@@ -11,12 +11,48 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { dispatchQueueJob } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { exitedStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const releaseTargetRouter = createTRPCRouter({
+  byId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.ReleaseTargetGet).on({
+          type: "releaseTarget",
+          id: input,
+        }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(schema.releaseTarget)
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseTarget.resourceId, schema.resource.id),
+        )
+        .innerJoin(
+          schema.deployment,
+          eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(schema.releaseTarget.environmentId, schema.environment.id),
+        )
+        .where(eq(schema.releaseTarget.id, input))
+        .then(takeFirst)
+        .then((row) => ({
+          ...row.release_target,
+          resource: row.resource,
+          deployment: row.deployment,
+          environment: row.environment,
+        })),
+    ),
+
   list: protectedProcedure
     .input(
       z
@@ -226,5 +262,64 @@ export const releaseTargetRouter = createTRPCRouter({
           return { ...releaseTarget, jobs };
         })
         .value();
+    }),
+
+  pinVersion: protectedProcedure
+    .input(
+      z.object({
+        releaseTargetId: z.string().uuid(),
+        versionId: z.string().uuid(),
+      }),
+    )
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.ReleaseTargetGet).on({
+          type: "releaseTarget",
+          id: input.releaseTargetId,
+        }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const version = await ctx.db
+        .select()
+        .from(schema.deploymentVersion)
+        .where(eq(schema.deploymentVersion.id, input.versionId))
+        .then(takeFirst);
+
+      const releaseTarget = await ctx.db
+        .update(schema.releaseTarget)
+        .set({ desiredVersionId: input.versionId })
+        .where(eq(schema.releaseTarget.id, input.releaseTargetId))
+        .returning()
+        .then(takeFirst);
+
+      await dispatchQueueJob()
+        .toEvaluate()
+        .releaseTargets([releaseTarget], {
+          versionEvaluateOptions: { versions: [version] },
+        });
+
+      return releaseTarget;
+    }),
+
+  unpinVersion: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.ReleaseTargetGet).on({
+          type: "releaseTarget",
+          id: input,
+        }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const releaseTarget = await ctx.db
+        .update(schema.releaseTarget)
+        .set({ desiredVersionId: null })
+        .where(eq(schema.releaseTarget.id, input))
+        .returning()
+        .then(takeFirst);
+
+      await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
+
+      return releaseTarget;
     }),
 });

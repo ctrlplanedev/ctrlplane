@@ -11,6 +11,7 @@ import {
   CommandItem,
   CommandList,
 } from "@ctrlplane/ui/command";
+import { Dialog, DialogContent } from "@ctrlplane/ui/dialog";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
@@ -20,10 +21,10 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
-import type { ReleaseTargetModuleInfo } from "./release-target-module-info";
+import type { ReleaseTargetModuleConfig } from "./schema";
 import { api } from "~/trpc/react";
-import { NEW_WIDGET_ID, useDashboard } from "../../../DashboardContext";
-import { WidgetKind } from "../WidgetKinds";
+import { useEditingWidget } from "../../../_hooks/useEditingWidget";
+import { getIsValidConfig } from "./schema";
 
 const useGetWorkspace = () => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
@@ -180,50 +181,25 @@ const ReleaseTargetCombobox: React.FC<{
   );
 };
 
-const useUpsertWidget = (widget: schema.DashboardWidget) => {
-  const { dashboardId } = useParams<{ dashboardId: string }>();
-  const utils = api.useUtils();
-  const invalidate = (releaseTargetId: string) =>
-    utils.dashboard.widget.data.releaseTargetModule.summary.invalidate(
-      releaseTargetId,
-    );
-
-  const { createWidget, updateWidget, isCreatingWidget, isUpdatingWidget } =
-    useDashboard();
-
-  const upsertWidget = async (name: string, releaseTargetId: string) => {
-    if (widget.id === NEW_WIDGET_ID) {
-      await createWidget({
-        dashboardId,
-        widget: WidgetKind.ReleaseTargetModule,
-        x: widget.x,
-        y: widget.y,
-        w: widget.w,
-        h: widget.h,
-        name,
-        config: { releaseTargetId },
-      });
-      invalidate(releaseTargetId);
-      return;
-    }
-
-    await updateWidget(widget.id, {
-      name,
-      config: { releaseTargetId },
-    });
-    invalidate(releaseTargetId);
-  };
-
-  const isUpserting = isCreatingWidget || isUpdatingWidget;
-
-  return { upsertWidget, isUpserting };
-};
-
 export const EditReleaseTargetModule: React.FC<{
-  widget: schema.DashboardWidget;
-  releaseTarget?: ReleaseTargetModuleInfo;
-}> = ({ widget, releaseTarget }) => {
-  const [widgetName, setWidgetName] = useState<string>(widget.name);
+  updateConfig: (config: ReleaseTargetModuleConfig) => Promise<void>;
+  config: ReleaseTargetModuleConfig;
+  isEditing: boolean;
+  setIsEditing: (isEditing: boolean) => void;
+  isUpdating: boolean;
+}> = ({ config, updateConfig, isEditing, setIsEditing, isUpdating }) => {
+  const isValidConfig = getIsValidConfig(config);
+
+  const { data: releaseTarget, isLoading } = api.releaseTarget.byId.useQuery(
+    config.releaseTargetId,
+    { enabled: isValidConfig },
+  );
+
+  const [widgetName, setWidgetName] = useState<string | null>(
+    config.name ?? null,
+  );
+  const { clearEditingWidget } = useEditingWidget();
+  const utils = api.useUtils();
 
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
     releaseTarget?.resource.id ?? null,
@@ -233,40 +209,56 @@ export const EditReleaseTargetModule: React.FC<{
     string | null
   >(releaseTarget?.id ?? null);
 
-  const { upsertWidget, isUpserting } = useUpsertWidget(widget);
+  const invalidate = () => {
+    utils.dashboard.widget.data.releaseTargetModule.summary.invalidate(
+      config.releaseTargetId,
+    );
+    utils.dashboard.widget.data.releaseTargetModule.deployableVersions.invalidate(
+      { releaseTargetId: config.releaseTargetId },
+    );
+  };
 
   const onSubmit = async () => {
     if (selectedReleaseTargetId == null) return;
-    await upsertWidget(widgetName, selectedReleaseTargetId);
+    await updateConfig({
+      name: widgetName,
+      releaseTargetId: selectedReleaseTargetId,
+    })
+      .then(clearEditingWidget)
+      .then(invalidate);
   };
 
   return (
-    <div className="w-96 space-y-4">
-      <div className="flex flex-col gap-2">
-        <Label>Name</Label>
-        <Input
-          value={widgetName}
-          onChange={(e) => setWidgetName(e.target.value)}
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label>Select Resource</Label>
-        <ResourceCombobox
-          selectedResourceId={selectedResourceId}
-          setSelectedResourceId={setSelectedResourceId}
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label>Select Deployment</Label>
-        <ReleaseTargetCombobox
-          selectedResourceId={selectedResourceId}
-          selectedReleaseTargetId={selectedReleaseTargetId}
-          setSelectedReleaseTargetId={setSelectedReleaseTargetId}
-        />
-      </div>
-      <Button onClick={onSubmit} disabled={isUpserting}>
-        Save
-      </Button>
-    </div>
+    <Dialog open={isEditing} onOpenChange={setIsEditing}>
+      <DialogContent>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2">
+            <Label>Name</Label>
+            <Input
+              value={widgetName ?? ""}
+              onChange={(e) => setWidgetName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label>Select Resource</Label>
+            <ResourceCombobox
+              selectedResourceId={selectedResourceId}
+              setSelectedResourceId={setSelectedResourceId}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label>Select Deployment</Label>
+            <ReleaseTargetCombobox
+              selectedResourceId={selectedResourceId}
+              selectedReleaseTargetId={selectedReleaseTargetId}
+              setSelectedReleaseTargetId={setSelectedReleaseTargetId}
+            />
+          </div>
+          <Button onClick={onSubmit} disabled={isLoading || isUpdating}>
+            Save
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

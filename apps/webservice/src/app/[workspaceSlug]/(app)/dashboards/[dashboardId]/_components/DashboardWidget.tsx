@@ -11,6 +11,7 @@ export type WidgetFC<Config> = React.FC<
     setIsEditing: (isEditing: boolean) => void;
     isEditMode: boolean;
     onDelete: () => void;
+    isUpdating: boolean;
   }
 >;
 

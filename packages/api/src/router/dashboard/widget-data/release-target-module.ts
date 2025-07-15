@@ -185,6 +185,7 @@ const getVersionsComparator =
   (releaseTarget: schema.ReleaseTarget) =>
   (a: schema.DeploymentVersion, b: schema.DeploymentVersion) => {
     if (releaseTarget.desiredVersionId === a.id) return -1;
+    if (releaseTarget.desiredVersionId === b.id) return 1;
     return b.createdAt.getTime() - a.createdAt.getTime();
   };
 
