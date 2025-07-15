@@ -16,8 +16,6 @@ import { usePolicyFormContext } from "../../_components/PolicyFormContext";
 
 const useReadableTimeScaleInterval = () => {
   const { form } = usePolicyFormContext();
-  const formErrors = form.formState.errors;
-  console.log("formErrors", formErrors);
   const rollout = form.watch("environmentVersionRollout");
   const timeScaleInterval = rollout?.timeScaleInterval;
   const [prettyString, setPrettyString] = useState<string>(

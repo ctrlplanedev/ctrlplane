@@ -172,8 +172,6 @@ export const RolloutCurveChart: React.FC = () => {
   const currentRolloutPosition =
     getCurrentRolloutPosition(rolloutInfo?.releaseTargetRolloutInfo ?? []) ?? 0;
 
-  console.log(currentRolloutPosition);
-
   return (
     <Card className="p-2">
       <CardHeader>

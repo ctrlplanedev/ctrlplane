@@ -130,8 +130,6 @@ export const VersionsTable: React.FC<{
 
   const versions = data ?? [];
 
-  console.log(versions);
-
   return (
     <div className="rounded-md border">
       <Table>

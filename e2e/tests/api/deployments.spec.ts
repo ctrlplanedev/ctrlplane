@@ -506,7 +506,6 @@ test.describe("Deployments API", () => {
      * since the deployment no longer has a specific scope
      */
     for (const resource of builder.refs.resources) {
-      console.log(resource);
       const fetchedResourceResponse = await api.GET(
         "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
         {

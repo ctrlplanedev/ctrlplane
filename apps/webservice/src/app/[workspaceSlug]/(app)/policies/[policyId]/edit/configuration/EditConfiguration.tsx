@@ -72,8 +72,6 @@ const TARGET_SCOPE_OPTIONS = [
 export const EditConfiguration: React.FC = () => {
   const { form } = usePolicyFormContext();
 
-  console.log(form.getValues());
-
   const isTargetsError = form.formState.errors.targets != null;
 
   const { fields, append, remove, update } = useFieldArray({

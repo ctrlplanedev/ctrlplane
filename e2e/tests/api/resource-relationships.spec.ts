@@ -82,7 +82,6 @@ test.describe("Resource Relationships API", () => {
 
     expect(sourceResource.response.status).toBe(200);
     expect(sourceResource.data?.relationships).toBeDefined();
-    console.log(sourceResource.data?.relationships);
     const target = sourceResource.data?.relationships?.[reference];
     expect(target).toBeDefined();
     expect(target?.type).toBe("depends_on");

@@ -417,7 +417,5 @@ test.describe("Resource API", () => {
         },
       },
     );
-
-    console.log("data", data);
   });
 });
