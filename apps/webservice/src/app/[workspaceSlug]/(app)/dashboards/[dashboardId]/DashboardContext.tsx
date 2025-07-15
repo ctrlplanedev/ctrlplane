@@ -1,8 +1,10 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
+import type { Dispatch, SetStateAction } from "react";
 import type { Layout, Layouts } from "react-grid-layout";
 import { createContext, useContext, useState } from "react";
+import { useParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 
@@ -22,28 +24,21 @@ type DashboardContextType = {
     placeholderWidget?: schema.DashboardWidget,
   ) => void;
   createWidget: (widget: schema.DashboardWidgetInsert) => Promise<void>;
-  isCreatingWidget: boolean;
   updateWidget: (
     widgetId: string,
     widget: schema.DashboardWidgetUpdate,
   ) => Promise<void>;
-  isUpdatingWidget: boolean;
   deleteWidget: (widgetId: string) => void;
-  isDeletingWidget: boolean;
+  isUpdating: boolean;
 };
 
 export const NEW_WIDGET_ID = "new_widget";
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
 
-export const DashboardContextProvider: React.FC<{
-  dashboard: Dashboard;
-  children: React.ReactNode;
-}> = ({ dashboard, children }) => {
-  const [widgets, setWidgets] = useState<schema.DashboardWidget[]>(
-    dashboard.widgets,
-  );
-
+const useEditMode = (
+  setWidgets: Dispatch<SetStateAction<schema.DashboardWidget[]>>,
+) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const onEditModeChange = (isEditMode: boolean) => {
     setIsEditMode(isEditMode);
@@ -56,12 +51,14 @@ export const DashboardContextProvider: React.FC<{
     });
   };
 
-  const layout: Layouts = {
-    lg: widgets.map((widget) => ({ i: widget.id, ...widget })),
-  };
+  return { isEditMode, setIsEditMode: onEditModeChange };
+};
 
+const useHandleLayoutChange = (
+  setWidgets: Dispatch<SetStateAction<schema.DashboardWidget[]>>,
+) => {
   const updateWidgetMutation = api.dashboard.widget.update.useMutation();
-  const handleLayoutChange = (
+  return (
     currentLayout: Layout[],
     placeholderWidget?: schema.DashboardWidget,
   ) =>
@@ -99,21 +96,29 @@ export const DashboardContextProvider: React.FC<{
       if (placeholderWidget == null) return newWidgets;
       return [...newWidgets, placeholderWidget];
     });
+};
 
+const useCreateWidget = (
+  setWidgets: Dispatch<SetStateAction<schema.DashboardWidget[]>>,
+) => {
+  const { dashboardId } = useParams<{ dashboardId: string }>();
   const createWidgetMutation = api.dashboard.widget.create.useMutation();
   const utils = api.useUtils();
   const createWidget = async (widget: schema.DashboardWidgetInsert) => {
     const newWidget = await createWidgetMutation.mutateAsync(widget);
-    utils.dashboard.get.invalidate();
+    utils.dashboard.get.invalidate(dashboardId);
     setWidgets((prevWidgets) => {
-      const prevWithoutPlaceholder = prevWidgets.filter(
-        (widget) => widget.id !== NEW_WIDGET_ID,
-      );
-      const newWidgets = [...prevWithoutPlaceholder, newWidget];
+      const newWidgets = [...prevWidgets, newWidget];
       return newWidgets;
     });
   };
+  return { createWidget, isCreatingWidget: createWidgetMutation.isPending };
+};
 
+const useUpdateWidget = (
+  setWidgets: Dispatch<SetStateAction<schema.DashboardWidget[]>>,
+) => {
+  const updateWidgetMutation = api.dashboard.widget.update.useMutation();
   const updateWidget = async (
     widgetId: string,
     widget: schema.DashboardWidgetUpdate,
@@ -127,16 +132,43 @@ export const DashboardContextProvider: React.FC<{
     });
     await updateWidgetMutation.mutateAsync({ id: widgetId, data: widget });
   };
+  return { updateWidget, isUpdatingWidget: updateWidgetMutation.isPending };
+};
 
+const useDeleteWidget = (
+  setWidgets: Dispatch<SetStateAction<schema.DashboardWidget[]>>,
+) => {
+  const { dashboardId } = useParams<{ dashboardId: string }>();
   const deleteWidgetMutation = api.dashboard.widget.delete.useMutation();
+  const utils = api.useUtils();
+
   const deleteWidget = (widgetId: string) => {
-    if (widgetId !== NEW_WIDGET_ID) deleteWidgetMutation.mutate(widgetId);
+    deleteWidgetMutation.mutate(widgetId);
+    utils.dashboard.get.invalidate(dashboardId);
     setWidgets((prevWidgets) => {
       const newWidgets = prevWidgets.filter((widget) => widget.id !== widgetId);
       return newWidgets;
     });
-    utils.dashboard.get.invalidate();
   };
+  return { deleteWidget, isDeletingWidget: deleteWidgetMutation.isPending };
+};
+
+export const DashboardContextProvider: React.FC<{
+  dashboard: Dashboard;
+  children: React.ReactNode;
+}> = ({ dashboard, children }) => {
+  const [widgets, setWidgets] = useState<schema.DashboardWidget[]>(
+    dashboard.widgets,
+  );
+  const layout: Layouts = {
+    lg: widgets.map((widget) => ({ i: widget.id, ...widget })),
+  };
+  const { isEditMode, setIsEditMode } = useEditMode(setWidgets);
+  const handleLayoutChange = useHandleLayoutChange(setWidgets);
+  const { createWidget, isCreatingWidget } = useCreateWidget(setWidgets);
+  const { updateWidget, isUpdatingWidget } = useUpdateWidget(setWidgets);
+  const { deleteWidget, isDeletingWidget } = useDeleteWidget(setWidgets);
+  const isUpdating = isCreatingWidget || isUpdatingWidget || isDeletingWidget;
 
   return (
     <DashboardContext.Provider
@@ -144,14 +176,12 @@ export const DashboardContextProvider: React.FC<{
         widgets,
         layout,
         isEditMode,
-        setIsEditMode: onEditModeChange,
+        setIsEditMode,
         setLayout: handleLayoutChange,
         createWidget,
-        isCreatingWidget: createWidgetMutation.isPending,
         updateWidget,
-        isUpdatingWidget: updateWidgetMutation.isPending,
         deleteWidget,
-        isDeletingWidget: deleteWidgetMutation.isPending,
+        isUpdating,
       }}
     >
       {children}
