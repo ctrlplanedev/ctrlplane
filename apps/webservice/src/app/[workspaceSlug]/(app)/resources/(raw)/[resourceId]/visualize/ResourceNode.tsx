@@ -192,11 +192,6 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
         )}
       >
         <NodeHeader resource={data} />
-        {data.systems.length === 0 && (
-          <div className="flex h-10 items-center justify-center rounded-md border bg-neutral-800/50 text-muted-foreground">
-            Not part of any system
-          </div>
-        )}
         {data.systems.map((system) => (
           <SystemSection key={system.id} resource={data} system={system} />
         ))}

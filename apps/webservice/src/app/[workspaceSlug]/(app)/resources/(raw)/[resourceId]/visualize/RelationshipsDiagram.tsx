@@ -83,7 +83,7 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
 
   const { setReactFlowInstance } = useLayoutAndFitView(nodes, {
     direction: "LR",
-    extraEdgeLength: 50,
+    extraEdgeLength: 250,
   });
 
   const closeSidebar = useCloseSidebar();
