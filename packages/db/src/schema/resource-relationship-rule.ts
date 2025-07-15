@@ -246,6 +246,18 @@ export const createResourceRelationshipRule = createInsertSchema(
         }),
       )
       .optional(),
+    sourceMetadataEquals: z
+      .array(
+        z.object({
+          key: z.string().refine((val) => val.trim().length > 0, {
+            message: "Key cannot be empty",
+          }),
+          value: z.string().refine((val) => val.trim().length > 0, {
+            message: "Value cannot be empty",
+          }),
+        }),
+      )
+      .optional(),
     targetMetadataEquals: z
       .array(
         z.object({

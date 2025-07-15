@@ -67,6 +67,21 @@ export const POST = request()
                 })),
               );
 
+          const sourceMetadataEquals = _.uniqBy(
+            body.sourceMetadataEquals ?? [],
+            (m) => m.key,
+          );
+          if (sourceMetadataEquals.length > 0)
+            await tx
+              .insert(schema.resourceRelationshipSourceRuleMetadataEquals)
+              .values(
+                sourceMetadataEquals.map((m) => ({
+                  resourceRelationshipRuleId: rule.id,
+                  key: m.key,
+                  value: m.value,
+                })),
+              );
+
           const targetMetadataEquals = _.uniqBy(
             body.targetMetadataEquals ?? [],
             (m) => m.key,
@@ -82,7 +97,12 @@ export const POST = request()
                 })),
               );
 
-          return { ...rule, metadataKeysMatches, targetMetadataEquals };
+          return {
+            ...rule,
+            metadataKeysMatches,
+            targetMetadataEquals,
+            sourceMetadataEquals,
+          };
         });
 
         return NextResponse.json(rule);

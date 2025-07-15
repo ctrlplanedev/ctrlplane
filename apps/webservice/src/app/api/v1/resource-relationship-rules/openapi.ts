@@ -75,6 +75,24 @@ export const openapi: Swagger.SwaggerV3 = {
           "inherits_from",
         ],
       },
+
+      MetadataEqualsConstraint: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          value: { type: "string" },
+        },
+      },
+
+      MetadataKeyMatchConstraint: {
+        type: "object",
+        properties: {
+          sourceKey: { type: "string" },
+          targetKey: { type: "string" },
+        },
+        required: ["sourceKey", "targetKey"],
+      },
+
       ResourceRelationshipRule: {
         type: "object",
         properties: {
@@ -87,32 +105,24 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           dependencyDescription: { type: "string" },
           description: { type: "string" },
+
           sourceKind: { type: "string" },
           sourceVersion: { type: "string" },
+          sourceMetadataEquals: {
+            type: "array",
+            items: { $ref: "#/components/schemas/MetadataEqualsConstraint" },
+          },
+
           targetKind: { type: "string" },
           targetVersion: { type: "string" },
           targetMetadataEquals: {
             type: "array",
-            items: {
-              type: "object",
-              properties: {
-                key: { type: "string" },
-                value: { type: "string" },
-              },
-              required: ["key", "value"],
-            },
+            items: { $ref: "#/components/schemas/MetadataEqualsConstraint" },
           },
 
           metadataKeysMatches: {
             type: "array",
-            items: {
-              type: "object",
-              properties: {
-                sourceKey: { type: "string" },
-                targetKey: { type: "string" },
-              },
-              required: ["sourceKey", "targetKey"],
-            },
+            items: { $ref: "#/components/schemas/MetadataKeyMatchConstraint" },
           },
         },
         required: [
@@ -142,25 +152,16 @@ export const openapi: Swagger.SwaggerV3 = {
           targetVersion: { type: "string" },
           metadataKeysMatches: {
             type: "array",
-            items: {
-              type: "object",
-              properties: {
-                sourceKey: { type: "string" },
-                targetKey: { type: "string" },
-              },
-              required: ["sourceKey", "targetKey"],
-            },
+            items: { $ref: "#/components/schemas/MetadataKeyMatchConstraint" },
           },
           targetMetadataEquals: {
             type: "array",
-            items: {
-              type: "object",
-              properties: {
-                key: { type: "string" },
-                value: { type: "string" },
-              },
-              required: ["key", "value"],
-            },
+            items: { $ref: "#/components/schemas/MetadataEqualsConstraint" },
+          },
+
+          sourceMetadataEquals: {
+            type: "array",
+            items: { $ref: "#/components/schemas/MetadataEqualsConstraint" },
           },
         },
         required: [

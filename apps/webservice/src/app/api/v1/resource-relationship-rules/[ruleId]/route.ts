@@ -45,7 +45,7 @@ const replaceMetadataMatchRules = async (
   return metadataKeys;
 };
 
-const replaceMetadataEqualsRules = async (
+const replaceTargetMetadataEqualsRules = async (
   tx: Tx,
   ruleId: string,
   targetMetadataEquals?: { key: string; value: string }[],
@@ -63,6 +63,34 @@ const replaceMetadataEqualsRules = async (
   const metadataKeys = _.uniqBy(targetMetadataEquals ?? [], (m) => m.key);
   if (metadataKeys.length > 0)
     await tx.insert(schema.resourceRelationshipTargetRuleMetadataEquals).values(
+      metadataKeys.map(({ key, value }) => ({
+        resourceRelationshipRuleId: ruleId,
+        key,
+        value,
+      })),
+    );
+
+  return metadataKeys;
+};
+
+const replaceSourceMetadataEqualsRules = async (
+  tx: Tx,
+  ruleId: string,
+  sourceMetadataEquals?: { key: string; value: string }[],
+) => {
+  await tx
+    .delete(schema.resourceRelationshipSourceRuleMetadataEquals)
+    .where(
+      eq(
+        schema.resourceRelationshipSourceRuleMetadataEquals
+          .resourceRelationshipRuleId,
+        ruleId,
+      ),
+    );
+
+  const metadataKeys = _.uniqBy(sourceMetadataEquals ?? [], (m) => m.key);
+  if (metadataKeys.length > 0)
+    await tx.insert(schema.resourceRelationshipSourceRuleMetadataEquals).values(
       metadataKeys.map(({ key, value }) => ({
         resourceRelationshipRuleId: ruleId,
         key,
@@ -115,13 +143,24 @@ export const PATCH = request()
           body.metadataKeysMatches,
         );
 
-        const targetMetadataEquals = await replaceMetadataEqualsRules(
+        const targetMetadataEquals = await replaceTargetMetadataEqualsRules(
           tx,
           ruleId,
           body.targetMetadataEquals,
         );
 
-        return { ...rule, metadataKeysMatches, targetMetadataEquals };
+        const sourceMetadataEquals = await replaceSourceMetadataEqualsRules(
+          tx,
+          ruleId,
+          body.sourceMetadataEquals,
+        );
+
+        return {
+          ...rule,
+          metadataKeysMatches,
+          targetMetadataEquals,
+          sourceMetadataEquals,
+        };
       });
 
       return NextResponse.json(rule);

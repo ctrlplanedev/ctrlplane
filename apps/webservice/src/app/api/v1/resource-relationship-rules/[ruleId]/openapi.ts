@@ -25,23 +25,19 @@ export const openapi: Swagger.SwaggerV3 = {
           metadataKeysMatches: {
             type: "array",
             items: {
-              type: "object",
-              properties: {
-                sourceKey: { type: "string" },
-                targetKey: { type: "string" },
-              },
-              required: ["sourceKey", "targetKey"],
+              $ref: "#/components/schemas/MetadataKeyMatchConstraint",
             },
           },
           targetMetadataEquals: {
             type: "array",
             items: {
-              type: "object",
-              properties: {
-                key: { type: "string" },
-                value: { type: "string" },
-              },
-              required: ["key", "value"],
+              $ref: "#/components/schemas/MetadataEqualsConstraint",
+            },
+          },
+          sourceMetadataEquals: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/MetadataEqualsConstraint",
             },
           },
         },

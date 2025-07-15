@@ -18,11 +18,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": [
-                "aws",
-                "gcp",
-                "azure"
-              ]
+              "enum": ["aws", "gcp", "azure"]
             },
             "description": "Cloud provider (aws, gcp, azure)"
           }
@@ -307,10 +303,7 @@
                             "type": "number"
                           }
                         },
-                        "required": [
-                          "rolloutTime",
-                          "rolloutPosition"
-                        ]
+                        "required": ["rolloutTime", "rolloutPosition"]
                       }
                     ]
                   }
@@ -396,12 +389,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "ready",
-                      "building",
-                      "failed",
-                      "rejected"
-                    ]
+                    "enum": ["ready", "building", "failed", "rejected"]
                   },
                   "message": {
                     "type": "string"
@@ -683,12 +671,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "ready",
-                      "building",
-                      "failed",
-                      "rejected"
-                    ]
+                    "enum": ["ready", "building", "failed", "rejected"]
                   },
                   "message": {
                     "type": "string"
@@ -700,10 +683,7 @@
                     }
                   }
                 },
-                "required": [
-                  "tag",
-                  "deploymentId"
-                ]
+                "required": ["tag", "deploymentId"]
               }
             }
           }
@@ -774,9 +754,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -819,9 +797,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -837,9 +813,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -934,9 +908,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -952,9 +924,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1057,9 +1027,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1075,9 +1043,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1127,10 +1093,7 @@
                     }
                   }
                 },
-                "required": [
-                  "key",
-                  "config"
-                ]
+                "required": ["key", "config"]
               }
             }
           }
@@ -1157,9 +1120,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1175,9 +1136,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1193,9 +1152,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1223,12 +1180,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": [
-                "ready",
-                "building",
-                "failed",
-                "rejected"
-              ]
+              "enum": ["ready", "building", "failed", "rejected"]
             }
           }
         ],
@@ -1257,9 +1209,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1275,9 +1225,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1354,11 +1302,7 @@
                     }
                   }
                 },
-                "required": [
-                  "systemId",
-                  "slug",
-                  "name"
-                ]
+                "required": ["systemId", "slug", "name"]
               }
             }
           }
@@ -1399,10 +1343,7 @@
                       "format": "uuid"
                     }
                   },
-                  "required": [
-                    "error",
-                    "id"
-                  ]
+                  "required": ["error", "id"]
                 }
               }
             }
@@ -1418,9 +1359,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1466,9 +1405,7 @@
                       "example": "Environment not found"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1561,10 +1498,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "systemId",
-                  "name"
-                ],
+                "required": ["systemId", "name"],
                 "properties": {
                   "directory": {
                     "type": "string",
@@ -1636,9 +1570,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1676,9 +1608,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "jobs"
-                  ]
+                  "required": ["jobs"]
                 }
               }
             }
@@ -1810,11 +1740,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "type",
-                  "name",
-                  "workspaceId"
-                ]
+                "required": ["type", "name", "workspaceId"]
               }
             }
           }
@@ -1837,11 +1763,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "workspaceId"
-                  ]
+                  "required": ["id", "name", "workspaceId"]
                 }
               }
             }
@@ -1879,9 +1801,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "sucess"
-                  ]
+                  "required": ["sucess"]
                 }
               }
             }
@@ -1897,9 +1817,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -2004,10 +1922,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "success",
-                    "message"
-                  ]
+                  "required": ["success", "message"]
                 }
               }
             }
@@ -2132,9 +2047,7 @@
                           "format": "date-time"
                         }
                       },
-                      "required": [
-                        "timeZone"
-                      ]
+                      "required": ["timeZone"]
                     }
                   },
                   "deploymentVersionSelector": {
@@ -2169,9 +2082,7 @@
                           "type": "number"
                         }
                       },
-                      "required": [
-                        "roleId"
-                      ]
+                      "required": ["roleId"]
                     }
                   },
                   "concurrency": {
@@ -2383,9 +2294,7 @@
                           "format": "date-time"
                         }
                       },
-                      "required": [
-                        "timeZone"
-                      ]
+                      "required": ["timeZone"]
                     }
                   },
                   "deploymentVersionSelector": {
@@ -2416,11 +2325,7 @@
                     "$ref": "#/components/schemas/MaxRetries"
                   }
                 },
-                "required": [
-                  "name",
-                  "workspaceId",
-                  "targets"
-                ]
+                "required": ["name", "workspaceId", "targets"]
               }
             }
           }
@@ -2478,10 +2383,7 @@
                     "example": "resource-123"
                   }
                 },
-                "required": [
-                  "jobId",
-                  "resourceIdentifier"
-                ],
+                "required": ["jobId", "resourceIdentifier"],
                 "additionalProperties": false
               }
             }
@@ -2575,9 +2477,7 @@
       "post": {
         "summary": "Create a relationship between two resources",
         "operationId": "createResourceToResourceRelationship",
-        "tags": [
-          "Resource Relationships"
-        ],
+        "tags": ["Resource Relationships"],
         "security": [
           {
             "bearerAuth": []
@@ -2901,9 +2801,7 @@
                         "description": "The ID of the version to pin"
                       }
                     },
-                    "required": [
-                      "versionId"
-                    ]
+                    "required": ["versionId"]
                   },
                   {
                     "type": "object",
@@ -2914,9 +2812,7 @@
                         "description": "The tag of the version to pin"
                       }
                     },
-                    "required": [
-                      "versionTag"
-                    ]
+                    "required": ["versionTag"]
                   }
                 ]
               }
@@ -3030,18 +2926,11 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "key",
-                            "value"
-                          ]
+                          "required": ["key", "value"]
                         }
                       }
                     },
-                    "required": [
-                      "deployment",
-                      "version",
-                      "variables"
-                    ]
+                    "required": ["deployment", "version", "variables"]
                   }
                 }
               }
@@ -3058,9 +2947,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -3076,9 +2963,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -3284,12 +3169,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "ready",
-                      "building",
-                      "failed",
-                      "rejected"
-                    ]
+                    "enum": ["ready", "building", "failed", "rejected"]
                   },
                   "message": {
                     "type": "string"
@@ -3353,12 +3233,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "ready",
-                      "building",
-                      "failed",
-                      "rejected"
-                    ]
+                    "enum": ["ready", "building", "failed", "rejected"]
                   },
                   "message": {
                     "type": "string"
@@ -3370,10 +3245,7 @@
                     }
                   }
                 },
-                "required": [
-                  "version",
-                  "deploymentId"
-                ]
+                "required": ["version", "deploymentId"]
               }
             }
           }
@@ -3431,9 +3303,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "resources"
-                ],
+                "required": ["resources"],
                 "properties": {
                   "resources": {
                     "type": "array",
@@ -3629,9 +3499,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -3647,9 +3515,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -3725,12 +3591,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "workspaceId",
-                  "version",
-                  "kind",
-                  "jsonSchema"
-                ],
+                "required": ["workspaceId", "version", "kind", "jsonSchema"],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -3917,9 +3778,7 @@
                       "example": "Resource not found"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -4003,9 +3862,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -4033,9 +3890,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "success"
-                  ],
+                  "required": ["success"],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -4062,9 +3917,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -4437,11 +4290,7 @@
                     "description": "The description of the system"
                   }
                 },
-                "required": [
-                  "workspaceId",
-                  "name",
-                  "slug"
-                ]
+                "required": ["workspaceId", "name", "slug"]
               }
             }
           }
@@ -4504,11 +4353,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "code",
-                          "message",
-                          "path"
-                        ]
+                        "required": ["code", "message", "path"]
                       }
                     }
                   }
@@ -4520,9 +4365,7 @@
                         {
                           "code": "invalid_type",
                           "message": "Invalid input",
-                          "path": [
-                            "name"
-                          ]
+                          "path": ["name"]
                         }
                       ]
                     }
@@ -4673,9 +4516,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -4691,9 +4532,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -4874,11 +4713,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "workspaceId"
-                  ]
+                  "required": ["id", "name", "workspaceId"]
                 }
               }
             }
@@ -5084,10 +4919,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "metadataKeys",
-                  "allowNullCombinations"
-                ],
+                "required": ["metadataKeys", "allowNullCombinations"],
                 "properties": {
                   "metadataKeys": {
                     "type": "array",
@@ -5110,10 +4942,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "keys",
-                    "combinations"
-                  ],
+                  "required": ["keys", "combinations"],
                   "properties": {
                     "keys": {
                       "type": "array",
@@ -5125,10 +4954,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "metadata",
-                          "resources"
-                        ],
+                        "required": ["metadata", "resources"],
                         "properties": {
                           "metadata": {
                             "type": "object",
@@ -5288,11 +5114,7 @@
     "schemas": {
       "CloudRegionGeoData": {
         "type": "object",
-        "required": [
-          "timezone",
-          "latitude",
-          "longitude"
-        ],
+        "required": ["timezone", "latitude", "longitude"],
         "properties": {
           "timezone": {
             "type": "string",
@@ -5334,10 +5156,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "approved",
-              "rejected"
-            ]
+            "enum": ["approved", "rejected"]
           },
           "approvedAt": {
             "type": "string",
@@ -5381,8 +5200,7 @@
           "priority": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 1000,
-            "description": "Higher numbers take precedence when multiple values select the same resource. Must be a non-negative whole number."
+            "maximum": 1000
           }
         }
       },
@@ -5418,9 +5236,7 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "value"
-            ]
+            "required": ["value"]
           }
         ]
       },
@@ -5437,9 +5253,7 @@
                 "format": "uuid"
               }
             },
-            "required": [
-              "id"
-            ]
+            "required": ["id"]
           }
         ]
       },
@@ -5481,10 +5295,7 @@
                 "nullable": true
               }
             },
-            "required": [
-              "path",
-              "reference"
-            ]
+            "required": ["path", "reference"]
           }
         ]
       },
@@ -5501,9 +5312,7 @@
                 "format": "uuid"
               }
             },
-            "required": [
-              "id"
-            ]
+            "required": ["id"]
           }
         ]
       },
@@ -5579,11 +5388,7 @@
             "additionalProperties": true
           }
         },
-        "required": [
-          "name",
-          "jobAgentId",
-          "jobAgentConfig"
-        ]
+        "required": ["name", "jobAgentId", "jobAgentConfig"]
       },
       "JobWithTrigger": {
         "allOf": [
@@ -5650,11 +5455,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "pending",
-                      "approved",
-                      "rejected"
-                    ]
+                    "enum": ["pending", "approved", "rejected"]
                   },
                   "approver": {
                     "type": "object",
@@ -5668,21 +5469,13 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "id",
-                      "name"
-                    ]
+                    "required": ["id", "name"]
                   }
                 },
-                "required": [
-                  "id",
-                  "status"
-                ]
+                "required": ["id", "status"]
               }
             },
-            "required": [
-              "variables"
-            ]
+            "required": ["variables"]
           }
         ]
       },
@@ -5715,11 +5508,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "id",
-          "name",
-          "slug"
-        ]
+        "required": ["id", "name", "slug"]
       },
       "System": {
         "type": "object",
@@ -5747,12 +5536,7 @@
             "description": "The description of the system"
           }
         },
-        "required": [
-          "id",
-          "workspaceId",
-          "name",
-          "slug"
-        ]
+        "required": ["id", "workspaceId", "name", "slug"]
       },
       "Deployment": {
         "type": "object",
@@ -5812,9 +5596,7 @@
             "additionalProperties": true
           }
         ],
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "additionalProperties": true
       },
       "Release": {
@@ -5898,11 +5680,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "building",
-              "ready",
-              "failed"
-            ]
+            "enum": ["building", "ready", "failed"]
           }
         },
         "required": [
@@ -5963,13 +5741,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "id",
-          "systemId",
-          "name",
-          "createdAt",
-          "directory"
-        ]
+        "required": ["id", "systemId", "name", "createdAt", "directory"]
       },
       "Runbook": {
         "type": "object",
@@ -5990,12 +5762,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "systemId",
-          "jobAgentId"
-        ]
+        "required": ["id", "name", "systemId", "jobAgentId"]
       },
       "Resource": {
         "type": "object",
@@ -6203,13 +5970,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "status",
-          "createdAt",
-          "updatedAt",
-          "jobAgentConfig"
-        ]
+        "required": ["id", "status", "createdAt", "updatedAt", "jobAgentConfig"]
       },
       "MetadataMap": {
         "type": "object",
@@ -6242,11 +6003,7 @@
       },
       "ReferenceVariable": {
         "type": "object",
-        "required": [
-          "key",
-          "reference",
-          "path"
-        ],
+        "required": ["key", "reference", "path"],
         "properties": {
           "key": {
             "type": "string"
@@ -6283,10 +6040,7 @@
       },
       "DirectVariable": {
         "type": "object",
-        "required": [
-          "key",
-          "value"
-        ],
+        "required": ["key", "value"],
         "properties": {
           "key": {
             "type": "string"
@@ -6360,10 +6114,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "timeZone",
-          "rrule"
-        ]
+        "required": ["timeZone", "rrule"]
       },
       "DeploymentVersionSelector": {
         "type": "object",
@@ -6379,10 +6130,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "deploymentVersionSelector"
-        ]
+        "required": ["name", "deploymentVersionSelector"]
       },
       "VersionAnyApproval": {
         "type": "object",
@@ -6391,9 +6139,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "requiredApprovalsCount"
-        ]
+        "required": ["requiredApprovalsCount"]
       },
       "VersionUserApproval": {
         "type": "object",
@@ -6402,9 +6148,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "userId"
-        ]
+        "required": ["userId"]
       },
       "VersionRoleApproval": {
         "type": "object",
@@ -6416,10 +6160,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "roleId",
-          "requiredApprovalsCount"
-        ]
+        "required": ["roleId", "requiredApprovalsCount"]
       },
       "PolicyConcurrency": {
         "type": "integer",
@@ -6455,11 +6196,7 @@
             "description": "Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval."
           }
         },
-        "required": [
-          "positionGrowthFactor",
-          "timeScaleInterval",
-          "rolloutType"
-        ]
+        "required": ["positionGrowthFactor", "timeScaleInterval", "rolloutType"]
       },
       "InsertEnvironmentVersionRollout": {
         "type": "object",
@@ -6483,9 +6220,7 @@
             "description": "Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified."
           }
         },
-        "required": [
-          "timeScaleInterval"
-        ]
+        "required": ["timeScaleInterval"]
       },
       "Policy": {
         "type": "object",
@@ -6601,10 +6336,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "id",
-              "email"
-            ]
+            "required": ["id", "email"]
           }
         },
         "required": [
@@ -6648,37 +6380,19 @@
           "metadataKeysMatches": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "sourceKey": {
-                  "type": "string"
-                },
-                "targetKey": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "sourceKey",
-                "targetKey"
-              ]
+              "$ref": "#/components/schemas/MetadataKeyMatchConstraint"
             }
           },
           "targetMetadataEquals": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "key": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "key",
-                "value"
-              ]
+              "$ref": "#/components/schemas/MetadataEqualsConstraint"
+            }
+          },
+          "sourceMetadataEquals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetadataEqualsConstraint"
             }
           }
         }
@@ -6693,6 +6407,29 @@
           "provisioned_in",
           "inherits_from"
         ]
+      },
+      "MetadataEqualsConstraint": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "MetadataKeyMatchConstraint": {
+        "type": "object",
+        "properties": {
+          "sourceKey": {
+            "type": "string"
+          },
+          "targetKey": {
+            "type": "string"
+          }
+        },
+        "required": ["sourceKey", "targetKey"]
       },
       "ResourceRelationshipRule": {
         "type": "object",
@@ -6726,6 +6463,12 @@
           "sourceVersion": {
             "type": "string"
           },
+          "sourceMetadataEquals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetadataEqualsConstraint"
+            }
+          },
           "targetKind": {
             "type": "string"
           },
@@ -6735,37 +6478,13 @@
           "targetMetadataEquals": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "key": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "key",
-                "value"
-              ]
+              "$ref": "#/components/schemas/MetadataEqualsConstraint"
             }
           },
           "metadataKeysMatches": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "sourceKey": {
-                  "type": "string"
-                },
-                "targetKey": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "sourceKey",
-                "targetKey"
-              ]
+              "$ref": "#/components/schemas/MetadataKeyMatchConstraint"
             }
           }
         },
@@ -6815,37 +6534,19 @@
           "metadataKeysMatches": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "sourceKey": {
-                  "type": "string"
-                },
-                "targetKey": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "sourceKey",
-                "targetKey"
-              ]
+              "$ref": "#/components/schemas/MetadataKeyMatchConstraint"
             }
           },
           "targetMetadataEquals": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "key": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "key",
-                "value"
-              ]
+              "$ref": "#/components/schemas/MetadataEqualsConstraint"
+            }
+          },
+          "sourceMetadataEquals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetadataEqualsConstraint"
             }
           }
         },
@@ -6877,12 +6578,7 @@
             "$ref": "#/components/schemas/Deployment"
           }
         },
-        "required": [
-          "id",
-          "resource",
-          "environment",
-          "deployment"
-        ]
+        "required": ["id", "resource", "environment", "deployment"]
       },
       "Event": {
         "type": "object",
@@ -6903,12 +6599,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "action",
-          "payload",
-          "createdAt"
-        ]
+        "required": ["id", "action", "payload", "createdAt"]
       }
     },
     "securitySchemes": {
