@@ -98,6 +98,7 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = ({
       proOptions={{ hideAttribution: true }}
       onInit={setReactFlowInstance}
       nodesDraggable
+      maxZoom={50}
       onPaneClick={closeSidebar}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
