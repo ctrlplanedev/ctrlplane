@@ -26,14 +26,14 @@ const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => {
 
   return (
     <div className="flex justify-between">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-1 items-center gap-2 ">
         <ResourceIcon
           version={resource.version}
           kind={resource.kind}
           className="h-8 w-8"
         />
-        <div className="flex flex-col gap-0.5">
-          <span className="font-medium">{resource.name}</span>
+        <div className="flex max-w-64 flex-col gap-0.5">
+          <span className="truncate font-medium">{resource.name}</span>
           <span className="text-xs text-muted-foreground">{resource.kind}</span>
         </div>
       </div>

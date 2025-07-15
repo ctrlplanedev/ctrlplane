@@ -58,7 +58,7 @@ export const getLayoutedElementsDagre = (
         position.x - (node.width ?? 0) / 2 + extraEdgeLength * levels[node.id]!;
       const y = position.y - (node.height ?? 0) / 2;
 
-      return { ...node, position: { x, y } };
+      return { ...node, x, y, position: { x, y } };
     }),
     edges,
   };

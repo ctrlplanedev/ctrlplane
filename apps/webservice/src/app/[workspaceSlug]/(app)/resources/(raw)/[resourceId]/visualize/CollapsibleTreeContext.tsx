@@ -15,7 +15,10 @@ import colors from "tailwindcss/colors";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Edge, ResourceNodeData } from "./types";
-import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
+import {
+  getLayoutedElementsDagre,
+  useLayoutAndFitView,
+} from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
 
 type CollapsibleTreeContextType = {
   allResources: ResourceNodeData[];
@@ -141,6 +144,8 @@ const getNodes = (resources: ResourceNodeData[]) =>
     type: "resource",
     data: { data: { ...r, label: r.name }, label: r.name },
     position: { x: 0, y: 0 },
+    width: 400,
+    height: 68 + r.systems.length * 52,
   }));
 
 const markerEnd = {
@@ -200,13 +205,10 @@ export const CollapsibleTreeProvider: React.FC<
     getEdges(expandedEdges),
   );
 
-  const { setReactFlowInstance: onInit, onLayout } = useLayoutAndFitView(
-    nodes,
-    {
-      direction: "LR",
-      extraEdgeLength: 250,
-    },
-  );
+  const { setReactFlowInstance: onInit } = useLayoutAndFitView(nodes, {
+    direction: "LR",
+    extraEdgeLength: 250,
+  });
 
   const addExpandedResourceIds = (resourceIds: string[]) => {
     setExpandedResourceIds((prev) => {
@@ -223,15 +225,13 @@ export const CollapsibleTreeProvider: React.FC<
       const newNodes = getNodes(newExpandedResources);
       const newEdges = getEdges(newExpandedEdges);
 
-      setNodes(newNodes);
-      setEdges(newEdges);
+      const layouted = getLayoutedElementsDagre(newNodes, newEdges, "LR", 250);
+
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
 
       return newSet;
     });
-
-    setTimeout(() => {
-      onLayout();
-    }, 100);
   };
 
   const removeExpandedResourceIds = (resourceIds: string[]) => {
@@ -239,25 +239,20 @@ export const CollapsibleTreeProvider: React.FC<
       const newSet = new Set(prev);
       resourceIds.forEach((id) => newSet.delete(id));
 
-      const newExpandedResources = resources.filter((resource) =>
-        newSet.has(resource.id),
-      );
-      const newExpandedEdges = edges.filter(
-        (edge) => newSet.has(edge.sourceId) && newSet.has(edge.targetId),
-      );
+      setNodes((prev) => {
+        const newNodes = prev.filter((node) => newSet.has(node.id));
+        return newNodes;
+      });
 
-      const newNodes = getNodes(newExpandedResources);
-      const newEdges = getEdges(newExpandedEdges);
-
-      setNodes(newNodes);
-      setEdges(newEdges);
+      setEdges((prev) => {
+        const newEdges = prev.filter(
+          (edge) => newSet.has(edge.source) && newSet.has(edge.target),
+        );
+        return newEdges;
+      });
 
       return newSet;
     });
-
-    setTimeout(() => {
-      onLayout();
-    }, 100);
   };
 
   const value: CollapsibleTreeContextType = {
