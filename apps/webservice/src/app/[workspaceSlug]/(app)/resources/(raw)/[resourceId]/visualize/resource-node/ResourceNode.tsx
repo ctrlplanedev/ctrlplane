@@ -1,111 +1,60 @@
 "use client";
 
-import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
 import React from "react";
-import {
-  IconCircleCheck,
-  IconCircleX,
-  IconClock,
-  IconLoader2,
-} from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { Handle, Position } from "reactflow";
-import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { useSidebar } from "@ctrlplane/ui/sidebar";
-import { Skeleton } from "@ctrlplane/ui/skeleton";
-import {
-  activeStatus,
-  failedStatuses,
-  JobStatus,
-} from "@ctrlplane/validators/jobs";
 
+import type { ResourceNodeData, System } from "../types";
 import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/resources/ResourceIcon";
-import { api } from "~/trpc/react";
-import { useSystemSidebarContext } from "./SystemSidebarContext";
+import { useSystemSidebarContext } from "../SystemSidebarContext";
+import { SystemStatus } from "./SystemStatus";
+import { useResourceCollapsibleToggle } from "./useResourceCollapsibleToggle";
 
-export type ResourceNodeData =
-  RouterOutputs["resource"]["visualize"]["resources"][number];
-
-type System = ResourceNodeData["systems"][number];
-
-const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => (
-  <div className="flex items-center gap-2">
-    <ResourceIcon
-      version={resource.version}
-      kind={resource.kind}
-      className="h-8 w-8"
-    />
-    <div className="flex flex-col gap-0.5">
-      <span className="font-medium">{resource.name}</span>
-      <span className="text-xs text-muted-foreground">{resource.kind}</span>
-    </div>
-  </div>
-);
-
-const getStatusInfo = (statuses: (JobStatus | null)[]) => {
-  const nonNullStatuses = statuses.filter(isPresent);
-
-  const numFailed = nonNullStatuses.filter((s) =>
-    failedStatuses.includes(s),
-  ).length;
-  const numActive = nonNullStatuses.filter((s) =>
-    activeStatus.includes(s),
-  ).length;
-  const numPending = nonNullStatuses.filter(
-    (s) => s === JobStatus.Pending,
-  ).length;
-  const numSuccessful = nonNullStatuses.filter(
-    (s) => s === JobStatus.Successful,
-  ).length;
-
-  if (numFailed > 0)
-    return {
-      numSuccessful,
-      Icon: <IconCircleX className="h-4 w-4 text-red-500" />,
-    };
-  if (numActive > 0)
-    return {
-      numSuccessful,
-      Icon: <IconLoader2 className="h-4 w-4 animate-spin text-blue-500" />,
-    };
-  if (numPending > 0)
-    return {
-      numSuccessful,
-      Icon: <IconClock className="h-4 w-4 text-neutral-400" />,
-    };
-  return {
-    numSuccessful,
-    Icon: <IconCircleCheck className="h-4 w-4 text-green-500" />,
-  };
-};
-
-const SystemStatus: React.FC<{
-  resourceId: string;
-  systemId: string;
-}> = ({ resourceId, systemId }) => {
-  const { data, isLoading } = api.resource.systemOverview.useQuery({
-    resourceId,
-    systemId,
-  });
-
-  if (isLoading) return <Skeleton className="h-4 w-16" />;
-
-  const statuses = (data ?? []).map((d) => d.status);
-  const { numSuccessful, Icon } = getStatusInfo(
-    statuses as (JobStatus | null)[],
-  );
+const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => {
+  const {
+    numHiddenDirectChildren,
+    numDirectChildren,
+    expandResource,
+    collapseResource,
+  } = useResourceCollapsibleToggle(resource.id);
 
   return (
-    <div className="flex items-center gap-2">
-      {Icon}
-      <span>
-        {numSuccessful}/{statuses.length}
-      </span>
+    <div className="flex justify-between">
+      <div className="flex items-center gap-2">
+        <ResourceIcon
+          version={resource.version}
+          kind={resource.kind}
+          className="h-8 w-8"
+        />
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium">{resource.name}</span>
+          <span className="text-xs text-muted-foreground">{resource.kind}</span>
+        </div>
+      </div>
+      {numHiddenDirectChildren > 0 && (
+        <Button
+          size="sm"
+          className="h-6 flex-shrink-0 rounded-full px-2"
+          onClick={expandResource}
+        >
+          +{numHiddenDirectChildren}
+        </Button>
+      )}
+      {numDirectChildren > 0 && numHiddenDirectChildren === 0 && (
+        <Button
+          size="sm"
+          className="h-6 flex-shrink-0 rounded-full px-2"
+          onClick={collapseResource}
+        >
+          collapse
+        </Button>
+      )}
     </div>
   );
 };
