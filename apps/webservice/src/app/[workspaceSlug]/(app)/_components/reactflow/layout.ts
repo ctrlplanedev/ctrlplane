@@ -1,7 +1,7 @@
 "use client";
 
 import type { Edge, Node, ReactFlowInstance } from "reactflow";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import dagre from "dagre";
 import { useReactFlow } from "reactflow";
 
@@ -78,7 +78,7 @@ export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
 
   const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
 
-  const onLayout = useCallback(() => {
+  const onLayout = () => {
     const layouted = getLayoutedElementsDagre(
       getNodes(),
       getEdges(),
@@ -89,7 +89,7 @@ export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
     setNodes(layouted.nodes);
     setEdges(layouted.edges);
     setIsLayouted(true);
-  }, [getNodes, getEdges, setNodes, setEdges, setIsLayouted, config]);
+  };
 
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
