@@ -239,17 +239,15 @@ export const CollapsibleTreeProvider: React.FC<
       const newSet = new Set(prev);
       resourceIds.forEach((id) => newSet.delete(id));
 
-      setNodes((prev) => {
-        const newNodes = prev.filter((node) => newSet.has(node.id));
-        return newNodes;
-      });
+      const newNodes = nodes.filter((node) => newSet.has(node.id));
+      const newEdges = flowEdges.filter(
+        (edge) => newSet.has(edge.source) && newSet.has(edge.target),
+      );
 
-      setEdges((prev) => {
-        const newEdges = prev.filter(
-          (edge) => newSet.has(edge.source) && newSet.has(edge.target),
-        );
-        return newEdges;
-      });
+      const layouted = getLayoutedElementsDagre(newNodes, newEdges, "LR", 250);
+
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
 
       return newSet;
     });
