@@ -135,7 +135,12 @@ export const WidgetDeploymentVersionDistribution: Widget<WidgetSchema> = {
         enabled: isValidConfig,
       });
 
-    if (isLoading) return <div>Loading...</div>;
+    if (isLoading)
+      return (
+        <div className="flex h-full w-full items-center justify-center">
+          <IconLoader2 className="h-4 w-4 animate-spin" />
+        </div>
+      );
 
     const versionCounts = data ?? [];
 
