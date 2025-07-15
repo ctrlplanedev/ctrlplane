@@ -2,6 +2,7 @@
 
 import type * as schema from "@ctrlplane/db/schema";
 import React from "react";
+import { IconLoader2 } from "@tabler/icons-react";
 import { ReactFlowProvider } from "reactflow";
 
 import {
@@ -11,17 +12,28 @@ import {
   SidebarProvider,
 } from "@ctrlplane/ui/sidebar";
 
-import type { Edge, ResourceNodeData } from "./types";
+import { api } from "~/trpc/react";
 import { CollapsibleTreeProvider } from "./CollapsibleTreeContext";
-import { RelationshipsDiagramProvider } from "./RelationshipsDiagram";
+import { RelationshipsDiagram } from "./RelationshipsDiagram";
 import { SystemSidebarContent } from "./SystemSidebar";
 import { SystemSidebarProvider } from "./SystemSidebarContext";
 
 export const PageContent: React.FC<{
   focusedResource: schema.Resource;
-  resources: ResourceNodeData[];
-  edges: Edge[];
-}> = ({ focusedResource, resources, edges }) => {
+}> = ({ focusedResource }) => {
+  const { data, isLoading } = api.resource.visualize.useQuery(
+    focusedResource.id,
+  );
+
+  const { resources, edges } = data ?? { resources: [], edges: [] };
+
+  if (isLoading)
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <IconLoader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+
   return (
     <ReactFlowProvider>
       <CollapsibleTreeProvider
@@ -37,11 +49,7 @@ export const PageContent: React.FC<{
           >
             <div className="relative flex h-full w-full">
               <SidebarInset className="h-[calc(100vh-56px-64px-2px)] min-w-0">
-                <RelationshipsDiagramProvider
-                  resources={resources}
-                  edges={edges}
-                  focusedResource={focusedResource}
-                />
+                <RelationshipsDiagram />
               </SidebarInset>
               <Sidebar
                 name="resource-visualization"

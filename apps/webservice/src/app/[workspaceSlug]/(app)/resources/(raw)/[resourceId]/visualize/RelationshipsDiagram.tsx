@@ -1,22 +1,14 @@
 "use client";
 
-import type * as schema from "@ctrlplane/db/schema";
 import type { EdgeTypes, NodeTypes } from "reactflow";
 import ReactFlow from "reactflow";
 
 import { useSidebar } from "@ctrlplane/ui/sidebar";
 
-import type { Edge, ResourceNodeData } from "./types";
 import { useCollapsibleTree } from "./CollapsibleTreeContext";
 import { DepEdge } from "./DepEdge";
 import { ResourceNode } from "./resource-node/ResourceNode";
 import { useSystemSidebarContext } from "./SystemSidebarContext";
-
-type RelationshipsDiagramProps = {
-  focusedResource: schema.Resource;
-  resources: ResourceNodeData[];
-  edges: Edge[];
-};
 
 const nodeTypes: NodeTypes = { resource: ResourceNode };
 const edgeTypes: EdgeTypes = { default: DepEdge };
@@ -33,7 +25,7 @@ const useCloseSidebar = () => {
   };
 };
 
-export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = () => {
+export const RelationshipsDiagram: React.FC = () => {
   const { reactFlow } = useCollapsibleTree();
   const closeSidebar = useCloseSidebar();
 
@@ -47,20 +39,6 @@ export const RelationshipsDiagram: React.FC<RelationshipsDiagramProps> = () => {
       onPaneClick={closeSidebar}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
-    />
-  );
-};
-
-export const RelationshipsDiagramProvider: React.FC<
-  RelationshipsDiagramProps
-> = ({ focusedResource }) => {
-  const { expandedResources, expandedEdges } = useCollapsibleTree();
-
-  return (
-    <RelationshipsDiagram
-      resources={expandedResources}
-      edges={expandedEdges}
-      focusedResource={focusedResource}
     />
   );
 };

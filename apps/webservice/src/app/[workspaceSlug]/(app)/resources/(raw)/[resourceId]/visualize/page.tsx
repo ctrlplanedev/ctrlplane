@@ -26,13 +26,6 @@ export default async function RelationshipsPage(props: PageProps) {
   const { resourceId } = await props.params;
   const resource = await api.resource.byId(resourceId);
   if (resource == null) return notFound();
-  const { resources, edges } = await api.resource.visualize(resourceId);
 
-  return (
-    <PageContent
-      focusedResource={resource}
-      resources={resources}
-      edges={edges}
-    />
-  );
+  return <PageContent focusedResource={resource} />;
 }
