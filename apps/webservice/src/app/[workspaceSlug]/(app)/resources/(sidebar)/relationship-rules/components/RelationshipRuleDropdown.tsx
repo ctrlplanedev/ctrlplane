@@ -18,6 +18,7 @@ interface RelationshipRuleDropdownProps {
   rule: SCHEMA.ResourceRelationshipRule & {
     metadataKeysMatches: SCHEMA.ResourceRelationshipRuleMetadataMatch[];
     targetMetadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
+    sourceMetadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
   };
 }
 

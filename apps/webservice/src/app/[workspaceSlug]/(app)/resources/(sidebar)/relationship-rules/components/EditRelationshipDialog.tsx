@@ -39,6 +39,7 @@ type EditRelationshipDialogProps = {
   rule: SCHEMA.ResourceRelationshipRule & {
     metadataKeysMatches: SCHEMA.ResourceRelationshipRuleMetadataMatch[];
     targetMetadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
+    sourceMetadataEquals: SCHEMA.ResourceRelationshipRuleMetadataEquals[];
   };
   children: React.ReactNode;
 };
@@ -55,6 +56,9 @@ export const EditRelationshipDialog: React.FC<EditRelationshipDialogProps> = ({
         .array(z.object({ sourceKey: z.string(), targetKey: z.string() }))
         .optional(),
       targetMetadataEquals: z
+        .array(z.object({ key: z.string(), value: z.string() }))
+        .optional(),
+      sourceMetadataEquals: z
         .array(z.object({ key: z.string(), value: z.string() }))
         .optional(),
     }),
