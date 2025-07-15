@@ -18,7 +18,11 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.query.resourceRelationshipRule.findMany({
         where: eq(schema.resourceRelationshipRule.workspaceId, input),
-        with: { metadataKeysMatches: true, targetMetadataEquals: true },
+        with: {
+          metadataKeysMatches: true,
+          targetMetadataEquals: true,
+          sourceMetadataEquals: true,
+        },
         orderBy: [
           asc(schema.resourceRelationshipRule.reference),
           asc(schema.resourceRelationshipRule.sourceKind),

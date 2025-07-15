@@ -890,6 +890,13 @@
       "when": 1752342153714,
       "tag": "0126_wandering_sasquatch",
       "breakpoints": true
+    },
+    {
+      "idx": 127,
+      "version": "7",
+      "when": 1752555329333,
+      "tag": "0127_vengeful_archangel",
+      "breakpoints": true
     }
   ]
 }
