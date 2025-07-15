@@ -111,8 +111,9 @@ export const WidgetEdit: React.FC<{
 
   const onSubmit = form.handleSubmit((data) => {
     const environmentIds = data.environmentIds.map((e) => e.envId);
-    clearEditingWidget();
-    updateConfig({ ...data, environmentIds }).then(invalidate);
+    updateConfig({ ...data, environmentIds })
+      .then(clearEditingWidget)
+      .then(invalidate);
   });
 
   return (
