@@ -114,5 +114,13 @@ export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
     }
   }, [reactFlowInstance, nodes, isLayouted, isViewFitted, config]);
 
-  return { setReactFlowInstance, onLayout };
+  const fitView = () => {
+    if (reactFlowInstance == null) return;
+    reactFlowInstance.fitView({
+      padding: config?.padding ?? 0.12,
+      maxZoom: config?.maxZoom ?? 2,
+    });
+  };
+
+  return { setReactFlowInstance, onLayout, fitView };
 };

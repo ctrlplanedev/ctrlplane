@@ -205,7 +205,7 @@ export const CollapsibleTreeProvider: React.FC<
     getEdges(expandedEdges),
   );
 
-  const { setReactFlowInstance: onInit } = useLayoutAndFitView(nodes, {
+  const { setReactFlowInstance: onInit, fitView } = useLayoutAndFitView(nodes, {
     direction: "LR",
     extraEdgeLength: 250,
   });
@@ -251,6 +251,8 @@ export const CollapsibleTreeProvider: React.FC<
 
       return newSet;
     });
+
+    setTimeout(fitView, 50);
   };
 
   const value: CollapsibleTreeContextType = {
