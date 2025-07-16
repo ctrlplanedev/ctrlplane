@@ -94,17 +94,17 @@ const getChildResourceIdsWithSystem = (
   const findPathsToSystems = (resourceId: string): boolean => {
     const resourceChildren = children.get(resourceId) ?? [];
 
-    if (hasSystems(resourceId)) {
+    const hasValidPath = hasSystems(resourceId);
+    const anyChildHasValidPath = resourceChildren.some((childId) =>
+      findPathsToSystems(childId),
+    );
+
+    if (hasValidPath || anyChildHasValidPath) {
       result.add(resourceId);
       return true;
     }
 
-    const hasValidPath = resourceChildren.some((childId) =>
-      findPathsToSystems(childId),
-    );
-
-    if (hasValidPath) result.add(resourceId);
-    return hasValidPath;
+    return false;
   };
 
   const directChildren = children.get(focusedResource.id) ?? [];
