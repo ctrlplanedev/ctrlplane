@@ -117,6 +117,8 @@ const getInitialExpandedResourceIds = (
   resources: ResourceNodeData[],
   edges: Edge[],
 ): Set<string> => {
+  if (resources.length <= 10) return new Set(resources.map((r) => r.id));
+
   const parentResourceIds = getParentResourceIds(
     focusedResource,
     resources,
