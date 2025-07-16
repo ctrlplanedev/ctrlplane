@@ -141,8 +141,21 @@ export class VariableReleaseManager implements ReleaseManager {
   }
 
   async evaluate() {
-    const variableManager = await VariableManager.database(this.releaseTarget);
-    const variables = await variableManager.getVariables();
-    return { chosenCandidate: variables };
+    try {
+      const variableManager = await VariableManager.database(
+        this.releaseTarget,
+      );
+      const variables = await variableManager.getVariables();
+      return { chosenCandidate: variables };
+    } catch (e) {
+      if (
+        this.releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
+      ) {
+        log.error(
+          `Failed to evaluate variables for release target ${this.releaseTarget.id}, ${JSON.stringify(e)}`,
+        );
+      }
+      return { chosenCandidate: [] };
+    }
   }
 }

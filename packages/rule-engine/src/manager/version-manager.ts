@@ -12,6 +12,7 @@ import {
 } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
@@ -23,6 +24,8 @@ import { getApplicablePolicies } from "../db/get-applicable-policies.js";
 import { VersionRuleEngine } from "../manager/version-rule-engine.js";
 import { mergePolicies } from "../utils/merge-policies.js";
 import { getAllRules } from "./version-manager-rules.js";
+
+const log = logger.child({ module: "version-manager" });
 
 export type VersionEvaluateOptions = {
   rules?: (
@@ -215,19 +218,30 @@ export class VersionReleaseManager implements ReleaseManager {
   }
 
   async evaluate(options?: VersionEvaluateOptions) {
-    const policy = options?.policy ?? (await this.getPolicy());
-    const getRules = options?.rules ?? getAllRules;
-    const rules = await getRules({
-      policy,
-      releaseTargetId: this.releaseTarget.id,
-    });
+    try {
+      const policy = options?.policy ?? (await this.getPolicy());
+      const getRules = options?.rules ?? getAllRules;
+      const rules = await getRules({
+        policy,
+        releaseTargetId: this.releaseTarget.id,
+      });
 
-    const engine = new VersionRuleEngine(rules);
-    const versions = options?.versions
-      ? await this.prevalidateProvidedVersions(options.versions)
-      : await this.getVersionsForEvaluate();
+      const engine = new VersionRuleEngine(rules);
+      const versions = options?.versions
+        ? await this.prevalidateProvidedVersions(options.versions)
+        : await this.getVersionsForEvaluate();
 
-    const result = await engine.evaluate(versions);
-    return result;
+      const result = await engine.evaluate(versions);
+      return result;
+    } catch (e) {
+      if (
+        this.releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
+      ) {
+        log.error(
+          `Failed to evaluate versions for release target ${this.releaseTarget.id}, ${JSON.stringify(e)}`,
+        );
+      }
+      return { chosenCandidate: null, rejectionReasons: new Map() };
+    }
   }
 }
