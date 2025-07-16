@@ -152,6 +152,7 @@ export const createResourceRelationshipRule = createInsertSchema(
 )
   .omit({ id: true })
   .extend({
+    dependencyType: z.string().min(1),
     reference: z
       .string()
       .min(1)
