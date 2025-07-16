@@ -232,6 +232,8 @@ export const CollapsibleTreeProvider: React.FC<
 
       return newSet;
     });
+
+    setTimeout(fitView, 50);
   };
 
   const removeExpandedResourceIds = (resourceIds: string[]) => {
