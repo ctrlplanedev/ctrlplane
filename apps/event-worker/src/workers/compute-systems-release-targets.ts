@@ -188,10 +188,7 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
       await dispatchQueueJob()
         .toCompute()
         .workspace(workspaceId)
-        .policyTargets({
-          processedPolicyTargetIds: [],
-          releaseTargetsToEvaluate: created,
-        });
+        .policyTargets({ releaseTargetsToEvaluate: created });
     } catch (e: any) {
       const isRowLocked = e.code === "55P03";
       if (isRowLocked) {
