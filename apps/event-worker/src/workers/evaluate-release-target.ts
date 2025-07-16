@@ -120,10 +120,6 @@ export const evaluateReleaseTargetWorker = createWorker(
     span.setAttribute("deployment.id", data.deploymentId);
     span.setAttribute("skipDuplicateCheck", skipDuplicateCheck);
 
-    if (data.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99") {
-      log.info("Evaluating release target", { data });
-    }
-
     try {
       const release = await db.transaction(async (tx) => {
         const releaseTarget = await tx.query.releaseTarget.findFirst({
@@ -149,12 +145,6 @@ export const evaluateReleaseTargetWorker = createWorker(
           releaseTarget.id,
         );
 
-        if (
-          releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
-        ) {
-          log.info("Latest version release", { latestVersionRelease });
-        }
-
         const existingVariableRelease =
           await tx.query.variableSetRelease.findFirst({
             where: eq(
@@ -164,29 +154,11 @@ export const evaluateReleaseTargetWorker = createWorker(
             orderBy: desc(schema.variableSetRelease.createdAt),
           });
 
-        if (
-          releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
-        ) {
-          log.info("Existing variable release", { existingVariableRelease });
-        }
-
         const { versionEvaluateOptions } = data;
         const [versionRelease, variableRelease] = await Promise.all([
           handleVersionRelease(tx, releaseTarget, versionEvaluateOptions),
           handleVariableRelease(tx, releaseTarget),
         ]);
-
-        if (
-          releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
-        ) {
-          log.info("Version release", { versionRelease });
-        }
-
-        if (
-          releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
-        ) {
-          log.info("Variable release", { variableRelease });
-        }
 
         if (versionRelease == null) return;
 
@@ -198,12 +170,6 @@ export const evaluateReleaseTargetWorker = createWorker(
 
         const hasAnythingChanged =
           !isVersionUnchanged || !areVariablesUnchanged;
-
-        if (
-          releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
-        ) {
-          log.info("Has anything changed", { hasAnythingChanged });
-        }
 
         // If nothing changed, return existing release
         if (!hasAnythingChanged) {
@@ -228,10 +194,6 @@ export const evaluateReleaseTargetWorker = createWorker(
           .then(takeFirst);
       });
 
-      if (data.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99") {
-        log.info("Release", { release });
-      }
-
       if (release == null) return;
 
       // Check if a job already exists for this release
@@ -239,20 +201,12 @@ export const evaluateReleaseTargetWorker = createWorker(
         where: eq(schema.releaseJob.releaseId, release.id),
       });
 
-      if (data.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99") {
-        log.info("Existing release job", { existingReleaseJob });
-      }
-
       if (existingReleaseJob != null && !skipDuplicateCheck) return;
 
       // If no job exists yet, create one and dispatch it
       const newReleaseJob = await db.transaction(async (tx) =>
         createReleaseJob(tx, release),
       );
-
-      if (data.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99") {
-        log.info("Created release job", { newReleaseJob });
-      }
 
       log.info("Created release job", {
         releaseId: release.id,

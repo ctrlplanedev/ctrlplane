@@ -234,13 +234,9 @@ export class VersionReleaseManager implements ReleaseManager {
       const result = await engine.evaluate(versions);
       return result;
     } catch (e) {
-      if (
-        this.releaseTarget.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99"
-      ) {
-        log.error(
-          `Failed to evaluate versions for release target ${this.releaseTarget.id}, ${JSON.stringify(e)}`,
-        );
-      }
+      log.error(
+        `Failed to evaluate versions for release target ${this.releaseTarget.id}, ${JSON.stringify(e)}`,
+      );
       return { chosenCandidate: null, rejectionReasons: new Map() };
     }
   }

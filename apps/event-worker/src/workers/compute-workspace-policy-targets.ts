@@ -33,31 +33,12 @@ export const computeWorkspacePolicyTargetsWorker = createWorker(
     const { workspaceId, processedPolicyTargetIds, releaseTargetsToEvaluate } =
       job.data;
 
-    if (
-      releaseTargetsToEvaluate?.some(
-        (rt) => rt.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99",
-      )
-    ) {
-      log.info("Compute workspace policy targets", {
-        job,
-        releaseTargetsToEvaluate,
-      });
-    }
-
     const policyTargets = await getPolicyTargets(
       workspaceId,
       processedPolicyTargetIds ?? [],
     );
 
     if (policyTargets.length === 0) {
-      if (
-        releaseTargetsToEvaluate?.some(
-          (rt) => rt.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99",
-        )
-      ) {
-        log.info("Policy targets", { policyTargets });
-      }
-
       if (releaseTargetsToEvaluate != null)
         await dispatchQueueJob()
           .toEvaluate()
@@ -74,13 +55,7 @@ export const computeWorkspacePolicyTargetsWorker = createWorker(
       } catch (e: any) {
         const isRowLockError = e.code === "55P03";
         if (!isRowLockError) {
-          if (
-            releaseTargetsToEvaluate?.some(
-              (rt) => rt.resourceId === "af9bbe15-3f4a-4716-9ef8-3bc3812b8c99",
-            )
-          ) {
-            log.error("Failed to compute policy targets", { error: e });
-          }
+          log.error("Failed to compute policy targets", { error: e });
           throw e;
         }
 
