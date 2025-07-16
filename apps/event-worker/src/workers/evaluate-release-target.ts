@@ -2,7 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { VersionEvaluateOptions } from "@ctrlplane/rule-engine";
 import _ from "lodash";
 
-import { and, desc, eq, takeFirst } from "@ctrlplane/db";
+import { and, desc, eq, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
@@ -84,14 +84,14 @@ const handleVariableRelease = withSpan(
   },
 );
 
-// const acquireReleaseTargetLock = async (tx: Tx, releaseTargetId: string) =>
-//   tx.execute(
-//     sql`
-//     SELECT * FROM ${schema.releaseTarget}
-//     WHERE ${eq(schema.releaseTarget.id, releaseTargetId)}
-//     FOR UPDATE NOWAIT
-//   `,
-//   );
+const acquireReleaseTargetLock = async (tx: Tx, releaseTargetId: string) =>
+  tx.execute(
+    sql`
+    SELECT * FROM ${schema.releaseTarget}
+    WHERE ${eq(schema.releaseTarget.id, releaseTargetId)}
+    FOR UPDATE NOWAIT
+  `,
+  );
 
 /**
  * Gets the latest version release for a specific release target
@@ -136,7 +136,7 @@ export const evaluateReleaseTargetWorker = createWorker(
         if (releaseTarget == null)
           throw new Error("Failed to get release target");
 
-        // await acquireReleaseTargetLock(tx, releaseTarget.id);
+        await acquireReleaseTargetLock(tx, releaseTarget.id);
 
         const latestVersionRelease = await getLatestVersionRelease(
           tx,
