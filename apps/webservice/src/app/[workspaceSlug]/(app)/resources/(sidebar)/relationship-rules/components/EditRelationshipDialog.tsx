@@ -3,7 +3,6 @@
 import type { FieldArrayWithId, UseFormReturn } from "react-hook-form";
 import React, { useState } from "react";
 import { IconX } from "@tabler/icons-react";
-import { capitalCase } from "change-case";
 import { z } from "zod";
 
 import * as SCHEMA from "@ctrlplane/db/schema";
@@ -15,12 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
 import {
   Form,
   FormControl,
@@ -141,26 +134,7 @@ const DependencyTypeField: React.FC<{
       <FormItem>
         <FormLabel>Dependency Type</FormLabel>
         <FormControl>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start font-normal"
-              >
-                {capitalCase(field.value ?? "")}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full min-w-[200px]">
-              {Object.values(SCHEMA.ResourceDependencyType).map((type) => (
-                <DropdownMenuItem
-                  key={type}
-                  onClick={() => field.onChange(type)}
-                >
-                  {capitalCase(type)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Input {...field} placeholder="depends on" />
         </FormControl>
         <FormMessage />
       </FormItem>

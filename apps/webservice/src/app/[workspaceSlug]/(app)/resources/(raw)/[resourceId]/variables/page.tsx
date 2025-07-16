@@ -158,7 +158,7 @@ export default async function VariablesPage(props: {
                       {(() => {
                         const relationship =
                           resource.relationships[v.reference];
-                        if (!relationship?.target) {
+                        if (!relationship?.source) {
                           return (
                             <span className="text-amber-500">
                               {v.reference} (not found)
@@ -166,17 +166,17 @@ export default async function VariablesPage(props: {
                           );
                         }
 
-                        const target = relationship.target;
+                        const source = relationship.source;
                         return (
                           <div className="flex items-center gap-2">
                             <Link
                               href={urls
                                 .workspace(workspaceSlug)
-                                .resource(target.id)
+                                .resource(source.id)
                                 .properties()}
                               className="text-blue-500 underline-offset-1 hover:underline"
                             >
-                              {target.name || v.reference}
+                              {source.name || v.reference}
                             </Link>
                             <IconLink className="h-4 w-4 text-muted-foreground" />
                           </div>

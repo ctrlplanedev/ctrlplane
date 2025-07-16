@@ -4,31 +4,31 @@ system:
   description: System for testing resources
 
 resources:
-  - kind: "Source"
-    version: "{{ prefix }}-test-version/v1"
-    identifier: "{{ prefix }}-source-resource"
-    name: "{{ prefix }}-source-resource"
-    slug: "{{ prefix }}-source-resource"
-    config:
-      enabled: true
-    metadata:
-      "{{ prefix }}": "true"
-      e2e/test: "true"
-  - kind: "SecondarySource"
-    version: "{{ prefix }}-test-version/v1"
-    identifier: "{{ prefix }}-secondary-source-resource"
-    name: "{{ prefix }}-secondary-source-resource"
-    slug: "{{ prefix }}-secondary-source-resource"
-    config:
-      enabled: true
-    metadata:
-      "{{ prefix }}": "true"
-      e2e/test: "true"
   - kind: "Target"
     version: "{{ prefix }}-test-version/v1"
     identifier: "{{ prefix }}-target-resource"
     name: "{{ prefix }}-target-resource"
     slug: "{{ prefix }}-target-resource"
+    config:
+      enabled: true
+    metadata:
+      "{{ prefix }}": "true"
+      e2e/test: "true"
+  - kind: "SecondaryTarget"
+    version: "{{ prefix }}-test-version/v1"
+    identifier: "{{ prefix }}-secondary-target-resource"
+    name: "{{ prefix }}-secondary-target-resource"
+    slug: "{{ prefix }}-secondary-target-resource"
+    config:
+      enabled: true
+    metadata:
+      "{{ prefix }}": "true"
+      e2e/test: "true"
+  - kind: "Source"
+    version: "{{ prefix }}-test-version/v1"
+    identifier: "{{ prefix }}-source-resource"
+    name: "{{ prefix }}-source-resource"
+    slug: "{{ prefix }}-source-resource"
     config:
       enabled: true
     metadata:

@@ -147,9 +147,9 @@ const getResourceWithMetadataAndRelationships = async (
   );
   const { relationships } = await getResourceParents(db, resource.id);
   const resourceRelationships = Object.fromEntries(
-    Object.entries(relationships).map(([key, { target, ...rule }]) => [
+    Object.entries(relationships).map(([key, { source, ...rule }]) => [
       key,
-      { ...target, rule },
+      { ...source, rule },
     ]),
   );
   return { ...resource, metadata, relationships: resourceRelationships };

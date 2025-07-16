@@ -46,7 +46,7 @@ const dispatchAffectedTargetJobs = async (
     .where(
       inArray(
         SCHEMA.releaseTarget.resourceId,
-        affectedResources.map((r) => r.source.id),
+        affectedResources.map((r) => r.target.id),
       ),
     );
 

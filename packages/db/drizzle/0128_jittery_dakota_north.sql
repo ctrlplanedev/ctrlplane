@@ -1,0 +1,1 @@
+ALTER TABLE "resource_relationship_rule" ALTER COLUMN "dependency_type" SET DATA TYPE text;

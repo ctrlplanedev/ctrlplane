@@ -12,15 +12,17 @@ export const getReferenceVariableValue = async (
     | schema.ReferenceDeploymentVariableValue,
 ) => {
   try {
-    const { relationships, getTargetsWithMetadataAndVars } =
-      await getResourceParents(db, resourceId);
-    const relationshipTargets = await getTargetsWithMetadataAndVars();
+    const {
+      relationships,
+      getParentsWithMetadataAndVars: getParentsWithMetadataAndVars,
+    } = await getResourceParents(db, resourceId);
+    const relationshipSources = await getParentsWithMetadataAndVars();
 
-    const targetId = relationships[variable.reference]?.target.id ?? "";
-    const targetResource = relationshipTargets[targetId];
-    if (targetResource == null) return variable.defaultValue ?? null;
+    const sourceId = relationships[variable.reference]?.source.id ?? "";
+    const sourceResource = relationshipSources[sourceId];
+    if (sourceResource == null) return variable.defaultValue ?? null;
     const resolvedPath =
-      _.get(targetResource, variable.path, variable.defaultValue) ?? null;
+      _.get(sourceResource, variable.path, variable.defaultValue) ?? null;
     return resolvedPath as string | number | boolean | object | null;
   } catch (error) {
     logger.error("Error resolving reference variable", { error, variable });

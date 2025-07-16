@@ -1,5 +1,6 @@
 "use client";
 
+import type * as schema from "@ctrlplane/db/schema";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type {
   EdgeChange,
@@ -11,8 +12,6 @@ import type {
 import { createContext, useContext, useState } from "react";
 import { MarkerType, useEdgesState, useNodesState } from "reactflow";
 import colors from "tailwindcss/colors";
-
-import * as schema from "@ctrlplane/db/schema";
 
 import type { Edge, ResourceNodeData } from "./types";
 import {
@@ -57,8 +56,8 @@ const getParentResourceIds = (
   currParentResourceIds: Set<string>,
 ): Set<string> => {
   const parentResourceIds = edges
-    .filter((edge) => edge.sourceId === focusedResource.id)
-    .map((edge) => edge.targetId);
+    .filter((edge) => edge.targetId === focusedResource.id)
+    .map((edge) => edge.sourceId);
 
   const directParentResources = resources.filter((resource) =>
     parentResourceIds.includes(resource.id),
@@ -80,10 +79,10 @@ const getChildResourceIdsWithSystem = (
 
   const children = new Map<string, string[]>();
   edges.forEach((edge) => {
-    if (!children.has(edge.targetId)) {
-      children.set(edge.targetId, []);
+    if (!children.has(edge.sourceId)) {
+      children.set(edge.sourceId, []);
     }
-    children.get(edge.targetId)!.push(edge.sourceId);
+    children.get(edge.sourceId)!.push(edge.targetId);
   });
 
   const hasSystems = (resourceId: string): boolean => {
@@ -153,17 +152,13 @@ const markerEnd = {
   color: colors.neutral[800],
 };
 
-/**
- * NOTE: we reverse the source and the target because for ctrlplane's logic,
- * the target of the relationship is the parent, and the source is the child
- */
 const getEdges = (edges: Edge[]) =>
   edges.map((e) => ({
-    id: `${e.targetId}-${e.sourceId}`,
-    source: e.targetId,
-    target: e.sourceId,
+    id: `${e.sourceId}-${e.targetId}`,
+    source: e.sourceId,
+    target: e.targetId,
     style: { stroke: colors.neutral[800] },
-    label: schema.ResourceDependencyTypeFlipped[e.relationshipType],
+    label: e.relationshipType,
     markerEnd,
   }));
 

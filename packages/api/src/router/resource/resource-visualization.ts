@@ -46,22 +46,22 @@ class TreeBuilder {
     const hasParents =
       Object.values(parentRelationships.relationships).length > 0;
     if (!hasParents) return;
-    for (const { target, type } of Object.values(
+    for (const { source, type } of Object.values(
       parentRelationships.relationships,
     )) {
-      this.addEdge(resource.id, target.id, type);
-      this.resources.push(target);
-      await this.getParents(target);
+      this.addEdge(source.id, resource.id, type);
+      this.resources.push(source);
+      await this.getParents(source);
     }
   }
 
   private async getChildren(resource: schema.Resource) {
     const resourceChildren = await getResourceChildren(db, resource.id);
     if (resourceChildren.length === 0) return;
-    for (const { source, type } of resourceChildren) {
-      this.addEdge(source.id, resource.id, type);
-      this.resources.push(source);
-      await this.getChildren(source);
+    for (const { target, type } of resourceChildren) {
+      this.addEdge(resource.id, target.id, type);
+      this.resources.push(target);
+      await this.getChildren(target);
     }
   }
 
