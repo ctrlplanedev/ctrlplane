@@ -1,14 +1,13 @@
-import { and, eq, isNull, ne, notExists } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 
 import type { Tx } from "../../common.js";
 import * as schema from "../../schema/index.js";
 import {
+  getRuleSatisfactionConditions,
   ruleMatchesSource,
   ruleMatchesTarget,
   sourceResource,
   targetResource,
-  unsatisfiedMetadataMatchRule,
-  unsatisfiedTargetMetadataEqualsRule,
 } from "./queries.js";
 
 /**
@@ -17,10 +16,7 @@ import {
  * @returns Array of children resources
  */
 export const getResourceChildren = async (tx: Tx, resourceId: string) => {
-  const isMetadataMatchSatisfied = notExists(unsatisfiedMetadataMatchRule(tx));
-  const isMetadataEqualsSatisfied = notExists(
-    unsatisfiedTargetMetadataEqualsRule(tx),
-  );
+  const ruleSatisfactionChecks = getRuleSatisfactionConditions(tx);
 
   return tx
     .selectDistinctOn([sourceResource.id, schema.resourceRelationshipRule.id], {
@@ -65,8 +61,7 @@ export const getResourceChildren = async (tx: Tx, resourceId: string) => {
          * variable release.
          */
         isNull(sourceResource.deletedAt),
-        isMetadataEqualsSatisfied,
-        isMetadataMatchSatisfied,
+        ...ruleSatisfactionChecks,
       ),
     );
 };

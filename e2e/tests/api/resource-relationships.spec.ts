@@ -94,7 +94,7 @@ test.describe("Resource Relationships API", () => {
     expect(target?.target?.config).toBeDefined();
   });
 
-  test("create a relationship with metadata equals", async ({
+  test("create a relationship with target metadata equals", async ({
     api,
     workspace,
   }) => {
@@ -114,6 +114,58 @@ test.describe("Resource Relationships API", () => {
           targetKind: "Target",
           targetVersion: `${prefix}-test-version/v1`,
           targetMetadataEquals: [{ key: prefix, value: "true" }],
+        },
+      },
+    );
+
+    expect(resourceRelationship.response.status).toBe(200);
+
+    const sourceResource = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: prefix + "-source-resource",
+          },
+        },
+      },
+    );
+
+    expect(sourceResource.response.status).toBe(200);
+    expect(sourceResource.data?.relationships).toBeDefined();
+    const target = sourceResource.data?.relationships?.[reference];
+    expect(target).toBeDefined();
+    expect(target?.type).toBe("depends_on");
+    expect(target?.reference).toBe(reference);
+    expect(target?.target?.id).toBeDefined();
+    expect(target?.target?.name).toBeDefined();
+    expect(target?.target?.version).toBeDefined();
+    expect(target?.target?.kind).toBeDefined();
+    expect(target?.target?.identifier).toBeDefined();
+    expect(target?.target?.config).toBeDefined();
+  });
+
+  test("create a relationship with source metadata equals", async ({
+    api,
+    workspace,
+  }) => {
+    const reference = `${prefix}-${faker.string.alphanumeric(
+      10,
+    )}`.toLocaleLowerCase();
+    const resourceRelationship = await api.POST(
+      "/v1/resource-relationship-rules",
+      {
+        body: {
+          workspaceId: workspace.id,
+          name: reference + "-resource-relationship-rule",
+          reference,
+          dependencyType: "depends_on",
+          sourceKind: "Source",
+          sourceVersion: `${prefix}-test-version/v1`,
+          targetKind: "Target",
+          targetVersion: `${prefix}-test-version/v1`,
+          sourceMetadataEquals: [{ key: prefix, value: "true" }],
         },
       },
     );

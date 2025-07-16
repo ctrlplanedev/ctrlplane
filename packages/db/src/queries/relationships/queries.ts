@@ -37,7 +37,7 @@ const metadataPairSameKeySameValue = (tx: Tx) =>
       ),
     );
 
-export const unsatisfiedMetadataMatchRule = (tx: Tx) =>
+const unsatisfiedMetadataMatchRule = (tx: Tx) =>
   tx
     .select()
     .from(schema.resourceRelationshipRuleMetadataMatch)
@@ -70,7 +70,7 @@ const targetMetadataMatchesRule = (tx: Tx) =>
       ),
     );
 
-export const unsatisfiedTargetMetadataEqualsRule = (tx: Tx) =>
+const unsatisfiedTargetMetadataEqualsRule = (tx: Tx) =>
   tx
     .select()
     .from(schema.resourceRelationshipTargetRuleMetadataEquals)
@@ -84,6 +84,55 @@ export const unsatisfiedTargetMetadataEqualsRule = (tx: Tx) =>
         notExists(targetMetadataMatchesRule(tx)),
       ),
     );
+
+const sourceMetadataEqualsRule = (tx: Tx) =>
+  tx
+    .select()
+    .from(sourceMetadata)
+    .where(
+      and(
+        eq(sourceMetadata.resourceId, sourceResource.id),
+        eq(
+          sourceMetadata.key,
+          schema.resourceRelationshipSourceRuleMetadataEquals.key,
+        ),
+        eq(
+          sourceMetadata.value,
+          schema.resourceRelationshipSourceRuleMetadataEquals.value,
+        ),
+      ),
+    );
+
+const unsatisfiedSourceMetadataEqualsRule = (tx: Tx) =>
+  tx
+    .select()
+    .from(schema.resourceRelationshipSourceRuleMetadataEquals)
+    .where(
+      and(
+        eq(
+          schema.resourceRelationshipSourceRuleMetadataEquals
+            .resourceRelationshipRuleId,
+          schema.resourceRelationshipRule.id,
+        ),
+        notExists(sourceMetadataEqualsRule(tx)),
+      ),
+    );
+
+export const getRuleSatisfactionConditions = (tx: Tx) => {
+  const isMetadataMatchSatisfied = notExists(unsatisfiedMetadataMatchRule(tx));
+  const isTargetMetadataEqualsSatisfied = notExists(
+    unsatisfiedTargetMetadataEqualsRule(tx),
+  );
+  const isSourceMetadataEqualsSatisfied = notExists(
+    unsatisfiedSourceMetadataEqualsRule(tx),
+  );
+
+  return [
+    isMetadataMatchSatisfied,
+    isTargetMetadataEqualsSatisfied,
+    isSourceMetadataEqualsSatisfied,
+  ];
+};
 
 export const ruleMatchesSource = [
   eq(schema.resourceRelationshipRule.workspaceId, sourceResource.workspaceId),

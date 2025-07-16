@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, ne, notExists } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import _ from "lodash";
 
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -6,12 +6,11 @@ import { variablesAES256 } from "@ctrlplane/secrets";
 import type { Tx } from "../../common.js";
 import * as schema from "../../schema/index.js";
 import {
+  getRuleSatisfactionConditions,
   ruleMatchesSource,
   ruleMatchesTarget,
   sourceResource,
   targetResource,
-  unsatisfiedMetadataMatchRule,
-  unsatisfiedTargetMetadataEqualsRule,
 } from "./queries.js";
 
 const formatResourceVariables = (
@@ -37,10 +36,7 @@ const formatResourceVariables = (
  * @returns Array of relationships with rule info and target resources
  */
 export const getResourceParents = async (tx: Tx, resourceId: string) => {
-  const isMetadataMatchSatisfied = notExists(unsatisfiedMetadataMatchRule(tx));
-  const isMetadataEqualsSatisfied = notExists(
-    unsatisfiedTargetMetadataEqualsRule(tx),
-  );
+  const ruleSatisfactionChecks = getRuleSatisfactionConditions(tx);
 
   const relationships = await tx
     .selectDistinctOn([targetResource.id, schema.resourceRelationshipRule.id], {
@@ -64,8 +60,7 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
         ne(targetResource.id, resourceId),
         isNull(sourceResource.deletedAt),
         isNull(targetResource.deletedAt),
-        isMetadataEqualsSatisfied,
-        isMetadataMatchSatisfied,
+        ...ruleSatisfactionChecks,
       ),
     );
 

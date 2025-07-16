@@ -1518,14 +1518,9 @@ export interface components {
       sourceVersion?: string;
       targetKind?: string;
       targetVersion?: string;
-      metadataKeysMatches?: {
-        sourceKey: string;
-        targetKey: string;
-      }[];
-      targetMetadataEquals?: {
-        key: string;
-        value: string;
-      }[];
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
     };
     /** @enum {string} */
     ResourceRelationshipRuleDependencyType:
@@ -1535,6 +1530,14 @@ export interface components {
       | "created_after"
       | "provisioned_in"
       | "inherits_from";
+    MetadataEqualsConstraint: {
+      key?: string;
+      value?: string;
+    };
+    MetadataKeyMatchConstraint: {
+      sourceKey: string;
+      targetKey: string;
+    };
     ResourceRelationshipRule: {
       /** Format: uuid */
       id: string;
@@ -1547,16 +1550,11 @@ export interface components {
       description?: string;
       sourceKind: string;
       sourceVersion: string;
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
       targetKind?: string;
       targetVersion?: string;
-      targetMetadataEquals?: {
-        key: string;
-        value: string;
-      }[];
-      metadataKeysMatches?: {
-        sourceKey: string;
-        targetKey: string;
-      }[];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;
@@ -1569,14 +1567,9 @@ export interface components {
       sourceVersion: string;
       targetKind: string;
       targetVersion: string;
-      metadataKeysMatches?: {
-        sourceKey: string;
-        targetKey: string;
-      }[];
-      targetMetadataEquals?: {
-        key: string;
-        value: string;
-      }[];
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
     };
     ReleaseTarget: {
       /** Format: uuid */
