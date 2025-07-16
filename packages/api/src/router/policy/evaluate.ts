@@ -7,8 +7,10 @@ import { z } from "zod";
 import { and, eq, selector } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import {
+  getConcurrencyRule,
   getRolloutInfoForReleaseTarget,
   mergePolicies,
+  ReleaseTargetConcurrencyRule,
   versionAnyApprovalRule,
   versionRoleApprovalRule,
   versionUserApprovalRule,
@@ -57,7 +59,7 @@ const getVersionSelector = (db: Tx, policy: Policy, versionId: string) => {
  * @param ruleGetter - Function that extracts the relevant approval rules from a policy
  * @returns Object mapping policy IDs to arrays of rejection reasons
  */
-const getApprovalReasons = async (
+const getFilterReasons = async (
   policies: Policy[],
   version: Version[],
   versionId: string,
@@ -79,6 +81,34 @@ const getApprovalReasons = async (
     ),
   );
 };
+
+const getReleaseTargetConcurrencyBlocked = async (releaseTargetId: string) => {
+  const rule = new ReleaseTargetConcurrencyRule(releaseTargetId);
+  const result = await rule.passing();
+  return {
+    passing: result.passing,
+    rejectionReason: result.rejectionReason ?? "",
+  };
+};
+
+const getConcurrencyBlocked = async (
+  policies: Policy[],
+): Promise<Record<string, string[]>> =>
+  Object.fromEntries(
+    await Promise.all(
+      policies.map(async (policy) => {
+        const [rule] = getConcurrencyRule(policy);
+        if (rule == null) return [policy.id, []];
+
+        const result = await rule.passing();
+
+        return [
+          policy.id,
+          result.passing ? [] : [result.rejectionReason ?? ""],
+        ];
+      }),
+    ),
+  );
 
 export const evaluateEnvironment = protectedProcedure
   .input(
@@ -123,7 +153,7 @@ export const evaluateEnvironment = protectedProcedure
 
     // Evaluate each type of approval rule These checks determine if the
     // version has the required approvals
-    const userApprovals = await getApprovalReasons(
+    const userApprovals = await getFilterReasons(
       policies,
       [version],
       versionId,
@@ -131,7 +161,7 @@ export const evaluateEnvironment = protectedProcedure
         versionUserApprovalRule(environmentId, policy.versionUserApprovals),
     );
 
-    const roleApprovals = await getApprovalReasons(
+    const roleApprovals = await getFilterReasons(
       policies,
       [version],
       versionId,
@@ -139,7 +169,7 @@ export const evaluateEnvironment = protectedProcedure
         versionRoleApprovalRule(environmentId, policy.versionRoleApprovals),
     );
 
-    const anyApprovals = await getApprovalReasons(
+    const anyApprovals = await getFilterReasons(
       policies,
       [version],
       versionId,
@@ -221,7 +251,7 @@ export const evaluateReleaseTarget = protectedProcedure
 
     // Evaluate each type of approval rule These checks determine if the
     // version has the required approvals
-    const userApprovals = await getApprovalReasons(
+    const userApprovals = await getFilterReasons(
       policies,
       [version],
       versionId,
@@ -229,7 +259,7 @@ export const evaluateReleaseTarget = protectedProcedure
         versionUserApprovalRule(environmentId, policy.versionUserApprovals),
     );
 
-    const roleApprovals = await getApprovalReasons(
+    const roleApprovals = await getFilterReasons(
       policies,
       [version],
       versionId,
@@ -237,13 +267,18 @@ export const evaluateReleaseTarget = protectedProcedure
         versionRoleApprovalRule(environmentId, policy.versionRoleApprovals),
     );
 
-    const anyApprovals = await getApprovalReasons(
+    const anyApprovals = await getFilterReasons(
       policies,
       [version],
       versionId,
       (policy) =>
         versionAnyApprovalRule(environmentId, policy.versionAnyApprovals),
     );
+
+    const concurrencyBlocked = await getConcurrencyBlocked(policies);
+
+    const releaseTargetConcurrencyBlocked =
+      await getReleaseTargetConcurrencyBlocked(releaseTargetId);
 
     const mergedPolicy = mergePolicies(policies);
     const rolloutInfo = await getRolloutInfoForReleaseTarget(
@@ -259,6 +294,8 @@ export const evaluateReleaseTarget = protectedProcedure
         userApprovals,
         roleApprovals,
         anyApprovals,
+        releaseTargetConcurrencyBlocked,
+        concurrencyBlocked,
         rolloutInfo: {
           rolloutTime: rolloutInfo.rolloutTime,
           rolloutPosition: rolloutInfo.rolloutPosition,

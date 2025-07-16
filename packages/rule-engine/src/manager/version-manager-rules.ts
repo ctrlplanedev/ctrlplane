@@ -1,13 +1,9 @@
-import { eq } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
-import * as schema from "@ctrlplane/db/schema";
-
 import type { FilterRule, Policy, PreValidationRule } from "../types";
 import type { Version } from "./version-rule-engine";
-import { ConcurrencyRule } from "../rules/concurrency-rule.js";
 import { DeploymentDenyRule } from "../rules/deployment-deny-rule.js";
 import { ReleaseTargetConcurrencyRule } from "../rules/release-target-concurrency-rule.js";
 import { ReleaseTargetLockRule } from "../rules/release-target-lock-rule.js";
+import { getConcurrencyRule } from "./version-manager-rules/concurrency.js";
 import {
   getEnvironmentVersionRolloutRule,
   getVersionApprovalRules,
@@ -24,37 +20,6 @@ export const denyWindows = (policy: Policy | null) =>
             dtend: denyWindow.dtend,
           }),
       );
-
-export const getConcurrencyRule = (policy: Policy | null) => {
-  if (policy?.concurrency == null) return [];
-  const getReleaseTargetsInConcurrencyGroup = () =>
-    db
-      .select()
-      .from(schema.releaseTarget)
-      .innerJoin(
-        schema.computedPolicyTargetReleaseTarget,
-        eq(
-          schema.computedPolicyTargetReleaseTarget.releaseTargetId,
-          schema.releaseTarget.id,
-        ),
-      )
-      .innerJoin(
-        schema.policyTarget,
-        eq(
-          schema.computedPolicyTargetReleaseTarget.policyTargetId,
-          schema.policyTarget.id,
-        ),
-      )
-      .where(eq(schema.policyTarget.policyId, policy.id))
-      .then((rows) => rows.map((row) => row.release_target));
-
-  return [
-    new ConcurrencyRule({
-      concurrency: policy.concurrency.concurrency,
-      getReleaseTargetsInConcurrencyGroup,
-    }),
-  ];
-};
 
 export type GetAllRulesOptions = {
   policy: Policy | null;

@@ -118,6 +118,76 @@ const RolloutCheck: React.FC<{
   );
 };
 
+const ConcurrencyCheck: React.FC<{
+  releaseTargetId: string;
+  versionId: string;
+}> = ({ releaseTargetId, versionId }) => {
+  const { data: policyEvaluations, isLoading } =
+    api.policy.evaluate.releaseTarget.useQuery(
+      { releaseTargetId, versionId },
+      { refetchInterval: 5_000 },
+    );
+
+  const concurrencyBlocked = policyEvaluations?.rules.concurrencyBlocked;
+
+  if (isLoading)
+    return (
+      <div className="flex items-center gap-2">
+        <Waiting /> Loading concurrency information
+      </div>
+    );
+
+  const isPassing = Object.values(concurrencyBlocked ?? {}).every(
+    (reasons) => reasons.length === 0,
+  );
+  if (isPassing)
+    return (
+      <div className="flex items-center gap-2">
+        <IconCheck className="h-4 w-4 text-green-400" /> Concurrency passed
+      </div>
+    );
+
+  return (
+    <div className="flex items-center gap-2">
+      <Failing /> Blocked by concurrency gate, waiting for other jobs to finish
+    </div>
+  );
+};
+
+const ReleaseTargetConcurrencyCheck: React.FC<{
+  releaseTargetId: string;
+  versionId: string;
+}> = ({ releaseTargetId, versionId }) => {
+  const { data: policyEvaluations, isLoading } =
+    api.policy.evaluate.releaseTarget.useQuery(
+      { releaseTargetId, versionId },
+      { refetchInterval: 5_000 },
+    );
+
+  const releaseTargetConcurrencyBlocked =
+    policyEvaluations?.rules.releaseTargetConcurrencyBlocked;
+
+  if (isLoading)
+    return (
+      <div className="flex items-center gap-2">
+        <Waiting /> Loading active jobs
+      </div>
+    );
+
+  if (releaseTargetConcurrencyBlocked?.passing)
+    return (
+      <div className="flex items-center gap-2">
+        <IconCheck className="h-4 w-4 text-green-400" /> No blocking jobs
+      </div>
+    );
+
+  return (
+    <div className="flex items-center gap-2">
+      <Failing /> Another job is running for this resource and deployment
+    </div>
+  );
+};
+
 export const PolicyEvaluationHover: React.FC<{
   releaseTargetId: string;
   versionId: string;
@@ -145,9 +215,8 @@ export const PolicyEvaluationHover: React.FC<{
       (p) => p.environmentVersionRollout != null,
     ) ?? false;
 
-  const hasRules = hasApprovalRules || hasVersionSelectorRule || hasRolloutRule;
-
-  if (!hasRules) return <span className="text-sm">No jobs</span>;
+  const hasConcurrencyRule =
+    policyEvaluations?.policies.some((p) => p.concurrency != null) ?? false;
 
   return (
     <HoverCard>
@@ -165,6 +234,8 @@ export const PolicyEvaluationHover: React.FC<{
               <VersionSelectorCheck policyEvaluations={policyEvaluations} />
             )}
             {hasRolloutRule && <RolloutCheck {...props} />}
+            {hasConcurrencyRule && <ConcurrencyCheck {...props} />}
+            <ReleaseTargetConcurrencyCheck {...props} />
           </div>
         )}
       </HoverCardContent>
