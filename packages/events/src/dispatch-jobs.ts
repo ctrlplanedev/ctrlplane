@@ -94,7 +94,6 @@ const dispatchComputeSystemReleaseTargetsJobs = async (
 
 const dispatchComputeWorkspacePolicyTargetsJobs = async (
   workspaceId: string,
-  processedPolicyTargetIds?: string[],
   releaseTargetsToEvaluate?: ReleaseTargetIdentifier[],
 ) => {
   const q = getQueue(Channel.ComputeWorkspacePolicyTargets);
@@ -102,13 +101,11 @@ const dispatchComputeWorkspacePolicyTargetsJobs = async (
   const isAlreadyQueued = waiting.some(
     (job) =>
       job.data.workspaceId === workspaceId &&
-      _.isEqual(job.data.releaseTargetsToEvaluate, releaseTargetsToEvaluate) &&
-      _.isEqual(job.data.processedPolicyTargetIds, processedPolicyTargetIds),
+      _.isEqual(job.data.releaseTargetsToEvaluate, releaseTargetsToEvaluate),
   );
   if (isAlreadyQueued) return;
   await q.add(workspaceId, {
     workspaceId,
-    processedPolicyTargetIds,
     releaseTargetsToEvaluate,
   });
 };
@@ -141,12 +138,10 @@ const toCompute = () => ({
   }),
   workspace: (workspaceId: string) => ({
     policyTargets: (opts?: {
-      processedPolicyTargetIds?: string[];
       releaseTargetsToEvaluate?: ReleaseTargetIdentifier[];
     }) =>
       dispatchComputeWorkspacePolicyTargetsJobs(
         workspaceId,
-        opts?.processedPolicyTargetIds,
         opts?.releaseTargetsToEvaluate,
       ),
   }),

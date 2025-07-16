@@ -89,7 +89,6 @@ export type ChannelMap = {
   [Channel.ComputePolicyTargetReleaseTargetSelector]: { id: string };
   [Channel.ComputeWorkspacePolicyTargets]: {
     workspaceId: string;
-    processedPolicyTargetIds?: string[];
     releaseTargetsToEvaluate?: ReleaseTargetIdentifier[];
   };
   [Channel.ComputeSystemsReleaseTargets]: { id: string };
