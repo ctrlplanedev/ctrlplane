@@ -6826,9 +6826,7 @@
           "reference",
           "dependencyType",
           "sourceKind",
-          "sourceVersion",
-          "targetKind",
-          "targetVersion"
+          "sourceVersion"
         ]
       },
       "ReleaseTarget": {

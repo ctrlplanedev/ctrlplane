@@ -1565,8 +1565,8 @@ export interface components {
       description?: string;
       sourceKind: string;
       sourceVersion: string;
-      targetKind: string;
-      targetVersion: string;
+      targetKind?: string;
+      targetVersion?: string;
       metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
       targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
       sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];

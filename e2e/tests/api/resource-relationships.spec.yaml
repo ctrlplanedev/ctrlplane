@@ -24,6 +24,16 @@ resources:
     metadata:
       "{{ prefix }}": "true"
       e2e/test: "true"
+  - kind: "DifferentVersionKindTarget"
+    version: "{{ prefix }}-test-version/v2"
+    identifier: "{{ prefix }}-different-version-kind-target-resource"
+    name: "{{ prefix }}-different-version-kind-target-resource"
+    slug: "{{ prefix }}-different-version-kind-target-resource"
+    config:
+      enabled: true
+    metadata:
+      "{{ prefix }}": "true"
+      e2e/test: "true"
   - kind: "Source"
     version: "{{ prefix }}-test-version/v1"
     identifier: "{{ prefix }}-source-resource"

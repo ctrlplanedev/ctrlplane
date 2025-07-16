@@ -198,6 +198,230 @@ test.describe("Resource Relationships API", () => {
     expect(target?.source?.config).toBeDefined();
   });
 
+  test("create a relationship rule where target version is not specified", async ({
+    api,
+    workspace,
+  }) => {
+    const reference =
+      `${prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+
+    const resourceRelationship = await api.POST(
+      "/v1/resource-relationship-rules",
+      {
+        body: {
+          workspaceId: workspace.id,
+          name: reference + "-resource-relationship-rule",
+          reference,
+          dependencyType: "depends_on",
+          sourceKind: "Source",
+          sourceVersion: `${prefix}-test-version/v1`,
+          targetKind: "Target",
+        },
+      },
+    );
+
+    expect(resourceRelationship.response.status).toBe(200);
+
+    const targetResource = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: prefix + "-target-resource",
+          },
+        },
+      },
+    );
+
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.relationships).toBeDefined();
+    const source = targetResource.data?.relationships?.[reference];
+    expect(source).toBeDefined();
+    expect(source?.type).toBe("depends_on");
+    expect(source?.reference).toBe(reference);
+    expect(source?.source?.id).toBeDefined();
+    expect(source?.source?.name).toBeDefined();
+    expect(source?.source?.version).toBeDefined();
+    expect(source?.source?.kind).toBeDefined();
+    expect(source?.source?.identifier).toBeDefined();
+    expect(source?.source?.config).toBeDefined();
+  });
+
+  test("create a relationship rule where target kind is not specified", async ({
+    api,
+    workspace,
+  }) => {
+    const reference =
+      `${prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+
+    const resourceRelationship = await api.POST(
+      "/v1/resource-relationship-rules",
+      {
+        body: {
+          workspaceId: workspace.id,
+          name: reference + "-resource-relationship-rule",
+          reference,
+          dependencyType: "depends_on",
+          sourceKind: "Source",
+          sourceVersion: `${prefix}-test-version/v1`,
+          targetVersion: `${prefix}-test-version/v1`,
+        },
+      },
+    );
+
+    expect(resourceRelationship.response.status).toBe(200);
+
+    const targetResource = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: prefix + "-target-resource",
+          },
+        },
+      },
+    );
+
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.relationships).toBeDefined();
+    const source = targetResource.data?.relationships?.[reference];
+    expect(source).toBeDefined();
+    expect(source?.type).toBe("depends_on");
+    expect(source?.reference).toBe(reference);
+    expect(source?.source?.id).toBeDefined();
+    expect(source?.source?.name).toBeDefined();
+    expect(source?.source?.version).toBeDefined();
+    expect(source?.source?.kind).toBeDefined();
+    expect(source?.source?.identifier).toBeDefined();
+    expect(source?.source?.config).toBeDefined();
+
+    const targetResource2 = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: prefix + "-secondary-target-resource",
+          },
+        },
+      },
+    );
+
+    expect(targetResource2.response.status).toBe(200);
+    expect(targetResource2.data?.relationships).toBeDefined();
+    const source2 = targetResource2.data?.relationships?.[reference];
+    expect(source2).toBeDefined();
+    expect(source2?.type).toBe("depends_on");
+    expect(source2?.reference).toBe(reference);
+    expect(source2?.source?.id).toBeDefined();
+    expect(source2?.source?.name).toBeDefined();
+    expect(source2?.source?.version).toBeDefined();
+    expect(source2?.source?.kind).toBeDefined();
+    expect(source2?.source?.identifier).toBeDefined();
+    expect(source2?.source?.config).toBeDefined();
+  });
+
+  test("create a relationship rule where neither target kind nor version is specified", async ({
+    api,
+    workspace,
+  }) => {
+    const reference =
+      `${prefix}-${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
+
+    const resourceRelationship = await api.POST(
+      "/v1/resource-relationship-rules",
+      {
+        body: {
+          workspaceId: workspace.id,
+          name: reference + "-resource-relationship-rule",
+          reference,
+          dependencyType: "depends_on",
+          sourceKind: "Source",
+          sourceVersion: `${prefix}-test-version/v1`,
+        },
+      },
+    );
+
+    expect(resourceRelationship.response.status).toBe(200);
+
+    const targetResource = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: prefix + "-target-resource",
+          },
+        },
+      },
+    );
+
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.relationships).toBeDefined();
+    const source = targetResource.data?.relationships?.[reference];
+    expect(source).toBeDefined();
+    expect(source?.type).toBe("depends_on");
+    expect(source?.reference).toBe(reference);
+    expect(source?.source?.id).toBeDefined();
+    expect(source?.source?.name).toBeDefined();
+    expect(source?.source?.version).toBeDefined();
+    expect(source?.source?.kind).toBeDefined();
+    expect(source?.source?.identifier).toBeDefined();
+    expect(source?.source?.config).toBeDefined();
+
+    const targetResource2 = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: prefix + "-secondary-target-resource",
+          },
+        },
+      },
+    );
+
+    expect(targetResource2.response.status).toBe(200);
+    expect(targetResource2.data?.relationships).toBeDefined();
+    const source2 = targetResource2.data?.relationships?.[reference];
+    expect(source2).toBeDefined();
+    expect(source2?.type).toBe("depends_on");
+    expect(source2?.reference).toBe(reference);
+    expect(source2?.source?.id).toBeDefined();
+    expect(source2?.source?.name).toBeDefined();
+    expect(source2?.source?.version).toBeDefined();
+    expect(source2?.source?.kind).toBeDefined();
+    expect(source2?.source?.identifier).toBeDefined();
+    expect(source2?.source?.config).toBeDefined();
+
+    const targetResource3 = await api.GET(
+      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
+      {
+        params: {
+          path: {
+            workspaceId: workspace.id,
+            identifier: prefix + "-different-version-kind-target-resource",
+          },
+        },
+      },
+    );
+
+    expect(targetResource3.response.status).toBe(200);
+    expect(targetResource3.data?.relationships).toBeDefined();
+    const source3 = targetResource3.data?.relationships?.[reference];
+    expect(source3).toBeDefined();
+    expect(source3?.type).toBe("depends_on");
+    expect(source3?.reference).toBe(reference);
+    expect(source3?.source?.id).toBeDefined();
+    expect(source3?.source?.name).toBeDefined();
+    expect(source3?.source?.version).toBeDefined();
+    expect(source3?.source?.kind).toBeDefined();
+    expect(source3?.source?.identifier).toBeDefined();
+    expect(source3?.source?.config).toBeDefined();
+  });
+
   test("upsert a relationship rule", async ({ api, workspace }) => {
     const reference = `${prefix}-${faker.string.alphanumeric(
       10,
