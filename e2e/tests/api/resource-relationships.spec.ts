@@ -68,33 +68,33 @@ test.describe("Resource Relationships API", () => {
 
     expect(resourceRelationship2.response.status).toBe(200);
 
-    const sourceResource = await api.GET(
+    const targetResource = await api.GET(
       `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
       {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: prefix + "-source-resource",
+            identifier: prefix + "-target-resource",
           },
         },
       },
     );
 
-    expect(sourceResource.response.status).toBe(200);
-    expect(sourceResource.data?.relationships).toBeDefined();
-    const target = sourceResource.data?.relationships?.[reference];
-    expect(target).toBeDefined();
-    expect(target?.type).toBe("depends_on");
-    expect(target?.reference).toBe(reference);
-    expect(target?.target?.id).toBeDefined();
-    expect(target?.target?.name).toBeDefined();
-    expect(target?.target?.version).toBeDefined();
-    expect(target?.target?.kind).toBeDefined();
-    expect(target?.target?.identifier).toBeDefined();
-    expect(target?.target?.config).toBeDefined();
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.relationships).toBeDefined();
+    const source = targetResource.data?.relationships?.[reference];
+    expect(source).toBeDefined();
+    expect(source?.type).toBe("depends_on");
+    expect(source?.reference).toBe(reference);
+    expect(source?.source?.id).toBeDefined();
+    expect(source?.source?.name).toBeDefined();
+    expect(source?.source?.version).toBeDefined();
+    expect(source?.source?.kind).toBeDefined();
+    expect(source?.source?.identifier).toBeDefined();
+    expect(source?.source?.config).toBeDefined();
   });
 
-  test("create a relationship with target metadata equals", async ({
+  test("create a relationship with source metadata equals", async ({
     api,
     workspace,
   }) => {
@@ -120,33 +120,33 @@ test.describe("Resource Relationships API", () => {
 
     expect(resourceRelationship.response.status).toBe(200);
 
-    const sourceResource = await api.GET(
+    const targetResource = await api.GET(
       `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
       {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: prefix + "-source-resource",
+            identifier: prefix + "-target-resource",
           },
         },
       },
     );
 
-    expect(sourceResource.response.status).toBe(200);
-    expect(sourceResource.data?.relationships).toBeDefined();
-    const target = sourceResource.data?.relationships?.[reference];
-    expect(target).toBeDefined();
-    expect(target?.type).toBe("depends_on");
-    expect(target?.reference).toBe(reference);
-    expect(target?.target?.id).toBeDefined();
-    expect(target?.target?.name).toBeDefined();
-    expect(target?.target?.version).toBeDefined();
-    expect(target?.target?.kind).toBeDefined();
-    expect(target?.target?.identifier).toBeDefined();
-    expect(target?.target?.config).toBeDefined();
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.relationships).toBeDefined();
+    const source = targetResource.data?.relationships?.[reference];
+    expect(source).toBeDefined();
+    expect(source?.type).toBe("depends_on");
+    expect(source?.reference).toBe(reference);
+    expect(source?.source?.id).toBeDefined();
+    expect(source?.source?.name).toBeDefined();
+    expect(source?.source?.version).toBeDefined();
+    expect(source?.source?.kind).toBeDefined();
+    expect(source?.source?.identifier).toBeDefined();
+    expect(source?.source?.config).toBeDefined();
   });
 
-  test("create a relationship with source metadata equals", async ({
+  test("create a relationship with target metadata equals", async ({
     api,
     workspace,
   }) => {
@@ -172,30 +172,30 @@ test.describe("Resource Relationships API", () => {
 
     expect(resourceRelationship.response.status).toBe(200);
 
-    const sourceResource = await api.GET(
+    const targetResource = await api.GET(
       `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
       {
         params: {
           path: {
             workspaceId: workspace.id,
-            identifier: prefix + "-source-resource",
+            identifier: prefix + "-target-resource",
           },
         },
       },
     );
 
-    expect(sourceResource.response.status).toBe(200);
-    expect(sourceResource.data?.relationships).toBeDefined();
-    const target = sourceResource.data?.relationships?.[reference];
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.relationships).toBeDefined();
+    const target = targetResource.data?.relationships?.[reference];
     expect(target).toBeDefined();
     expect(target?.type).toBe("depends_on");
     expect(target?.reference).toBe(reference);
-    expect(target?.target?.id).toBeDefined();
-    expect(target?.target?.name).toBeDefined();
-    expect(target?.target?.version).toBeDefined();
-    expect(target?.target?.kind).toBeDefined();
-    expect(target?.target?.identifier).toBeDefined();
-    expect(target?.target?.config).toBeDefined();
+    expect(target?.source?.id).toBeDefined();
+    expect(target?.source?.name).toBeDefined();
+    expect(target?.source?.version).toBeDefined();
+    expect(target?.source?.kind).toBeDefined();
+    expect(target?.source?.identifier).toBeDefined();
+    expect(target?.source?.config).toBeDefined();
   });
 
   test("upsert a relationship rule", async ({ api, workspace }) => {
@@ -265,12 +265,12 @@ test.describe("Resource Relationships API", () => {
       10,
     )}`.toLocaleLowerCase();
 
-    const sourceResourceCreate = await api.POST("/v1/resources", {
+    const targetResourceCreate = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
-        name: prefix + "-source-resource",
-        kind: "Source",
-        identifier: prefix + "-source-resource",
+        name: prefix + "-target-resource",
+        kind: "Target",
+        identifier: prefix + "-target-resource",
         version: `${prefix}-version/v1`,
         config: {},
         metadata: {
@@ -280,9 +280,9 @@ test.describe("Resource Relationships API", () => {
       },
     });
 
-    expect(sourceResourceCreate.response.status).toBe(200);
+    expect(targetResourceCreate.response.status).toBe(200);
 
-    const targetResourceCreate = await api.POST("/v1/resources", {
+    const sourceResourceCreate = await api.POST("/v1/resources", {
       body: {
         workspaceId: workspace.id,
         name: prefix + "-target-resource",
@@ -297,7 +297,7 @@ test.describe("Resource Relationships API", () => {
       },
     });
 
-    expect(targetResourceCreate.response.status).toBe(200);
+    expect(sourceResourceCreate.response.status).toBe(200);
 
     const relationshipRule = await api.POST("/v1/resource-relationship-rules", {
       body: {
@@ -318,7 +318,7 @@ test.describe("Resource Relationships API", () => {
 
     expect(relationshipRule.response.status).toBe(200);
 
-    const sourceResource = await api.GET(
+    const targetResource = await api.GET(
       `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
       {
         params: {
@@ -330,9 +330,9 @@ test.describe("Resource Relationships API", () => {
       },
     );
 
-    expect(sourceResource.response.status).toBe(200);
-    expect(sourceResource.data?.relationships).toBeDefined();
-    const target = sourceResource.data?.relationships?.[reference];
+    expect(targetResource.response.status).toBe(200);
+    expect(targetResource.data?.relationships).toBeDefined();
+    const target = targetResource.data?.relationships?.[reference];
     expect(target).toBeUndefined();
   });
 });

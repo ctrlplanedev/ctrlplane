@@ -3,8 +3,8 @@ import { useCollapsibleTree } from "../CollapsibleTreeContext";
 
 const getDirectChildrenIds = (resourceId: string, edges: Edge[]) =>
   edges
-    .filter((edge) => edge.targetId === resourceId)
-    .map((edge) => edge.sourceId);
+    .filter((edge) => edge.sourceId === resourceId)
+    .map((edge) => edge.targetId);
 
 const getAllDescendantsIds = (resourceId: string, edges: Edge[]) => {
   const descendants = new Set<string>();

@@ -33,7 +33,7 @@ const getResourceChildrenReleaseTargets = async (
         eq(schema.deploymentVariable.key, key),
         inArray(
           schema.releaseTarget.resourceId,
-          dependentResources.map((dr) => dr.source.id),
+          dependentResources.map((dr) => dr.target.id),
         ),
       ),
     )

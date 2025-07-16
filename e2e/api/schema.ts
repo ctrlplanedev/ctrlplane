@@ -4818,7 +4818,7 @@ export interface operations {
                 ruleId: string;
                 type: string;
                 reference: string;
-                target: components["schemas"]["Resource"];
+                source: components["schemas"]["Resource"];
               };
             };
           };

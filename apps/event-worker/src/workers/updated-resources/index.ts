@@ -17,7 +17,7 @@ const getAffectedReleaseTargets = async (resourceId: string) => {
       and(
         inArray(
           schema.releaseTarget.resourceId,
-          resourceChildren.map((dr) => dr.source.id),
+          resourceChildren.map((dr) => dr.target.id),
         ),
       ),
     );

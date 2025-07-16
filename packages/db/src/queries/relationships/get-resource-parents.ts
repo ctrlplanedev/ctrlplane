@@ -39,16 +39,16 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
   const ruleSatisfactionChecks = getRuleSatisfactionConditions(tx);
 
   const relationships = await tx
-    .selectDistinctOn([targetResource.id, schema.resourceRelationshipRule.id], {
+    .selectDistinctOn([sourceResource.id, schema.resourceRelationshipRule.id], {
       ruleId: schema.resourceRelationshipRule.id,
       type: schema.resourceRelationshipRule.dependencyType,
-      target: targetResource,
+      source: sourceResource,
       reference: schema.resourceRelationshipRule.reference,
     })
-    .from(sourceResource)
+    .from(targetResource)
     .innerJoin(
-      targetResource,
-      eq(targetResource.workspaceId, sourceResource.workspaceId),
+      sourceResource,
+      eq(sourceResource.workspaceId, targetResource.workspaceId),
     )
     .innerJoin(
       schema.resourceRelationshipRule,
@@ -56,20 +56,20 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
     )
     .where(
       and(
-        eq(sourceResource.id, resourceId),
-        ne(targetResource.id, resourceId),
+        eq(targetResource.id, resourceId),
+        ne(sourceResource.id, resourceId),
         isNull(sourceResource.deletedAt),
         isNull(targetResource.deletedAt),
         ...ruleSatisfactionChecks,
       ),
     );
 
-  const relatipnshipTargets = async () =>
+  const relatipnshipSources = async () =>
     await tx.query.resource
       .findMany({
         where: inArray(
           schema.resource.id,
-          Object.values(relationships).map((r) => r.target.id),
+          Object.values(relationships).map((r) => r.source.id),
         ),
         with: {
           metadata: true,
@@ -97,7 +97,7 @@ export const getResourceParents = async (tx: Tx, resourceId: string) => {
     relationships: Object.fromEntries(
       relationships.map((t) => [t.reference, t]),
     ),
-    getTargetsWithMetadataAndVars: relatipnshipTargets,
+    getParentsWithMetadataAndVars: relatipnshipSources,
   };
 };
 

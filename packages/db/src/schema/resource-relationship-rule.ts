@@ -1,78 +1,9 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { workspace } from "./workspace.js";
-
-/**
- * Enum defining types of resource dependency relationships.
- */
-const resourceDependencyType = pgEnum("resource_dependency_type", [
-  /**
-   * Direct dependency, indicating that the source explicitly depends on the
-   * target.
-   * @example Backend depends directly on MySQL database being available.
-   */
-  "depends_on",
-
-  /**
-   * Indirect dependency, where the source indirectly relies on the target
-   * through intermediate services.
-   * @example Frontend indirectly depends on database via a backend API.
-   */
-  "depends_indirectly_on",
-
-  /**
-   * Runtime dependency, indicating the source dynamically interacts with the
-   * target at runtime.
-   * @example Application dynamically connects to Stripe API at runtime.
-   */
-  "uses_at_runtime",
-
-  /**
-   * Sequential dependency, indicating the source must be provisioned or created
-   * after the target.
-   * @example Salesforce account creation triggers application provisioning.
-   */
-  "created_after",
-
-  /**
-   * Infrastructure dependency, indicating the source resource is provisioned or
-   * hosted within the target infrastructure.
-   * @example Kubernetes cluster provisioned inside a Google Cloud project.
-   */
-  "provisioned_in",
-
-  /**
-   * Inheritance dependency, where the source inherits configuration or
-   * properties from the target resource.
-   * @example App-specific logging configuration inherits from base logging
-   * configuration.
-   */
-  "inherits_from",
-]);
-
-export enum ResourceDependencyType {
-  DependsOn = "depends_on",
-  DependsIndirectlyOn = "depends_indirectly_on",
-  UsesAtRuntime = "uses_at_runtime",
-  CreatedAfter = "created_after",
-  ProvisionedIn = "provisioned_in",
-  InheritsFrom = "inherits_from",
-}
-
-export const ResourceDependencyTypeFlipped: Record<
-  ResourceDependencyType,
-  string
-> = {
-  [ResourceDependencyType.DependsOn]: "required_by",
-  [ResourceDependencyType.DependsIndirectlyOn]: "indirectly_required_by",
-  [ResourceDependencyType.UsesAtRuntime]: "used_by_at_runtime",
-  [ResourceDependencyType.CreatedAfter]: "created_before",
-  [ResourceDependencyType.ProvisionedIn]: "hosts",
-  [ResourceDependencyType.InheritsFrom]: "inherited_by",
-};
 
 export const resourceRelationshipRule = pgTable(
   "resource_relationship_rule",
@@ -86,7 +17,7 @@ export const resourceRelationshipRule = pgTable(
     name: text("name"),
     reference: text("reference").notNull(),
 
-    dependencyType: resourceDependencyType("dependency_type").notNull(),
+    dependencyType: text("dependency_type").notNull(),
     dependencyDescription: text("dependency_description"),
 
     description: text("description"),
