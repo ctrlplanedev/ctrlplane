@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, count, eq, or, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
@@ -7,14 +7,14 @@ import type { PreValidationRule } from "../types";
 
 type ConcurrencyRuleOptions = {
   concurrency: number;
-  getReleaseTargetsInConcurrencyGroup: () => Promise<schema.ReleaseTarget[]>;
+  policyId: string;
 };
 
 export class ConcurrencyRule implements PreValidationRule {
   public readonly name = "ConcurrencyRule";
   constructor(private readonly options: ConcurrencyRuleOptions) {}
 
-  async getNumberOfActiveJobs(releaseTargetsIds: string[]) {
+  async getNumberOfActiveJobs() {
     return db
       .select({ count: count() })
       .from(schema.job)
@@ -31,10 +31,23 @@ export class ConcurrencyRule implements PreValidationRule {
         schema.releaseTarget,
         eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
       )
+      .innerJoin(
+        schema.computedPolicyTargetReleaseTarget,
+        eq(
+          schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+          schema.releaseTarget.id,
+        ),
+      )
       .where(
         and(
-          inArray(schema.releaseTarget.id, releaseTargetsIds),
-          inArray(schema.job.status, [JobStatus.Pending, JobStatus.InProgress]),
+          eq(
+            schema.computedPolicyTargetReleaseTarget.policyTargetId,
+            this.options.policyId,
+          ),
+          or(
+            eq(schema.job.status, JobStatus.Pending),
+            eq(schema.job.status, JobStatus.InProgress),
+          ),
         ),
       )
       .then(takeFirst)
@@ -42,11 +55,7 @@ export class ConcurrencyRule implements PreValidationRule {
   }
 
   async passing() {
-    const releaseTargets =
-      await this.options.getReleaseTargetsInConcurrencyGroup();
-    const releaseTargetsIds = releaseTargets.map((rt) => rt.id);
-    const numberOfActiveJobs =
-      await this.getNumberOfActiveJobs(releaseTargetsIds);
+    const numberOfActiveJobs = await this.getNumberOfActiveJobs();
     if (numberOfActiveJobs < this.options.concurrency) return { passing: true };
 
     return {
