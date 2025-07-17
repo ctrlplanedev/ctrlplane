@@ -1,5 +1,6 @@
 import type { SQL } from "drizzle-orm";
 import { and, eq, inArray, isNull } from "drizzle-orm";
+import _ from "lodash";
 
 import type { Tx } from "../../common.js";
 import { takeFirstOrNull } from "../../common.js";
@@ -96,28 +97,26 @@ const getManyResourcesWithProviderMetadataAndVariables = async (
     )
     .where(sql);
 
-  const fullResourcePromises = resourceDbResult.map(async (resourceRow) => {
-    const { resource, resource_provider: provider } = resourceRow;
+  const resourceIds = resourceDbResult.map((r) => r.resource.id);
 
-    const metadata = await db
-      .select()
-      .from(schema.resourceMetadata)
-      .where(eq(schema.resourceMetadata.resourceId, resource.id));
+  const metadataDbResult = await db
+    .select()
+    .from(schema.resourceMetadata)
+    .where(inArray(schema.resourceMetadata.resourceId, resourceIds))
+    .then((rows) => _.groupBy(rows, (r) => r.resourceId));
 
-    const variables = await db
-      .select()
-      .from(schema.resourceVariable)
-      .where(eq(schema.resourceVariable.resourceId, resource.id));
+  const variablesDbResult = await db
+    .select()
+    .from(schema.resourceVariable)
+    .where(inArray(schema.resourceVariable.resourceId, resourceIds))
+    .then((rows) => _.groupBy(rows, (r) => r.resourceId));
 
-    return {
-      ...resource,
-      metadata,
-      variables,
-      provider,
-    };
-  });
-
-  return Promise.all(fullResourcePromises);
+  return resourceDbResult.map((r) => ({
+    ...r.resource,
+    provider: r.resource_provider,
+    metadata: metadataDbResult[r.resource.id] ?? [],
+    variables: variablesDbResult[r.resource.id] ?? [],
+  }));
 };
 
 const getResourcesWithMetadataAndVariablesByIdentifiersAndWorkspaceId = async (
