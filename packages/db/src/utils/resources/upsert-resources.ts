@@ -6,6 +6,7 @@ import { variablesAES256 } from "@ctrlplane/secrets";
 import type { Tx } from "../../common.js";
 import { buildConflictUpdateColumns } from "../../common.js";
 import * as SCHEMA from "../../schema/index.js";
+import { getResources } from "./get-full-resource.js";
 
 type ResourceWithMetadata = SCHEMA.Resource & {
   metadata?: Record<string, string>;
@@ -163,14 +164,11 @@ export const upsertResources = async (
     updateResourceVariables(tx, resourcesWithId),
   ]);
 
-  return tx.query.resource.findMany({
-    where: and(
-      inArray(
-        SCHEMA.resource.identifier,
-        resourcesToUpsert.map((r) => r.identifier),
-      ),
-      eq(SCHEMA.resource.workspaceId, workspaceId),
-    ),
-    with: { metadata: true, variables: true },
-  });
+  return getResources()
+    .withProviderMetadataAndVariables()
+    .byIdentifiersAndWorkspaceId(
+      tx,
+      resourcesToUpsert.map((r) => r.identifier),
+      workspaceId,
+    );
 };

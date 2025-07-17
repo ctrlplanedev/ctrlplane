@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   and,
   eq,
+  getResource,
   isNull,
   isResourceChanged,
   upsertResources,
@@ -26,22 +27,6 @@ import { request } from "../../middleware";
 
 const log = logger.child({ module: "v1/resources/[resourceId]" });
 
-/**
- * Retrieves a resource by workspace ID and identifier
- * @param resourceId - The ID of the resource
- * @returns The resource with its metadata, variables and provider
- */
-const getResourceById = (resourceId: string) => {
-  return db.query.resource.findFirst({
-    where: eq(schema.resource.id, resourceId),
-    with: {
-      metadata: true,
-      variables: true,
-      provider: true,
-    },
-  });
-};
-
 export const GET = request()
   .use(authn)
   .use(
@@ -55,7 +40,9 @@ export const GET = request()
     async (_, { params }) => {
       // we don't check deletedAt as we may be querying for soft-deleted resources
       const { resourceId } = await params;
-      const data = await getResourceById(resourceId);
+      const data = await getResource()
+        .withProviderMetadataAndVariables()
+        .byId(db, resourceId);
 
       if (data == null)
         return NextResponse.json(

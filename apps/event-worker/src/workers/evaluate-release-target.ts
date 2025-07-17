@@ -88,6 +88,8 @@ const acquireReleaseTargetLock = async (tx: Tx, releaseTargetId: string) =>
   tx.execute(
     sql`
     SELECT * FROM ${schema.releaseTarget}
+    INNER JOIN ${schema.computedPolicyTargetReleaseTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.releaseTargetId, schema.releaseTarget.id)}
+    INNER JOIN ${schema.policyTarget} ON ${eq(schema.computedPolicyTargetReleaseTarget.policyTargetId, schema.policyTarget.id)}
     WHERE ${eq(schema.releaseTarget.id, releaseTargetId)}
     FOR UPDATE NOWAIT
   `,

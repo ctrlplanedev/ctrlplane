@@ -8,6 +8,7 @@ import {
   asc,
   desc,
   eq,
+  getResource,
   inArray,
   isNull,
   not,
@@ -88,10 +89,10 @@ export const resourceRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const resource = await ctx.db.query.resource.findFirst({
-        where: and(eq(schema.resource.id, input), isNotDeleted),
-        with: { metadata: true, variables: true, provider: true },
-      });
+      const resource = await getResource()
+        .whichIsNotDeleted()
+        .withProviderMetadataAndVariables()
+        .byId(ctx.db, input);
       if (resource == null) return null;
 
       const { relationships } = await getResourceParents(ctx.db, resource.id);

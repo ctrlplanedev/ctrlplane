@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
 import { z } from "zod";
 
-import { and, eq, upsertResources } from "@ctrlplane/db";
+import { getResource, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel, getQueue } from "@ctrlplane/events";
@@ -71,13 +71,13 @@ export const POST = request()
   .handle<{ user: schema.User; body: z.infer<typeof patchBodySchema> }>(
     async (ctx) => {
       try {
-        const existingResource = await db.query.resource.findFirst({
-          where: and(
-            eq(schema.resource.identifier, ctx.body.identifier),
-            eq(schema.resource.workspaceId, ctx.body.workspaceId),
-          ),
-          with: { metadata: true, variables: true },
-        });
+        const existingResource = await getResource()
+          .withProviderMetadataAndVariables()
+          .byIdentifierAndWorkspaceId(
+            db,
+            ctx.body.identifier,
+            ctx.body.workspaceId,
+          );
 
         const [insertedResource] = await upsertResources(
           db,
