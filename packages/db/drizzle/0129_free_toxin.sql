@@ -1,0 +1,1 @@
+CREATE INDEX "resource_metadata_resource_id_index" ON "resource_metadata" USING btree ("resource_id");

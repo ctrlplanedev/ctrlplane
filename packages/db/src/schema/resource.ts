@@ -24,6 +24,7 @@ import {
 } from "drizzle-orm";
 import {
   boolean,
+  index,
   json,
   jsonb,
   pgEnum,
@@ -163,7 +164,10 @@ export const resourceMetadata = pgTable(
     key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.resourceId) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.key, t.resourceId),
+    resourceIdIdx: index().on(t.resourceId),
+  }),
 );
 
 export type ResourceMetadata = InferSelectModel<typeof resourceMetadata>;

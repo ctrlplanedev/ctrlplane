@@ -2,8 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 
 import {
-  and,
-  eq,
+  getResources,
   inArray,
   isResourceChanged,
   upsertResources,
@@ -30,23 +29,20 @@ export type ResourceToInsert = Omit<
   >;
 };
 
-const getPreviousResources = async (
+const getPreviousResources = (
   tx: Tx,
   workspaceId: string,
   toUpdate: ResourceToInsert[],
-) =>
-  toUpdate.length > 0
-    ? await tx.query.resource.findMany({
-        where: and(
-          inArray(
-            schema.resource.identifier,
-            toUpdate.map((r) => r.identifier),
-          ),
-          eq(schema.resource.workspaceId, workspaceId),
-        ),
-        with: { variables: true, metadata: true },
-      })
-    : [];
+) => {
+  if (toUpdate.length === 0) return [];
+  return getResources()
+    .withProviderMetadataAndVariables()
+    .byIdentifiersAndWorkspaceId(
+      tx,
+      toUpdate.map((r) => r.identifier),
+      workspaceId,
+    );
+};
 
 export const handleResourceProviderScan = async (
   tx: Tx,
