@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { and, eq, isNull } from "@ctrlplane/db";
+import { and, eq, getResource, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
@@ -11,29 +11,6 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
 import { request } from "~/app/api/v1/middleware";
-
-/**
- * Retrieves a resource by workspace ID and identifier
- * @param workspaceId - The ID of the workspace
- * @param identifier - The identifier of the resource
- * @returns The resource with its metadata, variables and provider
- */
-const getResourceByWorkspaceAndIdentifier = (
-  workspaceId: string,
-  identifier: string,
-) => {
-  return db.query.resource.findFirst({
-    where: and(
-      eq(schema.resource.workspaceId, workspaceId),
-      eq(schema.resource.identifier, identifier),
-    ),
-    with: {
-      metadata: true,
-      variables: true,
-      provider: true,
-    },
-  });
-};
 
 export const GET = request()
   .use(authn)
@@ -61,10 +38,9 @@ export const GET = request()
   >(async (_, { params }) => {
     const { workspaceId, identifier } = await params;
 
-    const resource = await getResourceByWorkspaceAndIdentifier(
-      workspaceId,
-      identifier,
-    );
+    const resource = await getResource()
+      .withProviderMetadataAndVariables()
+      .byIdentifierAndWorkspaceId(db, identifier, workspaceId);
 
     if (resource == null) {
       return NextResponse.json(
