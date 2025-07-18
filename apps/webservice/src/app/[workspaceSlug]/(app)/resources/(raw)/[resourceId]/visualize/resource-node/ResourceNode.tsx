@@ -76,7 +76,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
 
   return (
     <>
-      <div className="flex w-[400px] flex-col gap-4 rounded-md border bg-neutral-900/30 p-3">
+      <div className="flex w-[400px] flex-col gap-4 rounded-md border bg-neutral-900/30 p-3 hover:bg-neutral-900/60">
         <NodeHeader resource={data} />
         {data.systems.map((system) => (
           <SystemSection key={system.id} resource={data} system={system} />
