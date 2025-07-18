@@ -38,7 +38,10 @@ const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => {
         <Button
           size="sm"
           className="h-6 flex-shrink-0 rounded-full px-2"
-          onClick={expandResource}
+          onClick={(e) => {
+            e.stopPropagation();
+            expandResource();
+          }}
         >
           +{numHiddenDirectChildren}
         </Button>
@@ -47,7 +50,10 @@ const NodeHeader: React.FC<{ resource: schema.Resource }> = ({ resource }) => {
         <Button
           size="sm"
           className="h-6 flex-shrink-0 rounded-full px-2"
-          onClick={collapseResource}
+          onClick={(e) => {
+            e.stopPropagation();
+            collapseResource();
+          }}
         >
           collapse
         </Button>

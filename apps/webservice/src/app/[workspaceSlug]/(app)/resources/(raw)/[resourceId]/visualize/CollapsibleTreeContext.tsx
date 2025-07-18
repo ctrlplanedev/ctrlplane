@@ -26,6 +26,12 @@ type CollapsibleTreeContextType = {
   expandedEdges: Edge[];
   addExpandedResourceIds: (resourceIds: string[]) => void;
   removeExpandedResourceIds: (resourceIds: string[]) => void;
+  flowToolbar: {
+    fitView: () => void;
+    expandAll: () => void;
+    collapseAll: () => void;
+    getCompactView: () => void;
+  };
   reactFlow: {
     nodes: Node[];
     edges: ReactFlowEdge[];
@@ -248,8 +254,38 @@ export const CollapsibleTreeProvider: React.FC<
 
       return newSet;
     });
+  };
 
-    setTimeout(fitView, 50);
+  const getCompactView = () => {
+    const newSet = new Set(initialExpandedResourceIds);
+
+    const newExpandedResources = resources.filter((resource) =>
+      newSet.has(resource.id),
+    );
+
+    const newExpandedEdges = edges.filter(
+      (edge) => newSet.has(edge.sourceId) && newSet.has(edge.targetId),
+    );
+
+    const newNodes = getNodes(newExpandedResources);
+    const newEdges = getEdges(newExpandedEdges);
+
+    const layouted = getLayoutedElementsDagre(newNodes, newEdges, "LR", 250);
+
+    setNodes(layouted.nodes);
+    setEdges(layouted.edges);
+
+    setExpandedResourceIds(newSet);
+  };
+
+  const expandAll = () => addExpandedResourceIds(resources.map((r) => r.id));
+
+  const collapseAll = () => {
+    const currentExpandedResourceIds = Array.from(expandedResourceIds);
+    const toRemove = currentExpandedResourceIds.filter(
+      (id) => id !== focusedResource.id,
+    );
+    removeExpandedResourceIds(toRemove);
   };
 
   const value: CollapsibleTreeContextType = {
@@ -259,6 +295,12 @@ export const CollapsibleTreeProvider: React.FC<
     allEdges: edges,
     addExpandedResourceIds,
     removeExpandedResourceIds,
+    flowToolbar: {
+      fitView,
+      expandAll,
+      collapseAll,
+      getCompactView,
+    },
     reactFlow: {
       nodes,
       edges: flowEdges,

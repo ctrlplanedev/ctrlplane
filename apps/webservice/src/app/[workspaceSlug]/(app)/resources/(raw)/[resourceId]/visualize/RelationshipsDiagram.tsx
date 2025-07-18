@@ -10,6 +10,7 @@ import { SidebarTrigger, useSidebar } from "@ctrlplane/ui/sidebar";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { useCollapsibleTree } from "./CollapsibleTreeContext";
 import { DepEdge } from "./DepEdge";
+import { FlowToolbar } from "./FlowToolbar";
 import { ResourceDrawer } from "./resource-drawer/ResourceDrawer";
 import { useResourceDrawer } from "./resource-drawer/useResourceDrawer";
 import { ResourceNode } from "./resource-node/ResourceNode";
@@ -40,7 +41,7 @@ export const RelationshipsDiagram: React.FC = () => {
   const { resourceId, setResourceId, removeResourceId } = useResourceDrawer();
 
   return (
-    <>
+    <div className="relative h-full w-full">
       <ResourceSidebarTrigger />
       <ResourceDrawer />
       <ReactFlow
@@ -60,6 +61,7 @@ export const RelationshipsDiagram: React.FC = () => {
           setResourceId(nodeResourceId);
         }}
       />
-    </>
+      <FlowToolbar />
+    </div>
   );
 };
