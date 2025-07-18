@@ -15,6 +15,7 @@ import {
   IconCloudDataConnectionFilled,
   IconCube,
   IconDatabase,
+  IconFunctionFilled,
   IconLockFilled,
   IconServer,
   IconTerminal,
@@ -119,6 +120,13 @@ export const ResourceIcon: React.FC<{
   if (version.includes("ctrlplane.access"))
     return (
       <IconTerminal
+        className={cn("h-4 w-4 shrink-0 text-neutral-300", className)}
+      />
+    );
+
+  if (version.includes("container/service"))
+    return (
+      <IconFunctionFilled
         className={cn("h-4 w-4 shrink-0 text-neutral-300", className)}
       />
     );
