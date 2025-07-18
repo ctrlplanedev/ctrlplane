@@ -4,8 +4,8 @@ import {
   IconArrowLeft,
   IconEdit,
   IconHistory,
+  IconInfoCircle,
   IconLock,
-  IconSettings,
   IconShieldCheck,
   IconTopologyComplex,
   IconVariable,
@@ -95,6 +95,12 @@ export default async function Layout(props: {
             <SidebarGroup>
               <SidebarMenu>
                 <SidebarLink
+                  href={resourcePageUrls.properties()}
+                  icon={<IconInfoCircle className="size-4" />}
+                >
+                  Overview
+                </SidebarLink>
+                <SidebarLink
                   href={resourcePageUrls.deployments()}
                   icon={<IconHistory className="size-4" />}
                 >
@@ -111,12 +117,6 @@ export default async function Layout(props: {
                   icon={<IconVariable className="size-4" />}
                 >
                   Variables
-                </SidebarLink>
-                <SidebarLink
-                  href={resourcePageUrls.properties()}
-                  icon={<IconSettings className="size-4" />}
-                >
-                  Properties
                 </SidebarLink>
                 <SidebarLink
                   href={resourcePageUrls.policies()}
