@@ -202,16 +202,20 @@ const TargetResourceFields: React.FC<{
       <FormField
         control={form.control}
         name="targetKind"
-        render={({ field }) => (
+        render={({ field: { value, onChange } }) => (
           <FormItem className="flex-1">
             <FormLabel className="text-xs text-muted-foreground">
               Resource Kind
             </FormLabel>
             <FormControl>
               <Input
-                {...field}
                 placeholder="e.g., Service"
-                value={field.value ?? ""}
+                value={value ?? ""}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  const value = inputValue.trim() === "" ? null : inputValue;
+                  onChange(value);
+                }}
               />
             </FormControl>
             <FormMessage />
@@ -222,16 +226,20 @@ const TargetResourceFields: React.FC<{
       <FormField
         control={form.control}
         name="targetVersion"
-        render={({ field }) => (
+        render={({ field: { value, onChange } }) => (
           <FormItem className="flex-1">
             <FormLabel className="text-xs text-muted-foreground">
               Resource Version
             </FormLabel>
             <FormControl>
               <Input
-                {...field}
                 placeholder="e.g., v1"
-                value={field.value ?? ""}
+                value={value ?? ""}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  const value = inputValue.trim() === "" ? null : inputValue;
+                  onChange(value);
+                }}
               />
             </FormControl>
             <FormMessage />
