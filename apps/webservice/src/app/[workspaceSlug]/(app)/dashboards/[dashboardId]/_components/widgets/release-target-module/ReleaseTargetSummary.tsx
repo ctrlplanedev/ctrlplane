@@ -1,8 +1,11 @@
 import type * as schema from "@ctrlplane/db/schema";
 import React from "react";
 import Link from "next/link";
+import { IconExternalLink } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 
+import { cn } from "@ctrlplane/ui";
+import { buttonVariants } from "@ctrlplane/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -87,16 +90,28 @@ const JobRow: React.FC<{
   return (
     <div className="flex items-center justify-between">
       <span>Job:</span>
-      <div className="flex items-center gap-1">
-        {linksArray.length === 0 && (
-          <span className="text-muted-foreground">No links</span>
-        )}
-        {linksArray.map(([key, url]) => (
-          <Link href={url} target="_blank" rel="noopener noreferrer">
-            {key},
-          </Link>
-        ))}
-      </div>
+      {linksArray.length === 0 && (
+        <span className="text-muted-foreground">No links</span>
+      )}
+      {linksArray.length > 0 && (
+        <div className="flex items-center gap-1">
+          {linksArray.map(([key, url]) => (
+            <Link
+              key={key}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "flex h-6 items-center gap-1 text-xs",
+              )}
+            >
+              <IconExternalLink className="h-3 w-3" />
+              {key}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

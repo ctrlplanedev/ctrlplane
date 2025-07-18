@@ -14,7 +14,7 @@ export const ExpandedReleaseTargetModule: React.FC<{
   const { deployment, resource } = releaseTarget;
   return (
     <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-h-[90vh] max-w-4xl">
         <div className="flex w-full flex-col gap-4">
           <div className="text-lg font-medium">
             Deploy {deployment.name} to {resource.name}
