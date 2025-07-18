@@ -216,6 +216,7 @@ const deployableVersions = protectedProcedure
     const deploymentVersions = await ctx.db
       .select()
       .from(schema.deploymentVersion)
+      .orderBy(desc(schema.deploymentVersion.createdAt))
       .where(matchesSqlChecks)
       .limit(limit)
       .offset(offset);
