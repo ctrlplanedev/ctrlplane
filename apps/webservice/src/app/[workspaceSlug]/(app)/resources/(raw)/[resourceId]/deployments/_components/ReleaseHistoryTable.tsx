@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconExternalLink } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
+import { formatDistanceToNow } from "date-fns";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -45,6 +46,7 @@ import { api } from "~/trpc/react";
 type ReleaseHistoryTableProps = {
   resourceId: string;
   deployments: { id: string; name: string }[];
+  condensed?: boolean;
 };
 
 type VariablesCellProps = {
@@ -199,6 +201,43 @@ const JobLinksCell: React.FC<JobLinksCellProps> = ({ job }) => {
   );
 };
 
+const CondensedJobLinksCell: React.FC<JobLinksCellProps> = ({ job }) => {
+  const { links } = job;
+  if (links == null) return null;
+
+  const numLinks = Object.keys(links).length;
+
+  return (
+    <TableCell className="py-0">
+      <div className="flex flex-wrap gap-2">
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <Button variant="secondary" size="sm" className="h-6">
+              {numLinks} links
+            </Button>
+          </HoverCardTrigger>
+          <HoverCardContent
+            className="flex max-w-40 flex-col gap-1 p-2"
+            align="start"
+          >
+            {Object.entries(links).map(([label, url]) => (
+              <Link
+                key={label}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate text-sm underline-offset-1 hover:underline"
+              >
+                {label}
+              </Link>
+            ))}
+          </HoverCardContent>
+        </HoverCard>
+      </div>
+    </TableCell>
+  );
+};
+
 const DeploymentSelect: React.FC<{
   deployments: { id: string; name: string }[];
   selectedDeploymentId: string;
@@ -247,6 +286,7 @@ const JobStatusSelect: React.FC<{
 export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
   resourceId,
   deployments,
+  condensed = false,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const [selectedDeploymentId, setSelectedDeploymentId] =
@@ -265,8 +305,8 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
   const history = data ?? [];
 
   return (
-    <div>
-      <div className="flex items-center justify-end gap-2 p-2">
+    <div className="w-full">
+      <div className="flex w-full items-center justify-end gap-2 p-2">
         <DeploymentSelect
           deployments={deployments}
           selectedDeploymentId={selectedDeploymentId}
@@ -279,7 +319,7 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
         />
       </div>
       {isLoading && (
-        <div className="space-y-2 p-4">
+        <div className="w-full space-y-2 p-4">
           {Array.from({ length: 10 }).map((_, index) => (
             <Skeleton
               key={index}
@@ -339,8 +379,16 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
                     {capitalCase(h.job.status)}
                   </div>
                 </TableCell>
-                <JobLinksCell job={h.job} />
-                <TableCell>{h.job.createdAt.toLocaleString()}</TableCell>
+                {condensed ? (
+                  <CondensedJobLinksCell job={h.job} />
+                ) : (
+                  <JobLinksCell job={h.job} />
+                )}
+                <TableCell>
+                  {condensed
+                    ? formatDistanceToNow(h.job.createdAt, { addSuffix: true })
+                    : h.job.createdAt.toLocaleString()}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

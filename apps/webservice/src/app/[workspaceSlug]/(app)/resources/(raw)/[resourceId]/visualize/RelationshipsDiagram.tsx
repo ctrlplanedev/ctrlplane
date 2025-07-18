@@ -1,8 +1,13 @@
 "use client";
 
 import type { EdgeTypes, NodeTypes } from "reactflow";
+import { IconChevronRight } from "@tabler/icons-react";
 import ReactFlow from "reactflow";
 
+import { cn } from "@ctrlplane/ui";
+import { SidebarTrigger, useSidebar } from "@ctrlplane/ui/sidebar";
+
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { useCollapsibleTree } from "./CollapsibleTreeContext";
 import { DepEdge } from "./DepEdge";
 import { ResourceDrawer } from "./resource-drawer/ResourceDrawer";
@@ -12,12 +17,31 @@ import { ResourceNode } from "./resource-node/ResourceNode";
 const nodeTypes: NodeTypes = { resource: ResourceNode };
 const edgeTypes: EdgeTypes = { default: DepEdge };
 
+const ResourceSidebarTrigger: React.FC = () => {
+  const { open: openSidebars } = useSidebar();
+  const isOpen = openSidebars.includes(Sidebars.Resource);
+
+  return (
+    <div className="p-2">
+      <SidebarTrigger name={Sidebars.Resource}>
+        <IconChevronRight
+          className={cn(
+            "size-4 transition-transform duration-200",
+            isOpen ? "rotate-180" : "rotate-0",
+          )}
+        />
+      </SidebarTrigger>
+    </div>
+  );
+};
+
 export const RelationshipsDiagram: React.FC = () => {
   const { reactFlow } = useCollapsibleTree();
   const { resourceId, setResourceId, removeResourceId } = useResourceDrawer();
 
   return (
     <>
+      <ResourceSidebarTrigger />
       <ResourceDrawer />
       <ReactFlow
         {...reactFlow}

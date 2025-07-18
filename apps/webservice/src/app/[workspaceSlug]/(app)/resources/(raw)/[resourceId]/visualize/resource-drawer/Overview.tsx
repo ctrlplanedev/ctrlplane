@@ -1,24 +1,19 @@
-import { notFound } from "next/navigation";
 import * as yaml from "js-yaml";
 
+import type { ResourceInformation } from "../types";
 import { MetadataInfo } from "~/app/[workspaceSlug]/(app)/_components/MetadataInfo";
-import { api } from "~/trpc/server";
-import { ResourceProperties } from "../_components/ResourceProperties";
-import { ConfigEditor } from "./ConfigEditor";
+import { ResourceProperties } from "../../_components/ResourceProperties";
+import { ConfigEditor } from "../../properties/ConfigEditor";
 
 const ResourceConfigInfo: React.FC<{ config: Record<string, any> }> = ({
   config,
 }) => <ConfigEditor value={yaml.dump(config)} readOnly />;
 
-export default async function PropertiesPage(props: {
-  params: Promise<{ resourceId: string }>;
-}) {
-  const { resourceId } = await props.params;
-  const resource = await api.resource.byId(resourceId);
-  if (resource == null) notFound();
-
+export const ResourceDrawerOverview: React.FC<{
+  resource: ResourceInformation;
+}> = ({ resource }) => {
   return (
-    <div className="container space-y-4 p-8">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-123px)] space-y-4 overflow-x-auto overflow-y-scroll p-6">
       <ResourceProperties resource={resource} />
 
       <div>
@@ -38,4 +33,4 @@ export default async function PropertiesPage(props: {
       </div>
     </div>
   );
-}
+};

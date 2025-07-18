@@ -11,3 +11,7 @@ export type Edge = {
   targetId: string;
   relationshipType: schema.ResourceRelationshipRule["dependencyType"];
 };
+
+export type ResourceInformation = NonNullable<
+  RouterOutputs["resource"]["byId"]
+>;
