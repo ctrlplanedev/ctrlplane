@@ -183,6 +183,7 @@ export const allSystemsOverview = protectedProcedure
         const deployments = groupedReleaseTargets.map((r) => ({
           ...r.deployment,
           version: r.version,
+          releaseTarget: r.release_target,
         }));
         return { ...system, environment, deployments };
       })
