@@ -108,7 +108,10 @@ const useCreateWidget = (
     const newWidget = await createWidgetMutation.mutateAsync(widget);
     utils.dashboard.get.invalidate(dashboardId);
     setWidgets((prevWidgets) => {
-      const newWidgets = [...prevWidgets, newWidget];
+      const prevWithoutPlaceholder = prevWidgets.filter(
+        (widget) => widget.id !== NEW_WIDGET_ID,
+      );
+      const newWidgets = [...prevWithoutPlaceholder, newWidget];
       return newWidgets;
     });
   };
