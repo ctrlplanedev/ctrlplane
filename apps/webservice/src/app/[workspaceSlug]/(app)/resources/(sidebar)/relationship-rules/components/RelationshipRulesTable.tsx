@@ -33,7 +33,7 @@ import {
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
-import { CreateRelationshipDialog } from "./CreateRelationshipDialog";
+import { CreateRelationshipDialog } from "./create-relationship-dialog/CreateRelationshipDialog";
 import { RelationshipRuleDropdown } from "./RelationshipRuleDropdown";
 
 interface RelationshipRulesTableProps {

@@ -1,10 +1,168 @@
+import _ from "lodash";
 import { z } from "zod";
 
-import { asc, eq, takeFirst } from "@ctrlplane/db";
+import { and, asc, eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
+
+const matchingMetadataKeys = protectedProcedure
+  .input(
+    z.object({
+      workspaceId: z.string().uuid(),
+      source: z.object({ kind: z.string(), version: z.string() }).optional(),
+      target: z
+        .object({
+          kind: z.string().optional().nullable(),
+          version: z.string().optional().nullable(),
+        })
+        .optional(),
+    }),
+  )
+  .meta({
+    authorizationCheck: ({ canUser, input }) =>
+      canUser.perform(Permission.ResourceList).on({
+        type: "workspace",
+        id: input.workspaceId,
+      }),
+  })
+  .query(async ({ ctx, input }) => {
+    const { workspaceId, source, target } = input;
+
+    const sourceMetadata = await ctx.db
+      .selectDistinct({
+        key: schema.resourceMetadata.key,
+        value: schema.resourceMetadata.value,
+      })
+      .from(schema.resourceMetadata)
+      .innerJoin(
+        schema.resource,
+        eq(schema.resourceMetadata.resourceId, schema.resource.id),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, workspaceId),
+          source == null ? undefined : eq(schema.resource.kind, source.kind),
+          source == null
+            ? undefined
+            : eq(schema.resource.version, source.version),
+        ),
+      );
+
+    const targetMetadata = await ctx.db
+      .selectDistinct({
+        key: schema.resourceMetadata.key,
+        value: schema.resourceMetadata.value,
+      })
+      .from(schema.resourceMetadata)
+      .innerJoin(
+        schema.resource,
+        eq(schema.resourceMetadata.resourceId, schema.resource.id),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, workspaceId),
+          target?.kind == null
+            ? undefined
+            : eq(schema.resource.kind, target.kind),
+          target?.version == null
+            ? undefined
+            : eq(schema.resource.version, target.version),
+        ),
+      );
+
+    const sourceMetaGrouped = _.chain(sourceMetadata)
+      .groupBy((m) => m.key)
+      .map((keyGroup) => {
+        const key = keyGroup[0]!.key;
+        const values = _.chain(keyGroup)
+          .map((m) => m.value)
+          .uniq()
+          .value();
+
+        return { key, values };
+      })
+      .value();
+
+    const targetMetaGrouped = _.chain(targetMetadata)
+      .groupBy((m) => m.key)
+      .map((keyGroup) => {
+        const key = keyGroup[0]!.key;
+        const values = _.chain(keyGroup)
+          .map((m) => m.value)
+          .uniq()
+          .value();
+
+        return { key, values };
+      })
+      .value();
+
+    return sourceMetaGrouped.map((sourceMeta) => {
+      const { key, values } = sourceMeta;
+
+      const targetMetaWithMatchingValue = targetMetaGrouped
+        .filter((targetMetaGroup) =>
+          targetMetaGroup.values.some((targetVal) =>
+            values.includes(targetVal),
+          ),
+        )
+        .map(({ key }) => key);
+
+      return { key, targetMetaWithMatchingValue };
+    });
+  });
+
+const metadataEquals = protectedProcedure
+  .input(
+    z.object({
+      workspaceId: z.string().uuid(),
+      kind: z.string().optional().nullable(),
+      version: z.string().optional().nullable(),
+    }),
+  )
+  .meta({
+    authorizationCheck: ({ canUser, input }) =>
+      canUser.perform(Permission.ResourceList).on({
+        type: "workspace",
+        id: input.workspaceId,
+      }),
+  })
+  .query(async ({ ctx, input }) => {
+    const { workspaceId, kind, version } = input;
+    const metadata = await ctx.db
+      .select()
+      .from(schema.resourceMetadata)
+      .innerJoin(
+        schema.resource,
+        eq(schema.resourceMetadata.resourceId, schema.resource.id),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, workspaceId),
+          kind == null ? undefined : eq(schema.resource.kind, kind),
+          version == null ? undefined : eq(schema.resource.version, version),
+        ),
+      );
+
+    return _.chain(metadata)
+      .groupBy((m) => m.resource_metadata.key)
+      .map((keyGroup) => {
+        const key = keyGroup[0]!.resource_metadata.key;
+        const values = _.chain(keyGroup)
+          .map((m) => m.resource_metadata.value)
+          .uniq()
+          .value();
+
+        return { key, values };
+      })
+      .value();
+  });
+
+const metadata = createTRPCRouter({
+  matchingKeys: matchingMetadataKeys,
+  equals: metadataEquals,
+});
 
 export const resourceRelationshipRulesRouter = createTRPCRouter({
   list: protectedProcedure
@@ -176,4 +334,6 @@ export const resourceRelationshipRulesRouter = createTRPCRouter({
         };
       });
     }),
+
+  metadata,
 });

@@ -220,6 +220,62 @@ export const resourceRouter = createTRPCRouter({
           total,
         }));
       }),
+
+    kinds: protectedProcedure
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          version: z.string().optional(),
+        }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.ResourceList)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
+      .query(({ ctx, input }) =>
+        ctx.db
+          .selectDistinct({ kind: schema.resource.kind })
+          .from(schema.resource)
+          .where(
+            and(
+              eq(schema.resource.workspaceId, input.workspaceId),
+              isNotDeleted,
+              input.version
+                ? eq(schema.resource.version, input.version)
+                : undefined,
+            ),
+          )
+          .then((r) => r.map((row) => row.kind)),
+      ),
+
+    versions: protectedProcedure
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          kind: z.string().optional(),
+        }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.ResourceList)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
+      .query(({ ctx, input }) =>
+        ctx.db
+          .selectDistinct({ version: schema.resource.version })
+          .from(schema.resource)
+          .where(
+            and(
+              eq(schema.resource.workspaceId, input.workspaceId),
+              isNotDeleted,
+              input.kind ? eq(schema.resource.kind, input.kind) : undefined,
+            ),
+          )
+          .then((r) => r.map((row) => row.version)),
+      ),
   }),
 
   create: protectedProcedure
