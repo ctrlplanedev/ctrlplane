@@ -6,6 +6,7 @@ import {
   IconEye,
   IconLoader2,
   IconPencil,
+  IconTrash,
 } from "@tabler/icons-react";
 import { Cell, Pie, PieChart } from "recharts";
 import colors from "tailwindcss/colors";
@@ -125,8 +126,14 @@ export const WidgetDeploymentVersionDistribution: Widget<WidgetSchema> = {
   description: "A module to display the version distribution of a deployment",
   Icon: () => <IconChartPie className="h-10 w-10 stroke-1" />,
   Component: (props) => {
-    const { config, isEditMode, setIsExpanded, setIsEditing, isEditing } =
-      props;
+    const {
+      config,
+      isEditMode,
+      setIsExpanded,
+      setIsEditing,
+      isEditing,
+      onDelete,
+    } = props;
 
     const isValidConfig = getIsValidConfig(config);
 
@@ -151,6 +158,15 @@ export const WidgetDeploymentVersionDistribution: Widget<WidgetSchema> = {
             <span className="text-sm font-medium">{config.name}</span>
             {isEditMode && (
               <div className="flex flex-shrink-0 items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDelete}
+                  disabled={!isEditMode}
+                  className="h-6 w-6"
+                >
+                  <IconTrash className="h-4 w-4 text-red-500 hover:text-red-400" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

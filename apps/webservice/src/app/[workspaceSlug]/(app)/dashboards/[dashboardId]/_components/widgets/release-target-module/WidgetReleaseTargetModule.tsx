@@ -4,6 +4,7 @@ import {
   IconLoader2,
   IconPencil,
   IconRocket,
+  IconTrash,
 } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -34,6 +35,7 @@ export const WidgetReleaseTargetModule: Widget<ReleaseTargetModuleConfig> = {
     isEditing,
     setIsEditing,
     isUpdating,
+    onDelete,
   }) => {
     const isValidConfig = getIsValidConfig(config);
 
@@ -61,6 +63,15 @@ export const WidgetReleaseTargetModule: Widget<ReleaseTargetModuleConfig> = {
             </span>
             {isEditMode && (
               <div className="flex flex-shrink-0 items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDelete}
+                  disabled={!isEditMode}
+                  className="h-6 w-6"
+                >
+                  <IconTrash className="h-4 w-4 text-red-500 hover:text-red-400" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
