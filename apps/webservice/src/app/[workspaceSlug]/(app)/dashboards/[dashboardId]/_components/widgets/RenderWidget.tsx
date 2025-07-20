@@ -42,7 +42,7 @@ export const RenderWidget: React.FC<{
       dashboard.updateWidget(widget.id, { config });
       return;
     }
-
+    clearEditingWidget();
     await dashboard.createWidget({
       dashboardId,
       widget: widget.widget,

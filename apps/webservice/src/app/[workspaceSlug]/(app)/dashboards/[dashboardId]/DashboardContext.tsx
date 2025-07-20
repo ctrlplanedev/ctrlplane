@@ -7,6 +7,7 @@ import { createContext, useContext, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
+import { useEditingWidget } from "./_hooks/useEditingWidget";
 
 type Dashboard = schema.Dashboard & {
   widgets: schema.DashboardWidget[];
@@ -19,10 +20,7 @@ type DashboardContextType = {
   layout: Layouts;
   isEditMode: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
-  setLayout: (
-    currentLayout: Layout[],
-    placeholderWidget?: schema.DashboardWidget,
-  ) => void;
+  setLayout: (currentLayout: Layout[]) => void;
   createWidget: (widget: schema.DashboardWidgetInsert) => Promise<void>;
   updateWidget: (
     widgetId: string,
@@ -58,10 +56,7 @@ const useHandleLayoutChange = (
   setWidgets: Dispatch<SetStateAction<schema.DashboardWidget[]>>,
 ) => {
   const updateWidgetMutation = api.dashboard.widget.update.useMutation();
-  return (
-    currentLayout: Layout[],
-    placeholderWidget?: schema.DashboardWidget,
-  ) =>
+  return (currentLayout: Layout[]) =>
     setWidgets((prevWidgets) => {
       const newWidgets = prevWidgets.map((widget) => {
         const layoutItem = currentLayout.find((item) => item.i === widget.id);
@@ -92,26 +87,23 @@ const useHandleLayoutChange = (
           },
         });
       }
-
-      if (placeholderWidget == null) return newWidgets;
-      return [...newWidgets, placeholderWidget];
+      return newWidgets;
     });
 };
 
 const useCreateWidget = (
   setWidgets: Dispatch<SetStateAction<schema.DashboardWidget[]>>,
 ) => {
+  const { setEditingWidget } = useEditingWidget();
   const { dashboardId } = useParams<{ dashboardId: string }>();
   const createWidgetMutation = api.dashboard.widget.create.useMutation();
   const utils = api.useUtils();
   const createWidget = async (widget: schema.DashboardWidgetInsert) => {
     const newWidget = await createWidgetMutation.mutateAsync(widget);
+    setEditingWidget(newWidget.id);
     utils.dashboard.get.invalidate(dashboardId);
     setWidgets((prevWidgets) => {
-      const prevWithoutPlaceholder = prevWidgets.filter(
-        (widget) => widget.id !== NEW_WIDGET_ID,
-      );
-      const newWidgets = [...prevWithoutPlaceholder, newWidget];
+      const newWidgets = [...prevWidgets, newWidget];
       return newWidgets;
     });
   };
