@@ -5408,7 +5408,23 @@
                     "type": "object"
                   },
                   {
-                    "type": "array"
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ]
+                    }
                   }
                 ],
                 "nullable": true
@@ -5474,7 +5490,23 @@
                     "type": "object"
                   },
                   {
-                    "type": "array"
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ]
+                    }
                   }
                 ],
                 "nullable": true

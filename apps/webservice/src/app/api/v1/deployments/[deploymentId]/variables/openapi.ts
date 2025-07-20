@@ -32,7 +32,17 @@ export const openapi: Swagger.SwaggerV3 = {
                   { type: "number" },
                   { type: "boolean" },
                   { type: "object" },
-                  { type: "array" },
+                  {
+                    type: "array",
+                    items: {
+                      oneOf: [
+                        { type: "string" },
+                        { type: "number" },
+                        { type: "boolean" },
+                        { type: "object" },
+                      ],
+                    },
+                  },
                 ],
                 nullable: true,
               },
@@ -69,7 +79,17 @@ export const openapi: Swagger.SwaggerV3 = {
                   { type: "number" },
                   { type: "boolean" },
                   { type: "object" },
-                  { type: "array" },
+                  {
+                    type: "array",
+                    items: {
+                      oneOf: [
+                        { type: "string" },
+                        { type: "number" },
+                        { type: "boolean" },
+                        { type: "object" },
+                      ],
+                    },
+                  },
                 ],
                 nullable: true,
               },
