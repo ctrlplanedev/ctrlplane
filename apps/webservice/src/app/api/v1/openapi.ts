@@ -334,7 +334,17 @@ export const openapi: Swagger.SwaggerV3 = {
             { type: "boolean" },
             { type: "number" },
             { type: "object" },
-            { type: "array" },
+            {
+              type: "array",
+              items: {
+                oneOf: [
+                  { type: "string" },
+                  { type: "boolean" },
+                  { type: "number" },
+                  { type: "object" },
+                ],
+              },
+            },
           ],
         },
       },
@@ -351,7 +361,17 @@ export const openapi: Swagger.SwaggerV3 = {
               { type: "number" },
               { type: "boolean" },
               { type: "object" },
-              { type: "array" },
+              {
+                type: "array",
+                items: {
+                  oneOf: [
+                    { type: "string" },
+                    { type: "number" },
+                    { type: "boolean" },
+                    { type: "object" },
+                  ],
+                },
+              },
             ],
           },
         },
@@ -367,7 +387,17 @@ export const openapi: Swagger.SwaggerV3 = {
               { type: "number" },
               { type: "boolean" },
               { type: "object" },
-              { type: "array" },
+              {
+                type: "array",
+                items: {
+                  oneOf: [
+                    { type: "string" },
+                    { type: "number" },
+                    { type: "boolean" },
+                    { type: "object" },
+                  ],
+                },
+              },
             ],
           },
           sensitive: {
