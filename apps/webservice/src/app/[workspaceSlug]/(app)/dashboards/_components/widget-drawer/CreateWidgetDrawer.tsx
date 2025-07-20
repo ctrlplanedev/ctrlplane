@@ -16,13 +16,19 @@ import { WidgetComponents } from "../../[dashboardId]/_components/widgets/Widget
 import { useDashboard } from "../../[dashboardId]/DashboardContext";
 
 export const CreateWidgetDrawer: React.FC = () => {
-  const { isEditMode } = useDashboard();
+  const { setIsEditMode } = useDashboard();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Drawer open={isOpen} onOpenChange={setIsOpen}>
-      <DrawerTrigger disabled={!isEditMode} asChild>
-        <Button variant="outline" size="sm" disabled={!isEditMode}>
+    <Drawer
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (open) setIsEditMode(true);
+      }}
+    >
+      <DrawerTrigger asChild>
+        <Button variant="outline" size="sm">
           Create widget
         </Button>
       </DrawerTrigger>
