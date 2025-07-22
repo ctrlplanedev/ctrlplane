@@ -1,4 +1,4 @@
-import { and, eq, notInArray, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, notInArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { exitedStatus } from "@ctrlplane/validators/jobs";
@@ -34,9 +34,39 @@ export class ReleaseTargetConcurrencyRule implements PreValidationRule {
 
     if (activeJob == null) return { passing: true };
 
+    const versionInfo = await db
+      .select()
+      .from(schema.deploymentVersion)
+      .innerJoin(
+        schema.deployment,
+        eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
+      )
+      .innerJoin(
+        schema.system,
+        eq(schema.deployment.systemId, schema.system.id),
+      )
+      .where(
+        eq(schema.deploymentVersion.id, activeJob.version_release.versionId),
+      )
+      .then(takeFirst);
+
+    const jobMetadata = await db
+      .select()
+      .from(schema.jobMetadata)
+      .where(eq(schema.jobMetadata.jobId, activeJob.job.id))
+      .then((rows) => Object.fromEntries(rows.map((r) => [r.key, r.value])));
+
+    const jobInfo = {
+      job: { ...activeJob.job, metadata: jobMetadata },
+      version: versionInfo.deployment_version,
+      deployment: versionInfo.deployment,
+      system: versionInfo.system,
+    };
+
     return {
       passing: false,
       rejectionReason: `Release target ${this.releaseTargetId} has an active job`,
+      jobInfo,
     };
   }
 }

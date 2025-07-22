@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { allRules, and, eq, inArray, isNull } from "@ctrlplane/db";
+import { allRules, and, desc, eq, inArray, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { withSpan } from "../span.js";
@@ -53,6 +53,7 @@ export const getApplicablePolicies = withSpan(
     return tx.query.policy.findMany({
       where: inArray(schema.policy.id, policyIds),
       with: allRules,
+      orderBy: desc(schema.policy.priority),
     });
   },
 );
