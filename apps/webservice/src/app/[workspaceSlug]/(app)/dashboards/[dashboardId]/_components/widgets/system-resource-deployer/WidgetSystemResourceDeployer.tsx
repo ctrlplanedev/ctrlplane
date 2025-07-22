@@ -81,6 +81,7 @@ export const WidgetSystemResourceDeployments: Widget<SystemResourceDeploymentsCo
       const { data, isLoading } =
         api.dashboard.widget.data.systemResourceDeployments.useQuery(config, {
           enabled: isValidConfig,
+          refetchInterval: 5_000,
         });
 
       const deployments = data?.deployments ?? [];
