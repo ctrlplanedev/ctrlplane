@@ -47,6 +47,8 @@ const PolicyListTooltip: React.FC<{
             <Link
               key={policy.id}
               href={getPolicyUrl(policy.id)}
+              target="_blank"
+              rel="noreferrer noopener"
               className="hover:underline"
             >
               {policy.name}
@@ -169,10 +171,15 @@ const BlockingReleaseTargetJobTooltip: React.FC<{
             Another job is running
           </div>
         </TooltipTrigger>
-        <TooltipContent className="flex max-w-80 flex-col gap-2 border bg-neutral-950 p-2">
+        <TooltipContent className="flex w-96 flex-col gap-2 border bg-neutral-950 p-2">
           <div className="flex w-full items-center justify-between truncate">
             <span className="flex-shrink-0">Version:</span>
-            <Link href={versionUrl} className="hover:underline">
+            <Link
+              href={versionUrl}
+              className="hover:underline"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
               {jobInfo.version.name}
             </Link>
           </div>
@@ -183,6 +190,8 @@ const BlockingReleaseTargetJobTooltip: React.FC<{
                 <Link
                   key={key}
                   href={value}
+                  target="_blank"
+                  rel="noreferrer noopener"
                   className={cn(
                     buttonVariants({ variant: "outline", size: "sm" }),
                     "flex h-6 items-center gap-1",
