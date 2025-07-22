@@ -46,9 +46,10 @@ const useSaveSelector = (policyId: string, isNewRule: boolean) => {
 
 const ConditionEditor: React.FC<{
   policyId: string;
+  ctaText: string;
   isLoading: boolean;
   initialCondition: DeploymentVersionCondition | null;
-}> = ({ policyId, isLoading, initialCondition }) => {
+}> = ({ policyId, ctaText, isLoading, initialCondition }) => {
   const [condition, setCondition] = useState<DeploymentVersionCondition>(
     initialCondition ?? defaultCondition,
   );
@@ -74,7 +75,7 @@ const ConditionEditor: React.FC<{
           disabled={isSaving || isLoading || !isRuleValid || isUnchanged}
           size="sm"
         >
-          Save
+          {ctaText}
         </Button>
       </div>
     </>
@@ -124,6 +125,7 @@ export const WidgetPolicyVersionSelector: Widget<PolicyVersionSelectorConfig> =
             {isValid && !isLoading && (
               <ConditionEditor
                 policyId={config.policyId}
+                ctaText={config.ctaText ?? "Save"}
                 isLoading={isLoading}
                 initialCondition={
                   versionSelectorRule?.deploymentVersionSelector ?? null
