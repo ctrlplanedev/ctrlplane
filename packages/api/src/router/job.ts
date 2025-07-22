@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import _ from "lodash";
 import { z } from "zod";
 
 import {
@@ -187,9 +188,12 @@ const metadataKeysRouter = createTRPCRouter({
           .on({ type: "deploymentVersion", id: input }),
     })
     .input(z.string().uuid())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .selectDistinct({ key: schema.jobMetadata.key })
+    .query(async ({ ctx, input }) => {
+      const keyValuePairs = await ctx.db
+        .selectDistinct({
+          key: schema.jobMetadata.key,
+          value: schema.jobMetadata.value,
+        })
         .from(schema.deploymentVersion)
         .innerJoin(
           schema.versionRelease,
@@ -208,9 +212,16 @@ const metadataKeysRouter = createTRPCRouter({
           schema.jobMetadata,
           eq(schema.jobMetadata.jobId, schema.job.id),
         )
-        .where(eq(schema.deploymentVersion.id, input))
-        .then((r) => r.map((row) => row.key)),
-    ),
+        .where(eq(schema.deploymentVersion.id, input));
+
+      return _.chain(keyValuePairs)
+        .groupBy((k) => k.key)
+        .map((group) => {
+          const { key } = group[0]!;
+          return { key, values: group.map((g) => g.value) };
+        })
+        .value();
+    }),
 });
 
 export const jobRouter = createTRPCRouter({

@@ -3,7 +3,6 @@ import type {
   MetadataOperatorType,
 } from "@ctrlplane/validators/conditions";
 import { useState } from "react";
-import { IconSelector } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -13,7 +12,6 @@ import {
   CommandItem,
   CommandList,
 } from "@ctrlplane/ui/command";
-import { Input } from "@ctrlplane/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   Select,
@@ -27,7 +25,7 @@ import { MetadataOperator } from "@ctrlplane/validators/conditions";
 type MetadataConditionRenderProps = {
   condition: MetadataCondition;
   onChange: (condition: MetadataCondition) => void;
-  metadataKeys: string[];
+  metadataKeys: { key: string; values: string[] }[];
   className?: string;
 };
 export const MetadataConditionRender: React.FC<
@@ -47,9 +45,19 @@ export const MetadataConditionRender: React.FC<
   const [commandInput, setCommandInput] = useState("");
   const [open, setOpen] = useState(false);
 
-  const filteredMetadataKeys = metadataKeys.filter((key) =>
+  const [valueCommandInput, setValueCommandInput] = useState("");
+  const [valueOpen, setValueOpen] = useState(false);
+
+  const filteredMetadataKeys = metadataKeys.filter(({ key }) =>
     key.toLowerCase().includes(commandInput.toLowerCase()),
   );
+
+  const filteredValues =
+    metadataKeys
+      .find(({ key }) => key === condition.key)
+      ?.values.filter((value) =>
+        value.toLowerCase().includes(valueCommandInput.toLowerCase()),
+      ) ?? [];
 
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
@@ -61,10 +69,9 @@ export const MetadataConditionRender: React.FC<
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="w-full items-center justify-start gap-2 rounded-l-md rounded-r-none bg-transparent px-2 hover:bg-neutral-800/50"
+                className="w-full items-center justify-start rounded-l-md rounded-r-none bg-transparent px-2 hover:bg-neutral-800/50"
               >
-                <IconSelector className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">
+                <span className="truncate text-muted-foreground">
                   {condition.key != "" ? condition.key : "Select key..."}
                 </span>
               </Button>
@@ -81,7 +88,7 @@ export const MetadataConditionRender: React.FC<
                   onValueChange={setCommandInput}
                 />
                 <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
-                  {filteredMetadataKeys.map((key) => (
+                  {filteredMetadataKeys.map(({ key }) => (
                     <CommandItem
                       key={key}
                       value={key}
@@ -148,12 +155,63 @@ export const MetadataConditionRender: React.FC<
 
         {condition.operator !== MetadataOperator.Null ? (
           <div className="col-span-4">
-            <Input
-              placeholder="Value"
-              value={condition.value}
-              onChange={(e) => setValue(e.target.value)}
-              className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
-            />
+            <Popover open={valueOpen} onOpenChange={setValueOpen} modal>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={valueOpen}
+                  className="w-full items-center justify-start gap-2 rounded-l-none rounded-r-md bg-transparent px-2 hover:bg-neutral-800/50"
+                >
+                  <span className="truncate text-muted-foreground">
+                    {condition.value != ""
+                      ? condition.value
+                      : "Select value..."}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                className="w-[462px] p-0"
+              >
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Search value..."
+                    value={valueCommandInput}
+                    onValueChange={setValueCommandInput}
+                  />
+                  <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
+                    {filteredValues.map((value) => (
+                      <CommandItem
+                        key={value}
+                        value={value}
+                        onSelect={() => {
+                          setValue(value);
+                          setValueOpen(false);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {value}
+                      </CommandItem>
+                    ))}
+                    {filteredMetadataKeys.length === 0 && (
+                      <CommandItem
+                        key="no-results"
+                        value={valueCommandInput}
+                        onSelect={() => {
+                          setValue(valueCommandInput);
+                          setValueOpen(false);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        Use custom value
+                      </CommandItem>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         ) : (
           <div className="col-span-4 h-9 cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />

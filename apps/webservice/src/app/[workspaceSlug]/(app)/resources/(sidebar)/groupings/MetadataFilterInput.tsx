@@ -17,7 +17,7 @@ export const MetadataFilterInput: React.FC<{
     api.resource.metadataKeys.useQuery(workspaceId);
   const [open, setOpen] = useState(false);
   const filteredLabels = useMatchSorter(metadataKeys ?? [], value).filter(
-    (k) => !selectedKeys.includes(k),
+    ({ key }) => !selectedKeys.includes(key),
   );
   return (
     <div className="flex items-center gap-2">
@@ -38,19 +38,19 @@ export const MetadataFilterInput: React.FC<{
           className="max-h-[300px] w-[23rem] overflow-auto p-0 text-sm"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {filteredLabels.map((k) => (
+          {filteredLabels.map(({ key }) => (
             <Button
               variant="ghost"
               size="sm"
-              key={k}
+              key={key}
               className="w-full rounded-none text-left"
               onClick={(e) => {
                 e.preventDefault();
-                onChange(k);
+                onChange(key);
                 setOpen(false);
               }}
             >
-              <div className="w-full">{k}</div>
+              <div className="w-full">{key}</div>
             </Button>
           ))}
         </PopoverContent>

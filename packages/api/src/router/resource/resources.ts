@@ -400,17 +400,27 @@ export const resourceRouter = createTRPCRouter({
           .on({ type: "workspace", id: input }),
     })
     .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .selectDistinct({ key: schema.resourceMetadata.key })
+    .query(async ({ ctx, input }) => {
+      const keyValuePairs = await ctx.db
+        .selectDistinct({
+          key: schema.resourceMetadata.key,
+          value: schema.resourceMetadata.value,
+        })
         .from(schema.resource)
         .innerJoin(
           schema.resourceMetadata,
           eq(schema.resourceMetadata.resourceId, schema.resource.id),
         )
-        .where(and(eq(schema.resource.workspaceId, input), isNotDeleted))
-        .then((r) => r.map((row) => row.key)),
-    ),
+        .where(and(eq(schema.resource.workspaceId, input), isNotDeleted));
+
+      return _.chain(keyValuePairs)
+        .groupBy((k) => k.key)
+        .map((group) => {
+          const { key } = group[0]!;
+          return { key, values: group.map((g) => g.value) };
+        })
+        .value();
+    }),
 
   versions: protectedProcedure
     .input(z.string().uuid())
