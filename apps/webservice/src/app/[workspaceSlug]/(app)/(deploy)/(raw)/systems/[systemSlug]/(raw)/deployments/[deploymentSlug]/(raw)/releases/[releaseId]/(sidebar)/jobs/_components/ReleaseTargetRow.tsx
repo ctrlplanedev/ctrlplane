@@ -32,7 +32,7 @@ import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
-import { NoJobsCell } from "./NoJobsCell";
+import { PolicyEvaluationsCell } from "./PolicyEvaluationsCell";
 
 const ReleaseTargetActionsDropdownMenu: React.FC<{
   environment: { id: string; name: string };
@@ -220,7 +220,10 @@ export const ReleaseTargetRow: React.FC<{
           {latestJob == null && (
             <>
               <TableCell className="p-0">
-                <NoJobsCell releaseTargetId={id} versionId={version.id} />
+                <PolicyEvaluationsCell
+                  releaseTargetId={id}
+                  versionId={version.id}
+                />
               </TableCell>
               <TableCell />
               <TableCell />

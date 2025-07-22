@@ -11,7 +11,7 @@ import {
   IconLoader2,
   IconShieldFilled,
 } from "@tabler/icons-react";
-import { formatDistanceToNow, isAfter } from "date-fns";
+import { formatDistanceToNowStrict, isAfter } from "date-fns";
 import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
@@ -200,7 +200,7 @@ const BlockingReleaseTargetJobTooltip: React.FC<{
   );
 };
 
-export const NoJobsCell: React.FC<{
+export const PolicyEvaluationsCell: React.FC<{
   releaseTargetId: string;
   versionId: string;
 }> = ({ releaseTargetId, versionId }) => {
@@ -272,7 +272,7 @@ export const NoJobsCell: React.FC<{
           <div className="flex items-center gap-2 rounded-md border border-blue-500 px-2 py-1 text-xs text-blue-500">
             <IconCalendarTime className="h-4 w-4" />
             {policyBlockingByRollout.rolloutTime
-              ? `Rolls out in ${formatDistanceToNow(policyBlockingByRollout.rolloutTime)}`
+              ? `Rolls out in ${formatDistanceToNowStrict(policyBlockingByRollout.rolloutTime)}`
               : "Rollout not started"}
           </div>
         </PolicyListTooltip>
