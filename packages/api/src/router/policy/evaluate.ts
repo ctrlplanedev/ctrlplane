@@ -84,11 +84,7 @@ const getFilterReasons = async (
 
 const getReleaseTargetConcurrencyBlocked = async (releaseTargetId: string) => {
   const rule = new ReleaseTargetConcurrencyRule(releaseTargetId);
-  const result = await rule.passing();
-  return {
-    passing: result.passing,
-    rejectionReason: result.rejectionReason ?? "",
-  };
+  return rule.passing();
 };
 
 const getConcurrencyBlocked = async (
@@ -280,6 +276,9 @@ export const evaluateReleaseTarget = protectedProcedure
     const releaseTargetConcurrencyBlocked =
       await getReleaseTargetConcurrencyBlocked(releaseTargetId);
 
+    const policyWithRollout = policies.find(
+      (p) => p.environmentVersionRollout != null,
+    );
     const mergedPolicy = mergePolicies(policies);
     const rolloutInfo = await getRolloutInfoForReleaseTarget(
       ctx.db,
@@ -296,10 +295,14 @@ export const evaluateReleaseTarget = protectedProcedure
         anyApprovals,
         releaseTargetConcurrencyBlocked,
         concurrencyBlocked,
-        rolloutInfo: {
-          rolloutTime: rolloutInfo.rolloutTime,
-          rolloutPosition: rolloutInfo.rolloutPosition,
-        },
+        rolloutInfo:
+          policyWithRollout == null
+            ? null
+            : {
+                rolloutTime: rolloutInfo.rolloutTime,
+                rolloutPosition: rolloutInfo.rolloutPosition,
+                policyId: policyWithRollout.id,
+              },
         versionSelector: Object.fromEntries(
           await Promise.all(
             policies.map(

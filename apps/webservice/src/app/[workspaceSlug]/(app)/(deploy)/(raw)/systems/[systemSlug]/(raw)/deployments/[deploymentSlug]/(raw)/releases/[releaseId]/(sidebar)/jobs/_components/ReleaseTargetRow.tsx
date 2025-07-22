@@ -9,7 +9,6 @@ import {
   IconDots,
   IconExternalLink,
   IconReload,
-  IconShieldFilled,
   IconSwitch,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -33,7 +32,7 @@ import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
-import { PolicyEvaluationHover } from "./PolicyEvaluationHover";
+import { NoJobsCell } from "./NoJobsCell";
 
 const ReleaseTargetActionsDropdownMenu: React.FC<{
   environment: { id: string; name: string };
@@ -220,16 +219,8 @@ export const ReleaseTargetRow: React.FC<{
 
           {latestJob == null && (
             <>
-              <TableCell>
-                <PolicyEvaluationHover
-                  releaseTargetId={id}
-                  versionId={version.id}
-                >
-                  <div className="flex w-fit cursor-pointer items-center gap-1">
-                    <IconShieldFilled className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm">Blocked by policy</span>
-                  </div>
-                </PolicyEvaluationHover>
+              <TableCell className="p-0">
+                <NoJobsCell releaseTargetId={id} versionId={version.id} />
               </TableCell>
               <TableCell />
               <TableCell />
