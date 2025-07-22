@@ -53,6 +53,42 @@ export const releaseTargetRouter = createTRPCRouter({
         })),
     ),
 
+  bySystemId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.SystemGet).on({
+          type: "system",
+          id: input,
+        }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(schema.releaseTarget)
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseTarget.resourceId, schema.resource.id),
+        )
+        .innerJoin(
+          schema.deployment,
+          eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+        )
+        .innerJoin(
+          schema.environment,
+          eq(schema.releaseTarget.environmentId, schema.environment.id),
+        )
+        .where(eq(schema.deployment.systemId, input))
+        .then((r) =>
+          r.map((row) => ({
+            ...row.release_target,
+            resource: row.resource,
+            deployment: row.deployment,
+            environment: row.environment,
+          })),
+        ),
+    ),
+
   list: protectedProcedure
     .input(
       z
