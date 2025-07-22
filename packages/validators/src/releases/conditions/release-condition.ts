@@ -115,8 +115,9 @@ export const isValidDeploymentVersionCondition = (
   condition: DeploymentVersionCondition,
 ): boolean => {
   if (isComparisonCondition(condition))
-    return condition.conditions.every((c) =>
-      isValidDeploymentVersionCondition(c),
+    return (
+      condition.conditions.length > 0 &&
+      condition.conditions.every((c) => isValidDeploymentVersionCondition(c))
     );
   if (isVersionCondition(condition)) return condition.value.length > 0;
   if (isTagCondition(condition)) return condition.value.length > 0;

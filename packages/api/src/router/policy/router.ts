@@ -24,6 +24,7 @@ import { policyDenyWindowRouter } from "./deny-window";
 import { evaluateRouter } from "./evaluate";
 import { rolloutRouter } from "./rollout";
 import { policyTargetRouter } from "./target";
+import { policyVersionSelectorRouter } from "./version-selector";
 
 export const policyRouter = createTRPCRouter({
   ai: policyAiRouter,
@@ -31,6 +32,7 @@ export const policyRouter = createTRPCRouter({
   denyWindow: policyDenyWindowRouter,
   evaluate: evaluateRouter,
   rollout: rolloutRouter,
+  versionSelector: policyVersionSelectorRouter,
 
   list: protectedProcedure
     .meta({
