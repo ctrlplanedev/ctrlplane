@@ -122,7 +122,7 @@ export const openapi: Swagger.SwaggerV3 = {
       VersionDependency: {
         type: "object",
         properties: {
-          deploymentId: { type: "string" },
+          deploymentId: { type: "string", format: "uuid" },
           versionSelector: {
             type: "object",
             additionalProperties: true,

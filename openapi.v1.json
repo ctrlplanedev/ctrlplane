@@ -5908,7 +5908,8 @@
         "type": "object",
         "properties": {
           "deploymentId": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "versionSelector": {
             "type": "object",

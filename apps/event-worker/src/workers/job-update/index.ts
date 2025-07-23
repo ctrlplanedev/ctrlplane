@@ -18,7 +18,7 @@ import { dbUpdateJob } from "./db-update-job.js";
 import { updateJobMetadata } from "./job-metadata.js";
 import { getNumRetryAttempts, retryJob } from "./job-retry.js";
 import { getMatchedPolicies } from "./matched-policies.js";
-import { triggerDependentTargets } from "./trigger-dependendent-targets.js";
+import { triggerDependentTargets } from "./trigger-dependent-targets.js";
 import { getReleaseTarget } from "./utils.js";
 
 const log = logger.child({ worker: "job-update" });

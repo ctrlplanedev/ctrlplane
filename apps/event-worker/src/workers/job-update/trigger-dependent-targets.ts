@@ -11,8 +11,14 @@ import {
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { dispatchQueueJob } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
 
 import { getReleaseTarget } from "./utils.js";
+
+const log = logger.child({
+  worker: "job-update",
+  handler: "trigger-dependent-targets",
+});
 
 const getVersion = (versionId: string) =>
   db
@@ -88,20 +94,24 @@ const getReleaseTargetsToEvaluate = async (
     .then((rows) => rows.map((row) => row.release_target));
 
 export const triggerDependentTargets = async (job: schema.Job) => {
-  const releaseTargetResult = await getReleaseTarget(db, job.id);
-  if (releaseTargetResult == null) return;
-  const { resourceId } = releaseTargetResult.release_target;
-  const { versionId } = releaseTargetResult.version_release;
+  try {
+    const releaseTargetResult = await getReleaseTarget(db, job.id);
+    if (releaseTargetResult == null) return;
+    const { resourceId } = releaseTargetResult.release_target;
+    const { versionId } = releaseTargetResult.version_release;
 
-  const version = await getVersion(versionId);
-  const newlySatisfiedDependencies =
-    await getNewlySatisfiedDependencies(version);
-  const releaseTargetsToEvaluate = await getReleaseTargetsToEvaluate(
-    resourceId,
-    newlySatisfiedDependencies,
-  );
+    const version = await getVersion(versionId);
+    const newlySatisfiedDependencies =
+      await getNewlySatisfiedDependencies(version);
+    const releaseTargetsToEvaluate = await getReleaseTargetsToEvaluate(
+      resourceId,
+      newlySatisfiedDependencies,
+    );
 
-  await dispatchQueueJob()
-    .toEvaluate()
-    .releaseTargets(releaseTargetsToEvaluate);
+    await dispatchQueueJob()
+      .toEvaluate()
+      .releaseTargets(releaseTargetsToEvaluate);
+  } catch (error) {
+    log.error("Error triggering dependent targets", { error });
+  }
 };
