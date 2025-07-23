@@ -20,6 +20,12 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 import { toast } from "@ctrlplane/ui/toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import type { Deployment } from "./types";
 import { StatusIcon } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/environment-cell/StatusIcon";
@@ -34,6 +40,28 @@ const useCopyJobId = (jobId: string) => {
     toast.success("Job ID copied to clipboard");
   };
 };
+
+const VersionTooltip: React.FC<{
+  version: schema.DeploymentVersion;
+}> = ({ version }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="truncate text-sm font-medium">
+          {version.tag}
+          ldsfjslkdfjlksjdflksjdlfkjsldkfjlskdjflskjdflksjdflkjslkfjlskjdf
+        </span>
+      </TooltipTrigger>
+      <TooltipContent
+        className="flex max-w-96 flex-col gap-1.5 border bg-neutral-950 p-2 text-xs text-muted-foreground"
+        align="start"
+      >
+        <span>{version.tag}</span>
+        <span>{version.name}</span>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 const JobCell: React.FC<{
   systemSlug: string;
@@ -54,8 +82,8 @@ const JobCell: React.FC<{
   return (
     <div className="flex w-full items-center gap-2">
       <StatusIcon statuses={[job.status]} />
-      <div className="flex flex-grow flex-col gap-0.5">
-        <span className="text-sm font-medium">{version.name}</span>
+      <div className="flex flex-grow flex-col gap-0.5 truncate">
+        <VersionTooltip version={version} />
         <span className="text-xs text-muted-foreground">
           {format(job.createdAt, "MMM d, hh:mm aa")}
         </span>
@@ -115,7 +143,7 @@ export const DeploymentCard: React.FC<{
   systemSlug: string;
   deployment: Deployment;
 }> = ({ systemSlug, deployment }) => (
-  <Card className="w-60 rounded-md">
+  <Card className="w-80 rounded-md">
     <CardHeader className="px-4 pb-0 pt-4">
       <CardTitle className="flex items-center justify-between">
         <span className="truncate">{deployment.name}</span>

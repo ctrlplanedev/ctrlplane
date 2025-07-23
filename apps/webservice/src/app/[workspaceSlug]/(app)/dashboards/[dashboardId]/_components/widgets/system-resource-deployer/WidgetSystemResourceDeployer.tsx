@@ -88,7 +88,7 @@ export const WidgetSystemResourceDeployments: Widget<SystemResourceDeploymentsCo
 
       return (
         <>
-          <div className="flex h-full w-full flex-col gap-4 rounded-md border p-2">
+          <div className="flex h-full w-full flex-col gap-4 overflow-auto rounded-md border p-2">
             <div className="flex items-center gap-2">
               <div className="flex flex-grow items-center justify-between px-2 py-1">
                 {data != null && (
@@ -108,13 +108,8 @@ export const WidgetSystemResourceDeployments: Widget<SystemResourceDeploymentsCo
                 </div>
               )}
             </div>
-            <div className="flex h-full w-full flex-wrap content-start gap-2 overflow-y-auto px-2">
-              {isLoading && (
-                <>
-                  <SkeletonCard />
-                  <SkeletonCard />
-                </>
-              )}
+            <div className="flex h-full w-full flex-wrap content-start gap-4 overflow-y-auto px-2">
+              {isLoading && <SkeletonCard />}
               {data != null && (
                 <>
                   {deployments.map((deployment) => (
