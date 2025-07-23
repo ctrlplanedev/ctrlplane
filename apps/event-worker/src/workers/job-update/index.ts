@@ -1,7 +1,4 @@
-import type { Tx } from "@ctrlplane/db";
-import type { JobStatus } from "@ctrlplane/validators/jobs";
-
-import { eq, sql, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -11,13 +8,18 @@ import {
   getQueue,
 } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
-import { exitedStatus, failedStatuses } from "@ctrlplane/validators/jobs";
+import {
+  exitedStatus,
+  failedStatuses,
+  JobStatus,
+} from "@ctrlplane/validators/jobs";
 
-import { getReleaseTargetsInConcurrencyGroup } from "./concurrency.js";
 import { dbUpdateJob } from "./db-update-job.js";
 import { updateJobMetadata } from "./job-metadata.js";
 import { getNumRetryAttempts, retryJob } from "./job-retry.js";
 import { getMatchedPolicies } from "./matched-policies.js";
+import { triggerDependentTargets } from "./trigger-dependendent-targets.js";
+import { getReleaseTarget } from "./utils.js";
 
 const log = logger.child({ worker: "job-update" });
 
@@ -30,26 +32,6 @@ const getIsJobJustCompleted = (
   return !isPreviousStatusExited && isNewStatusExited;
 };
 
-const getReleaseTarget = (db: Tx, jobId: string) =>
-  db
-    .select()
-    .from(schema.releaseJob)
-    .innerJoin(
-      schema.release,
-      eq(schema.releaseJob.releaseId, schema.release.id),
-    )
-    .innerJoin(
-      schema.versionRelease,
-      eq(schema.release.versionReleaseId, schema.versionRelease.id),
-    )
-    .innerJoin(
-      schema.releaseTarget,
-      eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
-    )
-    .where(eq(schema.releaseJob.jobId, jobId))
-    .then(takeFirstOrNull)
-    .then((row) => row?.release_target ?? null);
-
 export const updateJobWorker = createWorker(Channel.UpdateJob, async (job) => {
   const { jobId, data, metadata } = job.data;
 
@@ -60,7 +42,7 @@ export const updateJobWorker = createWorker(Channel.UpdateJob, async (job) => {
   if (jobBeforeUpdate == null) throw new Error("Job not found");
 
   try {
-    await db.transaction(async (tx) => {
+    const job = await db.transaction(async (tx) => {
       await tx.execute(
         sql`
           SELECT * FROM ${schema.job}
@@ -77,10 +59,11 @@ export const updateJobWorker = createWorker(Channel.UpdateJob, async (job) => {
         jobBeforeUpdate.status as JobStatus,
         updatedJob.status as JobStatus,
       );
-      if (!isJobJustCompleted) return;
+      if (!isJobJustCompleted) return null;
 
-      const releaseTarget = await getReleaseTarget(tx, jobId);
-      if (releaseTarget == null) return;
+      const releaseTargetResult = await getReleaseTarget(tx, jobId);
+      if (releaseTargetResult == null) return null;
+      const { release_target: releaseTarget } = releaseTargetResult;
 
       const matchedPolicies = await getMatchedPolicies(tx, releaseTarget);
       const isJobFailed = failedStatuses.includes(
@@ -97,24 +80,16 @@ export const updateJobWorker = createWorker(Channel.UpdateJob, async (job) => {
 
       if (shouldRetry) {
         await retryJob(tx, jobId);
-        return;
+        return null;
       }
 
       await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
 
-      const policiesWithConcurrency = matchedPolicies.filter(
-        (p) => p.concurrency != null,
-      );
-      const releaseTargetsInConcurrencyGroup =
-        await getReleaseTargetsInConcurrencyGroup(
-          tx,
-          policiesWithConcurrency.map((p) => p.policyId),
-          releaseTarget.id,
-        );
-      await dispatchQueueJob()
-        .toEvaluate()
-        .releaseTargets(releaseTargetsInConcurrencyGroup);
+      return updatedJob;
     });
+
+    if (job?.status === JobStatus.Successful)
+      await triggerDependentTargets(job);
   } catch (e: any) {
     const isRowLocked = e.code === "55P03";
     if (isRowLocked) {

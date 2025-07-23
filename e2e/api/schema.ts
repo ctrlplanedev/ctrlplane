@@ -1075,7 +1075,13 @@ export interface components {
     };
     DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
       value:
-        | (string | number | boolean | Record<string, never> | unknown[])
+        | (
+            | string
+            | number
+            | boolean
+            | Record<string, never>
+            | (string | number | boolean | Record<string, never>)[]
+          )
         | null;
       sensitive?: boolean;
     };
@@ -1087,7 +1093,13 @@ export interface components {
       path: string[];
       reference: string;
       defaultValue?:
-        | (string | number | boolean | Record<string, never> | unknown[])
+        | (
+            | string
+            | number
+            | boolean
+            | Record<string, never>
+            | (string | number | boolean | Record<string, never>)[]
+          )
         | null;
     };
     ReferenceDeploymentVariableValueWithId: components["schemas"]["ReferenceDeploymentVariableValue"] & {
@@ -1239,6 +1251,12 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    VersionDependency: {
+      deploymentId?: string;
+      versionSelector?: {
+        [key: string]: unknown;
+      };
+    };
     DeploymentVersion: {
       /** Format: uuid */
       id: string;
@@ -1257,6 +1275,7 @@ export interface components {
       metadata?: {
         [key: string]: string;
       };
+      dependencies?: components["schemas"]["VersionDependency"][];
       /** @enum {string} */
       status?: "building" | "ready" | "failed";
     };
@@ -1379,7 +1398,13 @@ export interface components {
     };
     VariableMap: {
       [key: string]:
-        | (string | boolean | number | Record<string, never> | unknown[])
+        | (
+            | string
+            | boolean
+            | number
+            | Record<string, never>
+            | (string | boolean | number | Record<string, never>)[]
+          )
         | null;
     };
     ReferenceVariable: {
@@ -1391,11 +1416,16 @@ export interface components {
         | number
         | boolean
         | Record<string, never>
-        | unknown[];
+        | (string | number | boolean | Record<string, never>)[];
     };
     DirectVariable: {
       key: string;
-      value: string | number | boolean | Record<string, never> | unknown[];
+      value:
+        | string
+        | number
+        | boolean
+        | Record<string, never>
+        | (string | number | boolean | Record<string, never>)[];
       sensitive?: boolean;
     };
     Variable:
@@ -1843,6 +1873,7 @@ export interface operations {
           metadata?: {
             [key: string]: string;
           };
+          dependencies?: components["schemas"]["VersionDependency"][];
         };
       };
     };
@@ -2031,6 +2062,7 @@ export interface operations {
           metadata?: {
             [key: string]: string;
           };
+          dependencies?: components["schemas"]["VersionDependency"][];
         };
       };
     };

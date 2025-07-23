@@ -44,6 +44,10 @@ export const openapi: Swagger.SwaggerV3 = {
                     type: "object",
                     additionalProperties: { type: "string" },
                   },
+                  dependencies: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/VersionDependency" },
+                  },
                 },
               },
             },

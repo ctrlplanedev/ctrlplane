@@ -226,4 +226,53 @@ test.describe("Deployment Versions API", () => {
 
     expect(updatedDeploymentVersion.status).toBe("failed");
   });
+
+  test("should create a deployment version with dependencies", async ({
+    api,
+  }) => {
+    const dependentDeployment = await api.POST("/v1/deployments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        slug: faker.string.alphanumeric(10),
+      },
+    });
+    expect(dependentDeployment.response.status).toBe(201);
+    const dependentDeploymentId = dependentDeployment.data?.id ?? "";
+
+    const versionTag = faker.string.alphanumeric(10);
+    const selectorTag = faker.string.alphanumeric(10);
+
+    const deploymentVersionResponse = await api.POST(
+      "/v1/deployment-versions",
+      {
+        body: {
+          tag: versionTag,
+          deploymentId: builder.refs.deployments[0].id,
+          dependencies: [
+            {
+              deploymentId: dependentDeploymentId,
+              versionSelector: {
+                type: "tag",
+                operator: "equals",
+                value: selectorTag,
+              },
+            },
+          ],
+        },
+      },
+    );
+
+    expect(deploymentVersionResponse.response.status).toBe(201);
+    const deploymentVersion = deploymentVersionResponse.data;
+    expect(deploymentVersion).toBeDefined();
+    if (!deploymentVersion) throw new Error("Deployment version not found");
+
+    const dependency = deploymentVersion.dependencies?.[0];
+    expect(dependency).toBeDefined();
+    expect(dependency?.deploymentId).toBe(dependentDeploymentId);
+    expect(dependency?.versionSelector?.type).toBe("tag");
+    expect(dependency?.versionSelector?.operator).toBe("equals");
+    expect(dependency?.versionSelector?.value).toBe(selectorTag);
+  });
 });
