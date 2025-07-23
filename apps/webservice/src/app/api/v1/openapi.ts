@@ -119,6 +119,17 @@ export const openapi: Swagger.SwaggerV3 = {
           "jobAgentConfig",
         ],
       },
+      VersionDependency: {
+        type: "object",
+        properties: {
+          deploymentId: { type: "string", format: "uuid" },
+          versionSelector: {
+            type: "object",
+            additionalProperties: true,
+          },
+        },
+        required: ["deploymentId"],
+      },
       DeploymentVersion: {
         type: "object",
         properties: {
@@ -132,6 +143,10 @@ export const openapi: Swagger.SwaggerV3 = {
           metadata: {
             type: "object",
             additionalProperties: { type: "string" },
+          },
+          dependencies: {
+            type: "array",
+            items: { $ref: "#/components/schemas/VersionDependency" },
           },
           status: { type: "string", enum: ["building", "ready", "failed"] },
         },

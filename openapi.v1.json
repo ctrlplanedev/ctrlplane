@@ -411,6 +411,12 @@
                     "additionalProperties": {
                       "type": "string"
                     }
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/VersionDependency"
+                    }
                   }
                 }
               }
@@ -697,6 +703,12 @@
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
+                    }
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/VersionDependency"
                     }
                   }
                 },
@@ -5892,6 +5904,22 @@
           "jobAgentConfig"
         ]
       },
+      "VersionDependency": {
+        "type": "object",
+        "properties": {
+          "deploymentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionSelector": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "deploymentId"
+        ]
+      },
       "DeploymentVersion": {
         "type": "object",
         "properties": {
@@ -5925,6 +5953,12 @@
             "type": "object",
             "additionalProperties": {
               "type": "string"
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionDependency"
             }
           },
           "status": {

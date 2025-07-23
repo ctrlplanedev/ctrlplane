@@ -1,5 +1,5 @@
 import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
   index,
@@ -39,6 +39,9 @@ export const versionDependency = pgTable(
 );
 
 export type VersionDependency = InferSelectModel<typeof versionDependency>;
+export type VersionDependencyInsert = InferInsertModel<
+  typeof versionDependency
+>;
 
 const createVersionDependency = createInsertSchema(versionDependency, {
   versionSelector: deploymentVersionCondition,
@@ -95,7 +98,7 @@ export const createDeploymentVersion = createInsertSchema(deploymentVersion, {
 })
   .omit({ id: true })
   .extend({
-    versionDependencies: z
+    dependencies: z
       .array(createVersionDependency.omit({ versionId: true }))
       .default([]),
   });

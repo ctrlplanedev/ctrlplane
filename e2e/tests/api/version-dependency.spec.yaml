@@ -1,0 +1,36 @@
+system:
+  name: "{{ prefix }}-version-dependency"
+  slug: "{{ prefix }}-version-dependency"
+  description: System for testing version dependencies
+
+resources:
+  - name: "{{ prefix }}-resource"
+    kind: "service"
+    identifier: "{{ prefix }}-resource"
+    version: "1.0.0"
+    config:
+      enabled: true
+
+deployments:
+  - name: "{{ prefix }}-parent-deployment"
+    slug: "{{ prefix }}-parent-deployment"
+    description: Deployment for testing version dependencies
+  - name: "{{ prefix }}-child-deployment"
+    slug: "{{ prefix }}-child-deployment"
+    description: Child deployment for testing version dependencies, depends on {{ prefix }}-parent-deployment
+
+environments:
+  - name: "{{ prefix }}-environment"
+    slug: "{{ prefix }}-environment"
+    description: Environment for testing version dependencies
+    resourceSelector:
+      type: "comparison"
+      operator: "and"
+      conditions:
+        - type: "identifier"
+          operator: "equals"
+          value: "{{ prefix }}-resource"
+
+agents:
+  - name: "{{ prefix }}-agent"
+    type: "{{ prefix }}-agent-type"
