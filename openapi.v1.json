@@ -5915,7 +5915,10 @@
             "type": "object",
             "additionalProperties": true
           }
-        }
+        },
+        "required": [
+          "deploymentId"
+        ]
       },
       "DeploymentVersion": {
         "type": "object",

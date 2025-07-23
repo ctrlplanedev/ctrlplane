@@ -1253,7 +1253,7 @@ export interface components {
     };
     VersionDependency: {
       /** Format: uuid */
-      deploymentId?: string;
+      deploymentId: string;
       versionSelector?: {
         [key: string]: unknown;
       };

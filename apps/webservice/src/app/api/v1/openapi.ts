@@ -128,6 +128,7 @@ export const openapi: Swagger.SwaggerV3 = {
             additionalProperties: true,
           },
         },
+        required: ["deploymentId"],
       },
       DeploymentVersion: {
         type: "object",
