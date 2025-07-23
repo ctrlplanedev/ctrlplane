@@ -8,6 +8,7 @@ import {
   getEnvironmentVersionRolloutRule,
   getVersionApprovalRules,
 } from "./version-manager-rules/index.js";
+import { getVersionDependencyRule } from "./version-manager-rules/version-depedency.js";
 
 export const denyWindows = (policy: Policy | null) =>
   policy == null
@@ -38,12 +39,14 @@ export const getAllRules = async (
     policy,
     releaseTargetId,
   );
+  const versionDependencyRule = await getVersionDependencyRule(releaseTargetId);
   return [
     new ReleaseTargetLockRule({ releaseTargetId }),
     new ReleaseTargetConcurrencyRule(releaseTargetId),
     ...getConcurrencyRule(policy),
     ...versionApprovalRules,
     ...(environmentVersionRolloutRule ? [environmentVersionRolloutRule] : []),
+    versionDependencyRule,
   ];
   // The rrule package is being stupid and deny windows is not top priority
   // right now so I am commenting this out
