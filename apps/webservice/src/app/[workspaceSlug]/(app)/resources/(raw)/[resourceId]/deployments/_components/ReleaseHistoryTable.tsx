@@ -1,20 +1,12 @@
 "use client";
 
+import type * as schema from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconExternalLink } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { formatDistanceToNow } from "date-fns";
 
-import { cn } from "@ctrlplane/ui";
-import { Badge } from "@ctrlplane/ui/badge";
-import { Button, buttonVariants } from "@ctrlplane/ui/button";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@ctrlplane/ui/hover-card";
 import {
   Select,
   SelectContent,
@@ -31,211 +23,20 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@ctrlplane/ui/tooltip";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { CondensedJobLinksCell, JobLinksCell } from "./JobLinksCell";
+import { JobRowDropdown } from "./JobRowDropdown";
+import { VariablesCell } from "./VariablesCell";
+import { VersionTagCell } from "./VersionTagCell";
 
 type ReleaseHistoryTableProps = {
-  resourceId: string;
+  resource: schema.Resource;
   deployments: { id: string; name: string }[];
   condensed?: boolean;
-};
-
-type VariablesCellProps = {
-  variables: Record<string, any>;
-};
-
-const VersionTagCell: React.FC<{
-  version: { id: string; tag: string };
-  urlParams: {
-    workspaceSlug: string;
-    systemSlug: string;
-    deploymentSlug: string;
-  };
-}> = ({ version, urlParams }) => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link
-          target="_blank"
-          rel="noopener noreferrer"
-          href={urls
-            .workspace(urlParams.workspaceSlug)
-            .system(urlParams.systemSlug)
-            .deployment(urlParams.deploymentSlug)
-            .release(version.id)
-            .jobs()}
-        >
-          <div className="cursor-pointer truncate underline-offset-2 hover:underline">
-            {version.tag}
-          </div>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent className="p-2" align="start">
-        <pre>{version.tag}</pre>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
-
-const VariablesCell: React.FC<VariablesCellProps> = ({ variables }) => (
-  <HoverCard>
-    <HoverCardTrigger asChild>
-      <Badge variant="secondary" className="cursor-pointer">
-        {Object.keys(variables).length} variables
-      </Badge>
-    </HoverCardTrigger>
-    <HoverCardContent>
-      <div className="flex gap-2">
-        <div className="flex-grow space-y-2">
-          {Object.keys(variables).map((key) => (
-            <div key={key} className="min-w-0 truncate">
-              <span className="font-medium">{key}</span>
-            </div>
-          ))}
-        </div>
-        <div className="space-y-2">
-          {Object.entries(variables).map(([key, value]) => (
-            <div key={key}>
-              <pre>{JSON.stringify(value, null, 2)}</pre>
-            </div>
-          ))}
-        </div>
-      </div>
-    </HoverCardContent>
-  </HoverCard>
-);
-
-type JobLinksCellProps = {
-  job: { links: Record<string, string> | null };
-};
-
-const JobLinksCell: React.FC<JobLinksCellProps> = ({ job }) => {
-  const { links } = job;
-  if (links == null) return <TableCell />;
-
-  const numLinks = Object.keys(links).length;
-  if (numLinks <= 3)
-    return (
-      <TableCell className="py-0">
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(links).map(([label, url]) => (
-            <Link
-              key={label}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                buttonVariants({
-                  variant: "secondary",
-                  size: "sm",
-                }),
-                "h-6 max-w-24 gap-1 truncate px-2 py-0",
-              )}
-            >
-              <IconExternalLink className="h-4 w-4 shrink-0" />
-              <span className="truncate">{label}</span>
-            </Link>
-          ))}
-        </div>
-      </TableCell>
-    );
-
-  const firstThreeLinks = Object.entries(links).slice(0, 3);
-  const remainingLinks = Object.entries(links).slice(3);
-
-  return (
-    <TableCell className="py-0">
-      <div className="flex flex-wrap gap-2">
-        {firstThreeLinks.map(([label, url]) => (
-          <Link
-            key={label}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              buttonVariants({
-                variant: "secondary",
-                size: "sm",
-              }),
-              "h-6 max-w-24 gap-1 truncate px-2 py-0",
-            )}
-          >
-            <IconExternalLink className="h-4 w-4 shrink-0" />
-            <span className="truncate">{label}</span>
-          </Link>
-        ))}
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <Button variant="secondary" size="sm" className="h-6">
-              +{remainingLinks.length} more
-            </Button>
-          </HoverCardTrigger>
-          <HoverCardContent
-            className="flex max-w-40 flex-col gap-1 p-2"
-            align="start"
-          >
-            {remainingLinks.map(([label, url]) => (
-              <Link
-                key={label}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="truncate text-sm underline-offset-1 hover:underline"
-              >
-                {label}
-              </Link>
-            ))}
-          </HoverCardContent>
-        </HoverCard>
-      </div>
-    </TableCell>
-  );
-};
-
-const CondensedJobLinksCell: React.FC<JobLinksCellProps> = ({ job }) => {
-  const { links } = job;
-  if (links == null) return null;
-
-  const numLinks = Object.keys(links).length;
-
-  return (
-    <TableCell className="py-0">
-      <div className="flex flex-wrap gap-2">
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <Button variant="secondary" size="sm" className="h-6">
-              {numLinks} links
-            </Button>
-          </HoverCardTrigger>
-          <HoverCardContent
-            className="flex max-w-40 flex-col gap-1 p-2"
-            align="start"
-          >
-            {Object.entries(links).map(([label, url]) => (
-              <Link
-                key={label}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="truncate text-sm underline-offset-1 hover:underline"
-              >
-                {label}
-              </Link>
-            ))}
-          </HoverCardContent>
-        </HoverCard>
-      </div>
-    </TableCell>
-  );
 };
 
 const DeploymentSelect: React.FC<{
@@ -284,7 +85,7 @@ const JobStatusSelect: React.FC<{
 );
 
 export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
-  resourceId,
+  resource,
   deployments,
   condensed = false,
 }) => {
@@ -296,12 +97,15 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
     "all",
   );
 
-  const { data, isLoading } = api.resource.releaseHistory.useQuery({
-    resourceId,
-    deploymentId:
-      selectedDeploymentId === "all" ? undefined : selectedDeploymentId,
-    jobStatus: selectedJobStatus === "all" ? undefined : selectedJobStatus,
-  });
+  const resourceId = resource.id;
+  const deploymentId =
+    selectedDeploymentId === "all" ? undefined : selectedDeploymentId;
+  const jobStatus = selectedJobStatus === "all" ? undefined : selectedJobStatus;
+
+  const { data, isLoading } = api.resource.releaseHistory.useQuery(
+    { resourceId, deploymentId, jobStatus },
+    { refetchInterval: 5_000 },
+  );
   const history = data ?? [];
 
   return (
@@ -339,6 +143,7 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
               <TableHead>Status</TableHead>
               <TableHead>Links</TableHead>
               <TableHead>Released</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
 
@@ -388,6 +193,19 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
                   {condensed
                     ? formatDistanceToNow(h.job.createdAt, { addSuffix: true })
                     : h.job.createdAt.toLocaleString()}
+                </TableCell>
+
+                <TableCell>
+                  <div className="flex items-center justify-end">
+                    <JobRowDropdown
+                      job={h.job}
+                      releaseTarget={{
+                        deployment: h.deployment,
+                        environment: h.environment,
+                        resource,
+                      }}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -38,7 +38,7 @@ const ResourceDrawerContent: React.FC<{
           <ResourceDrawerSystems resource={resource} />
         )}
         {activeTab === ResourceDrawerSidebarTab.PipelineHistory && (
-          <PipelineHistory resourceId={resource.id} />
+          <PipelineHistory resource={resource} />
         )}
       </div>
     </div>

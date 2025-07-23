@@ -1,11 +1,13 @@
+import type * as schema from "@ctrlplane/db/schema";
+
 import { api } from "~/trpc/react";
 import { ReleaseHistoryTable } from "../../deployments/_components/ReleaseHistoryTable";
 
-export const PipelineHistory: React.FC<{ resourceId: string }> = ({
-  resourceId,
+export const PipelineHistory: React.FC<{ resource: schema.Resource }> = ({
+  resource,
 }) => {
   const { data: releaseTargetsResult } = api.releaseTarget.list.useQuery({
-    resourceId,
+    resourceId: resource.id,
   });
   const releaseTargets = releaseTargetsResult?.items ?? [];
   const deployments = releaseTargets.map((rt) => rt.deployment);
@@ -14,7 +16,7 @@ export const PipelineHistory: React.FC<{ resourceId: string }> = ({
     <div className="w-full space-y-4 p-6">
       <div className="text-2xl font-semibold">Pipeline History</div>
       <ReleaseHistoryTable
-        resourceId={resourceId}
+        resource={resource}
         deployments={deployments}
         condensed
       />
