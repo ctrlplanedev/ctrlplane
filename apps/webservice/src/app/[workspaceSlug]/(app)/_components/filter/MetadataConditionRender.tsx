@@ -25,13 +25,17 @@ import { MetadataOperator } from "@ctrlplane/validators/conditions";
 const FilteredCommandTrigger: React.FC<{
   open: boolean;
   value: string;
-}> = ({ open, value }) => (
+  className?: string;
+}> = ({ open, value, className }) => (
   <PopoverTrigger asChild>
     <Button
       variant="outline"
       role="combobox"
       aria-expanded={open}
-      className="w-full items-center justify-start rounded-l-md rounded-r-none bg-transparent px-2 hover:bg-neutral-800/50"
+      className={cn(
+        "w-full items-center justify-start bg-transparent px-2 hover:bg-neutral-800/50",
+        className,
+      )}
     >
       <span className="truncate text-muted-foreground">
         {value !== "" ? value : "Select value..."}
@@ -163,7 +167,11 @@ export const MetadataConditionRender: React.FC<
       <div className="grid w-full grid-cols-12">
         <div className="col-span-2">
           <Popover open={open} onOpenChange={setOpen} modal>
-            <FilteredCommandTrigger open={open} value={condition.key} />
+            <FilteredCommandTrigger
+              open={open}
+              value={condition.key}
+              className="rounded-l-md rounded-r-none"
+            />
             <PopoverContent
               align="start"
               onOpenAutoFocus={(e) => e.preventDefault()}
@@ -193,6 +201,7 @@ export const MetadataConditionRender: React.FC<
               <FilteredCommandTrigger
                 open={valueOpen}
                 value={condition.value}
+                className="rounded-l-none rounded-r-md"
               />
               <PopoverContent
                 align="start"
