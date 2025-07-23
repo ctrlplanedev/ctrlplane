@@ -26,7 +26,7 @@ const FilteredCommandTrigger: React.FC<{
   open: boolean;
   value: string;
   className?: string;
-}> = ({ open, value }) => (
+}> = ({ open, value, className }) => (
   <PopoverTrigger asChild>
     <Button
       variant="outline"
