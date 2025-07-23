@@ -8,7 +8,7 @@ import {
   getEnvironmentVersionRolloutRule,
   getVersionApprovalRules,
 } from "./version-manager-rules/index.js";
-import { getVersionDependencyRule } from "./version-manager-rules/version-depedency.js";
+import { getVersionDependencyRule } from "./version-manager-rules/version-dependency.js";
 
 export const denyWindows = (policy: Policy | null) =>
   policy == null
