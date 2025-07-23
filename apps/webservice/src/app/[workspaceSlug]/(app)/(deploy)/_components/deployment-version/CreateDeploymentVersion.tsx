@@ -61,7 +61,7 @@ const versionForm = z.object({
   deploymentId: z.string().uuid(),
   tag: z.string().min(1).max(255),
   status: z.nativeEnum(DeploymentVersionStatus),
-  versionDependencies: z.array(versionDependency).refine((deps) => {
+  dependencies: z.array(versionDependency).refine((deps) => {
     const deploymentIds = deps.map((d) => d.deploymentId);
     return new Set(deploymentIds).size === deploymentIds.length;
   }, "Cannot reuse a deployment in multiple version dependencies"),
@@ -81,7 +81,7 @@ export const CreateDeploymentVersionDialog: React.FC<{
       deploymentId: props.deploymentId ?? "",
       systemId: props.systemId ?? "",
       tag: props.tag ?? "",
-      versionDependencies: [],
+      dependencies: [],
       status: DeploymentVersionStatus.Ready,
     },
   });
@@ -117,7 +117,7 @@ export const CreateDeploymentVersionDialog: React.FC<{
   const router = useRouter();
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
-    const versionDependencies = data.versionDependencies.map((dep) => ({
+    const dependencies = data.dependencies.map((dep) => ({
       ...dep,
       versionSelector:
         dep.versionSelector == null || isEmptyCondition(dep.versionSelector)
@@ -126,7 +126,7 @@ export const CreateDeploymentVersionDialog: React.FC<{
     }));
     const version = await create.mutateAsync({
       ...data,
-      versionDependencies,
+      dependencies,
       name: data.tag.trim(),
     });
     await utils.deployment.version.list.invalidate({
@@ -152,10 +152,10 @@ export const CreateDeploymentVersionDialog: React.FC<{
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "versionDependencies",
+    name: "dependencies",
   });
 
-  const formErrors = form.formState.errors.versionDependencies ?? null;
+  const formErrors = form.formState.errors.dependencies ?? null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -266,7 +266,7 @@ export const CreateDeploymentVersionDialog: React.FC<{
                     <div key={index} className="flex items-center gap-2">
                       <FormField
                         control={form.control}
-                        name={`versionDependencies.${index}.deploymentId`}
+                        name={`dependencies.${index}.deploymentId`}
                         render={({ field: { value, onChange } }) => (
                           <FormItem>
                             <FormControl>
@@ -299,7 +299,7 @@ export const CreateDeploymentVersionDialog: React.FC<{
 
                       <FormField
                         control={form.control}
-                        name={`versionDependencies.${index}.versionSelector`}
+                        name={`dependencies.${index}.versionSelector`}
                         render={({ field: { value, onChange } }) => (
                           <FormItem>
                             <FormControl>

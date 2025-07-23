@@ -224,7 +224,7 @@ export const versionRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const versionDeps = input.versionDependencies.map((rd) => ({
+      const versionDeps = input.dependencies.map((rd) => ({
         ...rd,
         versionId: rel.id,
       }));
