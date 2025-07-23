@@ -103,7 +103,7 @@ const RolloutCurveChart: React.FC<{
   );
 
   const chartData = Array.from({ length: numResources }, (_, i) => ({
-    x: i,
+    x: i + 1,
     y: offsetFunction(i),
   }));
 
@@ -116,7 +116,7 @@ const RolloutCurveChart: React.FC<{
         <XAxis
           dataKey="x"
           label={{
-            value: "Rollout position (0-indexed)",
+            value: "Rollout position (1-indexed)",
             dy: 20,
           }}
           tick={{ fontSize: 14 }}
