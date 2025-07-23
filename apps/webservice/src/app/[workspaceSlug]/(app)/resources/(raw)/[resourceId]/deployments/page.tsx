@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import { api } from "~/trpc/server";
 import { ReleaseHistoryTable } from "./_components/ReleaseHistoryTable";
 
@@ -10,9 +12,12 @@ export default async function DeploymentsPage(props: { params: Params }) {
     resourceId,
   });
 
+  const resource = await api.resource.byId(resourceId);
+  if (resource == null) notFound();
+
   return (
     <ReleaseHistoryTable
-      resourceId={resourceId}
+      resource={resource}
       deployments={releaseTargets.map((rt) => rt.deployment)}
     />
   );

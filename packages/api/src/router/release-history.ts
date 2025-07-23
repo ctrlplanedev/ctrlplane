@@ -89,6 +89,10 @@ export const releaseHistory = protectedProcedure
         eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
       )
       .innerJoin(
+        schema.environment,
+        eq(schema.releaseTarget.environmentId, schema.environment.id),
+      )
+      .innerJoin(
         schema.deployment,
         eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
       )
@@ -115,9 +119,18 @@ export const releaseHistory = protectedProcedure
           ? (JSON.parse(jobResult.job_metadata.value) as Record<string, string>)
           : null;
       const job = { ...jobResult.job, links };
-      const { release, deployment, system } = jobResult;
+      const { release, deployment, system, environment } = jobResult;
       const version = jobResult.deployment_version;
       const variables = jobResult.variableRelease.variables;
-      return { job, release, version, variables, deployment, system };
+
+      return {
+        job,
+        release,
+        version,
+        variables,
+        deployment,
+        system,
+        environment,
+      };
     });
   });
