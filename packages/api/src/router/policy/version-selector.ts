@@ -1,3 +1,4 @@
+import type { Tx } from "@ctrlplane/db";
 import { z } from "zod";
 
 import {
@@ -7,10 +8,17 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { dispatchQueueJob } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
+
+const getPolicyTargets = async (db: Tx, policyId: string) =>
+  db
+    .select()
+    .from(schema.policyTarget)
+    .where(eq(schema.policyTarget.policyId, policyId));
 
 export const policyVersionSelectorRouter = createTRPCRouter({
   byPolicyId: protectedProcedure
@@ -45,8 +53,8 @@ export const policyVersionSelectorRouter = createTRPCRouter({
           id: input.policyId,
         }),
     })
-    .mutation(({ ctx, input: { name, policyId, versionSelector } }) =>
-      ctx.db
+    .mutation(async ({ ctx, input: { name, policyId, versionSelector } }) => {
+      const vs = await ctx.db
         .insert(schema.policyRuleDeploymentVersionSelector)
         .values({
           name: name ?? "",
@@ -60,8 +68,18 @@ export const policyVersionSelectorRouter = createTRPCRouter({
             ["deploymentVersionSelector", "name"],
           ),
         })
-        .returning(),
-    ),
+        .returning()
+        .then(takeFirst);
+
+      const policyTargets = await getPolicyTargets(ctx.db, policyId);
+      for (const policyTarget of policyTargets)
+        dispatchQueueJob()
+          .toCompute()
+          .policyTarget(policyTarget)
+          .releaseTargetSelector();
+
+      return vs;
+    }),
 
   update: protectedProcedure
     .input(
@@ -78,8 +96,8 @@ export const policyVersionSelectorRouter = createTRPCRouter({
           id: input.policyId,
         }),
     })
-    .mutation(({ ctx, input: { name, policyId, versionSelector } }) =>
-      ctx.db
+    .mutation(async ({ ctx, input: { name, policyId, versionSelector } }) => {
+      const vs = await ctx.db
         .update(schema.policyRuleDeploymentVersionSelector)
         .set({
           deploymentVersionSelector: versionSelector,
@@ -89,6 +107,15 @@ export const policyVersionSelectorRouter = createTRPCRouter({
           eq(schema.policyRuleDeploymentVersionSelector.policyId, policyId),
         )
         .returning()
-        .then(takeFirst),
-    ),
+        .then(takeFirst);
+
+      const policyTargets = await getPolicyTargets(ctx.db, policyId);
+      for (const policyTarget of policyTargets)
+        dispatchQueueJob()
+          .toCompute()
+          .policyTarget(policyTarget)
+          .releaseTargetSelector();
+
+      return vs;
+    }),
 });
