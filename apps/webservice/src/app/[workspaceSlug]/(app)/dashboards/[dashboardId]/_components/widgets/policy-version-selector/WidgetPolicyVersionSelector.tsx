@@ -11,7 +11,7 @@ import {
 
 import type { Widget } from "../../DashboardWidget";
 import type { PolicyVersionSelectorConfig } from "./types";
-import { DeploymentVersionConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionRender";
+import { WidgetVersionConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/WidgetVersionConditionRender";
 import { api } from "~/trpc/react";
 import { DeleteButton } from "../../buttons/DeleteButton";
 import { EditButton } from "../../buttons/EditButton";
@@ -63,13 +63,11 @@ const ConditionEditor: React.FC<{
 
   const isUnchanged = _.isEqual(condition, initialCondition);
   return (
-    <>
-      <DeploymentVersionConditionRender
-        condition={condition}
-        onChange={setCondition}
-        onRemove={() => setCondition(defaultCondition)}
-      />
-      <div className="flex w-full justify-end">
+    <WidgetVersionConditionRender
+      condition={condition}
+      onChange={setCondition}
+      onRemove={() => setCondition(defaultCondition)}
+      cta={
         <Button
           onClick={() => onSave(condition)}
           disabled={isSaving || isLoading || !isRuleValid || isUnchanged}
@@ -77,8 +75,8 @@ const ConditionEditor: React.FC<{
         >
           {ctaText}
         </Button>
-      </div>
-    </>
+      }
+    />
   );
 };
 
@@ -104,7 +102,7 @@ export const WidgetPolicyVersionSelector: Widget<PolicyVersionSelectorConfig> =
 
       return (
         <>
-          <div className="flex h-full w-full flex-col gap-4 rounded-md border p-2">
+          <div className="flex h-full w-full flex-col gap-4 overflow-y-auto rounded-md border p-2">
             <div className="flex items-center justify-between">
               <span className="flex-grow">
                 {config.name ?? versionSelectorRule?.name ?? "Version Selector"}
