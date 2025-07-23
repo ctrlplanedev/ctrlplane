@@ -22,10 +22,10 @@ import {
 } from "@ctrlplane/ui/select";
 import { MetadataOperator } from "@ctrlplane/validators/conditions";
 
-const KeySelectTrigger: React.FC<{
-  metadataKey: string;
+const FilteredCommandTrigger: React.FC<{
   open: boolean;
-}> = ({ metadataKey, open }) => (
+  value: string;
+}> = ({ open, value }) => (
   <PopoverTrigger asChild>
     <Button
       variant="outline"
@@ -34,57 +34,59 @@ const KeySelectTrigger: React.FC<{
       className="w-full items-center justify-start rounded-l-md rounded-r-none bg-transparent px-2 hover:bg-neutral-800/50"
     >
       <span className="truncate text-muted-foreground">
-        {metadataKey !== "" ? metadataKey : "Select key..."}
+        {value !== "" ? value : "Select value..."}
       </span>
     </Button>
   </PopoverTrigger>
 );
 
-const KeyCommand: React.FC<{
+const FilteredCommand: React.FC<{
   commandInput: string;
   setCommandInput: (commandInput: string) => void;
-  filteredMetadataKeys: { key: string; values: string[] }[];
-  setKey: (key: string) => void;
+  filteredItems: string[];
+  setItem: (item: string) => void;
   setOpen: (open: boolean) => void;
+  customItem: string;
 }> = ({
   commandInput,
   setCommandInput,
-  filteredMetadataKeys,
-  setKey,
+  filteredItems,
+  setItem,
   setOpen,
+  customItem,
 }) => (
   <Command shouldFilter={false}>
     <CommandInput
-      placeholder="Search key..."
+      placeholder="Search..."
       value={commandInput}
       onValueChange={setCommandInput}
       autoFocus
     />
     <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
-      {filteredMetadataKeys.map(({ key }) => (
+      {filteredItems.map((item) => (
         <CommandItem
-          key={key}
-          value={key}
+          key={item}
+          value={item}
           onSelect={() => {
-            setKey(key);
+            setItem(item);
             setOpen(false);
           }}
           className="cursor-pointer"
         >
-          {key}
+          {item}
         </CommandItem>
       ))}
-      {filteredMetadataKeys.length === 0 && (
+      {filteredItems.length === 0 && (
         <CommandItem
           key="no-results"
           value={commandInput}
           onSelect={() => {
-            setKey(commandInput);
+            setItem(commandInput);
             setOpen(false);
           }}
           className="cursor-pointer"
         >
-          Use custom key
+          Use custom {customItem}
         </CommandItem>
       )}
     </CommandList>
@@ -117,69 +119,6 @@ const OperatorSelect: React.FC<{
       <SelectItem value={MetadataOperator.Null}>Is Null</SelectItem>
     </SelectContent>
   </Select>
-);
-
-const ValueSelectTrigger: React.FC<{
-  value: string;
-  open: boolean;
-}> = ({ value, open }) => (
-  <PopoverTrigger asChild>
-    <Button
-      variant="outline"
-      role="combobox"
-      aria-expanded={open}
-      className="w-full items-center justify-start gap-2 rounded-l-none rounded-r-md bg-transparent px-2 hover:bg-neutral-800/50"
-    >
-      <span className="truncate text-muted-foreground">
-        {value !== "" ? value : "Select value..."}
-      </span>
-    </Button>
-  </PopoverTrigger>
-);
-
-const ValueCommand: React.FC<{
-  commandInput: string;
-  setCommandInput: (commandInput: string) => void;
-  filteredValues: string[];
-  setValue: (value: string) => void;
-  setOpen: (open: boolean) => void;
-}> = ({ commandInput, setCommandInput, filteredValues, setValue, setOpen }) => (
-  <Command shouldFilter={false}>
-    <CommandInput
-      placeholder="Search value..."
-      value={commandInput}
-      onValueChange={setCommandInput}
-      autoFocus
-    />
-    <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
-      {filteredValues.map((value) => (
-        <CommandItem
-          key={value}
-          value={value}
-          onSelect={() => {
-            setValue(value);
-            setOpen(false);
-          }}
-          className="cursor-pointer"
-        >
-          {value}
-        </CommandItem>
-      ))}
-      {filteredValues.length === 0 && (
-        <CommandItem
-          key="no-results"
-          value={commandInput}
-          onSelect={() => {
-            setValue(commandInput);
-            setOpen(false);
-          }}
-          className="cursor-pointer"
-        >
-          Use custom value
-        </CommandItem>
-      )}
-    </CommandList>
-  </Command>
 );
 
 type MetadataConditionRenderProps = {
@@ -224,18 +163,19 @@ export const MetadataConditionRender: React.FC<
       <div className="grid w-full grid-cols-12">
         <div className="col-span-2">
           <Popover open={open} onOpenChange={setOpen} modal>
-            <KeySelectTrigger metadataKey={condition.key} open={open} />
+            <FilteredCommandTrigger open={open} value={condition.key} />
             <PopoverContent
               align="start"
               onOpenAutoFocus={(e) => e.preventDefault()}
               className="w-[462px] p-0"
             >
-              <KeyCommand
+              <FilteredCommand
                 commandInput={commandInput}
                 setCommandInput={setCommandInput}
-                filteredMetadataKeys={filteredMetadataKeys}
-                setKey={setKey}
+                filteredItems={filteredMetadataKeys.map(({ key }) => key)}
+                setItem={setKey}
                 setOpen={setOpen}
+                customItem="key"
               />
             </PopoverContent>
           </Popover>
@@ -250,18 +190,22 @@ export const MetadataConditionRender: React.FC<
         {condition.operator !== MetadataOperator.Null ? (
           <div className="col-span-8">
             <Popover open={valueOpen} onOpenChange={setValueOpen} modal>
-              <ValueSelectTrigger value={condition.value} open={valueOpen} />
+              <FilteredCommandTrigger
+                open={valueOpen}
+                value={condition.value}
+              />
               <PopoverContent
                 align="start"
                 onOpenAutoFocus={(e) => e.preventDefault()}
                 className="w-[462px] p-0"
               >
-                <ValueCommand
+                <FilteredCommand
                   commandInput={valueCommandInput}
                   setCommandInput={setValueCommandInput}
-                  filteredValues={filteredValues}
-                  setValue={setValue}
+                  filteredItems={filteredValues}
+                  setItem={setValue}
                   setOpen={setValueOpen}
+                  customItem="value"
                 />
               </PopoverContent>
             </Popover>
