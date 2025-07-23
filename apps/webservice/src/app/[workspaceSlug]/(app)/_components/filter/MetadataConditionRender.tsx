@@ -62,7 +62,7 @@ export const MetadataConditionRender: React.FC<
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
       <div className="grid w-full grid-cols-12">
-        <div className="col-span-3">
+        <div className="col-span-2">
           <Popover open={open} onOpenChange={setOpen} modal>
             <PopoverTrigger asChild>
               <Button
@@ -119,7 +119,7 @@ export const MetadataConditionRender: React.FC<
             </PopoverContent>
           </Popover>
         </div>
-        <div className="col-span-3">
+        <div className="col-span-2">
           <Select
             value={condition.operator}
             onValueChange={(
@@ -154,7 +154,7 @@ export const MetadataConditionRender: React.FC<
         </div>
 
         {condition.operator !== MetadataOperator.Null ? (
-          <div className="col-span-5">
+          <div className="col-span-8">
             <Popover open={valueOpen} onOpenChange={setValueOpen} modal>
               <PopoverTrigger asChild>
                 <Button
@@ -214,7 +214,7 @@ export const MetadataConditionRender: React.FC<
             </Popover>
           </div>
         ) : (
-          <div className="col-span-4 h-9 cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
+          <div className="col-span-8 h-9 cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
         )}
       </div>
     </div>
