@@ -109,7 +109,7 @@ export const ReleaseHistoryTable: React.FC<ReleaseHistoryTableProps> = ({
   const history = data ?? [];
 
   return (
-    <div className="w-full">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-auto">
       <div className="flex w-full items-center justify-end gap-2 p-2">
         <DeploymentSelect
           deployments={deployments}
