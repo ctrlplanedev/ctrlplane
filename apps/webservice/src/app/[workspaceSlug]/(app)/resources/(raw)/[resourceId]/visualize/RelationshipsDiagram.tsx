@@ -23,7 +23,7 @@ const ResourceSidebarTrigger: React.FC = () => {
   const isOpen = openSidebars.includes(Sidebars.Resource);
 
   return (
-    <div className="p-2">
+    <div className="absolute left-0 top-0 z-10 p-2">
       <SidebarTrigger name={Sidebars.Resource}>
         <IconChevronRight
           className={cn(
