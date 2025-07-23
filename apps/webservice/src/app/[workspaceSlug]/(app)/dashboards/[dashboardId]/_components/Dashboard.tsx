@@ -20,8 +20,8 @@ export const Dashboard: React.FC = () => {
       layouts={layout}
       isResizable={isEditMode}
       breakpoints={{ lg: 0 }}
-      rowHeight={30}
-      cols={{ lg: 12 }}
+      rowHeight={5}
+      cols={{ lg: 32 }}
       margin={[16, 16]}
       onLayoutChange={(layout) => setLayout(layout)}
       draggableHandle=".widget-drag-handle"

@@ -102,9 +102,9 @@ export const WidgetPolicyVersionSelector: Widget<PolicyVersionSelectorConfig> =
 
       return (
         <>
-          <div className="flex h-full w-full flex-col gap-4 overflow-y-auto rounded-md border p-2">
-            <div className="flex items-center justify-between">
-              <span className="flex-grow">
+          <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex h-full w-full flex-col gap-4 overflow-auto rounded-md border p-2 text-sm">
+            <div className="flex items-center justify-between px-2 pt-1">
+              <span className="flex-grow font-medium">
                 {config.name ?? versionSelectorRule?.name ?? "Version Selector"}
               </span>
               {isEditMode && (

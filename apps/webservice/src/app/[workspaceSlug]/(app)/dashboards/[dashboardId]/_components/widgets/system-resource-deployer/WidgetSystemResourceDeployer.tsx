@@ -23,8 +23,8 @@ const WidgetHeader: React.FC<{
   };
 }> = ({ systemName, resource }) => (
   <>
-    <span className="text-lg font-medium">{systemName}</span>
-    <div className="flex items-center gap-2 text-lg font-medium">
+    <span className="font-medium">{systemName}</span>
+    <div className="flex items-center gap-2 font-medium">
       <ResourceIcon
         version={resource.version}
         kind={resource.kind}
@@ -88,7 +88,7 @@ export const WidgetSystemResourceDeployments: Widget<SystemResourceDeploymentsCo
 
       return (
         <>
-          <div className="flex h-full w-full flex-col gap-4 overflow-auto rounded-md border p-2">
+          <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex h-full w-full flex-col gap-4 overflow-auto rounded-md border p-2 text-sm">
             <div className="flex items-center gap-2">
               <div className="flex flex-grow items-center justify-between px-2 py-1">
                 {data != null && (
