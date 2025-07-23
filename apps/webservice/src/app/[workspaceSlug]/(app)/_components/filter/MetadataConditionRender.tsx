@@ -12,6 +12,7 @@ import {
   CommandItem,
   CommandList,
 } from "@ctrlplane/ui/command";
+import { Input } from "@ctrlplane/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   Select,
@@ -195,7 +196,10 @@ export const MetadataConditionRender: React.FC<
           />
         </div>
 
-        {condition.operator !== MetadataOperator.Null ? (
+        {condition.operator === MetadataOperator.Null && (
+          <div className="col-span-8 h-9 cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
+        )}
+        {condition.operator === MetadataOperator.Equals && (
           <div className="col-span-8">
             <Popover open={valueOpen} onOpenChange={setValueOpen} modal>
               <FilteredCommandTrigger
@@ -219,8 +223,18 @@ export const MetadataConditionRender: React.FC<
               </PopoverContent>
             </Popover>
           </div>
-        ) : (
-          <div className="col-span-8 h-9 cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
+        )}
+        {![MetadataOperator.Equals, MetadataOperator.Null].includes(
+          condition.operator as MetadataOperator,
+        ) && (
+          <div className="col-span-8">
+            <Input
+              value={condition.value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Enter value"
+              className="rounded-l-none rounded-r-md"
+            />
+          </div>
         )}
       </div>
     </div>
