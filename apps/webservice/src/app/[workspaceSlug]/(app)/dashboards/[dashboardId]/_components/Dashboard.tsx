@@ -21,7 +21,7 @@ export const Dashboard: React.FC = () => {
       isResizable={isEditMode}
       breakpoints={{ lg: 0 }}
       rowHeight={5}
-      cols={{ lg: 32 }}
+      cols={{ lg: 16 }}
       margin={[16, 16]}
       onLayoutChange={(layout) => setLayout(layout)}
       draggableHandle=".widget-drag-handle"
