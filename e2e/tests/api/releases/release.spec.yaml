@@ -22,3 +22,7 @@ environments:
       type: identifier
       operator: contains
       value: "{{ prefix }}"
+
+agents:
+  - name: "{{ prefix }}-agent"
+    type: "{{ prefix }}-agent-type"

@@ -6,6 +6,7 @@ import {
   desc,
   eq,
   inArray,
+  or,
   selector,
   takeFirst,
   takeFirstOrNull,
@@ -102,7 +103,10 @@ export class VersionReleaseManager implements ReleaseManager {
       .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
       .where(
         and(
-          eq(schema.job.status, JobStatus.Successful),
+          or(
+            eq(schema.job.status, JobStatus.Successful),
+            eq(schema.job.status, JobStatus.InProgress),
+          ),
           eq(schema.versionRelease.releaseTargetId, this.releaseTarget.id),
         ),
       )
@@ -179,6 +183,15 @@ export class VersionReleaseManager implements ReleaseManager {
     if (desiredVersion != null)
       return versions.filter((version) => version.id === desiredVersion.id);
 
+    const latestDeployedVersion = await this.findLastestDeployedVersion();
+    const versionsNewerThanLatest = versions.filter((version) =>
+      isAfter(
+        version.createdAt,
+        latestDeployedVersion?.createdAt ?? new Date(0),
+      ),
+    );
+    if (versionsNewerThanLatest.length === 0) return [];
+
     const policy = await this.getPolicy();
     const deploymentVersionSelector =
       policy?.deploymentVersionSelector?.deploymentVersionSelector;
@@ -190,11 +203,11 @@ export class VersionReleaseManager implements ReleaseManager {
       .sql();
 
     const isTargetedId =
-      versions.length === 1
-        ? eq(schema.deploymentVersion.id, versions.at(0)!.id)
+      versionsNewerThanLatest.length === 1
+        ? eq(schema.deploymentVersion.id, versionsNewerThanLatest.at(0)!.id)
         : inArray(
             schema.deploymentVersion.id,
-            versions.map((v) => v.id),
+            versionsNewerThanLatest.map((v) => v.id),
           );
 
     const isReady = eq(
