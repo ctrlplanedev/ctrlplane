@@ -452,6 +452,8 @@ importers:
         specifier: 'catalog:'
         version: 5.8.2
 
+  apps/selector-engine: {}
+
   apps/webservice:
     dependencies:
       '@ai-sdk/openai':
@@ -1278,6 +1280,9 @@ importers:
       ioredis:
         specifier: 'catalog:'
         version: 5.4.1
+      kafkajs:
+        specifier: ^2.2.4
+        version: 2.2.4
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
@@ -9123,6 +9128,10 @@ packages:
 
   jws@4.0.0:
     resolution: {integrity: sha512-KDncfTmOZoOMTFG4mBlG0qUIOlc03fmzH+ru6RgYVZhPkyiy/92Owlt/8UEN+a4TXR1FQetfIpJE8ApdvdVxTg==}
+
+  kafkajs@2.2.4:
+    resolution: {integrity: sha512-j/YeapB1vfPT2iOIUn/vxdyKEuhuY2PxMBvf5JWux6iSaukAccrMtXEY/Lb7OvavDhOWME589bpLrEdnVHjfjA==}
+    engines: {node: '>=14.0.0'}
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
@@ -20883,6 +20892,8 @@ snapshots:
     dependencies:
       jwa: 2.0.0
       safe-buffer: 5.2.1
+
+  kafkajs@2.2.4: {}
 
   keyv@4.5.4:
     dependencies:

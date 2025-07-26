@@ -28,6 +28,7 @@
     "bullmq-otel": "^1.0.1",
     "date-fns": "^4.1.0",
     "ioredis": "catalog:",
+    "kafkajs": "^2.2.4",
     "lodash": "catalog:",
     "zod": "catalog:"
   },

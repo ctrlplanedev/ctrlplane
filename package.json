@@ -5,7 +5,7 @@
     "node": ">=22.10.0",
     "pnpm": "^10.2.0"
   },
-  "packageManager": "pnpm@10.10.0",
+  "packageManager": "pnpm@10.13.1",
   "scripts": {
     "build": "turbo build",
     "build:digitalocean": "pnpm install --production=false && pnpm build",
