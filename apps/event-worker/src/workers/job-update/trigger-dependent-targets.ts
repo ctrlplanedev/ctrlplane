@@ -9,6 +9,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { getResourceChildren } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { dispatchQueueJob } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
@@ -68,7 +69,7 @@ const getNewlySatisfiedDependencies = async (
 };
 
 const getReleaseTargetsToEvaluate = async (
-  resourceId: string,
+  resourceIds: string[],
   newlySatisfiedDependencies: schema.VersionDependency[],
 ) =>
   db
@@ -88,7 +89,7 @@ const getReleaseTargetsToEvaluate = async (
           schema.deploymentVersion.id,
           newlySatisfiedDependencies.map((d) => d.versionId),
         ),
-        eq(schema.releaseTarget.resourceId, resourceId),
+        inArray(schema.releaseTarget.resourceId, resourceIds),
       ),
     )
     .then((rows) => rows.map((row) => row.release_target));
@@ -103,8 +104,10 @@ export const triggerDependentTargets = async (job: schema.Job) => {
     const version = await getVersion(versionId);
     const newlySatisfiedDependencies =
       await getNewlySatisfiedDependencies(version);
+    const childResources = await getResourceChildren(db, resourceId);
+    const childResourceIds = childResources.map(({ target }) => target.id);
     const releaseTargetsToEvaluate = await getReleaseTargetsToEvaluate(
-      resourceId,
+      [resourceId, ...childResourceIds],
       newlySatisfiedDependencies,
     );
 

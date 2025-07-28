@@ -104,6 +104,55 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
       },
+      delete: {
+        summary: "Delete a resource relationship rule",
+        operationId: "deleteResourceRelationshipRule",
+        parameters: [
+          {
+            name: "ruleId",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          200: {
+            description: "The deleted resource relationship rule",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ResourceRelationshipRule",
+                },
+              },
+            },
+          },
+          404: {
+            description: "The resource relationship rule was not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { error: { type: "string" } },
+                  required: ["error"],
+                },
+              },
+            },
+          },
+          500: {
+            description:
+              "An error occurred while deleting the resource relationship rule",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { error: { type: "string" } },
+                  required: ["error"],
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
 };
