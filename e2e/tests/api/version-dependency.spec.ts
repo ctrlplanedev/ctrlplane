@@ -295,6 +295,7 @@ test.describe("Version Dependency", () => {
       },
     );
     expect(resourceRelationshipRuleResponse.response.status).toBe(200);
+    return resourceRelationshipRuleResponse.data?.id ?? "";
   };
 
   const insertVersionForChildWithExternalDependency = async (
@@ -353,6 +354,29 @@ test.describe("Version Dependency", () => {
     expect(deploymentVersionResponse.response.status).toBe(201);
   };
 
+  const cleanupExternalParentResource = async (
+    api: Client<paths, `${string}/${string}`>,
+    externalParentResourceId: string,
+  ) => {
+    const deleteResponse = await api.DELETE(`/v1/resources/{resourceId}`, {
+      params: { path: { resourceId: externalParentResourceId } },
+    });
+    expect(deleteResponse.response.status).toBe(200);
+  };
+
+  const cleanupRelationshipRule = async (
+    api: Client<paths, `${string}/${string}`>,
+    externalParentResourceRelationshipId: string,
+  ) => {
+    const deleteResponse = await api.DELETE(
+      `/v1/resource-relationship-rules/{ruleId}`,
+      {
+        params: { path: { ruleId: externalParentResourceRelationshipId } },
+      },
+    );
+    expect(deleteResponse.response.status).toBe(200);
+  };
+
   test("should handle a version dependency on an external parent resource", async ({
     api,
     page,
@@ -365,8 +389,12 @@ test.describe("Version Dependency", () => {
     );
     await createExternalParentEnvironment(api, builder, externalSystem);
 
-    await createExternalParentResource(api, builder);
-    await createExternalParentResourceRelationship(api, builder);
+    const externalParentResourceId = await createExternalParentResource(
+      api,
+      builder,
+    );
+    const externalParentResourceRelationshipId =
+      await createExternalParentResourceRelationship(api, builder);
 
     const { versionTag, selectorTag } =
       await insertVersionForChildWithExternalDependency(
@@ -385,13 +413,11 @@ test.describe("Version Dependency", () => {
 
     expect(initialReleaseResult).toBeUndefined();
 
-    await page.waitForTimeout(5_000);
     await insertVersionForParentDeployment(
       api,
       externalParentDeploymentId,
       selectorTag,
     );
-    await page.waitForTimeout(2_000);
     await markJobAsSuccessful(api, builder, "agent-2");
     await page.waitForTimeout(5_000);
     const finalReleaseResult = await getRelease(
@@ -401,5 +427,8 @@ test.describe("Version Dependency", () => {
     );
 
     expect(finalReleaseResult).toBeDefined();
+
+    await cleanupExternalParentResource(api, externalParentResourceId);
+    await cleanupRelationshipRule(api, externalParentResourceRelationshipId);
   });
 });
