@@ -656,7 +656,8 @@ export interface paths {
     get?: never;
     put?: never;
     post?: never;
-    delete?: never;
+    /** Delete a resource relationship rule */
+    delete: operations["deleteResourceRelationshipRule"];
     options?: never;
     head?: never;
     /** Update a resource relationship rule */
@@ -1553,14 +1554,7 @@ export interface components {
       targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
       sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
     };
-    /** @enum {string} */
-    ResourceRelationshipRuleDependencyType:
-      | "depends_on"
-      | "depends_indirectly_on"
-      | "uses_at_runtime"
-      | "created_after"
-      | "provisioned_in"
-      | "inherits_from";
+    ResourceRelationshipRuleDependencyType: string;
     MetadataEqualsConstraint: {
       key?: string;
       value?: string;
@@ -3913,6 +3907,50 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  deleteResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The deleted resource relationship rule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
+        };
+      };
+      /** @description The resource relationship rule was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An error occurred while deleting the resource relationship rule */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
       };
     };
   };

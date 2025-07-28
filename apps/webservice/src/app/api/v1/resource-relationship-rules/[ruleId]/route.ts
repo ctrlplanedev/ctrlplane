@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import _ from "lodash";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -172,3 +172,46 @@ export const PATCH = request()
       );
     }
   });
+
+export const DELETE = request()
+  .use(authn)
+  .use(
+    authz(({ can, params }) =>
+      can.perform(Permission.ResourceRelationshipRuleDelete).on({
+        type: "resourceRelationshipRule",
+        id: params.ruleId ?? "",
+      }),
+    ),
+  )
+  .handle<{ db: Tx }, { params: Promise<{ ruleId: string }> }>(
+    async ({ db }, { params }) => {
+      try {
+        const { ruleId } = await params;
+
+        const rule = await db
+          .select()
+          .from(schema.resourceRelationshipRule)
+          .where(eq(schema.resourceRelationshipRule.id, ruleId))
+          .then(takeFirstOrNull);
+        if (rule == null)
+          return NextResponse.json(
+            { error: "Resource relationship rule not found" },
+            { status: NOT_FOUND },
+          );
+
+        const deletedRule = await db
+          .delete(schema.resourceRelationshipRule)
+          .where(eq(schema.resourceRelationshipRule.id, ruleId))
+          .returning()
+          .then(takeFirst);
+
+        return NextResponse.json(deletedRule);
+      } catch (error) {
+        log.error(error);
+        return NextResponse.json(
+          { error: "Failed to delete resource relationship rule" },
+          { status: INTERNAL_SERVER_ERROR },
+        );
+      }
+    },
+  );

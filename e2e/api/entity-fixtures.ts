@@ -99,6 +99,23 @@ export const ResourceFixture = z.object({
   metadata: z.record(z.string()).optional(),
 });
 
+export const ResourceRelationshipFixture = z.object({
+  source: z.object({
+    kind: z.string(),
+    version: z.string(),
+  }),
+  target: z
+    .object({
+      kind: z.string().optional(),
+      version: z.string().optional(),
+    })
+    .optional(),
+  dependencyType: z.string(),
+  dependencyDescription: z.string().optional(),
+  description: z.string().optional(),
+  reference: z.string(),
+});
+
 export const PolicyFixture = z.object({
   name: z.string(),
   targets: z.array(
@@ -151,6 +168,7 @@ export const EntityFixtures = z.object({
   system: SystemFixture,
   environments: z.array(EnvironmentFixture).optional(),
   resources: z.array(ResourceFixture).optional(),
+  resourceRelationships: z.array(ResourceRelationshipFixture).optional(),
   deployments: z.array(DeploymentFixture).optional(),
   policies: z.array(PolicyFixture).optional(),
   agents: z.array(AgentFixture).optional(),

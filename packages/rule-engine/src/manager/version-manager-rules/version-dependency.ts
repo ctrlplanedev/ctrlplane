@@ -1,5 +1,13 @@
-import { and, eq, selector, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  selector,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -25,6 +33,11 @@ const getResourceFromReleaseTarget = async (releaseTargetId: string) =>
 
 const getIsVersionDependencySatisfied = async (releaseTargetId: string) => {
   const resource = await getResourceFromReleaseTarget(releaseTargetId);
+  const parentRelationships = await getResourceParents(db, resource.id);
+  const parentResourceIds = Object.values(
+    parentRelationships.relationships,
+  ).map(({ source }) => source.id);
+  const resourceIdsToCheck = [resource.id, ...parentResourceIds];
 
   return (dependency: schema.VersionDependency) =>
     db
@@ -49,7 +62,7 @@ const getIsVersionDependencySatisfied = async (releaseTargetId: string) => {
       .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
       .where(
         and(
-          eq(schema.releaseTarget.resourceId, resource.id),
+          inArray(schema.releaseTarget.resourceId, resourceIdsToCheck),
           eq(schema.releaseTarget.deploymentId, dependency.deploymentId),
           selector()
             .query()

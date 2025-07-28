@@ -166,6 +166,59 @@ export class EntitiesBuilder {
     return results;
   }
 
+  async upsertResourceRelationshipsFixtures(): Promise<FetchResultInfo[]> {
+    if (
+      !this.fixtures.resourceRelationships ||
+      this.fixtures.resourceRelationships.length === 0
+    ) {
+      throw new Error("No resource relationships defined in YAML file");
+    }
+
+    const results: FetchResultInfo[] = [];
+    const workspaceId = this.workspace.id;
+
+    for (const relationship of this.fixtures.resourceRelationships) {
+      console.log(`Upserting resource relationship: ${relationship.reference}`);
+
+      const requestBody = {
+        ...relationship,
+        workspaceId,
+        sourceKind: relationship.source.kind,
+        sourceVersion: relationship.source.version,
+        targetKind: relationship.target?.kind,
+        targetVersion: relationship.target?.version,
+        name: relationship.reference,
+      };
+      const fetchResponse = await this.api.POST(
+        "/v1/resource-relationship-rules",
+        { body: requestBody },
+      );
+
+      results.push({ fetchResponse, requestBody });
+
+      this.refs.resourceRelationships.push({
+        id: fetchResponse.data!.id,
+        reference: fetchResponse.data!.reference,
+        dependencyType: fetchResponse.data!.dependencyType,
+        source: {
+          kind: fetchResponse.data!.sourceKind,
+          version: fetchResponse.data!.sourceVersion,
+        },
+        ...(fetchResponse.data?.targetKind != null ||
+        fetchResponse.data?.targetVersion != null
+          ? {
+              target: {
+                kind: fetchResponse.data!.targetKind,
+                version: fetchResponse.data!.targetVersion,
+              },
+            }
+          : {}),
+      });
+    }
+
+    return results;
+  }
+
   async upsertEnvironmentFixtures(): Promise<FetchResultInfo[]> {
     if (
       !this.fixtures.environments ||
@@ -648,6 +701,15 @@ export async function cleanupImportedEntities(
             path: { workspaceId: workspaceId, identifier: resource.identifier },
           },
         },
+      ),
+    });
+  }
+
+  for (const resourceRelationship of refs.resourceRelationships ?? []) {
+    results.push({
+      fetchResponse: await api.DELETE(
+        "/v1/resource-relationship-rules/{ruleId}",
+        { params: { path: { ruleId: resourceRelationship.id } } },
       ),
     });
   }

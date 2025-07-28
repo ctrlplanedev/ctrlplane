@@ -10,6 +10,8 @@ resources:
     version: "1.0.0"
     config:
       enabled: true
+    metadata:
+      e2e: "true"
 
 deployments:
   - name: "{{ prefix }}-parent-deployment"
@@ -32,5 +34,7 @@ environments:
           value: "{{ prefix }}-resource"
 
 agents:
-  - name: "{{ prefix }}-agent"
+  - name: "{{ prefix }}-agent-1"
+    type: "{{ prefix }}-agent-type"
+  - name: "{{ prefix }}-agent-2"
     type: "{{ prefix }}-agent-type"

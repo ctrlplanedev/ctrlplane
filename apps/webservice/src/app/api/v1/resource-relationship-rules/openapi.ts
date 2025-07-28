@@ -66,14 +66,6 @@ export const openapi: Swagger.SwaggerV3 = {
     schemas: {
       ResourceRelationshipRuleDependencyType: {
         type: "string",
-        enum: [
-          "depends_on",
-          "depends_indirectly_on",
-          "uses_at_runtime",
-          "created_after",
-          "provisioned_in",
-          "inherits_from",
-        ],
       },
 
       MetadataEqualsConstraint: {

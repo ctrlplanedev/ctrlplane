@@ -64,6 +64,20 @@ export interface ResourceRef {
   metadata?: Record<string, string>;
 }
 
+export interface ResourceRelationshipRef {
+  id: string;
+  reference: string;
+  dependencyType: string;
+  source: {
+    kind: string;
+    version: string;
+  };
+  target?: {
+    kind?: string;
+    version?: string;
+  };
+}
+
 export interface PolicyRef {
   id: string;
   name: string;
@@ -79,6 +93,8 @@ export class EntityRefs {
   public environments: Array<EnvironmentRef> = [];
 
   public resources: Array<ResourceRef> = [];
+
+  public resourceRelationships: Array<ResourceRelationshipRef> = [];
 
   public deployments: Array<DeploymentRef> = [];
 
@@ -118,6 +134,24 @@ export class EntityRefs {
       this.resources.filter(
         (res) => matches(res.name, match) || matches(res.identifier, match),
       ),
+    );
+  }
+
+  public takeResourceRelationships(
+    count: number,
+  ): Array<ResourceRelationshipRef> {
+    return takeRandom(this.resourceRelationships, count);
+  }
+
+  public oneResourceRelationship(): ResourceRelationshipRef {
+    return takeRandom(this.resourceRelationships, 1)[0];
+  }
+
+  public getResourceRelationshipByReference(
+    reference: string,
+  ): ResourceRelationshipRef {
+    return exactlyOne(
+      this.resourceRelationships.filter((rel) => rel.reference === reference),
     );
   }
 
