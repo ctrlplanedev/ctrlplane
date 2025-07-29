@@ -4,11 +4,13 @@ import { TRPCError } from "@trpc/server";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, selector } from "@ctrlplane/db";
+import { and, eq, inArray, selector, takeFirst } from "@ctrlplane/db";
+import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import {
   getConcurrencyRule,
   getRolloutInfoForReleaseTarget,
+  getVersionDependencyRule,
   mergePolicies,
   ReleaseTargetConcurrencyRule,
   versionAnyApprovalRule,
@@ -63,12 +65,14 @@ const getFilterReasons = async (
   policies: Policy[],
   version: Version[],
   versionId: string,
-  ruleGetter: (policy: Policy) => Array<FilterRule<Version>>,
+  ruleGetter: (
+    policy: Policy,
+  ) => Array<FilterRule<Version>> | Promise<Array<FilterRule<Version>>>,
 ) => {
   return Object.fromEntries(
     await Promise.all(
       policies.map(async (policy) => {
-        const rules = ruleGetter(policy);
+        const rules = await ruleGetter(policy);
         const rejectionReasons = await Promise.all(
           rules.map(async (rule) => {
             const result = await rule.filter(version);
@@ -105,6 +109,67 @@ const getConcurrencyBlocked = async (
       }),
     ),
   );
+
+const getResourceFromReleaseTarget = async (db: Tx, releaseTargetId: string) =>
+  db
+    .select()
+    .from(schema.releaseTarget)
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseTarget.resourceId, schema.resource.id),
+    )
+    .where(eq(schema.releaseTarget.id, releaseTargetId))
+    .then(takeFirst)
+    .then((r) => r.resource);
+
+const getVersionDependencyInfo = async (
+  db: Tx,
+  releaseTargetId: string,
+  dependency: schema.VersionDependency,
+) => {
+  const deployment = await db
+    .select()
+    .from(schema.deployment)
+    .where(eq(schema.deployment.id, dependency.deploymentId))
+    .then(takeFirst);
+
+  const resource = await getResourceFromReleaseTarget(db, releaseTargetId);
+  const { relationships } = await getResourceParents(db, resource.id);
+  const parentResourceIds = Object.values(relationships).map(
+    ({ source }) => source.id,
+  );
+  const parentResources = await db
+    .select()
+    .from(schema.resource)
+    .where(inArray(schema.resource.id, parentResourceIds));
+
+  const resourcesForDependency: schema.Resource[] = [
+    resource,
+    ...parentResources,
+  ];
+  return { resourcesForDependency, deployment };
+};
+
+const getVersionDependency = async (
+  db: Tx,
+  releaseTargetId: string,
+  version: schema.DeploymentVersion,
+) => {
+  const rule = await getVersionDependencyRule(releaseTargetId);
+  const result = await rule.filter([version]);
+  const dependencyResult = result.dependencyResults[version.id]!;
+
+  const allDependenciesPromise = dependencyResult.map(
+    async (dependencyResult) => {
+      const { isSatisfied, dependency } = dependencyResult;
+      const { resourcesForDependency, deployment } =
+        await getVersionDependencyInfo(db, releaseTargetId, dependency);
+      return { ...dependency, isSatisfied, resourcesForDependency, deployment };
+    },
+  );
+
+  return Promise.all(allDependenciesPromise);
+};
 
 export const evaluateEnvironment = protectedProcedure
   .input(
@@ -287,6 +352,12 @@ export const evaluateReleaseTarget = protectedProcedure
       version,
     );
 
+    const versionDependency = await getVersionDependency(
+      ctx.db,
+      releaseTargetId,
+      version,
+    );
+
     return {
       policies,
       rules: {
@@ -311,6 +382,7 @@ export const evaluateReleaseTarget = protectedProcedure
             ),
           ),
         ),
+        versionDependency,
       },
     };
   });
