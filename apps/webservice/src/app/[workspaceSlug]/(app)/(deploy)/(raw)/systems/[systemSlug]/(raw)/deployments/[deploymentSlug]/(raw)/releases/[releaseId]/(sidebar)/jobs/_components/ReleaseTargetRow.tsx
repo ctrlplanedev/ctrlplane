@@ -173,7 +173,7 @@ export const ReleaseTargetRow: React.FC<{
   resource: { id: string; name: string };
   environment: { id: string; name: string };
   deployment: { id: string; name: string };
-  version: { id: string };
+  version: { id: string; tag: string };
   jobs: Array<{
     id: string;
     status: SCHEMA.JobStatus;
@@ -222,7 +222,8 @@ export const ReleaseTargetRow: React.FC<{
               <TableCell className="p-0">
                 <PolicyEvaluationsCell
                   releaseTargetId={id}
-                  versionId={version.id}
+                  version={version}
+                  resource={resource}
                 />
               </TableCell>
               <TableCell />

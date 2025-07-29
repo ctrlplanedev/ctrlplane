@@ -26,6 +26,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { VersionDependencyBadge } from "./policy-evaluations/VersionDependencyBadge";
 
 type PolicyEvaluation = RouterOutputs["policy"]["evaluate"]["releaseTarget"];
 
@@ -115,12 +116,12 @@ const getPolicyBlockingByRollout = (policyEvaluations?: PolicyEvaluation) => {
   const policy = policyEvaluations.policies.find((p) => p.id === policyId);
   if (policy == null) return null;
 
-  if (rolloutTime == null) return { policy, rolloutTime: null, passing: false };
+  if (rolloutTime == null) return { policy, rolloutTime: null };
 
   const now = new Date();
-  if (isAfter(now, rolloutTime)) return { policy, rolloutTime, passing: true };
+  if (isAfter(now, rolloutTime)) return null;
 
-  return { policy, rolloutTime, passing: false };
+  return { policy, rolloutTime };
 };
 
 const getPoliciesBlockingByConcurrency = (
@@ -209,10 +210,20 @@ const BlockingReleaseTargetJobTooltip: React.FC<{
   );
 };
 
+const getBlockingVersionDependencies = (
+  policyEvaluations?: PolicyEvaluation,
+) => {
+  if (policyEvaluations == null) return [];
+  const { versionDependency } = policyEvaluations.rules;
+  return versionDependency.filter((v) => !v.isSatisfied);
+};
+
 export const PolicyEvaluationsCell: React.FC<{
+  resource: { id: string; name: string };
   releaseTargetId: string;
-  versionId: string;
-}> = ({ releaseTargetId, versionId }) => {
+  version: { id: string; tag: string };
+}> = ({ resource, releaseTargetId, version }) => {
+  const versionId = version.id;
   const { data: policyEvaluations, isLoading } =
     api.policy.evaluate.releaseTarget.useQuery({
       releaseTargetId,
@@ -236,13 +247,16 @@ export const PolicyEvaluationsCell: React.FC<{
     getPoliciesBlockingByConcurrency(policyEvaluations);
   const blockingReleaseTargetJob =
     getBlockingReleaseTargetJob(policyEvaluations);
+  const blockingVersionDependencies =
+    getBlockingVersionDependencies(policyEvaluations);
 
   const isBlocked =
     policiesBlockingByApproval.length > 0 ||
     policiesBlockingByVersionSelector.length > 0 ||
     policyBlockingByRollout != null ||
     policiesBlockingByConcurrency.length > 0 ||
-    blockingReleaseTargetJob != null;
+    blockingReleaseTargetJob != null ||
+    blockingVersionDependencies.length > 0;
 
   if (!isBlocked)
     return <div className="text-sm text-muted-foreground">No jobs</div>;
@@ -276,7 +290,7 @@ export const PolicyEvaluationsCell: React.FC<{
         </PolicyListTooltip>
       )}
 
-      {policyBlockingByRollout != null && !policyBlockingByRollout.passing && (
+      {policyBlockingByRollout != null && (
         <PolicyListTooltip policies={[policyBlockingByRollout.policy]}>
           <div className="flex items-center gap-2 rounded-md border border-blue-500 px-2 py-1 text-xs text-blue-500">
             <IconCalendarTime className="h-4 w-4" />
@@ -285,6 +299,14 @@ export const PolicyEvaluationsCell: React.FC<{
               : "Rollout not started"}
           </div>
         </PolicyListTooltip>
+      )}
+
+      {blockingVersionDependencies.length > 0 && (
+        <VersionDependencyBadge
+          resource={resource}
+          version={version}
+          dependencyResults={blockingVersionDependencies}
+        />
       )}
 
       {blockingReleaseTargetJob != null && (
