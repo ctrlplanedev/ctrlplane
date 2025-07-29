@@ -2,6 +2,7 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   IconAlertTriangle,
   IconChevronRight,
@@ -30,6 +31,7 @@ import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/
 import { OverrideJobStatusDialog } from "~/app/[workspaceSlug]/(app)/_components/job/OverrideJobStatusDialog";
 import { ForceDeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ForceDeployVersion";
 import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/RedeployVersionDialog";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
 import { PolicyEvaluationsCell } from "./PolicyEvaluationsCell";
@@ -168,6 +170,25 @@ const CreatedAtCell: React.FC<{
   </TableCell>
 );
 
+const ResourceLink: React.FC<{
+  resource: { id: string; name: string };
+}> = ({ resource }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const url = urls.workspace(workspaceSlug).resource(resource.id).deployments();
+
+  return (
+    <Link
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="hover:underline"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {resource.name}
+    </Link>
+  );
+};
+
 export const ReleaseTargetRow: React.FC<{
   id: string;
   resource: { id: string; name: string };
@@ -200,12 +221,14 @@ export const ReleaseTargetRow: React.FC<{
                     )}
                   />
                 </Button>
-                {resource.name}
+                <ResourceLink resource={resource} />
               </div>
             )}
 
             {jobs.length <= 1 && (
-              <div className="pl-[29px]">{resource.name}</div>
+              <div className="pl-[29px]">
+                <ResourceLink resource={resource} />
+              </div>
             )}
           </TableCell>
           {latestJob != null && (
