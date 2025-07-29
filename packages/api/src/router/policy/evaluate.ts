@@ -138,10 +138,13 @@ const getVersionDependencyInfo = async (
   const parentResourceIds = Object.values(relationships).map(
     ({ source }) => source.id,
   );
-  const parentResources = await db
-    .select()
-    .from(schema.resource)
-    .where(inArray(schema.resource.id, parentResourceIds));
+  const parentResources =
+    parentResourceIds.length > 0
+      ? await db
+          .select()
+          .from(schema.resource)
+          .where(inArray(schema.resource.id, parentResourceIds))
+      : [];
 
   const resourcesForDependency: schema.Resource[] = [
     resource,
@@ -157,7 +160,8 @@ const getVersionDependency = async (
 ) => {
   const rule = await getVersionDependencyRule(releaseTargetId);
   const result = await rule.filter([version]);
-  const dependencyResult = result.dependencyResults[version.id]!;
+  const dependencyResult = result.dependencyResults[version.id];
+  if (dependencyResult == null) return [];
 
   const allDependenciesPromise = dependencyResult.map(
     async (dependencyResult) => {
