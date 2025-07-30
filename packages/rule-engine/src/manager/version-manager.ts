@@ -176,7 +176,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
   async prevalidateProvidedVersions(versions: Version[]) {
     log.info(
-      `Prevalidating provided versions for release target ${this.releaseTarget.id}: ${versions.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}`,
+      `Prevalidating provided versions for release target ${this.releaseTarget.id}: ${JSON.stringify(versions)}`,
     );
 
     const desiredVersion = await this.findDesiredVersion();
@@ -192,7 +192,7 @@ export class VersionReleaseManager implements ReleaseManager {
     );
     if (versionsNewerThanLatest.length === 0) {
       log.info(
-        `For release target ${this.releaseTarget.id}, versions newer than latest deployed version was empty: ${versions.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}, latest deployed version: ${latestDeployedVersion?.id}, latest deployed version created at: ${latestDeployedVersion?.createdAt.toISOString()}`,
+        `For release target ${this.releaseTarget.id}, versions newer than latest deployed version was empty: ${JSON.stringify(versions)}, latest deployed version: ${JSON.stringify(latestDeployedVersion)}`,
       );
       return [];
     }
@@ -234,7 +234,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
     if (validVersions.length === 0) {
       log.info(
-        `For release target ${this.releaseTarget.id}, valid versions was empty: ${validVersions.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}`,
+        `For release target ${this.releaseTarget.id}, valid versions was empty: ${JSON.stringify(validVersions)}`,
       );
     }
 
