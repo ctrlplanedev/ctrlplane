@@ -15,7 +15,7 @@ import { formatDistanceToNowStrict, isAfter } from "date-fns";
 import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
-import { buttonVariants } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -27,6 +27,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { VersionDependencyBadge } from "./policy-evaluations/VersionDependencyBadge";
+import { useEnvironmentVersionApprovalDrawer } from "./rule-drawers/environment-version-approval/useEnvironmentVersionApprovalDrawer";
 
 type PolicyEvaluation = RouterOutputs["policy"]["evaluate"]["releaseTarget"];
 
@@ -210,6 +211,24 @@ const BlockingReleaseTargetJobTooltip: React.FC<{
   );
 };
 
+const ApprovalDrawerTrigger: React.FC<{
+  versionId: string;
+  environmentId: string;
+}> = ({ versionId, environmentId }) => {
+  const { setEnvironmentVersionIds } = useEnvironmentVersionApprovalDrawer();
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setEnvironmentVersionIds(environmentId, versionId)}
+      className="flex h-6 items-center gap-1 text-xs text-muted-foreground"
+    >
+      <IconShieldFilled className="h-3 w-3" />
+      Blocking approval
+    </Button>
+  );
+};
+
 const getBlockingVersionDependencies = (
   policyEvaluations?: PolicyEvaluation,
 ) => {
@@ -220,9 +239,10 @@ const getBlockingVersionDependencies = (
 
 export const PolicyEvaluationsCell: React.FC<{
   resource: { id: string; name: string };
+  environmentId: string;
   releaseTargetId: string;
   version: { id: string; tag: string };
-}> = ({ resource, releaseTargetId, version }) => {
+}> = ({ resource, releaseTargetId, version, environmentId }) => {
   const versionId = version.id;
   const { data: policyEvaluations, isLoading } =
     api.policy.evaluate.releaseTarget.useQuery({
@@ -264,12 +284,10 @@ export const PolicyEvaluationsCell: React.FC<{
   return (
     <div className="flex items-center gap-2">
       {policiesBlockingByApproval.length > 0 && (
-        <PolicyListTooltip policies={policiesBlockingByApproval}>
-          <div className="flex items-center gap-2 rounded-md border border-purple-500 px-2 py-1 text-xs text-purple-500">
-            <IconShieldFilled className="h-4 w-4" />
-            Blocking approval
-          </div>
-        </PolicyListTooltip>
+        <ApprovalDrawerTrigger
+          versionId={versionId}
+          environmentId={environmentId}
+        />
       )}
 
       {policiesBlockingByVersionSelector.length > 0 && (

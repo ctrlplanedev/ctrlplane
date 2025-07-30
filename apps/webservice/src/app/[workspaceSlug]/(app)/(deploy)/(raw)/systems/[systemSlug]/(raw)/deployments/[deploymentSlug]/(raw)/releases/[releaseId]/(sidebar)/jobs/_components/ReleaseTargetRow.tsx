@@ -247,6 +247,7 @@ export const ReleaseTargetRow: React.FC<{
                   releaseTargetId={id}
                   version={version}
                   resource={resource}
+                  environmentId={environment.id}
                 />
               </TableCell>
               <TableCell />

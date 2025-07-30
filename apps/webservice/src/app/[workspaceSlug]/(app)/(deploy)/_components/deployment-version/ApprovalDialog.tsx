@@ -123,7 +123,7 @@ const ApprovalDialogControl: React.FC<{
   const router = useRouter();
   const [reason, setReason] = useState("");
 
-  const addRecord = api.deployment.version.addApprovalRecord.useMutation();
+  const addRecord = api.policy.approval.addRecord.useMutation();
   const handleSubmit = (status: SCHEMA.ApprovalStatus) =>
     addRecord
       .mutateAsync({
