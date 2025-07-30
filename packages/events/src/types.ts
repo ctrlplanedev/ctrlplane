@@ -1,8 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type {
-  ReleaseTargetIdentifier,
-  VersionEvaluateOptions,
-} from "@ctrlplane/rule-engine";
+import type { VersionEvaluateOptions } from "@ctrlplane/rule-engine";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 export enum Channel {
@@ -89,7 +86,7 @@ export type ChannelMap = {
   [Channel.ComputePolicyTargetReleaseTargetSelector]: { id: string };
   [Channel.ComputeWorkspacePolicyTargets]: {
     workspaceId: string;
-    releaseTargetsToEvaluate?: ReleaseTargetIdentifier[];
+    releaseTargetsToEvaluate?: schema.ReleaseTarget[];
   };
   [Channel.ComputeSystemsReleaseTargets]: { id: string };
 };

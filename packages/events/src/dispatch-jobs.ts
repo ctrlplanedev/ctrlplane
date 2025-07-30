@@ -94,7 +94,7 @@ const dispatchComputeSystemReleaseTargetsJobs = async (
 
 const dispatchComputeWorkspacePolicyTargetsJobs = async (
   workspaceId: string,
-  releaseTargetsToEvaluate?: ReleaseTargetIdentifier[],
+  releaseTargetsToEvaluate?: schema.ReleaseTarget[],
 ) => {
   const q = getQueue(Channel.ComputeWorkspacePolicyTargets);
   const waiting = await q.getWaiting();
@@ -138,7 +138,7 @@ const toCompute = () => ({
   }),
   workspace: (workspaceId: string) => ({
     policyTargets: (opts?: {
-      releaseTargetsToEvaluate?: ReleaseTargetIdentifier[];
+      releaseTargetsToEvaluate?: schema.ReleaseTarget[];
     }) =>
       dispatchComputeWorkspacePolicyTargetsJobs(
         workspaceId,
