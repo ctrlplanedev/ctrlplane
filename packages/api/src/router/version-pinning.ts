@@ -1,5 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import type { VersionEvaluateOptions } from "@ctrlplane/rule-engine";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -28,11 +27,7 @@ const pinReleaseTargetsToVersion = async (
     )
     .returning();
 
-  const versionEvaluateOptions: VersionEvaluateOptions | undefined =
-    version != null ? { versions: [version] } : undefined;
-  await dispatchQueueJob()
-    .toEvaluate()
-    .releaseTargets(releaseTargets, { versionEvaluateOptions });
+  await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
 
   return releaseTargets;
 };

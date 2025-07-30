@@ -315,12 +315,6 @@ export const releaseTargetRouter = createTRPCRouter({
         }),
     })
     .mutation(async ({ ctx, input }) => {
-      const version = await ctx.db
-        .select()
-        .from(schema.deploymentVersion)
-        .where(eq(schema.deploymentVersion.id, input.versionId))
-        .then(takeFirst);
-
       const releaseTarget = await ctx.db
         .update(schema.releaseTarget)
         .set({ desiredVersionId: input.versionId })
@@ -328,11 +322,7 @@ export const releaseTargetRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await dispatchQueueJob()
-        .toEvaluate()
-        .releaseTargets([releaseTarget], {
-          versionEvaluateOptions: { versions: [version] },
-        });
+      await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
 
       return releaseTarget;
     }),
