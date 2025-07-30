@@ -75,27 +75,26 @@ export const ReviewRequestedAlert: React.FC<{
   return (
     <div className="flex items-center justify-between rounded-md bg-purple-400/20 p-2 ">
       <div className="flex items-center gap-2 text-purple-400">
-        <IconAlertTriangle className="h-4 w-4" />
-        <span className="text-sm">
-          Review requested for version {version.tag} to be released to{" "}
-          {environment.name}
-        </span>
+        <IconAlertTriangle className="h-4 w-4 flex-shrink-0" />
+        <span className="text-sm">Your review is requested</span>
       </div>
-      <ApprovalDialog
-        versionId={version.id}
-        versionTag={version.tag}
-        systemId={environment.systemId}
-        environmentId={environment.id}
-        onSubmit={invalidate}
-      >
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-purple-400 hover:bg-purple-400/30 hover:text-purple-400"
+      <div className="flex-shrink-0">
+        <ApprovalDialog
+          versionId={version.id}
+          versionTag={version.tag}
+          systemId={environment.systemId}
+          environmentId={environment.id}
+          onSubmit={invalidate}
         >
-          Review
-        </Button>
-      </ApprovalDialog>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-purple-400 hover:bg-purple-400/30 hover:text-purple-400"
+          >
+            Review
+          </Button>
+        </ApprovalDialog>
+      </div>
     </div>
   );
 };

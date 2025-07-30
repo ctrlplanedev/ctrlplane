@@ -25,7 +25,8 @@ import { UserApprovalSection } from "./UserApprovalSection";
 
 const ApprovalDrawerHeader: React.FC<{
   policies: schema.Policy[];
-}> = ({ policies }) => {
+  environment: schema.Environment;
+}> = ({ policies, environment }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const getPolicyUrl = (policyId: string) =>
     urls.workspace(workspaceSlug).policies().edit(policyId).qualitySecurity();
@@ -35,7 +36,7 @@ const ApprovalDrawerHeader: React.FC<{
         <div className="flex items-center justify-center rounded-lg bg-purple-600/70 p-1">
           <IconShield className="h-6 w-6 text-purple-400" />
         </div>
-        Approval status
+        Approval status for {environment.name}
       </DrawerTitle>
       <DrawerDescription className="flex items-center gap-2">
         <div className="flex items-center gap-2">
