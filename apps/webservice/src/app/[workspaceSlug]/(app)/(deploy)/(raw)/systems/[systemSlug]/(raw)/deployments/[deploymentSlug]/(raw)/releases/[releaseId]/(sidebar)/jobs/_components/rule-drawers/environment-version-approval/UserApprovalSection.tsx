@@ -57,6 +57,8 @@ export const UserApprovalSection: React.FC<{
     })
     .value();
 
+  if (userApprovalRulesWithRecords.length === 0) return null;
+
   const approved = userApprovalRulesWithRecords.filter(
     (r) => r.record?.status === schema.ApprovalStatus.Approved,
   );
