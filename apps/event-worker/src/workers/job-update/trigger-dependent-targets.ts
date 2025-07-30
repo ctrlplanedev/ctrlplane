@@ -104,7 +104,11 @@ export const triggerDependentTargets = async (job: schema.Job) => {
     const version = await getVersion(versionId);
     const newlySatisfiedDependencies =
       await getNewlySatisfiedDependencies(version);
+    if (newlySatisfiedDependencies.length === 0) return;
+
     const childResources = await getResourceChildren(db, resourceId);
+    if (childResources.length === 0) return;
+
     const childResourceIds = childResources.map(({ target }) => target.id);
     const releaseTargetsToEvaluate = await getReleaseTargetsToEvaluate(
       [resourceId, ...childResourceIds],
