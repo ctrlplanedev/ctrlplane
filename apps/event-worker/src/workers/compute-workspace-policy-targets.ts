@@ -74,6 +74,22 @@ const acquireWorkspacePolicyTargetsLock = async (tx: Tx, workspaceId: string) =>
   `,
   );
 
+const maybeAcquireReleaseTargetsLock = async (
+  tx: Tx,
+  releaseTargets?: schema.ReleaseTarget[],
+) => {
+  const releaseTargetsIds = releaseTargets?.map((rt) => rt.id) ?? [];
+  if (releaseTargetsIds.length === 0) return;
+
+  await tx.execute(
+    sql`
+    SELECT * FROM ${schema.releaseTarget}
+    WHERE ${inArray(schema.releaseTarget.id, releaseTargetsIds)}
+    FOR UPDATE NOWAIT
+  `,
+  );
+};
+
 const computePolicyTarget = async (
   tx: Tx,
   policyTarget: schema.PolicyTarget,
@@ -121,6 +137,7 @@ export const computeWorkspacePolicyTargetsWorker = createWorker(
 
     try {
       await db.transaction(async (tx) => {
+        await maybeAcquireReleaseTargetsLock(tx, releaseTargetsToEvaluate);
         await acquireWorkspacePolicyTargetsLock(tx, workspaceId);
 
         const policyTargets = await getPolicyTargets(tx, workspaceId);

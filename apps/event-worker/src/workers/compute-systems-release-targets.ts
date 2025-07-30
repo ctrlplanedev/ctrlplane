@@ -154,13 +154,16 @@ export const computeSystemsReleaseTargetsWorker = createWorker(
             ),
         );
 
-        if (created.length > 0)
-          await tx
-            .insert(schema.releaseTarget)
-            .values(created)
-            .onConflictDoNothing();
+        const inserted =
+          created.length > 0
+            ? await tx
+                .insert(schema.releaseTarget)
+                .values(created)
+                .onConflictDoNothing()
+                .returning()
+            : [];
 
-        return { created, deleted };
+        return { created: inserted, deleted };
       });
 
       if (deleted.length > 0)
