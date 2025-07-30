@@ -6,7 +6,6 @@ import {
   desc,
   eq,
   inArray,
-  or,
   selector,
   takeFirst,
   takeFirstOrNull,
@@ -103,10 +102,7 @@ export class VersionReleaseManager implements ReleaseManager {
       .innerJoin(schema.job, eq(schema.releaseJob.jobId, schema.job.id))
       .where(
         and(
-          or(
-            eq(schema.job.status, JobStatus.Successful),
-            eq(schema.job.status, JobStatus.InProgress),
-          ),
+          eq(schema.job.status, JobStatus.Successful),
           eq(schema.versionRelease.releaseTargetId, this.releaseTarget.id),
         ),
       )
@@ -190,7 +186,12 @@ export class VersionReleaseManager implements ReleaseManager {
         latestDeployedVersion?.createdAt ?? new Date(0),
       ),
     );
-    if (versionsNewerThanLatest.length === 0) return [];
+    if (versionsNewerThanLatest.length === 0) {
+      log.info(
+        `For release target ${this.releaseTarget.id}, versions newer than latest deployed version was empty: ${versionsNewerThanLatest.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}, latest deployed version: ${latestDeployedVersion?.id}, latest deployed version created at: ${latestDeployedVersion?.createdAt.toISOString()}`,
+      );
+      return [];
+    }
 
     const policy = await this.getPolicy();
     const deploymentVersionSelector =
@@ -226,6 +227,12 @@ export class VersionReleaseManager implements ReleaseManager {
       .from(schema.deploymentVersion)
       .where(and(...checks))
       .orderBy(desc(schema.deploymentVersion.createdAt));
+
+    if (validVersions.length === 0) {
+      log.info(
+        `For release target ${this.releaseTarget.id}, valid versions was empty: ${validVersions.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}`,
+      );
+    }
 
     return validVersions;
   }

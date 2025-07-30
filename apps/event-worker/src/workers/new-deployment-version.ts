@@ -18,6 +18,10 @@ export const newDeploymentVersionWorker = createWorker(
     const releaseTargets = await db.query.releaseTarget.findMany({
       where: eq(schema.releaseTarget.deploymentId, version.deploymentId),
     });
-    await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
+    await dispatchQueueJob()
+      .toEvaluate()
+      .releaseTargets(releaseTargets, {
+        versionEvaluateOptions: { versions: [version] },
+      });
   },
 );
