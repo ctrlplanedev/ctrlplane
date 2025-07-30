@@ -176,7 +176,7 @@ export class VersionReleaseManager implements ReleaseManager {
 
   async prevalidateProvidedVersions(versions: Version[]) {
     log.info(
-      `Prevalidating provided versions: ${versions.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}`,
+      `Prevalidating provided versions for release target ${this.releaseTarget.id}: ${versions.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}`,
     );
 
     const desiredVersion = await this.findDesiredVersion();
