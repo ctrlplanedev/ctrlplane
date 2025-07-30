@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import {
   IconArrowsSplit,
   IconCalendarTime,
-  IconFilterX,
   IconLoader2,
   IconShieldFilled,
 } from "@tabler/icons-react";
@@ -23,6 +22,7 @@ import {
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { useEnvironmentVersionApprovalDrawer } from "../rule-drawers/environment-version-approval/useEnvironmentVersionApprovalDrawer";
+import { useVersionSelectorDrawer } from "../rule-drawers/version-selector/useVersionSelectorDrawer";
 import { BlockingReleaseTargetJobTooltip } from "./BlockingReleaseTargetJobTooltip";
 import {
   getBlockingReleaseTargetJob,
@@ -84,6 +84,22 @@ const ApprovalDrawerTrigger: React.FC<{
   );
 };
 
+const VersionSelectorDrawerTrigger: React.FC<{
+  releaseTargetId: string;
+}> = ({ releaseTargetId }) => {
+  const { setReleaseTargetId } = useVersionSelectorDrawer();
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => setReleaseTargetId(releaseTargetId)}
+      className="flex h-6 text-sm text-muted-foreground"
+    >
+      Blocking version selector
+    </Button>
+  );
+};
+
 const getBlockingVersionDependencies = (
   policyEvaluations?: PolicyEvaluation,
 ) => {
@@ -128,12 +144,7 @@ export const PolicyEvaluationsCell: React.FC<{
   if (policiesBlockingByVersionSelector.length > 0)
     return (
       <div className="flex items-center gap-2">
-        <PolicyListTooltip policies={policiesBlockingByVersionSelector}>
-          <div className="flex items-center gap-2 rounded-md border border-purple-500 px-2 py-1 text-xs text-purple-500">
-            <IconFilterX className="h-4 w-4" />
-            Blocking version selector
-          </div>
-        </PolicyListTooltip>
+        <VersionSelectorDrawerTrigger releaseTargetId={releaseTargetId} />
       </div>
     );
 

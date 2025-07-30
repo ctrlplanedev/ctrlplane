@@ -9,6 +9,7 @@ import {
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { dispatchQueueJob } from "@ctrlplane/events";
+import { getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
 
@@ -36,6 +37,32 @@ export const policyVersionSelectorRouter = createTRPCRouter({
         .from(schema.policyRuleDeploymentVersionSelector)
         .where(eq(schema.policyRuleDeploymentVersionSelector.policyId, input))
         .then(takeFirstOrNull),
+    ),
+
+  byReleaseTargetId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.ReleaseTargetGet).on({
+          type: "releaseTarget",
+          id: input,
+        }),
+    })
+    .query(({ ctx, input }) =>
+      getApplicablePolicies(ctx.db, input).then((policies) =>
+        policies
+          .filter(
+            (p) =>
+              p.deploymentVersionSelector?.deploymentVersionSelector != null,
+          )
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            deploymentVersionSelector:
+              p.deploymentVersionSelector!.deploymentVersionSelector,
+            priority: p.priority,
+          })),
+      ),
     ),
 
   create: protectedProcedure
