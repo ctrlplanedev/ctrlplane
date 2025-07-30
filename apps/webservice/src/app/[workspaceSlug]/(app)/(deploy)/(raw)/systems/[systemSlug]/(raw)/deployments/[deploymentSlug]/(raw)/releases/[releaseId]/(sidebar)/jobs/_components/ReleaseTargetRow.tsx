@@ -34,7 +34,7 @@ import { RedeployVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_com
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
-import { PolicyEvaluationsCell } from "./PolicyEvaluationsCell";
+import { PolicyEvaluationsCell } from "./policy-evaluations/PolicyEvaluationsCell";
 
 const ReleaseTargetActionsDropdownMenu: React.FC<{
   environment: { id: string; name: string };
