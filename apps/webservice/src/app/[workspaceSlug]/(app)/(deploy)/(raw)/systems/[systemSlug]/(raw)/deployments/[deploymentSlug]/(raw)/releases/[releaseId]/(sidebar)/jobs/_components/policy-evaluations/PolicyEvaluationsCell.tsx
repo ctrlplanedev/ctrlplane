@@ -125,66 +125,69 @@ export const PolicyEvaluationsCell: React.FC<{
   const blockingVersionDependencies =
     getBlockingVersionDependencies(policyEvaluations);
 
-  const isBlocked =
-    policiesBlockingByApproval.length > 0 ||
-    policiesBlockingByVersionSelector.length > 0 ||
-    policyBlockingByRollout != null ||
-    policiesBlockingByConcurrency.length > 0 ||
-    blockingReleaseTargetJob != null ||
-    blockingVersionDependencies.length > 0;
-
-  if (!isBlocked)
-    return <div className="text-sm text-muted-foreground">No jobs</div>;
-
-  return (
-    <div className="flex items-center gap-2">
-      {policiesBlockingByApproval.length > 0 && (
-        <ApprovalDrawerTrigger
-          versionId={versionId}
-          environmentId={environmentId}
-        />
-      )}
-
-      {policiesBlockingByVersionSelector.length > 0 && (
+  if (policiesBlockingByVersionSelector.length > 0)
+    return (
+      <div className="flex items-center gap-2">
         <PolicyListTooltip policies={policiesBlockingByVersionSelector}>
           <div className="flex items-center gap-2 rounded-md border border-purple-500 px-2 py-1 text-xs text-purple-500">
             <IconFilterX className="h-4 w-4" />
             Blocking version selector
           </div>
         </PolicyListTooltip>
-      )}
+      </div>
+    );
 
-      {policiesBlockingByConcurrency.length > 0 && (
+  if (blockingVersionDependencies.length > 0)
+    return (
+      <div className="flex items-center gap-2">
+        <VersionDependencyBadge
+          resource={resource}
+          version={version}
+          dependencyResults={blockingVersionDependencies}
+        />
+      </div>
+    );
+
+  if (policiesBlockingByApproval.length > 0)
+    return (
+      <div className="flex items-center gap-2">
+        <ApprovalDrawerTrigger
+          versionId={versionId}
+          environmentId={environmentId}
+        />
+      </div>
+    );
+
+  if (policiesBlockingByConcurrency.length > 0)
+    return (
+      <div className="flex items-center gap-2">
         <PolicyListTooltip policies={policiesBlockingByConcurrency}>
           <div className="flex items-center gap-2 rounded-md border border-yellow-500 px-2 py-1 text-xs text-yellow-500">
             <IconArrowsSplit className="h-4 w-4" />
             Blocking concurrency gate
           </div>
         </PolicyListTooltip>
-      )}
+      </div>
+    );
 
-      {policyBlockingByRollout != null && (
-        <PolicyListTooltip policies={[policyBlockingByRollout.policy]}>
-          <div className="flex items-center gap-2 rounded-md border border-blue-500 px-2 py-1 text-xs text-blue-500">
-            <IconCalendarTime className="h-4 w-4" />
-            {policyBlockingByRollout.rolloutTime
-              ? `Rolls out in ${formatDistanceToNowStrict(policyBlockingByRollout.rolloutTime)}`
-              : "Rollout not started"}
-          </div>
-        </PolicyListTooltip>
-      )}
+  if (policyBlockingByRollout != null)
+    return (
+      <PolicyListTooltip policies={[policyBlockingByRollout.policy]}>
+        <div className="flex items-center gap-2 rounded-md border border-blue-500 px-2 py-1 text-xs text-blue-500">
+          <IconCalendarTime className="h-4 w-4" />
+          {policyBlockingByRollout.rolloutTime
+            ? `Rolls out in ${formatDistanceToNowStrict(policyBlockingByRollout.rolloutTime)}`
+            : "Rollout not started"}
+        </div>
+      </PolicyListTooltip>
+    );
 
-      {blockingVersionDependencies.length > 0 && (
-        <VersionDependencyBadge
-          resource={resource}
-          version={version}
-          dependencyResults={blockingVersionDependencies}
-        />
-      )}
-
-      {blockingReleaseTargetJob != null && (
+  if (blockingReleaseTargetJob != null)
+    return (
+      <div className="flex items-center gap-2">
         <BlockingReleaseTargetJobTooltip jobInfo={blockingReleaseTargetJob} />
-      )}
-    </div>
-  );
+      </div>
+    );
+
+  return <div className="text-sm text-muted-foreground">No jobs</div>;
 };
