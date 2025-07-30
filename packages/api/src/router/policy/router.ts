@@ -20,6 +20,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { policyAiRouter } from "./ai";
+import { policyApprovalRouter } from "./approval/router";
 import { policyDenyWindowRouter } from "./deny-window";
 import { evaluateRouter } from "./evaluate";
 import { rolloutRouter } from "./rollout";
@@ -33,6 +34,7 @@ export const policyRouter = createTRPCRouter({
   evaluate: evaluateRouter,
   rollout: rolloutRouter,
   versionSelector: policyVersionSelectorRouter,
+  approval: policyApprovalRouter,
 
   list: protectedProcedure
     .meta({

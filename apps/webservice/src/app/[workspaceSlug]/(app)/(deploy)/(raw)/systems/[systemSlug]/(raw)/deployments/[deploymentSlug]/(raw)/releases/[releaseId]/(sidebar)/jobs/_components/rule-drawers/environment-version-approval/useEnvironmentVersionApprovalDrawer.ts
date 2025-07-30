@@ -1,11 +1,12 @@
 import { useRouter, useSearchParams } from "next/navigation";
 
 const environmentVersionApprovalDrawerParam = "environment-version-approval";
+const delimiter = "|";
 export const useEnvironmentVersionApprovalDrawer = () => {
   const router = useRouter();
   const params = useSearchParams();
   const paramValue = params.get(environmentVersionApprovalDrawerParam);
-  const [environmentId, versionId] = paramValue?.split(":") ?? [];
+  const [environmentId, versionId] = paramValue?.split(delimiter) ?? [];
 
   const setEnvironmentVersionIds = (
     environmentId: string,
@@ -14,7 +15,7 @@ export const useEnvironmentVersionApprovalDrawer = () => {
     const url = new URL(window.location.href);
     url.searchParams.set(
       environmentVersionApprovalDrawerParam,
-      `${environmentId}:${versionId}`,
+      `${environmentId}${delimiter}${versionId}`,
     );
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
