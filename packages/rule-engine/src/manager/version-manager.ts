@@ -188,7 +188,7 @@ export class VersionReleaseManager implements ReleaseManager {
     );
     if (versionsNewerThanLatest.length === 0) {
       log.info(
-        `For release target ${this.releaseTarget.id}, versions newer than latest deployed version was empty: ${versionsNewerThanLatest.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}, latest deployed version: ${latestDeployedVersion?.id}, latest deployed version created at: ${latestDeployedVersion?.createdAt.toISOString()}`,
+        `For release target ${this.releaseTarget.id}, versions newer than latest deployed version was empty: ${versions.map((v) => `(id: ${v.id}, tag: ${v.tag}, createdAt: ${v.createdAt.toISOString()})`).join(", ")}, latest deployed version: ${latestDeployedVersion?.id}, latest deployed version created at: ${latestDeployedVersion?.createdAt.toISOString()}`,
       );
       return [];
     }
