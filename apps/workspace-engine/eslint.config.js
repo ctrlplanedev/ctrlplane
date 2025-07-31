@@ -5,6 +5,6 @@ export default [
   {
     ignores: [".nitro/**", ".output/**", "dist/**"],
   },
-  ...requireJsSuffix,
   ...baseConfig,
+  ...requireJsSuffix,
 ];
