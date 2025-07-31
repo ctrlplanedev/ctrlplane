@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconClock, IconExternalLink } from "@tabler/icons-react";
+import { IconExternalLink } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
-import { buttonVariants } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -35,10 +35,13 @@ export const BlockingReleaseTargetJobTooltip: React.FC<{
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-2 rounded-md border border-neutral-500 px-2 py-1 text-xs text-neutral-500">
-            <IconClock className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-sm text-muted-foreground"
+          >
             Another job is running
-          </div>
+          </Button>
         </TooltipTrigger>
         <TooltipContent className="flex w-96 flex-col gap-2 border bg-neutral-950 p-2">
           <div className="flex w-full items-center justify-between truncate">
