@@ -37,3 +37,4 @@ export * from "./types.js";
 export * from "./redis.js";
 export * from "./resource-provider-scan/handle-provider-scan.js";
 export * from "./dispatch-jobs.js";
+export * from "./kafka/index.js";
