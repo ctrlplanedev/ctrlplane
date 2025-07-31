@@ -8,7 +8,6 @@ import {
   IconLoader2,
 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
-import _ from "lodash";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
