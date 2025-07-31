@@ -45,6 +45,6 @@ ENV NODE_MAX_OLD_SPACE_SIZE=4096
 
 EXPOSE 3123
 
-WORKDIR apps/workspace-engine/dist/
+WORKDIR /app/apps/workspace-engine/dist/
 
 CMD ["node", "index.js"]
