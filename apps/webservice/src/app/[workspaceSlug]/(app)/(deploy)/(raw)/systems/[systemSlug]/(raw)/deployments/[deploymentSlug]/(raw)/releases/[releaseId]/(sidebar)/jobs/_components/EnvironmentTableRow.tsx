@@ -2,18 +2,54 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
-import { IconChevronRight } from "@tabler/icons-react";
+import { useParams } from "next/navigation";
+import { IconAlertTriangle, IconChevronRight } from "@tabler/icons-react";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
+import { Button } from "@ctrlplane/ui/button";
 import { TableCell } from "@ctrlplane/ui/table";
 import { failedStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
+import { api } from "~/trpc/react";
 import { CollapsibleRow } from "./CollapsibleRow";
 import { EnvironmentRowDropdown } from "./EnvironmentRowDropdown";
+import { getPoliciesBlockingByApproval } from "./policy-evaluations/utils";
+import { useEnvironmentVersionApprovalDrawer } from "./rule-drawers/environment-version-approval/useEnvironmentVersionApprovalDrawer";
+
+const ApprovalDrawerTrigger: React.FC<{
+  environmentId: string;
+}> = ({ environmentId }) => {
+  const { releaseId: versionId } = useParams<{ releaseId: string }>();
+  const { data } = api.policy.evaluate.environment.useQuery({
+    environmentId,
+    versionId,
+  });
+  const { setEnvironmentVersionIds } = useEnvironmentVersionApprovalDrawer();
+
+  if (data == null) return null;
+
+  const policiesBlockingByApproval = getPoliciesBlockingByApproval(data);
+  if (policiesBlockingByApproval.length === 0) return null;
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={(e) => {
+        e.stopPropagation();
+        setEnvironmentVersionIds(environmentId, versionId);
+      }}
+      className="flex h-6 items-center gap-2 text-sm"
+    >
+      <IconAlertTriangle className="h-4 w-4 text-yellow-500" />
+      Approval required
+    </Button>
+  );
+};
 
 const JobStatusBadge: React.FC<{
   status: SCHEMA.JobStatus;
@@ -28,7 +64,7 @@ const JobStatusBadge: React.FC<{
 export const EnvironmentTableRow: React.FC<{
   isExpanded: boolean;
   deployment: { id: string };
-  environment: { name: string };
+  environment: { id: string; name: string };
   releaseTargets: Array<{
     id: string;
     resourceId: string;
@@ -61,6 +97,7 @@ export const EnvironmentTableRow: React.FC<{
               />
             ))}
           </div>
+          <ApprovalDrawerTrigger environmentId={environment.id} />
         </div>
       </div>
     </TableCell>

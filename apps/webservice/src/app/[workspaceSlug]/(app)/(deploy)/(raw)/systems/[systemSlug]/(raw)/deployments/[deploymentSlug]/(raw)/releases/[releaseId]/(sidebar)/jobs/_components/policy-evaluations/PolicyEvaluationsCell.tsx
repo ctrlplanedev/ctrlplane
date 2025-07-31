@@ -6,7 +6,6 @@ import {
   IconArrowsSplit,
   IconCalendarTime,
   IconLoader2,
-  IconShieldFilled,
 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
@@ -21,7 +20,6 @@ import {
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { useEnvironmentVersionApprovalDrawer } from "../rule-drawers/environment-version-approval/useEnvironmentVersionApprovalDrawer";
 import { useVersionSelectorDrawer } from "../rule-drawers/version-selector/useVersionSelectorDrawer";
 import { BlockingReleaseTargetJobTooltip } from "./BlockingReleaseTargetJobTooltip";
 import {
@@ -66,24 +64,6 @@ const PolicyListTooltip: React.FC<{
   );
 };
 
-const ApprovalDrawerTrigger: React.FC<{
-  versionId: string;
-  environmentId: string;
-}> = ({ versionId, environmentId }) => {
-  const { setEnvironmentVersionIds } = useEnvironmentVersionApprovalDrawer();
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => setEnvironmentVersionIds(environmentId, versionId)}
-      className="flex h-6 items-center gap-1 text-xs text-muted-foreground"
-    >
-      <IconShieldFilled className="h-3 w-3" />
-      Blocking approval
-    </Button>
-  );
-};
-
 const VersionSelectorDrawerTrigger: React.FC<{
   releaseTargetId: string;
 }> = ({ releaseTargetId }) => {
@@ -110,10 +90,9 @@ const getBlockingVersionDependencies = (
 
 export const PolicyEvaluationsCell: React.FC<{
   resource: { id: string; name: string };
-  environmentId: string;
   releaseTargetId: string;
   version: { id: string; tag: string };
-}> = ({ resource, releaseTargetId, version, environmentId }) => {
+}> = ({ resource, releaseTargetId, version }) => {
   const versionId = version.id;
   const { data: policyEvaluations, isLoading } =
     api.policy.evaluate.releaseTarget.useQuery({
@@ -161,12 +140,7 @@ export const PolicyEvaluationsCell: React.FC<{
 
   if (policiesBlockingByApproval.length > 0)
     return (
-      <div className="flex items-center gap-2">
-        <ApprovalDrawerTrigger
-          versionId={versionId}
-          environmentId={environmentId}
-        />
-      </div>
+      <div className="text-sm text-muted-foreground">Pending approval</div>
     );
 
   if (policiesBlockingByConcurrency.length > 0)

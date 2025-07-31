@@ -1,12 +1,22 @@
 import type { RouterOutputs } from "@ctrlplane/api";
+import type * as schema from "@ctrlplane/db/schema";
 import { isAfter } from "date-fns";
 import _ from "lodash";
 
 export type PolicyEvaluation =
   RouterOutputs["policy"]["evaluate"]["releaseTarget"];
 
+type ApprovalPolicyEvaluation = {
+  rules: {
+    anyApprovals: Record<string, string[]>;
+    userApprovals: Record<string, string[]>;
+    roleApprovals: Record<string, string[]>;
+  };
+  policies: schema.Policy[];
+};
+
 export const getPoliciesBlockingByApproval = (
-  policyEvaluations?: PolicyEvaluation,
+  policyEvaluations?: ApprovalPolicyEvaluation,
 ) => {
   if (policyEvaluations == null) return [];
   const policiesBlockingAnyApproval = Object.entries(
