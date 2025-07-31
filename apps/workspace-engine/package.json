@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/event-worker",
+  "name": "@ctrlplane/workspace-engine",
   "private": true,
   "type": "module",
   "scripts": {
