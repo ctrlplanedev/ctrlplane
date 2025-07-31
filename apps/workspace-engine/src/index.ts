@@ -18,7 +18,7 @@ const getWorkspaceEngine = (workspaceId: string) => {
   const engine = workspaceEngines.get(workspaceId);
   if (engine != null) return engine;
 
-  const newEngine = new WorkspaceEngine();
+  const newEngine = new WorkspaceEngine(workspaceId);
   workspaceEngines.set(workspaceId, newEngine);
 
   return newEngine;
@@ -36,7 +36,7 @@ export const startConsumer = async () => {
         return;
       }
 
-      const parsedKey = z.string().uuid().safeParse(key);
+      const parsedKey = z.string().uuid().safeParse(key.toString());
       if (!parsedKey.success) {
         logger.error("Invalid key", { key });
         return;

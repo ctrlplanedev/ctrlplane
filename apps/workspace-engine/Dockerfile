@@ -34,7 +34,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/event-worker
+RUN turbo build --filter=...@ctrlplane/workspace-engine
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
@@ -45,4 +45,6 @@ ENV NODE_MAX_OLD_SPACE_SIZE=4096
 
 EXPOSE 3123
 
-CMD node -r ./apps/event-worker/dist/instrumentation-node.js --max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE} apps/event-worker/dist/index.js
+WORKDIR apps/workspace-engine/dist/
+
+CMD ["node", "index.js"]
