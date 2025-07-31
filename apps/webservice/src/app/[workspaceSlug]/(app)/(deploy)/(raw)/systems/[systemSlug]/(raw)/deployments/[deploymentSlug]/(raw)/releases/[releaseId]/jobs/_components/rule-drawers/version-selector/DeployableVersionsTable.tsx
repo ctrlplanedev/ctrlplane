@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { IconLoader2 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 
@@ -10,22 +12,42 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type Version = {
+  id: string;
   tag: string;
   name: string;
   createdAt: Date;
 };
-const DeployableVersionRow: React.FC<{ version: Version }> = ({ version }) => (
-  <TableRow>
-    <TableCell className="max-w-[200px] truncate">{version.tag}</TableCell>
-    <TableCell className="max-w-[200px] truncate">{version.name}</TableCell>
-    <TableCell>
-      {formatDistanceToNowStrict(version.createdAt, { addSuffix: true })}
-    </TableCell>
-  </TableRow>
-);
+const DeployableVersionRow: React.FC<{ version: Version }> = ({ version }) => {
+  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>();
+
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .release(version.id)
+    .jobs();
+  return (
+    <TableRow>
+      <TableCell className="max-w-[200px] truncate">
+        <Link href={versionUrl} className="hover:underline">
+          {version.tag}
+        </Link>
+      </TableCell>
+      <TableCell className="max-w-[200px] truncate">{version.name}</TableCell>
+      <TableCell>
+        {formatDistanceToNowStrict(version.createdAt, { addSuffix: true })}
+      </TableCell>
+    </TableRow>
+  );
+};
 
 const DeployableVersionTableHeader: React.FC = () => (
   <TableHeader>
