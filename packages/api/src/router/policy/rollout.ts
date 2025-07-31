@@ -68,6 +68,13 @@ const getPolicy = async (
   return mergePolicies(policies);
 };
 
+const getEnvironment = async (db: Tx, environmentId: string) =>
+  db
+    .select()
+    .from(schema.environment)
+    .where(eq(schema.environment.id, environmentId))
+    .then(takeFirst);
+
 export const rolloutRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
@@ -87,6 +94,7 @@ export const rolloutRouter = createTRPCRouter({
       const { environmentId, versionId } = input;
 
       const version = await getVersion(ctx.db, versionId);
+      const environment = await getEnvironment(ctx.db, environmentId);
 
       const releaseTargets = await getReleaseTargets(
         ctx.db,
@@ -99,6 +107,8 @@ export const rolloutRouter = createTRPCRouter({
         environmentId,
         version.deploymentId,
       );
+
+      if (policy?.environmentVersionRollout == null) return null;
 
       const releaseTargetRolloutInfoPromises = releaseTargets.map(
         (releaseTarget) =>
@@ -118,7 +128,9 @@ export const rolloutRouter = createTRPCRouter({
 
       return {
         releaseTargetRolloutInfo,
-        rolloutPolicy: policy?.environmentVersionRollout,
+        rolloutPolicy: policy,
+        environment,
+        version,
       };
     }),
 });

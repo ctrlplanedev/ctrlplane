@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { api } from "~/trpc/server";
 import { DeploymentVersionJobsTable } from "./_components/DeploymentVersionJobsTable";
 import { EnvironmentVersionApprovalDrawer } from "./_components/rule-drawers/environment-version-approval/EnvironmentVersionApprovalDrawer";
+import { RolloutDrawer } from "./_components/rule-drawers/environment-version-rollout/RolloutDrawer";
 import { VersionSelectorDrawer } from "./_components/rule-drawers/version-selector/VersionSelectorDrawer";
 
 type PageProps = {
@@ -41,6 +42,7 @@ export default async function ReleasePage(props: PageProps) {
         deployment={deployment}
       />
       <EnvironmentVersionApprovalDrawer />
+      <RolloutDrawer />
       <VersionSelectorDrawer />
     </>
   );

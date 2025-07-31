@@ -5,7 +5,6 @@ import type {
   NameType,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
-import { useParams } from "next/navigation";
 import { formatDistanceToNowStrict, isAfter } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
 import {
@@ -26,10 +25,11 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 
-import type { RolloutInfo } from "../_utils/rollout";
+import type { RolloutInfo } from "./rollout";
 import { RolloutTypeToOffsetFunction } from "~/app/[workspaceSlug]/(app)/policies/[policyId]/edit/rollouts/_components/equations";
 import { api } from "~/trpc/react";
-import { getCurrentRolloutPosition } from "../_utils/rollout";
+import { useRolloutDrawer } from "../useRolloutDrawer";
+import { getCurrentRolloutPosition } from "./rollout";
 
 const PrettyYAxisTick = (props: any) => {
   const { payload } = props;
@@ -95,6 +95,11 @@ const RolloutCurve: React.FC<{
   currentRolloutPosition: number;
   rolloutInfoList: RolloutInfo["releaseTargetRolloutInfo"];
 }> = ({ chartData, currentRolloutPosition, rolloutInfoList }) => {
+  const { releaseTargetId } = useRolloutDrawer();
+  const releaseTarget = rolloutInfoList.find(
+    (info) => info.id === releaseTargetId,
+  );
+
   return (
     <div className="h-[300px] w-full">
       <ResponsiveContainer width="100%" height={300}>
@@ -105,7 +110,7 @@ const RolloutCurve: React.FC<{
           <XAxis
             dataKey="x"
             label={{
-              value: "Rollout position (0-indexed)",
+              value: "Rollout position",
               dy: 20,
             }}
             tick={{ fontSize: 14 }}
@@ -119,18 +124,28 @@ const RolloutCurve: React.FC<{
             tick={PrettyYAxisTick}
           />
           <Line type="monotone" dataKey="y" stroke="#8884d8" dot={false} />
-          <ReferenceLine
-            x={currentRolloutPosition}
-            stroke="#9ca3af"
-            strokeDasharray="5 5"
-            strokeWidth={2}
-            label={{
-              value: "Current rollout position",
-              position: "top",
-              fill: "#9ca3af",
-              fontSize: 12,
-            }}
-          />
+          {currentRolloutPosition !==
+            Number(releaseTarget?.rolloutPosition ?? 0) && (
+            <ReferenceLine
+              x={currentRolloutPosition}
+              stroke="#22c55e"
+              strokeWidth={2}
+            />
+          )}
+          {releaseTarget != null && (
+            <ReferenceLine
+              x={Number(releaseTarget.rolloutPosition)}
+              stroke="#9ca3af"
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              label={{
+                value: `${releaseTarget.resource.name}${currentRolloutPosition === Number(releaseTarget.rolloutPosition) ? " (current)" : ""}`,
+                position: "top",
+                fill: "#9ca3af",
+                fontSize: 12,
+              }}
+            />
+          )}
           <Tooltip
             content={(props) => PrettyTooltip({ ...props, rolloutInfoList })}
           />
@@ -140,12 +155,10 @@ const RolloutCurve: React.FC<{
   );
 };
 
-export const RolloutCurveChart: React.FC = () => {
-  const { releaseId: versionId, environmentId } = useParams<{
-    releaseId: string;
-    environmentId: string;
-  }>();
-
+export const RolloutCurveChart: React.FC<{
+  environmentId: string;
+  versionId: string;
+}> = ({ environmentId, versionId }) => {
   const { data: rolloutInfo } = api.policy.rollout.list.useQuery(
     { environmentId, versionId },
     { refetchInterval: 10_000 },
@@ -168,15 +181,16 @@ export const RolloutCurveChart: React.FC = () => {
   );
 
   const chartData = Array.from({ length: numReleaseTargets }, (_, i) => ({
-    x: i,
+    x: i + 1,
     y: offsetFunction(i),
   }));
 
-  const currentRolloutPosition =
-    getCurrentRolloutPosition(rolloutInfo?.releaseTargetRolloutInfo ?? []) ?? 0;
+  const currentRolloutPosition = getCurrentRolloutPosition(
+    rolloutInfo?.releaseTargetRolloutInfo ?? [],
+  );
 
   return (
-    <Card className="p-2">
+    <Card className="rounded-md p-2">
       <CardHeader>
         <CardTitle>Rollout curve</CardTitle>
         <CardDescription>
