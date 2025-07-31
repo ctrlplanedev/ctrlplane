@@ -2,11 +2,7 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  IconArrowsSplit,
-  IconCalendarTime,
-  IconLoader2,
-} from "@tabler/icons-react";
+import { IconArrowsSplit, IconLoader2 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -19,6 +15,7 @@ import {
 
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { useRolloutDrawer } from "../rule-drawers/environment-version-rollout/useRolloutDrawer";
 import { useVersionSelectorDrawer } from "../rule-drawers/version-selector/useVersionSelectorDrawer";
 import { BlockingReleaseTargetJobTooltip } from "./BlockingReleaseTargetJobTooltip";
 import {
@@ -79,6 +76,27 @@ const VersionSelectorDrawerTrigger: React.FC<{
   );
 };
 
+const RolloutDrawerTrigger: React.FC<{
+  environmentId: string;
+  versionId: string;
+  releaseTargetId: string;
+  rolloutTime: Date;
+}> = ({ environmentId, versionId, releaseTargetId, rolloutTime }) => {
+  const { setEnvironmentVersionIds } = useRolloutDrawer();
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() =>
+        setEnvironmentVersionIds(environmentId, versionId, releaseTargetId)
+      }
+      className="flex h-6 text-sm text-muted-foreground"
+    >
+      Rolls out in {formatDistanceToNowStrict(rolloutTime, { addSuffix: true })}
+    </Button>
+  );
+};
+
 const getBlockingVersionDependencies = (
   policyEvaluations?: PolicyEvaluation,
 ) => {
@@ -91,7 +109,8 @@ export const PolicyEvaluationsCell: React.FC<{
   resource: { id: string; name: string };
   releaseTargetId: string;
   version: { id: string; tag: string };
-}> = ({ resource, releaseTargetId, version }) => {
+  environmentId: string;
+}> = ({ resource, releaseTargetId, version, environmentId }) => {
   const versionId = version.id;
   const { data: policyEvaluations, isLoading } =
     api.policy.evaluate.releaseTarget.useQuery({
@@ -154,16 +173,16 @@ export const PolicyEvaluationsCell: React.FC<{
       </div>
     );
 
-  if (policyBlockingByRollout != null)
+  if (policyBlockingByRollout?.rolloutTime != null)
     return (
-      <PolicyListTooltip policies={[policyBlockingByRollout.policy]}>
-        <div className="flex items-center gap-2 rounded-md border border-blue-500 px-2 py-1 text-xs text-blue-500">
-          <IconCalendarTime className="h-4 w-4" />
-          {policyBlockingByRollout.rolloutTime
-            ? `Rolls out in ${formatDistanceToNowStrict(policyBlockingByRollout.rolloutTime)}`
-            : "Rollout not started"}
-        </div>
-      </PolicyListTooltip>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <RolloutDrawerTrigger
+          environmentId={environmentId}
+          versionId={versionId}
+          releaseTargetId={releaseTargetId}
+          rolloutTime={policyBlockingByRollout.rolloutTime}
+        />
+      </div>
     );
 
   if (blockingReleaseTargetJob != null)

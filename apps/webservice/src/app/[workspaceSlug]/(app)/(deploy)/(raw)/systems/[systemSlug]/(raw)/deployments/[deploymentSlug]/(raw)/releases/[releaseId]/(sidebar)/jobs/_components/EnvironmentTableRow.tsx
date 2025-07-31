@@ -3,7 +3,11 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import { useParams } from "next/navigation";
-import { IconAlertTriangle, IconChevronRight } from "@tabler/icons-react";
+import {
+  IconAlertTriangle,
+  IconCalendarClock,
+  IconChevronRight,
+} from "@tabler/icons-react";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
@@ -19,6 +23,7 @@ import { CollapsibleRow } from "./CollapsibleRow";
 import { EnvironmentRowDropdown } from "./EnvironmentRowDropdown";
 import { getPoliciesBlockingByApproval } from "./policy-evaluations/utils";
 import { useEnvironmentVersionApprovalDrawer } from "./rule-drawers/environment-version-approval/useEnvironmentVersionApprovalDrawer";
+import { useRolloutDrawer } from "./rule-drawers/environment-version-rollout/useRolloutDrawer";
 
 const ApprovalDrawerTrigger: React.FC<{
   environmentId: string;
@@ -43,10 +48,38 @@ const ApprovalDrawerTrigger: React.FC<{
         e.stopPropagation();
         setEnvironmentVersionIds(environmentId, versionId);
       }}
-      className="flex h-6 items-center gap-2 text-sm"
+      className="flex h-6 items-center gap-2 rounded-full border text-sm"
     >
       <IconAlertTriangle className="h-4 w-4 text-yellow-500" />
       Approval required
+    </Button>
+  );
+};
+
+const RolloutDrawerTrigger: React.FC<{
+  environmentId: string;
+}> = ({ environmentId }) => {
+  const { releaseId: versionId } = useParams<{ releaseId: string }>();
+  const { data } = api.policy.rollout.list.useQuery({
+    environmentId,
+    versionId,
+  });
+  const { setEnvironmentVersionIds } = useRolloutDrawer();
+
+  if (data == null) return null;
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={(e) => {
+        e.stopPropagation();
+        setEnvironmentVersionIds(environmentId, versionId);
+      }}
+      className="flex h-6 items-center gap-2 rounded-full border text-sm"
+    >
+      <IconCalendarClock className="h-4 w-4 text-purple-500" />
+      View rollout
     </Button>
   );
 };
@@ -98,6 +131,7 @@ export const EnvironmentTableRow: React.FC<{
             ))}
           </div>
           <ApprovalDrawerTrigger environmentId={environment.id} />
+          <RolloutDrawerTrigger environmentId={environment.id} />
         </div>
       </div>
     </TableCell>
