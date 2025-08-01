@@ -82,7 +82,7 @@ catalogs:
       specifier: ^3.4.17
       version: 3.4.17
     ts-is-present:
-      specifier: ^1.2.2
+      specifier: 1.2.2
       version: 1.2.2
     tsx:
       specifier: ^4.19.1
@@ -787,6 +787,9 @@ importers:
       kafkajs:
         specifier: ^2.2.4
         version: 2.2.4
+      ts-is-present:
+        specifier: 'catalog:'
+        version: 1.2.2
       zod:
         specifier: 'catalog:'
         version: 3.24.2

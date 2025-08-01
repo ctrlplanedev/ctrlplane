@@ -1,4 +1,3 @@
-import type * as schema from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 import {
@@ -7,57 +6,10 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
-import type { SelectorEngine } from "./selector-engine.js";
+import type { Resource } from "../entity-types.js";
 import { DateComparisonFn, StringComparisonFn } from "./common.js";
 
-type Resource = schema.Resource & { metadata: Record<string, string> };
-
-export class EnvironmentResourceSelectorEngine
-  implements SelectorEngine<Resource, schema.Environment>
-{
-  private resources: Map<string, Resource>;
-  private environments: Map<string, schema.Environment>;
-
-  constructor() {
-    this.resources = new Map();
-    this.environments = new Map();
-  }
-
-  loadEntities(resources: Resource[]): void {
-    for (const resource of resources) this.resources.set(resource.id, resource);
-  }
-  upsertEntity(resource: Resource): void {
-    this.resources.set(resource.id, resource);
-  }
-  removeEntities(resourceIds: string[]): void {
-    for (const resourceId of resourceIds) this.resources.delete(resourceId);
-  }
-
-  loadSelectors(environments: schema.Environment[]): void {
-    for (const environment of environments)
-      this.environments.set(environment.id, environment);
-  }
-  upsertSelector(environment: schema.Environment): void {
-    this.environments.set(environment.id, environment);
-  }
-  removeSelectors(ids: string[]): void {
-    for (const id of ids) this.environments.delete(id);
-  }
-
-  getMatchesForEntity(resource: Resource): schema.Environment[] {
-    return Array.from(this.environments.values()).filter((environment) =>
-      isResourceMatchingCondition(resource, environment.resourceSelector),
-    );
-  }
-
-  getMatchesForSelector(environment: schema.Environment): Resource[] {
-    return Array.from(this.resources.values()).filter((resource) =>
-      isResourceMatchingCondition(resource, environment.resourceSelector),
-    );
-  }
-}
-
-const isResourceMatchingCondition = (
+export const isResourceMatchingCondition = (
   resource: Resource,
   condition: ResourceCondition | null,
 ): boolean => {

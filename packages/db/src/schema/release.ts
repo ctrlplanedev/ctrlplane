@@ -131,6 +131,8 @@ export const release = pgTable("release", {
     .defaultNow(),
 });
 
+export type Release = typeof release.$inferSelect;
+
 export const releaseJob = pgTable("release_job", {
   id: uuid("id").primaryKey().defaultRandom(),
   releaseId: uuid("release_id")

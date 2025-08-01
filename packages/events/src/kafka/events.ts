@@ -62,6 +62,12 @@ export type EventPayload = {
   [Event.SystemCreated]: schema.System;
   [Event.SystemUpdated]: { previous: schema.System; current: schema.System };
   [Event.SystemDeleted]: schema.System;
+  [Event.ReleaseCreated]: schema.Release;
+  [Event.ReleaseUpdated]: {
+    previous: schema.Release;
+    current: schema.Release;
+  };
+  [Event.ReleaseDeleted]: schema.Release;
 };
 
 export type Message<T extends keyof EventPayload> = {
