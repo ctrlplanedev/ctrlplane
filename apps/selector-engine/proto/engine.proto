@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package engine;
+
+import "proto/resource.proto";
+import "proto/selector.proto";
+
+option go_package = "github.com/ctrlplanedev/selector-engine/pkg/pb";
+
+
+
+service SelectorEngine {
+  rpc LoadResources (stream resource.Resource) returns (stream Match) {}
+  rpc RemoveResources (stream resource.ResourceRef) returns (stream Status) {}
+
+  rpc LoadSelectors (stream selector.ResourceSelector) returns (stream Match) {}
+  rpc RemoveSelectors (stream selector.ResourceSelectorRef) returns (stream Status) {}
+}
+
+message Match {
+    bool error = 1;
+    string message = 2;
+    string selector_id = 3;
+    string resource_id = 4;
+    resource.Resource resource = 5;
+    selector.ResourceSelector selector = 6;
+}
+
+message Status {
+    bool error = 1;
+    string message = 2;
+}
