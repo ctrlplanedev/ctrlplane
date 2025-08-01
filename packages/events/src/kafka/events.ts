@@ -30,13 +30,17 @@ export enum Event {
   SystemDeleted = "system.deleted",
 }
 
+type Resource = schema.Resource & {
+  metadata: Record<string, string>;
+};
+
 export type EventPayload = {
-  [Event.ResourceCreated]: schema.Resource;
+  [Event.ResourceCreated]: Resource;
   [Event.ResourceUpdated]: {
-    previous: schema.Resource;
-    current: schema.Resource;
+    previous: Resource;
+    current: Resource;
   };
-  [Event.ResourceDeleted]: schema.Resource;
+  [Event.ResourceDeleted]: Resource;
   [Event.DeploymentCreated]: schema.Deployment;
   [Event.DeploymentUpdated]: {
     previous: schema.Deployment;

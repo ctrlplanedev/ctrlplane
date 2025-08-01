@@ -12,9 +12,11 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@t3-oss/env-core": "catalog:",
+    "date-fns": "catalog:",
     "kafkajs": "^2.2.4",
     "zod": "catalog:"
   },
@@ -22,6 +24,7 @@
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@ctrlplane/validators": "workspace:*",
     "@types/node": "catalog:node22",
     "eslint": "catalog:",
     "prettier": "catalog:",

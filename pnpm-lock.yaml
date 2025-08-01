@@ -766,6 +766,9 @@ importers:
 
   apps/workspace-engine:
     dependencies:
+      '@ctrlplane/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@ctrlplane/events':
         specifier: workspace:*
         version: link:../../packages/events
@@ -775,6 +778,9 @@ importers:
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
+      date-fns:
+        specifier: 'catalog:'
+        version: 3.6.0
       kafkajs:
         specifier: ^2.2.4
         version: 2.2.4
@@ -791,6 +797,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
       '@types/node':
         specifier: catalog:node22
         version: 22.13.10
