@@ -775,9 +775,6 @@ importers:
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
       kafkajs:
         specifier: ^2.2.4
         version: 2.2.4

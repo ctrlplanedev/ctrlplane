@@ -7,13 +7,11 @@ import { env } from "../config.js";
 let kafka: Kafka | null = null;
 let producer: Producer | null = null;
 
-const getKafka = () => {
-  kafka ??= new Kafka({
+const getKafka = () =>
+  (kafka ??= new Kafka({
     clientId: "ctrlplane-events",
     brokers: env.KAFKA_BROKERS.split(","),
-  });
-  return kafka;
-};
+  }));
 
 const getProducer = async () => {
   if (producer == null) {
