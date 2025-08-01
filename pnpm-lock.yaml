@@ -82,7 +82,7 @@ catalogs:
       specifier: ^3.4.17
       version: 3.4.17
     ts-is-present:
-      specifier: ^1.2.2
+      specifier: 1.2.2
       version: 1.2.2
     tsx:
       specifier: ^4.19.1
@@ -766,18 +766,30 @@ importers:
 
   apps/workspace-engine:
     dependencies:
+      '@ctrlplane/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@ctrlplane/events':
         specifier: workspace:*
         version: link:../../packages/events
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
+      date-fns:
+        specifier: 'catalog:'
+        version: 3.6.0
       kafkajs:
         specifier: ^2.2.4
         version: 2.2.4
+      ts-is-present:
+        specifier: 'catalog:'
+        version: 1.2.2
       zod:
         specifier: 'catalog:'
         version: 3.24.2
