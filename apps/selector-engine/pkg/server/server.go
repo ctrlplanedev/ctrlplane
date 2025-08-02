@@ -5,10 +5,10 @@ import (
 	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
 	"io"
-	"os"
 
 	"github.com/charmbracelet/log"
 	"github.com/ctrlplanedev/selector-engine/pkg/engine"
+	"github.com/ctrlplanedev/selector-engine/pkg/logger"
 	"github.com/ctrlplanedev/selector-engine/pkg/mapping"
 
 	pb "github.com/ctrlplanedev/selector-engine/pkg/pb/proto"
@@ -253,18 +253,18 @@ func NewServer() *grpc.Server {
 }
 
 func NewServerWithConfig(config *ServerConfig) *grpc.Server {
-	logger := log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true})
+	log := logger.Get()
 
 	var eng model.Engine
 	if config == nil || config.MaxParallelCalls <= 0 {
-		logger.Fatal("MaxParallelCalls not set or invalid")
+		log.Fatal("MaxParallelCalls not set or invalid")
 	} else {
 		eng = engine.NewGoParallelDispatcherEngine(config.MaxParallelCalls)
 	}
 
 	s := grpc.NewServer()
 	pb.RegisterSelectorEngineServer(s, &SelectorEngineServer{
-		logger: logger,
+		logger: log,
 		engine: eng,
 	})
 	return s

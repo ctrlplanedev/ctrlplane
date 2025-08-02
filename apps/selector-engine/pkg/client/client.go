@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 	"math/rand"
-	"os"
 	"sync"
 
 	"github.com/charmbracelet/log"
+	"github.com/ctrlplanedev/selector-engine/pkg/logger"
 	pb "github.com/ctrlplanedev/selector-engine/pkg/pb/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -35,7 +35,7 @@ func NewClient(address string) (*SelectorEngineClient, error) {
 	return &SelectorEngineClient{
 		conn:   conn,
 		client: client,
-		logger: log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true}),
+		logger: logger.Get(),
 	}, nil
 }
 

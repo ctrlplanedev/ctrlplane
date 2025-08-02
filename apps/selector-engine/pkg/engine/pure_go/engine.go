@@ -5,10 +5,10 @@ import (
 	"github.com/ctrlplanedev/selector-engine/pkg/model"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
-	"os"
 	"sync"
 
 	"github.com/charmbracelet/log"
+	"github.com/ctrlplanedev/selector-engine/pkg/logger"
 )
 
 type GoDispatcherEngine struct {
@@ -20,7 +20,7 @@ type GoDispatcherEngine struct {
 func NewGoDispatcherEngine() *GoDispatcherEngine {
 	return &GoDispatcherEngine{
 		workspaceEngines: make(map[string]*GoWorkspaceEngine),
-		logger:           log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true}),
+		logger:           logger.Get(),
 	}
 }
 
