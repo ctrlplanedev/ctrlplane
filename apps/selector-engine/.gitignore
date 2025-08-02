@@ -23,7 +23,6 @@ vendor/
 .vscode/
 *.swp
 *.swo
-*.claude
 *~
 
 # OS specific files
