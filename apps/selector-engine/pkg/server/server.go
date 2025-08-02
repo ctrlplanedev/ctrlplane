@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/charmbracelet/log"
-	purego "github.com/ctrlplanedev/selector-engine/pkg/engine/pure_go"
+	"github.com/ctrlplanedev/selector-engine/pkg/engine"
 	"github.com/ctrlplanedev/selector-engine/pkg/mapping"
 
 	pb "github.com/ctrlplanedev/selector-engine/pkg/pb/proto"
@@ -249,23 +249,23 @@ type ServerConfig struct {
 }
 
 func NewServer() *grpc.Server {
-	return NewServerWithConfig(nil)
+	return NewServerWithConfig(&ServerConfig{MaxParallelCalls: engine.DefaultMaxParallelCalls})
 }
 
 func NewServerWithConfig(config *ServerConfig) *grpc.Server {
 	logger := log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true})
 
-	var engine model.Engine
-	if config != nil && config.MaxParallelCalls > 0 {
-		engine = purego.NewGoParallelDispatcherEngine(config.MaxParallelCalls)
+	var eng model.Engine
+	if config == nil || config.MaxParallelCalls <= 0 {
+		logger.Fatal("MaxParallelCalls not set or invalid")
 	} else {
-		engine = purego.NewGoDispatcherEngine()
+		eng = engine.NewGoParallelDispatcherEngine(config.MaxParallelCalls)
 	}
 
 	s := grpc.NewServer()
 	pb.RegisterSelectorEngineServer(s, &SelectorEngineServer{
 		logger: logger,
-		engine: engine,
+		engine: eng,
 	})
 	return s
 }

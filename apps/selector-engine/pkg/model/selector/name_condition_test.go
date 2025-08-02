@@ -150,11 +150,11 @@ func TestNameCondition_Type(t *testing.T) {
 
 func TestNameCondition_Matches(t *testing.T) {
 	tests := []struct {
-		name    string
-		cond    NameCondition
+		name     string
+		cond     NameCondition
 		resource resource.Resource
-		want    bool
-		wantErr bool
+		want     bool
+		wantErr  bool
 	}{
 		{
 			name: "equals match",

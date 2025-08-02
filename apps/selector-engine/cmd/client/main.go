@@ -21,13 +21,13 @@ func main() {
 	pflag.Int("workspace-count", 5, "Number of workspaces")
 	pflag.Parse()
 
-	// Setup viper
-	viper.BindPFlags(pflag.CommandLine)
+	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
+		log.Fatal("Failed to bind flags", "error", err)
+	}
 	viper.SetEnvPrefix("SELECTOR_ENGINE")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
-	// Setup logger
 	logLevel := viper.GetString("log-level")
 	logger := log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true})
 	switch strings.ToLower(logLevel) {
@@ -66,19 +66,16 @@ func main() {
 	var deploymentSelectors []*pb.ResourceSelector = make([]*pb.ResourceSelector, 0)
 	var environmentSelectors []*pb.ResourceSelector = make([]*pb.ResourceSelector, 0)
 
-	// Generate workspace IDs
 	for range workspaceCount {
 		workspaceIds = append(workspaceIds, client.RandomString(10))
 	}
 
-	// Generate resources
 	for _, workspaceId := range workspaceIds {
 		for range resourcesPerWorkspace {
 			resources = append(resources, client.BuildRandomResource(workspaceId))
 		}
 	}
 
-	// Generate selectors
 	for _, r := range resources {
 		deploymentSelectors = append(deploymentSelectors, client.BuildRandomDeploymentSelector(r))
 		environmentSelectors = append(environmentSelectors, client.BuildRandomEnvironmentSelector(r))
@@ -86,7 +83,6 @@ func main() {
 
 	ctx := context.Background()
 
-	// Load deployment selectors
 	logger.Info("Loading deployment selectors...")
 	deploymentMatches, err := c.LoadSelectorsBatch(ctx, deploymentSelectors)
 	if err != nil {
@@ -98,7 +94,6 @@ func main() {
 		}
 	}
 
-	// Load environment selectors
 	logger.Info("Loading environment selectors...")
 	environmentMatches, err := c.LoadSelectorsBatch(ctx, environmentSelectors)
 	if err != nil {
@@ -114,7 +109,6 @@ func main() {
 	totalMatchCount := len(deploymentMatches) + len(environmentMatches)
 	logger.Infof("Loaded %d selectors across %d workspaces, %d total matches", totalSelectorCount, workspaceCount, totalMatchCount)
 
-	// Load NEW resources
 	logger.Info("Loading NEW resources...")
 	resourceMatches, err := c.LoadResourcesBatch(ctx, resources)
 	if err != nil {
@@ -126,8 +120,7 @@ func main() {
 		}
 	}
 
-	// Load EXISTING resources (same resources again)
-	logger.Info("Loading EXISTING resources...")
+	logger.Info("Loading EXISTING resources with NO UPDATES...")
 	existingResourceMatches, err := c.LoadResourcesBatch(ctx, resources)
 	if err != nil {
 		logger.Error("Failed to load existing resources", "error", err)
@@ -135,6 +128,93 @@ func main() {
 		logger.Infof("Loaded %d existing resources across %d workspaces, %d total matches", len(resources), workspaceCount, len(existingResourceMatches))
 		for _, match := range existingResourceMatches {
 			logger.Debug("match for existing resource", "match", match)
+		}
+	}
+
+	logger.Info("Loading resources with UPDATES to name (selectors with name condition should not match)...")
+	updatedResources := make([]*pb.Resource, 0, len(resources))
+	for _, r := range resources {
+		// Update the resource by changing its name
+		updatedResource := r
+		updatedResource.Name = "updated-" + r.Name
+		updatedResources = append(updatedResources, updatedResource)
+	}
+	updatedResourceMatches, err := c.LoadResourcesBatch(ctx, updatedResources)
+	if err != nil {
+		logger.Error("Failed to load updated resources", "error", err)
+	} else {
+		logger.Infof("Loaded %d updated resources across %d workspaces, %d total matches", len(resources), workspaceCount, len(updatedResourceMatches))
+		for _, match := range updatedResourceMatches {
+			logger.Debug("match for updated resource", "match", match)
+		}
+	}
+
+	logger.Info("Removing resources...")
+	resourceRefs := make([]*pb.ResourceRef, 0, len(resources))
+	for _, r := range resources {
+		resourceRef := &pb.ResourceRef{
+			Id:          r.Id,
+			WorkspaceId: r.WorkspaceId,
+		}
+		resourceRefs = append(resourceRefs, resourceRef)
+	}
+	removeResourceStatuses, err := c.RemoveResourcesBatch(ctx, resourceRefs)
+	if err != nil {
+		logger.Error("Failed to remove resources", "error", err)
+	} else {
+		logger.Infof("Removed %d resources across %d workspaces, %d total statuses", len(resources), workspaceCount, len(removeResourceStatuses))
+		for _, status := range removeResourceStatuses {
+			if status.Error {
+				logger.Error("Error removing resource", "status", status)
+			} else {
+				logger.Debug("Successfully removed resource", "status", status)
+			}
+		}
+	}
+
+	logger.Info("Removing environment selectors...")
+	environmentSelectorRefs := make([]*pb.ResourceSelectorRef, 0, len(environmentSelectors))
+	for _, sel := range environmentSelectors {
+		selectorRef := &pb.ResourceSelectorRef{
+			Id:          sel.Id,
+			WorkspaceId: sel.WorkspaceId,
+		}
+		environmentSelectorRefs = append(environmentSelectorRefs, selectorRef)
+	}
+	removeEnvironmentSelectorStatuses, err := c.RemoveSelectorsBatch(ctx, environmentSelectorRefs)
+	if err != nil {
+		logger.Error("Failed to remove environment selectors", "error", err)
+	} else {
+		logger.Infof("Removed %d environment selectors across %d workspaces, %d total statuses", len(environmentSelectors), workspaceCount, len(removeEnvironmentSelectorStatuses))
+		for _, status := range removeEnvironmentSelectorStatuses {
+			if status.Error {
+				logger.Error("Error removing environment selector", "status", status)
+			} else {
+				logger.Debug("Successfully removed environment selector", "status", status)
+			}
+		}
+	}
+
+	logger.Info("Removing deployment selectors...")
+	deploymentSelectorRefs := make([]*pb.ResourceSelectorRef, 0, len(deploymentSelectors))
+	for _, sel := range deploymentSelectors {
+		selectorRef := &pb.ResourceSelectorRef{
+			Id:          sel.Id,
+			WorkspaceId: sel.WorkspaceId,
+		}
+		deploymentSelectorRefs = append(deploymentSelectorRefs, selectorRef)
+	}
+	removeDeploymentSelectorStatuses, err := c.RemoveSelectorsBatch(ctx, deploymentSelectorRefs)
+	if err != nil {
+		logger.Error("Failed to remove deployment selectors", "error", err)
+	} else {
+		logger.Infof("Removed %d deployment selectors across %d workspaces, %d total statuses", len(deploymentSelectors), workspaceCount, len(removeDeploymentSelectorStatuses))
+		for _, status := range removeDeploymentSelectorStatuses {
+			if status.Error {
+				logger.Error("Error removing deployment selector", "status", status)
+			} else {
+				logger.Debug("Successfully removed deployment selector", "status", status)
+			}
 		}
 	}
 

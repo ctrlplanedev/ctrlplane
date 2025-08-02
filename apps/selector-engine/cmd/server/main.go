@@ -16,18 +16,17 @@ import (
 )
 
 func main() {
-	// Setup flags
 	pflag.Int("port", 50555, "The server port")
 	pflag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	pflag.Parse()
 
-	// Setup viper
-	viper.BindPFlags(pflag.CommandLine)
+	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
+		log.Fatal("Failed to bind flags", "error", err)
+	}
 	viper.SetEnvPrefix("SELECTOR_ENGINE")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
-	// Setup logger
 	logLevel := viper.GetString("log-level")
 	logger := log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true})
 	switch strings.ToLower(logLevel) {

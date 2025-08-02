@@ -415,7 +415,9 @@ func BuildRandomEnvironmentSelector(resource *pb.Resource) *pb.ResourceSelector 
 }
 
 func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
-	// We'll create a compound selector that demonstrates multiple selector types
+	var nameCondition *pb.Condition
+	var metadataCondition *pb.Condition
+	var versionCondition *pb.Condition
 
 	minLen := func(a, b int) int {
 		if a < b {
@@ -424,7 +426,7 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 		return b
 	}
 
-	// Option 1: Create a name selector that checks if resource name starts with a prefix
+	// Option 1: Name selector that checks if resource name starts with a prefix
 	namePrefix := ""
 	if len(resource.GetName()) > 0 {
 		namePrefix = resource.GetName()[:minLen(3, len(resource.GetName()))] // Use first 3 chars as prefix
@@ -432,7 +434,7 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 		namePrefix = "test" // fallback
 	}
 
-	nameCondition := &pb.Condition{
+	nameCondition = &pb.Condition{
 		ConditionType: &pb.Condition_NameCondition{
 			NameCondition: &pb.NameCondition{
 				TypeField: pb.ConditionType_CONDITION_TYPE_NAME,
@@ -442,7 +444,7 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 		},
 	}
 
-	// Option 2: Create a metadata selector if resource has metadata
+	// Option 2: Metadata selector if resource has metadata
 	if len(resource.GetMetadata()) > 0 {
 		// Get the first metadata key-value pair
 		for key, value := range resource.GetMetadata() {
@@ -457,7 +459,7 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 				},
 			}
 
-			return &pb.Condition{
+			metadataCondition = &pb.Condition{
 				ConditionType: &pb.Condition_ComparisonCondition{
 					ComparisonCondition: &pb.ComparisonCondition{
 						TypeField: pb.ConditionType_CONDITION_TYPE_COMPARISON,
@@ -473,7 +475,7 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 		}
 	}
 
-	// Option 3: Create a version selector if resource has a version
+	// Option 3: Version selector if resource has a version
 	if resource.GetVersion() != "" {
 		return &pb.Condition{
 			ConditionType: &pb.Condition_VersionCondition{
@@ -486,8 +488,14 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 		}
 	}
 
-	// Fallback: Return the name selector
-	return nameCondition
+	// Randomly choose one of the conditions, falling back to nameCondition
+	allConditions := []*pb.Condition{nameCondition, metadataCondition, versionCondition}
+	randomIndex := rand.Intn(len(allConditions))
+	selectedCondition := allConditions[randomIndex]
+	if selectedCondition == nil {
+		selectedCondition = nameCondition
+	}
+	return selectedCondition
 }
 
 func RandomString(i int) string {

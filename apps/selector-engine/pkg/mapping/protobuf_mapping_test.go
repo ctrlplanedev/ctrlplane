@@ -1,10 +1,10 @@
 package mapping
 
 import (
+	"github.com/ctrlplanedev/selector-engine/pkg/model"
 	"testing"
 	"time"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
 	pb "github.com/ctrlplanedev/selector-engine/pkg/pb/proto"

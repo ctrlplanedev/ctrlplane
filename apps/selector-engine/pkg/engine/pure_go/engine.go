@@ -2,23 +2,25 @@ package purego
 
 import (
 	"context"
+	"github.com/ctrlplanedev/selector-engine/pkg/model"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
 	"os"
 	"sync"
 
 	"github.com/charmbracelet/log"
-	"github.com/ctrlplanedev/selector-engine/pkg/model"
 )
 
 type GoDispatcherEngine struct {
-	workspaceEngines sync.Map
+	workspaceEngines map[string]*GoWorkspaceEngine
+	mu               sync.Mutex
 	logger           *log.Logger
 }
 
 func NewGoDispatcherEngine() *GoDispatcherEngine {
 	return &GoDispatcherEngine{
-		logger: log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true}),
+		workspaceEngines: make(map[string]*GoWorkspaceEngine),
+		logger:           log.NewWithOptions(os.Stderr, log.Options{ReportTimestamp: true}),
 	}
 }
 
@@ -81,14 +83,16 @@ func (e *GoDispatcherEngine) RemoveSelectors(ctx context.Context, selectorRefs [
 }
 
 func (e *GoDispatcherEngine) getWorkspaceEngine(workspaceID string) *GoWorkspaceEngine {
-	val, ok := e.workspaceEngines.Load(workspaceID)
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	engine, ok := e.workspaceEngines[workspaceID]
 	if !ok {
 		e.logger.Info("Creating engine for", "workspaceId", workspaceID)
-		val, _ = e.workspaceEngines.LoadOrStore(
-			workspaceID, &GoWorkspaceEngine{workspaceID: workspaceID, logger: e.logger},
-		)
+		engine = &GoWorkspaceEngine{workspaceID: workspaceID, logger: e.logger}
+		e.workspaceEngines[workspaceID] = engine
 	}
-	return val.(*GoWorkspaceEngine)
+	return engine
 }
 
 type GoWorkspaceEngine struct {

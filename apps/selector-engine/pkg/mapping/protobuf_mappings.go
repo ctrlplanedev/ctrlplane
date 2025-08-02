@@ -2,10 +2,10 @@ package mapping
 
 import (
 	"fmt"
+	"github.com/ctrlplanedev/selector-engine/pkg/model"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
 	"time"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model"
 	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
 	pb "github.com/ctrlplanedev/selector-engine/pkg/pb/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
