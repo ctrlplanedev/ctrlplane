@@ -70,11 +70,12 @@ func (c *SelectorEngineClient) LoadResourcesBatch(ctx context.Context, resources
 		doneChan := make(chan bool, 1)
 
 		go func() {
+			batchMatchCount := 0
 			for {
 				match, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("LoadResources batch done")
+					c.logger.Info("LoadResources batch done", "batch match count", batchMatchCount)
 					return
 				}
 				if err != nil {
@@ -83,6 +84,7 @@ func (c *SelectorEngineClient) LoadResourcesBatch(ctx context.Context, resources
 					return
 				}
 				mu.Lock()
+				batchMatchCount++
 				allMatches = append(allMatches, match)
 				mu.Unlock()
 				c.logger.Debug("Received match", "message", match.GetMessage(), "resourceId", match.GetResourceId())
@@ -139,11 +141,12 @@ func (c *SelectorEngineClient) RemoveResourcesBatch(ctx context.Context, resourc
 		doneChan := make(chan bool, 1)
 
 		go func() {
+			statusErrCount := 0
 			for {
 				status, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("RemoveResources batch done")
+					c.logger.Info("RemoveResources batch done", "status error count", statusErrCount)
 					return
 				}
 				if err != nil {
@@ -152,6 +155,9 @@ func (c *SelectorEngineClient) RemoveResourcesBatch(ctx context.Context, resourc
 					return
 				}
 				mu.Lock()
+				if status.GetError() {
+					statusErrCount++
+				}
 				allStatuses = append(allStatuses, status)
 				mu.Unlock()
 				c.logger.Debug("Received status", "error", status.GetError(), "message", status.GetMessage())
@@ -208,11 +214,12 @@ func (c *SelectorEngineClient) LoadSelectorsBatch(ctx context.Context, selectors
 		doneChan := make(chan bool, 1)
 
 		go func() {
+			batchMatchCount := 0
 			for {
 				match, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("LoadSelectors batch done")
+					c.logger.Info("LoadSelectors batch done", "batch match count", batchMatchCount)
 					return
 				}
 				if err != nil {
@@ -221,6 +228,7 @@ func (c *SelectorEngineClient) LoadSelectorsBatch(ctx context.Context, selectors
 					return
 				}
 				mu.Lock()
+				batchMatchCount++
 				allMatches = append(allMatches, match)
 				mu.Unlock()
 				c.logger.Debug("Received match", "message", match.GetMessage(), "selectorId", match.GetSelectorId())
@@ -277,11 +285,12 @@ func (c *SelectorEngineClient) RemoveSelectorsBatch(ctx context.Context, selecto
 		doneChan := make(chan bool, 1)
 
 		go func() {
+			statusErrCount := 0
 			for {
 				status, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("RemoveSelectors batch done")
+					c.logger.Info("RemoveSelectors batch done", "status error count", statusErrCount)
 					return
 				}
 				if err != nil {
@@ -290,6 +299,9 @@ func (c *SelectorEngineClient) RemoveSelectorsBatch(ctx context.Context, selecto
 					return
 				}
 				mu.Lock()
+				if status.GetError() {
+					statusErrCount++
+				}
 				allStatuses = append(allStatuses, status)
 				mu.Unlock()
 				c.logger.Debug("Received status", "error", status.GetError(), "message", status.GetMessage())
