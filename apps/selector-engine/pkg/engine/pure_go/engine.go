@@ -202,9 +202,10 @@ func (g *GoWorkspaceEngine) resourceMatches(ctx context.Context, resource resour
 					ResourceID: resource.ID,
 				})
 			}
+			g.logger.Debug("match result", "success", ok, "resource", resource, "condition", sel.Condition)
 			return true
 		})
-	g.logger.Debug("deployment selectors match rate", "matches", matchCount, "total", testCount, "resourceId", resource.ID)
+	//g.logger.Debug("deployment selectors match rate", "matches", matchCount, "total", testCount, "resourceId", resource.ID)
 
 	// Check environment selectors
 	testCount = 0
@@ -234,9 +235,10 @@ func (g *GoWorkspaceEngine) resourceMatches(ctx context.Context, resource resour
 					ResourceID: resource.ID,
 				})
 			}
+			g.logger.Debug("match result", "success", ok, "resource", resource, "condition", sel.Condition)
 			return true
 		})
-	g.logger.Debug("environment selectors match rate", "matches", matchCount, "total", testCount, "resourceId", resource.ID)
+	//g.logger.Debug("environment selectors match rate", "matches", matchCount, "total", testCount, "resourceId", resource.ID)
 
 	return allMatches
 }
@@ -278,9 +280,10 @@ func (g *GoWorkspaceEngine) selectorMatches(
 						ResourceID: res.ID,
 					})
 				}
+				g.logger.Debug("match result", "success", ok, "resource", res, "condition", sel.Condition)
 				return true
 			})
-		g.logger.Debug("selector match rate", "selectorId", sel.ID, "matches", matchCount, "total", testCount)
+		//g.logger.Debug("selector match rate", "selectorId", sel.ID, "matches", matchCount, "total", testCount)
 	}
 
 	return allMatches

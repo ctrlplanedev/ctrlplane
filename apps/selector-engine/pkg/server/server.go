@@ -24,7 +24,7 @@ type SelectorEngineServer struct {
 
 // LoadResources implements bidirectional streaming for loading resources
 func (s *SelectorEngineServer) LoadResources(stream grpc.BidiStreamingServer[pb.Resource, pb.Match]) error {
-	s.logger.Debug("LoadResources stream started")
+	//s.logger.Debug.Debug("LoadResources stream started")
 	ctx := stream.Context()
 
 	resourceChan := make(chan resource.Resource)
@@ -48,7 +48,7 @@ func (s *SelectorEngineServer) LoadResources(stream grpc.BidiStreamingServer[pb.
 				return
 			}
 
-			s.logger.Debug("Received resource", "name", res.GetName(), "id", res.GetId())
+			//s.logger.Debug("Received resource", "name", res.GetName(), "id", res.GetId())
 			modelReq := mapping.FromProtoResource(res)
 			select {
 			case resourceChan <- modelReq:
@@ -79,7 +79,7 @@ func (s *SelectorEngineServer) LoadResources(stream grpc.BidiStreamingServer[pb.
 
 // RemoveResources implements bidirectional streaming for removing resources
 func (s *SelectorEngineServer) RemoveResources(stream grpc.BidiStreamingServer[pb.ResourceRef, pb.Status]) error {
-	s.logger.Debug("RemoveResources stream started")
+	//s.logger.Debug("RemoveResources stream started")
 	ctx := stream.Context()
 
 	refChan := make(chan resource.ResourceRef)
@@ -103,7 +103,7 @@ func (s *SelectorEngineServer) RemoveResources(stream grpc.BidiStreamingServer[p
 				return
 			}
 
-			s.logger.Debug("Received resource ref for removal", "id", pbRef.GetId())
+			//s.logger.Debug("Received resource ref for removal", "id", pbRef.GetId())
 			modelRef := mapping.FromProtoResourceRef(pbRef)
 			select {
 			case refChan <- modelRef:
@@ -133,7 +133,7 @@ func (s *SelectorEngineServer) RemoveResources(stream grpc.BidiStreamingServer[p
 
 // LoadSelectors implements bidirectional streaming for loading selectors
 func (s *SelectorEngineServer) LoadSelectors(stream grpc.BidiStreamingServer[pb.ResourceSelector, pb.Match]) error {
-	s.logger.Debug("LoadSelectors stream started")
+	//s.logger.Debug("LoadSelectors stream started")
 	ctx := stream.Context()
 
 	selectorChan := make(chan selector.ResourceSelector)
@@ -157,7 +157,7 @@ func (s *SelectorEngineServer) LoadSelectors(stream grpc.BidiStreamingServer[pb.
 				return
 			}
 
-			s.logger.Debug("Received selector", "id", sel.GetId(), "entityType", sel.GetEntityType())
+			//s.logger.Debug("Received selector", "id", sel.GetId(), "entityType", sel.GetEntityType())
 			modelReq, err := mapping.FromProtoResourceSelector(sel)
 			if err != nil {
 				errChan <- err
@@ -191,7 +191,7 @@ func (s *SelectorEngineServer) LoadSelectors(stream grpc.BidiStreamingServer[pb.
 
 // RemoveSelectors implements bidirectional streaming for removing selectors
 func (s *SelectorEngineServer) RemoveSelectors(stream grpc.BidiStreamingServer[pb.ResourceSelectorRef, pb.Status]) error {
-	s.logger.Debug("RemoveSelectors stream started")
+	//s.logger.Debug("RemoveSelectors stream started")
 	ctx := stream.Context()
 
 	refChan := make(chan selector.ResourceSelectorRef)
@@ -215,7 +215,7 @@ func (s *SelectorEngineServer) RemoveSelectors(stream grpc.BidiStreamingServer[p
 				return
 			}
 
-			s.logger.Debug("Received selector ref for removal", "id", pbRef.GetId())
+			//s.logger.Debug("Received selector ref for removal", "id", pbRef.GetId())
 			modelRef := mapping.FromProtoResourceSelectorRef(pbRef)
 			select {
 			case refChan <- modelRef:

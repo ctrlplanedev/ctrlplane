@@ -58,7 +58,7 @@ func (c *SelectorEngineClient) LoadResourcesBatch(ctx context.Context, resources
 		if end > len(resources) {
 			end = len(resources)
 		}
-		c.logger.Info("Next LoadResources batch", "startIndex", i, "endIndex", end)
+		//c.logger.Info("Next LoadResources batch", "startIndex", i, "endIndex", end)
 		batch := resources[i:end]
 
 		stream, err := c.client.LoadResources(ctx)
@@ -75,7 +75,7 @@ func (c *SelectorEngineClient) LoadResourcesBatch(ctx context.Context, resources
 				match, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("LoadResources batch done", "batch match count", batchMatchCount)
+					//c.logger.Info("LoadResources batch done", "batch match count", batchMatchCount)
 					return
 				}
 				if err != nil {
@@ -129,7 +129,7 @@ func (c *SelectorEngineClient) RemoveResourcesBatch(ctx context.Context, resourc
 		if end > len(resourceRefs) {
 			end = len(resourceRefs)
 		}
-		c.logger.Info("Next RemoveResources batch", "startIndex", i, "endIndex", end)
+		//c.logger.Info("Next RemoveResources batch", "startIndex", i, "endIndex", end)
 		batch := resourceRefs[i:end]
 
 		stream, err := c.client.RemoveResources(ctx)
@@ -146,7 +146,7 @@ func (c *SelectorEngineClient) RemoveResourcesBatch(ctx context.Context, resourc
 				status, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("RemoveResources batch done", "status error count", statusErrCount)
+					//c.logger.Info("RemoveResources batch done", "status error count", statusErrCount)
 					return
 				}
 				if err != nil {
@@ -202,7 +202,7 @@ func (c *SelectorEngineClient) LoadSelectorsBatch(ctx context.Context, selectors
 		if end > len(selectors) {
 			end = len(selectors)
 		}
-		c.logger.Info("Next LoadSelectors batch", "startIndex", i, "endIndex", end)
+		//c.logger.Info("Next LoadSelectors batch", "startIndex", i, "endIndex", end)
 		batch := selectors[i:end]
 
 		stream, err := c.client.LoadSelectors(ctx)
@@ -219,7 +219,7 @@ func (c *SelectorEngineClient) LoadSelectorsBatch(ctx context.Context, selectors
 				match, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("LoadSelectors batch done", "batch match count", batchMatchCount)
+					//c.logger.Info("LoadSelectors batch done", "batch match count", batchMatchCount)
 					return
 				}
 				if err != nil {
@@ -273,7 +273,7 @@ func (c *SelectorEngineClient) RemoveSelectorsBatch(ctx context.Context, selecto
 		if end > len(selectorRefs) {
 			end = len(selectorRefs)
 		}
-		c.logger.Info("Next RemoveSelectors batch", "startIndex", i, "endIndex", end)
+		//c.logger.Info("Next RemoveSelectors batch", "startIndex", i, "endIndex", end)
 		batch := selectorRefs[i:end]
 
 		stream, err := c.client.RemoveSelectors(ctx)
@@ -290,7 +290,7 @@ func (c *SelectorEngineClient) RemoveSelectorsBatch(ctx context.Context, selecto
 				status, err := stream.Recv()
 				if err == io.EOF {
 					doneChan <- true
-					c.logger.Info("RemoveSelectors batch done", "status error count", statusErrCount)
+					//c.logger.Info("RemoveSelectors batch done", "status error count", statusErrCount)
 					return
 				}
 				if err != nil {
@@ -382,7 +382,7 @@ func (c *SelectorEngineClient) RemoveSelectorsExample(ctx context.Context, selec
 func BuildRandomResource(workspaceId string) *pb.Resource {
 	return &pb.Resource{
 		Id:          "id-" + RandomString(15),
-		Name:        "name-" + RandomString(15),
+		Name:        "name-" + RandomString(15) + "-name",
 		WorkspaceId: workspaceId,
 		Identifier:  "identifier-" + RandomString(15),
 		Kind:        "kind-" + RandomString(15),
@@ -429,7 +429,7 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 	// Option 1: Name selector that checks if resource name starts with a prefix
 	namePrefix := ""
 	if len(resource.GetName()) > 0 {
-		namePrefix = resource.GetName()[:minLen(3, len(resource.GetName()))] // Use first 3 chars as prefix
+		namePrefix = resource.GetName()[:minLen(15, len(resource.GetName()))] // Use first 3 chars as prefix
 	} else {
 		namePrefix = "test" // fallback
 	}
@@ -448,7 +448,7 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 	if len(resource.GetMetadata()) > 0 {
 		// Get the first metadata key-value pair
 		for key, value := range resource.GetMetadata() {
-			metadataCondition := &pb.Condition{
+			metadataCondition = &pb.Condition{
 				ConditionType: &pb.Condition_MetadataValueCondition{
 					MetadataValueCondition: &pb.MetadataValueCondition{
 						TypeField: pb.ConditionType_CONDITION_TYPE_METADATA,
@@ -458,26 +458,27 @@ func BuildRandomCondition(resource *pb.Resource) *pb.Condition {
 					},
 				},
 			}
+			break
 
-			metadataCondition = &pb.Condition{
-				ConditionType: &pb.Condition_ComparisonCondition{
-					ComparisonCondition: &pb.ComparisonCondition{
-						TypeField: pb.ConditionType_CONDITION_TYPE_COMPARISON,
-						Operator:  pb.ComparisonOperator_COMPARISON_OPERATOR_AND,
-						Conditions: []*pb.Condition{
-							nameCondition,
-							metadataCondition,
-						},
-						Depth: 0,
-					},
-				},
-			}
+			//metadataCondition = &pb.Condition{
+			//	ConditionType: &pb.Condition_ComparisonCondition{
+			//		ComparisonCondition: &pb.ComparisonCondition{
+			//			TypeField: pb.ConditionType_CONDITION_TYPE_COMPARISON,
+			//			Operator:  pb.ComparisonOperator_COMPARISON_OPERATOR_AND,
+			//			Conditions: []*pb.Condition{
+			//				nameCondition,
+			//				metadataCondition,
+			//			},
+			//			Depth: 0,
+			//		},
+			//	},
+			//}
 		}
 	}
 
 	// Option 3: Version selector if resource has a version
 	if resource.GetVersion() != "" {
-		return &pb.Condition{
+		versionCondition = &pb.Condition{
 			ConditionType: &pb.Condition_VersionCondition{
 				VersionCondition: &pb.VersionCondition{
 					TypeField: pb.ConditionType_CONDITION_TYPE_VERSION,
