@@ -2,7 +2,7 @@ package selector
 
 import (
 	"fmt"
-	"workspace-engine/pkg/model/resource"
+	"selector-engine/pkg/model/resource"
 )
 
 // ComparisonCondition represents a logical combination of conditions
