@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package resource;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ctrlplanedev/selector-engine/pkg/pb";
+
+message Resource {
+  string id = 1;
+  string workspace_id = 2;
+  string identifier = 3;
+  string name = 4;
+  string kind = 5;
+  string version = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp last_sync = 8;
+  map<string, string> metadata = 9;
+} 
+
+message ResourceRef {
+  string id = 1;
+  string workspace_id = 2;
+}
+
