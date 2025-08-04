@@ -3,7 +3,7 @@ package selector
 import (
 	"fmt"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
 
 // SystemCondition represents a system matching selector

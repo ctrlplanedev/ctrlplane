@@ -3,7 +3,7 @@ package selector
 import (
 	"fmt"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
 
 // IdOperator defines matching operators for ID

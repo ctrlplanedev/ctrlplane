@@ -2,8 +2,7 @@ package selector
 
 import (
 	"fmt"
-
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
 
 // NameCondition represents a name matching selector

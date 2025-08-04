@@ -2,8 +2,8 @@ package model
 
 import (
 	"context"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
+	"workspace-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/selector"
 )
 
 type Engine interface {

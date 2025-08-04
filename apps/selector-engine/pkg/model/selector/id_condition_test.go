@@ -3,7 +3,7 @@ package selector
 import (
 	"testing"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
 
 func TestIDCondition_Type(t *testing.T) {

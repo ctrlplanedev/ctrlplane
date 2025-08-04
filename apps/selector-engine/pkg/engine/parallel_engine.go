@@ -2,11 +2,11 @@ package engine
 
 import (
 	"context"
-	"github.com/ctrlplanedev/selector-engine/pkg/engine/pure_go"
-	"github.com/ctrlplanedev/selector-engine/pkg/model"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
 	"sync"
+	purego "workspace-engine/pkg/engine/pure_go"
+	"workspace-engine/pkg/model"
+	"workspace-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/selector"
 )
 
 const (

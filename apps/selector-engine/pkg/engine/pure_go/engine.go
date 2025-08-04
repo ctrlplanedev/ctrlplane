@@ -2,13 +2,14 @@ package purego
 
 import (
 	"context"
-	"github.com/ctrlplanedev/selector-engine/pkg/model"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
 	"sync"
+	"workspace-engine/pkg/model"
+	"workspace-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/selector"
+
+	"workspace-engine/pkg/logger"
 
 	"github.com/charmbracelet/log"
-	"github.com/ctrlplanedev/selector-engine/pkg/logger"
 )
 
 type GoDispatcherEngine struct {

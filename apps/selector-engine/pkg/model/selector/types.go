@@ -3,7 +3,7 @@ package selector
 import (
 	"fmt"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
 
 // MaxDepthAllowed defines the maximum nesting depth for conditions
@@ -33,9 +33,6 @@ const (
 
 // Condition is the interface that all selector types must implement
 type Condition interface {
-	Type() ConditionType
-	Validate() error
-	validate(depth int) error
 	Matches(resource resource.Resource) (bool, error)
 }
 

@@ -2,9 +2,9 @@ package purego
 
 import (
 	"context"
-	"github.com/ctrlplanedev/selector-engine/pkg/model"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
-	"github.com/ctrlplanedev/selector-engine/pkg/model/selector"
+	"workspace-engine/pkg/model"
+	"workspace-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/selector"
 )
 
 func (e *GoDispatcherEngine) LoadResource(ctx context.Context, in <-chan resource.Resource) (<-chan model.Match, error) {

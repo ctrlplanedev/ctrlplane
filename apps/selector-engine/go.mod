@@ -1,4 +1,4 @@
-module github.com/ctrlplanedev/selector-engine
+module workspace-engine
 
 go 1.24
 

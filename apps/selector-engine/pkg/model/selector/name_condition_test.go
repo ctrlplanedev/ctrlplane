@@ -3,7 +3,7 @@ package selector
 import (
 	"testing"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
 
 func TestNameCondition_Validate(t *testing.T) {

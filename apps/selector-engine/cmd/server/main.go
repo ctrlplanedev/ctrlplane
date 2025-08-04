@@ -10,8 +10,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/logger"
-	"github.com/ctrlplanedev/selector-engine/pkg/server"
+	"workspace-engine/pkg/logger"
 )
 
 func main() {
@@ -45,11 +44,5 @@ func main() {
 		log.Fatal("Failed to listen", "error", err)
 	}
 
-	s := server.NewServer()
-
-	log.Info("gRPC server listening", "port", port)
-	if err := s.Serve(lis); err != nil {
-		log.Fatal("Failed to serve", "error", err)
-	}
-
+	println("Listening on port", lis)
 }

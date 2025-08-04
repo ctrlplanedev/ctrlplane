@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ctrlplanedev/selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
 
 // DateOperator defines date comparison operators
