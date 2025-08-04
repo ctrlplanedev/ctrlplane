@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/logger"
 )
 
@@ -37,6 +38,8 @@ func main() {
 			log.Error("Failed to start pprof server", "error", err)
 		}
 	}()
+
+	go kafka.StartConsumer()
 
 	port := viper.GetInt("port")
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
