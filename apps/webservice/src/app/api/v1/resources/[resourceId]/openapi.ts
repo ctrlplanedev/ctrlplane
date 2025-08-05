@@ -94,6 +94,10 @@ export const openapi: Swagger.SwaggerV3 = {
                     type: "string",
                   },
                   metadata: { $ref: "#/components/schemas/MetadataMap" },
+                  config: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
                   variables: {
                     type: "array",
                     items: {
