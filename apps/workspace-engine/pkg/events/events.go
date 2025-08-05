@@ -2,11 +2,13 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"workspace-engine/pkg/logger"
 
 	"github.com/charmbracelet/log"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type EventType string
@@ -33,13 +35,13 @@ type RawEvent struct {
 type EventHandler func(ctx context.Context, event RawEvent) error
 type EventHandlerRegistry map[EventType]EventHandler
 
-type EventProcessor struct {
+type MessageReader struct {
 	handlers EventHandlerRegistry
 	log      *log.Logger
 }
 
-func NewEventProcessor() *EventProcessor {
-	return &EventProcessor{
+func NewMessageReader() *MessageReader {
+	return &MessageReader{
 		handlers: EventHandlerRegistry{
 			ResourceCreated: handleResourceCreatedEvent,
 			ResourceUpdated: handleResourceUpdatedEvent,
@@ -49,11 +51,16 @@ func NewEventProcessor() *EventProcessor {
 	}
 }
 
-func (p *EventProcessor) HandleEvent(ctx context.Context, event RawEvent) error {
-	handler, ok := p.handlers[event.EventType]
-	if !ok {
-		return fmt.Errorf("no handler found for event type: %s", event.EventType)
+func (p *MessageReader) ReadMessage(ctx context.Context, msg *kafka.Message) error {
+	var rawEvent RawEvent
+	if err := json.Unmarshal(msg.Value, &rawEvent); err != nil {
+		return fmt.Errorf("failed to unmarshal event: %w", err)
 	}
 
-	return handler(ctx, event)
+	handler, ok := p.handlers[rawEvent.EventType]
+	if !ok {
+		return fmt.Errorf("no handler found for event type: %s", rawEvent.EventType)
+	}
+
+	return handler(ctx, rawEvent)
 }

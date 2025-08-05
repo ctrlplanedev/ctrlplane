@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"time"
 
@@ -47,7 +46,7 @@ func RunConsumer(ctx context.Context) error {
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
-	processor := events.NewEventProcessor()
+	reader := events.NewMessageReader()
 
 	for {
 		select {
@@ -67,17 +66,8 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		var rawEvent events.RawEvent
-		err = json.Unmarshal(msg.Value, &rawEvent)
-		if err != nil {
-			log.Error("Failed to unmarshal event", "error", err)
-			continue
-		}
-
-		log.Info("Received event", "event", rawEvent)
-
-		if err := processor.HandleEvent(ctx, rawEvent); err != nil {
-			log.Error("Failed to handle event", "error", err)
+		if err := reader.ReadMessage(ctx, msg); err != nil {
+			log.Error("Failed to read message", "error", err)
 			continue
 		}
 
