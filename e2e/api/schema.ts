@@ -4271,6 +4271,9 @@ export interface operations {
           identifier?: string;
           workspaceId?: string;
           metadata?: components["schemas"]["MetadataMap"];
+          config?: {
+            [key: string]: unknown;
+          };
           variables?: components["schemas"]["DirectVariable"][];
         };
       };
@@ -4351,7 +4354,9 @@ export interface operations {
           kind: string;
           identifier: string;
           version: string;
-          config: Record<string, never>;
+          config: {
+            [key: string]: unknown;
+          };
           metadata?: {
             [key: string]: string;
           };

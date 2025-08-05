@@ -48,12 +48,7 @@ func (c MetadataNullCondition) GetOperator() MetadataOperator {
 	return c.Operator
 }
 
-// Validate validates the metadata null selector
-func (c MetadataNullCondition) Validate() error {
-	return c.validate(0)
-}
-
-func (c MetadataNullCondition) validate(depth int) error {
+func (c MetadataNullCondition) validate() error {
 	if c.TypeField != ConditionTypeMetadata {
 		return fmt.Errorf("invalid type for metadata selector: %s", c.TypeField)
 	}
@@ -71,6 +66,10 @@ func (c MetadataNullCondition) validate(depth int) error {
 
 // Matches checks if the resource matches the metadata null selector
 func (c MetadataNullCondition) Matches(resource resource.Resource) (bool, error) {
+	var err error
+	if err = c.validate(); err != nil {
+		return false, err
+	}
 	if c.Operator == MetadataOperatorNull {
 		_, ok := resource.Metadata[c.Key]
 		return !ok, nil // if it's missing it is null
@@ -101,12 +100,7 @@ func (c MetadataValueCondition) GetOperator() MetadataOperator {
 	return c.Operator
 }
 
-// Validate validates the metadata value selector
-func (c MetadataValueCondition) Validate() error {
-	return c.validate(0)
-}
-
-func (c MetadataValueCondition) validate(depth int) error {
+func (c MetadataValueCondition) validate() error {
 	if c.TypeField != ConditionTypeMetadata {
 		return fmt.Errorf("invalid type for metadata selector: %s", c.TypeField)
 	}
@@ -134,6 +128,12 @@ func (c MetadataValueCondition) validate(depth int) error {
 func (c MetadataValueCondition) Matches(resource resource.Resource) (bool, error) {
 	var value string
 	var ok bool
+	var err error
+
+	if err = c.validate(); err != nil {
+		return false, err
+	}
+
 	if value, ok = resource.Metadata[c.Key]; !ok {
 		return false, nil
 	}

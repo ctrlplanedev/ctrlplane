@@ -1,8 +1,12 @@
 import type { Producer } from "kafkajs";
 import { Kafka } from "kafkajs";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { EventPayload, Message } from "./events.js";
 import { env } from "../config.js";
+
+const log = logger.child({ component: "kafka-client" });
 
 let kafka: Kafka | null = null;
 let producer: Producer | null = null;
@@ -24,14 +28,19 @@ const getProducer = async () => {
 export const sendEvent = async <T extends keyof EventPayload>(
   message: Message<T> | Message<T>[],
 ) => {
-  const messages = Array.isArray(message) ? message : [message];
-  const producer = await getProducer();
-  await producer.send({
-    topic: "ctrlplane-events",
-    messages: messages.map((message) => ({
-      key: message.workspaceId,
-      value: JSON.stringify(message),
-      timestamp: message.timestamp.toString(),
-    })),
-  });
+  try {
+    const messages = Array.isArray(message) ? message : [message];
+    const producer = await getProducer();
+    await producer.send({
+      topic: "ctrlplane-events",
+      messages: messages.map((message) => ({
+        key: message.workspaceId,
+        value: JSON.stringify(message),
+        timestamp: message.timestamp.toString(),
+      })),
+    });
+    log.info("Sent event", { messages });
+  } catch (error) {
+    log.error("Failed to send event", { error });
+  }
 };

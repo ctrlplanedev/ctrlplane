@@ -182,14 +182,7 @@ func (g *GoWorkspaceEngine) resourceMatches(ctx context.Context, resource resour
 		func(key any, value any) bool {
 			sel := value.(*selector.ResourceSelector)
 			testCount++
-			if err = sel.Condition.Validate(); err != nil {
-				allMatches = append(allMatches, model.Match{
-					Error:      true,
-					Message:    err.Error(),
-					SelectorID: sel.ID,
-					ResourceID: resource.ID,
-				})
-			} else if ok, err = sel.Condition.Matches(resource); err != nil {
+			if ok, err = sel.Condition.Matches(resource); err != nil {
 				allMatches = append(allMatches, model.Match{
 					Error:      true,
 					Message:    err.Error(),
@@ -215,14 +208,7 @@ func (g *GoWorkspaceEngine) resourceMatches(ctx context.Context, resource resour
 		func(key any, value any) bool {
 			sel := value.(*selector.ResourceSelector)
 			testCount++
-			if err = sel.Condition.Validate(); err != nil {
-				allMatches = append(allMatches, model.Match{
-					Error:      true,
-					Message:    err.Error(),
-					SelectorID: sel.ID,
-					ResourceID: resource.ID,
-				})
-			} else if ok, err = sel.Condition.Matches(resource); err != nil {
+			if ok, err = sel.Condition.Matches(resource); err != nil {
 				allMatches = append(allMatches, model.Match{
 					Error:      true,
 					Message:    err.Error(),
@@ -250,42 +236,30 @@ func (g *GoWorkspaceEngine) selectorMatches(
 	var allMatches []model.Match = make([]model.Match, 0)
 	var ok bool
 	var err error
-
-	if err = sel.Condition.Validate(); err != nil {
-		allMatches = append(allMatches, model.Match{
-			Error:      true,
-			Message:    err.Error(),
-			SelectorID: sel.ID,
-			ResourceID: "",
+	var testCount int
+	var matchCount int
+	g.resources.Range(
+		func(key any, value any) bool {
+			res := value.(resource.Resource)
+			testCount++
+			if ok, err = sel.Condition.Matches(res); err != nil {
+				allMatches = append(allMatches, model.Match{
+					Error:      true,
+					Message:    err.Error(),
+					SelectorID: sel.ID,
+					ResourceID: res.ID,
+				})
+			}
+			if ok {
+				matchCount++
+				allMatches = append(allMatches, model.Match{
+					SelectorID: sel.ID,
+					ResourceID: res.ID,
+				})
+			}
+			g.logger.Debug("match result", "success", ok, "resource", res, "condition", sel.Condition)
+			return true
 		})
-	} else {
-		// Check against resources
-		testCount := 0
-		matchCount := 0
-		g.resources.Range(
-			func(key any, value any) bool {
-				res := value.(resource.Resource)
-				testCount++
-				if ok, err = sel.Condition.Matches(res); err != nil {
-					allMatches = append(allMatches, model.Match{
-						Error:      true,
-						Message:    err.Error(),
-						SelectorID: sel.ID,
-						ResourceID: res.ID,
-					})
-				}
-				if ok {
-					matchCount++
-					allMatches = append(allMatches, model.Match{
-						SelectorID: sel.ID,
-						ResourceID: res.ID,
-					})
-				}
-				g.logger.Debug("match result", "success", ok, "resource", res, "condition", sel.Condition)
-				return true
-			})
-		//g.logger.Debug("selector match rate", "selectorId", sel.ID, "matches", matchCount, "total", testCount)
-	}
 
 	return allMatches
 }

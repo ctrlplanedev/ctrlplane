@@ -31,9 +31,6 @@ const (
 	ConditionTypeOr         ConditionType = "or"
 )
 
-type Condition interface {
-	Matches(entity selector.MatchableEntity) (bool, error)
-}
 
 type UnknownCondition struct {
 	ConditionType ConditionType `json:"type"`
@@ -43,8 +40,8 @@ type UnknownCondition struct {
 	Conditions    []UnknownCondition `json:"conditions"`
 }
 
-func (c UnknownCondition) GetCondition() (Condition, error) {
-	conditions := make([]Condition, len(c.Conditions))
+func (c UnknownCondition) GetCondition() (selector.Condition, error) {
+	conditions := make([]selector.Condition, len(c.Conditions))
 	for i, cond := range c.Conditions {
 		condition, err := cond.GetCondition()
 		if err != nil {
