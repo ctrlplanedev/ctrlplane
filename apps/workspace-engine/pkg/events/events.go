@@ -1,10 +1,20 @@
 package events
 
+import (
+	"context"
+	"fmt"
+
+	"workspace-engine/pkg/logger"
+
+	"github.com/charmbracelet/log"
+)
+
 type EventType string
 
 const (
 	ResourceCreated EventType = "resource.created"
 	ResourceUpdated EventType = "resource.updated"
+	ResourceDeleted EventType = "resource.deleted"
 )
 
 type BaseEvent struct {
@@ -17,5 +27,33 @@ type BaseEvent struct {
 
 type RawEvent struct {
 	BaseEvent
-	Payload map[string]any `json:"payload,omitempty"`
+	Payload any `json:"payload,omitempty"`
+}
+
+type EventHandler func(ctx context.Context, event RawEvent) error
+type EventHandlerRegistry map[EventType]EventHandler
+
+type EventProcessor struct {
+	handlers EventHandlerRegistry
+	log      *log.Logger
+}
+
+func NewEventProcessor() *EventProcessor {
+	return &EventProcessor{
+		handlers: EventHandlerRegistry{
+			ResourceCreated: handleResourceCreatedEvent,
+			ResourceUpdated: handleResourceUpdatedEvent,
+			ResourceDeleted: handleResourceDeletedEvent,
+		},
+		log: logger.Get(),
+	}
+}
+
+func (p *EventProcessor) HandleEvent(ctx context.Context, event RawEvent) error {
+	handler, ok := p.handlers[event.EventType]
+	if !ok {
+		return fmt.Errorf("no handler found for event type: %s", event.EventType)
+	}
+
+	return handler(ctx, event)
 }
