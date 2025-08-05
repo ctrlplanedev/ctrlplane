@@ -39,3 +39,7 @@ debug
 # Temporary files
 *.tmp
 *.temp
+
+# Binaries
+main
+tmp/
