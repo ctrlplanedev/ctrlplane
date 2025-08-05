@@ -1,8 +1,11 @@
 package kafka
 
 import (
+	"context"
 	"encoding/json"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"workspace-engine/pkg/logger"
@@ -25,7 +28,7 @@ type Event struct {
 	Payload     map[string]interface{} `json:"payload"`
 }
 
-func StartConsumer() {
+func RunConsumer(ctx context.Context) error {
 	log := logger.Get()
 
 	brokers := os.Getenv("KAFKA_BROKERS")
@@ -34,27 +37,46 @@ func StartConsumer() {
 	}
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": brokers,
-		"group.id":          GroupID,
-		"auto.offset.reset": "earliest",
+		"bootstrap.servers":  brokers,
+		"group.id":           GroupID,
+		"auto.offset.reset":  "earliest",
+		"enable.auto.commit": false,
 	})
 
 	if err != nil {
 		log.Error("Failed to create consumer", "error", err)
-		return
+		return err
 	}
 	defer c.Close()
 
 	err = c.SubscribeTopics([]string{Topic}, nil)
 	if err != nil {
 		log.Error("Failed to subscribe", "error", err)
-		return
+		return err
 	}
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
-	run := true
-	for run {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	go func() {
+		<-sigChan
+		log.Info("Received shutdown signal, stopping consumer")
+		cancel()
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Context cancelled, stopping consumer")
+			return nil
+		default:
+		}
+
 		msg, err := c.ReadMessage(time.Second)
 
 		if err != nil {
@@ -73,5 +95,8 @@ func StartConsumer() {
 		}
 
 		log.Info("Received event", "event", event)
+
+		// NOTE: we do not commit the message. if the process ends and we need to rebuild the state,
+		// we need to start from the beginning of the topic.
 	}
 }

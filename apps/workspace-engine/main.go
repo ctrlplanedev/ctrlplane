@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	pflag.Int("port", 50555, "The server port")
 	pflag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	pflag.Parse()
@@ -39,7 +41,11 @@ func main() {
 		}
 	}()
 
-	go kafka.StartConsumer()
+	go func() {
+		if err := kafka.RunConsumer(ctx); err != nil {
+			log.Error("received error from kafka consumer", "error", err)
+		}
+	}()
 
 	port := viper.GetInt("port")
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
