@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,10 +11,12 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/logger"
 )
 
 func main() {
+	ctx := context.Background()
 	pflag.Int("port", 50555, "The server port")
 	pflag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	pflag.Parse()
@@ -35,6 +38,12 @@ func main() {
 		log.Info("Starting pprof server on :6060")
 		if err := http.ListenAndServe(":6060", nil); err != nil {
 			log.Error("Failed to start pprof server", "error", err)
+		}
+	}()
+
+	go func() {
+		if err := kafka.RunConsumer(ctx); err != nil {
+			log.Error("received error from kafka consumer", "error", err)
 		}
 	}()
 
