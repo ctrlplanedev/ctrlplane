@@ -6,73 +6,73 @@ import (
 	"workspace-engine/pkg/model/resource"
 )
 
-func TestNameCondition_Validate(t *testing.T) {
+func TestVersionCondition_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		cond    NameCondition
+		cond    VersionCondition
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid equals operator",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test-resource",
+				Value:     "1.0.0",
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid starts-with operator",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorStartsWith,
-				Value:     "test-",
+				Value:     "1.",
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid ends-with operator",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEndsWith,
-				Value:     "-resource",
+				Value:     ".0",
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid contains operator",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorContains,
-				Value:     "res",
+				Value:     "2.1",
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalid type field",
-			cond: NameCondition{
+			cond: VersionCondition{
 				TypeField: ConditionTypeID,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test",
+				Value:     "1.0.0",
 			},
 			wantErr: true,
-			errMsg:  "invalid type for name selector: id",
+			errMsg:  "invalid type for version selector: id",
 		},
 		{
 			name: "invalid operator",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  "invalid-operator",
-				Value:     "test",
+				Value:     "1.0.0",
 			},
 			wantErr: true,
 			errMsg:  "invalid column operator: invalid-operator",
 		},
 		{
 			name: "empty value",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
 				Value:     "",
 			},
@@ -81,8 +81,8 @@ func TestNameCondition_Validate(t *testing.T) {
 		},
 		{
 			name: "whitespace only value",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
 				Value:     "   ",
 			},
@@ -90,8 +90,8 @@ func TestNameCondition_Validate(t *testing.T) {
 		},
 		{
 			name: "very long value",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
 				Value:     string(make([]byte, 1000)),
 			},
@@ -102,7 +102,7 @@ func TestNameCondition_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// result doesn't matter, only testing for validation errors
-			_, err := tt.cond.Matches(resourceFixture())
+			_, err := tt.cond.Matches(resource.Resource{Version: "1.0.0"})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -113,29 +113,29 @@ func TestNameCondition_Validate(t *testing.T) {
 	}
 }
 
-func TestNameCondition_Type(t *testing.T) {
+func TestVersionCondition_Type(t *testing.T) {
 	tests := []struct {
 		name     string
-		cond     NameCondition
+		cond     VersionCondition
 		wantType ConditionType
 	}{
 		{
 			name: "returns correct type",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test",
+				Value:     "1.0.0",
 			},
-			wantType: ConditionTypeName,
+			wantType: ConditionTypeVersion,
 		},
 		{
 			name: "returns correct type even with wrong TypeField",
-			cond: NameCondition{
+			cond: VersionCondition{
 				TypeField: ConditionTypeID,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test",
+				Value:     "1.0.0",
 			},
-			wantType: ConditionTypeName,
+			wantType: ConditionTypeVersion,
 		},
 	}
 
@@ -149,179 +149,231 @@ func TestNameCondition_Type(t *testing.T) {
 	}
 }
 
-func TestNameCondition_Matches(t *testing.T) {
+func TestVersionCondition_Matches(t *testing.T) {
 	tests := []struct {
 		name     string
-		cond     NameCondition
+		cond     VersionCondition
 		resource resource.Resource
 		want     bool
 		wantErr  bool
 	}{
 		{
 			name: "equals match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test-resource",
+				Value:     "1.0.0",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.0.0",
 			},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name: "equals no match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test-resource",
+				Value:     "1.0.0",
 			},
 			resource: resource.Resource{
-				Name: "other-resource",
+				Version: "2.0.0",
 			},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name: "starts-with match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorStartsWith,
-				Value:     "test-",
+				Value:     "1.",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.2.3",
 			},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name: "starts-with no match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorStartsWith,
-				Value:     "prod-",
+				Value:     "2.",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.2.3",
 			},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name: "ends-with match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEndsWith,
-				Value:     "-resource",
+				Value:     ".3",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.2.3",
 			},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name: "ends-with no match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEndsWith,
-				Value:     "-service",
+				Value:     ".4",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.2.3",
 			},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name: "contains match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorContains,
-				Value:     "st-res",
+				Value:     ".2.",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.2.3",
 			},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name: "contains no match",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorContains,
-				Value:     "xyz",
+				Value:     ".5.",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.2.3",
 			},
 			want:    false,
 			wantErr: false,
 		},
 		{
 			name: "case sensitive equals",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "Test-Resource",
+				Value:     "v1.0.0",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "V1.0.0",
 			},
 			want:    false,
 			wantErr: false,
 		},
 		{
-			name: "empty resource name",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			name: "empty resource version",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test",
+				Value:     "1.0.0",
 			},
 			resource: resource.Resource{
-				Name: "",
+				Version: "",
 			},
 			want:    false,
 			wantErr: false,
 		},
 		{
-			name: "special characters in name",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			name: "semantic version with pre-release",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "test-resource_v1.2.3",
+				Value:     "1.0.0-alpha.1",
 			},
 			resource: resource.Resource{
-				Name: "test-resource_v1.2.3",
+				Version: "1.0.0-alpha.1",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "semantic version with build metadata",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
+				Operator:  ColumnOperatorEquals,
+				Value:     "1.0.0+20130313144700",
+			},
+			resource: resource.Resource{
+				Version: "1.0.0+20130313144700",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "version with v prefix",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
+				Operator:  ColumnOperatorEquals,
+				Value:     "v1.0.0",
+			},
+			resource: resource.Resource{
+				Version: "v1.0.0",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "date-based version",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
+				Operator:  ColumnOperatorEquals,
+				Value:     "2023.01.15",
+			},
+			resource: resource.Resource{
+				Version: "2023.01.15",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "commit hash version",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
+				Operator:  ColumnOperatorStartsWith,
+				Value:     "abc123",
+			},
+			resource: resource.Resource{
+				Version: "abc123def456",
 			},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name: "unicode characters",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEquals,
-				Value:     "测试-resource",
+				Value:     "版本-1.0.0",
 			},
 			resource: resource.Resource{
-				Name: "测试-resource",
+				Version: "版本-1.0.0",
 			},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name: "invalid operator should error",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  "invalid",
-				Value:     "test",
+				Value:     "1.0.0",
 			},
 			resource: resource.Resource{
-				Name: "test-resource",
+				Version: "1.0.0",
 			},
 			want:    false,
 			wantErr: true,
@@ -342,74 +394,98 @@ func TestNameCondition_Matches(t *testing.T) {
 	}
 }
 
-func TestNameCondition_EdgeCases(t *testing.T) {
+func TestVersionCondition_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name     string
-		cond     NameCondition
+		cond     VersionCondition
 		resource resource.Resource
 		want     bool
 		wantErr  bool
 	}{
 		{
 			name: "starts-with empty string errors",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorStartsWith,
 				Value:     "",
 			},
 			resource: resource.Resource{
-				Name: "any-name",
+				Version: "any-version",
 			},
 			want:    false,
 			wantErr: true,
 		},
 		{
 			name: "ends-with empty string errors",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEndsWith,
 				Value:     "",
 			},
 			resource: resource.Resource{
-				Name: "any-name",
+				Version: "any-version",
 			},
 			want:    false,
 			wantErr: true,
 		},
 		{
 			name: "contains empty string errors",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorContains,
 				Value:     "",
 			},
 			resource: resource.Resource{
-				Name: "any-name",
+				Version: "any-version",
 			},
 			want:    false,
 			wantErr: true,
 		},
 		{
 			name: "whitespace handling in starts-with",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorStartsWith,
-				Value:     " test",
+				Value:     " 1.0",
 			},
 			resource: resource.Resource{
-				Name: " test-resource",
+				Version: " 1.0.0",
 			},
 			want: true,
 		},
 		{
 			name: "whitespace handling in ends-with",
-			cond: NameCondition{
-				TypeField: ConditionTypeName,
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
 				Operator:  ColumnOperatorEndsWith,
-				Value:     "resource ",
+				Value:     ".0 ",
 			},
 			resource: resource.Resource{
-				Name: "test-resource ",
+				Version: "1.0.0 ",
+			},
+			want: true,
+		},
+		{
+			name: "version with special characters",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
+				Operator:  ColumnOperatorEquals,
+				Value:     "1.0.0-beta+exp.sha.5114f85",
+			},
+			resource: resource.Resource{
+				Version: "1.0.0-beta+exp.sha.5114f85",
+			},
+			want: true,
+		},
+		{
+			name: "version with dots only",
+			cond: VersionCondition{
+				TypeField: ConditionTypeVersion,
+				Operator:  ColumnOperatorEquals,
+				Value:     "...",
+			},
+			resource: resource.Resource{
+				Version: "...",
 			},
 			want: true,
 		},

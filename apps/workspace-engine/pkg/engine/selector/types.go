@@ -2,18 +2,19 @@ package selector
 
 import (
 	"context"
-	"workspace-engine/pkg/model/selector"
 )
+
+type Condition interface {
+	Matches(entity MatchableEntity) (bool, error)
+}
 
 type MatchableEntity interface {
 	GetID() string
-	GetWorkspaceID() string
 }
 
 type Selector interface {
 	GetID() string
-	GetWorkspaceID() string
-	Conditions() []selector.Condition
+	GetConditions() Condition
 }
 
 type MatchChange struct {
@@ -29,6 +30,29 @@ const (
 	MatchChangeTypeRemoved MatchChangeType = "removed"
 )
 
+type BaseEntity struct {
+	ID string
+}
+
+func (b BaseEntity) GetID() string {
+	return b.ID
+}
+
+type BaseSelector struct {
+	ID string
+	Conditions Condition
+}
+
+func (b BaseSelector) GetID() string {
+	return b.ID
+}
+
+func (b BaseSelector) GetConditions() Condition {
+	return b.Conditions
+}
+
+type MatchChangesHandler func(ctx context.Context, change MatchChange) error
+
 type SelectorEngine[E MatchableEntity, S Selector] interface {
 	LoadEntities(ctx context.Context, entities []E) error
 	UpsertEntity(ctx context.Context, entity E) error
@@ -40,5 +64,8 @@ type SelectorEngine[E MatchableEntity, S Selector] interface {
 	RemoveSelectors(ctx context.Context, selectors []S) error
 	RemoveSelector(ctx context.Context, selector S) error
 
-	OnMatchChange(cb func(ctx context.Context, change MatchChange) error) error
+	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
+	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
+
+	SubscribeToMatchChanges(handler MatchChangesHandler) error
 }

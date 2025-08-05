@@ -6,9 +6,6 @@ import (
 	"workspace-engine/pkg/model/resource"
 )
 
-// MaxDepthAllowed defines the maximum nesting depth for conditions
-const MaxDepthAllowed = 2
-
 // ComparisonOperator defines logical operators for combining conditions
 type ComparisonOperator string
 

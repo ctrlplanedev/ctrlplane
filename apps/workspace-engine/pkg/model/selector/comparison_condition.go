@@ -2,8 +2,11 @@ package selector
 
 import (
 	"fmt"
-	"selector-engine/pkg/model/resource"
+	"workspace-engine/pkg/model/resource"
 )
+
+// MaxDepthAllowed defines the maximum nesting depth for conditions
+const MaxDepthAllowed = 2
 
 // ComparisonCondition represents a logical combination of conditions
 type ComparisonCondition struct {
@@ -17,12 +20,25 @@ func (c ComparisonCondition) Type() ConditionType {
 	return ConditionTypeComparison
 }
 
-// Validate validates the comparison selector
-func (c ComparisonCondition) Validate() error {
-	return c.validate(0)
+// validate will check depth and the for nested ComparisonConditions only, as this is the only case where
+// depth can increase. Other condition types do not support nesting.
+func (c ComparisonCondition) validateDepth(depth int) error {
+	if depth >= MaxDepthAllowed {
+		return fmt.Errorf("maximum selector depth (%d) exceeded", MaxDepthAllowed)
+	}
+
+	for i, cond := range c.Conditions {
+		if compCond, ok := cond.(ComparisonCondition); ok {
+			if err := compCond.validateDepth(depth + 1); err != nil {
+				return fmt.Errorf("validation failed for sub-selector at index %d: %v", i, err)
+			}
+		}
+	}
+
+	return nil
 }
 
-func (c ComparisonCondition) validate(depth int) error {
+func (c ComparisonCondition) validate() error {
 	if c.TypeField != ConditionTypeComparison {
 		return fmt.Errorf("invalid type for comparison selector: %s", c.TypeField)
 	}
@@ -34,17 +50,6 @@ func (c ComparisonCondition) validate(depth int) error {
 	if len(c.Conditions) == 0 {
 		return fmt.Errorf("comparison selector must have at least one sub-selector")
 	}
-
-	if err := depthCheck(depth); err != nil {
-		return err
-	}
-
-	for i, cond := range c.Conditions {
-		if err := cond.validate(depth + 1); err != nil {
-			return fmt.Errorf("validation failed for sub-selector at index %d: %v", i, err)
-		}
-	}
-
 	return nil
 }
 
@@ -52,6 +57,12 @@ func (c ComparisonCondition) validate(depth int) error {
 func (c ComparisonCondition) Matches(resource resource.Resource) (bool, error) {
 	var ok bool
 	var err error
+	if err = c.validateDepth(0); err != nil {
+		return false, err
+	}
+	if err = c.validate(); err != nil {
+		return false, err
+	}
 	switch c.Operator {
 	case ComparisonOperatorAnd:
 		for _, cond := range c.Conditions {
