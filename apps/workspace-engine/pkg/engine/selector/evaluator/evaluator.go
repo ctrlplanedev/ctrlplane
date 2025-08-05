@@ -4,310 +4,325 @@ import (
 	"context"
 	"fmt"
 	"sync"
-
-	selectorengine "workspace-engine/pkg/engine/selector"
-	"workspace-engine/pkg/model/resource"
-	"workspace-engine/pkg/model/selector"
+	"workspace-engine/pkg/engine/selector"
 )
 
-// ResourceEntity adapts resource.Resource to implement MatchableEntity
-type ResourceEntity struct {
-	resource.Resource
+// Evaluator implements the SelectorEngine interface
+type Evaluator struct {
+	// Storage for entities and selectors
+	entities  map[string]selector.MatchableEntity
+	selectors map[string]selector.Selector
+	
+	// Track current matches between entities and selectors
+	matches map[string]map[string]bool // matches[entityID][selectorID] = isMatched
+	
+	// Subscribers to match changes
+	subscribers []selector.MatchChangesHandler
+	
+	// Mutex for thread safety
+	mu sync.RWMutex
 }
 
-func (r ResourceEntity) GetID() string {
-	return r.Resource.ID
-}
-
-func (r ResourceEntity) GetWorkspaceID() string {
-	return r.Resource.WorkspaceID
-}
-
-// ResourceSelectorEntity adapts selector.ResourceSelector to implement Selector
-type ResourceSelectorEntity struct {
-	selector.ResourceSelector
-}
-
-func (s ResourceSelectorEntity) GetID() string {
-	return s.ResourceSelector.ID
-}
-
-func (s ResourceSelectorEntity) GetWorkspaceID() string {
-	return s.ResourceSelector.WorkspaceID
-}
-
-func (s ResourceSelectorEntity) Conditions() []selector.Condition {
-	return []selector.Condition{s.ResourceSelector.Condition}
-}
-
-// Engine implements the SelectorEngine interface using direct evaluation
-type Engine struct {
-	mu             sync.RWMutex
-	entities       map[string]ResourceEntity
-	selectors      map[string]ResourceSelectorEntity
-	currentMatches map[string]map[string]bool // selectorID -> entityID -> isMatched
-	onMatchChange  func(ctx context.Context, change selectorengine.MatchChange) error
-}
-
-// NewEngine creates a new evaluator-based selector engine
-func NewEngine() selectorengine.SelectorEngine[ResourceEntity, ResourceSelectorEntity] {
-	return &Engine{
-		entities:       make(map[string]ResourceEntity),
-		selectors:      make(map[string]ResourceSelectorEntity),
-		currentMatches: make(map[string]map[string]bool),
+// NewEvaluator creates a new evaluator instance
+func NewEvaluator() *Evaluator {
+	return &Evaluator{
+		entities:    make(map[string]selector.MatchableEntity),
+		selectors:   make(map[string]selector.Selector),
+		matches:     make(map[string]map[string]bool),
+		subscribers: make([]selector.MatchChangesHandler, 0),
 	}
 }
 
-// LoadEntities loads multiple entities into the engine
-func (e *Engine) LoadEntities(ctx context.Context, entities []ResourceEntity) error {
+// LoadEntities loads multiple entities into the evaluator
+func (e *Evaluator) LoadEntities(ctx context.Context, entities []selector.BaseEntity) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-
+	
 	for _, entity := range entities {
 		e.entities[entity.GetID()] = entity
+		if e.matches[entity.GetID()] == nil {
+			e.matches[entity.GetID()] = make(map[string]bool)
+		}
+		
+		// Evaluate against all existing selectors
+		for _, sel := range e.selectors {
+			if err := e.evaluateMatch(ctx, entity, sel); err != nil {
+				return fmt.Errorf("failed to evaluate match for entity %s: %w", entity.GetID(), err)
+			}
+		}
 	}
-
-	return e.evaluateAllMatches(ctx)
+	
+	return nil
 }
 
-// UpsertEntity adds or updates an entity in the engine
-func (e *Engine) UpsertEntity(ctx context.Context, entity ResourceEntity) error {
+// UpsertEntity adds or updates an entity
+func (e *Evaluator) UpsertEntity(ctx context.Context, entity selector.BaseEntity) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-
+	
 	e.entities[entity.GetID()] = entity
-	return e.evaluateEntityMatches(ctx, entity)
-}
-
-// RemoveEntities removes multiple entities from the engine
-func (e *Engine) RemoveEntities(ctx context.Context, entities []ResourceEntity) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	for _, entity := range entities {
-		delete(e.entities, entity.GetID())
-		if err := e.removeEntityMatches(ctx, entity); err != nil {
-			return err
-		}
+	if e.matches[entity.GetID()] == nil {
+		e.matches[entity.GetID()] = make(map[string]bool)
 	}
-
-	return nil
-}
-
-// RemoveEntity removes an entity from the engine
-func (e *Engine) RemoveEntity(ctx context.Context, entity ResourceEntity) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	delete(e.entities, entity.GetID())
-	return e.removeEntityMatches(ctx, entity)
-}
-
-// LoadSelectors loads multiple selectors into the engine
-func (e *Engine) LoadSelectors(ctx context.Context, selectors []ResourceSelectorEntity) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	for _, sel := range selectors {
-		e.selectors[sel.GetID()] = sel
-		if e.currentMatches[sel.GetID()] == nil {
-			e.currentMatches[sel.GetID()] = make(map[string]bool)
-		}
-	}
-
-	return e.evaluateAllMatches(ctx)
-}
-
-// UpsertSelector adds or updates a selector in the engine
-func (e *Engine) UpsertSelector(ctx context.Context, sel ResourceSelectorEntity) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	e.selectors[sel.GetID()] = sel
-	if e.currentMatches[sel.GetID()] == nil {
-		e.currentMatches[sel.GetID()] = make(map[string]bool)
-	}
-
-	return e.evaluateSelectorMatches(ctx, sel)
-}
-
-// RemoveSelectors removes multiple selectors from the engine
-func (e *Engine) RemoveSelectors(ctx context.Context, selectors []ResourceSelectorEntity) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	for _, sel := range selectors {
-		if err := e.removeSelectorMatches(ctx, sel); err != nil {
-			return err
-		}
-		delete(e.selectors, sel.GetID())
-		delete(e.currentMatches, sel.GetID())
-	}
-
-	return nil
-}
-
-// RemoveSelector removes a selector from the engine
-func (e *Engine) RemoveSelector(ctx context.Context, sel ResourceSelectorEntity) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	if err := e.removeSelectorMatches(ctx, sel); err != nil {
-		return err
-	}
-	delete(e.selectors, sel.GetID())
-	delete(e.currentMatches, sel.GetID())
-
-	return nil
-}
-
-// OnMatchChange sets the callback function for match changes
-func (e *Engine) OnMatchChange(cb func(ctx context.Context, change selectorengine.MatchChange) error) error {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	e.onMatchChange = cb
-	return nil
-}
-
-// evaluateAllMatches re-evaluates all entity-selector combinations
-func (e *Engine) evaluateAllMatches(ctx context.Context) error {
-	for _, entity := range e.entities {
-		if err := e.evaluateEntityMatches(ctx, entity); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// evaluateEntityMatches evaluates an entity against all selectors
-func (e *Engine) evaluateEntityMatches(ctx context.Context, entity ResourceEntity) error {
+	
+	// Evaluate against all selectors
 	for _, sel := range e.selectors {
 		if err := e.evaluateMatch(ctx, entity, sel); err != nil {
-			return err
+			return fmt.Errorf("failed to evaluate match for entity %s: %w", entity.GetID(), err)
 		}
 	}
+	
 	return nil
 }
 
-// evaluateSelectorMatches evaluates a selector against all entities
-func (e *Engine) evaluateSelectorMatches(ctx context.Context, sel ResourceSelectorEntity) error {
-	for _, entity := range e.entities {
-		if err := e.evaluateMatch(ctx, entity, sel); err != nil {
+// RemoveEntities removes multiple entities
+func (e *Evaluator) RemoveEntities(ctx context.Context, entities []selector.BaseEntity) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
+	for _, entity := range entities {
+		if err := e.removeEntity(ctx, entity); err != nil {
 			return err
 		}
 	}
+	
+	return nil
+}
+
+// RemoveEntity removes a single entity
+func (e *Evaluator) RemoveEntity(ctx context.Context, entity selector.BaseEntity) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
+	return e.removeEntity(ctx, entity)
+}
+
+// removeEntity internal helper for removing entities (assumes lock is held)
+func (e *Evaluator) removeEntity(ctx context.Context, entity selector.BaseEntity) error {
+	entityID := entity.GetID()
+	
+	// Notify subscribers of removed matches
+	if matches, exists := e.matches[entityID]; exists {
+		for selectorID, wasMatched := range matches {
+			if wasMatched {
+				if sel, selectorExists := e.selectors[selectorID]; selectorExists {
+					change := selector.MatchChange{
+						Entity:     entity,
+						Selector:   sel,
+						ChangeType: selector.MatchChangeTypeRemoved,
+					}
+					e.notifySubscribers(ctx, change)
+				}
+			}
+		}
+	}
+	
+	delete(e.entities, entityID)
+	delete(e.matches, entityID)
+	
+	return nil
+}
+
+// LoadSelectors loads multiple selectors
+func (e *Evaluator) LoadSelectors(ctx context.Context, selectors []selector.BaseSelector) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
+	for _, sel := range selectors {
+		e.selectors[sel.GetID()] = sel
+		
+		// Evaluate against all existing entities
+		for _, entity := range e.entities {
+			if err := e.evaluateMatch(ctx, entity, sel); err != nil {
+				return fmt.Errorf("failed to evaluate match for selector %s: %w", sel.GetID(), err)
+			}
+		}
+	}
+	
+	return nil
+}
+
+// UpsertSelector adds or updates a selector
+func (e *Evaluator) UpsertSelector(ctx context.Context, sel selector.BaseSelector) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
+	e.selectors[sel.GetID()] = sel
+	
+	// Evaluate against all entities
+	for _, entity := range e.entities {
+		if err := e.evaluateMatch(ctx, entity, sel); err != nil {
+			return fmt.Errorf("failed to evaluate match for selector %s: %w", sel.GetID(), err)
+		}
+	}
+	
+	return nil
+}
+
+// RemoveSelectors removes multiple selectors
+func (e *Evaluator) RemoveSelectors(ctx context.Context, selectors []selector.BaseSelector) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
+	for _, sel := range selectors {
+		if err := e.removeSelector(ctx, sel); err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+
+// RemoveSelector removes a single selector
+func (e *Evaluator) RemoveSelector(ctx context.Context, sel selector.BaseSelector) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
+	return e.removeSelector(ctx, sel)
+}
+
+// removeSelector internal helper for removing selectors (assumes lock is held)
+func (e *Evaluator) removeSelector(ctx context.Context, sel selector.BaseSelector) error {
+	selectorID := sel.GetID()
+	
+	// Notify subscribers of removed matches
+	for entityID, matches := range e.matches {
+		if wasMatched, exists := matches[selectorID]; exists && wasMatched {
+			if entity, entityExists := e.entities[entityID]; entityExists {
+				change := selector.MatchChange{
+					Entity:     entity,
+					Selector:   sel,
+					ChangeType: selector.MatchChangeTypeRemoved,
+				}
+				e.notifySubscribers(ctx, change)
+			}
+			delete(matches, selectorID)
+		}
+	}
+	
+	delete(e.selectors, selectorID)
+	
+	return nil
+}
+
+// GetSelectorsForEntity returns all selectors that match the given entity
+func (e *Evaluator) GetSelectorsForEntity(ctx context.Context, entity selector.BaseEntity) ([]selector.BaseSelector, error) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	
+	var matchingSelectors []selector.BaseSelector
+	entityID := entity.GetID()
+	
+	if matches, exists := e.matches[entityID]; exists {
+		for selectorID, isMatched := range matches {
+			if isMatched {
+				if sel, selectorExists := e.selectors[selectorID]; selectorExists {
+					if baseSelector, ok := sel.(selector.BaseSelector); ok {
+						matchingSelectors = append(matchingSelectors, baseSelector)
+					}
+				}
+			}
+		}
+	}
+	
+	return matchingSelectors, nil
+}
+
+// GetEntitiesForSelector returns all entities that match the given selector
+func (e *Evaluator) GetEntitiesForSelector(ctx context.Context, sel selector.BaseSelector) ([]selector.BaseEntity, error) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	
+	var matchingEntities []selector.BaseEntity
+	selectorID := sel.GetID()
+	
+	for entityID, matches := range e.matches {
+		if isMatched, exists := matches[selectorID]; exists && isMatched {
+			if entity, entityExists := e.entities[entityID]; entityExists {
+				if baseEntity, ok := entity.(selector.BaseEntity); ok {
+					matchingEntities = append(matchingEntities, baseEntity)
+				}
+			}
+		}
+	}
+	
+	return matchingEntities, nil
+}
+
+// SubscribeToMatchChanges registers a callback for match change events
+func (e *Evaluator) SubscribeToMatchChanges(handler func(ctx context.Context, change selector.MatchChange) error) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	
+	e.subscribers = append(e.subscribers, handler)
 	return nil
 }
 
 // evaluateMatch evaluates if an entity matches a selector and handles state changes
-func (e *Engine) evaluateMatch(ctx context.Context, entity ResourceEntity, sel ResourceSelectorEntity) error {
-	// Skip if workspace doesn't match
-	if entity.GetWorkspaceID() != sel.GetWorkspaceID() {
-		return nil
+func (e *Evaluator) evaluateMatch(
+	ctx context.Context,
+	entity selector.MatchableEntity,
+	sel selector.Selector,
+) error {
+	entityID := entity.GetID()
+	selectorID := sel.GetID()
+	
+	// Ensure entity has match tracking initialized
+	if e.matches[entityID] == nil {
+		e.matches[entityID] = make(map[string]bool)
 	}
-
-	// Evaluate the condition
-	matches, err := sel.ResourceSelector.Condition.Matches(entity.Resource)
-	if err != nil {
-		return fmt.Errorf("error evaluating condition for selector %s and entity %s: %w", sel.GetID(), entity.GetID(), err)
-	}
-
+	
 	// Get current match state
-	currentlyMatches := e.currentMatches[sel.GetID()][entity.GetID()]
-
-	// If state changed, update and trigger callback
-	if matches != currentlyMatches {
-		e.currentMatches[sel.GetID()][entity.GetID()] = matches
-
-		if e.onMatchChange != nil {
-			changeType := selectorengine.MatchChangeTypeAdded
-			if !matches {
-				changeType = selectorengine.MatchChangeTypeRemoved
-			}
-
-			change := selectorengine.MatchChange{
-				Entity:     entity,
-				Selector:   sel,
-				ChangeType: changeType,
-			}
-
-			if err := e.onMatchChange(ctx, change); err != nil {
-				return fmt.Errorf("error in match change callback: %w", err)
-			}
-		}
+	wasMatched := e.matches[entityID][selectorID]
+	
+	// Evaluate current match using selector conditions
+	isMatched, err := e.evaluateConditions(entity, sel.GetConditions())
+	if err != nil {
+		return fmt.Errorf("failed to evaluate conditions: %w", err)
 	}
-
+	
+	// Update match state
+	e.matches[entityID][selectorID] = isMatched
+	
+	// Notify subscribers if match state changed
+	if wasMatched != isMatched {
+		changeType := selector.MatchChangeTypeAdded
+		if !isMatched {
+			changeType = selector.MatchChangeTypeRemoved
+		}
+		
+		change := selector.MatchChange{
+			Entity:     entity,
+			Selector:   sel,
+			ChangeType: changeType,
+		}
+		
+		e.notifySubscribers(ctx, change)
+	}
+	
 	return nil
 }
 
-// removeEntityMatches removes all matches for an entity
-func (e *Engine) removeEntityMatches(ctx context.Context, entity ResourceEntity) error {
-	for selectorID, matches := range e.currentMatches {
-		if matches[entity.GetID()] {
-			// Entity was matching, trigger remove event
-			sel, exists := e.selectors[selectorID]
-			if exists && e.onMatchChange != nil {
-				change := selectorengine.MatchChange{
-					Entity:     entity,
-					Selector:   sel,
-					ChangeType: selectorengine.MatchChangeTypeRemoved,
-				}
+// evaluateConditions evaluates conditions against an entity using operation functions
+func (e *Evaluator) evaluateConditions(entity selector.MatchableEntity, condition selector.Condition) (bool, error) {
+	if condition == nil {
+		return true, nil // No conditions means always match
+	}
+	
+	return condition.Matches(entity)
+}
 
-				if err := e.onMatchChange(ctx, change); err != nil {
-					return fmt.Errorf("error in match change callback: %w", err)
-				}
+// notifySubscribers notifies all registered subscribers of match changes
+func (e *Evaluator) notifySubscribers(ctx context.Context, change selector.MatchChange) {
+	for _, subscriber := range e.subscribers {
+		// Execute subscriber in a goroutine to avoid blocking
+		go func(sub func(ctx context.Context, change selector.MatchChange) error) {
+			if err := sub(ctx, change); err != nil {
+				// Log error but don't stop other subscribers
+				// You might want to add proper logging here
+				fmt.Printf("Subscriber error: %v\n", err)
 			}
-		}
-		delete(matches, entity.GetID())
+		}(subscriber)
 	}
-	return nil
 }
 
-// removeSelectorMatches removes all matches for a selector
-func (e *Engine) removeSelectorMatches(ctx context.Context, sel ResourceSelectorEntity) error {
-	matches := e.currentMatches[sel.GetID()]
-	for entityID, isMatched := range matches {
-		if isMatched {
-			// Entity was matching, trigger remove event
-			entity, exists := e.entities[entityID]
-			if exists && e.onMatchChange != nil {
-				change := selectorengine.MatchChange{
-					Entity:     entity,
-					Selector:   sel,
-					ChangeType: selectorengine.MatchChangeTypeRemoved,
-				}
-
-				if err := e.onMatchChange(ctx, change); err != nil {
-					return fmt.Errorf("error in match change callback: %w", err)
-				}
-			}
-		}
-	}
-	return nil
-}
-
-// Helper functions for creating wrapper types
-func WrapResource(res resource.Resource) ResourceEntity {
-	return ResourceEntity{Resource: res}
-}
-
-func WrapSelector(sel selector.ResourceSelector) ResourceSelectorEntity {
-	return ResourceSelectorEntity{ResourceSelector: sel}
-}
-
-func WrapResources(resources []resource.Resource) []ResourceEntity {
-	wrapped := make([]ResourceEntity, len(resources))
-	for i, res := range resources {
-		wrapped[i] = WrapResource(res)
-	}
-	return wrapped
-}
-
-func WrapSelectors(selectors []selector.ResourceSelector) []ResourceSelectorEntity {
-	wrapped := make([]ResourceSelectorEntity, len(selectors))
-	for i, sel := range selectors {
-		wrapped[i] = WrapSelector(sel)
-	}
-	return wrapped
-}
