@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"workspace-engine/pkg/logger"
@@ -36,6 +34,7 @@ func RunConsumer(ctx context.Context) error {
 		brokers = "localhost:9092"
 	}
 
+	log.Info("Connecting to Kafka", "brokers", brokers)
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers":  brokers,
 		"group.id":           GroupID,
@@ -56,18 +55,6 @@ func RunConsumer(ctx context.Context) error {
 	}
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	go func() {
-		<-sigChan
-		log.Info("Received shutdown signal, stopping consumer")
-		cancel()
-	}()
 
 	for {
 		select {

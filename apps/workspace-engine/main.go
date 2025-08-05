@@ -6,7 +6,10 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -41,6 +44,9 @@ func main() {
 		}
 	}()
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	go func() {
 		if err := kafka.RunConsumer(ctx); err != nil {
 			log.Error("received error from kafka consumer", "error", err)
@@ -52,6 +58,14 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to listen", "error", err)
 	}
+	defer lis.Close()
 
-	println("Listening on port", lis)
+	log.Info("Workspace engine started", "port", port)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	log.Info("Shutting down workspace engine...")
+	cancel()
 }
