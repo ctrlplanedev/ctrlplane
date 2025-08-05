@@ -37,12 +37,7 @@ func (c DateCondition) Type() ConditionType {
 	return ConditionTypeDate
 }
 
-// Validate validates the created-at selector
-func (c DateCondition) Validate() error {
-	return c.validate(0)
-}
-
-func (c DateCondition) validate(depth int) error {
+func (c DateCondition) validate() error {
 	if c.TypeField != ConditionTypeDate {
 		return fmt.Errorf("invalid type for created-at selector: %s", c.TypeField)
 	}
@@ -61,6 +56,11 @@ func (c DateCondition) validate(depth int) error {
 // Matches checks if the resource matches the created-at selector
 func (c DateCondition) Matches(resource resource.Resource) (bool, error) {
 	var resourceDate time.Time
+	var err error
+
+	if err = c.validate(); err != nil {
+		return false, err
+	}
 
 	switch c.DateField {
 	case DateFieldCreatedAt:

@@ -17,12 +17,7 @@ func (c NameCondition) Type() ConditionType {
 	return ConditionTypeName
 }
 
-// Validate validates the name selector
-func (c NameCondition) Validate() error {
-	return c.validate(0)
-}
-
-func (c NameCondition) validate(depth int) error {
+func (c NameCondition) validate() error {
 	if c.TypeField != ConditionTypeName {
 		return fmt.Errorf("invalid type for name selector: %s", c.TypeField)
 	}
@@ -40,5 +35,9 @@ func (c NameCondition) validate(depth int) error {
 
 // Matches checks if the resource matches the name selector
 func (c NameCondition) Matches(resource resource.Resource) (bool, error) {
+	var err error
+	if err = c.validate(); err != nil {
+		return false, err
+	}
 	return c.Operator.Test(resource.Name, c.Value)
 }

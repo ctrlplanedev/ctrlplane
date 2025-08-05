@@ -128,12 +128,13 @@ func TestIDCondition_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.cond.Validate()
+			// result doesn't matter, only testing for validation errors
+			_, err := tt.cond.Matches(resourceFixture())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Match() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err != nil && tt.errMsg != "" && err.Error() != tt.errMsg {
-				t.Errorf("Validate() error message = %v, want %v", err.Error(), tt.errMsg)
+				t.Errorf("Match() error message = %v, want %v", err.Error(), tt.errMsg)
 			}
 		})
 	}
@@ -201,7 +202,7 @@ func TestIDCondition_Matches(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "empty condition value matches empty resource ID",
+			name: "empty condition value errors",
 			cond: IDCondition{
 				TypeField: ConditionTypeID,
 				Operator:  IdOperatorEquals,
@@ -210,8 +211,8 @@ func TestIDCondition_Matches(t *testing.T) {
 			resource: resource.Resource{
 				ID: "",
 			},
-			want:    true,
-			wantErr: false,
+			want:    false,
+			wantErr: true,
 		},
 		{
 			name: "special characters match",
