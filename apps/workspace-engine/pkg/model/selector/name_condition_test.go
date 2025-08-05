@@ -101,7 +101,8 @@ func TestNameCondition_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.cond.Validate()
+			// result doesn't matter, only testing for validation errors
+			_, err := tt.cond.Matches(resourceFixture())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -347,9 +348,10 @@ func TestNameCondition_EdgeCases(t *testing.T) {
 		cond     NameCondition
 		resource resource.Resource
 		want     bool
+		wantErr  bool
 	}{
 		{
-			name: "starts-with empty string matches everything",
+			name: "starts-with empty string errors",
 			cond: NameCondition{
 				TypeField: ConditionTypeName,
 				Operator:  ColumnOperatorStartsWith,
@@ -358,10 +360,11 @@ func TestNameCondition_EdgeCases(t *testing.T) {
 			resource: resource.Resource{
 				Name: "any-name",
 			},
-			want: true,
+			want:    false,
+			wantErr: true,
 		},
 		{
-			name: "ends-with empty string matches everything",
+			name: "ends-with empty string errors",
 			cond: NameCondition{
 				TypeField: ConditionTypeName,
 				Operator:  ColumnOperatorEndsWith,
@@ -370,10 +373,11 @@ func TestNameCondition_EdgeCases(t *testing.T) {
 			resource: resource.Resource{
 				Name: "any-name",
 			},
-			want: true,
+			want:    false,
+			wantErr: true,
 		},
 		{
-			name: "contains empty string matches everything",
+			name: "contains empty string errors",
 			cond: NameCondition{
 				TypeField: ConditionTypeName,
 				Operator:  ColumnOperatorContains,
@@ -382,7 +386,8 @@ func TestNameCondition_EdgeCases(t *testing.T) {
 			resource: resource.Resource{
 				Name: "any-name",
 			},
-			want: true,
+			want:    false,
+			wantErr: true,
 		},
 		{
 			name: "whitespace handling in starts-with",
@@ -413,11 +418,11 @@ func TestNameCondition_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.cond.Matches(tt.resource)
-			if err != nil {
-				t.Errorf("Matches() unexpected error = %v", err)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Matches() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
+			if err == nil && got != tt.want {
 				t.Errorf("Matches() = %v, want %v", got, tt.want)
 			}
 		})
