@@ -1,8 +1,8 @@
 package operations
 
 import (
+	"fmt"
 	"time"
-	"workspace-engine/pkg/engine/selector"
 )
 
 var now = time.Now()
@@ -22,13 +22,13 @@ type entityBuilder struct {
 
 func newEntityBuilder() *entityBuilder {
 	return &entityBuilder{
-		ID:        "test-123",
+		ID:        "test-id",
 		Name:      "Test Entity",
-		CreatedAt: yesterday.Format(time.RFC3339),
-		UpdatedAt: now.Format(time.RFC3339),
+		CreatedAt: time.Time{}.Format(time.RFC3339),
+		UpdatedAt: time.Time{}.Format(time.RFC3339),
 		Metadata: map[string]string{
 			"environment": "production",
-			"owner":       "team-a",
+			"owner":       "team",
 		},
 	}
 }
@@ -58,7 +58,7 @@ func (e *entityBuilder) metadata(metadata map[string]string) *entityBuilder {
 	return e
 }
 
-func (e *entityBuilder) build() selector.MatchableEntity {
+func (e *entityBuilder) build() *matchableEntity {
 	return &matchableEntity{
 		ID:        e.ID,
 		Name:      e.Name,
@@ -80,4 +80,31 @@ func (m *matchableEntity) GetID() string {
 	return m.ID
 }
 
+func (m *matchableEntity) GetName() string {
+	return m.Name
+}
 
+func (m *matchableEntity) GetCreatedAt() time.Time {
+	var createdAt time.Time
+	var err error
+	if createdAt, err = time.Parse(time.RFC3339, m.CreatedAt); err != nil {
+		panic(fmt.Sprintf("invalid created-at format: %s", m.CreatedAt))
+	}
+	return createdAt
+}
+
+func (m *matchableEntity) GetUpdatedAt() time.Time {
+	var updatedAt time.Time
+	var err error
+	if updatedAt, err = time.Parse(time.RFC3339, m.UpdatedAt); err != nil {
+		panic(fmt.Sprintf("invalid updated-at format: %s", m.UpdatedAt))
+	}
+	return updatedAt
+}
+
+func (m *matchableEntity) GetMetadata() map[string]string {
+	if m.Metadata == nil {
+		return make(map[string]string)
+	}
+	return m.Metadata
+}
