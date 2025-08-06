@@ -413,7 +413,7 @@ func TestDateCondition_timeTruncation(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.condTime.String(), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			cond := DateCondition{
 				TypeField: ConditionTypeDate,
 				Operator:  tt.operator,

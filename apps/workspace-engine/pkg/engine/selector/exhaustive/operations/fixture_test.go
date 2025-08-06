@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -84,12 +85,20 @@ func (m *matchableEntity) GetName() string {
 }
 
 func (m *matchableEntity) GetCreatedAt() time.Time {
-	createdAt, _ := time.Parse(time.RFC3339, m.CreatedAt)
+	var createdAt time.Time
+	var err error
+	if createdAt, err = time.Parse(time.RFC3339, m.CreatedAt); err != nil {
+		panic(fmt.Sprintf("invalid created-at format: %s", m.CreatedAt))
+	}
 	return createdAt
 }
 
 func (m *matchableEntity) GetUpdatedAt() time.Time {
-	updatedAt, _ := time.Parse(time.RFC3339, m.UpdatedAt)
+	var updatedAt time.Time
+	var err error
+	if updatedAt, err = time.Parse(time.RFC3339, m.UpdatedAt); err != nil {
+		panic(fmt.Sprintf("invalid updated-at format: %s", m.UpdatedAt))
+	}
 	return updatedAt
 }
 
