@@ -8,14 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Policy struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	Enabled     bool
-	Priority    int
-	Targets     []PolicyTarget
-}
-
 type PolicyTarget struct {
 	ID                  uuid.UUID
 	DeploymentSelector  *selector.Condition
@@ -23,11 +15,11 @@ type PolicyTarget struct {
 	ResourceSelector    *selector.Condition
 }
 
-type PolicySelectorEngine interface {
-	LoadPolicies(ctx context.Context, policies []Policy) error
-	UpsertPolicy(ctx context.Context, policy Policy) error
-	RemovePolicies(ctx context.Context, policies []Policy) error
-	RemovePolicy(ctx context.Context, policy Policy) error
+type PolicyTargetSelectorEngine interface {
+	LoadPoliciesTargets(ctx context.Context, policies []PolicyTarget) error
+	UpsertPolicyTarget(ctx context.Context, policyTarget PolicyTarget) error
+	RemovePoliciesTargets(ctx context.Context, policies []PolicyTarget) error
+	RemovePolicyTarget(ctx context.Context, policyTarget PolicyTarget) error
 
 	LoadDeployments(ctx context.Context, deployments []selector.BaseEntity) error
 	UpsertDeployment(ctx context.Context, deployment selector.BaseEntity) error
@@ -44,5 +36,5 @@ type PolicySelectorEngine interface {
 	RemoveResources(ctx context.Context, resources []selector.BaseEntity) error
 	RemoveResource(ctx context.Context, resource selector.BaseEntity) error
 
-	GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget engine.ReleaseTarget) ([]Policy, error)
+	GetPolicyTargetsForReleaseTarget(ctx context.Context, releaseTarget engine.ReleaseTarget) ([]PolicyTarget, error)
 }
