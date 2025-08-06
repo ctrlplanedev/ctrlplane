@@ -42,7 +42,7 @@ func compareDateCondition(operator DateOperator, aValue time.Time, bValue time.T
 	case DateOperatorBeforeOrOn:
 		return aValueSec.Before(bValueSec) || aValueSec.Equal(bValueSec), nil
 	case DateOperatorAfterOrOn:
-		return aValue.After(bValueSec) || aValue.Equal(bValueSec), nil
+		return aValueSec.After(bValueSec) || aValueSec.Equal(bValueSec), nil
 	default:
 		return false, fmt.Errorf("invalid date operator: %s", operator)
 	}
