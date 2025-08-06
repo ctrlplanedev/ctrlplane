@@ -21,11 +21,13 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 
 	deploymentSelectors := engine.Selectors.DeploymentResources.UpsertEntity(ctx, resource)
 	environmentSelectors := engine.Selectors.EnvironmentResources.UpsertEntity(ctx, resource)
+	policyTargetSelectors := engine.Selectors.PolicyTargetResources.UpsertEntity(ctx, resource)
 
 	deploymentDone := false
 	environmentDone := false
+	policyTargetDone := false
 
-	for !deploymentDone || !environmentDone {
+	for !deploymentDone || !environmentDone || !policyTargetDone {
 		select {
 		case selector := <-deploymentSelectors:
 			if selector.Done {
@@ -37,6 +39,11 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 				environmentDone = true
 				continue
 			}
+		case selector := <-policyTargetSelectors:
+			if selector.Done {
+				policyTargetDone = true
+				continue
+			}
 		}
 	}
 
@@ -45,6 +52,8 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 
 	// Find matching deployment-environment pairs based on system ID
 	var matches []policy.ReleaseTarget
+
+	newReleaseTargets := make([]policy.ReleaseTarget, 0)
 
 	for _, deployment := range deployments {
 		for _, environment := range environments {
@@ -58,5 +67,14 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 		}
 	}
 
-	return nil
+	// upsert the new release targets to the policy target release targets selector
+	// delete old release targets from the policy target release targets selector
+
+	// for each new release target
+	//   just grab any policy that matches
+	//     feed it to eval engine (release target, policies[])  engine.GetSelectorsForEntity(ctx, releaseTarget)
+
+	// for each removed release target
+	//   call exit hooks
+
 }
