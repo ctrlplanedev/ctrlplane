@@ -4,79 +4,56 @@ import (
 	"fmt"
 	"time"
 	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/model/conditions"
 )
 
 // MaxDepthAllowed defines the maximum nesting depth for conditions
 const MaxDepthAllowed = 2
 
-type ComparisonOperator string
-
-const (
-	ComparisonOperatorAnd ComparisonOperator = "and"
-	ComparisonOperatorOr  ComparisonOperator = "or"
-)
-
-type ConditionType string
-
-const (
-	ConditionTypeMetadata   ConditionType = "metadata"
-	ConditionTypeDate       ConditionType = "created-at"
-	ConditionTypeUpdatedAt  ConditionType = "updated-at"
-	ConditionTypeComparison ConditionType = "comparison"
-	ConditionTypeVersion    ConditionType = "version"
-	ConditionTypeID         ConditionType = "id"
-	ConditionTypeName       ConditionType = "name"
-	ConditionTypeSystem     ConditionType = "system"
-	ConditionTypeAnd        ConditionType = "and"
-	ConditionTypeOr         ConditionType = "or"
-)
-
 type UnknownCondition struct {
-	ConditionType ConditionType      `json:"type"`
-	Operator      string             `json:"operator"`
-	Value         string             `json:"value"`
-	Key           string             `json:"key"`
-	Conditions    []UnknownCondition `json:"conditions"`
+	JSONCondition conditions.JSONCondition
 }
 
-func (c UnknownCondition) GetCondition() (selector.Condition, error) {
-	conditions := make([]selector.Condition, len(c.Conditions))
-	for i, cond := range c.Conditions {
-		condition, err := cond.GetCondition()
+func (c UnknownCondition) GetCondition() (selector.Condition[selector.MatchableEntity], error) {
+	cs := make([]selector.Condition[selector.MatchableEntity], len(c.JSONCondition.Conditions))
+	for i, cond := range c.JSONCondition.Conditions {
+		condition, err := UnknownCondition{cond}.GetCondition()
 		if err != nil {
 			return nil, err
 		}
-		conditions[i] = condition
+		cs[i] = condition
 	}
-	switch c.ConditionType {
-	case ConditionTypeAnd:
-		return &ComparisonCondition{ComparisonConditionOperatorAnd, conditions}, nil
-	case ConditionTypeOr:
-		return &ComparisonCondition{ComparisonConditionOperatorOr, conditions}, nil
-	case ConditionTypeMetadata:
-		return &MetadataCondition{MetadataConditionOperator(c.Operator), c.Key, c.Value}, nil
-	case ConditionTypeDate:
-		date, err := time.Parse(time.RFC3339, c.Value)
+
+	conditionType := c.JSONCondition.ConditionType
+	switch conditionType {
+	case conditions.ConditionTypeAnd:
+		return &ComparisonCondition{ComparisonConditionOperatorAnd, cs}, nil
+	case conditions.ConditionTypeOr:
+		return &ComparisonCondition{ComparisonConditionOperatorOr, cs}, nil
+	case conditions.ConditionTypeMetadata:
+		return &MetadataCondition{MetadataConditionOperator(c.JSONCondition.Operator), c.JSONCondition.Key, c.JSONCondition.Value}, nil
+	case conditions.ConditionTypeDate:
+		date, err := time.Parse(time.RFC3339, c.JSONCondition.Value)
 		if err != nil {
 			return nil, err
 		}
-		return &DateCondition{c.ConditionType, DateOperator(c.Operator), date}, nil
-	case ConditionTypeUpdatedAt:
-		date, err := time.Parse(time.RFC3339, c.Value)
+		return &DateCondition{c.JSONCondition.ConditionType, conditions.DateOperator(c.JSONCondition.Operator), date}, nil
+	case conditions.ConditionTypeUpdatedAt:
+		date, err := time.Parse(time.RFC3339, c.JSONCondition.Value)
 		if err != nil {
 			return nil, err
 		}
-		return &DateCondition{c.ConditionType, DateOperator(c.Operator), date}, nil
-	case ConditionTypeVersion:
-		return &StringCondition{c.ConditionType, StringConditionOperator(c.Operator), c.Value}, nil
-	case ConditionTypeID:
-		return &StringCondition{c.ConditionType, StringConditionOperator(c.Operator), c.Value}, nil
-	case ConditionTypeName:
-		return &StringCondition{c.ConditionType, StringConditionOperator(c.Operator), c.Value}, nil
-	case ConditionTypeSystem:
-		return &StringCondition{c.ConditionType, StringConditionOperator(c.Operator), c.Value}, nil
+		return &DateCondition{c.JSONCondition.ConditionType, conditions.DateOperator(c.JSONCondition.Operator), date}, nil
+	case conditions.ConditionTypeVersion:
+		return &StringCondition{c.JSONCondition.ConditionType, conditions.StringConditionOperator(c.JSONCondition.Operator), c.JSONCondition.Value}, nil
+	case conditions.ConditionTypeID:
+		return &StringCondition{conditionType, conditions.StringConditionOperator(c.JSONCondition.Operator), c.JSONCondition.Value}, nil
+	case conditions.ConditionTypeName:
+		return &StringCondition{conditionType, conditions.StringConditionOperator(c.JSONCondition.Operator), c.JSONCondition.Value}, nil
+	case conditions.ConditionTypeSystem:
+		return &StringCondition{conditionType, conditions.StringConditionOperator(c.JSONCondition.Operator), c.JSONCondition.Value}, nil
 	}
-	return nil, fmt.Errorf("invalid condition type: %s", c.ConditionType)
+	return nil, fmt.Errorf("invalid condition type: %s", c.JSONCondition.ConditionType)
 }
 
 func (c UnknownCondition) Matches(entity selector.MatchableEntity) (bool, error) {

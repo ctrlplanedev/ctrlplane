@@ -3,27 +3,28 @@ package operations
 import (
 	"testing"
 	"time"
+	"workspace-engine/pkg/model/conditions"
 )
 
 func TestDateCondition_ConditionTypeDate(t *testing.T) {
 	condAfter := DateCondition{
-		TypeField: ConditionTypeDate,
-		Operator:  DateOperatorAfter,
+		TypeField: conditions.ConditionTypeDate,
+		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
 	}
 	condBefore := DateCondition{
-		TypeField: ConditionTypeDate,
-		Operator:  DateOperatorBefore,
+		TypeField: conditions.ConditionTypeDate,
+		Operator:  conditions.DateOperatorBefore,
 		Value:     now,
 	}
 	condBeforeOrOn := DateCondition{
-		TypeField: ConditionTypeDate,
-		Operator:  DateOperatorBeforeOrOn,
+		TypeField: conditions.ConditionTypeDate,
+		Operator:  conditions.DateOperatorBeforeOrOn,
 		Value:     now,
 	}
 	condAfterOrOn := DateCondition{
-		TypeField: ConditionTypeDate,
-		Operator:  DateOperatorAfterOrOn,
+		TypeField: conditions.ConditionTypeDate,
+		Operator:  conditions.DateOperatorAfterOrOn,
 		Value:     now,
 	}
 
@@ -136,23 +137,23 @@ func TestDateCondition_ConditionTypeDate(t *testing.T) {
 
 func TestDateCondition_ConditionTypeUpdatedAt(t *testing.T) {
 	condAfter := DateCondition{
-		TypeField: ConditionTypeUpdatedAt,
-		Operator:  DateOperatorAfter,
+		TypeField: conditions.ConditionTypeUpdatedAt,
+		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
 	}
 	condBefore := DateCondition{
-		TypeField: ConditionTypeUpdatedAt,
-		Operator:  DateOperatorBefore,
+		TypeField: conditions.ConditionTypeUpdatedAt,
+		Operator:  conditions.DateOperatorBefore,
 		Value:     now,
 	}
 	condBeforeOrOn := DateCondition{
-		TypeField: ConditionTypeUpdatedAt,
-		Operator:  DateOperatorBeforeOrOn,
+		TypeField: conditions.ConditionTypeUpdatedAt,
+		Operator:  conditions.DateOperatorBeforeOrOn,
 		Value:     now,
 	}
 	condAfterOrOn := DateCondition{
-		TypeField: ConditionTypeUpdatedAt,
-		Operator:  DateOperatorAfterOrOn,
+		TypeField: conditions.ConditionTypeUpdatedAt,
+		Operator:  conditions.DateOperatorAfterOrOn,
 		Value:     now,
 	}
 
@@ -271,8 +272,8 @@ func TestDateCondition_InvalidField(t *testing.T) {
 	}
 
 	cond := DateCondition{
-		TypeField: ConditionTypeDate,
-		Operator:  DateOperatorAfter,
+		TypeField: conditions.ConditionTypeDate,
+		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
 	}
 
@@ -291,8 +292,8 @@ func TestDateCondition_InvalidDateFormat(t *testing.T) {
 	}
 
 	cond := DateCondition{
-		TypeField: ConditionTypeDate,
-		Operator:  DateOperatorAfter,
+		TypeField: conditions.ConditionTypeDate,
+		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
 	}
 
@@ -306,7 +307,7 @@ func TestDateCondition_InvalidOperator(t *testing.T) {
 	entity := newEntityBuilder().build()
 
 	cond := DateCondition{
-		TypeField: ConditionTypeDate,
+		TypeField: conditions.ConditionTypeDate,
 		Operator:  "equals", // Invalid operator
 		Value:     now,
 	}
@@ -324,98 +325,98 @@ func TestDateCondition_timeTruncation(t *testing.T) {
 		name       string
 		condTime   time.Time
 		entityTime time.Time
-		operator   DateOperator
+		operator   conditions.DateOperator
 		wantMatch  bool
 	}{
 		{
 			name:       "truncated condTime with After operator",
 			condTime:   nowTruncated,
 			entityTime: nowWithMillis,
-			operator:   DateOperatorAfter,
+			operator:   conditions.DateOperatorAfter,
 			wantMatch:  false,
 		},
 		{
 			name:       "truncated entityTime with After operator",
 			condTime:   nowWithMillis,
 			entityTime: nowTruncated,
-			operator:   DateOperatorAfter,
+			operator:   conditions.DateOperatorAfter,
 			wantMatch:  false,
 		},
 		{
 			name:       "truncated both with After operator",
 			condTime:   nowTruncated,
 			entityTime: nowTruncated,
-			operator:   DateOperatorAfter,
+			operator:   conditions.DateOperatorAfter,
 			wantMatch:  false,
 		},
 		{
 			name:       "truncated condTime with AfterOrOn operator",
 			condTime:   nowTruncated,
 			entityTime: nowWithMillis,
-			operator:   DateOperatorAfterOrOn,
+			operator:   conditions.DateOperatorAfterOrOn,
 			wantMatch:  true,
 		},
 		{
 			name:       "truncated entityTime with AfterOrOn operator",
 			condTime:   nowWithMillis,
 			entityTime: nowTruncated,
-			operator:   DateOperatorAfterOrOn,
+			operator:   conditions.DateOperatorAfterOrOn,
 			wantMatch:  true,
 		},
 		{
 			name:       "truncated both with AfterOrOn operator",
 			condTime:   nowTruncated,
 			entityTime: nowTruncated,
-			operator:   DateOperatorAfterOrOn,
+			operator:   conditions.DateOperatorAfterOrOn,
 			wantMatch:  true,
 		},
 		{
 			name:       "truncated condTime with Before operator",
 			condTime:   nowTruncated,
 			entityTime: nowWithMillis,
-			operator:   DateOperatorBefore,
+			operator:   conditions.DateOperatorBefore,
 			wantMatch:  false,
 		},
 		{
 			name:       "truncated entityTime with Before operator",
 			condTime:   nowWithMillis,
 			entityTime: nowTruncated,
-			operator:   DateOperatorBefore,
+			operator:   conditions.DateOperatorBefore,
 			wantMatch:  false,
 		},
 		{
 			name:       "truncated both with Before operator",
 			condTime:   nowTruncated,
 			entityTime: nowTruncated,
-			operator:   DateOperatorBefore,
+			operator:   conditions.DateOperatorBefore,
 			wantMatch:  false,
 		},
 		{
 			name:       "truncated condTime with BeforeOrOn operator",
 			condTime:   nowTruncated,
 			entityTime: nowWithMillis,
-			operator:   DateOperatorBeforeOrOn,
+			operator:   conditions.DateOperatorBeforeOrOn,
 			wantMatch:  true,
 		},
 		{
 			name:       "truncated entityTime with BeforeOrOn operator",
 			condTime:   nowWithMillis,
 			entityTime: nowTruncated,
-			operator:   DateOperatorBeforeOrOn,
+			operator:   conditions.DateOperatorBeforeOrOn,
 			wantMatch:  true,
 		},
 		{
 			name:       "truncated both with BeforeOrOn operator",
 			condTime:   nowTruncated,
 			entityTime: nowTruncated,
-			operator:   DateOperatorBeforeOrOn,
+			operator:   conditions.DateOperatorBeforeOrOn,
 			wantMatch:  true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cond := DateCondition{
-				TypeField: ConditionTypeDate,
+				TypeField: conditions.ConditionTypeDate,
 				Operator:  tt.operator,
 				Value:     tt.condTime,
 			}

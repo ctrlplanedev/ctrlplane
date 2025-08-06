@@ -3,8 +3,6 @@ package engine
 import (
 	"workspace-engine/pkg/engine/policy"
 	"workspace-engine/pkg/engine/selector"
-	"workspace-engine/pkg/model/deployment"
-	"workspace-engine/pkg/model/environment"
 	"workspace-engine/pkg/model/resource"
 )
 
@@ -17,8 +15,12 @@ func (w *WorkspaceStore) GetWorkspaceID() string {
 }
 
 type WorkspaceSelector struct {
-	EnvironmentResources selector.SelectorEngine[resource.Resource, environment.Environment]
-	DeploymentResources  selector.SelectorEngine[resource.Resource, deployment.Deployment]
+	EnvironmentResources selector.SelectorEngine[resource.Resource, model.EnvironmentResourceSelector]
+	DeploymentResources  selector.SelectorEngine[resource.Resource, model.DeploymentResourceSelector]
+
+	PolicyTargetResources selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
+	PolicyTargetEnvironments selector.SelectorEngine[resource.Resource, selector.BaseSelector]
+	PolicyTargetDeployments selector.SelectorEngine[resource.Resource, selector.BaseSelector]
 
 	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.PolicyTarget]
 }

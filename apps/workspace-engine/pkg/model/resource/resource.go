@@ -1,6 +1,8 @@
 package resource
 
-import "time"
+import (
+	"time"
+)
 
 type Resource struct {
 	ID          string            `json:"id"`
@@ -12,7 +14,6 @@ type Resource struct {
 	CreatedAt   time.Time         `json:"createdAt"`
 	Metadata    map[string]string `json:"metadata"`
 }
-
 
 func (r Resource) GetID() string {
 	return r.ID

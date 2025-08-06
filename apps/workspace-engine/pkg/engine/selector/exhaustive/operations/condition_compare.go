@@ -10,8 +10,8 @@ const (
 )
 
 type ComparisonCondition struct {
-	Operator   ComparisonConditionOperator `json:"operator"`
-	Conditions []selector.Condition        `json:"conditions"`
+	Operator   ComparisonConditionOperator                    `json:"operator"`
+	Conditions []selector.Condition[selector.MatchableEntity] `json:"conditions"`
 }
 
 func (c ComparisonCondition) Matches(entity selector.MatchableEntity) (bool, error) {

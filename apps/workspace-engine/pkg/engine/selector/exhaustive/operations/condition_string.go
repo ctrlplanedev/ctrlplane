@@ -4,26 +4,18 @@ import (
 	"fmt"
 	"strings"
 	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/model/conditions"
 )
 
-type StringConditionOperator string
-
-const (
-	StringConditionOperatorEquals     StringConditionOperator = "equals"
-	StringConditionOperatorStartsWith StringConditionOperator = "starts-with"
-	StringConditionOperatorEndsWith   StringConditionOperator = "ends-with"
-	StringConditionOperatorContains   StringConditionOperator = "contains"
-)
-
-func compareStringCondition(operator StringConditionOperator, aValue string, bValue string) (bool, error) {
+func compareStringCondition(operator conditions.StringConditionOperator, aValue string, bValue string) (bool, error) {
 	switch operator {
-	case StringConditionOperatorEquals:
+	case conditions.StringConditionOperatorEquals:
 		return aValue == bValue, nil
-	case StringConditionOperatorStartsWith:
+	case conditions.StringConditionOperatorStartsWith:
 		return strings.HasPrefix(aValue, bValue), nil
-	case StringConditionOperatorEndsWith:
+	case conditions.StringConditionOperatorEndsWith:
 		return strings.HasSuffix(aValue, bValue), nil
-	case StringConditionOperatorContains:
+	case conditions.StringConditionOperatorContains:
 		return strings.Contains(aValue, bValue), nil
 	default:
 		return false, fmt.Errorf("invalid column operator: %s", operator)
@@ -31,8 +23,8 @@ func compareStringCondition(operator StringConditionOperator, aValue string, bVa
 }
 
 type StringCondition struct {
-	TypeField ConditionType           `json:"type"`
-	Operator  StringConditionOperator `json:"operator"`
+	TypeField conditions.ConditionType           `json:"type"`
+	Operator  conditions.StringConditionOperator `json:"operator"`
 	Value     string                  `json:"value"`
 }
 

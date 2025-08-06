@@ -11,13 +11,13 @@ import (
 type Exhaustive struct {
 	// Storage for entities and selectors
 	entities  map[string]selector.MatchableEntity
-	selectors map[string]selector.Selector
+	selectors map[string]selector.Selector[selector.MatchableEntity]
 
 	// Track current matches between entities and selectors
 	matches map[string]map[string]bool // matches[entityID][selectorID] = isMatched
 
 	// Subscribers to match changes
-	subscribers []selector.MatchChangesHandler
+	subscribers []selector.MatchChangesHandler[selector.MatchableEntity]
 
 	// Mutex for thread safety
 	mu sync.RWMutex
@@ -27,9 +27,9 @@ type Exhaustive struct {
 func NewExhaustive() *Exhaustive {
 	return &Exhaustive{
 		entities:    make(map[string]selector.MatchableEntity),
-		selectors:   make(map[string]selector.Selector),
+		selectors:   make(map[string]selector.Selector[selector.MatchableEntity]),
 		matches:     make(map[string]map[string]bool),
-		subscribers: make([]selector.MatchChangesHandler, 0),
+		subscribers: make([]selector.MatchChangesHandler[selector.MatchableEntity], 0),
 	}
 }
 
@@ -106,7 +106,7 @@ func (e *Exhaustive) removeEntity(ctx context.Context, entity selector.BaseEntit
 		for selectorID, wasMatched := range matches {
 			if wasMatched {
 				if sel, selectorExists := e.selectors[selectorID]; selectorExists {
-					change := selector.MatchChange{
+					change := selector.MatchChange[selector.MatchableEntity]{
 						Entity:     entity,
 						Selector:   sel,
 						ChangeType: selector.MatchChangeTypeRemoved,
@@ -189,7 +189,7 @@ func (e *Exhaustive) removeSelector(ctx context.Context, sel selector.BaseSelect
 	for entityID, matches := range e.matches {
 		if wasMatched, exists := matches[selectorID]; exists && wasMatched {
 			if entity, entityExists := e.entities[entityID]; entityExists {
-				change := selector.MatchChange{
+				change := selector.MatchChange[selector.MatchableEntity]{
 					Entity:     entity,
 					Selector:   sel,
 					ChangeType: selector.MatchChangeTypeRemoved,
@@ -250,7 +250,7 @@ func (e *Exhaustive) GetEntitiesForSelector(ctx context.Context, sel selector.Ba
 }
 
 // SubscribeToMatchChanges registers a callback for match change events
-func (e *Exhaustive) SubscribeToMatchChanges(handler func(ctx context.Context, change selector.MatchChange) error) error {
+func (e *Exhaustive) SubscribeToMatchChanges(handler func(ctx context.Context, change selector.MatchChange[selector.MatchableEntity]) error) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -262,7 +262,7 @@ func (e *Exhaustive) SubscribeToMatchChanges(handler func(ctx context.Context, c
 func (e *Exhaustive) evaluateMatch(
 	ctx context.Context,
 	entity selector.MatchableEntity,
-	sel selector.Selector,
+	sel selector.Selector[selector.MatchableEntity],
 ) error {
 	entityID := entity.GetID()
 	selectorID := sel.GetID()
@@ -291,7 +291,7 @@ func (e *Exhaustive) evaluateMatch(
 			changeType = selector.MatchChangeTypeRemoved
 		}
 
-		change := selector.MatchChange{
+		change := selector.MatchChange[selector.MatchableEntity]{
 			Entity:     entity,
 			Selector:   sel,
 			ChangeType: changeType,
@@ -304,7 +304,7 @@ func (e *Exhaustive) evaluateMatch(
 }
 
 // evaluateConditions evaluates conditions against an entity using operation functions
-func (e *Exhaustive) evaluateConditions(entity selector.MatchableEntity, condition selector.Condition) (bool, error) {
+func (e *Exhaustive) evaluateConditions(entity selector.MatchableEntity, condition selector.Condition[selector.MatchableEntity]) (bool, error) {
 	if condition == nil {
 		return true, nil // No conditions means always match
 	}
@@ -313,10 +313,10 @@ func (e *Exhaustive) evaluateConditions(entity selector.MatchableEntity, conditi
 }
 
 // notifySubscribers notifies all registered subscribers of match changes
-func (e *Exhaustive) notifySubscribers(ctx context.Context, change selector.MatchChange) {
+func (e *Exhaustive) notifySubscribers(ctx context.Context, change selector.MatchChange[selector.MatchableEntity]) {
 	for _, subscriber := range e.subscribers {
 		// Execute subscriber in a goroutine to avoid blocking
-		go func(sub func(ctx context.Context, change selector.MatchChange) error) {
+		go func(sub func(ctx context.Context, change selector.MatchChange[selector.MatchableEntity]) error) {
 			if err := sub(ctx, change); err != nil {
 				// Log error but don't stop other subscribers
 				// You might want to add proper logging here
