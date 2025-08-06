@@ -8,16 +8,12 @@ type MatchableEntity interface {
 	GetID() string
 }
 
-type SelectorEntity interface {
-	GetID() string
-}
-
 type Selector[E MatchableEntity] interface {
 	GetID() string
 	Matches(entity E) (bool, error)
 }
 
-type MatchChange[E MatchableEntity, S SelectorEntity] struct {
+type MatchChange[E MatchableEntity, S Selector[E]] struct {
 	Entity     E
 	Selector   S
 	ChangeType MatchChangeType
@@ -30,16 +26,16 @@ const (
 	MatchChangeTypeRemoved MatchChangeType = "removed"
 )
 
-type MatchChangesHandler[E MatchableEntity, S SelectorEntity] func(ctx context.Context, change MatchChange[E, S]) error
+type MatchChangesHandler[E MatchableEntity, S Selector[E]] func(ctx context.Context, change MatchChange[E, S]) error
 
-type ChannelResult[E MatchableEntity, S SelectorEntity] struct {
+type ChannelResult[E MatchableEntity, S Selector[E]] struct {
 	MatchChange *MatchChange[E, S]
 
 	Done  bool
 	Error error
 }
 
-type SelectorEngine[E MatchableEntity, S SelectorEntity] interface {
+type SelectorEngine[E MatchableEntity, S Selector[E]] interface {
 	UpsertEntity(ctx context.Context, entity ...E) <-chan ChannelResult[E, S]
 	RemoveEntity(ctx context.Context, entity ...E) <-chan ChannelResult[E, S]
 
