@@ -124,7 +124,7 @@ func (e *Exhaustive) removeEntity(ctx context.Context, entity selector.BaseEntit
 }
 
 // LoadSelectors loads multiple selectors
-func (e *Exhaustive) LoadSelectors(ctx context.Context, selectors []selector.BaseSelector) error {
+func (e *Exhaustive) LoadSelectors(ctx context.Context, selectors []selector.Selector[selector.MatchableEntity]) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

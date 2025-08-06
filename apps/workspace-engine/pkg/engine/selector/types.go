@@ -30,43 +30,43 @@ const (
 	MatchChangeTypeRemoved MatchChangeType = "removed"
 )
 
-type BaseEntity struct {
+type BaseEntity[E MatchableEntity] struct {
 	ID string
 }
 
-func (b BaseEntity) GetID() string {
+func (b BaseEntity[E]) GetID() string {
 	return b.ID
 }
 
-type BaseSelector struct {
+type BaseSelector[E MatchableEntity] struct {
 	ID         string
 	Conditions Condition[MatchableEntity]
 }
 
-func (b BaseSelector) GetID() string {
+func (b BaseSelector[E]) GetID() string {
 	return b.ID
 }
 
-func (b BaseSelector) GetConditions() Condition[MatchableEntity]	 {
+func (b BaseSelector[E]) GetConditions() Condition[MatchableEntity]	 {
 	return b.Conditions
 }
 
 type MatchChangesHandler[E MatchableEntity] func(ctx context.Context, change MatchChange[E]) error
 
-type ChannelResult struct {
-	MatchChange *MatchChange[MatchableEntity]
+type ChannelResult[E MatchableEntity] struct {
+	MatchChange *MatchChange[E]
 
 	Done  bool
 	Error error
 }
 
-type SelectorEngine[E MatchableEntity, S Selector[E]] interface {
-	UpsertEntity(ctx context.Context, entity ...E) <-chan ChannelResult
-	RemoveEntity(ctx context.Context, entity ...E) <-chan ChannelResult
+type SelectorEngine[E MatchableEntity] interface {
+	UpsertEntity(ctx context.Context, entity ...E) <-chan ChannelResult[E]
+	RemoveEntity(ctx context.Context, entity ...E) <-chan ChannelResult[E]
 
-	UpsertSelector(ctx context.Context, selector ...S) <-chan ChannelResult
-	RemoveSelector(ctx context.Context, selector ...S) <-chan ChannelResult
+	UpsertSelector(ctx context.Context, selector ...Selector[E]) <-chan ChannelResult[E]
+	RemoveSelector(ctx context.Context, selector ...Selector[E]) <-chan ChannelResult[E]
 
-	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
-	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
+	GetSelectorsForEntity(ctx context.Context, entity E) ([]Selector[E], error)
+	GetEntitiesForSelector(ctx context.Context, selector Selector[E]) ([]E, error)
 }

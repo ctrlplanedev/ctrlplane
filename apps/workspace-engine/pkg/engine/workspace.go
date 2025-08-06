@@ -15,14 +15,14 @@ func (w *WorkspaceStore) GetWorkspaceID() string {
 }
 
 type WorkspaceSelector struct {
-	EnvironmentResources selector.SelectorEngine[resource.Resource, model.EnvironmentResourceSelector]
-	DeploymentResources  selector.SelectorEngine[resource.Resource, model.DeploymentResourceSelector]
+	EnvironmentResources selector.SelectorEngine[resource.Resource]
+	DeploymentResources  selector.SelectorEngine[resource.Resource]
 
-	PolicyTargetResources selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
-	PolicyTargetEnvironments selector.SelectorEngine[resource.Resource, selector.BaseSelector]
-	PolicyTargetDeployments selector.SelectorEngine[resource.Resource, selector.BaseSelector]
+	PolicyTargetResources    selector.SelectorEngine[resource.Resource]
+	PolicyTargetEnvironments selector.SelectorEngine[resource.Resource]
+	PolicyTargetDeployments  selector.SelectorEngine[resource.Resource]
 
-	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.PolicyTarget]
+	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget]
 }
 
 type WorkspaceStore struct {
