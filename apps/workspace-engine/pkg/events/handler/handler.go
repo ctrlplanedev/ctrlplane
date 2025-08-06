@@ -84,16 +84,16 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	duration := time.Since(startTime)
 
 	if err != nil {
-		el.log.Error("Handler failed to process event", 
-			"eventType", rawEvent.EventType, 
-			"eventId", rawEvent.EventID, 
+		el.log.Error("Handler failed to process event",
+			"eventType", rawEvent.EventType,
+			"eventId", rawEvent.EventID,
 			"error", err,
 			"duration", duration)
 		return fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
-	el.log.Info("Successfully processed event", 
-		"eventType", rawEvent.EventType, 
+	el.log.Info("Successfully processed event",
+		"eventType", rawEvent.EventType,
 		"eventId", rawEvent.EventID,
 		"duration", duration)
 

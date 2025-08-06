@@ -3,6 +3,7 @@ package operations
 import (
 	"fmt"
 	"time"
+	"workspace-engine/pkg/engine/selector"
 )
 
 var now = time.Now()
@@ -107,4 +108,11 @@ func (m *matchableEntity) GetMetadata() map[string]string {
 		return make(map[string]string)
 	}
 	return m.Metadata
+}
+
+func (m *matchableEntity) GetMatchableEntity(entityType selector.MatchableEntityType) (selector.MatchableEntity, error) {
+	if entityType == selector.MatchableEntityDefault {
+		return m, nil
+	}
+	return nil, fmt.Errorf("unsupported entity type: %s", entityType)
 }

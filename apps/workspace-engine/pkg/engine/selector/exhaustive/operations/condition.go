@@ -31,6 +31,9 @@ const (
 	ConditionTypeOr         ConditionType = "or"
 )
 
+// MatchableEntityType and its constants have been moved to the selector package to avoid cyclic imports.
+// Use selector.MatchableEntityType, selector.MatchableEntityDefault, etc.
+
 type UnknownCondition struct {
 	ConditionType ConditionType      `json:"type"`
 	Operator      string             `json:"operator"`

@@ -2,14 +2,25 @@ package selector
 
 import (
 	"context"
+	"fmt"
 )
 
 type Condition interface {
 	Matches(entity MatchableEntity) (bool, error)
 }
 
+type MatchableEntityType string
+
+const (
+	MatchableEntityDefault     MatchableEntityType = "" // Default entity type is to use the MatchableEntity provided
+	MatchableEntityResource    MatchableEntityType = "resource"
+	MatchableEntityDeployment  MatchableEntityType = "deployment"
+	MatchableEntityEnvironment MatchableEntityType = "environment"
+)
+
 type MatchableEntity interface {
 	GetID() string
+	GetMatchableEntity(entityType MatchableEntityType) (MatchableEntity, error)
 }
 
 type Selector interface {
@@ -38,8 +49,15 @@ func (b BaseEntity) GetID() string {
 	return b.ID
 }
 
+func (b BaseEntity) GetMatchableEntity(entityType MatchableEntityType) (MatchableEntity, error) {
+	if entityType == MatchableEntityDefault {
+		return b, nil
+	}
+	return nil, fmt.Errorf("unsupported entity type: %s", entityType)
+}
+
 type BaseSelector struct {
-	ID string
+	ID         string
 	Conditions Condition
 }
 
@@ -61,12 +79,12 @@ type ChannelResult struct {
 }
 
 type SelectorEngine[E MatchableEntity, S Selector] interface {
-    UpsertEntity(ctx context.Context, entity ...E) <- chan ChannelResult
-    RemoveEntity(ctx context.Context, entity ...E) <- chan ChannelResult
+	UpsertEntity(ctx context.Context, entity ...E) <-chan ChannelResult
+	RemoveEntity(ctx context.Context, entity ...E) <-chan ChannelResult
 
-    UpsertSelector(ctx context.Context, selector ...S) <- chan ChannelResult
-    RemoveSelector(ctx context.Context, selector ...S) <- chan ChannelResult
+	UpsertSelector(ctx context.Context, selector ...S) <-chan ChannelResult
+	RemoveSelector(ctx context.Context, selector ...S) <-chan ChannelResult
 
-    GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
-    GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
+	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
+	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
 }
