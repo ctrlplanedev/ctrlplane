@@ -7,6 +7,10 @@ import (
 	"workspace-engine/pkg/engine/selector"
 )
 
+type ExhaustiveConfig struct {
+	IsNilConditionAMatch bool
+}
+
 // Exhaustive implements the SelectorEngine interface
 type Exhaustive struct {
 	// Storage for entities and selectors
@@ -19,6 +23,8 @@ type Exhaustive struct {
 	// Subscribers to match changes
 	subscribers []selector.MatchChangesHandler
 
+	config ExhaustiveConfig
+
 	// Mutex for thread safety
 	mu sync.RWMutex
 }
@@ -30,6 +36,19 @@ func NewExhaustive() *Exhaustive {
 		selectors:   make(map[string]selector.Selector),
 		matches:     make(map[string]map[string]bool),
 		subscribers: make([]selector.MatchChangesHandler, 0),
+		config: ExhaustiveConfig{
+			IsNilConditionAMatch: true,
+		},
+	}
+}
+
+func NewExhaustiveWithConfig(config ExhaustiveConfig) *Exhaustive {
+	return &Exhaustive{
+		entities:    make(map[string]selector.MatchableEntity),
+		selectors:   make(map[string]selector.Selector),
+		matches:     make(map[string]map[string]bool),
+		subscribers: make([]selector.MatchChangesHandler, 0),
+		config:      config,
 	}
 }
 
@@ -306,7 +325,7 @@ func (e *Exhaustive) evaluateMatch(
 // evaluateConditions evaluates conditions against an entity using operation functions
 func (e *Exhaustive) evaluateConditions(entity selector.MatchableEntity, condition selector.Condition) (bool, error) {
 	if condition == nil {
-		return true, nil // No conditions means always match
+		return e.config.IsNilConditionAMatch, nil // No conditions means always match
 	}
 
 	return condition.Matches(entity)
