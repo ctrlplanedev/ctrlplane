@@ -31,12 +31,11 @@ const (
 	ConditionTypeOr         ConditionType = "or"
 )
 
-
 type UnknownCondition struct {
-	ConditionType ConditionType `json:"type"`
-	Operator      string `json:"operator"`
-	Value         string `json:"value"`
-	Key           string `json:"key"`
+	ConditionType ConditionType      `json:"type"`
+	Operator      string             `json:"operator"`
+	Value         string             `json:"value"`
+	Key           string             `json:"key"`
 	Conditions    []UnknownCondition `json:"conditions"`
 }
 
@@ -62,7 +61,7 @@ func (c UnknownCondition) GetCondition() (selector.Condition, error) {
 			return nil, err
 		}
 		return &DateCondition{c.ConditionType, DateOperator(c.Operator), date}, nil
-	case ConditionTypeUpdatedAt:	
+	case ConditionTypeUpdatedAt:
 		date, err := time.Parse(time.RFC3339, c.Value)
 		if err != nil {
 			return nil, err

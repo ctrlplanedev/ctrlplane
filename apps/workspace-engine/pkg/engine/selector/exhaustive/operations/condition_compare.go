@@ -5,13 +5,13 @@ import "workspace-engine/pkg/engine/selector"
 type ComparisonConditionOperator string
 
 const (
-	ComparisonConditionOperatorAnd ComparisonConditionOperator = "and" 
+	ComparisonConditionOperatorAnd ComparisonConditionOperator = "and"
 	ComparisonConditionOperatorOr  ComparisonConditionOperator = "or"
 )
 
 type ComparisonCondition struct {
-	Operator  ComparisonConditionOperator `json:"operator"`
-	Conditions []selector.Condition                `json:"conditions"`
+	Operator   ComparisonConditionOperator `json:"operator"`
+	Conditions []selector.Condition        `json:"conditions"`
 }
 
 func (c ComparisonCondition) Matches(entity selector.MatchableEntity) (bool, error) {

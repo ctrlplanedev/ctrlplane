@@ -29,16 +29,20 @@ func (c DateCondition) Matches(entity selector.MatchableEntity) (bool, error) {
 	return compareDateCondition(c.Operator, value, c.Value)
 }
 
+// compareDateCondition compares two dates based on the given operator.
+// It truncates the time to the second to avoid issues with sub-second precision.
 func compareDateCondition(operator DateOperator, aValue time.Time, bValue time.Time) (bool, error) {
+	aValueSec := aValue.Truncate(time.Second)
+	bValueSec := bValue.Truncate(time.Second)
 	switch operator {
 	case DateOperatorBefore:
-		return aValue.Before(bValue), nil
+		return aValueSec.Before(bValueSec), nil
 	case DateOperatorAfter:
-		return aValue.After(bValue), nil
+		return aValueSec.After(bValueSec), nil
 	case DateOperatorBeforeOrOn:
-		return aValue.Before(bValue) || aValue.Equal(bValue), nil
+		return aValueSec.Before(bValueSec) || aValueSec.Equal(bValueSec), nil
 	case DateOperatorAfterOrOn:
-		return aValue.After(bValue) || aValue.Equal(bValue), nil
+		return aValueSec.After(bValueSec) || aValueSec.Equal(bValueSec), nil
 	default:
 		return false, fmt.Errorf("invalid date operator: %s", operator)
 	}

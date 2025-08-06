@@ -18,9 +18,9 @@ const (
 )
 
 type MetadataCondition struct {
-	Operator  MetadataConditionOperator `json:"operator"`
-	Key       string                    `json:"key"`
-	Value     string                    `json:"value"`
+	Operator MetadataConditionOperator `json:"operator"`
+	Key      string                    `json:"key"`
+	Value    string                    `json:"value"`
 }
 
 func (c MetadataCondition) Matches(entity selector.MatchableEntity) (bool, error) {
