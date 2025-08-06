@@ -4,29 +4,13 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/model/conditions"
 )
 
-type MetadataConditionOperator string
-
-const (
-	MetadataConditionOperatorEquals     MetadataConditionOperator = "equals"
-	MetadataConditionOperatorStartsWith MetadataConditionOperator = "starts-with"
-	MetadataConditionOperatorEndsWith   MetadataConditionOperator = "ends-with"
-	MetadataConditionOperatorContains   MetadataConditionOperator = "contains"
-	MetadataConditionOperatorNull       MetadataConditionOperator = "null"
-)
-
-type MetadataCondition struct {
-	Operator MetadataConditionOperator `json:"operator"`
-	Key      string                    `json:"key"`
-	Value    string                    `json:"value"`
-}
-
-func (c MetadataCondition) Matches(entity selector.MatchableEntity) (bool, error) {
-	metadata, err := getProperty(entity, "Metadata")
+func MetadataConditionMatches(entity any, operator conditions.StringConditionOperator, field string, value string) (bool, error) {
+	metadata, err := getProperty(entity, "metadata")
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 
 	if metadata.Kind() != reflect.Map {
@@ -38,26 +22,23 @@ func (c MetadataCondition) Matches(entity selector.MatchableEntity) (bool, error
 		return false, fmt.Errorf("field %s is not a map", "Metadata")
 	}
 
-	value, ok := metadataMap[c.Key]
+	metadataValue, ok := metadataMap[field]
 	if !ok {
-		if c.Operator == MetadataConditionOperatorNull {
-			return true, nil
-		}
 		return false, nil
 	}
 
-	return compareMetadataCondition(c.Operator, value, c.Key)
+	return compareMetadataCondition(operator, metadataValue, value)
 }
 
-func compareMetadataCondition(operator MetadataConditionOperator, aValue string, bValue string) (bool, error) {
+func compareMetadataCondition(operator conditions.StringConditionOperator, aValue string, bValue string) (bool, error) {
 	switch operator {
-	case MetadataConditionOperatorEquals:
+	case conditions.StringConditionOperatorEquals:
 		return aValue == bValue, nil
-	case MetadataConditionOperatorStartsWith:
+	case conditions.StringConditionOperatorStartsWith:
 		return strings.HasPrefix(aValue, bValue), nil
-	case MetadataConditionOperatorEndsWith:
+	case conditions.StringConditionOperatorEndsWith:
 		return strings.HasSuffix(aValue, bValue), nil
-	case MetadataConditionOperatorContains:
+	case conditions.StringConditionOperatorContains:
 		return strings.Contains(aValue, bValue), nil
 	default:
 		return false, fmt.Errorf("invalid column operator: %s", operator)

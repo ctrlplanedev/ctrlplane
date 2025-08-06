@@ -7,13 +7,21 @@ import (
 	"workspace-engine/pkg/model/conditions"
 )
 
-type DateCondition struct {
+func DateConditionMatches(entity any, operator conditions.DateOperator, field string, value string) (bool, error) {
+	date, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return false, err
+	}
+	return compareDateCondition(operator, date, date)
+}
+
+type DateCondition[E selector.MatchableEntity] struct {
 	TypeField conditions.ConditionType `json:"type"`
 	Operator  conditions.DateOperator  `json:"operator"`
 	Value     time.Time     `json:"value"`
 }
 
-func (c DateCondition) Matches(entity selector.MatchableEntity) (bool, error) {
+func (c DateCondition[E]) Matches(entity E) (bool, error) {
 	value, err := getDateProperty(entity, string(c.TypeField))
 	if err != nil {
 		return false, err

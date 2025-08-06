@@ -1,23 +1,13 @@
 package operations
 
-import "workspace-engine/pkg/engine/selector"
-
-type ComparisonConditionOperator string
-
-const (
-	ComparisonConditionOperatorAnd ComparisonConditionOperator = "and"
-	ComparisonConditionOperatorOr  ComparisonConditionOperator = "or"
+import (
+	types "workspace-engine/pkg/model/conditions"
 )
 
-type ComparisonCondition struct {
-	Operator   ComparisonConditionOperator                    `json:"operator"`
-	Conditions []selector.Condition[selector.MatchableEntity] `json:"conditions"`
-}
-
-func (c ComparisonCondition) Matches(entity selector.MatchableEntity) (bool, error) {
-	switch c.Operator {
-	case ComparisonConditionOperatorAnd:
-		for _, condition := range c.Conditions {
+func ComparisonConditionMatches(entity any, operator types.ComparisonConditionOperator, conditions []JSONSelector) (bool, error) {
+	switch operator {
+	case types.ComparisonConditionOperatorAnd:
+		for _, condition := range conditions {
 			ok, err := condition.Matches(entity)
 			if err != nil {
 				return false, err
@@ -27,8 +17,8 @@ func (c ComparisonCondition) Matches(entity selector.MatchableEntity) (bool, err
 			}
 		}
 		return true, nil // Return true only if all conditions are true
-	case ComparisonConditionOperatorOr:
-		for _, condition := range c.Conditions {
+	case types.ComparisonConditionOperatorOr:
+		for _, condition := range conditions {
 			ok, err := condition.Matches(entity)
 			if err != nil {
 				return false, err

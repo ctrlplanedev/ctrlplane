@@ -3,7 +3,6 @@ package operations
 import (
 	"fmt"
 	"strings"
-	"workspace-engine/pkg/engine/selector"
 	"workspace-engine/pkg/model/conditions"
 )
 
@@ -22,16 +21,10 @@ func compareStringCondition(operator conditions.StringConditionOperator, aValue 
 	}
 }
 
-type StringCondition struct {
-	TypeField conditions.ConditionType           `json:"type"`
-	Operator  conditions.StringConditionOperator `json:"operator"`
-	Value     string                  `json:"value"`
-}
-
-func (c StringCondition) Matches(entity selector.MatchableEntity) (bool, error) {
-	value, err := getStringProperty(entity, string(c.TypeField))
+func StringConditionMatches(entity any, operator conditions.StringConditionOperator, field string, value string) (bool, error) {
+	entityValue, err := getStringProperty(entity, field)
 	if err != nil {
 		return false, err
 	}
-	return compareStringCondition(c.Operator, value, c.Value)
+	return compareStringCondition(operator, value, entityValue)
 }

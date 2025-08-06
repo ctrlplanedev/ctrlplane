@@ -4,17 +4,13 @@ import (
 	"context"
 )
 
-type Condition[E MatchableEntity] interface {
-	Matches(entity E) (bool, error)
-}
-
 type MatchableEntity interface {
 	GetID() string
 }
 
 type Selector[E MatchableEntity] interface {
 	GetID() string
-	GetConditions() Condition[E]
+	Matches(entity E) (bool, error)
 }
 
 type MatchChange[E MatchableEntity] struct {
@@ -29,27 +25,6 @@ const (
 	MatchChangeTypeAdded   MatchChangeType = "added"
 	MatchChangeTypeRemoved MatchChangeType = "removed"
 )
-
-type BaseEntity[E MatchableEntity] struct {
-	ID string
-}
-
-func (b BaseEntity[E]) GetID() string {
-	return b.ID
-}
-
-type BaseSelector[E MatchableEntity] struct {
-	ID         string
-	Conditions Condition[MatchableEntity]
-}
-
-func (b BaseSelector[E]) GetID() string {
-	return b.ID
-}
-
-func (b BaseSelector[E]) GetConditions() Condition[MatchableEntity]	 {
-	return b.Conditions
-}
 
 type MatchChangesHandler[E MatchableEntity] func(ctx context.Context, change MatchChange[E]) error
 

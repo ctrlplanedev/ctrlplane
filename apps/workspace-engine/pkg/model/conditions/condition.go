@@ -1,5 +1,13 @@
 package conditions
 
+
+type ComparisonConditionOperator string
+
+const (
+	ComparisonConditionOperatorAnd ComparisonConditionOperator = "and"
+	ComparisonConditionOperatorOr  ComparisonConditionOperator = "or"
+)
+
 // MaxDepthAllowed defines the maximum nesting depth for conditions
 const MaxDepthAllowed = 2
 
