@@ -3,20 +3,24 @@ package engine
 import (
 	"workspace-engine/pkg/engine/policy"
 	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/model/deployment"
+	"workspace-engine/pkg/model/environment"
 	"workspace-engine/pkg/model/resource"
 )
 
-func NewWorkspaceStore(workspaceID string) *WorkspaceStore {
-	return &WorkspaceStore{
-		WorkspaceID: workspaceID,
-	}
+func NewWorkspaceStore(WorkspaceID string) *WorkspaceStore {
+	return &WorkspaceStore{WorkspaceID}
+}
+
+func (w *WorkspaceStore) GetWorkspaceID() string {
+	return w.WorkspaceID
 }
 
 type WorkspaceSelector struct {
-	EnvironmentResources selector.SelectorEngine[selector.BaseEntity, selector.BaseSelector]
-	DeploymentResources  selector.SelectorEngine[selector.BaseEntity, selector.BaseSelector]
+	EnvironmentResources selector.SelectorEngine[resource.Resource, environment.Environment]
+	DeploymentResources  selector.SelectorEngine[resource.Resource, deployment.Deployment]
 
-	PolicyTargets selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
+	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.PolicyTarget]
 }
 
 type WorkspaceStore struct {
