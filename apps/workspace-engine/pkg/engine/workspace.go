@@ -16,18 +16,20 @@ type WorkspaceSelector struct {
 	PolicyTargetEnvironments selector.SelectorEngine[environment.Environment, policy.ReleaseTarget]
 	PolicyTargetDeployments  selector.SelectorEngine[deployment.Deployment, policy.ReleaseTarget]
 
-	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.ReleaseTarget]
+	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.PolicyTarget]
 }
-	
+
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 	return &WorkspaceEngine{
 		WorkspaceID: workspaceID,
-	}	
+	}
 }
 
 type WorkspaceEngine struct {
 	WorkspaceID string
 	Selectors   WorkspaceSelector
+
+	Policies map[string]policy.Policy
 }
 
 var workspaces = make(map[string]*WorkspaceEngine)

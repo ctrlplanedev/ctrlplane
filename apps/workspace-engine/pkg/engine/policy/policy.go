@@ -8,6 +8,11 @@ import (
 	"workspace-engine/pkg/model/resource"
 )
 
+type Policy struct {
+	ID       string
+	Priority int
+}
+
 type ReleaseTarget struct {
 	Resource    resource.Resource
 	Environment environment.Environment
