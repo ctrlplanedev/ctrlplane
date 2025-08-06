@@ -2,10 +2,10 @@ package kafka
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"time"
 
+	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/logger"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -15,16 +15,6 @@ const (
 	GroupID = "workspace-engine"
 	Topic   = "ctrlplane-events"
 )
-
-// Event represents the structure of events from your TypeScript code
-type Event struct {
-	WorkspaceID string                 `json:"workspaceId"`
-	EventType   string                 `json:"eventType"`
-	EventID     string                 `json:"eventId"`
-	Timestamp   float64                `json:"timestamp"`
-	Source      string                 `json:"source"`
-	Payload     map[string]interface{} `json:"payload"`
-}
 
 func RunConsumer(ctx context.Context) error {
 	log := logger.Get()
@@ -56,6 +46,8 @@ func RunConsumer(ctx context.Context) error {
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
+	reader := events.NewMessageReader()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -74,14 +66,10 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		var event Event
-		err = json.Unmarshal(msg.Value, &event)
-		if err != nil {
-			log.Error("Failed to unmarshal event", "error", err)
+		if err := reader.ReadMessage(ctx, msg); err != nil {
+			log.Error("Failed to read message", "error", err)
 			continue
 		}
-
-		log.Info("Received event", "event", event)
 
 		// NOTE: we do not commit the message. if the process ends and we need to rebuild the state,
 		// we need to start from the beginning of the topic.
