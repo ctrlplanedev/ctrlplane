@@ -46,7 +46,7 @@ func RunConsumer(ctx context.Context) error {
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
-	reader := events.NewMessageReader()
+	reader := events.NewEventHandler()
 
 	for {
 		select {
@@ -66,7 +66,7 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		if err := reader.ReadMessage(ctx, msg); err != nil {
+		if err := reader.ListenAndRoute(ctx, msg); err != nil {
 			log.Error("Failed to read message", "error", err)
 			continue
 		}
