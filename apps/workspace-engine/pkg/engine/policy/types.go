@@ -2,7 +2,6 @@ package policy
 
 import (
 	"context"
-	"workspace-engine/pkg/engine"
 	"workspace-engine/pkg/engine/selector"
 	"workspace-engine/pkg/model/policy"
 )

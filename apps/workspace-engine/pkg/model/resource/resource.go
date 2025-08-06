@@ -13,11 +13,6 @@ type Resource struct {
 	Metadata    map[string]string `json:"metadata"`
 }
 
-
-func (r Resource) GetID() string {
-	return r.ID
-}
-
 func (r Resource) GetID() string {
 	return r.ID
 }
