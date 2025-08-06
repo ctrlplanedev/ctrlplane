@@ -18,3 +18,7 @@ type ResourceRef struct {
 	ID          string `json:"id"`
 	WorkspaceID string `json:"workspace_id"`
 }
+
+func (r Resource) GetID() string {
+	return r.ID
+}

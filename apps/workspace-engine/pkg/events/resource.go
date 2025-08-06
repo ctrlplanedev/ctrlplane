@@ -47,7 +47,7 @@ type ResourceUpdatedEvent struct {
 	Payload struct {
 		Current  Resource `json:"current"`
 		Previous Resource `json:"previous"`
-	}
+	} `json:"payload"`
 }
 
 func handleResourceUpdatedEvent(_ context.Context, event RawEvent) error {

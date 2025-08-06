@@ -4,22 +4,14 @@ import (
 	"context"
 	"workspace-engine/pkg/engine"
 	"workspace-engine/pkg/engine/selector"
-
-	"github.com/google/uuid"
+	"workspace-engine/pkg/model/policy"
 )
 
-type PolicyTarget struct {
-	ID                  uuid.UUID
-	DeploymentSelector  *selector.Condition
-	EnvironmentSelector *selector.Condition
-	ResourceSelector    *selector.Condition
-}
-
-type PolicyTargetSelectorEngine interface {
-	LoadPoliciesTargets(ctx context.Context, policies []PolicyTarget) error
-	UpsertPolicyTarget(ctx context.Context, policyTarget PolicyTarget) error
-	RemovePoliciesTargets(ctx context.Context, policies []PolicyTarget) error
-	RemovePolicyTarget(ctx context.Context, policyTarget PolicyTarget) error
+type PolicySelectorEngine interface {
+	LoadPolicies(ctx context.Context, policies []policy.Policy) error
+	UpsertPolicy(ctx context.Context, policy policy.Policy) error
+	RemovePolicies(ctx context.Context, policies []policy.Policy) error
+	RemovePolicy(ctx context.Context, policy policy.Policy) error
 
 	LoadDeployments(ctx context.Context, deployments []selector.BaseEntity) error
 	UpsertDeployment(ctx context.Context, deployment selector.BaseEntity) error
@@ -36,5 +28,5 @@ type PolicyTargetSelectorEngine interface {
 	RemoveResources(ctx context.Context, resources []selector.BaseEntity) error
 	RemoveResource(ctx context.Context, resource selector.BaseEntity) error
 
-	GetPolicyTargetsForReleaseTarget(ctx context.Context, releaseTarget engine.ReleaseTarget) ([]PolicyTarget, error)
+	GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget engine.ReleaseTarget) ([]policy.Policy, error)
 }
