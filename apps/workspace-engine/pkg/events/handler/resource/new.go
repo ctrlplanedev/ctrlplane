@@ -2,6 +2,8 @@ package resource
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"workspace-engine/pkg/engine"
 	"workspace-engine/pkg/engine/policy"
 	"workspace-engine/pkg/events/handler"
@@ -14,6 +16,28 @@ type NewResourceHandler struct {
 
 func NewNewResourceHandler() *NewResourceHandler {
 	return &NewResourceHandler{}
+}
+
+func (h *NewResourceHandler) getPoliciesForReleaseTarget(ctx context.Context, engine *engine.WorkspaceEngine, releaseTarget policy.ReleaseTarget) ([]policy.Policy, error) {
+	policies := make([]policy.Policy, 0)
+	policyTargets, err := engine.Selectors.PolicyTargetReleaseTargets.GetSelectorsForEntity(ctx, releaseTarget)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, policyTarget := range policyTargets {
+		policy, ok := engine.Policies[policyTarget.ID]
+		if !ok {
+			continue
+		}
+		policies = append(policies, policy)
+	}
+
+	sort.Slice(policies, func(i, j int) bool {
+		return policies[i].Priority < policies[j].Priority
+	})
+
+	return policies, nil
 }
 
 func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.WorkspaceEngine, event handler.RawEvent) error {
@@ -47,13 +71,17 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 		}
 	}
 
-	deployments, _ := engine.Selectors.DeploymentResources.GetSelectorsForEntity(ctx, resource)
-	environments, _ := engine.Selectors.EnvironmentResources.GetSelectorsForEntity(ctx, resource)
+	deployments, err := engine.Selectors.DeploymentResources.GetSelectorsForEntity(ctx, resource)
+	if err != nil {
+		return err
+	}
+	environments, err := engine.Selectors.EnvironmentResources.GetSelectorsForEntity(ctx, resource)
+	if err != nil {
+		return err
+	}
 
 	// Find matching deployment-environment pairs based on system ID
 	var matches []policy.ReleaseTarget
-
-	newReleaseTargets := make([]policy.ReleaseTarget, 0)
 
 	for _, deployment := range deployments {
 		for _, environment := range environments {
@@ -67,6 +95,29 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 		}
 	}
 
+	policyTargetsReleaseTargetsChan := engine.Selectors.PolicyTargetReleaseTargets.UpsertEntity(ctx, matches...)
+
+	policyTargetsReleaseTargetsDone := false
+
+	for !policyTargetsReleaseTargetsDone {
+		select {
+		case selector := <-policyTargetsReleaseTargetsChan:
+			if selector.Done {
+				policyTargetsReleaseTargetsDone = true
+				continue
+			}
+		}
+	}
+
+	for _, match := range matches {
+		policies, err := h.getPoliciesForReleaseTarget(ctx, engine, match)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("found %d policies for release target %s\n", len(policies), match.GetID())
+	}
+
 	// upsert the new release targets to the policy target release targets selector
 	// delete old release targets from the policy target release targets selector
 
@@ -77,4 +128,5 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 	// for each removed release target
 	//   call exit hooks
 
+	return nil
 }
