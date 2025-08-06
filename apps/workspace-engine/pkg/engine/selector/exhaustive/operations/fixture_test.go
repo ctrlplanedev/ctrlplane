@@ -68,10 +68,6 @@ func (e *entityBuilder) build() selector.MatchableEntity {
 	}
 }
 
-func (m *matchableEntity) GetID() string {
-	return m.ID
-}
-
 type matchableEntity struct {
 	ID        string            `json:"id"`
 	Name      string            `json:"name"`
@@ -79,3 +75,9 @@ type matchableEntity struct {
 	UpdatedAt string            `json:"updated-at"`
 	Metadata  map[string]string `json:"metadata"`
 }
+
+func (m *matchableEntity) GetID() string {
+	return m.ID
+}
+
+
