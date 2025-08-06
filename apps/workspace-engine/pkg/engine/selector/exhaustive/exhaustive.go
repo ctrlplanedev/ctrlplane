@@ -29,7 +29,7 @@ func NewExhaustive() *Exhaustive {
 		entities:    make(map[string]selector.MatchableEntity),
 		selectors:   make(map[string]selector.Selector[selector.MatchableEntity]),
 		matches:     make(map[string]map[string]bool),
-		subscribers: make([]selector.MatchChangesHandler[selector.MatchableEntity], 0),
+		subscribers: make([]selector.MatchChangesHandler[selector.MatchableEntity, selector.SelectorEntity], 0),
 	}
 }
 

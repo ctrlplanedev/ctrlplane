@@ -21,36 +21,17 @@ func (r ReleaseTarget) GetID() string {
 type PolicyTarget struct {
 	ID string
 
-	ResourceSelector    selector.Condition[resource.Resource]       `json:"resourceSelector"`
-	EnvironmentSelector selector.Condition[environment.Environment] `json:"environmentSelector"`
-	DeploymentSelector  selector.Condition[deployment.Deployment]   `json:"deploymentSelector"`
+	EnvironmentSelector selector.Selector[environment.Environment]
+	DeploymentSelector  selector.Selector[deployment.Deployment]
+	ResourceSelector    selector.Selector[resource.Resource]
 
-	EnvironmentMatcher selector.SelectorEngine[environment.Environment, selector.BaseSelector]
-	DeploymentMatcher  selector.SelectorEngine[deployment.Deployment, selector.BaseSelector]
-	ResourceMatcher    selector.SelectorEngine[resource.Resource, selector.BaseSelector]
+	EnvironmentMatcher selector.SelectorEngine[environment.Environment, ReleaseTarget]
+	DeploymentMatcher  selector.SelectorEngine[deployment.Deployment, ReleaseTarget]
+	ResourceMatcher    selector.SelectorEngine[resource.Resource, ReleaseTarget]
 }
 
 func (p PolicyTarget) GetID() string {
 	return p.ID
-}
-
-func (p PolicyTarget) GetEnvironmentSelector() selector.BaseSelector {
-	return selector.BaseSelector{ID: p.ID, Conditions: p.EnvironmentSelector}
-}
-
-func (p PolicyTarget) GetDeploymentSelector() selector.BaseSelector {
-	return selector.BaseSelector{ID: p.ID, Conditions: p.DeploymentSelector}
-}
-
-func (p PolicyTarget) GetResourceSelector() selector.BaseSelector {
-	return selector.BaseSelector{ID: p.ID, Conditions: p.ResourceSelector}
-}
-
-func (p PolicyTarget) GetConditions() selector.Condition[ReleaseTarget] {
-	return ReleaseTargetConditions{
-		ID:           p.ID,
-		PolicyTarget: p,
-	}
 }
 
 type ReleaseTargetConditions struct {
@@ -62,8 +43,9 @@ func (c ReleaseTargetConditions) Matches(target ReleaseTarget) (bool, error) {
 	ctx := context.Background()
 
 	if c.PolicyTarget.EnvironmentMatcher != nil {
-		environmentSelector := c.PolicyTarget.GetEnvironmentSelector()
-		matchingEnvironments, err := c.PolicyTarget.EnvironmentMatcher.GetEntitiesForSelector(ctx, environmentSelector)
+		selector := c.PolicyTarget.EnvironmentSelector
+		matcher := c.PolicyTarget.EnvironmentMatcher
+		matchingEnvironments, err := matcher.GetEntitiesForSelector(ctx, selector)
 		if err != nil {
 			return false, err
 		}
@@ -73,8 +55,9 @@ func (c ReleaseTargetConditions) Matches(target ReleaseTarget) (bool, error) {
 	}
 
 	if c.PolicyTarget.DeploymentMatcher != nil {
-		deploymentSelector := c.PolicyTarget.GetDeploymentSelector()
-		matchingDeployments, err := c.PolicyTarget.DeploymentMatcher.GetEntitiesForSelector(ctx, deploymentSelector)
+		selector := c.PolicyTarget.DeploymentSelector
+		matcher := c.PolicyTarget.DeploymentMatcher
+		matchingDeployments, err := matcher.GetEntitiesForSelector(ctx, selector)
 		if err != nil {
 			return false, err
 		}
@@ -84,8 +67,9 @@ func (c ReleaseTargetConditions) Matches(target ReleaseTarget) (bool, error) {
 	}
 
 	if c.PolicyTarget.ResourceMatcher != nil {
-		resourceSelector := c.PolicyTarget.GetResourceSelector()
-		matchingResources, err := c.PolicyTarget.ResourceMatcher.GetEntitiesForSelector(ctx, resourceSelector)
+		selector := c.PolicyTarget.ResourceSelector
+		matcher := c.PolicyTarget.ResourceMatcher
+		matchingResources, err := matcher.GetEntitiesForSelector(ctx, selector)
 		if err != nil {
 			return false, err
 		}

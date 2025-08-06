@@ -10,7 +10,7 @@ import (
 type PolicyTargetSelector struct {
 	ID string
 
-	ResourceSelector    selector.Condition[resource.Resource]
-	EnvironmentSelector selector.Condition[environment.Environment]
-	DeploymentSelector  selector.Condition[deployment.Deployment]
+	ResourceSelector    selector.Selector[resource.Resource]
+	EnvironmentSelector selector.Selector[environment.Environment]
+	DeploymentSelector  selector.Selector[deployment.Deployment]
 }

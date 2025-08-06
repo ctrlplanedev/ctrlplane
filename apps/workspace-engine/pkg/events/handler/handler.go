@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"workspace-engine/pkg/engine"
 	"workspace-engine/pkg/logger"
 
 	"github.com/charmbracelet/log"
@@ -38,7 +39,7 @@ type RawEvent struct {
 
 // Handler defines the interface for processing events
 type Handler interface {
-	Handle(ctx context.Context, event RawEvent) error
+	Handle(ctx context.Context, engine *engine.WorkspaceEngine, event RawEvent) error
 }
 
 // HandlerRegistry maps event types to their corresponding handlers
@@ -80,7 +81,8 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	// Execute the handler
 	startTime := time.Now()
-	err := handler.Handle(ctx, rawEvent)
+	engine := engine.GetWorkspaceEngine(rawEvent.WorkspaceID)
+	err := handler.Handle(ctx, engine, rawEvent)
 	duration := time.Since(startTime)
 
 	if err != nil {

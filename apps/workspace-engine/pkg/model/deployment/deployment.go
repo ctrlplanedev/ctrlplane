@@ -5,8 +5,10 @@ import (
 )
 
 type Deployment struct {
-	ID string
+	ID string `json:"id"`
 
+	SystemID string `json:"systemId"`
+	
 	ResourceSelector conditions.JSONCondition `json:"resourceSelector"`
 }
 

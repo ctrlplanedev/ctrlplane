@@ -8,8 +8,8 @@ import (
 type Environment struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
-	SystemID  string    `json:"system_id"`
-	CreatedAt time.Time `json:"created_at"`
+	SystemID  string    `json:"systemId"`
+	CreatedAt time.Time `json:"createdAt"`
 
 	ResourceSelector conditions.JSONCondition `json:"resourceSelector"`
 }
