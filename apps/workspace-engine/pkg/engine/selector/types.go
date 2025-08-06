@@ -53,19 +53,20 @@ func (b BaseSelector) GetConditions() Condition {
 
 type MatchChangesHandler func(ctx context.Context, change MatchChange) error
 
+type ChannelResult struct {
+	MatchChange *MatchChange
+
+	Done  bool
+	Error error
+}
+
 type SelectorEngine[E MatchableEntity, S Selector] interface {
-	LoadEntities(ctx context.Context, entities []E) error
-	UpsertEntity(ctx context.Context, entity E) error
-	RemoveEntities(ctx context.Context, entities []E) error
-	RemoveEntity(ctx context.Context, entity E) error
+    UpsertEntity(ctx context.Context, entity ...E) <- chan ChannelResult
+    RemoveEntity(ctx context.Context, entity ...E) <- chan ChannelResult
 
-	LoadSelectors(ctx context.Context, selectors []S) error
-	UpsertSelector(ctx context.Context, selector S) error
-	RemoveSelectors(ctx context.Context, selectors []S) error
-	RemoveSelector(ctx context.Context, selector S) error
+    UpsertSelector(ctx context.Context, selector ...S) <- chan ChannelResult
+    RemoveSelector(ctx context.Context, selector ...S) <- chan ChannelResult
 
-	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
-	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
-
-	SubscribeToMatchChanges(handler MatchChangesHandler) error
+    GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
+    GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
 }
