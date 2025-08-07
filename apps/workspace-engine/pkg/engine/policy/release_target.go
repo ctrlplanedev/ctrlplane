@@ -1,8 +1,10 @@
 package policy
 
 import (
-	"context"
+	"fmt"
 	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/model"
+	"workspace-engine/pkg/model/conditions"
 	"workspace-engine/pkg/model/deployment"
 	"workspace-engine/pkg/model/environment"
 	"workspace-engine/pkg/model/resource"
@@ -18,62 +20,35 @@ func (r ReleaseTarget) GetID() string {
 	return r.Resource.ID + r.Deployment.ID + r.Environment.ID
 }
 
+func (r ReleaseTarget) GetType() string {
+	return "release_target"
+}
+
 type PolicyTarget struct {
 	ID string
 
-	EnvironmentSelector selector.Selector[environment.Environment]
-	DeploymentSelector  selector.Selector[deployment.Deployment]
-	ResourceSelector    selector.Selector[resource.Resource]
+	ResourceSelector    conditions.JSONCondition `json:"resourceSelector"`
+	EnvironmentSelector conditions.JSONCondition `json:"environmentSelector"`
+	DeploymentSelector  conditions.JSONCondition `json:"deploymentSelector"`
 
-	EnvironmentMatcher selector.SelectorEngine[environment.Environment, ReleaseTarget]
-	DeploymentMatcher  selector.SelectorEngine[deployment.Deployment, ReleaseTarget]
-	ResourceMatcher    selector.SelectorEngine[resource.Resource, ReleaseTarget]
+	EnvironmentMatcher selector.SelectorEngine[environment.Environment, PolicyTarget]
+	DeploymentMatcher  selector.SelectorEngine[deployment.Deployment, PolicyTarget]
+	ResourceMatcher    selector.SelectorEngine[resource.Resource, PolicyTarget]
 }
 
 func (p PolicyTarget) GetID() string {
 	return p.ID
 }
 
-type ReleaseTargetConditions struct {
-	ID           string
-	PolicyTarget PolicyTarget
-}
-
-func (c ReleaseTargetConditions) Matches(target ReleaseTarget) (bool, error) {
-	ctx := context.Background()
-
-	if c.PolicyTarget.EnvironmentMatcher != nil {
-		matcher := c.PolicyTarget.EnvironmentMatcher
-		matchingEnvironments, err := matcher.GetEntitiesForSelector(ctx, target)
-		if err != nil {
-			return false, err
-		}
-		if len(matchingEnvironments) == 0 {
-			return false, nil
-		}
+func (p PolicyTarget) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
+	switch entity.GetType() {
+	case "resource":
+		return p.ResourceSelector, nil
+	case "environment":
+		return p.EnvironmentSelector, nil
+	case "deployment":
+		return p.DeploymentSelector, nil
+	default:
+		return conditions.JSONCondition{}, fmt.Errorf("entity type %s is not supported by policy target selector", entity.GetType())
 	}
-
-	if c.PolicyTarget.DeploymentMatcher != nil {
-		matcher := c.PolicyTarget.DeploymentMatcher
-		matchingDeployments, err := matcher.GetEntitiesForSelector(ctx, target)
-		if err != nil {
-			return false, err
-		}
-		if len(matchingDeployments) == 0 {
-			return false, nil
-		}
-	}
-
-	if c.PolicyTarget.ResourceMatcher != nil {
-		matcher := c.PolicyTarget.ResourceMatcher
-		matchingResources, err := matcher.GetEntitiesForSelector(ctx, target)
-		if err != nil {
-			return false, err
-		}
-		if len(matchingResources) == 0 {
-			return false, nil
-		}
-	}
-
-	return true, nil
 }

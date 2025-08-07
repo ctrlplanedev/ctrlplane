@@ -27,3 +27,7 @@ func (e Environment) Selector(entity model.MatchableEntity) (conditions.JSONCond
 
 	return e.ResourceSelector, nil
 }
+
+func (e Environment) GetType() string {
+	return "environment"
+}

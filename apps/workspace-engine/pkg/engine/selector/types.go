@@ -5,7 +5,6 @@ import (
 	"workspace-engine/pkg/model"
 )
 
-
 type MatchChange[E model.MatchableEntity, S model.SelectorEntity] struct {
 	Entity     E
 	Selector   S
@@ -32,8 +31,6 @@ type SelectorEngine[E model.MatchableEntity, S model.SelectorEntity] interface {
 
 	UpsertSelector(ctx context.Context, selector ...S) <-chan ChannelResult[E, S]
 	RemoveSelector(ctx context.Context, selector ...S) <-chan ChannelResult[E, S]
-
-	Matches(selectorEntity S, entity E) (bool, error)
 
 	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
 	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)

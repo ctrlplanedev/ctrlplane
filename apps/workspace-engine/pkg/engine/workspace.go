@@ -16,11 +16,11 @@ type WorkspaceSelector struct {
 	EnvironmentResources selector.SelectorEngine[resource.Resource, environment.Environment]
 	DeploymentResources  selector.SelectorEngine[resource.Resource, deployment.Deployment]
 
-	PolicyTargetResources    selector.SelectorEngine[resource.Resource, policy.ReleaseTarget]
-	PolicyTargetEnvironments selector.SelectorEngine[environment.Environment, policy.ReleaseTarget]
-	PolicyTargetDeployments  selector.SelectorEngine[deployment.Deployment, policy.ReleaseTarget]
+	PolicyTargetResources    selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
+	PolicyTargetEnvironments selector.SelectorEngine[environment.Environment, policy.PolicyTarget]
+	PolicyTargetDeployments  selector.SelectorEngine[deployment.Deployment, policy.PolicyTarget]
 
-	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.ReleaseTarget]
+	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.PolicyTarget]
 }
 
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
@@ -29,10 +29,10 @@ func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 		Selectors: WorkspaceSelector{
 			EnvironmentResources:       exhaustive.NewExhaustive[resource.Resource, environment.Environment](),
 			DeploymentResources:        exhaustive.NewExhaustive[resource.Resource, deployment.Deployment](),
-			PolicyTargetResources:      exhaustive.NewExhaustive[resource.Resource, policy.ReleaseTarget](),
-			PolicyTargetEnvironments:   exhaustive.NewExhaustive[environment.Environment, policy.ReleaseTarget](),
-			PolicyTargetDeployments:    exhaustive.NewExhaustive[deployment.Deployment, policy.ReleaseTarget](),
-			PolicyTargetReleaseTargets: exhaustive.NewExhaustive[policy.ReleaseTarget, policy.ReleaseTarget](),
+			PolicyTargetResources:      exhaustive.NewExhaustive[resource.Resource, policy.PolicyTarget](),
+			PolicyTargetEnvironments:   exhaustive.NewExhaustive[environment.Environment, policy.PolicyTarget](),
+			PolicyTargetDeployments:    exhaustive.NewExhaustive[deployment.Deployment, policy.PolicyTarget](),
+			PolicyTargetReleaseTargets: exhaustive.NewExhaustive[policy.ReleaseTarget, policy.PolicyTarget](),
 		},
 	}
 }

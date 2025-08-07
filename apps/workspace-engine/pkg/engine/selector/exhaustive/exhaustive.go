@@ -4,13 +4,15 @@ import (
 	"context"
 	"sync"
 	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/engine/selector/exhaustive/operations"
+	"workspace-engine/pkg/model"
 )
 
 // Exhaustive implements the SelectorEngine interface
-type Exhaustive[E selector.MatchableEntity, S selector.SelectorEntity] struct {
+type Exhaustive[E model.MatchableEntity, S model.SelectorEntity] struct {
 	// Storage for entities and selectors
 	entities  map[string]E
-	selectors map[string]selector.Selector[E]
+	selectors map[string]S
 
 	// Track current matches between entities and selectors
 	matches map[string]map[string]bool // matches[entityID][selectorID] = isMatched
@@ -20,10 +22,10 @@ type Exhaustive[E selector.MatchableEntity, S selector.SelectorEntity] struct {
 }
 
 // NewExhaustive creates a new exhaustive instance
-func NewExhaustive[E selector.MatchableEntity, S selector.SelectorEntity]() *Exhaustive[E, S] {
+func NewExhaustive[E model.MatchableEntity, S model.SelectorEntity]() *Exhaustive[E, S] {
 	return &Exhaustive[E, S]{
 		entities:  make(map[string]E),
-		selectors: make(map[string]selector.Selector[E]),
+		selectors: make(map[string]S),
 		matches:   make(map[string]map[string]bool),
 	}
 }
@@ -52,7 +54,16 @@ func (e *Exhaustive[E, S]) UpsertEntity(ctx context.Context, entity ...E) <-chan
 
 			for _, sel := range e.selectors {
 				wasPreviouslyMatched := e.matches[ent.GetID()][sel.GetID()]
-				matchResult, err := sel.Matches(ent)
+				selectorCondition, err := sel.Selector(ent)
+				matchResult, err := operations.JSONSelector{
+					JSONCondition: selectorCondition,
+				}.Matches(ent)
+
+				if err != nil {
+					channel <- selector.ChannelResult[E, S]{Error: err}
+					continue
+				}
+
 				if err != nil {
 					channel <- selector.ChannelResult[E, S]{Error: err}
 					continue
@@ -62,7 +73,7 @@ func (e *Exhaustive[E, S]) UpsertEntity(ctx context.Context, entity ...E) <-chan
 					channel <- selector.ChannelResult[E, S]{
 						MatchChange: &selector.MatchChange[E, S]{
 							Entity:     ent,
-							Selector:   sel.(S),
+							Selector:   sel,
 							ChangeType: e.getMatchChangeType(matchResult),
 						},
 					}
@@ -97,7 +108,7 @@ func (e *Exhaustive[E, S]) RemoveEntity(ctx context.Context, entity ...E) <-chan
 				channel <- selector.ChannelResult[E, S]{
 					MatchChange: &selector.MatchChange[E, S]{
 						Entity:     ent,
-						Selector:   sel.(S),
+						Selector:   sel,
 						ChangeType: selector.MatchChangeTypeRemoved,
 					},
 				}
@@ -118,11 +129,14 @@ func (e *Exhaustive[E, S]) UpsertSelector(ctx context.Context, sel ...S) <-chan 
 		defer close(channel)
 
 		for _, sel := range sel {
-			selector, ok := sel.(selector.Selector[E])
 			e.selectors[sel.GetID()] = sel
 
 			for _, ent := range e.entities {
-				matchResult, err := sel.Matches(ent)
+				selectorCondition, err := sel.Selector(ent)
+				matchResult, err := operations.JSONSelector{
+					JSONCondition: selectorCondition,
+				}.Matches(ent)
+
 				if err != nil {
 					channel <- selector.ChannelResult[E, S]{Error: err}
 					continue
@@ -132,7 +146,7 @@ func (e *Exhaustive[E, S]) UpsertSelector(ctx context.Context, sel ...S) <-chan 
 				channel <- selector.ChannelResult[E, S]{
 					MatchChange: &selector.MatchChange[E, S]{
 						Entity:     ent,
-						Selector:   sel.(S),
+						Selector:   sel,
 						ChangeType: e.getMatchChangeType(matchResult),
 					},
 				}
@@ -182,7 +196,7 @@ func (e *Exhaustive[E, S]) GetSelectorsForEntity(ctx context.Context, entity E) 
 	selectors := make([]S, 0)
 	for _, sel := range e.selectors {
 		if e.matches[entity.GetID()][sel.GetID()] {
-			selectors = append(selectors, sel.(S))
+			selectors = append(selectors, sel)
 		}
 	}
 
