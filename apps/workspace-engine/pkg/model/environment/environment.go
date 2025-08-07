@@ -1,10 +1,10 @@
 package environment
 
 import (
-	"fmt"
 	"time"
 	"workspace-engine/pkg/model"
 	"workspace-engine/pkg/model/conditions"
+	"workspace-engine/pkg/model/resource"
 )
 
 type Environment struct {
@@ -21,8 +21,8 @@ func (e Environment) GetID() string {
 }
 
 func (e Environment) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
-	if entity.GetType() != "resource" {
-		return conditions.JSONCondition{}, fmt.Errorf("entity type %s is not supported by environment selector", entity.GetType())
+	if _, ok := entity.(resource.Resource); ok {
+		return e.ResourceSelector, nil
 	}
 
 	return e.ResourceSelector, nil
