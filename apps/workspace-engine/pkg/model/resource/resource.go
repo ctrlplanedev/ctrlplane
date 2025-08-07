@@ -18,7 +18,3 @@ type Resource struct {
 func (r Resource) GetID() string {
 	return r.ID
 }
-
-func (r Resource) GetType() string {
-	return "resource"
-}

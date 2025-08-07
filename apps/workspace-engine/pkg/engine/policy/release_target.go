@@ -41,14 +41,15 @@ func (p PolicyTarget) GetID() string {
 }
 
 func (p PolicyTarget) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
-	switch entity.GetType() {
-	case "resource":
+	if _, ok := entity.(resource.Resource); ok {
 		return p.ResourceSelector, nil
-	case "environment":
-		return p.EnvironmentSelector, nil
-	case "deployment":
-		return p.DeploymentSelector, nil
-	default:
-		return conditions.JSONCondition{}, fmt.Errorf("entity type %s is not supported by policy target selector", entity.GetType())
 	}
+	if _, ok := entity.(environment.Environment); ok {
+		return p.EnvironmentSelector, nil
+	}
+	if _, ok := entity.(deployment.Deployment); ok {
+		return p.DeploymentSelector, nil
+	}
+
+	return conditions.JSONCondition{}, fmt.Errorf("entity type is not supported by policy target selector")
 }

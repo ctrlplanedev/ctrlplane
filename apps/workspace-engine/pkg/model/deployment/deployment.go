@@ -1,9 +1,9 @@
 package deployment
 
 import (
-	"fmt"
 	"workspace-engine/pkg/model"
 	"workspace-engine/pkg/model/conditions"
+	"workspace-engine/pkg/model/resource"
 )
 
 type Deployment struct {
@@ -19,8 +19,8 @@ func (d Deployment) GetID() string {
 }
 
 func (d Deployment) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
-	if entity.GetType() != "resource" {
-		return conditions.JSONCondition{}, fmt.Errorf("entity type %s is not supported by deployment selector", entity.GetType())
+	if _, ok := entity.(resource.Resource); ok {
+		return d.ResourceSelector, nil
 	}
 
 	return d.ResourceSelector, nil
