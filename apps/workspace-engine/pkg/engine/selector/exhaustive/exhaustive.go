@@ -152,12 +152,11 @@ func (e *Exhaustive[E, S]) UpsertSelector(ctx context.Context, sel ...S) <-chan 
 }
 
 func (e *Exhaustive[E, S]) RemoveSelector(ctx context.Context, sel ...S) <-chan selector.ChannelResult[E, S] {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	channel := make(chan selector.ChannelResult[E, S])
 
 	go func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
 		defer close(channel)
 
 		for _, sel := range sel {
