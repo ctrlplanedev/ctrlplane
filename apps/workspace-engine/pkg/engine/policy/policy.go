@@ -9,7 +9,7 @@ import (
 type Policy[Target any] interface {
 	GetID() string
 	GetPriority() int
-	
+
 	GetTargets() []Target
 
 	GetRule(ruleID string) (Rule[Target], error)
@@ -21,7 +21,7 @@ type Policy[Target any] interface {
 
 type PolicyEvaluationResult struct {
 	PolicyID string
-	Rules []RuleEvaluationResult
+	Rules    []RuleEvaluationResult
 }
 
 func (r *PolicyEvaluationResult) Passed() bool {
@@ -37,10 +37,10 @@ func (r *PolicyEvaluationResult) Passed() bool {
 type PolicyEvaluator[Target any] interface {
 	// Evaluate a single policy with all its rules
 	Evaluate(ctx context.Context, target Target) (*PolicyEvaluationResult, error)
-	
+
 	// Get policies applicable to a target context
 	GetApplicablePolicies(ctx context.Context, target Target) ([]Policy[Target], error)
-	
+
 	// Validate policy configuration
 	ValidatePolicy(policy Policy[Target]) error
 }
@@ -52,7 +52,7 @@ type PolicyRepository[Target any] interface {
 	GetPolicy(ctx context.Context, policyID string) (Policy[Target], error)
 	CreatePolicy(ctx context.Context, policy Policy[Target]) error
 	UpdatePolicy(ctx context.Context, policy Policy[Target]) error
-	
+
 	// Policy querying
 	GetPoliciesForTarget(ctx context.Context, target Target) ([]Policy[Target], error)
 	GetAllPolicies(ctx context.Context) ([]Policy[Target], error)

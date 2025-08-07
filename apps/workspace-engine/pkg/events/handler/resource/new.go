@@ -33,7 +33,7 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 
 	// Get existing release targets for this resource to track changes
 	existingReleaseTargets, _ := engine.Selectors.PolicyTargetResources.GetSelectorsForEntity(ctx, resource)
-	
+
 	// Find matching deployment-environment pairs based on system ID
 	newReleaseTargets := make([]policy.ReleaseTarget, 0)
 
@@ -82,7 +82,7 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 	for _, target := range addedTargets {
 		// Upsert the new release target to the policy target release targets selector
 		releaseTargetChannel := engine.Selectors.PolicyTargetReleaseTargets.UpsertEntity(ctx, target)
-		
+
 		// Wait for completion and handle any policy matches
 		for change := range releaseTargetChannel {
 			if change.Done {
@@ -100,7 +100,7 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 	for _, target := range removedTargets {
 		// Remove the release target from the policy target release targets selector
 		releaseTargetChannel := engine.Selectors.PolicyTargetReleaseTargets.RemoveEntity(ctx, target)
-		
+
 		// Wait for completion and handle any policy removals
 		for change := range releaseTargetChannel {
 			if change.Done {

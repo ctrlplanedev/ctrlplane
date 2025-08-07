@@ -9,4 +9,3 @@ type Policy struct {
 func (p Policy) GetID() string {
 	return p.ID
 }
-
