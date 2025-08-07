@@ -1,16 +1,6 @@
-package policytarget
+package policy
 
 import "workspace-engine/pkg/model/conditions"
-
-type Policy struct {
-	ID string `json:"id"`
-
-	Name string `json:"name"`
-}
-
-func (p Policy) GetID() string {
-	return p.ID
-}
 
 type PolicyTarget struct {
 	ID string `json:"id"`

@@ -8,6 +8,9 @@ import (
 	"workspace-engine/pkg/model/resource"
 )
 
+type WorkspacePolicy struct {
+}
+
 type WorkspaceSelector struct {
 	EnvironmentResources selector.SelectorEngine[resource.Resource, environment.Environment]
 	DeploymentResources  selector.SelectorEngine[resource.Resource, deployment.Deployment]
@@ -26,8 +29,9 @@ func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 }
 
 type WorkspaceEngine struct {
-	WorkspaceID string
-	Selectors   WorkspaceSelector
+	WorkspaceID      string
+	Selectors        WorkspaceSelector
+	PolicyRepository policy.PolicyRepository[policy.ReleaseTarget]
 }
 
 var workspaces = make(map[string]*WorkspaceEngine)
