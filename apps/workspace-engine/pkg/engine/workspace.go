@@ -33,7 +33,7 @@ func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 			PolicyTargetResources:      exhaustive.NewExhaustive[resource.Resource, policy.PolicyTarget](),
 			PolicyTargetEnvironments:   exhaustive.NewExhaustive[environment.Environment, policy.PolicyTarget](),
 			PolicyTargetDeployments:    exhaustive.NewExhaustive[deployment.Deployment, policy.PolicyTarget](),
-			PolicyTargetReleaseTargets: exhaustive.NewExhaustive[policy.ReleaseTarget, policy.PolicyTarget](),
+			PolicyTargetReleaseTargets: exhaustive.NewExhaustive[epolicy.ReleaseTarget, policy.PolicyTarget](),
 		},
 	}
 }

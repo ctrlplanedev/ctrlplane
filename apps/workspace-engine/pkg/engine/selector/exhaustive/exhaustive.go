@@ -37,46 +37,53 @@ func (e *Exhaustive[E, S]) getMatchChangeType(matchResult bool) selector.MatchCh
 	return selector.MatchChangeTypeRemoved
 }
 
-func (e *Exhaustive[E, S]) UpsertEntity(ctx context.Context, entity ...E) <-chan selector.ChannelResult[E, S] {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+func (e *Exhaustive[E, S]) handleEntitySelectorPair(ent E, sel S) *selector.ChannelResult[E, S] {
+	wasPreviouslyMatched := e.matches[ent.GetID()][sel.GetID()]
+	selectorCondition, err := sel.Selector(ent)
+	if err != nil {
+		return &selector.ChannelResult[E, S]{Error: err}
+	}
 
+	matchResult, err := operations.JSONSelector{
+		JSONCondition: selectorCondition,
+	}.Matches(ent)
+	if err != nil {
+		return &selector.ChannelResult[E, S]{Error: err}
+	}
+
+	e.matches[ent.GetID()][sel.GetID()] = matchResult
+
+	if matchResult == wasPreviouslyMatched {
+		return nil
+	}
+
+	return &selector.ChannelResult[E, S]{
+		MatchChange: &selector.MatchChange[E, S]{
+			Entity:     ent,
+			Selector:   sel,
+			ChangeType: e.getMatchChangeType(matchResult),
+		},
+	}
+}
+
+func (e *Exhaustive[E, S]) UpsertEntity(ctx context.Context, entity ...E) <-chan selector.ChannelResult[E, S] {
 	channel := make(chan selector.ChannelResult[E, S])
 
 	go func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
 		defer close(channel)
-		for _, ent := range entity {
 
+		for _, ent := range entity {
 			e.entities[ent.GetID()] = ent
 			if e.matches[ent.GetID()] == nil {
 				e.matches[ent.GetID()] = make(map[string]bool)
 			}
 
 			for _, sel := range e.selectors {
-				wasPreviouslyMatched := e.matches[ent.GetID()][sel.GetID()]
-				selectorCondition, err := sel.Selector(ent)
-				if err != nil {
-					channel <- selector.ChannelResult[E, S]{Error: err}
-					continue
-				}
-
-				matchResult, err := operations.JSONSelector{
-					JSONCondition: selectorCondition,
-				}.Matches(ent)
-
-				if err != nil {
-					channel <- selector.ChannelResult[E, S]{Error: err}
-					continue
-				}
-
-				if matchResult != wasPreviouslyMatched {
-					channel <- selector.ChannelResult[E, S]{
-						MatchChange: &selector.MatchChange[E, S]{
-							Entity:     ent,
-							Selector:   sel,
-							ChangeType: e.getMatchChangeType(matchResult),
-						},
-					}
+				channelResult := e.handleEntitySelectorPair(ent, sel)
+				if channelResult != nil {
+					channel <- *channelResult
 				}
 			}
 		}
@@ -86,13 +93,13 @@ func (e *Exhaustive[E, S]) UpsertEntity(ctx context.Context, entity ...E) <-chan
 }
 
 func (e *Exhaustive[E, S]) RemoveEntity(ctx context.Context, entity ...E) <-chan selector.ChannelResult[E, S] {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	channel := make(chan selector.ChannelResult[E, S])
 
 	go func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
 		defer close(channel)
+
 		for _, ent := range entity {
 			matchEntries := e.matches[ent.GetID()]
 			for setID, wasPreviouslyMatched := range matchEntries {
@@ -113,6 +120,8 @@ func (e *Exhaustive[E, S]) RemoveEntity(ctx context.Context, entity ...E) <-chan
 					},
 				}
 			}
+
+			delete(e.matches, ent.GetID())
 		}
 	}()
 
@@ -120,40 +129,20 @@ func (e *Exhaustive[E, S]) RemoveEntity(ctx context.Context, entity ...E) <-chan
 }
 
 func (e *Exhaustive[E, S]) UpsertSelector(ctx context.Context, sel ...S) <-chan selector.ChannelResult[E, S] {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	channel := make(chan selector.ChannelResult[E, S])
 
 	go func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
 		defer close(channel)
 
 		for _, sel := range sel {
 			e.selectors[sel.GetID()] = sel
 
 			for _, ent := range e.entities {
-				selectorCondition, err := sel.Selector(ent)
-				if err != nil {
-					channel <- selector.ChannelResult[E, S]{Error: err}
-					continue
-				}
-
-				matchResult, err := operations.JSONSelector{
-					JSONCondition: selectorCondition,
-				}.Matches(ent)
-
-				if err != nil {
-					channel <- selector.ChannelResult[E, S]{Error: err}
-					continue
-				}
-
-				e.matches[ent.GetID()][sel.GetID()] = matchResult
-				channel <- selector.ChannelResult[E, S]{
-					MatchChange: &selector.MatchChange[E, S]{
-						Entity:     ent,
-						Selector:   sel,
-						ChangeType: e.getMatchChangeType(matchResult),
-					},
+				channelResult := e.handleEntitySelectorPair(ent, sel)
+				if channelResult != nil {
+					channel <- *channelResult
 				}
 			}
 		}
@@ -176,17 +165,16 @@ func (e *Exhaustive[E, S]) RemoveSelector(ctx context.Context, sel ...S) <-chan 
 
 			for _, ent := range e.entities {
 				wasPreviouslyMatched := e.matches[ent.GetID()][sel.GetID()]
-				if !wasPreviouslyMatched {
-					continue
+				if wasPreviouslyMatched {
+					channel <- selector.ChannelResult[E, S]{
+						MatchChange: &selector.MatchChange[E, S]{
+							Entity:     ent,
+							Selector:   sel,
+							ChangeType: selector.MatchChangeTypeRemoved,
+						},
+					}
 				}
-
-				channel <- selector.ChannelResult[E, S]{
-					MatchChange: &selector.MatchChange[E, S]{
-						Entity:     ent,
-						Selector:   sel,
-						ChangeType: selector.MatchChangeTypeRemoved,
-					},
-				}
+				delete(e.matches[ent.GetID()], sel.GetID())
 			}
 		}
 	}()
