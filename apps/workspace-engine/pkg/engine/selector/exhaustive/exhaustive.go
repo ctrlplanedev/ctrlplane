@@ -55,14 +55,14 @@ func (e *Exhaustive[E, S]) UpsertEntity(ctx context.Context, entity ...E) <-chan
 			for _, sel := range e.selectors {
 				wasPreviouslyMatched := e.matches[ent.GetID()][sel.GetID()]
 				selectorCondition, err := sel.Selector(ent)
-				matchResult, err := operations.JSONSelector{
-					JSONCondition: selectorCondition,
-				}.Matches(ent)
-
 				if err != nil {
 					channel <- selector.ChannelResult[E, S]{Error: err}
 					continue
 				}
+
+				matchResult, err := operations.JSONSelector{
+					JSONCondition: selectorCondition,
+				}.Matches(ent)
 
 				if err != nil {
 					channel <- selector.ChannelResult[E, S]{Error: err}
@@ -133,6 +133,11 @@ func (e *Exhaustive[E, S]) UpsertSelector(ctx context.Context, sel ...S) <-chan 
 
 			for _, ent := range e.entities {
 				selectorCondition, err := sel.Selector(ent)
+				if err != nil {
+					channel <- selector.ChannelResult[E, S]{Error: err}
+					continue
+				}
+
 				matchResult, err := operations.JSONSelector{
 					JSONCondition: selectorCondition,
 				}.Matches(ent)
