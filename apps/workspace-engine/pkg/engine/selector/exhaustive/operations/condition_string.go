@@ -26,5 +26,5 @@ func StringConditionMatches(entity any, operator conditions.StringConditionOpera
 	if err != nil {
 		return false, err
 	}
-	return compareStringCondition(operator, value, entityValue)
+	return compareStringCondition(operator, entityValue, value)
 }

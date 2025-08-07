@@ -34,6 +34,8 @@ type SelectorEngine[E model.MatchableEntity, S model.SelectorEntity] interface {
 
 	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
 	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
+
+	IsMatch(ctx context.Context, entity E, selector S) (bool, error)
 }
 
 func CollectMatchChangesByType[E model.MatchableEntity, S model.SelectorEntity](results <-chan ChannelResult[E, S]) ([]MatchChange[E, S], []MatchChange[E, S], error) {

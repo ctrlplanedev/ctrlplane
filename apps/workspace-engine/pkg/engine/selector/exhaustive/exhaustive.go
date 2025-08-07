@@ -208,3 +208,10 @@ func (e *Exhaustive[E, S]) GetEntitiesForSelector(ctx context.Context, sel S) ([
 
 	return entities, nil
 }
+
+func (e *Exhaustive[E, S]) IsMatch(ctx context.Context, entity E, selector S) (bool, error) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	return e.matches[entity.GetID()][selector.GetID()], nil
+}
