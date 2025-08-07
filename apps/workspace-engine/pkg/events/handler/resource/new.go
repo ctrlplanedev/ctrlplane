@@ -33,11 +33,11 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 	deployments, _ := engine.Selectors.DeploymentResources.GetSelectorsForEntity(ctx, resource)
 	environments, _ := engine.Selectors.EnvironmentResources.GetSelectorsForEntity(ctx, resource)
 
-	releaseTargets := make([]policy.ReleaseTarget, 0)
+	releaseTargets := make([]*policy.ReleaseTarget, 0)
 	for _, deployment := range deployments {
 		for _, environment := range environments {
 			if deployment.SystemID == environment.SystemID {
-				releaseTargets = append(releaseTargets, policy.ReleaseTarget{
+				releaseTargets = append(releaseTargets, &policy.ReleaseTarget{
 					Resource:    resource,
 					Environment: environment,
 					Deployment:  deployment,
@@ -55,17 +55,24 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 		environmentIDs = append(environmentIDs, environment.GetID())
 	}
 
-	changes, err := engine.Repository.ReleaseTarget.SetReleaseTargetsForDeploymentsAndEnvironments(
-		ctx,
-		deploymentIDs,
-		environmentIDs,
-		releaseTargets,
-	)
+	changes, err := engine.Repository.
+		ReleaseTarget.
+		SetReleaseTargetsForDeploymentsAndEnvironments(
+			ctx,
+			deploymentIDs,
+			environmentIDs,
+			releaseTargets,
+		)
 	if err != nil {
 		return err
 	}
 	if changes.HasChanges() {
-		log.Info("Release targets changed", "changes", changes)
+		log.Info(
+			"Release targets changed",
+			"added", changes.Added,
+			"removed", changes.Removed,
+			"already existed", changes.AlreadyExisted,
+		)
 	}
 
 	return nil
