@@ -3,6 +3,7 @@ package engine
 import (
 	"workspace-engine/pkg/engine/policy"
 	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/engine/selector/exhaustive"
 	"workspace-engine/pkg/model/deployment"
 	"workspace-engine/pkg/model/environment"
 	"workspace-engine/pkg/model/resource"
@@ -25,6 +26,14 @@ type WorkspaceSelector struct {
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 	return &WorkspaceEngine{
 		WorkspaceID: workspaceID,
+		Selectors: WorkspaceSelector{
+			EnvironmentResources:       exhaustive.NewExhaustive[resource.Resource, environment.Environment](),
+			DeploymentResources:        exhaustive.NewExhaustive[resource.Resource, deployment.Deployment](),
+			PolicyTargetResources:      exhaustive.NewExhaustive[resource.Resource, policy.ReleaseTarget](),
+			PolicyTargetEnvironments:   exhaustive.NewExhaustive[environment.Environment, policy.ReleaseTarget](),
+			PolicyTargetDeployments:    exhaustive.NewExhaustive[deployment.Deployment, policy.ReleaseTarget](),
+			PolicyTargetReleaseTargets: exhaustive.NewExhaustive[policy.ReleaseTarget, policy.ReleaseTarget](),
+		},
 	}
 }
 
