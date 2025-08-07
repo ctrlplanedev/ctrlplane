@@ -1,6 +1,5 @@
 package conditions
 
-
 type ComparisonConditionOperator string
 
 const (
@@ -52,9 +51,9 @@ const (
 )
 
 type JSONCondition struct {
-	ConditionType ConditionType      `json:"type"`
-	Operator      string             `json:"operator"`
-	Value         string             `json:"value"`
-	Key           string             `json:"key"`
+	ConditionType ConditionType   `json:"type"`
+	Operator      string          `json:"operator"`
+	Value         string          `json:"value"`
+	Key           string          `json:"key"`
 	Conditions    []JSONCondition `json:"conditions"`
 }

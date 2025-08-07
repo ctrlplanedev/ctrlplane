@@ -28,19 +28,19 @@ var dateFieldMapping = map[conditions.ConditionType]string{
 
 func (c JSONSelector) Matches(entity any) (bool, error) {
 	switch c.JSONCondition.ConditionType {
-	case conditions.ConditionTypeID, conditions.ConditionTypeVersion, 
-		 conditions.ConditionTypeName, conditions.ConditionTypeSystem:
+	case conditions.ConditionTypeID, conditions.ConditionTypeVersion,
+		conditions.ConditionTypeName, conditions.ConditionTypeSystem:
 		return c.handleStringCondition(entity)
-		
+
 	case conditions.ConditionTypeMetadata:
 		return c.handleMetadataCondition(entity)
-		
+
 	case conditions.ConditionTypeDate, conditions.ConditionTypeUpdatedAt:
 		return c.handleDateCondition(entity)
-		
+
 	case conditions.ConditionTypeComparison, conditions.ConditionTypeAnd, conditions.ConditionTypeOr:
 		return c.handleComparisonCondition(entity)
-		
+
 	default:
 		return false, fmt.Errorf("unsupported condition type: %s", c.JSONCondition.ConditionType)
 	}
@@ -51,7 +51,7 @@ func (c JSONSelector) handleStringCondition(entity any) (bool, error) {
 	if !exists {
 		return false, fmt.Errorf("unsupported string condition type: %s", c.JSONCondition.ConditionType)
 	}
-	
+
 	op := conditions.StringConditionOperator(c.JSONCondition.Operator)
 	return StringConditionMatches(entity, op, field, c.JSONCondition.Value)
 }
@@ -66,7 +66,7 @@ func (c JSONSelector) handleDateCondition(entity any) (bool, error) {
 	if !exists {
 		return false, fmt.Errorf("unsupported date condition type: %s", c.JSONCondition.ConditionType)
 	}
-	
+
 	op := conditions.DateOperator(c.JSONCondition.Operator)
 	return DateConditionMatches(entity, op, field, c.JSONCondition.Value)
 }

@@ -18,11 +18,11 @@ type WorkspaceSelector struct {
 
 	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.ReleaseTarget]
 }
-	
+
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 	return &WorkspaceEngine{
 		WorkspaceID: workspaceID,
-	}	
+	}
 }
 
 type WorkspaceEngine struct {

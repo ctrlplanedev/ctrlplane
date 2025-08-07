@@ -18,7 +18,7 @@ func DateConditionMatches(entity any, operator conditions.DateOperator, field st
 type DateCondition[E selector.MatchableEntity] struct {
 	TypeField conditions.ConditionType `json:"type"`
 	Operator  conditions.DateOperator  `json:"operator"`
-	Value     time.Time     `json:"value"`
+	Value     time.Time                `json:"value"`
 }
 
 func (c DateCondition[E]) Matches(entity E) (bool, error) {

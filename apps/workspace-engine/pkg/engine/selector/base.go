@@ -9,7 +9,7 @@ func (b BaseEntity[E]) GetID() string {
 }
 
 type BaseSelector[E MatchableEntity] struct {
-	ID         string
+	ID string
 }
 
 func (b BaseSelector[E]) GetID() string {
