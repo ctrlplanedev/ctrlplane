@@ -5,6 +5,7 @@ import (
 	"workspace-engine/pkg/engine/selector"
 	"workspace-engine/pkg/model/deployment"
 	"workspace-engine/pkg/model/environment"
+	"workspace-engine/pkg/model/policy"
 	"workspace-engine/pkg/model/resource"
 )
 
@@ -21,13 +22,9 @@ func (r ReleaseTarget) GetID() string {
 type PolicyTarget struct {
 	ID string
 
-	EnvironmentSelector selector.SelectorEngine[environment.Environment, ReleaseTarget]
-	DeploymentSelector  selector.SelectorEngine[deployment.Deployment, ReleaseTarget]
-	ResourceSelector    selector.SelectorEngine[resource.Resource, ReleaseTarget]
-}
-
-func (p PolicyTarget) GetID() string {
-	return p.ID
+	EnvironmentSelector selector.SelectorEngine[environment.Environment, policy.PolicyTarget]
+	DeploymentSelector  selector.SelectorEngine[deployment.Deployment, policy.PolicyTarget]
+	ResourceSelector    selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
 }
 
 type ReleaseTargetConditions struct {
@@ -38,35 +35,35 @@ type ReleaseTargetConditions struct {
 func (c ReleaseTargetConditions) Matches(target ReleaseTarget) (bool, error) {
 	ctx := context.Background()
 
-	if c.PolicyTarget.EnvironmentMatcher != nil {
-		matcher := c.PolicyTarget.EnvironmentMatcher
-		matchingEnvironments, err := matcher.GetEntitiesForSelector(ctx, target)
+	if c.PolicyTarget.EnvironmentSelector != nil {
+		matcher := c.PolicyTarget.EnvironmentSelector
+		matchingSelectors, err := matcher.GetSelectorsForEntity(ctx, target.Environment)
 		if err != nil {
 			return false, err
 		}
-		if len(matchingEnvironments) == 0 {
+		if len(matchingSelectors) == 0 {
 			return false, nil
 		}
 	}
 
-	if c.PolicyTarget.DeploymentMatcher != nil {
-		matcher := c.PolicyTarget.DeploymentMatcher
-		matchingDeployments, err := matcher.GetEntitiesForSelector(ctx, target)
+	if c.PolicyTarget.DeploymentSelector != nil {
+		matcher := c.PolicyTarget.DeploymentSelector
+		matchingSelectors, err := matcher.GetSelectorsForEntity(ctx, target.Deployment)
 		if err != nil {
 			return false, err
 		}
-		if len(matchingDeployments) == 0 {
+		if len(matchingSelectors) == 0 {
 			return false, nil
 		}
 	}
 
-	if c.PolicyTarget.ResourceMatcher != nil {
-		matcher := c.PolicyTarget.ResourceMatcher
-		matchingResources, err := matcher.GetEntitiesForSelector(ctx, target)
+	if c.PolicyTarget.ResourceSelector != nil {
+		matcher := c.PolicyTarget.ResourceSelector
+		matchingSelectors, err := matcher.GetSelectorsForEntity(ctx, target.Resource)
 		if err != nil {
 			return false, err
 		}
-		if len(matchingResources) == 0 {
+		if len(matchingSelectors) == 0 {
 			return false, nil
 		}
 	}

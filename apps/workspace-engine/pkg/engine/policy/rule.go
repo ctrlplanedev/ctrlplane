@@ -17,11 +17,11 @@ const (
 	// PolicyDecisionAllow indicates that the policy allows the requested action.
 	// This is the positive outcome where no restrictions are applied.
 	PolicyDecisionAllow PolicyDecision = "allow"
-	
+
 	// PolicyDecisionDeny indicates that the policy explicitly denies the requested action.
 	// This will typically block or prevent the action from proceeding.
 	PolicyDecisionDeny PolicyDecision = "deny"
-	
+
 	// PolicyDecisionWarn indicates that the policy allows the action but with warnings.
 	// This allows the action to proceed while flagging potential issues or concerns.
 	PolicyDecisionWarn PolicyDecision = "warn"
@@ -33,16 +33,16 @@ const (
 type ConditionResult struct {
 	// Field is the name or identifier of the field being evaluated
 	Field string
-	
+
 	// Expected contains the expected value or criteria for this condition
 	Expected interface{}
-	
+
 	// Actual contains the actual value that was found during evaluation
 	Actual interface{}
-	
+
 	// Passed indicates whether this specific condition was satisfied
 	Passed bool
-	
+
 	// Message provides human-readable details about the condition evaluation,
 	// including context about why it passed or failed
 	Message string
@@ -54,21 +54,21 @@ type ConditionResult struct {
 type RuleEvaluationResult struct {
 	// RuleID is the unique identifier of the rule that was evaluated
 	RuleID string
-	
+
 	// Decision is the final policy decision made by this rule evaluation
 	Decision PolicyDecision
-	
+
 	// Message provides a summary explanation of the rule evaluation result
 	Message string
-	
+
 	// EvaluatedAt records when this rule evaluation was performed
 	EvaluatedAt time.Time
-	
+
 	// Conditions contains the detailed results of each individual condition
 	// that was evaluated as part of this rule. This provides granular insight
 	// into which specific checks passed or failed.
 	Conditions []ConditionResult
-	
+
 	// Warnings contains any warning messages generated during rule evaluation.
 	// These are non-blocking issues that should be brought to attention but
 	// don't necessarily prevent the action from proceeding.
@@ -92,7 +92,7 @@ type Rule[Target any] interface {
 	// GetID returns the unique identifier for this rule.
 	// This ID should be stable and used for tracking, logging, and debugging.
 	GetID() string
-	
+
 	// Evaluate performs the actual rule evaluation against the provided target.
 	// It returns a detailed evaluation result that includes the decision,
 	// condition results, and any warnings or messages.
@@ -109,21 +109,21 @@ type RuleRepository[Target any] interface {
 	// GetRules retrieves all rules from the repository.
 	// Returns an empty slice if no rules are found.
 	GetRules(ctx context.Context) ([]Rule[Target], error)
-	
+
 	// GetRule retrieves a specific rule by its unique identifier.
 	// Returns an error if the rule is not found.
 	GetRule(ctx context.Context, ruleID string) (Rule[Target], error)
-	
+
 	// CreateRule persists a new rule to the repository.
 	// The rule ID should be unique, and the operation will fail if a rule
 	// with the same ID already exists.
 	CreateRule(ctx context.Context, rule Rule[Target]) error
-	
+
 	// UpdateRule modifies an existing rule in the repository.
 	// The rule is identified by its ID, and all fields will be updated.
 	// Returns an error if the rule doesn't exist.
 	UpdateRule(ctx context.Context, rule Rule[Target]) error
-	
+
 	// DeleteRule removes a rule from the repository by its unique identifier.
 	// This is typically a soft delete that marks the rule as inactive
 	// rather than permanently removing it.

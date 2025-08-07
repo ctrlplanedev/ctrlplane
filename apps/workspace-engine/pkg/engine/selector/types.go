@@ -5,7 +5,6 @@ import (
 	"workspace-engine/pkg/model"
 )
 
-
 type MatchChange[E model.MatchableEntity, S model.SelectorEntity] struct {
 	Entity     E
 	Selector   S
