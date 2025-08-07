@@ -32,14 +32,6 @@ func (s selector) Selector(e model.MatchableEntity) (conditions.JSONCondition, e
 	return s.conditions, nil
 }
 
-func idCondition(id string) conditions.JSONCondition {
-	return conditions.JSONCondition{
-		ConditionType: conditions.ConditionTypeID,
-		Operator:      string(conditions.StringConditionOperatorEquals),
-		Value:         id,
-	}
-}
-
 func nameCondition(name string) conditions.JSONCondition {
 	return conditions.JSONCondition{
 		ConditionType: conditions.ConditionTypeName,
