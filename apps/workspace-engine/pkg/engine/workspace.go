@@ -20,8 +20,6 @@ type WorkspaceSelector struct {
 	PolicyTargetResources    selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
 	PolicyTargetEnvironments selector.SelectorEngine[environment.Environment, policy.PolicyTarget]
 	PolicyTargetDeployments  selector.SelectorEngine[deployment.Deployment, policy.PolicyTarget]
-
-	PolicyTargetReleaseTargets selector.SelectorEngine[epolicy.ReleaseTarget, policy.PolicyTarget]
 }
 
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {

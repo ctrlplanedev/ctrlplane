@@ -21,5 +21,4 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *engine.Workspac
 	environmentSelectors := engine.Selectors.EnvironmentResources.UpsertSelector(ctx, environment)
 
 	return nil
-
 }

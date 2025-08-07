@@ -46,7 +46,6 @@ type PolicyEvaluator[Target any] interface {
 }
 
 // PolicyRepository interface for policy data access
-
 type PolicyRepository[Target any] interface {
 	// Basic CRUD operations
 	GetPolicy(ctx context.Context, policyID string) (Policy[Target], error)

@@ -1,12 +1,12 @@
 package policy
 
 import (
-	"fmt"
+	"context"
 	"workspace-engine/pkg/engine/selector"
-	"workspace-engine/pkg/model"
 	"workspace-engine/pkg/model/conditions"
 	"workspace-engine/pkg/model/deployment"
 	"workspace-engine/pkg/model/environment"
+	"workspace-engine/pkg/model/policy"
 	"workspace-engine/pkg/model/resource"
 )
 
@@ -20,8 +20,9 @@ func (r ReleaseTarget) GetID() string {
 	return r.Resource.ID + r.Deployment.ID + r.Environment.ID
 }
 
-func (r ReleaseTarget) GetType() string {
-	return "release_target"
+// GetPolicyTargets returns all PolicyTargets that match this ReleaseTarget
+func (r ReleaseTarget) GetPolicyTargets(ctx context.Context, policyTargetSelector selector.SelectorEngine[ReleaseTarget, policy.PolicyTarget]) ([]policy.PolicyTarget, error) {
+	return policyTargetSelector.GetSelectorsForEntity(ctx, r)
 }
 
 type PolicyTarget struct {
@@ -34,22 +35,4 @@ type PolicyTarget struct {
 	EnvironmentMatcher selector.SelectorEngine[environment.Environment, PolicyTarget]
 	DeploymentMatcher  selector.SelectorEngine[deployment.Deployment, PolicyTarget]
 	ResourceMatcher    selector.SelectorEngine[resource.Resource, PolicyTarget]
-}
-
-func (p PolicyTarget) GetID() string {
-	return p.ID
-}
-
-func (p PolicyTarget) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
-	if _, ok := entity.(resource.Resource); ok {
-		return p.ResourceSelector, nil
-	}
-	if _, ok := entity.(environment.Environment); ok {
-		return p.EnvironmentSelector, nil
-	}
-	if _, ok := entity.(deployment.Deployment); ok {
-		return p.DeploymentSelector, nil
-	}
-
-	return conditions.JSONCondition{}, fmt.Errorf("entity type is not supported by policy target selector")
 }
