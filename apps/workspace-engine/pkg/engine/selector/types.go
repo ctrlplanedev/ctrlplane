@@ -2,22 +2,11 @@ package selector
 
 import (
 	"context"
+	"workspace-engine/pkg/model"
 )
 
-type MatchableEntity interface {
-	GetID() string
-}
 
-type SelectorEntity interface {
-	GetID() string
-}
-
-type Selector[E MatchableEntity] interface {
-	GetID() string
-	Matches(entity E) (bool, error)
-}
-
-type MatchChange[E MatchableEntity, S SelectorEntity] struct {
+type MatchChange[E model.MatchableEntity, S model.SelectorEntity] struct {
 	Entity     E
 	Selector   S
 	ChangeType MatchChangeType
@@ -30,25 +19,27 @@ const (
 	MatchChangeTypeRemoved MatchChangeType = "removed"
 )
 
-type MatchChangesHandler[E MatchableEntity, S SelectorEntity] func(ctx context.Context, change MatchChange[E, S]) error
+type MatchChangesHandler[E model.MatchableEntity, S model.SelectorEntity] func(ctx context.Context, change MatchChange[E, S]) error
 
-type ChannelResult[E MatchableEntity, S SelectorEntity] struct {
+type ChannelResult[E model.MatchableEntity, S model.SelectorEntity] struct {
 	MatchChange *MatchChange[E, S]
 	Error       error
 }
 
-type SelectorEngine[E MatchableEntity, S SelectorEntity] interface {
+type SelectorEngine[E model.MatchableEntity, S model.SelectorEntity] interface {
 	UpsertEntity(ctx context.Context, entity ...E) <-chan ChannelResult[E, S]
 	RemoveEntity(ctx context.Context, entity ...E) <-chan ChannelResult[E, S]
 
 	UpsertSelector(ctx context.Context, selector ...S) <-chan ChannelResult[E, S]
 	RemoveSelector(ctx context.Context, selector ...S) <-chan ChannelResult[E, S]
 
+	Matches(selectorEntity S, entity E) (bool, error)
+
 	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
 	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
 }
 
-func CollectMatchChangesByType[E MatchableEntity, S SelectorEntity](results <-chan ChannelResult[E, S]) ([]MatchChange[E, S], []MatchChange[E, S], error) {
+func CollectMatchChangesByType[E model.MatchableEntity, S model.SelectorEntity](results <-chan ChannelResult[E, S]) ([]MatchChange[E, S], []MatchChange[E, S], error) {
 
 	added := make([]MatchChange[E, S], 0)
 	removed := make([]MatchChange[E, S], 0)
@@ -69,7 +60,7 @@ func CollectMatchChangesByType[E MatchableEntity, S SelectorEntity](results <-ch
 
 	return added, removed, nil
 }
-func CollectMatchedEntitiesFromChannel[E MatchableEntity, S SelectorEntity](r <-chan ChannelResult[E, S]) ([]E, error) {
+func CollectMatchedEntitiesFromChannel[E model.MatchableEntity, S model.SelectorEntity](r <-chan ChannelResult[E, S]) ([]E, error) {
 	items := make([]E, 0)
 	for result := range r {
 		if result.Error != nil {

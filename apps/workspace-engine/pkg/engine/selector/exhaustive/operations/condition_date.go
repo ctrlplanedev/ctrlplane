@@ -3,7 +3,7 @@ package operations
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/engine/selector"
+	"workspace-engine/pkg/model"
 	"workspace-engine/pkg/model/conditions"
 )
 
@@ -15,7 +15,7 @@ func DateConditionMatches(entity any, operator conditions.DateOperator, field st
 	return compareDateCondition(operator, date, date)
 }
 
-type DateCondition[E selector.MatchableEntity] struct {
+type DateCondition[E model.MatchableEntity] struct {
 	TypeField conditions.ConditionType `json:"type"`
 	Operator  conditions.DateOperator  `json:"operator"`
 	Value     time.Time                `json:"value"`
