@@ -19,54 +19,15 @@ func (r ReleaseTarget) GetID() string {
 	return r.Resource.ID + r.Deployment.ID + r.Environment.ID
 }
 
+// GetPolicyTargets returns all PolicyTargets that match this ReleaseTarget
+func (r ReleaseTarget) GetPolicyTargets(ctx context.Context, policyTargetSelector selector.SelectorEngine[ReleaseTarget, policy.PolicyTarget]) ([]policy.PolicyTarget, error) {
+	return policyTargetSelector.GetSelectorsForEntity(ctx, r)
+}
+
 type PolicyTarget struct {
 	ID string
 
 	EnvironmentSelector selector.SelectorEngine[environment.Environment, policy.PolicyTarget]
 	DeploymentSelector  selector.SelectorEngine[deployment.Deployment, policy.PolicyTarget]
 	ResourceSelector    selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
-}
-
-type ReleaseTargetConditions struct {
-	ID           string
-	PolicyTarget PolicyTarget
-}
-
-func (c ReleaseTargetConditions) Matches(target ReleaseTarget) (bool, error) {
-	ctx := context.Background()
-
-	if c.PolicyTarget.EnvironmentSelector != nil {
-		matcher := c.PolicyTarget.EnvironmentSelector
-		matchingSelectors, err := matcher.GetSelectorsForEntity(ctx, target.Environment)
-		if err != nil {
-			return false, err
-		}
-		if len(matchingSelectors) == 0 {
-			return false, nil
-		}
-	}
-
-	if c.PolicyTarget.DeploymentSelector != nil {
-		matcher := c.PolicyTarget.DeploymentSelector
-		matchingSelectors, err := matcher.GetSelectorsForEntity(ctx, target.Deployment)
-		if err != nil {
-			return false, err
-		}
-		if len(matchingSelectors) == 0 {
-			return false, nil
-		}
-	}
-
-	if c.PolicyTarget.ResourceSelector != nil {
-		matcher := c.PolicyTarget.ResourceSelector
-		matchingSelectors, err := matcher.GetSelectorsForEntity(ctx, target.Resource)
-		if err != nil {
-			return false, err
-		}
-		if len(matchingSelectors) == 0 {
-			return false, nil
-		}
-	}
-
-	return true, nil
 }
