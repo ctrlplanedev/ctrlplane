@@ -15,11 +15,11 @@ type WorkspaceSelector struct {
 	EnvironmentResources selector.SelectorEngine[resource.Resource, environment.Environment]
 	DeploymentResources  selector.SelectorEngine[resource.Resource, deployment.Deployment]
 
-	PolicyTargetResources    selector.SelectorEngine[resource.Resource, policy.ReleaseTarget]
-	PolicyTargetEnvironments selector.SelectorEngine[environment.Environment, policy.ReleaseTarget]
-	PolicyTargetDeployments  selector.SelectorEngine[deployment.Deployment, policy.ReleaseTarget]
+	PolicyTargetResources    selector.SelectorEngine[resource.Resource, policy.PolicyTarget]
+	PolicyTargetEnvironments selector.SelectorEngine[environment.Environment, policy.PolicyTarget]
+	PolicyTargetDeployments  selector.SelectorEngine[deployment.Deployment, policy.PolicyTarget]
 
-	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.ReleaseTarget]
+	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.PolicyTarget]
 }
 
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {

@@ -22,9 +22,8 @@ func (e Environment) GetID() string {
 }
 
 func (e Environment) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
-	_, ok := entity.(resource.Resource)
-	if !ok {
-		return conditions.JSONCondition{}, fmt.Errorf("entity is not a supported resource")
+	if _, ok := entity.(resource.Resource); ok {
+		return e.ResourceSelector, nil
 	}
-	return e.ResourceSelector, nil
+	return conditions.JSONCondition{}, fmt.Errorf("entity is not a supported selector option")
 }
