@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"fmt"
 	"workspace-engine/pkg/model"
 	"workspace-engine/pkg/model/conditions"
 	"workspace-engine/pkg/model/resource"
@@ -22,10 +23,5 @@ func (d Deployment) Selector(entity model.MatchableEntity) (conditions.JSONCondi
 	if _, ok := entity.(resource.Resource); ok {
 		return d.ResourceSelector, nil
 	}
-
-	return d.ResourceSelector, nil
-}
-
-func (d Deployment) GetType() string {
-	return "deployment"
+	return conditions.JSONCondition{}, fmt.Errorf("entity is not a supported selector option")
 }
