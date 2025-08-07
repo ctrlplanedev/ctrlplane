@@ -6,17 +6,17 @@ import (
 
 // Policy interface defines the core contract for deployment policies
 // Policies contain multiple rules that determine whether something can deploy to a specific release target
-type Policy[Target any] interface {
+type Policy interface {
 	GetID() string
 	GetPriority() int
 
-	GetTargets() []Target
+	GetTargets() []ReleaseTarget
 
-	GetRule(ruleID string) (Rule[Target], error)
-	GetRules() []Rule[Target]
+	GetRule(ruleID string) (Rule[ReleaseTarget], error)
+	GetRules() []Rule[ReleaseTarget]
 
 	// Policy evaluation - evaluates all applicable rules
-	Evaluate(ctx context.Context, target Target) (*RuleEvaluationResult, error)
+	Evaluate(ctx context.Context, target ReleaseTarget) (*RuleEvaluationResult, error)
 }
 
 type PolicyEvaluationResult struct {
@@ -34,25 +34,13 @@ func (r *PolicyEvaluationResult) Passed() bool {
 }
 
 // PolicyEvaluator handles evaluation of specific policy types
-type PolicyEvaluator[Target any] interface {
+type PolicyEvaluator interface {
 	// Evaluate a single policy with all its rules
-	Evaluate(ctx context.Context, target Target) (*PolicyEvaluationResult, error)
+	Evaluate(ctx context.Context, target ReleaseTarget) (*PolicyEvaluationResult, error)
 
 	// Get policies applicable to a target context
-	GetApplicablePolicies(ctx context.Context, target Target) ([]Policy[Target], error)
+	GetApplicablePolicies(ctx context.Context, target ReleaseTarget) ([]Policy, error)
 
 	// Validate policy configuration
-	ValidatePolicy(policy Policy[Target]) error
-}
-
-// PolicyRepository interface for policy data access
-type PolicyRepository[Target any] interface {
-	// Basic CRUD operations
-	GetPolicy(ctx context.Context, policyID string) (Policy[Target], error)
-	CreatePolicy(ctx context.Context, policy Policy[Target]) error
-	UpdatePolicy(ctx context.Context, policy Policy[Target]) error
-
-	// Policy querying
-	GetPoliciesForTarget(ctx context.Context, target Target) ([]Policy[Target], error)
-	GetAllPolicies(ctx context.Context) ([]Policy[Target], error)
+	ValidatePolicy(policy Policy) error
 }

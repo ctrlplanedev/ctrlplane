@@ -8,9 +8,13 @@ import (
 	"workspace-engine/pkg/model/environment"
 	"workspace-engine/pkg/model/policy"
 	"workspace-engine/pkg/model/resource"
+
+	"github.com/charmbracelet/log"
 )
 
-type WorkspacePolicy struct {
+type WorkspaceRepository struct {
+	ReleaseTarget *epolicy.ReleaseTargetRepository
+	Policy        epolicy.Repository[epolicy.Policy]
 }
 
 type WorkspaceSelector struct {
@@ -23,22 +27,28 @@ type WorkspaceSelector struct {
 }
 
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
+	selectors := WorkspaceSelector{
+		EnvironmentResources:     exhaustive.NewExhaustive[resource.Resource, environment.Environment](),
+		DeploymentResources:      exhaustive.NewExhaustive[resource.Resource, deployment.Deployment](),
+		PolicyTargetResources:    exhaustive.NewExhaustive[resource.Resource, policy.PolicyTarget](),
+		PolicyTargetEnvironments: exhaustive.NewExhaustive[environment.Environment, policy.PolicyTarget](),
+		PolicyTargetDeployments:  exhaustive.NewExhaustive[deployment.Deployment, policy.PolicyTarget](),
+	}
+	repository := WorkspaceRepository{
+		ReleaseTarget: epolicy.NewReleaseTargetRepository(),
+		Policy:        epolicy.NewPolicyRepository(),
+	}
 	return &WorkspaceEngine{
 		WorkspaceID: workspaceID,
-		Selectors: WorkspaceSelector{
-			EnvironmentResources:     exhaustive.NewExhaustive[resource.Resource, environment.Environment](),
-			DeploymentResources:      exhaustive.NewExhaustive[resource.Resource, deployment.Deployment](),
-			PolicyTargetResources:    exhaustive.NewExhaustive[resource.Resource, policy.PolicyTarget](),
-			PolicyTargetEnvironments: exhaustive.NewExhaustive[environment.Environment, policy.PolicyTarget](),
-			PolicyTargetDeployments:  exhaustive.NewExhaustive[deployment.Deployment, policy.PolicyTarget](),
-		},
+		Selectors:   selectors,
+		Repository:  repository,
 	}
 }
 
 type WorkspaceEngine struct {
-	WorkspaceID      string
-	Selectors        WorkspaceSelector
-	PolicyRepository epolicy.PolicyRepository[epolicy.ReleaseTarget]
+	WorkspaceID string
+	Selectors   WorkspaceSelector
+	Repository  WorkspaceRepository
 }
 
 var workspaces = make(map[string]*WorkspaceEngine)
@@ -47,6 +57,7 @@ func GetWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 	engine, ok := workspaces[workspaceID]
 	if !ok {
 		engine = NewWorkspaceEngine(workspaceID)
+		log.Warn("Creating new workspace engine.", "workspaceID", workspaceID)
 		workspaces[workspaceID] = engine
 	}
 	return engine
