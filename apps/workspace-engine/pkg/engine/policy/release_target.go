@@ -21,13 +21,9 @@ func (r ReleaseTarget) GetID() string {
 type PolicyTarget struct {
 	ID string
 
-	EnvironmentSelector selector.Selector[environment.Environment]
-	DeploymentSelector  selector.Selector[deployment.Deployment]
-	ResourceSelector    selector.Selector[resource.Resource]
-
-	EnvironmentMatcher selector.SelectorEngine[environment.Environment, ReleaseTarget]
-	DeploymentMatcher  selector.SelectorEngine[deployment.Deployment, ReleaseTarget]
-	ResourceMatcher    selector.SelectorEngine[resource.Resource, ReleaseTarget]
+	EnvironmentSelector selector.SelectorEngine[environment.Environment, ReleaseTarget]
+	DeploymentSelector  selector.SelectorEngine[deployment.Deployment, ReleaseTarget]
+	ResourceSelector    selector.SelectorEngine[resource.Resource, ReleaseTarget]
 }
 
 func (p PolicyTarget) GetID() string {

@@ -1,10 +1,11 @@
 package engine
 
 import (
-	"workspace-engine/pkg/engine/policy"
+	epolicy "workspace-engine/pkg/engine/policy"
 	"workspace-engine/pkg/engine/selector"
 	"workspace-engine/pkg/model/deployment"
 	"workspace-engine/pkg/model/environment"
+	"workspace-engine/pkg/model/policy"
 	"workspace-engine/pkg/model/resource"
 )
 
@@ -19,7 +20,7 @@ type WorkspaceSelector struct {
 	PolicyTargetEnvironments selector.SelectorEngine[environment.Environment, policy.PolicyTarget]
 	PolicyTargetDeployments  selector.SelectorEngine[deployment.Deployment, policy.PolicyTarget]
 
-	PolicyTargetReleaseTargets selector.SelectorEngine[policy.ReleaseTarget, policy.PolicyTarget]
+	PolicyTargetReleaseTargets selector.SelectorEngine[epolicy.ReleaseTarget, policy.PolicyTarget]
 }
 
 func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
@@ -31,7 +32,7 @@ func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 type WorkspaceEngine struct {
 	WorkspaceID      string
 	Selectors        WorkspaceSelector
-	PolicyRepository policy.PolicyRepository[policy.ReleaseTarget]
+	PolicyRepository epolicy.PolicyRepository[epolicy.ReleaseTarget]
 }
 
 var workspaces = make(map[string]*WorkspaceEngine)
