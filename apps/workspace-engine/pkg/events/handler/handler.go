@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"workspace-engine/pkg/engine/workspace"
 
 	"workspace-engine/pkg/engine"
 	"workspace-engine/pkg/logger"
@@ -39,7 +40,7 @@ type RawEvent struct {
 
 // Handler defines the interface for processing events
 type Handler interface {
-	Handle(ctx context.Context, engine *engine.WorkspaceEngine, event RawEvent) error
+	Handle(ctx context.Context, engine *workspace.WorkspaceEngine, event RawEvent) error
 }
 
 // HandlerRegistry maps event types to their corresponding handlers

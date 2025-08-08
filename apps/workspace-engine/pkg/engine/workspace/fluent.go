@@ -33,10 +33,10 @@ type FluentPipeline struct {
 
 	// results
 	releaseTargetPolicies map[string][]*policy.Policy
-	selectorChanges    *ResourceSelectorChanges
-	environmentChanges *EnvironmentSelectorChanges
-	deploymentChanges  *DeploymentSelectorChanges
-	policyChanges      *PolicyTargetSelectorChanges
+	selectorChanges       *ResourceSelectorChanges
+	environmentChanges    *EnvironmentSelectorChanges
+	deploymentChanges     *DeploymentSelectorChanges
+	policyChanges         *PolicyTargetSelectorChanges
 
 	releaseTargets *ReleaseTargetChanges
 	// policyMatches    []epolicy.PolicyMatch
@@ -95,7 +95,8 @@ func (fp *FluentPipeline) UpdateSelectors() *FluentPipeline {
 			fp.deploymentChanges = changes
 		}
 		if len(fp.policyIDs) > 0 {
-			changes, err := fp.engine.SelectorManager.UpsertPolicyTargets(fp.ctx, fp.policyIDs)
+			// TODO: fix typing error from fp.policyIDs
+			changes, err := fp.engine.SelectorManager.UpsertPolicyTargets(fp.ctx, []policy.PolicyTarget{} /*fp.policyIDs*/)
 			if err != nil {
 				fp.err = err
 				return fp
@@ -128,7 +129,8 @@ func (fp *FluentPipeline) UpdateSelectors() *FluentPipeline {
 			fp.deploymentChanges = changes
 		}
 		if len(fp.policyIDs) > 0 {
-			changes, err := fp.engine.SelectorManager.RemovePolicyTargets(fp.ctx, fp.policyIDs)
+			// TODO: fix typing error from fp.policyIDs
+			changes, err := fp.engine.SelectorManager.RemovePolicyTargets(fp.ctx, []policy.PolicyTarget{} /*fp.policyIDs*/)
 			if err != nil {
 				fp.err = err
 				return fp
