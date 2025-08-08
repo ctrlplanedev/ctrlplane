@@ -37,4 +37,6 @@ type SelectorEngine[E model.MatchableEntity, S model.SelectorEntity] interface {
 
 	GetAllEntities(ctx context.Context) ([]E, error)
 	GetAllSelectors(ctx context.Context) ([]S, error)
+
+	IsMatch(ctx context.Context, entity E, selector S) (bool, error)
 }
