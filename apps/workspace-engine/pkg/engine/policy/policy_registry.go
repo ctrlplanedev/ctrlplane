@@ -1,21 +1,25 @@
 package policy
 
-import "context"
+import (
+	"context"
+	"workspace-engine/pkg/model"
+	"workspace-engine/pkg/model/policy"
+)
 
-var _ Repository[Policy] = (*PolicyRepository)(nil)
+var _ model.Repository[policy.Policy] = (*PolicyRepository)(nil)
 
-func NewPolicyRepository() Repository[Policy] {
+func NewPolicyRepository() *PolicyRepository {
 	return &PolicyRepository{
-		Policies: make(map[string]*Policy),
+		Policies: make(map[string]*policy.Policy),
 	}
 }
 
 type PolicyRepository struct {
-	Policies map[string]*Policy
+	Policies map[string]*policy.Policy
 }
 
 // Create implements Registry.
-func (r *PolicyRepository) Create(ctx context.Context, entity *Policy) error {
+func (r *PolicyRepository) Create(ctx context.Context, entity *policy.Policy) error {
 	r.Policies[(*entity).GetID()] = entity
 	return nil
 }
@@ -27,13 +31,13 @@ func (r *PolicyRepository) Delete(ctx context.Context, entityID string) error {
 }
 
 // Get implements Registry.
-func (r *PolicyRepository) Get(ctx context.Context, entityID string) *Policy {
+func (r *PolicyRepository) Get(ctx context.Context, entityID string) *policy.Policy {
 	return r.Policies[entityID]
 }
 
 // GetAll implements Registry.
-func (r *PolicyRepository) GetAll(ctx context.Context) []*Policy {
-	policies := make([]*Policy, 0, len(r.Policies))
+func (r *PolicyRepository) GetAll(ctx context.Context) []*policy.Policy {
+	policies := make([]*policy.Policy, 0, len(r.Policies))
 	for _, policy := range r.Policies {
 		policies = append(policies, policy)
 	}
@@ -41,7 +45,7 @@ func (r *PolicyRepository) GetAll(ctx context.Context) []*Policy {
 }
 
 // Update implements Registry.
-func (r *PolicyRepository) Update(ctx context.Context, entity *Policy) error {
+func (r *PolicyRepository) Update(ctx context.Context, entity *policy.Policy) error {
 	r.Policies[(*entity).GetID()] = entity
 	return nil
 }

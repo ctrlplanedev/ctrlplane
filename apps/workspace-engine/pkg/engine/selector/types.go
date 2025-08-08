@@ -34,38 +34,7 @@ type SelectorEngine[E model.MatchableEntity, S model.SelectorEntity] interface {
 
 	GetSelectorsForEntity(ctx context.Context, entity E) ([]S, error)
 	GetEntitiesForSelector(ctx context.Context, selector S) ([]E, error)
-}
 
-func CollectMatchChangesByType[E model.MatchableEntity, S model.SelectorEntity](results <-chan ChannelResult[E, S]) ([]MatchChange[E, S], []MatchChange[E, S], error) {
-
-	added := make([]MatchChange[E, S], 0)
-	removed := make([]MatchChange[E, S], 0)
-
-	for result := range results {
-		if result.Error != nil {
-			return nil, nil, result.Error
-		}
-		if result.MatchChange != nil {
-			if result.MatchChange.ChangeType == MatchChangeTypeAdded {
-				added = append(added, *result.MatchChange)
-			}
-			if result.MatchChange.ChangeType == MatchChangeTypeRemoved {
-				removed = append(removed, *result.MatchChange)
-			}
-		}
-	}
-
-	return added, removed, nil
-}
-func CollectMatchedEntitiesFromChannel[E model.MatchableEntity, S model.SelectorEntity](r <-chan ChannelResult[E, S]) ([]E, error) {
-	items := make([]E, 0)
-	for result := range r {
-		if result.Error != nil {
-			return items, result.Error
-		}
-		if result.MatchChange != nil {
-			items = append(items, result.MatchChange.Entity)
-		}
-	}
-	return items, nil
+	GetAllEntities(ctx context.Context) ([]E, error)
+	GetAllSelectors(ctx context.Context) ([]S, error)
 }

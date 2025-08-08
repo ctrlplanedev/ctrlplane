@@ -2,7 +2,7 @@
 // in the workspace engine. This file specifically handles the in-memory storage and
 // management of release targets, which represent combinations of resources, deployments,
 // and environments that policies can be applied to.
-package policy
+package releasetargets
 
 import (
 	"context"
@@ -28,6 +28,9 @@ func NewReleaseTargetRepository() *ReleaseTargetRepository {
 		ReleaseTargets: make(map[string]*ReleaseTarget),
 	}
 }
+
+// Compile-time check to ensure ReleaseTargetRepository implements Repository interface
+var _ model.Repository[ReleaseTarget] = (*ReleaseTargetRepository)(nil)
 
 // ReleaseTargetRepository provides an in-memory implementation of the Repository interface
 // for managing ReleaseTarget entities. It uses a map-based storage for fast lookups by ID

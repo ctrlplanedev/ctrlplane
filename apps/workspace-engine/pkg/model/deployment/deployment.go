@@ -25,3 +25,9 @@ func (d Deployment) Selector(entity model.MatchableEntity) (conditions.JSONCondi
 	}
 	return conditions.JSONCondition{}, fmt.Errorf("entity is not a supported selector option")
 }
+
+type DeploymentVersion struct {
+	ID           string `json:"id"`
+	DeploymentID string `json:"deploymentId"`
+	Tag          string `json:"tag"`
+}

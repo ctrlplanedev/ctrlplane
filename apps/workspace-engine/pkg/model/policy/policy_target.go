@@ -14,9 +14,9 @@ type PolicyTarget struct {
 
 	PolicyID string `json:"policyId"`
 
-	DeploymentSelector  conditions.JSONCondition `json:"deploymentSelector"`
-	EnvironmentSelector conditions.JSONCondition `json:"environmentSelector"`
-	ResourceSelector    conditions.JSONCondition `json:"resourceSelector"`
+	DeploymentSelector  *conditions.JSONCondition `json:"deploymentSelector,omitempty"`
+	EnvironmentSelector *conditions.JSONCondition `json:"environmentSelector,omitempty"`
+	ResourceSelector    *conditions.JSONCondition `json:"resourceSelector,omitempty"`
 }
 
 func (p PolicyTarget) GetID() string {

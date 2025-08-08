@@ -208,3 +208,27 @@ func (e *Exhaustive[E, S]) GetEntitiesForSelector(ctx context.Context, sel S) ([
 
 	return entities, nil
 }
+
+func (e *Exhaustive[E, S]) GetAllEntities(ctx context.Context) ([]E, error) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	entities := make([]E, 0, len(e.entities))
+	for _, ent := range e.entities {
+		entities = append(entities, ent)
+	}
+
+	return entities, nil
+}
+
+func (e *Exhaustive[E, S]) GetAllSelectors(ctx context.Context) ([]S, error) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	selectors := make([]S, 0, len(e.selectors))
+	for _, sel := range e.selectors {
+		selectors = append(selectors, sel)
+	}
+
+	return selectors, nil
+}

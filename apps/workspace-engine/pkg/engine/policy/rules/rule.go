@@ -2,11 +2,13 @@
 // This package defines the fundamental structures used throughout the workspace engine
 // for policy-based decision making, including rule evaluation, condition checking,
 // and policy decision outcomes.
-package policy
+package rules
 
 import (
 	"context"
 	"time"
+	rt "workspace-engine/pkg/engine/policy/releasetargets"
+	"workspace-engine/pkg/model"
 )
 
 // PolicyDecision represents the possible outcomes when a policy rule is evaluated.
@@ -35,10 +37,10 @@ type ConditionResult struct {
 	Field string
 
 	// Expected contains the expected value or criteria for this condition
-	Expected interface{}
+	Expected any
 
 	// Actual contains the actual value that was found during evaluation
-	Actual interface{}
+	Actual any
 
 	// Passed indicates whether this specific condition was satisfied
 	Passed bool
@@ -88,10 +90,8 @@ func (r *RuleEvaluationResult) Passed() bool {
 //
 // The Target type parameter allows rules to be strongly typed for the specific
 // types of objects they evaluate (e.g., deployments, releases, resources).
-type Rule[Target any] interface {
-	// GetID returns the unique identifier for this rule.
-	// This ID should be stable and used for tracking, logging, and debugging.
-	GetID() string
+type Rule interface {
+	model.Entity
 
 	// Evaluate performs the actual rule evaluation against the provided target.
 	// It returns a detailed evaluation result that includes the decision,
@@ -99,33 +99,5 @@ type Rule[Target any] interface {
 	//
 	// The context can be used for cancellation, timeouts, and passing
 	// request-scoped values needed during evaluation.
-	Evaluate(ctx context.Context, target Target) (*RuleEvaluationResult, error)
-}
-
-// RuleRepository provides a comprehensive interface for managing policy rules in persistent storage.
-// It supports full CRUD operations as well as advanced querying capabilities for rule management.
-// The generic Target type parameter ensures type safety when working with rules for specific target types.
-type RuleRepository[Target any] interface {
-	// GetRules retrieves all rules from the repository.
-	// Returns an empty slice if no rules are found.
-	GetRules(ctx context.Context) ([]Rule[Target], error)
-
-	// GetRule retrieves a specific rule by its unique identifier.
-	// Returns an error if the rule is not found.
-	GetRule(ctx context.Context, ruleID string) (Rule[Target], error)
-
-	// CreateRule persists a new rule to the repository.
-	// The rule ID should be unique, and the operation will fail if a rule
-	// with the same ID already exists.
-	CreateRule(ctx context.Context, rule Rule[Target]) error
-
-	// UpdateRule modifies an existing rule in the repository.
-	// The rule is identified by its ID, and all fields will be updated.
-	// Returns an error if the rule doesn't exist.
-	UpdateRule(ctx context.Context, rule Rule[Target]) error
-
-	// DeleteRule removes a rule from the repository by its unique identifier.
-	// This is typically a soft delete that marks the rule as inactive
-	// rather than permanently removing it.
-	DeleteRule(ctx context.Context, ruleID string) error
+	Evaluate(ctx context.Context, target rt.ReleaseTarget) (*RuleEvaluationResult, error)
 }

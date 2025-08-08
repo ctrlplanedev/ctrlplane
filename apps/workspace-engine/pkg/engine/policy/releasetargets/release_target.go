@@ -1,4 +1,4 @@
-package policy
+package releasetargets
 
 import (
 	"context"
@@ -27,25 +27,22 @@ func (r ReleaseTarget) GetID() string {
 }
 
 // GetPolicyTargets returns all PolicyTargets that match this ReleaseTarget
-func (r ReleaseTarget) GetPolicies(ctx context.Context, policyTargetSelectors PolicyTargetSelectors, policies []*policy.Policy) ([]*policy.Policy, error) {
-	var matchingPolicies []*policy.Policy
+func (r ReleaseTarget) GetPolicyTargets(ctx context.Context, policyTargetSelectors PolicyTargetSelectors, policyTargets []policy.PolicyTarget) ([]policy.PolicyTarget, error) {
+	var matchingPolicyTargets []policy.PolicyTarget
 
-	for _, policy := range policies {
-		for _, policyTarget := range policy.PolicyTargets {
-			matches, err := r.matchesPolicyTarget(ctx, policyTargetSelectors, policyTarget)
-			if err != nil {
-				fmt.Println("error matching policy target:", err)
-				continue
-			}
+	for _, policyTarget := range policyTargets {
+		matches, err := r.matchesPolicyTarget(ctx, policyTargetSelectors, policyTarget)
+		if err != nil {
+			fmt.Println("error matching policy target:", err)
+			continue
+		}
 
-			if matches {
-				matchingPolicies = append(matchingPolicies, policy)
-				break
-			}
+		if matches {
+			matchingPolicyTargets = append(matchingPolicyTargets, policyTarget)
 		}
 	}
 
-	return matchingPolicies, nil
+	return matchingPolicyTargets, nil
 }
 
 // matchesPolicyTarget checks if this ReleaseTarget matches the given PolicyTarget
