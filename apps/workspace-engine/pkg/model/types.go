@@ -18,5 +18,6 @@ type MatchableEntity = Entity
 
 type SelectorEntity interface {
 	Entity
-	Selector(entity MatchableEntity) (conditions.JSONCondition, error)
+	MatchAllIfNullSelector(entity MatchableEntity) bool
+	Selector(entity MatchableEntity) (*conditions.JSONCondition, error)
 }

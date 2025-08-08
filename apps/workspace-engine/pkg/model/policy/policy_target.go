@@ -23,8 +23,15 @@ func (p PolicyTarget) GetID() string {
 	return p.ID
 }
 
-func (p PolicyTarget) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
+func (p PolicyTarget) MatchAllIfNullSelector(entity model.MatchableEntity) bool {
+	return true
+}
+
+func (p PolicyTarget) Selector(entity model.MatchableEntity) (*conditions.JSONCondition, error) {
 	if _, ok := entity.(resource.Resource); ok {
+		if p.ResourceSelector == nil {
+			return nil, nil
+		}
 		return p.ResourceSelector, nil
 	}
 
@@ -36,5 +43,5 @@ func (p PolicyTarget) Selector(entity model.MatchableEntity) (conditions.JSONCon
 		return p.DeploymentSelector, nil
 	}
 
-	return conditions.JSONCondition{}, fmt.Errorf("entity is not a supported selector option")
+	return nil, fmt.Errorf("entity is not a supported selector option")
 }

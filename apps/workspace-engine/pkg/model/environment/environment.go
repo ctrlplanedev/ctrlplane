@@ -14,16 +14,20 @@ type Environment struct {
 	SystemID  string    `json:"systemId"`
 	CreatedAt time.Time `json:"createdAt"`
 
-	ResourceSelector conditions.JSONCondition `json:"resourceSelector"`
+	ResourceSelector *conditions.JSONCondition `json:"resourceSelector,omitempty"`
 }
 
 func (e Environment) GetID() string {
 	return e.ID
 }
 
-func (e Environment) Selector(entity model.MatchableEntity) (conditions.JSONCondition, error) {
+func (e Environment) MatchAllIfNullSelector(entity model.MatchableEntity) bool {
+	return false
+}
+
+func (e Environment) Selector(entity model.MatchableEntity) (*conditions.JSONCondition, error) {
 	if _, ok := entity.(resource.Resource); ok {
 		return e.ResourceSelector, nil
 	}
-	return conditions.JSONCondition{}, fmt.Errorf("entity is not a supported selector option")
+	return nil, fmt.Errorf("entity is not a supported selector option")
 }
