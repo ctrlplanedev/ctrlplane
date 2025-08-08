@@ -44,8 +44,12 @@ func (e *Exhaustive[E, S]) handleEntitySelectorPair(ent E, sel S) *selector.Chan
 		return &selector.ChannelResult[E, S]{Error: err}
 	}
 
+	if selectorCondition == nil {
+		return nil
+	}
+
 	matchResult, err := operations.JSONSelector{
-		JSONCondition: selectorCondition,
+		JSONCondition: *selectorCondition,
 	}.Matches(ent)
 	if err != nil {
 		return &selector.ChannelResult[E, S]{Error: err}
@@ -214,4 +218,28 @@ func (e *Exhaustive[E, S]) IsMatch(ctx context.Context, entity E, selector S) (b
 	defer e.mu.RUnlock()
 
 	return e.matches[entity.GetID()][selector.GetID()], nil
+}
+
+func (e *Exhaustive[E, S]) GetAllEntities(ctx context.Context) ([]E, error) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	entities := make([]E, 0, len(e.entities))
+	for _, ent := range e.entities {
+		entities = append(entities, ent)
+	}
+
+	return entities, nil
+}
+
+func (e *Exhaustive[E, S]) GetAllSelectors(ctx context.Context) ([]S, error) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	selectors := make([]S, 0, len(e.selectors))
+	for _, sel := range e.selectors {
+		selectors = append(selectors, sel)
+	}
+
+	return selectors, nil
 }
