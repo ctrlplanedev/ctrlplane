@@ -3,6 +3,8 @@ package deploymentversion
 import (
 	"context"
 	"fmt"
+	"sort"
+	"time"
 	"workspace-engine/pkg/model"
 	"workspace-engine/pkg/model/deployment"
 )
@@ -10,7 +12,7 @@ import (
 var _ model.Repository[deployment.DeploymentVersion] = (*DeploymentVersionRepository)(nil)
 
 type DeploymentVersionRepository struct {
-	// DeploymentID -> DeploymentVersion sorted by createdAt
+	// DeploymentID -> DeploymentVersions (in insertion order). To guarantee ordering, sort by CreatedAt on insert.
 	DeploymentVersions map[string][]*deployment.DeploymentVersion
 }
 
@@ -21,7 +23,10 @@ func NewDeploymentVersionRepository() *DeploymentVersionRepository {
 }
 
 func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, deploymentID string) []*deployment.DeploymentVersion {
-	return r.DeploymentVersions[deploymentID]
+	src := r.DeploymentVersions[deploymentID]
+	dst := make([]*deployment.DeploymentVersion, len(src))
+	copy(dst, src)
+	return dst
 }
 
 func (r *DeploymentVersionRepository) GetAllReadyForDeployment(ctx context.Context, deploymentID string) []*deployment.DeploymentVersion {
@@ -55,10 +60,29 @@ func (r *DeploymentVersionRepository) Get(ctx context.Context, versionID string)
 }
 
 func (r *DeploymentVersionRepository) Create(ctx context.Context, deploymentVersion *deployment.DeploymentVersion) error {
+	if deploymentVersion.ID == "" {
+		return fmt.Errorf("deployment version ID is required")
+	}
+
+	if r.Exists(ctx, deploymentVersion.ID) {
+		return fmt.Errorf("deployment version already exists")
+	}
+
+	if deploymentVersion.CreatedAt.IsZero() {
+		deploymentVersion.CreatedAt = time.Now().UTC()
+	}
+
+	if deploymentVersion.Status == "" {
+		deploymentVersion.Status = deployment.DeploymentVersionStatusReady
+	}
+
 	if r.DeploymentVersions[deploymentVersion.DeploymentID] == nil {
 		r.DeploymentVersions[deploymentVersion.DeploymentID] = make([]*deployment.DeploymentVersion, 0)
 	}
 	r.DeploymentVersions[deploymentVersion.DeploymentID] = append(r.DeploymentVersions[deploymentVersion.DeploymentID], deploymentVersion)
+	sort.Slice(r.DeploymentVersions[deploymentVersion.DeploymentID], func(i, j int) bool {
+		return r.DeploymentVersions[deploymentVersion.DeploymentID][i].CreatedAt.After(r.DeploymentVersions[deploymentVersion.DeploymentID][j].CreatedAt)
+	})
 	return nil
 }
 
@@ -75,10 +99,10 @@ func (r *DeploymentVersionRepository) Update(ctx context.Context, deploymentVers
 }
 
 func (r *DeploymentVersionRepository) Delete(ctx context.Context, versionID string) error {
-	for _, versions := range r.DeploymentVersions {
+	for depID, versions := range r.DeploymentVersions {
 		for i, version := range versions {
 			if version.ID == versionID {
-				r.DeploymentVersions[versions[i].DeploymentID] = append(r.DeploymentVersions[versions[i].DeploymentID][:i], r.DeploymentVersions[versions[i].DeploymentID][i+1:]...)
+				r.DeploymentVersions[depID] = append(r.DeploymentVersions[depID][:i], r.DeploymentVersions[depID][i+1:]...)
 				return nil
 			}
 		}

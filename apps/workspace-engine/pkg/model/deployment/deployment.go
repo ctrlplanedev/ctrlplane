@@ -36,7 +36,7 @@ func (d Deployment) Selector(entity model.MatchableEntity) (*conditions.JSONCond
 type DeploymentVersionStatus string
 
 const (
-	DeploymentVersionStatusPending  DeploymentVersionStatus = "building"
+	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
 	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
 	DeploymentVersionStatusFailed   DeploymentVersionStatus = "failed"
 	DeploymentVersionStatusRejected DeploymentVersionStatus = "rejected"
