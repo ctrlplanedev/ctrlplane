@@ -33,15 +33,6 @@ func (d Deployment) Selector(entity model.MatchableEntity) (*conditions.JSONCond
 	return nil, fmt.Errorf("entity is not a supported selector option")
 }
 
-type DeploymentVersionStatus string
-
-const (
-	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
-	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
-	DeploymentVersionStatusFailed   DeploymentVersionStatus = "failed"
-	DeploymentVersionStatusRejected DeploymentVersionStatus = "rejected"
-)
-
 type DeploymentVersion struct {
 	ID string `json:"id"`
 
@@ -55,8 +46,6 @@ type DeploymentVersion struct {
 
 	JobAgentConfig map[string]any `json:"jobAgentConfig"`
 
-	Status DeploymentVersionStatus `json:"status"`
-
 	Message *string `json:"message,omitempty"`
 
 	CreatedAt time.Time `json:"createdAt"`
@@ -64,8 +53,4 @@ type DeploymentVersion struct {
 
 func (d DeploymentVersion) GetID() string {
 	return d.ID
-}
-
-func (d DeploymentVersion) GetStatus() DeploymentVersionStatus {
-	return d.Status
 }
