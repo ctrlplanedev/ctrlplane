@@ -110,6 +110,14 @@ func (r *DeploymentVersionRepository) Delete(ctx context.Context, versionID stri
 	return fmt.Errorf("deployment version not found")
 }
 
+func (r *DeploymentVersionRepository) DeleteDeployment(ctx context.Context, deploymentID string) error {
+	if _, ok := r.DeploymentVersions[deploymentID]; !ok {
+		return fmt.Errorf("deployment not found")
+	}
+	delete(r.DeploymentVersions, deploymentID)
+	return nil
+}
+
 func (r *DeploymentVersionRepository) Exists(ctx context.Context, versionID string) bool {
 	for _, versions := range r.DeploymentVersions {
 		for _, version := range versions {
