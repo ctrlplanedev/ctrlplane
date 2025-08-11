@@ -28,8 +28,12 @@ func (s selector) GetID() string {
 	return s.ID
 }
 
-func (s selector) Selector(e model.MatchableEntity) (conditions.JSONCondition, error) {
-	return s.conditions, nil
+func (s selector) Selector(e model.MatchableEntity) (*conditions.JSONCondition, error) {
+	return &s.conditions, nil
+}
+
+func (s selector) MatchAllIfNullSelector(e model.MatchableEntity) bool {
+	return false
 }
 
 func nameCondition(name string) conditions.JSONCondition {
