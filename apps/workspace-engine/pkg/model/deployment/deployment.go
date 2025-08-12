@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"fmt"
+	"time"
 	"workspace-engine/pkg/model"
 	"workspace-engine/pkg/model/conditions"
 	"workspace-engine/pkg/model/resource"
@@ -33,9 +34,21 @@ func (d Deployment) Selector(entity model.MatchableEntity) (*conditions.JSONCond
 }
 
 type DeploymentVersion struct {
-	ID           string `json:"id"`
+	ID string `json:"id"`
+
 	DeploymentID string `json:"deploymentId"`
-	Tag          string `json:"tag"`
+
+	Name *string `json:"name,omitempty"`
+
+	Tag string `json:"tag"`
+
+	Config map[string]any `json:"config"`
+
+	JobAgentConfig map[string]any `json:"jobAgentConfig"`
+
+	Message *string `json:"message,omitempty"`
+
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (d DeploymentVersion) GetID() string {
