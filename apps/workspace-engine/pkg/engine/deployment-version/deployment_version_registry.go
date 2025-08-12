@@ -21,7 +21,7 @@ func NewDeploymentVersionRepository() *DeploymentVersionRepository {
 	}
 }
 
-func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, deploymentID string) []deployment.DeploymentVersion {
+func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, deploymentID string, limit *int) []deployment.DeploymentVersion {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -31,6 +31,9 @@ func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, d
 	sort.Slice(dst, func(i, j int) bool {
 		return dst[i].CreatedAt.After(dst[j].CreatedAt)
 	})
+	if limit != nil {
+		dst = dst[:*limit]
+	}
 	return dst
 }
 
@@ -129,4 +132,19 @@ func (r *DeploymentVersionRepository) DeleteDeployment(ctx context.Context, depl
 	}
 	delete(r.DeploymentVersions, deploymentID)
 	return nil
+}
+
+func (r *DeploymentVersionRepository) Exists(ctx context.Context, versionID string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, versions := range r.DeploymentVersions {
+		for _, version := range versions {
+			if version.ID == versionID {
+				return true
+			}
+		}
+	}
+
+	return false
 }

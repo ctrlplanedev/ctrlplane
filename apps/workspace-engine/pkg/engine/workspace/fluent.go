@@ -15,7 +15,6 @@ import (
 type Operation string
 
 const (
-	OperationCreate Operation = "create"
 	OperationUpdate Operation = "update"
 	OperationRemove Operation = "remove"
 )
@@ -162,16 +161,18 @@ func (fp *FluentPipeline) UpdateDeploymentVersions() *FluentPipeline {
 	}
 
 	switch fp.operation {
-	case OperationCreate:
-		for _, deploymentVersion := range fp.deploymentVersions {
-			if err := fp.engine.Repository.DeploymentVersion.Create(fp.ctx, deploymentVersion); err != nil {
-				fp.err = err
-				return fp
-			}
-		}
 	case OperationUpdate:
 		for _, deploymentVersion := range fp.deploymentVersions {
-			if err := fp.engine.Repository.DeploymentVersion.Update(fp.ctx, deploymentVersion); err != nil {
+			exists := fp.engine.Repository.DeploymentVersion.Exists(fp.ctx, deploymentVersion.ID)
+			if exists {
+				if err := fp.engine.Repository.DeploymentVersion.Update(fp.ctx, deploymentVersion); err != nil {
+					fp.err = err
+					return fp
+				}
+				continue
+			}
+
+			if err := fp.engine.Repository.DeploymentVersion.Create(fp.ctx, deploymentVersion); err != nil {
 				fp.err = err
 				return fp
 			}
@@ -235,7 +236,8 @@ func (fp *FluentPipeline) EvaulatePolicies() *FluentPipeline {
 	for _, releaseTarget := range fp.releaseTargets.ToEvaluate {
 		policies := fp.releaseTargetPolicies[releaseTarget.GetID()]
 		deploymentID := releaseTarget.Deployment.GetID()
-		deploymentVersions := fp.engine.Repository.DeploymentVersion.GetAllForDeployment(fp.ctx, deploymentID)
+		limit := 500
+		deploymentVersions := fp.engine.Repository.DeploymentVersion.GetAllForDeployment(fp.ctx, deploymentID, &limit)
 		// TODO: version stuff
 		for _, policy := range policies {
 			result, err := fp.engine.PolicyManager.EvaluatePolicy(fp.ctx, policy, releaseTarget)

@@ -80,10 +80,20 @@ func (e *WorkspaceEngine) RemoveDeployment(ctx context.Context, deployments ...d
 	}
 }
 
-func (e *WorkspaceEngine) CreateDeploymentVersion(ctx context.Context, deploymentVersions ...deployment.DeploymentVersion) *FluentPipeline {
-	return &FluentPipeline{
+func (e *WorkspaceEngine) UpsertDeploymentVersion(ctx context.Context, deploymentVersions ...deployment.DeploymentVersion) *FluentPipeline {
+	fp := &FluentPipeline{
 		engine:             e,
-		operation:          OperationCreate,
+		operation:          OperationUpdate,
 		deploymentVersions: deploymentVersions,
 	}
+	return fp.UpdateDeploymentVersions()
+}
+
+func (e *WorkspaceEngine) RemoveDeploymentVersion(ctx context.Context, deploymentVersions ...deployment.DeploymentVersion) *FluentPipeline {
+	fp := &FluentPipeline{
+		engine:             e,
+		operation:          OperationRemove,
+		deploymentVersions: deploymentVersions,
+	}
+	return fp.UpdateDeploymentVersions()
 }

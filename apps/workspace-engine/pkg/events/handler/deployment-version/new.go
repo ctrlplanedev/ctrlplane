@@ -3,9 +3,12 @@ package deploymentversion
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"workspace-engine/pkg/engine/workspace"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/model/deployment"
+
+	"github.com/google/uuid"
 )
 
 type NewDeploymentVersionHandler struct {
@@ -22,8 +25,23 @@ func (h *NewDeploymentVersionHandler) Handle(ctx context.Context, engine *worksp
 		return err
 	}
 
-	return engine.CreateDeploymentVersion(ctx, deploymentVersion).
-		UpdateDeploymentVersions().
+	if deploymentVersion.DeploymentID == "" {
+		return fmt.Errorf("deployment version must have a deployment")
+	}
+
+	if deploymentVersion.Tag == "" {
+		return fmt.Errorf("deployment version must have a tag")
+	}
+
+	if deploymentVersion.Name == nil {
+		deploymentVersion.Name = &deploymentVersion.Tag
+	}
+
+	if deploymentVersion.ID == "" {
+		deploymentVersion.ID = uuid.New().String()
+	}
+
+	return engine.UpsertDeploymentVersion(ctx, deploymentVersion).
 		GetMatchingPolicies().
 		EvaulatePolicies().
 		CreateHookDispatchRequests().
