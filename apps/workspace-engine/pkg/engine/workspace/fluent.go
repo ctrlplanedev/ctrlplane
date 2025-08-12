@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 
+	rt "workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/model/deployment"
 	"workspace-engine/pkg/model/environment"
 	"workspace-engine/pkg/model/policy"
@@ -14,9 +15,15 @@ import (
 type Operation string
 
 const (
+	OperationCreate Operation = "create"
 	OperationUpdate Operation = "update"
 	OperationRemove Operation = "remove"
 )
+
+type ReleaseTargetResult struct {
+	Removed    []*rt.ReleaseTarget
+	ToEvaluate []*rt.ReleaseTarget
+}
 
 // FluentPipeline represents the fluent API pipeline
 type FluentPipeline struct {
@@ -26,10 +33,11 @@ type FluentPipeline struct {
 	err       error
 
 	// Pipeline state
-	resources    []resource.Resource
-	environments []environment.Environment
-	deployments  []deployment.Deployment
-	policyIDs    []string
+	resources          []resource.Resource
+	environments       []environment.Environment
+	deployments        []deployment.Deployment
+	policyIDs          []string
+	deploymentVersions []deployment.DeploymentVersion
 
 	// results
 	releaseTargetPolicies map[string][]*policy.Policy
@@ -38,7 +46,7 @@ type FluentPipeline struct {
 	deploymentChanges     *DeploymentSelectorChanges
 	policyChanges         *PolicyTargetSelectorChanges
 
-	releaseTargets *ReleaseTargetChanges
+	releaseTargets *ReleaseTargetResult
 	// policyMatches    []epolicy.PolicyMatch
 	dispatchRequests []JobDispatchRequest
 }
@@ -59,7 +67,10 @@ func (fp *FluentPipeline) GetReleaseTargetChanges() *FluentPipeline {
 		return fp
 	}
 
-	fp.releaseTargets = changes
+	fp.releaseTargets = &ReleaseTargetResult{
+		Removed:    changes.Removed,
+		ToEvaluate: changes.Added,
+	}
 	return fp
 }
 
@@ -141,12 +152,61 @@ func (fp *FluentPipeline) UpdateSelectors() *FluentPipeline {
 	return fp
 }
 
+func (fp *FluentPipeline) UpdateDeploymentVersions() *FluentPipeline {
+	if fp.err != nil {
+		return fp
+	}
+
+	if len(fp.deploymentVersions) == 0 {
+		return fp
+	}
+
+	switch fp.operation {
+	case OperationCreate:
+		for _, deploymentVersion := range fp.deploymentVersions {
+			if err := fp.engine.Repository.DeploymentVersion.Create(fp.ctx, deploymentVersion); err != nil {
+				fp.err = err
+				return fp
+			}
+		}
+	case OperationUpdate:
+		for _, deploymentVersion := range fp.deploymentVersions {
+			if err := fp.engine.Repository.DeploymentVersion.Update(fp.ctx, deploymentVersion); err != nil {
+				fp.err = err
+				return fp
+			}
+		}
+	case OperationRemove:
+		for _, deploymentVersion := range fp.deploymentVersions {
+			if err := fp.engine.Repository.DeploymentVersion.Delete(fp.ctx, deploymentVersion.ID); err != nil {
+				fp.err = err
+				return fp
+			}
+		}
+	}
+
+	uniqueDeploymentIds := make(map[string]bool)
+	for _, deploymentVersion := range fp.deploymentVersions {
+		uniqueDeploymentIds[deploymentVersion.DeploymentID] = true
+	}
+
+	releaseTargetsToEvaluate := make([]*rt.ReleaseTarget, 0)
+	for deploymentID := range uniqueDeploymentIds {
+		releaseTargetsToEvaluate = append(releaseTargetsToEvaluate, fp.engine.Repository.ReleaseTarget.GetAllForDeployment(fp.ctx, deploymentID)...)
+	}
+
+	fp.releaseTargets = &ReleaseTargetResult{
+		ToEvaluate: releaseTargetsToEvaluate,
+	}
+	return fp
+}
+
 func (fp *FluentPipeline) GetMatchingPolicies() *FluentPipeline {
 	if fp.err != nil {
 		return fp
 	}
 
-	for _, releaseTarget := range fp.releaseTargets.Added {
+	for _, releaseTarget := range fp.releaseTargets.ToEvaluate {
 		policies, err := fp.engine.PolicyManager.GetReleaseTargetPolicies(fp.ctx, releaseTarget)
 		if err != nil {
 			fp.err = err
@@ -162,7 +222,7 @@ func (fp *FluentPipeline) EvaulatePolicies() *FluentPipeline {
 	if fp.err != nil {
 		return fp
 	}
-	if fp.releaseTargets == nil || len(fp.releaseTargets.Added) == 0 {
+	if fp.releaseTargets == nil || len(fp.releaseTargets.ToEvaluate) == 0 {
 		log.Warn("No release targets found, skipping policy evaluation")
 		return fp
 	}
@@ -172,8 +232,10 @@ func (fp *FluentPipeline) EvaulatePolicies() *FluentPipeline {
 		return fp
 	}
 
-	for _, releaseTarget := range fp.releaseTargets.Added {
+	for _, releaseTarget := range fp.releaseTargets.ToEvaluate {
 		policies := fp.releaseTargetPolicies[releaseTarget.GetID()]
+		deploymentID := releaseTarget.Deployment.GetID()
+		deploymentVersions := fp.engine.Repository.DeploymentVersion.GetAllForDeployment(fp.ctx, deploymentID)
 		// TODO: version stuff
 		for _, policy := range policies {
 			result, err := fp.engine.PolicyManager.EvaluatePolicy(fp.ctx, policy, releaseTarget)
@@ -182,8 +244,13 @@ func (fp *FluentPipeline) EvaulatePolicies() *FluentPipeline {
 				return fp
 			}
 
+			if result == nil {
+				log.Warn("Policy evaluation returned nil, skipping job dispatch", "policy", policy.GetID(), "releaseTarget", releaseTarget.GetID())
+				continue
+			}
+
 			if !result.Passed() {
-				log.Warn("Policy evaluation failed, skipping policy dispatch", "policy", policy.GetID(), "releaseTarget", releaseTarget.GetID())
+				log.Warn("Policy evaluation failed, skipping job dispatch", "policy", policy.GetID(), "releaseTarget", releaseTarget.GetID())
 				continue
 			}
 
@@ -192,12 +259,27 @@ func (fp *FluentPipeline) EvaulatePolicies() *FluentPipeline {
 				continue
 			}
 
-			request := JobDispatchRequest{
-				ReleaseTarget: releaseTarget,
-				Versions:      &result.Versions[0],
+			newDeploymentVersions := make([]deployment.DeploymentVersion, 0)
+			for _, version := range deploymentVersions {
+				for _, filteredVersion := range result.Versions {
+					if filteredVersion.ID == version.ID {
+						newDeploymentVersions = append(newDeploymentVersions, version)
+					}
+				}
 			}
-			fp.dispatchRequests = append(fp.dispatchRequests, request)
+			deploymentVersions = newDeploymentVersions
 		}
+
+		if len(deploymentVersions) == 0 {
+			log.Warn("No deployment versions found, skipping job dispatch", "releaseTarget", releaseTarget.GetID())
+			continue
+		}
+
+		request := JobDispatchRequest{
+			ReleaseTarget: releaseTarget,
+			Versions:      &deploymentVersions[0],
+		}
+		fp.dispatchRequests = append(fp.dispatchRequests, request)
 	}
 	return fp
 }

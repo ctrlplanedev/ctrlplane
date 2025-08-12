@@ -34,7 +34,7 @@ func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 
 func (e *WorkspaceEngine) UpsertResource(ctx context.Context, resources ...resource.Resource) *FluentPipeline {
 	return &FluentPipeline{
-		engine: e,
+		engine:    e,
 		operation: OperationUpdate,
 		resources: resources,
 	}
@@ -42,7 +42,7 @@ func (e *WorkspaceEngine) UpsertResource(ctx context.Context, resources ...resou
 
 func (e *WorkspaceEngine) RemoveResource(ctx context.Context, resources ...resource.Resource) *FluentPipeline {
 	return &FluentPipeline{
-		engine: e,
+		engine:    e,
 		operation: OperationRemove,
 		resources: resources,
 	}
@@ -50,32 +50,40 @@ func (e *WorkspaceEngine) RemoveResource(ctx context.Context, resources ...resou
 
 func (e *WorkspaceEngine) UpsertEnvironment(ctx context.Context, environments ...environment.Environment) *FluentPipeline {
 	return &FluentPipeline{
-		engine: e,
-		operation: OperationUpdate,
+		engine:       e,
+		operation:    OperationUpdate,
 		environments: environments,
 	}
 }
 
 func (e *WorkspaceEngine) RemoveEnvironment(ctx context.Context, environments ...environment.Environment) *FluentPipeline {
 	return &FluentPipeline{
-		engine: e,
-		operation: OperationRemove,
+		engine:       e,
+		operation:    OperationRemove,
 		environments: environments,
 	}
 }
 
 func (e *WorkspaceEngine) UpsertDeployment(ctx context.Context, deployments ...deployment.Deployment) *FluentPipeline {
 	return &FluentPipeline{
-		engine: e,
-		operation: OperationUpdate,
+		engine:      e,
+		operation:   OperationUpdate,
 		deployments: deployments,
 	}
 }
 
 func (e *WorkspaceEngine) RemoveDeployment(ctx context.Context, deployments ...deployment.Deployment) *FluentPipeline {
 	return &FluentPipeline{
-		engine: e,
-		operation: OperationRemove,
+		engine:      e,
+		operation:   OperationRemove,
 		deployments: deployments,
+	}
+}
+
+func (e *WorkspaceEngine) CreateDeploymentVersion(ctx context.Context, deploymentVersions ...deployment.DeploymentVersion) *FluentPipeline {
+	return &FluentPipeline{
+		engine:             e,
+		operation:          OperationCreate,
+		deploymentVersions: deploymentVersions,
 	}
 }
