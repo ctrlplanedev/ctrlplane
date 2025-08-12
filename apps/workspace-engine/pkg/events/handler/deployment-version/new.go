@@ -43,7 +43,7 @@ func (h *NewDeploymentVersionHandler) Handle(ctx context.Context, engine *worksp
 
 	return engine.UpsertDeploymentVersion(ctx, deploymentVersion).
 		GetMatchingPolicies().
-		EvaulatePolicies().
+		EvaluatePolicies().
 		CreateHookDispatchRequests().
 		CreateDeploymentDispatchRequests().
 		Dispatch()

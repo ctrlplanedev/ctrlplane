@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 
 	rt "workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/model/deployment"
@@ -156,6 +157,11 @@ func (fp *FluentPipeline) UpdateDeploymentVersions() *FluentPipeline {
 		return fp
 	}
 
+	if fp.ctx == nil {
+		fp.err = fmt.Errorf("context is nil")
+		return fp
+	}
+
 	if len(fp.deploymentVersions) == 0 {
 		return fp
 	}
@@ -219,7 +225,7 @@ func (fp *FluentPipeline) GetMatchingPolicies() *FluentPipeline {
 	return fp
 }
 
-func (fp *FluentPipeline) EvaulatePolicies() *FluentPipeline {
+func (fp *FluentPipeline) EvaluatePolicies() *FluentPipeline {
 	if fp.err != nil {
 		return fp
 	}

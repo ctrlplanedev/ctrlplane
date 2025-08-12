@@ -21,6 +21,9 @@ func NewDeploymentVersionRepository() *DeploymentVersionRepository {
 	}
 }
 
+// GetAllForDeployment returns DeploymentVersion records for a given deploymentID,
+// ordered by CreatedAt descending. If limit is non-nil, returns at most *limit items;
+// otherwise returns all matching records.
 func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, deploymentID string, limit *int) []deployment.DeploymentVersion {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -32,7 +35,14 @@ func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, d
 		return dst[i].CreatedAt.After(dst[j].CreatedAt)
 	})
 	if limit != nil {
-		dst = dst[:*limit]
+		n := *limit
+		if n > len(dst) {
+			n = len(dst)
+		}
+		if n < 0 {
+			n = 0
+		}
+		dst = dst[:n]
 	}
 	return dst
 }

@@ -229,7 +229,7 @@ func TestDeploymentVersionRegistry(t *testing.T) {
 				}
 
 				for deploymentID, expectedVersions := range step.expectedDeploymentVersions {
-					actualVersions := registry.GetAllForDeployment(ctx, deploymentID)
+					actualVersions := registry.GetAllForDeployment(ctx, deploymentID, nil)
 					assert.DeepEqual(t, expectedVersions, actualVersions)
 				}
 			}

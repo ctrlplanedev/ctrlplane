@@ -22,7 +22,7 @@ func (h *NewResourceHandler) Handle(ctx context.Context, engine *workspace.Works
 		UpdateSelectors().
 		GetReleaseTargetChanges().
 		GetMatchingPolicies().
-		EvaulatePolicies().
+		EvaluatePolicies().
 		CreateHookDispatchRequests().
 		CreateDeploymentDispatchRequests().
 		Dispatch()

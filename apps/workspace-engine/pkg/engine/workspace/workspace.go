@@ -34,6 +34,7 @@ func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 
 func (e *WorkspaceEngine) UpsertResource(ctx context.Context, resources ...resource.Resource) *FluentPipeline {
 	return &FluentPipeline{
+		ctx:       ctx,
 		engine:    e,
 		operation: OperationUpdate,
 		resources: resources,
@@ -42,6 +43,7 @@ func (e *WorkspaceEngine) UpsertResource(ctx context.Context, resources ...resou
 
 func (e *WorkspaceEngine) RemoveResource(ctx context.Context, resources ...resource.Resource) *FluentPipeline {
 	return &FluentPipeline{
+		ctx:       ctx,
 		engine:    e,
 		operation: OperationRemove,
 		resources: resources,
@@ -50,6 +52,7 @@ func (e *WorkspaceEngine) RemoveResource(ctx context.Context, resources ...resou
 
 func (e *WorkspaceEngine) UpsertEnvironment(ctx context.Context, environments ...environment.Environment) *FluentPipeline {
 	return &FluentPipeline{
+		ctx:          ctx,
 		engine:       e,
 		operation:    OperationUpdate,
 		environments: environments,
@@ -58,6 +61,7 @@ func (e *WorkspaceEngine) UpsertEnvironment(ctx context.Context, environments ..
 
 func (e *WorkspaceEngine) RemoveEnvironment(ctx context.Context, environments ...environment.Environment) *FluentPipeline {
 	return &FluentPipeline{
+		ctx:          ctx,
 		engine:       e,
 		operation:    OperationRemove,
 		environments: environments,
@@ -66,6 +70,7 @@ func (e *WorkspaceEngine) RemoveEnvironment(ctx context.Context, environments ..
 
 func (e *WorkspaceEngine) UpsertDeployment(ctx context.Context, deployments ...deployment.Deployment) *FluentPipeline {
 	return &FluentPipeline{
+		ctx:         ctx,
 		engine:      e,
 		operation:   OperationUpdate,
 		deployments: deployments,
@@ -74,6 +79,7 @@ func (e *WorkspaceEngine) UpsertDeployment(ctx context.Context, deployments ...d
 
 func (e *WorkspaceEngine) RemoveDeployment(ctx context.Context, deployments ...deployment.Deployment) *FluentPipeline {
 	return &FluentPipeline{
+		ctx:         ctx,
 		engine:      e,
 		operation:   OperationRemove,
 		deployments: deployments,
@@ -82,6 +88,7 @@ func (e *WorkspaceEngine) RemoveDeployment(ctx context.Context, deployments ...d
 
 func (e *WorkspaceEngine) UpsertDeploymentVersion(ctx context.Context, deploymentVersions ...deployment.DeploymentVersion) *FluentPipeline {
 	fp := &FluentPipeline{
+		ctx:                ctx,
 		engine:             e,
 		operation:          OperationUpdate,
 		deploymentVersions: deploymentVersions,
@@ -91,6 +98,7 @@ func (e *WorkspaceEngine) UpsertDeploymentVersion(ctx context.Context, deploymen
 
 func (e *WorkspaceEngine) RemoveDeploymentVersion(ctx context.Context, deploymentVersions ...deployment.DeploymentVersion) *FluentPipeline {
 	fp := &FluentPipeline{
+		ctx:                ctx,
 		engine:             e,
 		operation:          OperationRemove,
 		deploymentVersions: deploymentVersions,
