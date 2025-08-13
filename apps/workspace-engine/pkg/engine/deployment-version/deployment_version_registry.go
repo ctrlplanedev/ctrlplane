@@ -21,7 +21,10 @@ func NewDeploymentVersionRepository() *DeploymentVersionRepository {
 	}
 }
 
-func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, deploymentID string) []deployment.DeploymentVersion {
+// GetAllForDeployment returns DeploymentVersion records for a given deploymentID,
+// ordered by CreatedAt descending. If limit is non-nil, returns at most *limit items;
+// otherwise returns all matching records.
+func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, deploymentID string, limit *int) []deployment.DeploymentVersion {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -31,6 +34,16 @@ func (r *DeploymentVersionRepository) GetAllForDeployment(ctx context.Context, d
 	sort.Slice(dst, func(i, j int) bool {
 		return dst[i].CreatedAt.After(dst[j].CreatedAt)
 	})
+	if limit != nil {
+		n := *limit
+		if n > len(dst) {
+			n = len(dst)
+		}
+		if n < 0 {
+			n = 0
+		}
+		dst = dst[:n]
+	}
 	return dst
 }
 
@@ -129,4 +142,19 @@ func (r *DeploymentVersionRepository) DeleteDeployment(ctx context.Context, depl
 	}
 	delete(r.DeploymentVersions, deploymentID)
 	return nil
+}
+
+func (r *DeploymentVersionRepository) Exists(ctx context.Context, versionID string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, versions := range r.DeploymentVersions {
+		for _, version := range versions {
+			if version.ID == versionID {
+				return true
+			}
+		}
+	}
+
+	return false
 }

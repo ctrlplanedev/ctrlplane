@@ -21,6 +21,9 @@ const (
 	ResourceCreated EventType = "resource.created"
 	ResourceUpdated EventType = "resource.updated"
 	ResourceDeleted EventType = "resource.deleted"
+
+	DeploymentVersionCreated EventType = "deployment-version.created"
+	DeploymentVersionDeleted EventType = "deployment-version.deleted"
 )
 
 // BaseEvent represents the common structure of all events

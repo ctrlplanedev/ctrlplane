@@ -5,6 +5,7 @@ go 1.24
 require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/confluentinc/confluent-kafka-go/v2 v2.11.0
+	github.com/google/uuid v1.6.0
 	github.com/spf13/pflag v1.0.7
 	github.com/spf13/viper v1.20.1
 )

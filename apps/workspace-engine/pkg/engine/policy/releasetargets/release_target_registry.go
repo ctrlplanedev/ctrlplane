@@ -179,6 +179,28 @@ func (r *ReleaseTargetRepository) GetAll(ctx context.Context) []*ReleaseTarget {
 	return releaseTargets
 }
 
+// GetAllForDeployment returns all release targets for a given deployment ID
+//
+// Parameters:
+//   - ctx: Context for cancellation and request-scoped values
+//   - deploymentID: The ID of the deployment to get release targets for
+//
+// Returns:
+//   - []*ReleaseTarget: A slice containing all release targets for the deployment
+//
+// Example:
+//
+//	targets := repo.GetAllForDeployment(ctx, "deployment1")
+func (r *ReleaseTargetRepository) GetAllForDeployment(ctx context.Context, deploymentID string) []*ReleaseTarget {
+	releaseTargets := make([]*ReleaseTarget, 0, len(r.ReleaseTargets))
+	for _, target := range r.ReleaseTargets {
+		if target.Deployment.GetID() == deploymentID {
+			releaseTargets = append(releaseTargets, target)
+		}
+	}
+	return releaseTargets
+}
+
 // Update implements Repository.Update by updating an existing release target.
 // This operation overwrites the existing release target with the provided entity.
 //

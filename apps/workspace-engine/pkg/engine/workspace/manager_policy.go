@@ -11,7 +11,7 @@ import (
 )
 
 type PolicyManager struct {
-	repository *WorkspaceRepository
+	repository      *WorkspaceRepository
 	selectorManager *SelectorManager
 }
 
@@ -24,7 +24,7 @@ func NewPolicyManager(repo *WorkspaceRepository) *PolicyManager {
 func (m *PolicyManager) GetReleaseTargetPolicies(ctx context.Context, releaseTarget *rt.ReleaseTarget) ([]*policy.Policy, error) {
 	allPolicies := m.repository.Policy.GetAll(ctx)
 
-	policies := make([]*policy.Policy,0 )
+	policies := make([]*policy.Policy, 0)
 	for _, policy := range allPolicies {
 		for _, policyTarget := range policy.PolicyTargets {
 			policyMatches, err := m.PolicyTargetMatchesReleaseTarget(ctx, &policyTarget, releaseTarget)
@@ -38,7 +38,7 @@ func (m *PolicyManager) GetReleaseTargetPolicies(ctx context.Context, releaseTar
 			}
 		}
 	}
-	
+
 	return policies, nil
 }
 
@@ -150,8 +150,8 @@ func (r *PolicyEvaluationResult) Passed() bool {
 }
 
 func (m *PolicyManager) EvaluatePolicy(
-	ctx context.Context, 
-	policy *policy.Policy, 
+	ctx context.Context,
+	policy *policy.Policy,
 	releaseTarget *rt.ReleaseTarget,
 ) (*PolicyEvaluationResult, error) {
 	return nil, nil
