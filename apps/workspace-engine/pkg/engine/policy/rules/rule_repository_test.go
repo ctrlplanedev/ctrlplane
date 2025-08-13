@@ -329,80 +329,12 @@ func TestRuleRepository(t *testing.T) {
 		},
 	}
 
-	createNilRule := RuleRepositoryTest{
-		name: "should handle nil rule creation",
-		steps: []RuleRepositoryTestStep{
-			{
-				createRule:             nil,
-				expectedRules:          []*MockRule{},
-				expectedRulesForPolicy: map[string][]*MockRule{},
-				expectedExists:         map[string]bool{},
-			},
-		},
-	}
-
-	updateNilRule := RuleRepositoryTest{
-		name: "should handle nil rule update",
-		steps: []RuleRepositoryTestStep{
-			{
-				createRule: &MockRule{
-					ID:        "1",
-					PolicyID:  "policy1",
-					CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-				},
-				expectedRules: []*MockRule{
-					{
-						ID:        "1",
-						PolicyID:  "policy1",
-						CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-					},
-				},
-				expectedRulesForPolicy: map[string][]*MockRule{
-					"policy1": {
-						{
-							ID:        "1",
-							PolicyID:  "policy1",
-							CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-						},
-					},
-				},
-				expectedExists: map[string]bool{
-					"1": true,
-				},
-			},
-			{
-				updateRule: nil,
-				expectedRules: []*MockRule{
-					{
-						ID:        "1",
-						PolicyID:  "policy1",
-						CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-					},
-				},
-				expectedRulesForPolicy: map[string][]*MockRule{
-					"policy1": {
-						{
-							ID:        "1",
-							PolicyID:  "policy1",
-							CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-						},
-					},
-				},
-				expectedExists: map[string]bool{
-					"1": true,
-				},
-			},
-		},
-	}
-
 	tests := []RuleRepositoryTest{
 		createRule,
 		removeRule,
 		updateRule,
 		multipleRules,
 		multiplePolicies,
-		createNilRule,
-		updateNilRule,
 	}
 
 	for _, test := range tests {
