@@ -21,6 +21,7 @@ type DeploymentVersionRegistryTestStep struct {
 type DeploymentVersionRegistryTest struct {
 	name  string
 	steps []DeploymentVersionRegistryTestStep
+	limit *int
 }
 
 func TestDeploymentVersionRegistry(t *testing.T) {
@@ -200,11 +201,103 @@ func TestDeploymentVersionRegistry(t *testing.T) {
 		},
 	}
 
+	limit := 1
+	respectLimit := DeploymentVersionRegistryTest{
+		name:  "should respect limit",
+		limit: &limit,
+		steps: []DeploymentVersionRegistryTestStep{
+			{
+				createDeploymentVersion: &deployment.DeploymentVersion{
+					ID:           "1",
+					DeploymentID: "1",
+					Tag:          "1.0.0",
+					CreatedAt:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+				expectedDeploymentVersions: map[string][]deployment.DeploymentVersion{
+					"1": {
+						{
+							ID:           "1",
+							DeploymentID: "1",
+							Tag:          "1.0.0",
+							CreatedAt:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+				},
+			},
+			{
+				createDeploymentVersion: &deployment.DeploymentVersion{
+					ID:           "2",
+					DeploymentID: "1",
+					Tag:          "2.0.0",
+					CreatedAt:    time.Date(2025, 1, 1, 0, 0, 0, 1, time.UTC),
+				},
+				expectedDeploymentVersions: map[string][]deployment.DeploymentVersion{
+					"1": {
+						{
+							ID:           "2",
+							DeploymentID: "1",
+							Tag:          "2.0.0",
+							CreatedAt:    time.Date(2025, 1, 1, 0, 0, 0, 1, time.UTC),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	limitNegative := -1
+	respectLimitNegative := DeploymentVersionRegistryTest{
+		name:  "negative limit should return empty array",
+		limit: &limitNegative,
+		steps: []DeploymentVersionRegistryTestStep{
+			{
+				createDeploymentVersion: &deployment.DeploymentVersion{
+					ID:           "1",
+					DeploymentID: "1",
+					Tag:          "1.0.0",
+					CreatedAt:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+				expectedDeploymentVersions: map[string][]deployment.DeploymentVersion{
+					"1": {},
+				},
+			},
+		},
+	}
+
+	largeLimit := 1000
+	respectLargeLimit := DeploymentVersionRegistryTest{
+		name:  "large limit should return all versions",
+		limit: &largeLimit,
+		steps: []DeploymentVersionRegistryTestStep{
+			{
+				createDeploymentVersion: &deployment.DeploymentVersion{
+					ID:           "1",
+					DeploymentID: "1",
+					Tag:          "1.0.0",
+					CreatedAt:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+				expectedDeploymentVersions: map[string][]deployment.DeploymentVersion{
+					"1": {
+						{
+							ID:           "1",
+							DeploymentID: "1",
+							Tag:          "1.0.0",
+							CreatedAt:    time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+				},
+			},
+		},
+	}
+
 	tests := []DeploymentVersionRegistryTest{
 		upsertDeploymentVersion,
 		removeDeploymentVersion,
 		preserveSorting,
 		updateSorting,
+		respectLimit,
+		respectLimitNegative,
+		respectLargeLimit,
 	}
 
 	for _, test := range tests {
@@ -229,7 +322,7 @@ func TestDeploymentVersionRegistry(t *testing.T) {
 				}
 
 				for deploymentID, expectedVersions := range step.expectedDeploymentVersions {
-					actualVersions := registry.GetAllForDeployment(ctx, deploymentID, nil)
+					actualVersions := registry.GetAllForDeployment(ctx, deploymentID, test.limit)
 					assert.DeepEqual(t, expectedVersions, actualVersions)
 				}
 			}
