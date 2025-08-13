@@ -415,11 +415,7 @@ func TestRuleRepository(t *testing.T) {
 					// Convert MockRule to Rule interface
 					var rule rules.Rule = step.createRule
 					err := registry.Create(ctx, &rule)
-					if step.createRule == nil {
-						assert.ErrorContains(t, err, "rule is nil")
-					} else {
-						assert.NilError(t, err)
-					}
+					assert.NilError(t, err)
 				}
 
 				if step.removeRule != nil {
@@ -431,11 +427,7 @@ func TestRuleRepository(t *testing.T) {
 					// Convert MockRule to Rule interface
 					var rule rules.Rule = step.updateRule
 					err := registry.Update(ctx, &rule)
-					if step.updateRule == nil {
-						assert.ErrorContains(t, err, "rule is nil")
-					} else {
-						assert.NilError(t, err)
-					}
+					assert.NilError(t, err)
 				}
 
 				// Test GetAll
@@ -466,4 +458,22 @@ func TestRuleRepository(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestNilHandling tests that the repository properly handles nil rule operations
+func TestNilHandling(t *testing.T) {
+	registry := rules.NewRuleRepository()
+	ctx := context.Background()
+
+	// Test Create with nil rule
+	err := registry.Create(ctx, nil)
+	assert.ErrorContains(t, err, "rule is nil")
+
+	// Test Update with nil rule
+	err = registry.Update(ctx, nil)
+	assert.ErrorContains(t, err, "rule is nil")
+
+	// Verify repository is still in a valid state
+	allRules := registry.GetAll(ctx)
+	assert.Equal(t, 0, len(allRules))
 }

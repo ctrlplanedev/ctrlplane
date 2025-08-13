@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 	rt "workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/engine/policy/rules"
 	"workspace-engine/pkg/model/deployment"
@@ -171,7 +172,7 @@ func (m *PolicyManager) EvaluatePolicy(
 			rule := *rulePtr
 			evaluation, err := rule.Evaluate(ctx, *releaseTarget, version)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to evaluate rule %s for version %s: %w", rule.GetID(), version.GetID(), err)
 			}
 			result.Rules = append(result.Rules, *evaluation)
 		}

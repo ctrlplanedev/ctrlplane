@@ -246,6 +246,10 @@ func (fp *FluentPipeline) EvaluatePolicies() *FluentPipeline {
 		deploymentVersions := fp.engine.Repository.DeploymentVersion.GetAllForDeployment(fp.ctx, deploymentID, &limit)
 
 		for _, policy := range policies {
+			if policy == nil {
+				log.Warn("Policy is nil, skipping policy evaluation", "releaseTarget", releaseTarget.GetID())
+				continue
+			}
 			results, err := fp.engine.PolicyManager.EvaluatePolicy(fp.ctx, policy, releaseTarget)
 			if err != nil {
 				fp.err = err
