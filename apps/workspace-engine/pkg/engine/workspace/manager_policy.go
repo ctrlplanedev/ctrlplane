@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 	rt "workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/engine/policy/rules"
 	"workspace-engine/pkg/model/deployment"
@@ -136,8 +137,8 @@ type PolicyEvaluationResult struct {
 	PolicyID string
 	Rules    []rules.RuleEvaluationResult
 
-	// Versions that can be deployed to the release target
-	Versions []deployment.DeploymentVersion
+	// Version that can be deployed to the release target
+	Version deployment.DeploymentVersion
 }
 
 func (r *PolicyEvaluationResult) Passed() bool {
@@ -153,6 +154,31 @@ func (m *PolicyManager) EvaluatePolicy(
 	ctx context.Context,
 	policy *policy.Policy,
 	releaseTarget *rt.ReleaseTarget,
-) (*PolicyEvaluationResult, error) {
-	return nil, nil
+) ([]PolicyEvaluationResult, error) {
+	rulePtrs := m.repository.Rule.GetAllForPolicy(ctx, policy.GetID())
+	limit := 500
+	allVersions := m.repository.DeploymentVersion.GetAllForDeployment(ctx, releaseTarget.Deployment.GetID(), &limit)
+
+	results := make([]PolicyEvaluationResult, 0, len(allVersions))
+
+	for _, version := range allVersions {
+		result := PolicyEvaluationResult{
+			PolicyID: policy.GetID(),
+			Version:  version,
+			Rules:    make([]rules.RuleEvaluationResult, 0, len(rulePtrs)),
+		}
+
+		for _, rulePtr := range rulePtrs {
+			rule := *rulePtr
+			evaluation, err := rule.Evaluate(ctx, *releaseTarget, version)
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate rule %s for version %s: %w", rule.GetID(), version.GetID(), err)
+			}
+			result.Rules = append(result.Rules, *evaluation)
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
 }

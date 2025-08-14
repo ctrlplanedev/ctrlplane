@@ -9,6 +9,7 @@ import (
 	"time"
 	rt "workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/model"
+	"workspace-engine/pkg/model/deployment"
 )
 
 // PolicyDecision represents the possible outcomes when a policy rule is evaluated.
@@ -93,11 +94,13 @@ func (r *RuleEvaluationResult) Passed() bool {
 type Rule interface {
 	model.Entity
 
+	GetPolicyID() string
+
 	// Evaluate performs the actual rule evaluation against the provided target.
 	// It returns a detailed evaluation result that includes the decision,
 	// condition results, and any warnings or messages.
 	//
 	// The context can be used for cancellation, timeouts, and passing
 	// request-scoped values needed during evaluation.
-	Evaluate(ctx context.Context, target rt.ReleaseTarget) (*RuleEvaluationResult, error)
+	Evaluate(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (*RuleEvaluationResult, error)
 }

@@ -244,37 +244,27 @@ func (fp *FluentPipeline) EvaluatePolicies() *FluentPipeline {
 		deploymentID := releaseTarget.Deployment.GetID()
 		limit := 500
 		deploymentVersions := fp.engine.Repository.DeploymentVersion.GetAllForDeployment(fp.ctx, deploymentID, &limit)
-		// TODO: version stuff
+
 		for _, policy := range policies {
-			result, err := fp.engine.PolicyManager.EvaluatePolicy(fp.ctx, policy, releaseTarget)
+			if policy == nil {
+				log.Warn("Policy is nil, skipping policy evaluation", "releaseTarget", releaseTarget.GetID())
+				continue
+			}
+			results, err := fp.engine.PolicyManager.EvaluatePolicy(fp.ctx, policy, releaseTarget)
 			if err != nil {
 				fp.err = err
 				return fp
 			}
 
-			if result == nil {
-				log.Warn("Policy evaluation returned nil, skipping job dispatch", "policy", policy.GetID(), "releaseTarget", releaseTarget.GetID())
-				continue
-			}
-
-			if !result.Passed() {
-				log.Warn("Policy evaluation failed, skipping job dispatch", "policy", policy.GetID(), "releaseTarget", releaseTarget.GetID())
-				continue
-			}
-
-			if len(result.Versions) == 0 {
-				log.Warn("All policies passed but no version was found. This should never happen.", "policy", policy.GetID(), "releaseTarget", releaseTarget.GetID())
-				continue
-			}
-
 			newDeploymentVersions := make([]deployment.DeploymentVersion, 0)
 			for _, version := range deploymentVersions {
-				for _, filteredVersion := range result.Versions {
-					if filteredVersion.ID == version.ID {
+				for _, result := range results {
+					if result.Version.GetID() == version.GetID() && result.Passed() {
 						newDeploymentVersions = append(newDeploymentVersions, version)
 					}
 				}
 			}
+
 			deploymentVersions = newDeploymentVersions
 		}
 
