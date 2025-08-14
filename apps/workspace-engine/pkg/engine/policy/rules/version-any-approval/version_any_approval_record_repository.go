@@ -57,6 +57,22 @@ func (v *VersionAnyApprovalRecordRepository) Create(ctx context.Context, record 
 		return fmt.Errorf("record is nil")
 	}
 
+	if record.ID == "" {
+		return fmt.Errorf("record ID is empty")
+	}
+
+	if record.EnvironmentID == "" {
+		return fmt.Errorf("environment ID is empty")
+	}
+
+	if record.VersionID == "" {
+		return fmt.Errorf("version ID is empty")
+	}
+
+	if record.UserID == "" {
+		return fmt.Errorf("user ID is empty")
+	}
+
 	environmentID := record.EnvironmentID
 	versionID := record.VersionID
 
@@ -155,10 +171,10 @@ func (v *VersionAnyApprovalRecordRepository) Update(ctx context.Context, record 
 		r.Status = record.Status
 		r.ApprovedAt = record.ApprovedAt
 		r.Reason = record.Reason
-		r.UpdatedAt = record.UpdatedAt
-		if r.UpdatedAt.Equal(record.UpdatedAt) {
-			r.UpdatedAt = time.Now().UTC()
+		if record.UpdatedAt.Equal(r.UpdatedAt) || record.UpdatedAt.Before(r.UpdatedAt) {
+			record.UpdatedAt = time.Now().UTC()
 		}
+		r.UpdatedAt = record.UpdatedAt
 
 		return nil
 	}
@@ -191,10 +207,10 @@ func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record 
 			r.Status = record.Status
 			r.ApprovedAt = record.ApprovedAt
 			r.Reason = record.Reason
-			r.UpdatedAt = record.UpdatedAt
-			if r.UpdatedAt.Equal(record.UpdatedAt) {
-				r.UpdatedAt = time.Now().UTC()
+			if record.UpdatedAt.Equal(r.UpdatedAt) || record.UpdatedAt.Before(r.UpdatedAt) {
+				record.UpdatedAt = time.Now().UTC()
 			}
+			r.UpdatedAt = record.UpdatedAt
 
 			return nil
 		}

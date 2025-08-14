@@ -3,6 +3,7 @@ package versionanyapproval_test
 import (
 	"context"
 	"testing"
+	"time"
 	versionanyapproval "workspace-engine/pkg/engine/policy/rules/version-any-approval"
 
 	"gotest.tools/assert"
@@ -247,11 +248,161 @@ func TestBasicCRUD(t *testing.T) {
 		},
 	}
 
+	maintainsRecordOrderByUpdatedAt := VersionAnyApprovalRecordRepositoryTest{
+		name: "maintains record order by updated at",
+		steps: []VersionAnyApprovalRecordRepositoryTestStep{
+			{
+				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
+					ID:            "record-1",
+					VersionID:     "version-1",
+					EnvironmentID: "environment-1",
+					UserID:        "user-1",
+					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+					UpdatedAt:     time.Now().Add(-time.Second * 2),
+				},
+				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
+					"version-1": {
+						"environment-1": {
+							{
+								ID:            "record-1",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-1",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+								UpdatedAt:     time.Now().Add(-time.Second * 2),
+							},
+						},
+					},
+				},
+			},
+			{
+				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
+					ID:            "record-2",
+					VersionID:     "version-1",
+					EnvironmentID: "environment-1",
+					UserID:        "user-2",
+					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+					UpdatedAt:     time.Now().Add(-time.Second),
+				},
+				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
+					"version-1": {
+						"environment-1": {
+							{
+								ID:            "record-2",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-2",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+								UpdatedAt:     time.Now().Add(-time.Second),
+							},
+							{
+								ID:            "record-1",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-1",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+								UpdatedAt:     time.Now().Add(-time.Second * 2),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	maintainsOrderWhenRecordsAreUpdated := VersionAnyApprovalRecordRepositoryTest{
+		name: "maintains order when records are updated",
+		steps: []VersionAnyApprovalRecordRepositoryTestStep{
+			{
+				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
+					ID:            "record-1",
+					VersionID:     "version-1",
+					EnvironmentID: "environment-1",
+					UserID:        "user-1",
+					Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
+				},
+				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
+					"version-1": {
+						"environment-1": {
+							{
+								ID:            "record-1",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-1",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
+							},
+						},
+					},
+				},
+			},
+			{
+				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
+					ID:            "record-2",
+					VersionID:     "version-1",
+					EnvironmentID: "environment-1",
+					UserID:        "user-2",
+					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+				},
+				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
+					"version-1": {
+						"environment-1": {
+							{
+								ID:            "record-2",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-2",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+							},
+							{
+								ID:            "record-1",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-1",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
+							},
+						},
+					},
+				},
+			},
+			{
+				updateRecord: &versionanyapproval.VersionAnyApprovalRecord{
+					ID:            "record-1",
+					VersionID:     "version-1",
+					EnvironmentID: "environment-1",
+					UserID:        "user-1",
+					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+				},
+				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
+					"version-1": {
+						"environment-1": {
+							{
+								ID:            "record-1",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-1",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+							},
+							{
+								ID:            "record-2",
+								VersionID:     "version-1",
+								EnvironmentID: "environment-1",
+								UserID:        "user-2",
+								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	tests := []VersionAnyApprovalRecordRepositoryTest{
 		createRecord,
 		updateRecord,
 		deleteRecord,
 		upsertRecord,
+		maintainsRecordOrderByUpdatedAt,
+		maintainsOrderWhenRecordsAreUpdated,
 	}
 
 	for _, test := range tests {
