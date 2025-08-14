@@ -104,3 +104,16 @@ type Rule interface {
 	// request-scoped values needed during evaluation.
 	Evaluate(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (*RuleEvaluationResult, error)
 }
+
+type BaseRule struct {
+	ID       string
+	PolicyID string
+}
+
+func (r *BaseRule) GetID() string {
+	return r.ID
+}
+
+func (r *BaseRule) GetPolicyID() string {
+	return r.PolicyID
+}
