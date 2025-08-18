@@ -200,8 +200,8 @@ func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record 
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	if record == nil {
-		return fmt.Errorf("record is nil")
+	if err := v.validateRecord(record); err != nil {
+		return err
 	}
 
 	environmentID := record.EnvironmentID
