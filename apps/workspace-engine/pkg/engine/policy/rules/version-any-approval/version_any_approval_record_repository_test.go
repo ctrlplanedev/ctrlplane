@@ -652,9 +652,14 @@ func TestGlobalIDUniqueness(t *testing.T) {
 	assert.Equal(t, existingRecord.GetUserID(), "user-1")
 	assert.Equal(t, existingRecord.GetStatus(), versionanyapproval.ApprovalRecordStatusApproved)
 
-	// Verify the second record was not created
-	nonExistentRecord := repo.Get(ctx, "record-2")
-	assert.Assert(t, nonExistentRecord == nil)
+	// verify that the second record was not created
+	allRecords := repo.GetAll(ctx)
+	assert.Equal(t, len(allRecords), 1)
+	assert.Equal(t, allRecords[0].GetID(), "record-1")
+	assert.Equal(t, allRecords[0].GetVersionID(), "version-1")
+	assert.Equal(t, allRecords[0].GetEnvironmentID(), "environment-1")
+	assert.Equal(t, allRecords[0].GetUserID(), "user-1")
+	assert.Equal(t, allRecords[0].GetStatus(), versionanyapproval.ApprovalRecordStatusApproved)
 }
 
 func TestUserUniquenessForEnvAndVersion(t *testing.T) {
