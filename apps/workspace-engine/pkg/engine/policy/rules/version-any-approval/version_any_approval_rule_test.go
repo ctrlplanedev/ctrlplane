@@ -90,26 +90,26 @@ func TestVersionAnyApprovalRule(t *testing.T) {
 			versionID := test.version.GetID()
 
 			for i := 0; i < test.numApprovalsToCreate; i++ {
-				record := &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            randomID(),
-					VersionID:     versionID,
-					EnvironmentID: environmentID,
-					UserID:        randomID(),
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				}
+				record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID(randomID()).
+					WithVersionID(versionID).
+					WithEnvironmentID(environmentID).
+					WithUserID(randomID()).
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build()
 
 				err := repo.Create(ctx, record)
 				assert.NilError(t, err)
 			}
 
 			for i := 0; i < test.numRejectionsToCreate; i++ {
-				record := &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            randomID(),
-					VersionID:     versionID,
-					EnvironmentID: environmentID,
-					UserID:        randomID(),
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-				}
+				record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID(randomID()).
+					WithVersionID(versionID).
+					WithEnvironmentID(environmentID).
+					WithUserID(randomID()).
+					WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+					Build()
 
 				err := repo.Create(ctx, record)
 				assert.NilError(t, err)

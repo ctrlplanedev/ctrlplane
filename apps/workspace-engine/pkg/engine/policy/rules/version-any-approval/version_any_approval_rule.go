@@ -49,7 +49,7 @@ func (r *VersionAnyApprovalRule) Evaluate(ctx context.Context, target rt.Release
 
 	approvedCount := 0
 	for _, record := range records {
-		if record.Status == VersionAnyApprovalRecordStatusApproved {
+		if record.IsApproved() {
 			approvedCount++
 		}
 	}

@@ -47,7 +47,7 @@ func (b *TestStepBundle) executeStep() {
 	}
 
 	if b.step.deleteRecord != nil {
-		err := b.repo.Delete(b.ctx, b.step.deleteRecord.ID)
+		err := b.repo.Delete(b.ctx, b.step.deleteRecord.GetID())
 		if err != nil {
 			b.t.Fatalf("failed to delete record: %v", err)
 		}
@@ -59,6 +59,8 @@ func (b *TestStepBundle) executeStep() {
 			b.t.Fatalf("failed to upsert record: %v", err)
 		}
 	}
+
+	time.Sleep(1 * time.Millisecond)
 }
 
 func (b *TestStepBundle) validateExpectedState() {
@@ -69,11 +71,11 @@ func (b *TestStepBundle) validateExpectedState() {
 
 			for i, expectedRecord := range records {
 				actualRecord := actualRecords[i]
-				assert.Equal(b.t, expectedRecord.ID, actualRecord.ID)
-				assert.Equal(b.t, expectedRecord.VersionID, actualRecord.VersionID)
-				assert.Equal(b.t, expectedRecord.EnvironmentID, actualRecord.EnvironmentID)
-				assert.Equal(b.t, expectedRecord.UserID, actualRecord.UserID)
-				assert.Equal(b.t, expectedRecord.Status, actualRecord.Status)
+				assert.Equal(b.t, expectedRecord.GetID(), actualRecord.GetID())
+				assert.Equal(b.t, expectedRecord.GetVersionID(), actualRecord.GetVersionID())
+				assert.Equal(b.t, expectedRecord.GetEnvironmentID(), actualRecord.GetEnvironmentID())
+				assert.Equal(b.t, expectedRecord.GetUserID(), actualRecord.GetUserID())
+				assert.Equal(b.t, expectedRecord.GetStatus(), actualRecord.GetStatus())
 			}
 		}
 	}
@@ -84,23 +86,23 @@ func TestBasicCRUD(t *testing.T) {
 		name: "creates a record",
 		steps: []VersionAnyApprovalRecordRepositoryTestStep{
 			{
-				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				},
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
 						},
 					},
 				},
@@ -112,45 +114,45 @@ func TestBasicCRUD(t *testing.T) {
 		name: "updates a record",
 		steps: []VersionAnyApprovalRecordRepositoryTestStep{
 			{
-				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-				},
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+								Build(),
 						},
 					},
 				},
 			},
 			{
-				updateRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				},
+				updateRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
 						},
 					},
 				},
@@ -162,35 +164,35 @@ func TestBasicCRUD(t *testing.T) {
 		name: "deletes a record",
 		steps: []VersionAnyApprovalRecordRepositoryTestStep{
 			{
-				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				},
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
 						},
 					},
 				},
 			},
 			{
-				deleteRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				},
+				deleteRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {"environment-1": {}},
 				},
@@ -202,45 +204,45 @@ func TestBasicCRUD(t *testing.T) {
 		name: "upserts a record",
 		steps: []VersionAnyApprovalRecordRepositoryTestStep{
 			{
-				upsertRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-				},
+				upsertRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+								Build(),
 						},
 					},
 				},
 			},
 			{
-				upsertRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				},
+				upsertRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
 						},
 					},
 				},
@@ -252,57 +254,52 @@ func TestBasicCRUD(t *testing.T) {
 		name: "maintains record order by updated at",
 		steps: []VersionAnyApprovalRecordRepositoryTestStep{
 			{
-				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-					UpdatedAt:     time.Now().Add(-time.Second * 2),
-				},
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-								UpdatedAt:     time.Now().Add(-time.Second * 2),
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
 						},
 					},
 				},
 			},
 			{
-				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-2",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-2",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-					UpdatedAt:     time.Now().Add(-time.Second),
-				},
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-2").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-2").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-2",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-2",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-								UpdatedAt:     time.Now().Add(-time.Second),
-							},
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-								UpdatedAt:     time.Now().Add(-time.Second * 2),
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-2").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-2").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
 						},
 					},
 				},
@@ -314,81 +311,81 @@ func TestBasicCRUD(t *testing.T) {
 		name: "maintains order when records are updated",
 		steps: []VersionAnyApprovalRecordRepositoryTestStep{
 			{
-				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-				},
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+								Build(),
 						},
 					},
 				},
 			},
 			{
-				createRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-2",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-2",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				},
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-2").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-2").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-2",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-2",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-							},
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-2").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-2").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+								Build(),
 						},
 					},
 				},
 			},
 			{
-				updateRecord: &versionanyapproval.VersionAnyApprovalRecord{
-					ID:            "record-1",
-					VersionID:     "version-1",
-					EnvironmentID: "environment-1",
-					UserID:        "user-1",
-					Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-				},
+				updateRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-1").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-1").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
 					"version-1": {
 						"environment-1": {
-							{
-								ID:            "record-1",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-1",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-							},
-							{
-								ID:            "record-2",
-								VersionID:     "version-1",
-								EnvironmentID: "environment-1",
-								UserID:        "user-2",
-								Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-							},
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-2").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-2").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
 						},
 					},
 				},
@@ -428,13 +425,13 @@ func TestDuplicateRecords(t *testing.T) {
 	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
 	ctx := context.Background()
 
-	record := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-1",
-		VersionID:     "version-1",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-	}
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
 
 	err := repo.Create(ctx, record)
 	assert.NilError(t, err)
@@ -445,8 +442,15 @@ func TestDuplicateRecords(t *testing.T) {
 	err = repo.Upsert(ctx, record)
 	assert.NilError(t, err)
 
-	record.Status = versionanyapproval.VersionAnyApprovalRecordStatusRejected
-	err = repo.Update(ctx, record)
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
+
+	err = repo.Update(ctx, record2)
 	assert.NilError(t, err)
 }
 
@@ -454,24 +458,32 @@ func TestUpdateNonExistingRecord(t *testing.T) {
 	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
 	ctx := context.Background()
 
-	record := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-1",
-		VersionID:     "version-1",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-	}
+	// record := &versionanyapproval.VersionAnyApprovalRecord{
+	// 	ID:            "record-1",
+	// 	VersionID:     "version-1",
+	// 	EnvironmentID: "environment-1",
+	// 	UserID:        "user-1",
+	// 	Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+	// }
+
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
 
 	err := repo.Create(ctx, record)
 	assert.NilError(t, err)
 
-	record2 := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-2",
-		VersionID:     "version-1",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-	}
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
 
 	err = repo.Update(ctx, record2)
 	assert.ErrorContains(t, err, "record not found")
@@ -481,46 +493,64 @@ func TestUpdateRecordWithReadonlyIds(t *testing.T) {
 	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
 	ctx := context.Background()
 
-	record := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-1",
-		VersionID:     "version-1",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-	}
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
 
 	err := repo.Create(ctx, record)
 	assert.NilError(t, err)
 
-	updateRecord := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-1",
-		VersionID:     "version-2",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-	}
+	updateRecord := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-2").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
 
 	err = repo.Update(ctx, updateRecord)
 	assert.ErrorContains(t, err, "version ID mismatch")
 	err = repo.Upsert(ctx, updateRecord)
 	assert.ErrorContains(t, err, "version ID mismatch")
 
-	updateRecord.VersionID = "version-1"
-	updateRecord.EnvironmentID = "environment-2"
-	err = repo.Update(ctx, updateRecord)
+	updateRecord2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-2").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Update(ctx, updateRecord2)
 	assert.ErrorContains(t, err, "environment ID mismatch")
-	err = repo.Upsert(ctx, updateRecord)
+	err = repo.Upsert(ctx, updateRecord2)
 	assert.ErrorContains(t, err, "environment ID mismatch")
 
-	updateRecord.EnvironmentID = "environment-1"
-	updateRecord.UserID = "user-2"
-	err = repo.Update(ctx, updateRecord)
+	updateRecord3 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Update(ctx, updateRecord3)
 	assert.ErrorContains(t, err, "user ID mismatch")
-	err = repo.Upsert(ctx, updateRecord)
+	err = repo.Upsert(ctx, updateRecord3)
 	assert.ErrorContains(t, err, "user ID mismatch")
 
-	updateRecord.UserID = "user-1"
-	err = repo.Update(ctx, updateRecord)
+	updateRecord4 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+	err = repo.Update(ctx, updateRecord4)
 	assert.NilError(t, err)
 }
 
@@ -546,25 +576,25 @@ func TestGlobalIDUniqueness(t *testing.T) {
 	ctx := context.Background()
 
 	// Create first record in version-1/environment-1
-	record1 := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-1",
-		VersionID:     "version-1",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-	}
+	record1 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
 
 	err := repo.Create(ctx, record1)
 	assert.NilError(t, err)
 
 	// Attempt to create a record with the same ID in a different version/environment bucket
-	record2 := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-1",      // Same ID as record1
-		VersionID:     "version-2",     // Different version
-		EnvironmentID: "environment-2", // Different environment
-		UserID:        "user-2",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-	}
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-2").
+		WithEnvironmentID("environment-2").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
 
 	err = repo.Create(ctx, record2)
 	assert.ErrorContains(t, err, "record already exists")
@@ -572,11 +602,11 @@ func TestGlobalIDUniqueness(t *testing.T) {
 	// Verify the first record still exists and is unchanged
 	existingRecord := repo.Get(ctx, "record-1")
 	assert.Assert(t, existingRecord != nil)
-	assert.Equal(t, existingRecord.ID, "record-1")
-	assert.Equal(t, existingRecord.VersionID, "version-1")
-	assert.Equal(t, existingRecord.EnvironmentID, "environment-1")
-	assert.Equal(t, existingRecord.UserID, "user-1")
-	assert.Equal(t, existingRecord.Status, versionanyapproval.VersionAnyApprovalRecordStatusApproved)
+	assert.Equal(t, existingRecord.GetID(), "record-1")
+	assert.Equal(t, existingRecord.GetVersionID(), "version-1")
+	assert.Equal(t, existingRecord.GetEnvironmentID(), "environment-1")
+	assert.Equal(t, existingRecord.GetUserID(), "user-1")
+	assert.Equal(t, existingRecord.GetStatus(), versionanyapproval.ApprovalRecordStatusApproved)
 
 	// Verify the second record was not created
 	nonExistentRecord := repo.Get(ctx, "record-2")
@@ -587,24 +617,24 @@ func TestUserUniquenessForEnvAndVersion(t *testing.T) {
 	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
 	ctx := context.Background()
 
-	record1 := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-1",
-		VersionID:     "version-1",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
-	}
+	record1 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
 
 	err := repo.Create(ctx, record1)
 	assert.NilError(t, err)
 
-	record2 := &versionanyapproval.VersionAnyApprovalRecord{
-		ID:            "record-2",
-		VersionID:     "version-1",
-		EnvironmentID: "environment-1",
-		UserID:        "user-1",
-		Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
-	}
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
 
 	err = repo.Create(ctx, record2)
 	assert.ErrorContains(t, err, "record already exists for user")
@@ -612,7 +642,14 @@ func TestUserUniquenessForEnvAndVersion(t *testing.T) {
 	err = repo.Upsert(ctx, record2)
 	assert.ErrorContains(t, err, "record already exists for user")
 
-	record2.UserID = "user-2"
-	err = repo.Upsert(ctx, record2)
+	record3 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
+
+	err = repo.Upsert(ctx, record3)
 	assert.NilError(t, err)
 }
