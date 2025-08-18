@@ -7,12 +7,19 @@ import (
 	"workspace-engine/pkg/model/conditions"
 )
 
-func DateConditionMatches(entity any, operator conditions.DateOperator, field string, value string) (bool, error) {
-	date, err := time.Parse(time.RFC3339, value)
+func DateConditionMatches(entity any, operator conditions.DateOperator, aField string, bValue string) (bool, error) {
+	var err error
+	var aDate time.Time
+	var bDate time.Time
+
+	if aDate, err = getDateProperty(entity, aField); err != nil {
+		return false, err
+	}
+	bDate, err = time.Parse(time.RFC3339, bValue)
 	if err != nil {
 		return false, err
 	}
-	return compareDateCondition(operator, date, date)
+	return compareDateCondition(operator, aDate, bDate)
 }
 
 type DateCondition[E model.MatchableEntity] struct {

@@ -433,3 +433,137 @@ func TestDateCondition_timeTruncation(t *testing.T) {
 		})
 	}
 }
+
+func TestDateConditionMatches(t *testing.T) {
+	now := time.Now()
+	nowRfc3339 := now.Format(time.RFC3339)
+	laterRfc3339 := now.Add(24 * time.Hour).Format(time.RFC3339)
+	earlierRfc3339 := now.Add(-24 * time.Hour).Format(time.RFC3339)
+
+	entity := newEntityBuilder().createdAt(now).build()
+
+	tests := []struct {
+		name      string
+		entity    any
+		operator  conditions.DateOperator
+		aField    string
+		bValue    string
+		wantMatch bool
+		wantErr   bool
+	}{
+		// Success cases
+		{
+			name:      "created-at after bValue with After operator",
+			entity:    entity,
+			operator:  conditions.DateOperatorAfter,
+			aField:    "created-at",
+			bValue:    earlierRfc3339,
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:      "created-at before bValue with After operator",
+			entity:    entity,
+			operator:  conditions.DateOperatorAfter,
+			aField:    "created-at",
+			bValue:    laterRfc3339,
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:      "created-at equal to bValue with After operator",
+			entity:    entity,
+			operator:  conditions.DateOperatorAfter,
+			aField:    "created-at",
+			bValue:    nowRfc3339,
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:      "created-at before bValue with Before operator",
+			entity:    entity,
+			operator:  conditions.DateOperatorBefore,
+			aField:    "created-at",
+			bValue:    laterRfc3339,
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:      "created-at after bValue with Before operator",
+			entity:    entity,
+			operator:  conditions.DateOperatorBefore,
+			aField:    "created-at",
+			bValue:    earlierRfc3339,
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:      "created-at equal to bValue with BeforeOrOn operator",
+			entity:    entity,
+			operator:  conditions.DateOperatorBeforeOrOn,
+			aField:    "created-at",
+			bValue:    nowRfc3339,
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:      "created-at equal to bValue with AfterOrOn operator",
+			entity:    entity,
+			operator:  conditions.DateOperatorAfterOrOn,
+			aField:    "created-at",
+			bValue:    nowRfc3339,
+			wantMatch: true,
+			wantErr:   false,
+		},
+
+		// Error cases
+		{
+			name:     "invalid aField",
+			entity:   entity,
+			operator: conditions.DateOperatorAfter,
+			aField:   "non_existent_field",
+			bValue:   nowRfc3339,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid bValue format",
+			entity:   entity,
+			operator: conditions.DateOperatorAfter,
+			aField:   "created-at",
+			bValue:   "not-a-date",
+			wantErr:  true,
+		},
+		{
+			name: "field is not a date",
+			entity: &matchableEntity{
+				ID:   "test-123",
+				Name: "not a date field",
+			},
+			operator: conditions.DateOperatorAfter,
+			aField:   "name",
+			bValue:   nowRfc3339,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid operator",
+			entity:   entity,
+			operator: "equals",
+			aField:   "created-at",
+			bValue:   nowRfc3339,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matched, err := DateConditionMatches(tt.entity, tt.operator, tt.aField, tt.bValue)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DateConditionMatches() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if matched != tt.wantMatch {
+				t.Errorf("DateConditionMatches() = %v, want %v", matched, tt.wantMatch)
+			}
+		})
+	}
+}

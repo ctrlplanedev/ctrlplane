@@ -8,8 +8,14 @@ import (
 )
 
 func MetadataConditionMatches(entity any, operator conditions.StringConditionOperator, field string, value string) (bool, error) {
-	metadata, err := getProperty(entity, "metadata")
-	if err != nil {
+	var err error
+	var ok bool
+	var metadata reflect.Value
+	var metadataMap map[string]string
+	var metadataValue string
+
+	if metadata, err = getProperty(entity, "metadata"); err != nil {
+		// missing metadata is not an error, just means no match
 		return false, nil
 	}
 
@@ -17,13 +23,12 @@ func MetadataConditionMatches(entity any, operator conditions.StringConditionOpe
 		return false, fmt.Errorf("field %s is not a map", "Metadata")
 	}
 
-	metadataMap, ok := metadata.Interface().(map[string]string)
-	if !ok {
+	if metadataMap, ok = metadata.Interface().(map[string]string); !ok {
 		return false, fmt.Errorf("field %s is not a map", "Metadata")
 	}
 
-	metadataValue, ok := metadataMap[field]
-	if !ok {
+	if metadataValue, ok = metadataMap[field]; !ok {
+		// missing metadata key is not an error, just means no match
 		return false, nil
 	}
 

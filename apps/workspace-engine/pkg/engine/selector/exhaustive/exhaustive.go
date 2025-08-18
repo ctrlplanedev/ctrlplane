@@ -48,9 +48,7 @@ func (e *Exhaustive[E, S]) handleEntitySelectorPair(ent E, sel S) *selector.Chan
 		return nil
 	}
 
-	matchResult, err := operations.JSONSelector{
-		JSONCondition: *selectorCondition,
-	}.Matches(ent)
+	matchResult, err := operations.NewJSONSelector(*selectorCondition).Matches(ent)
 	if err != nil {
 		return &selector.ChannelResult[E, S]{Error: err}
 	}
