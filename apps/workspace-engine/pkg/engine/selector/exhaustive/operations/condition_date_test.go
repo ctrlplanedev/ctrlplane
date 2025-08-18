@@ -7,22 +7,22 @@ import (
 )
 
 func TestDateCondition_ConditionTypeDate(t *testing.T) {
-	condAfter := DateCondition{
+	condAfter := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeDate,
 		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
 	}
-	condBefore := DateCondition{
+	condBefore := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeDate,
 		Operator:  conditions.DateOperatorBefore,
 		Value:     now,
 	}
-	condBeforeOrOn := DateCondition{
+	condBeforeOrOn := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeDate,
 		Operator:  conditions.DateOperatorBeforeOrOn,
 		Value:     now,
 	}
-	condAfterOrOn := DateCondition{
+	condAfterOrOn := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeDate,
 		Operator:  conditions.DateOperatorAfterOrOn,
 		Value:     now,
@@ -30,7 +30,7 @@ func TestDateCondition_ConditionTypeDate(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		cond         DateCondition
+		cond         DateCondition[*matchableEntity]
 		entityOffset time.Duration
 		wantMatch    bool
 		wantErr      bool
@@ -136,22 +136,22 @@ func TestDateCondition_ConditionTypeDate(t *testing.T) {
 }
 
 func TestDateCondition_ConditionTypeUpdatedAt(t *testing.T) {
-	condAfter := DateCondition{
+	condAfter := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeUpdatedAt,
 		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
 	}
-	condBefore := DateCondition{
+	condBefore := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeUpdatedAt,
 		Operator:  conditions.DateOperatorBefore,
 		Value:     now,
 	}
-	condBeforeOrOn := DateCondition{
+	condBeforeOrOn := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeUpdatedAt,
 		Operator:  conditions.DateOperatorBeforeOrOn,
 		Value:     now,
 	}
-	condAfterOrOn := DateCondition{
+	condAfterOrOn := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeUpdatedAt,
 		Operator:  conditions.DateOperatorAfterOrOn,
 		Value:     now,
@@ -159,7 +159,7 @@ func TestDateCondition_ConditionTypeUpdatedAt(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		cond         DateCondition
+		cond         DateCondition[*matchableEntity]
 		entityOffset time.Duration
 		wantMatch    bool
 		wantErr      bool
@@ -271,7 +271,7 @@ func TestDateCondition_InvalidField(t *testing.T) {
 		// Missing CreatedAt and UpdatedAt fields
 	}
 
-	cond := DateCondition{
+	cond := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeDate,
 		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
@@ -291,7 +291,7 @@ func TestDateCondition_InvalidDateFormat(t *testing.T) {
 		UpdatedAt: "also-not-valid",
 	}
 
-	cond := DateCondition{
+	cond := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeDate,
 		Operator:  conditions.DateOperatorAfter,
 		Value:     now,
@@ -306,7 +306,7 @@ func TestDateCondition_InvalidDateFormat(t *testing.T) {
 func TestDateCondition_InvalidOperator(t *testing.T) {
 	entity := newEntityBuilder().build()
 
-	cond := DateCondition{
+	cond := DateCondition[*matchableEntity]{
 		TypeField: conditions.ConditionTypeDate,
 		Operator:  "equals", // Invalid operator
 		Value:     now,
@@ -415,7 +415,7 @@ func TestDateCondition_timeTruncation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cond := DateCondition{
+			cond := DateCondition[*matchableEntity]{
 				TypeField: conditions.ConditionTypeDate,
 				Operator:  tt.operator,
 				Value:     tt.condTime,
