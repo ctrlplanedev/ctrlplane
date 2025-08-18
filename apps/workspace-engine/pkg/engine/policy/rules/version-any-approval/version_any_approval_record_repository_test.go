@@ -477,6 +477,53 @@ func TestUpdateNonExistingRecord(t *testing.T) {
 	assert.ErrorContains(t, err, "record not found")
 }
 
+func TestUpdateRecordWithReadonlyIds(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	record := &versionanyapproval.VersionAnyApprovalRecord{
+		ID:            "record-1",
+		VersionID:     "version-1",
+		EnvironmentID: "environment-1",
+		UserID:        "user-1",
+		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+	}
+
+	err := repo.Create(ctx, record)
+	assert.NilError(t, err)
+
+	updateRecord := &versionanyapproval.VersionAnyApprovalRecord{
+		ID:            "record-1",
+		VersionID:     "version-2",
+		EnvironmentID: "environment-1",
+		UserID:        "user-1",
+		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+	}
+
+	err = repo.Update(ctx, updateRecord)
+	assert.ErrorContains(t, err, "version ID mismatch")
+	err = repo.Upsert(ctx, updateRecord)
+	assert.ErrorContains(t, err, "version ID mismatch")
+
+	updateRecord.VersionID = "version-1"
+	updateRecord.EnvironmentID = "environment-2"
+	err = repo.Update(ctx, updateRecord)
+	assert.ErrorContains(t, err, "environment ID mismatch")
+	err = repo.Upsert(ctx, updateRecord)
+	assert.ErrorContains(t, err, "environment ID mismatch")
+
+	updateRecord.EnvironmentID = "environment-1"
+	updateRecord.UserID = "user-2"
+	err = repo.Update(ctx, updateRecord)
+	assert.ErrorContains(t, err, "user ID mismatch")
+	err = repo.Upsert(ctx, updateRecord)
+	assert.ErrorContains(t, err, "user ID mismatch")
+
+	updateRecord.UserID = "user-1"
+	err = repo.Update(ctx, updateRecord)
+	assert.NilError(t, err)
+}
+
 func TestNilHandling(t *testing.T) {
 	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
 	ctx := context.Background()
@@ -492,4 +539,80 @@ func TestNilHandling(t *testing.T) {
 
 	err = repo.Upsert(ctx, nil)
 	assert.ErrorContains(t, err, "record is nil")
+}
+
+func TestGlobalIDUniqueness(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	// Create first record in version-1/environment-1
+	record1 := &versionanyapproval.VersionAnyApprovalRecord{
+		ID:            "record-1",
+		VersionID:     "version-1",
+		EnvironmentID: "environment-1",
+		UserID:        "user-1",
+		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+	}
+
+	err := repo.Create(ctx, record1)
+	assert.NilError(t, err)
+
+	// Attempt to create a record with the same ID in a different version/environment bucket
+	record2 := &versionanyapproval.VersionAnyApprovalRecord{
+		ID:            "record-1",      // Same ID as record1
+		VersionID:     "version-2",     // Different version
+		EnvironmentID: "environment-2", // Different environment
+		UserID:        "user-2",
+		Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
+	}
+
+	err = repo.Create(ctx, record2)
+	assert.ErrorContains(t, err, "record already exists")
+
+	// Verify the first record still exists and is unchanged
+	existingRecord := repo.Get(ctx, "record-1")
+	assert.Assert(t, existingRecord != nil)
+	assert.Equal(t, existingRecord.ID, "record-1")
+	assert.Equal(t, existingRecord.VersionID, "version-1")
+	assert.Equal(t, existingRecord.EnvironmentID, "environment-1")
+	assert.Equal(t, existingRecord.UserID, "user-1")
+	assert.Equal(t, existingRecord.Status, versionanyapproval.VersionAnyApprovalRecordStatusApproved)
+
+	// Verify the second record was not created
+	nonExistentRecord := repo.Get(ctx, "record-2")
+	assert.Assert(t, nonExistentRecord == nil)
+}
+
+func TestUserUniquenessForEnvAndVersion(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	record1 := &versionanyapproval.VersionAnyApprovalRecord{
+		ID:            "record-1",
+		VersionID:     "version-1",
+		EnvironmentID: "environment-1",
+		UserID:        "user-1",
+		Status:        versionanyapproval.VersionAnyApprovalRecordStatusApproved,
+	}
+
+	err := repo.Create(ctx, record1)
+	assert.NilError(t, err)
+
+	record2 := &versionanyapproval.VersionAnyApprovalRecord{
+		ID:            "record-2",
+		VersionID:     "version-1",
+		EnvironmentID: "environment-1",
+		UserID:        "user-1",
+		Status:        versionanyapproval.VersionAnyApprovalRecordStatusRejected,
+	}
+
+	err = repo.Create(ctx, record2)
+	assert.ErrorContains(t, err, "record already exists for user")
+
+	err = repo.Upsert(ctx, record2)
+	assert.ErrorContains(t, err, "record already exists for user")
+
+	record2.UserID = "user-2"
+	err = repo.Upsert(ctx, record2)
+	assert.NilError(t, err)
 }

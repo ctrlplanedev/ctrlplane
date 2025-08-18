@@ -49,10 +49,20 @@ func NewVersionAnyApprovalRecordRepository() *VersionAnyApprovalRecordRepository
 	}
 }
 
-func (v *VersionAnyApprovalRecordRepository) Create(ctx context.Context, record *VersionAnyApprovalRecord) error {
-	v.mu.Lock()
-	defer v.mu.Unlock()
+func (v *VersionAnyApprovalRecordRepository) getRecordByID(id string) *VersionAnyApprovalRecord {
+	for _, environmentRecords := range v.records {
+		for _, records := range environmentRecords {
+			for _, r := range records {
+				if r.ID == id {
+					return r
+				}
+			}
+		}
+	}
+	return nil
+}
 
+func (v *VersionAnyApprovalRecordRepository) validateRecord(record *VersionAnyApprovalRecord) error {
 	if record == nil {
 		return fmt.Errorf("record is nil")
 	}
@@ -73,6 +83,17 @@ func (v *VersionAnyApprovalRecordRepository) Create(ctx context.Context, record 
 		return fmt.Errorf("user ID is empty")
 	}
 
+	return nil
+}
+
+func (v *VersionAnyApprovalRecordRepository) Create(ctx context.Context, record *VersionAnyApprovalRecord) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	if err := v.validateRecord(record); err != nil {
+		return err
+	}
+
 	environmentID := record.EnvironmentID
 	versionID := record.VersionID
 
@@ -84,14 +105,14 @@ func (v *VersionAnyApprovalRecordRepository) Create(ctx context.Context, record 
 		v.records[versionID][environmentID] = make([]*VersionAnyApprovalRecord, 0)
 	}
 
+	if v.getRecordByID(record.ID) != nil {
+		return fmt.Errorf("record already exists")
+	}
+
 	currentRecords := v.records[versionID][environmentID]
 	for _, r := range currentRecords {
 		if r == nil {
 			continue
-		}
-
-		if r.ID == record.ID {
-			return fmt.Errorf("record already exists")
 		}
 
 		if r.UserID == record.UserID {
@@ -143,43 +164,36 @@ func (v *VersionAnyApprovalRecordRepository) Update(ctx context.Context, record 
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	if record == nil {
-		return fmt.Errorf("record is nil")
+	if err := v.validateRecord(record); err != nil {
+		return err
 	}
 
-	environmentID := record.EnvironmentID
-	versionID := record.VersionID
-
-	if _, ok := v.records[versionID]; !ok {
-		return fmt.Errorf("version not found")
+	existingRecord := v.getRecordByID(record.ID)
+	if existingRecord == nil {
+		return fmt.Errorf("record not found")
 	}
 
-	if _, ok := v.records[versionID][environmentID]; !ok {
-		return fmt.Errorf("environment not found")
+	if existingRecord.EnvironmentID != record.EnvironmentID {
+		return fmt.Errorf("environment ID mismatch")
 	}
 
-	currentRecords := v.records[versionID][environmentID]
-	for _, r := range currentRecords {
-		if r == nil {
-			continue
-		}
-
-		if r.ID != record.ID {
-			continue
-		}
-
-		r.Status = record.Status
-		r.ApprovedAt = record.ApprovedAt
-		r.Reason = record.Reason
-		if record.UpdatedAt.Equal(r.UpdatedAt) || record.UpdatedAt.Before(r.UpdatedAt) {
-			record.UpdatedAt = time.Now().UTC()
-		}
-		r.UpdatedAt = record.UpdatedAt
-
-		return nil
+	if existingRecord.VersionID != record.VersionID {
+		return fmt.Errorf("version ID mismatch")
 	}
 
-	return fmt.Errorf("record not found")
+	if existingRecord.UserID != record.UserID {
+		return fmt.Errorf("user ID mismatch")
+	}
+
+	existingRecord.Status = record.Status
+	existingRecord.ApprovedAt = record.ApprovedAt
+	existingRecord.Reason = record.Reason
+	if record.UpdatedAt.Equal(existingRecord.UpdatedAt) || record.UpdatedAt.Before(existingRecord.UpdatedAt) {
+		record.UpdatedAt = time.Now().UTC()
+	}
+	existingRecord.UpdatedAt = record.UpdatedAt
+
+	return nil
 }
 
 func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record *VersionAnyApprovalRecord) error {
@@ -192,7 +206,30 @@ func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record 
 
 	environmentID := record.EnvironmentID
 	versionID := record.VersionID
-	userID := record.UserID
+
+	existingRecord := v.getRecordByID(record.ID)
+	if existingRecord != nil {
+		if existingRecord.EnvironmentID != record.EnvironmentID {
+			return fmt.Errorf("environment ID mismatch")
+		}
+
+		if existingRecord.VersionID != record.VersionID {
+			return fmt.Errorf("version ID mismatch")
+		}
+
+		if existingRecord.UserID != record.UserID {
+			return fmt.Errorf("user ID mismatch")
+		}
+
+		existingRecord.Status = record.Status
+		existingRecord.ApprovedAt = record.ApprovedAt
+		existingRecord.Reason = record.Reason
+		if record.UpdatedAt.Equal(existingRecord.UpdatedAt) || record.UpdatedAt.Before(existingRecord.UpdatedAt) {
+			record.UpdatedAt = time.Now().UTC()
+		}
+		existingRecord.UpdatedAt = record.UpdatedAt
+		return nil
+	}
 
 	if _, ok := v.records[versionID]; !ok {
 		v.records[versionID] = make(map[string][]*VersionAnyApprovalRecord)
@@ -202,25 +239,17 @@ func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record 
 		v.records[versionID][environmentID] = make([]*VersionAnyApprovalRecord, 0)
 	}
 
-	for _, r := range v.records[versionID][environmentID] {
-		if r.UserID == userID {
-			r.Status = record.Status
-			r.ApprovedAt = record.ApprovedAt
-			r.Reason = record.Reason
-			if record.UpdatedAt.Equal(r.UpdatedAt) || record.UpdatedAt.Before(r.UpdatedAt) {
-				record.UpdatedAt = time.Now().UTC()
-			}
-			r.UpdatedAt = record.UpdatedAt
-
-			return nil
-		}
-	}
-
 	if record.CreatedAt.IsZero() {
 		record.CreatedAt = time.Now().UTC()
 	}
 	if record.UpdatedAt.IsZero() {
 		record.UpdatedAt = time.Now().UTC()
+	}
+
+	for _, r := range v.records[versionID][environmentID] {
+		if r.UserID == record.UserID {
+			return fmt.Errorf("record already exists for user")
+		}
 	}
 
 	v.records[versionID][environmentID] = append(v.records[versionID][environmentID], record)
