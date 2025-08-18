@@ -188,10 +188,11 @@ func (v *VersionAnyApprovalRecordRepository) Update(ctx context.Context, record 
 	existingRecord.Status = record.Status
 	existingRecord.ApprovedAt = record.ApprovedAt
 	existingRecord.Reason = record.Reason
-	if record.UpdatedAt.Equal(existingRecord.UpdatedAt) || record.UpdatedAt.Before(existingRecord.UpdatedAt) {
-		record.UpdatedAt = time.Now().UTC()
+	ts := record.UpdatedAt
+	if ts.Equal(existingRecord.UpdatedAt) || ts.Before(existingRecord.UpdatedAt) {
+		ts = time.Now().UTC()
 	}
-	existingRecord.UpdatedAt = record.UpdatedAt
+	existingRecord.UpdatedAt = ts
 
 	return nil
 }
@@ -224,10 +225,11 @@ func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record 
 		existingRecord.Status = record.Status
 		existingRecord.ApprovedAt = record.ApprovedAt
 		existingRecord.Reason = record.Reason
-		if record.UpdatedAt.Equal(existingRecord.UpdatedAt) || record.UpdatedAt.Before(existingRecord.UpdatedAt) {
-			record.UpdatedAt = time.Now().UTC()
+		ts := record.UpdatedAt
+		if ts.Equal(existingRecord.UpdatedAt) || ts.Before(existingRecord.UpdatedAt) {
+			ts = time.Now().UTC()
 		}
-		existingRecord.UpdatedAt = record.UpdatedAt
+		existingRecord.UpdatedAt = ts
 		return nil
 	}
 
