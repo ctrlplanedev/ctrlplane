@@ -17,6 +17,8 @@ type ApprovalRecord interface {
 	GetStatus() ApprovalRecordStatus
 	GetApprovedAt() *time.Time
 	GetReason() *string
+	GetCreatedAt() time.Time
+	GetUpdatedAt() time.Time
 
 	IsApproved() bool
 }

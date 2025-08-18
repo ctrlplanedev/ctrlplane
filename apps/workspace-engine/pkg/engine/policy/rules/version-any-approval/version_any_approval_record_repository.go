@@ -33,6 +33,8 @@ type versionAnyApprovalRecordBuilder struct {
 	userID        string
 	status        ApprovalRecordStatus
 	reason        *string
+	createdAt     *time.Time
+	updatedAt     *time.Time
 }
 
 func NewVersionAnyApprovalRecordBuilder() *versionAnyApprovalRecordBuilder {
@@ -76,17 +78,32 @@ func (b *versionAnyApprovalRecordBuilder) WithReason(reason *string) *versionAny
 	return b
 }
 
+func (b *versionAnyApprovalRecordBuilder) WithCreatedAt(createdAt time.Time) *versionAnyApprovalRecordBuilder {
+	b.createdAt = &createdAt
+	return b
+}
+
+func (b *versionAnyApprovalRecordBuilder) WithUpdatedAt(updatedAt time.Time) *versionAnyApprovalRecordBuilder {
+	b.updatedAt = &updatedAt
+	return b
+}
+
 func (b *versionAnyApprovalRecordBuilder) Build() *VersionAnyApprovalRecord {
-	return &VersionAnyApprovalRecord{
+	r := &VersionAnyApprovalRecord{
 		id:            b.id,
 		versionID:     b.versionID,
 		environmentID: b.environmentID,
 		userID:        b.userID,
 		status:        b.status,
 		reason:        b.reason,
-		createdAt:     time.Now().UTC(),
-		updatedAt:     time.Now().UTC(),
 	}
+	if b.createdAt != nil {
+		r.createdAt = *b.createdAt
+	}
+	if b.updatedAt != nil {
+		r.updatedAt = *b.updatedAt
+	}
+	return r
 }
 
 func (v VersionAnyApprovalRecord) GetID() string {
@@ -119,6 +136,14 @@ func (v VersionAnyApprovalRecord) GetApprovedAt() *time.Time {
 
 func (v VersionAnyApprovalRecord) GetReason() *string {
 	return v.reason
+}
+
+func (v VersionAnyApprovalRecord) GetCreatedAt() time.Time {
+	return v.createdAt
+}
+
+func (v VersionAnyApprovalRecord) GetUpdatedAt() time.Time {
+	return v.updatedAt
 }
 
 var _ model.Repository[VersionAnyApprovalRecord] = (*VersionAnyApprovalRecordRepository)(nil)
@@ -169,6 +194,10 @@ func (v *VersionAnyApprovalRecordRepository) validateRecord(record *VersionAnyAp
 		return fmt.Errorf("user ID is empty")
 	}
 
+	if record.status == "" {
+		return fmt.Errorf("status is empty")
+	}
+
 	return nil
 }
 
@@ -176,8 +205,14 @@ func (v *VersionAnyApprovalRecordRepository) Create(ctx context.Context, record 
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
+	now := time.Now().UTC()
+
 	if err := v.validateRecord(record); err != nil {
 		return err
+	}
+
+	if record.status == ApprovalRecordStatusApproved && record.approvedAt == nil {
+		record.approvedAt = &now
 	}
 
 	environmentID := record.environmentID
@@ -214,6 +249,7 @@ func (v *VersionAnyApprovalRecordRepository) Create(ctx context.Context, record 
 	}
 
 	v.records[versionID][environmentID] = append(currentRecords, record)
+	fmt.Println("creatd record", record.id, record.updatedAt)
 	return nil
 }
 
@@ -250,6 +286,8 @@ func (v *VersionAnyApprovalRecordRepository) Update(ctx context.Context, record 
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
+	now := time.Now().UTC()
+
 	if err := v.validateRecord(record); err != nil {
 		return err
 	}
@@ -276,9 +314,13 @@ func (v *VersionAnyApprovalRecordRepository) Update(ctx context.Context, record 
 	existingRecord.reason = record.reason
 	ts := record.updatedAt
 	if ts.Equal(existingRecord.updatedAt) || ts.Before(existingRecord.updatedAt) {
-		ts = time.Now().UTC()
+		ts = now
 	}
 	existingRecord.updatedAt = ts
+
+	if existingRecord.status == ApprovalRecordStatusApproved && existingRecord.approvedAt == nil {
+		existingRecord.approvedAt = &now
+	}
 
 	return nil
 }
@@ -287,8 +329,14 @@ func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record 
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
+	now := time.Now().UTC()
+
 	if err := v.validateRecord(record); err != nil {
 		return err
+	}
+
+	if record.status == ApprovalRecordStatusApproved && record.approvedAt == nil {
+		record.approvedAt = &now
 	}
 
 	environmentID := record.environmentID
@@ -313,9 +361,10 @@ func (v *VersionAnyApprovalRecordRepository) Upsert(ctx context.Context, record 
 		existingRecord.reason = record.reason
 		ts := record.updatedAt
 		if ts.Equal(existingRecord.updatedAt) || ts.Before(existingRecord.updatedAt) {
-			ts = time.Now().UTC()
+			ts = now
 		}
 		existingRecord.updatedAt = ts
+
 		return nil
 	}
 

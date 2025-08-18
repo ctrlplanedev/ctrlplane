@@ -2,6 +2,7 @@ package versionanyapproval_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 	versionanyapproval "workspace-engine/pkg/engine/policy/rules/version-any-approval"
@@ -68,6 +69,10 @@ func (b *TestStepBundle) validateExpectedState() {
 		for environmentID, records := range environmentRecords {
 			actualRecords := b.repo.GetAllForVersionAndEnvironment(b.ctx, versionID, environmentID)
 			assert.Equal(b.t, len(records), len(actualRecords))
+
+			for _, actualRecord := range actualRecords {
+				fmt.Println(actualRecord.GetID(), actualRecord.GetUpdatedAt())
+			}
 
 			for i, expectedRecord := range records {
 				actualRecord := actualRecords[i]
@@ -186,6 +191,35 @@ func TestBasicCRUD(t *testing.T) {
 				},
 			},
 			{
+				createRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+					WithID("record-2").
+					WithVersionID("version-1").
+					WithEnvironmentID("environment-1").
+					WithUserID("user-2").
+					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+					Build(),
+				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
+					"version-1": {
+						"environment-1": {
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-2").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-2").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-1").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-1").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
+						},
+					},
+				},
+			},
+			{
 				deleteRecord: versionanyapproval.NewVersionAnyApprovalRecordBuilder().
 					WithID("record-1").
 					WithVersionID("version-1").
@@ -194,7 +228,17 @@ func TestBasicCRUD(t *testing.T) {
 					WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
 					Build(),
 				expectedRecords: map[string]map[string][]*versionanyapproval.VersionAnyApprovalRecord{
-					"version-1": {"environment-1": {}},
+					"version-1": {
+						"environment-1": {
+							versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+								WithID("record-2").
+								WithVersionID("version-1").
+								WithEnvironmentID("environment-1").
+								WithUserID("user-2").
+								WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+								Build(),
+						},
+					},
 				},
 			},
 		},
@@ -652,4 +696,310 @@ func TestUserUniquenessForEnvAndVersion(t *testing.T) {
 
 	err = repo.Upsert(ctx, record3)
 	assert.NilError(t, err)
+}
+
+func TestExists(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err := repo.Create(ctx, record)
+	assert.NilError(t, err)
+
+	assert.Equal(t, repo.Exists(ctx, "record-1"), true)
+	assert.Equal(t, repo.Exists(ctx, "record-2"), false)
+}
+
+func TestGetAll(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err := repo.Create(ctx, record)
+	assert.NilError(t, err)
+
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-2").
+		WithEnvironmentID("environment-2").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
+
+	err = repo.Create(ctx, record2)
+	assert.NilError(t, err)
+
+	records := repo.GetAll(ctx)
+	assert.Equal(t, len(records), 2)
+	assert.Equal(t, records[0].GetID(), "record-2")
+	assert.Equal(t, records[1].GetID(), "record-1")
+}
+
+func TestCreateWithReason(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	reason := "reason-1"
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		WithReason(&reason).
+		Build()
+
+	err := repo.Create(ctx, record)
+	assert.NilError(t, err)
+
+	actualRecord := repo.Get(ctx, "record-1")
+	assert.Equal(t, *actualRecord.GetReason(), reason)
+
+	recordWithNilReason := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Create(ctx, recordWithNilReason)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-2")
+	assert.Equal(t, actualRecord.GetReason(), (*string)(nil))
+}
+
+func TestCreateInvalidRecord(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	recordWithEmptyVersionID := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err := repo.Create(ctx, recordWithEmptyVersionID)
+	assert.ErrorContains(t, err, "version ID is empty")
+
+	recordWithEmptyEnvironmentID := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Create(ctx, recordWithEmptyEnvironmentID)
+	assert.ErrorContains(t, err, "environment ID is empty")
+
+	recordWithEmptyUserID := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Create(ctx, recordWithEmptyUserID)
+	assert.ErrorContains(t, err, "user ID is empty")
+
+	recordWithEmptyStatus := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		Build()
+
+	recordWithEmptyID := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Create(ctx, recordWithEmptyID)
+	assert.ErrorContains(t, err, "record ID is empty")
+
+	err = repo.Create(ctx, recordWithEmptyStatus)
+	assert.ErrorContains(t, err, "status is empty")
+}
+
+func TestCreateWithTimestamps(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	now := time.Now().UTC()
+
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		WithCreatedAt(now).
+		WithUpdatedAt(now).
+		Build()
+
+	err := repo.Create(ctx, record)
+	assert.NilError(t, err)
+
+	actualRecord := repo.Get(ctx, "record-1")
+	assert.Equal(t, actualRecord.GetCreatedAt(), now)
+	assert.Equal(t, actualRecord.GetUpdatedAt(), now)
+
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		WithCreatedAt(now).
+		WithUpdatedAt(now).
+		Build()
+
+	err = repo.Upsert(ctx, record2)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-2")
+	assert.Equal(t, actualRecord.GetCreatedAt(), now)
+	assert.Equal(t, actualRecord.GetUpdatedAt(), now)
+}
+
+func TestInsertsTimestampsIfNotProvided(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err := repo.Create(ctx, record)
+	assert.NilError(t, err)
+
+	actualRecord := repo.Get(ctx, "record-1")
+	assert.Assert(t, actualRecord.GetCreatedAt() != time.Time{})
+	assert.Assert(t, actualRecord.GetUpdatedAt() != time.Time{})
+
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Upsert(ctx, record2)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-2")
+	assert.Assert(t, actualRecord.GetCreatedAt() != time.Time{})
+	assert.Assert(t, actualRecord.GetUpdatedAt() != time.Time{})
+}
+
+func TestAutopopulatesApprovedAtIfBuildWithApprovedStatus(t *testing.T) {
+	repo := versionanyapproval.NewVersionAnyApprovalRecordRepository()
+	ctx := context.Background()
+
+	record := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err := repo.Create(ctx, record)
+	assert.NilError(t, err)
+
+	actualRecord := repo.Get(ctx, "record-1")
+	assert.Assert(t, actualRecord.GetApprovedAt() != nil)
+
+	record2 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-2").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-2").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Upsert(ctx, record2)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-2")
+	assert.Assert(t, actualRecord.GetApprovedAt() != nil)
+
+	record3 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-3").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-3").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
+
+	err = repo.Upsert(ctx, record3)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-3")
+	assert.Assert(t, actualRecord.GetApprovedAt() == nil)
+
+	record3Updated := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-3").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-3").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Upsert(ctx, record3Updated)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-3")
+	assert.Assert(t, actualRecord.GetApprovedAt() != nil)
+
+	record4 := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-4").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-4").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		Build()
+
+	err = repo.Upsert(ctx, record4)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-4")
+	assert.Assert(t, actualRecord.GetApprovedAt() == nil)
+
+	record4Upserted := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-4").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-4").
+		WithStatus(versionanyapproval.ApprovalRecordStatusApproved).
+		Build()
+
+	err = repo.Upsert(ctx, record4Upserted)
+	assert.NilError(t, err)
+
+	actualRecord = repo.Get(ctx, "record-4")
+	assert.Assert(t, actualRecord.GetApprovedAt() != nil)
 }
