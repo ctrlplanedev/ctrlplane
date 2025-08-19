@@ -21,7 +21,7 @@ func NewWorkspaceEngine(workspaceID string) *WorkspaceEngine {
 	repository := NewWorkspaceRepository()
 	selectorManager := NewSelectorManager()
 	releaseTargetManager := NewReleaseTargetManager(selectorManager, repository)
-	policyManager := NewPolicyManager(repository)
+	policyManager := NewPolicyManager(repository, selectorManager)
 
 	return &WorkspaceEngine{
 		WorkspaceID:          workspaceID,

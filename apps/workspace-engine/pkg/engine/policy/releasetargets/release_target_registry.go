@@ -201,6 +201,16 @@ func (r *ReleaseTargetRepository) GetAllForDeployment(ctx context.Context, deplo
 	return releaseTargets
 }
 
+func (r *ReleaseTargetRepository) GetAllForDeploymentAndEnvironment(ctx context.Context, deploymentID string, environmentID string) []*ReleaseTarget {
+	releaseTargets := make([]*ReleaseTarget, 0, len(r.ReleaseTargets))
+	for _, target := range r.ReleaseTargets {
+		if target.Deployment.GetID() == deploymentID && target.Environment.GetID() == environmentID {
+			releaseTargets = append(releaseTargets, target)
+		}
+	}
+	return releaseTargets
+}
+
 // Update implements Repository.Update by updating an existing release target.
 // This operation overwrites the existing release target with the provided entity.
 //

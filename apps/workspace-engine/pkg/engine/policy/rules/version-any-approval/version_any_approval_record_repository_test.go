@@ -842,6 +842,21 @@ func TestCreateInvalidRecord(t *testing.T) {
 
 	err = repo.Create(ctx, recordWithEmptyStatus)
 	assert.ErrorContains(t, err, "status is empty")
+
+	recordWithApprovedAtSetForNonApprovedStatus := versionanyapproval.NewVersionAnyApprovalRecordBuilder().
+		WithID("record-1").
+		WithVersionID("version-1").
+		WithEnvironmentID("environment-1").
+		WithUserID("user-1").
+		WithStatus(versionanyapproval.ApprovalRecordStatusRejected).
+		WithApprovedAt(time.Now().UTC()).
+		Build()
+
+	err = repo.Create(ctx, recordWithApprovedAtSetForNonApprovedStatus)
+	assert.ErrorContains(t, err, "approvedAt is set for a non-approved record")
+
+	err = repo.Upsert(ctx, recordWithApprovedAtSetForNonApprovedStatus)
+	assert.ErrorContains(t, err, "approvedAt is set for a non-approved record")
 }
 
 func TestCreateWithTimestamps(t *testing.T) {

@@ -64,3 +64,7 @@ func (r *VersionAnyApprovalRule) Evaluate(ctx context.Context, target rt.Release
 	result.Message = "Minimum number of approvals not reached"
 	return result, nil
 }
+
+func (r *VersionAnyApprovalRule) GetType() rules.RuleType {
+	return rules.RuleTypeVersionAnyApproval
+}

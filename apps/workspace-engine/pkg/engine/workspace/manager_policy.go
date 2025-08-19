@@ -16,9 +16,10 @@ type PolicyManager struct {
 	selectorManager *SelectorManager
 }
 
-func NewPolicyManager(repo *WorkspaceRepository) *PolicyManager {
+func NewPolicyManager(repo *WorkspaceRepository, selectorManager *SelectorManager) *PolicyManager {
 	return &PolicyManager{
-		repository: repo,
+		repository:      repo,
+		selectorManager: selectorManager,
 	}
 }
 
