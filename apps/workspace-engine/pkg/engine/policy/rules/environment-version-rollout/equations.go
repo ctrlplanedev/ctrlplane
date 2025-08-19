@@ -55,7 +55,7 @@ func GetExponentialOffsetFunction(positionGrowthFactor int, timeScaleInterval in
 	}
 
 	return func(ctx context.Context, position int) time.Duration {
-		offset := float64(timeScaleInterval) * (1 - math.Exp(-float64(position)/float64(numReleaseTargets)))
+		offset := float64(timeScaleInterval) * (1 - math.Exp(-float64(position)/float64(positionGrowthFactor)))
 		return time.Duration(offset) * time.Minute
 	}, nil
 }

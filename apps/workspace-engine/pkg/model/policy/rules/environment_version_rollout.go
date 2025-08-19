@@ -3,10 +3,8 @@ package rules
 type RolloutType string
 
 const (
-	RolloutTypeLinear                RolloutType = "linear"
-	RolloutTypeExponential           RolloutType = "exponential"
-	RolloutTypeLinearNormalized      RolloutType = "linear-normalized"
-	RolloutTypeExponentialNormalized RolloutType = "exponential-normalized"
+	RolloutTypeLinear      RolloutType = "linear"
+	RolloutTypeExponential RolloutType = "exponential"
 )
 
 type EnvironmentVersionRolloutRule struct {

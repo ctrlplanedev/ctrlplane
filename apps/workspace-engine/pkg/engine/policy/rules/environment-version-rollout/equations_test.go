@@ -69,7 +69,7 @@ func TestGetExponentialOffsetFunction(t *testing.T) {
 	offset := offsetFunction(ctx, position)
 
 	expectedOffset := time.Duration(
-		float64(timeScaleInterval)*(1-math.Exp(-float64(position)/float64(numReleaseTargets))),
+		float64(timeScaleInterval)*(1-math.Exp(-float64(position)/float64(positionGrowthFactor))),
 	) * time.Minute
 
 	assert.Equal(t, offset, expectedOffset)

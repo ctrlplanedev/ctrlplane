@@ -80,8 +80,8 @@ func (b *testBundle) insertReleaseTarget() *testBundle {
 
 func (b *testBundle) insertPolicies() *testBundle {
 	alwaysTrue := alwaysTrueCondition()
-	policyID := randomID()
 	for _, numApprovalsRequired := range b.test.numApprovalsRequired {
+		policyID := randomID()
 		policy := policy.Policy{
 			ID: policyID,
 			PolicyTargets: []policy.PolicyTarget{
