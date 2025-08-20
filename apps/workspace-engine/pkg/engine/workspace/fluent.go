@@ -275,7 +275,7 @@ func (fp *FluentPipeline) EvaluatePolicies() *FluentPipeline {
 
 		request := JobDispatchRequest{
 			ReleaseTarget: releaseTarget,
-			Versions:      &deploymentVersions[0],
+			Version:       &deploymentVersions[0],
 		}
 		fp.dispatchRequests = append(fp.dispatchRequests, request)
 	}
