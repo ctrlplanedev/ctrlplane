@@ -42,137 +42,180 @@ func TestJobRepository_BasicCRUD(t *testing.T) {
 	createJob := JobRepositoryTest{
 		name: "creates a job",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", CreatedAt: now, UpdatedAt: now}},
-			{expectedJobs: []job.Job{{ID: "1", CreatedAt: now, UpdatedAt: now}}},
+			{
+				createJob:    &job.Job{ID: "1", CreatedAt: now, UpdatedAt: now},
+				expectedJobs: []job.Job{{ID: "1", CreatedAt: now, UpdatedAt: now}},
+			},
 		},
 	}
 
 	updateJob := JobRepositoryTest{
 		name: "updates a job",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", Status: job.JobStatusPending}},
-			{updateJob: &job.Job{ID: "1", Status: job.JobStatusInProgress}},
-			{expectedJobs: []job.Job{{ID: "1", Status: job.JobStatusInProgress}}},
+			{
+				createJob:    &job.Job{ID: "1", Status: job.JobStatusPending},
+				expectedJobs: []job.Job{{ID: "1", Status: job.JobStatusPending}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", Status: job.JobStatusInProgress},
+				expectedJobs: []job.Job{{ID: "1", Status: job.JobStatusInProgress}},
+			},
 		},
 	}
 
 	updateJobJobAgentID := JobRepositoryTest{
 		name: "updates a job's job agent id",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", JobAgentID: &[]string{"1"}[0]}},
-			{updateJob: &job.Job{ID: "1", JobAgentID: &[]string{"2"}[0]}},
-			{expectedJobs: []job.Job{{ID: "1", JobAgentID: &[]string{"2"}[0]}}},
+			{
+				createJob:    &job.Job{ID: "1", JobAgentID: &[]string{"1"}[0]},
+				expectedJobs: []job.Job{{ID: "1", JobAgentID: &[]string{"1"}[0]}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", JobAgentID: &[]string{"2"}[0]},
+				expectedJobs: []job.Job{{ID: "1", JobAgentID: &[]string{"2"}[0]}},
+			},
 		},
 	}
 
 	updateJobJobAgentConfig := JobRepositoryTest{
 		name: "updates a job's job agent config",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", JobAgentConfig: map[string]any{"key": "value"}}},
-			{updateJob: &job.Job{ID: "1", JobAgentConfig: map[string]any{"key": "new_value"}}},
-			{expectedJobs: []job.Job{{ID: "1", JobAgentConfig: map[string]any{"key": "new_value"}}}},
+			{
+				createJob:    &job.Job{ID: "1", JobAgentConfig: map[string]any{"key": "value"}},
+				expectedJobs: []job.Job{{ID: "1", JobAgentConfig: map[string]any{"key": "value"}}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", JobAgentConfig: map[string]any{"key": "new_value"}},
+				expectedJobs: []job.Job{{ID: "1", JobAgentConfig: map[string]any{"key": "new_value"}}},
+			},
 		},
 	}
 
 	updateJobExternalID := JobRepositoryTest{
 		name: "updates a job's external id",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", ExternalID: &[]string{"1"}[0]}},
-			{updateJob: &job.Job{ID: "1", ExternalID: &[]string{"2"}[0]}},
-			{expectedJobs: []job.Job{{ID: "1", ExternalID: &[]string{"2"}[0]}}},
+			{
+				createJob:    &job.Job{ID: "1", ExternalID: &[]string{"1"}[0]},
+				expectedJobs: []job.Job{{ID: "1", ExternalID: &[]string{"1"}[0]}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", ExternalID: &[]string{"2"}[0]},
+				expectedJobs: []job.Job{{ID: "1", ExternalID: &[]string{"2"}[0]}},
+			},
 		},
 	}
 
 	updateJobStatus := JobRepositoryTest{
 		name: "updates a job's status",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", Status: job.JobStatusPending}},
-			{updateJob: &job.Job{ID: "1", Status: job.JobStatusInProgress}},
-			{expectedJobs: []job.Job{{ID: "1", Status: job.JobStatusInProgress}}},
+			{
+				createJob:    &job.Job{ID: "1", Status: job.JobStatusPending},
+				expectedJobs: []job.Job{{ID: "1", Status: job.JobStatusPending}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", Status: job.JobStatusInProgress},
+				expectedJobs: []job.Job{{ID: "1", Status: job.JobStatusInProgress}},
+			},
 		},
 	}
 
 	updateJobReason := JobRepositoryTest{
 		name: "updates a job's reason",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", Reason: job.JobReasonEnvPolicyOverride}},
-			{updateJob: &job.Job{ID: "1", Reason: job.JobReasonConfigPolicyOverride}},
-			{expectedJobs: []job.Job{{ID: "1", Reason: job.JobReasonConfigPolicyOverride}}},
+			{
+				createJob:    &job.Job{ID: "1", Reason: job.JobReasonEnvPolicyOverride},
+				expectedJobs: []job.Job{{ID: "1", Reason: job.JobReasonEnvPolicyOverride}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", Reason: job.JobReasonConfigPolicyOverride},
+				expectedJobs: []job.Job{{ID: "1", Reason: job.JobReasonConfigPolicyOverride}},
+			},
 		},
 	}
 
 	updateJobMessage := JobRepositoryTest{
 		name: "updates a job's message",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", Message: &[]string{"1"}[0]}},
-			{updateJob: &job.Job{ID: "1", Message: &[]string{"2"}[0]}},
-			{expectedJobs: []job.Job{{ID: "1", Message: &[]string{"2"}[0]}}},
+			{
+				createJob:    &job.Job{ID: "1", Message: &[]string{"1"}[0]},
+				expectedJobs: []job.Job{{ID: "1", Message: &[]string{"1"}[0]}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", Message: &[]string{"2"}[0]},
+				expectedJobs: []job.Job{{ID: "1", Message: &[]string{"2"}[0]}},
+			},
 		},
 	}
 
 	updateJobStartedAt := JobRepositoryTest{
 		name: "updates a job's started at",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", StartedAt: now.Add(-time.Second * 10)}},
-			{updateJob: &job.Job{ID: "1", StartedAt: now.Add(-time.Second * 5)}},
-			{expectedJobs: []job.Job{{ID: "1", StartedAt: now.Add(-time.Second * 5)}}},
+			{
+				createJob:    &job.Job{ID: "1", StartedAt: now.Add(-time.Second * 10)},
+				expectedJobs: []job.Job{{ID: "1", StartedAt: now.Add(-time.Second * 10)}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", StartedAt: now.Add(-time.Second * 5)},
+				expectedJobs: []job.Job{{ID: "1", StartedAt: now.Add(-time.Second * 5)}},
+			},
 		},
 	}
 
 	updateJobCompletedAt := JobRepositoryTest{
 		name: "updates a job's completed at",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", CompletedAt: now.Add(-time.Second * 10)}},
-			{updateJob: &job.Job{ID: "1", CompletedAt: now.Add(-time.Second * 5)}},
-			{expectedJobs: []job.Job{{ID: "1", CompletedAt: now.Add(-time.Second * 5)}}},
+			{
+				createJob:    &job.Job{ID: "1", CompletedAt: now.Add(-time.Second * 10)},
+				expectedJobs: []job.Job{{ID: "1", CompletedAt: now.Add(-time.Second * 10)}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1", CompletedAt: now.Add(-time.Second * 5)},
+				expectedJobs: []job.Job{{ID: "1", CompletedAt: now.Add(-time.Second * 5)}},
+			},
 		},
 	}
 
 	removeJob := JobRepositoryTest{
 		name: "removes a job",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1"}},
-			{removeJob: &job.Job{ID: "1"}},
-			{expectedJobs: []job.Job{}},
+			{
+				createJob:    &job.Job{ID: "1"},
+				expectedJobs: []job.Job{{ID: "1"}},
+			},
+			{
+				removeJob:    &job.Job{ID: "1"},
+				expectedJobs: []job.Job{},
+			},
 		},
 	}
-
-	tenSecondsBefore := now.Add(-time.Second * 10)
-	fiveSecondsBefore := now.Add(-time.Second * 5)
-	oneSecondBefore := now.Add(-time.Second * 1)
-	oneSecondAfter := now.Add(time.Second * 1)
-	fiveSecondsAfter := now.Add(time.Second * 5)
-	tenSecondsAfter := now.Add(time.Second * 10)
 
 	sorting := JobRepositoryTest{
 		name: "sorts jobs by updated at",
 		steps: []JobRepositoryTestStep{
-			{createJob: &job.Job{ID: "1", UpdatedAt: tenSecondsBefore}},
-			{createJob: &job.Job{ID: "2", UpdatedAt: fiveSecondsBefore}},
-			{createJob: &job.Job{ID: "3", UpdatedAt: oneSecondBefore}},
-			{expectedJobs: []job.Job{
-				{ID: "3", UpdatedAt: oneSecondBefore},
-				{ID: "2", UpdatedAt: fiveSecondsBefore},
-				{ID: "1", UpdatedAt: tenSecondsBefore},
-			}},
-			{updateJob: &job.Job{ID: "1", UpdatedAt: tenSecondsAfter}},
-			{expectedJobs: []job.Job{
-				{ID: "1", UpdatedAt: tenSecondsAfter},
-				{ID: "3", UpdatedAt: oneSecondBefore},
-				{ID: "2", UpdatedAt: fiveSecondsBefore},
-			}},
-			{updateJob: &job.Job{ID: "2", UpdatedAt: oneSecondAfter}},
-			{expectedJobs: []job.Job{
-				{ID: "1", UpdatedAt: tenSecondsAfter},
-				{ID: "2", UpdatedAt: oneSecondAfter},
-				{ID: "3", UpdatedAt: oneSecondBefore},
-			}},
-			{updateJob: &job.Job{ID: "3", UpdatedAt: fiveSecondsAfter}},
-			{expectedJobs: []job.Job{
-				{ID: "1", UpdatedAt: tenSecondsAfter},
-				{ID: "3", UpdatedAt: fiveSecondsAfter},
-				{ID: "2", UpdatedAt: oneSecondAfter},
-			}},
+			{
+				createJob:    &job.Job{ID: "1"},
+				expectedJobs: []job.Job{{ID: "1"}},
+			},
+			{
+				createJob:    &job.Job{ID: "2"},
+				expectedJobs: []job.Job{{ID: "2"}, {ID: "1"}},
+			},
+			{
+				createJob:    &job.Job{ID: "3"},
+				expectedJobs: []job.Job{{ID: "3"}, {ID: "2"}, {ID: "1"}},
+			},
+			{
+				updateJob:    &job.Job{ID: "1"},
+				expectedJobs: []job.Job{{ID: "1"}, {ID: "3"}, {ID: "2"}},
+			},
+			{
+				updateJob:    &job.Job{ID: "2"},
+				expectedJobs: []job.Job{{ID: "2"}, {ID: "1"}, {ID: "3"}},
+			},
+			{
+				updateJob:    &job.Job{ID: "3"},
+				expectedJobs: []job.Job{{ID: "3"}, {ID: "2"}, {ID: "1"}},
+			},
 		},
 	}
 
@@ -213,10 +256,12 @@ func TestJobRepository_BasicCRUD(t *testing.T) {
 					assert.Assert(t, !repository.Exists(ctx, step.removeJob.GetID()), "job should not exist")
 				}
 
-				for _, expectedJob := range step.expectedJobs {
+				actualJobs := repository.GetAll(ctx)
+				assert.Equal(t, len(actualJobs), len(step.expectedJobs))
+
+				for i, expectedJob := range step.expectedJobs {
 					assert.Assert(t, repository.Exists(ctx, expectedJob.GetID()), "job should exist")
-					actualJob := repository.Get(ctx, expectedJob.GetID())
-					assert.Assert(t, actualJob != nil)
+					actualJob := actualJobs[i]
 
 					assert.Equal(t, expectedJob.GetID(), actualJob.GetID())
 
