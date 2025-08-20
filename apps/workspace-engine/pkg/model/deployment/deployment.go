@@ -44,6 +44,8 @@ type DeploymentVersion struct {
 
 	Config map[string]any `json:"config"`
 
+	JobAgentID *string `json:"jobAgentId,omitempty"`
+
 	JobAgentConfig map[string]any `json:"jobAgentConfig"`
 
 	Message *string `json:"message,omitempty"`
@@ -57,4 +59,12 @@ func (d DeploymentVersion) GetID() string {
 
 func (d DeploymentVersion) GetCreatedAt() time.Time {
 	return d.CreatedAt
+}
+
+func (d DeploymentVersion) GetJobAgentID() *string {
+	return d.JobAgentID
+}
+
+func (d DeploymentVersion) GetJobAgentConfig() map[string]any {
+	return d.JobAgentConfig
 }
