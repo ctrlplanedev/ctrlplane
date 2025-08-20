@@ -2,6 +2,7 @@ package workspace
 
 import (
 	deploymentversion "workspace-engine/pkg/engine/deployment-version"
+	"workspace-engine/pkg/engine/job"
 	epolicy "workspace-engine/pkg/engine/policy"
 	"workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/engine/policy/rules"
@@ -12,6 +13,7 @@ type WorkspaceRepository struct {
 	Policy            *epolicy.PolicyRepository
 	DeploymentVersion *deploymentversion.DeploymentVersionRepository
 	Rule              *rules.RuleRepository
+	Job               *job.JobRepository
 }
 
 func NewWorkspaceRepository() *WorkspaceRepository {
@@ -20,5 +22,6 @@ func NewWorkspaceRepository() *WorkspaceRepository {
 		Policy:            epolicy.NewPolicyRepository(),
 		DeploymentVersion: deploymentversion.NewDeploymentVersionRepository(),
 		Rule:              rules.NewRuleRepository(),
+		Job:               job.NewJobRepository(),
 	}
 }
