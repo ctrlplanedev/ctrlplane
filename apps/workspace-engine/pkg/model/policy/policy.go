@@ -1,5 +1,7 @@
 package policy
 
+import "workspace-engine/pkg/model/policy/rules"
+
 type Policy struct {
 	ID string `json:"id"`
 
@@ -10,6 +12,8 @@ type Policy struct {
 	Priority int `json:"priority"`
 
 	PolicyTargets []PolicyTarget `json:"policyTargets"`
+
+	EnvironmentVersionRolloutRule *rules.EnvironmentVersionRolloutRule `json:"environmentVersionRolloutRule,omitempty"`
 }
 
 func (p Policy) GetID() string {

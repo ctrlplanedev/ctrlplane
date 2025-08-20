@@ -85,6 +85,15 @@ func (r *RuleEvaluationResult) Passed() bool {
 	return r.Decision != PolicyDecisionDeny
 }
 
+type RuleType string
+
+const (
+	RuleTypeMock RuleType = "mock"
+
+	RuleTypeEnvironmentVersionRollout RuleType = "environment-version-rollout"
+	RuleTypeVersionAnyApproval        RuleType = "version-any-approval"
+)
+
 // Rule is a generic interface that defines the contract for all policy rules.
 // Rules are responsible for evaluating targets (which can be any type) against
 // specific criteria and returning detailed evaluation results.
@@ -103,6 +112,8 @@ type Rule interface {
 	// The context can be used for cancellation, timeouts, and passing
 	// request-scoped values needed during evaluation.
 	Evaluate(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (*RuleEvaluationResult, error)
+
+	GetType() RuleType
 }
 
 type BaseRule struct {

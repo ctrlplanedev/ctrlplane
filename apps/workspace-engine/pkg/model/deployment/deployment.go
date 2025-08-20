@@ -54,3 +54,7 @@ type DeploymentVersion struct {
 func (d DeploymentVersion) GetID() string {
 	return d.ID
 }
+
+func (d DeploymentVersion) GetCreatedAt() time.Time {
+	return d.CreatedAt
+}

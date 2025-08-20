@@ -35,6 +35,7 @@ type versionAnyApprovalRecordBuilder struct {
 	reason        *string
 	createdAt     *time.Time
 	updatedAt     *time.Time
+	approvedAt    *time.Time
 }
 
 func NewVersionAnyApprovalRecordBuilder() *versionAnyApprovalRecordBuilder {
@@ -88,6 +89,11 @@ func (b *versionAnyApprovalRecordBuilder) WithUpdatedAt(updatedAt time.Time) *ve
 	return b
 }
 
+func (b *versionAnyApprovalRecordBuilder) WithApprovedAt(approvedAt time.Time) *versionAnyApprovalRecordBuilder {
+	b.approvedAt = &approvedAt
+	return b
+}
+
 func (b *versionAnyApprovalRecordBuilder) Build() *VersionAnyApprovalRecord {
 	r := &VersionAnyApprovalRecord{
 		id:            b.id,
@@ -102,6 +108,9 @@ func (b *versionAnyApprovalRecordBuilder) Build() *VersionAnyApprovalRecord {
 	}
 	if b.updatedAt != nil {
 		r.updatedAt = *b.updatedAt
+	}
+	if b.approvedAt != nil {
+		r.approvedAt = b.approvedAt
 	}
 	return r
 }
@@ -196,6 +205,10 @@ func (v *VersionAnyApprovalRecordRepository) validateRecord(record *VersionAnyAp
 
 	if record.status == "" {
 		return fmt.Errorf("status is empty")
+	}
+
+	if record.status != ApprovalRecordStatusApproved && record.approvedAt != nil {
+		return fmt.Errorf("approvedAt is set for a non-approved record")
 	}
 
 	return nil

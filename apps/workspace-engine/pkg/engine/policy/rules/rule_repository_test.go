@@ -26,6 +26,10 @@ func (r *MockRule) GetPolicyID() string {
 	return r.PolicyID
 }
 
+func (r *MockRule) GetType() rules.RuleType {
+	return rules.RuleTypeMock
+}
+
 func (r *MockRule) Evaluate(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (*rules.RuleEvaluationResult, error) {
 	// Mock implementation - always allow
 	return &rules.RuleEvaluationResult{
