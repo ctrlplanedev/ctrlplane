@@ -46,6 +46,7 @@ func TestEnvironmentVersionRollout(t *testing.T) {
 			rolloutStartTimeFunction: func(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (*time.Time, error) {
 				return nil, nil
 			},
+			releaseTargetsRepo: rt.NewReleaseTargetRepository(),
 		},
 		expectedDecision: rules.PolicyDecisionDeny,
 		expectedError:    nil,
@@ -58,6 +59,7 @@ func TestEnvironmentVersionRollout(t *testing.T) {
 			rolloutStartTimeFunction: func(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (*time.Time, error) {
 				return nil, errors.New("rollout start time function error")
 			},
+			releaseTargetsRepo: rt.NewReleaseTargetRepository(),
 		},
 		expectedDecision: rules.PolicyDecisionDeny,
 		expectedError:    errors.New("rollout start time function error"),
@@ -73,6 +75,7 @@ func TestEnvironmentVersionRollout(t *testing.T) {
 			releaseTargetPositionFunction: func(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (int, error) {
 				return 0, errors.New("release target position function error")
 			},
+			releaseTargetsRepo: rt.NewReleaseTargetRepository(),
 		},
 		expectedDecision: rules.PolicyDecisionDeny,
 		expectedError:    errors.New("release target position function error"),
@@ -91,6 +94,7 @@ func TestEnvironmentVersionRollout(t *testing.T) {
 			offsetFunctionGetter: func(positionGrowthFactor int, timeScaleInterval int, numReleaseTargets int) (PositionOffsetFunction, error) {
 				return nil, errors.New("offset function getter error")
 			},
+			releaseTargetsRepo: rt.NewReleaseTargetRepository(),
 		},
 		expectedDecision: rules.PolicyDecisionDeny,
 		expectedError:    errors.New("offset function getter error"),
@@ -114,6 +118,7 @@ func TestEnvironmentVersionRollout(t *testing.T) {
 					return time.Duration(position) * time.Hour
 				}, nil
 			},
+			releaseTargetsRepo: rt.NewReleaseTargetRepository(),
 		},
 		expectedDecision: rules.PolicyDecisionDeny,
 		expectedError:    nil,
@@ -135,6 +140,7 @@ func TestEnvironmentVersionRollout(t *testing.T) {
 					return time.Duration(position) * time.Hour
 				}, nil
 			},
+			releaseTargetsRepo: rt.NewReleaseTargetRepository(),
 		},
 		expectedDecision: rules.PolicyDecisionAllow,
 		expectedError:    nil,
@@ -155,6 +161,7 @@ func TestEnvironmentVersionRollout(t *testing.T) {
 					return time.Duration(position) * time.Hour
 				}, nil
 			},
+			releaseTargetsRepo: rt.NewReleaseTargetRepository(),
 		},
 		expectedDecision: rules.PolicyDecisionAllow,
 		expectedError:    nil,
