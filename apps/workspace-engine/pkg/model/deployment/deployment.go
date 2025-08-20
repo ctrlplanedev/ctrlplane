@@ -16,6 +16,9 @@ type Deployment struct {
 	SystemID string `json:"systemId"`
 
 	ResourceSelector *conditions.JSONCondition `json:"resourceSelector"`
+
+	JobAgentID     *string        `json:"jobAgentId,omitempty"`
+	JobAgentConfig map[string]any `json:"jobAgentConfig"`
 }
 
 func (d Deployment) GetID() string {
@@ -33,6 +36,14 @@ func (d Deployment) Selector(entity model.MatchableEntity) (*conditions.JSONCond
 	return nil, fmt.Errorf("entity is not a supported selector option")
 }
 
+func (d Deployment) GetJobAgentID() *string {
+	return d.JobAgentID
+}
+
+func (d Deployment) GetJobAgentConfig() map[string]any {
+	return d.JobAgentConfig
+}
+
 type DeploymentVersion struct {
 	ID string `json:"id"`
 
@@ -43,10 +54,6 @@ type DeploymentVersion struct {
 	Tag string `json:"tag"`
 
 	Config map[string]any `json:"config"`
-
-	JobAgentID *string `json:"jobAgentId,omitempty"`
-
-	JobAgentConfig map[string]any `json:"jobAgentConfig"`
 
 	Message *string `json:"message,omitempty"`
 
@@ -59,12 +66,4 @@ func (d DeploymentVersion) GetID() string {
 
 func (d DeploymentVersion) GetCreatedAt() time.Time {
 	return d.CreatedAt
-}
-
-func (d DeploymentVersion) GetJobAgentID() *string {
-	return d.JobAgentID
-}
-
-func (d DeploymentVersion) GetJobAgentConfig() map[string]any {
-	return d.JobAgentConfig
 }
