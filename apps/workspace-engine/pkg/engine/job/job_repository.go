@@ -29,7 +29,8 @@ func (jr *JobRepository) GetAll(ctx context.Context) []*job.Job {
 
 	jobs := make([]*job.Job, 0, len(jr.jobs))
 	for _, job := range jr.jobs {
-		jobs = append(jobs, job)
+		jobCopy := *job
+		jobs = append(jobs, &jobCopy)
 	}
 
 	sort.Slice(jobs, func(i, j int) bool {
@@ -43,7 +44,13 @@ func (jr *JobRepository) Get(ctx context.Context, jobID string) *job.Job {
 	jr.mu.RLock()
 	defer jr.mu.RUnlock()
 
-	return jr.jobs[jobID]
+	job := jr.jobs[jobID]
+	if job == nil {
+		return nil
+	}
+
+	jobCopy := *job
+	return &jobCopy
 }
 
 func (jr *JobRepository) Create(ctx context.Context, job *job.Job) error {
@@ -58,15 +65,18 @@ func (jr *JobRepository) Create(ctx context.Context, job *job.Job) error {
 		return fmt.Errorf("job already exists")
 	}
 
+	jobCopy := *job
+	jobCopyPtr := &jobCopy
+
 	now := time.Now().UTC()
-	if job.CreatedAt.IsZero() {
-		job.CreatedAt = now
+	if jobCopy.CreatedAt.IsZero() {
+		jobCopyPtr.CreatedAt = now
 	}
-	if job.UpdatedAt.IsZero() {
-		job.UpdatedAt = now
+	if jobCopyPtr.UpdatedAt.IsZero() {
+		jobCopyPtr.UpdatedAt = now
 	}
 
-	jr.jobs[job.GetID()] = job
+	jr.jobs[jobCopyPtr.GetID()] = jobCopyPtr
 
 	return nil
 }
@@ -79,20 +89,49 @@ func (jr *JobRepository) Update(ctx context.Context, job *job.Job) error {
 		return fmt.Errorf("job is nil")
 	}
 
-	currentJob, ok := jr.jobs[job.GetID()]
+	currentJobPtr, ok := jr.jobs[job.GetID()]
 	if !ok {
 		return fmt.Errorf("job does not exist")
 	}
 
-	isUpdatedAtStale := job.UpdatedAt.IsZero() ||
-		job.UpdatedAt.Before(currentJob.UpdatedAt) ||
-		job.UpdatedAt.Equal(currentJob.UpdatedAt)
+	merged := *currentJobPtr
 
-	if isUpdatedAtStale {
-		job.UpdatedAt = time.Now().UTC()
+	// Merge mutable fields from new job into current job. Zero values are not overwritten.
+	if job.JobAgentID != nil {
+		merged.JobAgentID = job.JobAgentID
 	}
 
-	jr.jobs[job.GetID()] = job
+	if job.JobAgentConfig != nil {
+		merged.JobAgentConfig = job.JobAgentConfig
+	}
+
+	if job.ExternalID != nil {
+		merged.ExternalID = job.ExternalID
+	}
+
+	if job.Status != "" {
+		merged.Status = job.Status
+	}
+
+	if job.Reason != "" {
+		merged.Reason = job.Reason
+	}
+
+	if job.Message != nil {
+		merged.Message = job.Message
+	}
+
+	if !job.StartedAt.IsZero() {
+		merged.StartedAt = job.StartedAt
+	}
+
+	if !job.CompletedAt.IsZero() {
+		merged.CompletedAt = job.CompletedAt
+	}
+
+	merged.UpdatedAt = time.Now().UTC()
+
+	jr.jobs[merged.GetID()] = &merged
 
 	return nil
 }
