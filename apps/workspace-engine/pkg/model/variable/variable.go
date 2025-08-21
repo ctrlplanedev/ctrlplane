@@ -5,7 +5,7 @@ import (
 	"workspace-engine/pkg/model/resource"
 )
 
-type VariableValue interface {
+type Variable interface {
 	GetID() string
 	GetKey() string
 	Resolve(ctx context.Context, resource *resource.Resource) (string, error)

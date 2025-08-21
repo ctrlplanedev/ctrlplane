@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceVariable interface {
-	VariableValue
+	Variable
 	GetResourceID() string
 }
 
