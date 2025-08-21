@@ -12,7 +12,7 @@ type ResourceVariable interface {
 	GetResourceID() string
 }
 
-type DirectResourceVariableValue struct {
+type DirectResourceVariable struct {
 	ID         string `json:"id"`
 	ResourceID string `json:"resourceId"`
 	Key        string `json:"key"`
@@ -20,27 +20,27 @@ type DirectResourceVariableValue struct {
 	Sensitive  bool   `json:"sensitive"`
 }
 
-func (v *DirectResourceVariableValue) GetID() string {
+func (v *DirectResourceVariable) GetID() string {
 	return v.ID
 }
 
-func (v *DirectResourceVariableValue) GetResourceID() string {
+func (v *DirectResourceVariable) GetResourceID() string {
 	return v.ResourceID
 }
 
-func (v *DirectResourceVariableValue) GetKey() string {
+func (v *DirectResourceVariable) GetKey() string {
 	return v.Key
 }
 
-func (v *DirectResourceVariableValue) GetValue() any {
+func (v *DirectResourceVariable) GetValue() any {
 	return v.Value
 }
 
-func (v *DirectResourceVariableValue) IsSensitive() bool {
+func (v *DirectResourceVariable) IsSensitive() bool {
 	return v.Sensitive
 }
 
-func (v *DirectResourceVariableValue) Resolve(ctx context.Context, resource *resource.Resource) (string, error) {
+func (v *DirectResourceVariable) Resolve(ctx context.Context, resource *resource.Resource) (string, error) {
 	if v.Sensitive {
 		// TODO: encryption
 		return "", errors.New("sensitive variable not supported")
