@@ -5,7 +5,7 @@ import (
 	"errors"
 	rt "workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/model/deployment"
-	"workspace-engine/pkg/model/job"
+	jobmodel "workspace-engine/pkg/model/job"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -24,7 +24,7 @@ func NewJobDispatcher(wsRepo *WorkspaceRepository) *JobDispatcher {
 	return &JobDispatcher{repository: wsRepo}
 }
 
-func validateRequest(request JobDispatchRequest) error {
+func (jd *JobDispatcher) validateRequest(request JobDispatchRequest) error {
 	if request.ReleaseTarget == nil {
 		return errors.New("release target is required")
 	}
@@ -34,8 +34,8 @@ func validateRequest(request JobDispatchRequest) error {
 	return nil
 }
 
-func (jd *JobDispatcher) createJob(ctx context.Context, request JobDispatchRequest) (*job.Job, error) {
-	if err := validateRequest(request); err != nil {
+func (jd *JobDispatcher) createJob(request JobDispatchRequest) (*jobmodel.Job, error) {
+	if err := jd.validateRequest(request); err != nil {
 		log.Error("Invalid request", "error", err)
 		return nil, err
 	}
@@ -49,19 +49,19 @@ func (jd *JobDispatcher) createJob(ctx context.Context, request JobDispatchReque
 
 	jobAgentConfig := deployment.GetJobAgentConfig()
 
-	return &job.Job{
+	return &jobmodel.Job{
 		ID:             uuid.New().String(),
 		JobAgentID:     jobAgentID,
 		JobAgentConfig: jobAgentConfig,
-		Status:         job.JobStatusPending,
-		Reason:         job.JobReasonPolicyPassing,
+		Status:         jobmodel.JobStatusPending,
+		Reason:         jobmodel.JobReasonPolicyPassing,
 	}, nil
 }
 
 func (jd *JobDispatcher) DispatchJobs(ctx context.Context, requests []JobDispatchRequest) error {
 	log.Info("Dispatching jobs", "count", len(requests))
 	for _, request := range requests {
-		job, err := jd.createJob(ctx, request)
+		job, err := jd.createJob(request)
 		if err != nil {
 			log.Error("Error creating job", "error", err)
 			continue
@@ -71,6 +71,24 @@ func (jd *JobDispatcher) DispatchJobs(ctx context.Context, requests []JobDispatc
 		}
 
 		jd.repository.Job.Create(ctx, job)
+
+		jobAgentID := job.GetJobAgentID()
+		if jobAgentID == nil || *jobAgentID == "" {
+			log.Info("No job agent configured for job", "job", job.ID, "Skipping request", "releaseTarget", request.ReleaseTarget.GetID(), "version", request.Version.ID)
+			continue
+		}
+
+		jobAgentPtr := jd.repository.JobAgent.Get(ctx, *jobAgentID)
+		if jobAgentPtr == nil {
+			log.Error("Job agent not found", "job", job.ID, "jobAgentID", *jobAgentID)
+			continue
+		}
+
+		jobAgent := *jobAgentPtr
+		if err := jobAgent.DispatchJob(ctx, job); err != nil {
+			log.Error("Job agent failed to dispatch job", "job", job.ID, "jobAgentID", *jobAgentID, "error", err)
+			continue
+		}
 	}
 
 	return nil
