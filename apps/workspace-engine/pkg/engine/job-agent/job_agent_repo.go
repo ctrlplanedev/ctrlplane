@@ -47,7 +47,7 @@ func (r *JobAgentRepository) Create(ctx context.Context, agent *JobAgent) error 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if agent == nil {
+	if agent == nil || *agent == nil {
 		return errors.New("job agent is nil")
 	}
 
@@ -67,7 +67,7 @@ func (r *JobAgentRepository) Update(ctx context.Context, agent *JobAgent) error 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if agent == nil {
+	if agent == nil || *agent == nil {
 		return errors.New("job agent is nil")
 	}
 

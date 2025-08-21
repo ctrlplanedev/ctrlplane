@@ -5,7 +5,7 @@ import (
 	"errors"
 	rt "workspace-engine/pkg/engine/policy/releasetargets"
 	"workspace-engine/pkg/model/deployment"
-	"workspace-engine/pkg/model/job"
+	jobmodel "workspace-engine/pkg/model/job"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -34,7 +34,7 @@ func (jd *JobDispatcher) validateRequest(request JobDispatchRequest) error {
 	return nil
 }
 
-func (jd *JobDispatcher) createJob(request JobDispatchRequest) (*job.Job, error) {
+func (jd *JobDispatcher) createJob(request JobDispatchRequest) (*jobmodel.Job, error) {
 	if err := jd.validateRequest(request); err != nil {
 		log.Error("Invalid request", "error", err)
 		return nil, err
@@ -49,12 +49,12 @@ func (jd *JobDispatcher) createJob(request JobDispatchRequest) (*job.Job, error)
 
 	jobAgentConfig := deployment.GetJobAgentConfig()
 
-	return &job.Job{
+	return &jobmodel.Job{
 		ID:             uuid.New().String(),
 		JobAgentID:     jobAgentID,
 		JobAgentConfig: jobAgentConfig,
-		Status:         job.JobStatusPending,
-		Reason:         job.JobReasonPolicyPassing,
+		Status:         jobmodel.JobStatusPending,
+		Reason:         jobmodel.JobReasonPolicyPassing,
 	}, nil
 }
 

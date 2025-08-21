@@ -246,4 +246,11 @@ func TestNilHandling(t *testing.T) {
 
 	err = repo.Update(ctx, nil)
 	assertEqualError(t, err, errors.New("job agent is nil"))
+
+	var nilIFace JobAgent = nil
+	err = repo.Create(ctx, &nilIFace)
+	assertEqualError(t, err, errors.New("job agent is nil"))
+
+	err = repo.Update(ctx, &nilIFace)
+	assertEqualError(t, err, errors.New("job agent is nil"))
 }
