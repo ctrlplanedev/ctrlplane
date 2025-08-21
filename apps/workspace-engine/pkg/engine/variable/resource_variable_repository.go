@@ -26,11 +26,11 @@ func (r *ResourceVariableRepository) GetAll(ctx context.Context) []*ResourceVari
 	var variables []*ResourceVariable
 	for _, resourceVariables := range r.variables {
 		for _, variable := range resourceVariables {
-			variableCopy := *variable
-			if variableCopy == nil {
+			if variable == nil || *variable == nil {
 				continue
 			}
 
+			variableCopy := *variable
 			variables = append(variables, &variableCopy)
 		}
 	}
@@ -92,6 +92,27 @@ func (r *ResourceVariableRepository) GetByResourceIDAndKey(ctx context.Context, 
 	return nil
 }
 
+func (r *ResourceVariableRepository) ensureVariableUniqueness(resourceID string, variable *ResourceVariable) error {
+	variableCopy := *variable
+	if _, ok := r.variables[resourceID][variableCopy.GetKey()]; ok {
+		return fmt.Errorf("variable already exists for resource %s and key %s", resourceID, variableCopy.GetKey())
+	}
+
+	for _, resourceVariables := range r.variables {
+		for _, existingVariable := range resourceVariables {
+			if existingVariable == nil || *existingVariable == nil {
+				continue
+			}
+			existingVariableCopy := *existingVariable
+			if existingVariableCopy.GetID() == variableCopy.GetID() {
+				return fmt.Errorf("variable already exists with ID %s", variableCopy.GetID())
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *ResourceVariableRepository) Create(ctx context.Context, variable *ResourceVariable) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -108,8 +129,8 @@ func (r *ResourceVariableRepository) Create(ctx context.Context, variable *Resou
 		r.variables[resourceID] = make(map[string]*ResourceVariable)
 	}
 
-	if _, ok := r.variables[resourceID][key]; ok {
-		return fmt.Errorf("variable already exists for resource %s and key %s", resourceID, key)
+	if err := r.ensureVariableUniqueness(resourceID, variable); err != nil {
+		return err
 	}
 
 	r.variables[resourceID][key] = &variableCopy

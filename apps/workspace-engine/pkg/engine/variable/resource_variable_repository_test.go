@@ -246,6 +246,53 @@ func TestResourceVariableRepository(t *testing.T) {
 		},
 	}
 
+	throwsErrorOnDuplicateID := resourceVariableRepositoryTest{
+		name: "throws error on duplicate ID",
+		steps: []resourceVariableRepositoryTestStep{
+			{
+				createResourceVariable: &DirectResourceVariable{
+					id:         "3",
+					resourceID: "1",
+					key:        "key2",
+					value:      "value",
+					sensitive:  false,
+				},
+				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+					"1": {
+						"key2": {
+							id:         "3",
+							resourceID: "1",
+							key:        "key2",
+							value:      "value",
+							sensitive:  false,
+						},
+					},
+				},
+			},
+			{
+				createResourceVariable: &DirectResourceVariable{
+					id:         "3",
+					resourceID: "1",
+					key:        "key3",
+					value:      "value",
+					sensitive:  false,
+				},
+				expectedError: errors.New("variable already exists with ID 3"),
+				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+					"1": {
+						"key2": {
+							id:         "3",
+							resourceID: "1",
+							key:        "key2",
+							value:      "value",
+							sensitive:  false,
+						},
+					},
+				},
+			},
+		},
+	}
+
 	throwsErrorOnDuplicateKey := resourceVariableRepositoryTest{
 		name: "throws error on duplicate key for a resource",
 		steps: []resourceVariableRepositoryTestStep{
@@ -408,6 +455,7 @@ func TestResourceVariableRepository(t *testing.T) {
 		createResourceVariable,
 		updateResourceVariable,
 		deleteResourceVariable,
+		throwsErrorOnDuplicateID,
 		throwsErrorOnDuplicateKey,
 		throwsErrorOnUpdateNonExistentResource,
 		throwsErrorOnUpdateNonExistentKey,
