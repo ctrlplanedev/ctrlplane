@@ -44,10 +44,10 @@ func (r *ResourceVariableRepository) Get(ctx context.Context, id string) *Resour
 
 	for _, resourceVariables := range r.variables {
 		for _, variable := range resourceVariables {
-			variableCopy := *variable
-			if variableCopy == nil {
-				return nil
+			if variable == nil || *variable == nil {
+				continue
 			}
+			variableCopy := *variable
 			if variableCopy.GetID() == id {
 				return &variableCopy
 			}
@@ -64,11 +64,10 @@ func (r *ResourceVariableRepository) GetAllByResourceID(ctx context.Context, res
 	var variables []*ResourceVariable
 	if resourceVariables, ok := r.variables[resourceID]; ok {
 		for _, variable := range resourceVariables {
-			variableCopy := *variable
-			if variableCopy == nil {
+			if variable == nil || *variable == nil {
 				continue
 			}
-
+			variableCopy := *variable
 			variables = append(variables, &variableCopy)
 		}
 	}
@@ -82,10 +81,10 @@ func (r *ResourceVariableRepository) GetByResourceIDAndKey(ctx context.Context, 
 
 	if resourceVariables, ok := r.variables[resourceID]; ok {
 		if variable, ok := resourceVariables[key]; ok {
-			variableCopy := *variable
-			if variableCopy == nil {
+			if variable == nil || *variable == nil {
 				return nil
 			}
+			variableCopy := *variable
 			return &variableCopy
 		}
 	}
@@ -156,12 +155,12 @@ func (r *ResourceVariableRepository) Delete(ctx context.Context, id string) erro
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if resourceVariables, ok := r.variables[id]; ok {
+	for _, resourceVariables := range r.variables {
 		for _, variable := range resourceVariables {
-			variableCopy := *variable
-			if variableCopy == nil {
+			if variable == nil || *variable == nil {
 				continue
 			}
+			variableCopy := *variable
 			if variableCopy.GetID() == id {
 				delete(resourceVariables, variableCopy.GetKey())
 			}
@@ -177,10 +176,10 @@ func (r *ResourceVariableRepository) Exists(ctx context.Context, id string) bool
 
 	for _, resourceVariables := range r.variables {
 		for _, variable := range resourceVariables {
-			variableCopy := *variable
-			if variableCopy == nil {
+			if variable == nil || *variable == nil {
 				continue
 			}
+			variableCopy := *variable
 			if variableCopy.GetID() == id {
 				return true
 			}

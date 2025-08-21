@@ -221,7 +221,7 @@ func TestResourceVariableRepository(t *testing.T) {
 		steps: []resourceVariableRepositoryTestStep{
 			{
 				createResourceVariable: &DirectResourceVariable{
-					id:         "1",
+					id:         "2",
 					resourceID: "1",
 					key:        "key",
 					value:      "value",
@@ -230,7 +230,7 @@ func TestResourceVariableRepository(t *testing.T) {
 				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
 					"1": {
 						"key": {
-							id:         "1",
+							id:         "2",
 							resourceID: "1",
 							key:        "key",
 							value:      "value",
@@ -240,7 +240,7 @@ func TestResourceVariableRepository(t *testing.T) {
 				},
 			},
 			{
-				deleteResourceVariable:    &DirectResourceVariable{id: "1"},
+				deleteResourceVariable:    &DirectResourceVariable{id: "2"},
 				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{"1": {}},
 			},
 		},
