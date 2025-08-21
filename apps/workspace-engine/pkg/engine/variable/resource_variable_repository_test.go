@@ -5,15 +5,17 @@ import (
 	"errors"
 	"testing"
 
+	modelvariable "workspace-engine/pkg/model/variable"
+
 	"gotest.tools/assert"
 )
 
 type resourceVariableRepositoryTestStep struct {
-	createResourceVariable *DirectResourceVariable
-	updateResourceVariable *DirectResourceVariable
-	deleteResourceVariable *DirectResourceVariable
+	createResourceVariable *modelvariable.DirectResourceVariableValue
+	updateResourceVariable *modelvariable.DirectResourceVariableValue
+	deleteResourceVariable *modelvariable.DirectResourceVariableValue
 
-	expectedResourceVariables map[string]map[string]*DirectResourceVariable
+	expectedResourceVariables map[string]map[string]*modelvariable.DirectResourceVariableValue
 	expectedError             error
 }
 
@@ -40,13 +42,13 @@ func (b *testBundle) assertEqualError(actualError error) {
 
 func (b *testBundle) executeStep() *testBundle {
 	if b.step.createResourceVariable != nil {
-		var variable ResourceVariable = b.step.createResourceVariable
+		var variable modelvariable.ResourceVariable = b.step.createResourceVariable
 		err := b.repo.Create(b.ctx, &variable)
 		b.assertEqualError(err)
 	}
 
 	if b.step.updateResourceVariable != nil {
-		var variable ResourceVariable = b.step.updateResourceVariable
+		var variable modelvariable.ResourceVariable = b.step.updateResourceVariable
 		err := b.repo.Update(b.ctx, &variable)
 		b.assertEqualError(err)
 	}
@@ -60,8 +62,8 @@ func (b *testBundle) executeStep() *testBundle {
 	return b
 }
 
-func (b *testBundle) assertVariableEqual(actualVariable ResourceVariable, expectedVariable *DirectResourceVariable) {
-	actualVariableCastedPtr := actualVariable.(*DirectResourceVariable)
+func (b *testBundle) assertVariableEqual(actualVariable modelvariable.ResourceVariable, expectedVariable *modelvariable.DirectResourceVariableValue) {
+	actualVariableCastedPtr := actualVariable.(*modelvariable.DirectResourceVariableValue)
 	assert.Equal(b.t, actualVariableCastedPtr.GetID(), expectedVariable.GetID())
 	assert.Equal(b.t, actualVariableCastedPtr.GetResourceID(), expectedVariable.GetResourceID())
 	assert.Equal(b.t, actualVariableCastedPtr.GetKey(), expectedVariable.GetKey())
@@ -69,7 +71,7 @@ func (b *testBundle) assertVariableEqual(actualVariable ResourceVariable, expect
 	assert.Equal(b.t, actualVariableCastedPtr.IsSensitive(), expectedVariable.IsSensitive())
 }
 
-func (b *testBundle) validateVariableReturnedFromGet(variable *DirectResourceVariable) *testBundle {
+func (b *testBundle) validateVariableReturnedFromGet(variable *modelvariable.DirectResourceVariableValue) *testBundle {
 	actualVariable := b.repo.Get(b.ctx, variable.GetID())
 	assert.Assert(b.t, actualVariable != nil)
 	assert.Assert(b.t, *actualVariable != nil)
@@ -77,7 +79,7 @@ func (b *testBundle) validateVariableReturnedFromGet(variable *DirectResourceVar
 	return b
 }
 
-func (b *testBundle) validateVariableReturnedFromGetAll(variable *DirectResourceVariable) *testBundle {
+func (b *testBundle) validateVariableReturnedFromGetAll(variable *modelvariable.DirectResourceVariableValue) *testBundle {
 	allVariables := b.repo.GetAll(b.ctx)
 	for _, actualVariable := range allVariables {
 		if actualVariable == nil || *actualVariable == nil {
@@ -92,7 +94,7 @@ func (b *testBundle) validateVariableReturnedFromGetAll(variable *DirectResource
 	return b
 }
 
-func (b *testBundle) validateVariableReturnedFromGetAllByResourceID(variable *DirectResourceVariable) *testBundle {
+func (b *testBundle) validateVariableReturnedFromGetAllByResourceID(variable *modelvariable.DirectResourceVariableValue) *testBundle {
 	resourceVariables := b.repo.GetAllByResourceID(b.ctx, variable.GetResourceID())
 
 	for _, actualVariable := range resourceVariables {
@@ -108,7 +110,7 @@ func (b *testBundle) validateVariableReturnedFromGetAllByResourceID(variable *Di
 	return b
 }
 
-func (b *testBundle) validateVariableReturnedFromGetByResourceIDAndKey(variable *DirectResourceVariable) *testBundle {
+func (b *testBundle) validateVariableReturnedFromGetByResourceIDAndKey(variable *modelvariable.DirectResourceVariableValue) *testBundle {
 	actualVariable := b.repo.GetByResourceIDAndKey(b.ctx, variable.GetResourceID(), variable.GetKey())
 	assert.Assert(b.t, actualVariable != nil)
 	assert.Assert(b.t, *actualVariable != nil)
@@ -116,7 +118,7 @@ func (b *testBundle) validateVariableReturnedFromGetByResourceIDAndKey(variable 
 	return b
 }
 
-func (b *testBundle) validateVariableExists(variable *DirectResourceVariable) *testBundle {
+func (b *testBundle) validateVariableExists(variable *modelvariable.DirectResourceVariableValue) *testBundle {
 	assert.Assert(b.t, b.repo.Exists(b.ctx, variable.GetID()))
 	return b
 }
@@ -148,21 +150,21 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "creates a resource variable",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
@@ -174,41 +176,41 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "updates a resource variable",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
 			},
 			{
-				updateResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key",
-					value:      "value2",
-					sensitive:  false,
+				updateResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value2",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value2",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value2",
+							Sensitive:  false,
 						},
 					},
 				},
@@ -220,28 +222,28 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "deletes a resource variable",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "2",
-					resourceID: "1",
-					key:        "key",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "2",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "2",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "2",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
 			},
 			{
-				deleteResourceVariable:    &DirectResourceVariable{id: "2"},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{"1": {}},
+				deleteResourceVariable:    &modelvariable.DirectResourceVariableValue{ID: "2"},
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{"1": {}},
 			},
 		},
 	}
@@ -250,42 +252,42 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "throws error on duplicate ID",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "3",
-					resourceID: "1",
-					key:        "key2",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "3",
+					ResourceID: "1",
+					Key:        "key2",
+					Value:      "value",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key2": {
-							id:         "3",
-							resourceID: "1",
-							key:        "key2",
-							value:      "value",
-							sensitive:  false,
+							ID:         "3",
+							ResourceID: "1",
+							Key:        "key2",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
 			},
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "3",
-					resourceID: "1",
-					key:        "key3",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "3",
+					ResourceID: "1",
+					Key:        "key3",
+					Value:      "value",
+					Sensitive:  false,
 				},
 				expectedError: errors.New("variable already exists with ID 3"),
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key2": {
-							id:         "3",
-							resourceID: "1",
-							key:        "key2",
-							value:      "value",
-							sensitive:  false,
+							ID:         "3",
+							ResourceID: "1",
+							Key:        "key2",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
@@ -297,42 +299,42 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "throws error on duplicate key for a resource",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
 			},
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "2",
-					resourceID: "1",
-					key:        "key",
-					value:      "value2",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "2",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value2",
+					Sensitive:  false,
 				},
 				expectedError: errors.New("variable already exists for resource 1 and key key"),
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
@@ -344,15 +346,15 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "throws error on update with non existent resource",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				updateResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key",
-					value:      "value",
-					sensitive:  false,
+				updateResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value",
+					Sensitive:  false,
 				},
 				expectedError:             errors.New("resource not found"),
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{},
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{},
 			},
 		},
 	}
@@ -361,42 +363,42 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "throws error on update with non existent key",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
 			},
 			{
-				updateResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key2",
-					value:      "value2",
-					sensitive:  false,
+				updateResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key2",
+					Value:      "value2",
+					Sensitive:  false,
 				},
 				expectedError: errors.New("variable key not found"),
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
@@ -408,42 +410,42 @@ func TestResourceVariableRepository(t *testing.T) {
 		name: "throws error on update with mismatched ID",
 		steps: []resourceVariableRepositoryTestStep{
 			{
-				createResourceVariable: &DirectResourceVariable{
-					id:         "1",
-					resourceID: "1",
-					key:        "key",
-					value:      "value",
-					sensitive:  false,
+				createResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "1",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value",
+					Sensitive:  false,
 				},
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
 			},
 			{
-				updateResourceVariable: &DirectResourceVariable{
-					id:         "2",
-					resourceID: "1",
-					key:        "key",
-					value:      "value2",
-					sensitive:  false,
+				updateResourceVariable: &modelvariable.DirectResourceVariableValue{
+					ID:         "2",
+					ResourceID: "1",
+					Key:        "key",
+					Value:      "value2",
+					Sensitive:  false,
 				},
 				expectedError: errors.New("variable ID mismatch"),
-				expectedResourceVariables: map[string]map[string]*DirectResourceVariable{
+				expectedResourceVariables: map[string]map[string]*modelvariable.DirectResourceVariableValue{
 					"1": {
 						"key": {
-							id:         "1",
-							resourceID: "1",
-							key:        "key",
-							value:      "value",
-							sensitive:  false,
+							ID:         "1",
+							ResourceID: "1",
+							Key:        "key",
+							Value:      "value",
+							Sensitive:  false,
 						},
 					},
 				},
@@ -494,7 +496,7 @@ func TestNilHandling(t *testing.T) {
 	err = repo.Update(ctx, nil)
 	assert.Error(t, err, "variable is nil")
 
-	var nilIFace ResourceVariable = nil
+	var nilIFace modelvariable.ResourceVariable = nil
 	err = repo.Create(ctx, &nilIFace)
 	assert.Error(t, err, "variable is nil")
 
@@ -502,5 +504,5 @@ func TestNilHandling(t *testing.T) {
 	assert.Error(t, err, "variable is nil")
 
 	nonExistent := repo.Get(ctx, "non-existent")
-	assert.Assert(t, nonExistent == (*ResourceVariable)(nil))
+	assert.Assert(t, nonExistent == (*modelvariable.ResourceVariable)(nil))
 }

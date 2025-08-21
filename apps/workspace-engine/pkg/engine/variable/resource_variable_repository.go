@@ -6,24 +6,25 @@ import (
 	"fmt"
 	"sync"
 	"workspace-engine/pkg/model"
+	modelvariable "workspace-engine/pkg/model/variable"
 )
 
-var _ model.Repository[ResourceVariable] = (*ResourceVariableRepository)(nil)
+var _ model.Repository[modelvariable.ResourceVariable] = (*ResourceVariableRepository)(nil)
 
 type ResourceVariableRepository struct {
-	variables map[string]map[string]*ResourceVariable // resourceID -> key -> variable
+	variables map[string]map[string]*modelvariable.ResourceVariable // resourceID -> key -> variable
 	mu        sync.RWMutex
 }
 
 func NewResourceVariableRepository() *ResourceVariableRepository {
-	return &ResourceVariableRepository{variables: make(map[string]map[string]*ResourceVariable)}
+	return &ResourceVariableRepository{variables: make(map[string]map[string]*modelvariable.ResourceVariable)}
 }
 
-func (r *ResourceVariableRepository) GetAll(ctx context.Context) []*ResourceVariable {
+func (r *ResourceVariableRepository) GetAll(ctx context.Context) []*modelvariable.ResourceVariable {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var variables []*ResourceVariable
+	var variables []*modelvariable.ResourceVariable
 	for _, resourceVariables := range r.variables {
 		for _, variable := range resourceVariables {
 			if variable == nil || *variable == nil {
@@ -38,7 +39,7 @@ func (r *ResourceVariableRepository) GetAll(ctx context.Context) []*ResourceVari
 	return variables
 }
 
-func (r *ResourceVariableRepository) Get(ctx context.Context, id string) *ResourceVariable {
+func (r *ResourceVariableRepository) Get(ctx context.Context, id string) *modelvariable.ResourceVariable {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -57,11 +58,11 @@ func (r *ResourceVariableRepository) Get(ctx context.Context, id string) *Resour
 	return nil
 }
 
-func (r *ResourceVariableRepository) GetAllByResourceID(ctx context.Context, resourceID string) []*ResourceVariable {
+func (r *ResourceVariableRepository) GetAllByResourceID(ctx context.Context, resourceID string) []*modelvariable.ResourceVariable {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var variables []*ResourceVariable
+	var variables []*modelvariable.ResourceVariable
 	if resourceVariables, ok := r.variables[resourceID]; ok {
 		for _, variable := range resourceVariables {
 			if variable == nil || *variable == nil {
@@ -75,7 +76,7 @@ func (r *ResourceVariableRepository) GetAllByResourceID(ctx context.Context, res
 	return variables
 }
 
-func (r *ResourceVariableRepository) GetByResourceIDAndKey(ctx context.Context, resourceID, key string) *ResourceVariable {
+func (r *ResourceVariableRepository) GetByResourceIDAndKey(ctx context.Context, resourceID, key string) *modelvariable.ResourceVariable {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -92,7 +93,7 @@ func (r *ResourceVariableRepository) GetByResourceIDAndKey(ctx context.Context, 
 	return nil
 }
 
-func (r *ResourceVariableRepository) ensureVariableUniqueness(resourceID string, variable *ResourceVariable) error {
+func (r *ResourceVariableRepository) ensureVariableUniqueness(resourceID string, variable *modelvariable.ResourceVariable) error {
 	variableCopy := *variable
 	if _, ok := r.variables[resourceID][variableCopy.GetKey()]; ok {
 		return fmt.Errorf("variable already exists for resource %s and key %s", resourceID, variableCopy.GetKey())
@@ -113,7 +114,7 @@ func (r *ResourceVariableRepository) ensureVariableUniqueness(resourceID string,
 	return nil
 }
 
-func (r *ResourceVariableRepository) Create(ctx context.Context, variable *ResourceVariable) error {
+func (r *ResourceVariableRepository) Create(ctx context.Context, variable *modelvariable.ResourceVariable) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -126,7 +127,7 @@ func (r *ResourceVariableRepository) Create(ctx context.Context, variable *Resou
 	key := variableCopy.GetKey()
 
 	if _, ok := r.variables[resourceID]; !ok {
-		r.variables[resourceID] = make(map[string]*ResourceVariable)
+		r.variables[resourceID] = make(map[string]*modelvariable.ResourceVariable)
 	}
 
 	if err := r.ensureVariableUniqueness(resourceID, variable); err != nil {
@@ -138,7 +139,7 @@ func (r *ResourceVariableRepository) Create(ctx context.Context, variable *Resou
 	return nil
 }
 
-func (r *ResourceVariableRepository) Update(ctx context.Context, variable *ResourceVariable) error {
+func (r *ResourceVariableRepository) Update(ctx context.Context, variable *modelvariable.ResourceVariable) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
