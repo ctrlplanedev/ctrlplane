@@ -1,17 +1,5 @@
 package variable
 
-import (
-	"context"
-	"errors"
-	"fmt"
-	"workspace-engine/pkg/model/resource"
-)
-
-type ResourceVariable interface {
-	Variable
-	GetResourceID() string
-}
-
 type DirectResourceVariable struct {
 	ID         string `json:"id"`
 	ResourceID string `json:"resourceId"`
@@ -38,13 +26,4 @@ func (v *DirectResourceVariable) GetValue() any {
 
 func (v *DirectResourceVariable) IsSensitive() bool {
 	return v.Sensitive
-}
-
-func (v *DirectResourceVariable) Resolve(ctx context.Context, resource *resource.Resource) (string, error) {
-	if v.Sensitive {
-		// TODO: encryption
-		return "", errors.New("sensitive variable not supported")
-	}
-
-	return fmt.Sprintf("%v", v.Value), nil
 }
