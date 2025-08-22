@@ -11,32 +11,18 @@ type VariableManager interface {
 }
 
 type WorkspaceVariableManager struct {
-	deploymentVariables *DeploymentVariableRepository
-	managers            []VariableManager
+	getKeys  func(ctx context.Context, deploymentID string) []string
+	managers []VariableManager
 }
 
 func NewWorkspaceVariableManager(
-	deploymentVariables *DeploymentVariableRepository,
+	getKeys func(ctx context.Context, deploymentID string) []string,
 	managers []VariableManager,
 ) *WorkspaceVariableManager {
 	return &WorkspaceVariableManager{
-		deploymentVariables: deploymentVariables,
-		managers:            managers,
+		getKeys:  getKeys,
+		managers: managers,
 	}
-}
-
-func (v *WorkspaceVariableManager) getKeys(ctx context.Context, deploymentID string) []string {
-	deploymentVariables := v.deploymentVariables.GetAllByDeploymentID(ctx, deploymentID)
-	keys := make([]string, 0)
-	for _, variablePtr := range deploymentVariables {
-		if variablePtr == nil || *variablePtr == nil {
-			continue
-		}
-
-		keys = append(keys, (*variablePtr).GetKey())
-	}
-
-	return keys
 }
 
 func (v *WorkspaceVariableManager) ResolveDeploymentVariables(ctx context.Context, resource *resource.Resource, deploymentID string) (map[string]string, error) {
