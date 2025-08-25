@@ -134,6 +134,52 @@ importers:
         specifier: ^5.7.3
         version: 5.8.3
 
+  apps/event-queue:
+    dependencies:
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
+      kafkajs:
+        specifier: ^2.2.4
+        version: 2.2.4
+      zod:
+        specifier: 'catalog:'
+        version: 3.24.2
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:^
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:^
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: catalog:node22
+        version: 22.13.10
+      eslint:
+        specifier: 'catalog:'
+        version: 9.11.1(jiti@2.3.3)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.5.3
+      tsx:
+        specifier: 'catalog:'
+        version: 4.19.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.2
+
   apps/event-worker:
     dependencies:
       '@aws-sdk/client-ec2':
@@ -7678,10 +7724,6 @@ packages:
 
   dotenv@16.0.3:
     resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
-    engines: {node: '>=12'}
-
-  dotenv@16.5.0:
-    resolution: {integrity: sha512-m/C+AwOAr9/W1UOIZUo232ejMNnJAJtYQjUbHoNTBNTJSvqzzDh7vnrei3o3r3m9blf6ZoDkvcw0VmozNRFJxg==}
     engines: {node: '>=12'}
 
   dotenv@16.6.1:
@@ -17372,7 +17414,7 @@ snapshots:
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.16.2
 
   '@types/d3-array@3.2.1': {}
 
@@ -17668,7 +17710,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.16.2
 
   '@typescript-eslint/eslint-plugin@8.13.0(@typescript-eslint/parser@8.13.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.8.2))(eslint@9.11.1(jiti@2.3.3))(typescript@5.8.2)':
     dependencies:
@@ -18951,15 +18993,13 @@ snapshots:
   dotenv-cli@7.4.4:
     dependencies:
       cross-spawn: 7.0.6
-      dotenv: 16.5.0
+      dotenv: 16.6.1
       dotenv-expand: 10.0.0
       minimist: 1.2.8
 
   dotenv-expand@10.0.0: {}
 
   dotenv@16.0.3: {}
-
-  dotenv@16.5.0: {}
 
   dotenv@16.6.1: {}
 
