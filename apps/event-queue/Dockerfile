@@ -28,13 +28,13 @@ COPY tooling/typescript/package.json ./tooling/typescript/package.json
 COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/events/package.json ./packages/events/package.json
 
-COPY apps/workspace-engine/package.json ./apps/workspace-engine/package.json
+COPY apps/event-queue/package.json ./apps/event-queue/package.json
 
 RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/workspace-engine
+RUN turbo build --filter=...@ctrlplane/event-queue
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
@@ -45,6 +45,6 @@ ENV NODE_MAX_OLD_SPACE_SIZE=4096
 
 EXPOSE 3123
 
-WORKDIR apps/workspace-engine/dist/
+WORKDIR apps/event-queue/dist/
 
 CMD ["node", "index.js"]

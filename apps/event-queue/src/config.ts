@@ -12,7 +12,15 @@ export const env = createEnv({
     KAFKA_BROKERS: z
       .string()
       .default("localhost:9092")
-      .transform((val) => val.split(",")),
+      .transform((val) =>
+        val
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      )
+      .refine((arr) => arr.length > 0, {
+        message: "KAFKA_BROKERS must be a non-empty list of brokers",
+      }),
   },
   runtimeEnv: process.env,
 });
