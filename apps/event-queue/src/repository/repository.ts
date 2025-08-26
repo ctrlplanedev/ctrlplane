@@ -1,12 +1,12 @@
 type Entity = { id: string };
 
-interface Repository<T extends Entity> {
-  get(id: string): T | null;
-  getAll(): T[];
-  create(entity: T): T;
-  update(entity: T): T;
-  delete(id: string): T | null;
-  exists(id: string): boolean;
+export interface Repository<T extends Entity> {
+  get(id: string): Promise<T | null> | T | null;
+  getAll(): Promise<T[]> | T[];
+  create(entity: T): Promise<T> | T;
+  update(entity: T): Promise<T> | T;
+  delete(id: string): Promise<T | null> | T | null;
+  exists(id: string): Promise<boolean> | boolean;
 }
 
 export class RepositoryWithID<T extends Entity> implements Repository<T> {
