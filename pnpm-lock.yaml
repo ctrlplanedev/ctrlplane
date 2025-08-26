@@ -136,6 +136,9 @@ importers:
 
   apps/event-queue:
     dependencies:
+      '@ctrlplane/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@ctrlplane/events':
         specifier: workspace:*
         version: link:../../packages/events
@@ -155,9 +158,6 @@ importers:
         specifier: 'catalog:'
         version: 3.24.2
     devDependencies:
-      '@ctrlplane/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@ctrlplane/eslint-config':
         specifier: workspace:^
         version: link:../../tooling/eslint

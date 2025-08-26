@@ -12,6 +12,7 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@t3-oss/env-core": "catalog:",
@@ -20,7 +21,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@ctrlplane/db": "workspace:*",
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
     "@ctrlplane/tsconfig": "workspace:*",
