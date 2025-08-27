@@ -12,6 +12,7 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@t3-oss/env-core": "catalog:",

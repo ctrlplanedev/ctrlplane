@@ -31,7 +31,6 @@ type VersionAnyApprovalRule struct {
 	versionAnyApprovalRecordRepository *VersionAnyApprovalRecordRepository
 	RequiredApprovalsCount             int
 }
-
 func (r *VersionAnyApprovalRule) Evaluate(ctx context.Context, target rt.ReleaseTarget, version deployment.DeploymentVersion) (*rules.RuleEvaluationResult, error) {
 	environmentID := target.Environment.GetID()
 	versionID := version.GetID()
