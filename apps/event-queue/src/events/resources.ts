@@ -5,6 +5,7 @@ import { WorkspaceManager } from "../workspace/workspace.js";
 
 export const newResource: Handler<Event.ResourceCreated> = async (event) => {
   const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+  console.log(ws);
 };
 
 export const updatedResource: Handler<Event.ResourceUpdated> = (event) => {

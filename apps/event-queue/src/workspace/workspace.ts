@@ -1,4 +1,5 @@
 import { SelectorManager } from "../selector/selector.js";
+import { ReleaseTargetManager } from "./release-targets/manager.js";
 
 type WorkspaceOptions = {
   id: string;
@@ -16,7 +17,9 @@ export class Workspace {
 
   constructor(private opts?: WorkspaceOptions) {
     this.selectorManager = new SelectorManager({});
-    this.releaseTargetManager = new ReleaseTargetManager({});
+    this.releaseTargetManager = new ReleaseTargetManager({
+      workspaceId: opts?.id ?? "",
+    });
   }
 }
 
