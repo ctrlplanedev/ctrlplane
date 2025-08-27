@@ -6,12 +6,19 @@ import type {
   Workspace,
 } from "@ctrlplane/db/schema";
 
-export interface Selector<S, E> {
-  upsertEntity(...entity: E[]): Promise<void>;
-  removeEntity(...entity: E[]): Promise<void>;
+type MatchChangeType = "added" | "removed";
+export type MatchChange<E, S> = {
+  entity: E;
+  selector: S;
+  changeType: MatchChangeType;
+};
 
-  upsertSelector(...selector: S[]): Promise<void>;
-  removeSelector(...selector: S[]): Promise<void>;
+export interface Selector<S, E> {
+  upsertEntity(entity: E): Promise<MatchChange<E, S>[]>;
+  removeEntity(entity: E): Promise<MatchChange<E, S>[]>;
+
+  upsertSelector(selector: S): Promise<MatchChange<E, S>[]>;
+  removeSelector(selector: S): Promise<MatchChange<E, S>[]>;
 
   getEntitiesForSelector(selector: S): Promise<E[]>;
   getSelectorsForEntity(entity: E): Promise<S[]>;
@@ -33,49 +40,49 @@ export class SelectorManager {
 
   constructor(private opts: SelectorManagerOptions) {}
 
-  async updateResources(resources: Resource[]) {
+  async updateResource(resource: Resource) {
     await Promise.all([
-      this.environmentResources.upsertEntity(...resources),
-      this.deploymentResources.upsertEntity(...resources),
-      this.policyTargetResources.upsertEntity(...resources),
+      this.environmentResources.upsertEntity(resource),
+      this.deploymentResources.upsertEntity(resource),
+      this.policyTargetResources.upsertEntity(resource),
     ]);
   }
 
-  async updateEnvironments(environments: Environment[]) {
-    await this.policyTargetEnvironments.upsertEntity(...environments);
-    await this.environmentResources.upsertSelector(...environments);
+  async updateEnvironment(environment: Environment) {
+    await this.policyTargetEnvironments.upsertEntity(environment);
+    await this.environmentResources.upsertSelector(environment);
   }
 
-  async updateDeployments(deployments: Deployment[]) {
-    await this.policyTargetDeployments.upsertEntity(...deployments);
-    await this.deploymentResources.upsertSelector(...deployments);
+  async updateDeployment(deployment: Deployment) {
+    await this.policyTargetDeployments.upsertEntity(deployment);
+    await this.deploymentResources.upsertSelector(deployment);
   }
 
-  async removeResources(resources: Resource[]) {
-    await this.environmentResources.removeEntity(...resources);
-    await this.deploymentResources.removeEntity(...resources);
-    await this.policyTargetResources.removeEntity(...resources);
+  async removeResource(resource: Resource) {
+    await this.environmentResources.removeEntity(resource);
+    await this.deploymentResources.removeEntity(resource);
+    await this.policyTargetResources.removeEntity(resource);
   }
 
-  async removeEnvironments(environments: Environment[]) {
-    await this.policyTargetEnvironments.removeEntity(...environments);
-    await this.environmentResources.removeSelector(...environments);
+  async removeEnvironment(environment: Environment) {
+    await this.policyTargetEnvironments.removeEntity(environment);
+    await this.environmentResources.removeSelector(environment);
   }
 
-  async removeDeployments(deployments: Deployment[]) {
-    await this.policyTargetDeployments.removeEntity(...deployments);
-    await this.deploymentResources.removeSelector(...deployments);
+  async removeDeployment(deployment: Deployment) {
+    await this.policyTargetDeployments.removeEntity(deployment);
+    await this.deploymentResources.removeSelector(deployment);
   }
 
-  async upsertPolicyTargets(policyTargets: PolicyTarget[]) {
-    await this.policyTargetResources.upsertSelector(...policyTargets);
-    await this.policyTargetEnvironments.upsertSelector(...policyTargets);
-    await this.policyTargetDeployments.upsertSelector(...policyTargets);
+  async upsertPolicyTargets(policyTarget: PolicyTarget) {
+    await this.policyTargetResources.upsertSelector(policyTarget);
+    await this.policyTargetEnvironments.upsertSelector(policyTarget);
+    await this.policyTargetDeployments.upsertSelector(policyTarget);
   }
 
-  async removePolicyTargets(policyTargets: PolicyTarget[]) {
-    await this.policyTargetResources.removeSelector(...policyTargets);
-    await this.policyTargetEnvironments.removeSelector(...policyTargets);
-    await this.policyTargetDeployments.removeSelector(...policyTargets);
+  async removePolicyTargets(policyTarget: PolicyTarget) {
+    await this.policyTargetResources.removeSelector(policyTarget);
+    await this.policyTargetEnvironments.removeSelector(policyTarget);
+    await this.policyTargetDeployments.removeSelector(policyTarget);
   }
 }

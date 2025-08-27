@@ -7,13 +7,13 @@ type WorkspaceOptions = {
 
   operation: "update" | "delete";
 
-  resources?: schema.Resource[];
-  environments?: schema.Environment[];
-  deployments?: schema.Deployment[];
-  deploymentVersions?: schema.DeploymentVersion[];
-  policies?: schema.Policy[];
-  jobs?: schema.Job[];
-  jobAgents?: schema.JobAgent[];
+  resource?: schema.Resource;
+  environment?: schema.Environment;
+  deployment?: schema.Deployment;
+  deploymentVersion?: schema.DeploymentVersion;
+  policy?: schema.Policy;
+  job?: schema.Job;
+  jobAgent?: schema.JobAgent;
 
   releaseTargets?: {
     new: schema.ReleaseTarget[];
@@ -36,47 +36,46 @@ export class OperationPipeline {
     return new OperationPipeline({ workspace, operation: "delete" });
   }
 
-  resources(...resources: schema.Resource[]) {
-    this.opts.resources = resources;
+  resource(resource: schema.Resource) {
+    this.opts.resource = resource;
     return this;
   }
 
-  environments(...environments: schema.Environment[]) {
-    this.opts.environments = environments;
+  environment(environment: schema.Environment) {
+    this.opts.environment = environment;
     return this;
   }
 
-  deployments(...deployments: schema.Deployment[]) {
-    this.opts.deployments = deployments;
+  deployment(deployment: schema.Deployment) {
+    this.opts.deployment = deployment;
     return this;
   }
 
   getReleaseTargetChanges() {}
 
   async dispatch() {
-    const {
-      operation,
-      workspace,
-      resources = [],
-      environments = [],
-      deployments = [],
-    } = this.opts;
+    const { operation, workspace, resource, environment, deployment } =
+      this.opts;
 
     const manager = workspace.selectorManager;
 
     switch (operation) {
       case "update":
         await Promise.all([
-          manager.updateResources(resources),
-          manager.updateEnvironments(environments),
-          manager.updateDeployments(deployments),
+          resource ? manager.updateResource(resource) : Promise.resolve(),
+          environment
+            ? manager.updateEnvironment(environment)
+            : Promise.resolve(),
+          deployment ? manager.updateDeployment(deployment) : Promise.resolve(),
         ]);
         break;
       case "delete":
         await Promise.all([
-          manager.removeResources(resources),
-          manager.removeEnvironments(environments),
-          manager.removeDeployments(deployments),
+          resource ? manager.removeResource(resource) : Promise.resolve(),
+          environment
+            ? manager.removeEnvironment(environment)
+            : Promise.resolve(),
+          deployment ? manager.removeDeployment(deployment) : Promise.resolve(),
         ]);
         break;
     }
