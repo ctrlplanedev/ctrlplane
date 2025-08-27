@@ -6,7 +6,11 @@ import type {
   Workspace,
 } from "@ctrlplane/db/schema";
 
-type MatchChangeType = "added" | "removed";
+export enum MatchChangeType {
+  Added = "added",
+  Removed = "removed",
+}
+
 export type MatchChange<E, S> = {
   entity: E;
   selector: S;

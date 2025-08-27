@@ -18,6 +18,7 @@
     "@t3-oss/env-core": "catalog:",
     "dotenv": "^16.4.5",
     "kafkajs": "^2.2.4",
+    "ts-is-present": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

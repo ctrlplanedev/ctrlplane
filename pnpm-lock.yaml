@@ -154,6 +154,9 @@ importers:
       kafkajs:
         specifier: ^2.2.4
         version: 2.2.4
+      ts-is-present:
+        specifier: 'catalog:'
+        version: 1.2.2
       zod:
         specifier: 'catalog:'
         version: 3.24.2
