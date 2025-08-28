@@ -3,7 +3,6 @@ import type {
   Environment,
   PolicyTarget,
   Resource,
-  Workspace,
 } from "@ctrlplane/db/schema";
 
 export enum MatchChangeType {
@@ -33,7 +32,13 @@ export interface Selector<S, E> {
   isMatch(entity: E, selector: S): Promise<boolean>;
 }
 
-type SelectorManagerOptions = {};
+type SelectorManagerOptions = {
+  environmentResourceSelector: Selector<Environment, Resource>;
+  deploymentResourceSelector: Selector<Deployment, Resource>;
+  policyTargetResourceSelector: Selector<PolicyTarget, Resource>;
+  policyTargetEnvironmentSelector: Selector<PolicyTarget, Environment>;
+  policyTargetDeploymentSelector: Selector<PolicyTarget, Deployment>;
+};
 
 export class SelectorManager {
   environmentResources: Selector<Environment, Resource>;
@@ -42,7 +47,13 @@ export class SelectorManager {
   policyTargetEnvironments: Selector<PolicyTarget, Environment>;
   policyTargetDeployments: Selector<PolicyTarget, Deployment>;
 
-  constructor(private opts: SelectorManagerOptions) {}
+  constructor(private opts: SelectorManagerOptions) {
+    this.environmentResources = opts.environmentResourceSelector;
+    this.deploymentResources = opts.deploymentResourceSelector;
+    this.policyTargetResources = opts.policyTargetResourceSelector;
+    this.policyTargetEnvironments = opts.policyTargetEnvironmentSelector;
+    this.policyTargetDeployments = opts.policyTargetDeploymentSelector;
+  }
 
   async updateResource(resource: Resource) {
     await Promise.all([

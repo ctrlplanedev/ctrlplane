@@ -67,7 +67,12 @@ export class DbEnvironmentResourceSelector
         schema.system,
         eq(schema.environment.systemId, schema.system.id),
       )
-      .where(eq(schema.computedEnvironmentResource.resourceId, resource.id))
+      .where(
+        and(
+          eq(schema.computedEnvironmentResource.resourceId, resource.id),
+          eq(schema.system.workspaceId, this.workspaceId),
+        ),
+      )
       .then((results) => results.map(({ environment }) => environment));
   }
 
@@ -92,6 +97,8 @@ export class DbEnvironmentResourceSelector
     environment: schema.Environment,
   ) {
     const { resourceSelector } = environment;
+    if (resourceSelector == null) return null;
+
     const resourceMatch = await this.db
       .select()
       .from(schema.resource)
