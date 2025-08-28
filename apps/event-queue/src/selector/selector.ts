@@ -37,65 +37,66 @@ type SelectorManagerOptions = {
   environmentResourceSelector: Selector<Environment, Resource>;
   deploymentResourceSelector: Selector<Deployment, Resource>;
   policyTargetReleaseTargetSelector: Selector<PolicyTarget, ReleaseTarget>;
-  // policyTargetResourceSelector: Selector<PolicyTarget, Resource>;
-  // policyTargetEnvironmentSelector: Selector<PolicyTarget, Environment>;
-  // policyTargetDeploymentSelector: Selector<PolicyTarget, Deployment>;
 };
 
 export class SelectorManager {
-  environmentResources: Selector<Environment, Resource>;
-  deploymentResources: Selector<Deployment, Resource>;
-  policyTargetReleaseTargets: Selector<PolicyTarget, ReleaseTarget>;
-
-  constructor(private opts: SelectorManagerOptions) {
-    this.environmentResources = opts.environmentResourceSelector;
-    this.deploymentResources = opts.deploymentResourceSelector;
-    this.policyTargetReleaseTargets = opts.policyTargetReleaseTargetSelector;
-  }
+  constructor(private opts: SelectorManagerOptions) {}
 
   async updateResource(resource: Resource) {
-    await Promise.all([
-      this.environmentResources.upsertEntity(resource),
-      this.deploymentResources.upsertEntity(resource),
+    const [environmentChanges, deploymentChanges] = await Promise.all([
+      this.opts.environmentResourceSelector.upsertEntity(resource),
+      this.opts.deploymentResourceSelector.upsertEntity(resource),
     ]);
+
+    return { environmentChanges, deploymentChanges };
   }
 
   async updateEnvironment(environment: Environment) {
-    await this.environmentResources.upsertSelector(environment);
+    return this.opts.environmentResourceSelector.upsertSelector(environment);
   }
 
   async updateDeployment(deployment: Deployment) {
-    await this.deploymentResources.upsertSelector(deployment);
+    return this.opts.deploymentResourceSelector.upsertSelector(deployment);
   }
 
   async removeResource(resource: Resource) {
-    await Promise.all([
-      this.environmentResources.removeEntity(resource),
-      this.deploymentResources.removeEntity(resource),
+    const [environmentChanges, deploymentChanges] = await Promise.all([
+      this.opts.environmentResourceSelector.removeEntity(resource),
+      this.opts.deploymentResourceSelector.removeEntity(resource),
     ]);
+
+    return { environmentChanges, deploymentChanges };
   }
 
   async removeEnvironment(environment: Environment) {
-    await this.environmentResources.removeSelector(environment);
+    return this.opts.environmentResourceSelector.removeSelector(environment);
   }
 
   async removeDeployment(deployment: Deployment) {
-    await this.deploymentResources.removeSelector(deployment);
+    return this.opts.deploymentResourceSelector.removeSelector(deployment);
   }
 
   async upsertReleaseTarget(releaseTarget: ReleaseTarget) {
-    await this.policyTargetReleaseTargets.upsertEntity(releaseTarget);
+    return this.opts.policyTargetReleaseTargetSelector.upsertEntity(
+      releaseTarget,
+    );
   }
 
   async removeReleaseTarget(releaseTarget: ReleaseTarget) {
-    await this.policyTargetReleaseTargets.removeEntity(releaseTarget);
+    return this.opts.policyTargetReleaseTargetSelector.removeEntity(
+      releaseTarget,
+    );
   }
 
   async upsertPolicyTargets(policyTarget: PolicyTarget) {
-    await this.policyTargetReleaseTargets.upsertSelector(policyTarget);
+    return this.opts.policyTargetReleaseTargetSelector.upsertSelector(
+      policyTarget,
+    );
   }
 
   async removePolicyTargets(policyTarget: PolicyTarget) {
-    await this.policyTargetReleaseTargets.removeSelector(policyTarget);
+    return this.opts.policyTargetReleaseTargetSelector.removeSelector(
+      policyTarget,
+    );
   }
 }
