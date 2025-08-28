@@ -2,6 +2,7 @@ import type {
   Deployment,
   Environment,
   PolicyTarget,
+  ReleaseTarget,
   Resource,
 } from "@ctrlplane/db/schema";
 
@@ -35,69 +36,66 @@ export interface Selector<S, E> {
 type SelectorManagerOptions = {
   environmentResourceSelector: Selector<Environment, Resource>;
   deploymentResourceSelector: Selector<Deployment, Resource>;
-  policyTargetResourceSelector: Selector<PolicyTarget, Resource>;
-  policyTargetEnvironmentSelector: Selector<PolicyTarget, Environment>;
-  policyTargetDeploymentSelector: Selector<PolicyTarget, Deployment>;
+  policyTargetReleaseTargetSelector: Selector<PolicyTarget, ReleaseTarget>;
+  // policyTargetResourceSelector: Selector<PolicyTarget, Resource>;
+  // policyTargetEnvironmentSelector: Selector<PolicyTarget, Environment>;
+  // policyTargetDeploymentSelector: Selector<PolicyTarget, Deployment>;
 };
 
 export class SelectorManager {
   environmentResources: Selector<Environment, Resource>;
   deploymentResources: Selector<Deployment, Resource>;
-  policyTargetResources: Selector<PolicyTarget, Resource>;
-  policyTargetEnvironments: Selector<PolicyTarget, Environment>;
-  policyTargetDeployments: Selector<PolicyTarget, Deployment>;
+  policyTargetReleaseTargets: Selector<PolicyTarget, ReleaseTarget>;
 
   constructor(private opts: SelectorManagerOptions) {
     this.environmentResources = opts.environmentResourceSelector;
     this.deploymentResources = opts.deploymentResourceSelector;
-    this.policyTargetResources = opts.policyTargetResourceSelector;
-    this.policyTargetEnvironments = opts.policyTargetEnvironmentSelector;
-    this.policyTargetDeployments = opts.policyTargetDeploymentSelector;
+    this.policyTargetReleaseTargets = opts.policyTargetReleaseTargetSelector;
   }
 
   async updateResource(resource: Resource) {
     await Promise.all([
       this.environmentResources.upsertEntity(resource),
       this.deploymentResources.upsertEntity(resource),
-      this.policyTargetResources.upsertEntity(resource),
     ]);
   }
 
   async updateEnvironment(environment: Environment) {
-    await this.policyTargetEnvironments.upsertEntity(environment);
     await this.environmentResources.upsertSelector(environment);
   }
 
   async updateDeployment(deployment: Deployment) {
-    await this.policyTargetDeployments.upsertEntity(deployment);
     await this.deploymentResources.upsertSelector(deployment);
   }
 
   async removeResource(resource: Resource) {
-    await this.environmentResources.removeEntity(resource);
-    await this.deploymentResources.removeEntity(resource);
-    await this.policyTargetResources.removeEntity(resource);
+    await Promise.all([
+      this.environmentResources.removeEntity(resource),
+      this.deploymentResources.removeEntity(resource),
+    ]);
   }
 
   async removeEnvironment(environment: Environment) {
-    await this.policyTargetEnvironments.removeEntity(environment);
     await this.environmentResources.removeSelector(environment);
   }
 
   async removeDeployment(deployment: Deployment) {
-    await this.policyTargetDeployments.removeEntity(deployment);
     await this.deploymentResources.removeSelector(deployment);
   }
 
+  async upsertReleaseTarget(releaseTarget: ReleaseTarget) {
+    await this.policyTargetReleaseTargets.upsertEntity(releaseTarget);
+  }
+
+  async removeReleaseTarget(releaseTarget: ReleaseTarget) {
+    await this.policyTargetReleaseTargets.removeEntity(releaseTarget);
+  }
+
   async upsertPolicyTargets(policyTarget: PolicyTarget) {
-    await this.policyTargetResources.upsertSelector(policyTarget);
-    await this.policyTargetEnvironments.upsertSelector(policyTarget);
-    await this.policyTargetDeployments.upsertSelector(policyTarget);
+    await this.policyTargetReleaseTargets.upsertSelector(policyTarget);
   }
 
   async removePolicyTargets(policyTarget: PolicyTarget) {
-    await this.policyTargetResources.removeSelector(policyTarget);
-    await this.policyTargetEnvironments.removeSelector(policyTarget);
-    await this.policyTargetDeployments.removeSelector(policyTarget);
+    await this.policyTargetReleaseTargets.removeSelector(policyTarget);
   }
 }
