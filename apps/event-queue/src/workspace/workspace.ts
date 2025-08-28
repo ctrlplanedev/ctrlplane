@@ -1,3 +1,6 @@
+import { DbDeploymentResourceSelector } from "../selector/db-deployment-resource.js";
+import { DbEnvironmentResourceSelector } from "../selector/db-environment-resource.js";
+import { DbPolicyTargetReleaseTargetSelector } from "../selector/db-policy-target-release-target.js";
 import { SelectorManager } from "../selector/selector.js";
 import { ReleaseTargetManager } from "./release-targets/manager.js";
 
@@ -6,8 +9,8 @@ type WorkspaceOptions = {
 };
 
 export class Workspace {
-  static async load(_: string) {
-    const ws = new Workspace();
+  static async load(id: string) {
+    const ws = new Workspace({ id });
 
     return Promise.resolve(ws);
   }
@@ -15,10 +18,21 @@ export class Workspace {
   selectorManager: SelectorManager;
   releaseTargetManager: ReleaseTargetManager;
 
-  constructor(private opts?: WorkspaceOptions) {
-    this.selectorManager = new SelectorManager({});
+  constructor(private opts: WorkspaceOptions) {
+    this.selectorManager = new SelectorManager({
+      environmentResourceSelector: new DbEnvironmentResourceSelector({
+        workspaceId: opts.id,
+      }),
+      deploymentResourceSelector: new DbDeploymentResourceSelector({
+        workspaceId: opts.id,
+      }),
+      policyTargetReleaseTargetSelector:
+        new DbPolicyTargetReleaseTargetSelector({
+          workspaceId: opts.id,
+        }),
+    });
     this.releaseTargetManager = new ReleaseTargetManager({
-      workspaceId: opts?.id ?? "",
+      workspaceId: opts.id,
     });
   }
 }
