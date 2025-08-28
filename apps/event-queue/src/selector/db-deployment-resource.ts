@@ -14,7 +14,6 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Selector } from "./selector.js";
-import { MatchChangeType } from "./selector.js";
 
 type DbDeploymentResourceSelectorOptions = {
   workspaceId: string;
@@ -167,60 +166,38 @@ export class DbDeploymentResourceSelector
       currentlyMatchingDeployments.map(({ id }) => id),
     );
 
-    const removedMatchChanges = previouslyMatchedDeployments
-      .filter(({ id }) => !currDeploymentIds.has(id))
-      .map((deployment) => ({
-        entity,
-        selector: deployment,
-        changeType: MatchChangeType.Removed,
-      }));
-
-    const newlyMatchedChanges = currentlyMatchingDeployments
-      .filter(({ id }) => !prevDeploymentIds.has(id))
-      .map((deployment) => ({
-        entity,
-        selector: deployment,
-        changeType: MatchChangeType.Added,
-      }));
+    const unmatchedDeployments = previouslyMatchedDeployments.filter(
+      (deployment) => !currDeploymentIds.has(deployment.id),
+    );
+    const newlyMatchedDeployments = currentlyMatchingDeployments.filter(
+      (deployment) => !prevDeploymentIds.has(deployment.id),
+    );
 
     await Promise.all([
       this.removeComputedDeploymentResourcesForEntity(
         entity,
-        removedMatchChanges.map(({ selector: { id } }) => id),
+        unmatchedDeployments.map(({ id }) => id),
       ),
       this.insertComputedDeploymentResourcesForEntity(
         entity,
-        newlyMatchedChanges.map(({ selector: { id } }) => id),
+        newlyMatchedDeployments.map(({ id }) => id),
       ),
     ]);
-
-    return [...removedMatchChanges, ...newlyMatchedChanges];
   }
 
   async removeEntity(entity: schema.Resource) {
     const previouslyMatchedDeployments =
       await this.getPreviouslyMatchedDeployments(entity);
 
-    const removedMatchChanges = previouslyMatchedDeployments.map(
-      (deployment) => ({
-        entity,
-        selector: deployment,
-        changeType: MatchChangeType.Removed,
-      }),
-    );
-
     await this.db
       .update(schema.resource)
       .set({ deletedAt: new Date() })
       .where(eq(schema.resource.id, entity.id));
 
-    if (removedMatchChanges.length > 0)
-      await this.removeComputedDeploymentResourcesForEntity(
-        entity,
-        removedMatchChanges.map(({ selector: { id } }) => id),
-      );
-
-    return removedMatchChanges;
+    await this.removeComputedDeploymentResourcesForEntity(
+      entity,
+      previouslyMatchedDeployments.map(({ id }) => id),
+    );
   }
 
   private async upsertDeployment(deployment: schema.Deployment) {
@@ -314,51 +291,29 @@ export class DbDeploymentResourceSelector
       currentlyMatchingResources.map(({ id }) => id),
     );
 
-    const removedMatchChanges = previouslyMatchedResources
-      .filter(({ id }) => !currResourceIds.has(id))
-      .map((resource) => ({
-        entity: resource,
-        selector,
-        changeType: MatchChangeType.Removed,
-      }));
-
-    const newlyMatchedChanges = currentlyMatchingResources
-      .filter(({ id }) => !prevResourceIds.has(id))
-      .map((resource) => ({
-        entity: resource,
-        selector,
-        changeType: MatchChangeType.Added,
-      }));
+    const unmatchedResources = previouslyMatchedResources.filter(
+      (resource) => !currResourceIds.has(resource.id),
+    );
+    const newlyMatchedResources = currentlyMatchingResources.filter(
+      (resource) => !prevResourceIds.has(resource.id),
+    );
 
     await Promise.all([
       this.removeComputedDeploymentResourcesForSelector(
         selector,
-        removedMatchChanges.map(({ entity: { id } }) => id),
+        unmatchedResources.map(({ id }) => id),
       ),
       this.insertComputedDeploymentResourcesForSelector(
         selector,
-        newlyMatchedChanges.map(({ entity: { id } }) => id),
+        newlyMatchedResources.map(({ id }) => id),
       ),
     ]);
-
-    return [...removedMatchChanges, ...newlyMatchedChanges];
   }
 
   async removeSelector(selector: schema.Deployment) {
-    const previouslyMatchedResources =
-      await this.getPreviouslyMatchedResources(selector);
-
-    const removedMatchChanges = previouslyMatchedResources.map((resource) => ({
-      entity: resource,
-      selector,
-      changeType: MatchChangeType.Removed,
-    }));
-
     await this.db
       .delete(schema.deployment)
       .where(eq(schema.deployment.id, selector.id));
-
-    return removedMatchChanges;
   }
 
   async getEntitiesForSelector(selector: schema.Deployment) {

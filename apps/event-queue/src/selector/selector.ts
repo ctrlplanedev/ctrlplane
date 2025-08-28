@@ -6,23 +6,12 @@ import type {
   Resource,
 } from "@ctrlplane/db/schema";
 
-export enum MatchChangeType {
-  Added = "added",
-  Removed = "removed",
-}
-
-export type MatchChange<E, S> = {
-  entity: E;
-  selector: S;
-  changeType: MatchChangeType;
-};
-
 export interface Selector<S, E> {
-  upsertEntity(entity: E): Promise<MatchChange<E, S>[]>;
-  removeEntity(entity: E): Promise<MatchChange<E, S>[]>;
+  upsertEntity(entity: E): Promise<void>;
+  removeEntity(entity: E): Promise<void>;
 
-  upsertSelector(selector: S): Promise<MatchChange<E, S>[]>;
-  removeSelector(selector: S): Promise<MatchChange<E, S>[]>;
+  upsertSelector(selector: S): Promise<void>;
+  removeSelector(selector: S): Promise<void>;
 
   getEntitiesForSelector(selector: S): Promise<E[]>;
   getSelectorsForEntity(entity: E): Promise<S[]>;

@@ -14,8 +14,7 @@ import {
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { MatchChange, Selector } from "./selector.js";
-import { MatchChangeType } from "./selector.js";
+import type { Selector } from "./selector.js";
 
 type DbEnvironmentResourceSelectorOptions = {
   workspaceId: string;
@@ -125,9 +124,37 @@ export class DbEnvironmentResourceSelector
     );
   }
 
-  async upsertEntity(
+  private async removeComputedEnvironmentResourcesForEntity(
     entity: schema.Resource,
-  ): Promise<MatchChange<schema.Resource, schema.Environment>[]> {
+    environmentIds: string[],
+  ) {
+    await this.db
+      .delete(schema.computedEnvironmentResource)
+      .where(
+        and(
+          eq(schema.computedEnvironmentResource.resourceId, entity.id),
+          inArray(
+            schema.computedEnvironmentResource.environmentId,
+            environmentIds,
+          ),
+        ),
+      );
+  }
+
+  private async insertComputedEnvironmentResourcesForEntity(
+    entity: schema.Resource,
+    environmentIds: string[],
+  ) {
+    if (environmentIds.length === 0) return;
+    await this.db.insert(schema.computedEnvironmentResource).values(
+      environmentIds.map((environmentId) => ({
+        environmentId,
+        resourceId: entity.id,
+      })),
+    );
+  }
+
+  async upsertEntity(entity: schema.Resource) {
     await this.upsertResource(entity);
     const [previouslyMatchedEnvironments, currentlyMatchingEnvironments] =
       await Promise.all([
@@ -142,76 +169,38 @@ export class DbEnvironmentResourceSelector
       currentlyMatchingEnvironments.map(({ id }) => id),
     );
 
-    const removedMatchChanges = previouslyMatchedEnvironments
-      .filter(({ id }) => !currEnvIds.has(id))
-      .map((env) => ({
-        entity,
-        selector: env,
-        changeType: MatchChangeType.Removed,
-      }));
-
-    const newlyMatchedChanges = currentlyMatchingEnvironments
-      .filter(({ id }) => !prevEnvIds.has(id))
-      .map((env) => ({
-        entity,
-        selector: env,
-        changeType: MatchChangeType.Added,
-      }));
+    const unmatchedEnvironments = previouslyMatchedEnvironments.filter(
+      (env) => !currEnvIds.has(env.id),
+    );
+    const newlyMatchedEnvironments = currentlyMatchingEnvironments.filter(
+      (env) => !prevEnvIds.has(env.id),
+    );
 
     await Promise.all([
-      removedMatchChanges.length > 0
-        ? this.db.delete(schema.computedEnvironmentResource).where(
-            and(
-              eq(schema.computedEnvironmentResource.resourceId, entity.id),
-              inArray(
-                schema.computedEnvironmentResource.environmentId,
-                removedMatchChanges.map(({ selector }) => selector.id),
-              ),
-            ),
-          )
-        : Promise.resolve(),
-      newlyMatchedChanges.length > 0
-        ? this.db.insert(schema.computedEnvironmentResource).values(
-            newlyMatchedChanges.map(({ selector }) => ({
-              environmentId: selector.id,
-              resourceId: entity.id,
-            })),
-          )
-        : Promise.resolve(),
+      this.removeComputedEnvironmentResourcesForEntity(
+        entity,
+        unmatchedEnvironments.map(({ id }) => id),
+      ),
+      this.insertComputedEnvironmentResourcesForEntity(
+        entity,
+        newlyMatchedEnvironments.map(({ id }) => id),
+      ),
     ]);
-
-    return [...removedMatchChanges, ...newlyMatchedChanges];
   }
 
-  async removeEntity(
-    entity: schema.Resource,
-  ): Promise<MatchChange<schema.Resource, schema.Environment>[]> {
+  async removeEntity(entity: schema.Resource) {
     const previouslyMatchedEnvironments =
       await this.getPreviouslyMatchedEnvironments(entity);
-
-    const removedMatchChanges = previouslyMatchedEnvironments.map((env) => ({
-      entity,
-      selector: env,
-      changeType: MatchChangeType.Removed,
-    }));
 
     await this.db
       .update(schema.resource)
       .set({ deletedAt: new Date() })
       .where(eq(schema.resource.id, entity.id));
 
-    if (removedMatchChanges.length > 0)
-      await this.db.delete(schema.computedEnvironmentResource).where(
-        and(
-          eq(schema.computedEnvironmentResource.resourceId, entity.id),
-          inArray(
-            schema.computedEnvironmentResource.environmentId,
-            removedMatchChanges.map(({ selector }) => selector.id),
-          ),
-        ),
-      );
-
-    return removedMatchChanges;
+    await this.removeComputedEnvironmentResourcesForEntity(
+      entity,
+      previouslyMatchedEnvironments.map(({ id }) => id),
+    );
   }
 
   private async upsertEnvironment(environment: schema.Environment) {
@@ -256,9 +245,34 @@ export class DbEnvironmentResourceSelector
       );
   }
 
-  async upsertSelector(
+  private async removeComputedEnvironmentResourcesForSelector(
     selector: schema.Environment,
-  ): Promise<MatchChange<schema.Resource, schema.Environment>[]> {
+    resourceIds: string[],
+  ) {
+    if (resourceIds.length === 0) return;
+    await this.db
+      .delete(schema.computedEnvironmentResource)
+      .where(
+        and(
+          eq(schema.computedEnvironmentResource.environmentId, selector.id),
+          inArray(schema.computedEnvironmentResource.resourceId, resourceIds),
+        ),
+      );
+  }
+
+  private async insertComputedEnvironmentResourcesForSelector(
+    selector: schema.Environment,
+    resourceIds: string[],
+  ) {
+    if (resourceIds.length === 0) return;
+    await this.db.insert(schema.computedEnvironmentResource).values(
+      resourceIds.map((resourceId) => ({
+        environmentId: selector.id,
+        resourceId,
+      })),
+    );
+  }
+  async upsertSelector(selector: schema.Environment) {
     const previouslyMatchedResources =
       await this.getPreviouslyMatchedResources(selector);
     await this.upsertEnvironment(selector);
@@ -272,64 +286,29 @@ export class DbEnvironmentResourceSelector
       currentlyMatchingResources.map(({ id }) => id),
     );
 
-    const removedMatchChanges = previouslyMatchedResources
-      .filter(({ id }) => !currResourceIds.has(id))
-      .map((resource) => ({
-        entity: resource,
-        selector,
-        changeType: MatchChangeType.Removed,
-      }));
-
-    const newlyMatchedChanges = currentlyMatchingResources
-      .filter(({ id }) => !prevResourceIds.has(id))
-      .map((resource) => ({
-        entity: resource,
-        selector,
-        changeType: MatchChangeType.Added,
-      }));
+    const unmatchedResources = previouslyMatchedResources.filter(
+      (resource) => !currResourceIds.has(resource.id),
+    );
+    const newlyMatchedResources = currentlyMatchingResources.filter(
+      (resource) => !prevResourceIds.has(resource.id),
+    );
 
     await Promise.all([
-      removedMatchChanges.length > 0
-        ? this.db.delete(schema.computedEnvironmentResource).where(
-            and(
-              eq(schema.computedEnvironmentResource.environmentId, selector.id),
-              inArray(
-                schema.computedEnvironmentResource.resourceId,
-                removedMatchChanges.map(({ entity }) => entity.id),
-              ),
-            ),
-          )
-        : Promise.resolve(),
-      newlyMatchedChanges.length > 0
-        ? this.db.insert(schema.computedEnvironmentResource).values(
-            newlyMatchedChanges.map(({ entity }) => ({
-              environmentId: selector.id,
-              resourceId: entity.id,
-            })),
-          )
-        : Promise.resolve(),
+      this.removeComputedEnvironmentResourcesForSelector(
+        selector,
+        unmatchedResources.map(({ id }) => id),
+      ),
+      this.insertComputedEnvironmentResourcesForSelector(
+        selector,
+        newlyMatchedResources.map(({ id }) => id),
+      ),
     ]);
-
-    return [...removedMatchChanges, ...newlyMatchedChanges];
   }
 
-  async removeSelector(
-    selector: schema.Environment,
-  ): Promise<MatchChange<schema.Resource, schema.Environment>[]> {
-    const previouslyMatchedResources =
-      await this.getPreviouslyMatchedResources(selector);
-
-    const removedMatchChanges = previouslyMatchedResources.map((resource) => ({
-      entity: resource,
-      selector,
-      changeType: MatchChangeType.Removed,
-    }));
-
+  async removeSelector(selector: schema.Environment) {
     await this.db
       .delete(schema.environment)
       .where(eq(schema.environment.id, selector.id));
-
-    return removedMatchChanges;
   }
 
   getEntitiesForSelector(

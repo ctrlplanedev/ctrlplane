@@ -13,7 +13,6 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Selector } from "./selector.js";
-import { MatchChangeType } from "./selector.js";
 
 type DbPolicyTargetReleaseTargetSelectorOptions = {
   workspaceId: string;
@@ -185,53 +184,29 @@ export class DbPolicyTargetReleaseTargetSelector
       currentlyMatchingPolicyTargets.map(({ id }) => id),
     );
 
-    const removedMatchChanges = previouslyMatchedPolicyTargets
-      .filter(({ id }) => !currPolicyTargetIds.has(id))
-      .map((policyTarget) => ({
-        entity,
-        selector: policyTarget,
-        changeType: MatchChangeType.Removed,
-      }));
-
-    const newlyMatchedChanges = currentlyMatchingPolicyTargets
-      .filter(({ id }) => !prevPolicyTargetIds.has(id))
-      .map((policyTarget) => ({
-        entity,
-        selector: policyTarget,
-        changeType: MatchChangeType.Added,
-      }));
+    const unmatchedPolicyTargets = previouslyMatchedPolicyTargets.filter(
+      (policyTarget) => !currPolicyTargetIds.has(policyTarget.id),
+    );
+    const newlyMatchedPolicyTargets = currentlyMatchingPolicyTargets.filter(
+      (policyTarget) => !prevPolicyTargetIds.has(policyTarget.id),
+    );
 
     await Promise.all([
       this.removeComputedPolicyTargetReleaseTargetsForEntity(
         entity,
-        removedMatchChanges.map(({ selector }) => selector.id),
+        unmatchedPolicyTargets.map(({ id }) => id),
       ),
       this.insertComputedPolicyTargetReleaseTargetsForEntity(
         entity,
-        newlyMatchedChanges.map(({ selector }) => selector.id),
+        newlyMatchedPolicyTargets.map(({ id }) => id),
       ),
     ]);
-
-    return [...removedMatchChanges, ...newlyMatchedChanges];
   }
 
   async removeEntity(entity: schema.ReleaseTarget) {
-    const previouslyMatchedPolicyTargets =
-      await this.getPreviouslyMatchedPolicyTargets(entity);
-
-    const removedMatchChanges = previouslyMatchedPolicyTargets.map(
-      (policyTarget) => ({
-        entity,
-        selector: policyTarget,
-        changeType: MatchChangeType.Removed,
-      }),
-    );
-
     await this.db
       .delete(schema.releaseTarget)
       .where(eq(schema.releaseTarget.id, entity.id));
-
-    return removedMatchChanges;
   }
 
   private async upsertPolicyTarget(policyTarget: schema.PolicyTarget) {
@@ -368,53 +343,29 @@ export class DbPolicyTargetReleaseTargetSelector
       currentlyMatchingReleaseTargets.map(({ id }) => id),
     );
 
-    const removedMatchChanges = previouslyMatchedReleaseTargets
-      .filter(({ id }) => !currReleaseTargetIds.has(id))
-      .map((releaseTarget) => ({
-        entity: releaseTarget,
-        selector,
-        changeType: MatchChangeType.Removed,
-      }));
-
-    const newlyMatchedChanges = currentlyMatchingReleaseTargets
-      .filter(({ id }) => !prevReleaseTargetIds.has(id))
-      .map((releaseTarget) => ({
-        entity: releaseTarget,
-        selector,
-        changeType: MatchChangeType.Added,
-      }));
+    const unmatchedReleaseTargets = previouslyMatchedReleaseTargets.filter(
+      (releaseTarget) => !currReleaseTargetIds.has(releaseTarget.id),
+    );
+    const newlyMatchedReleaseTargets = currentlyMatchingReleaseTargets.filter(
+      (releaseTarget) => !prevReleaseTargetIds.has(releaseTarget.id),
+    );
 
     await Promise.all([
       this.removeComputedPolicyTargetReleaseTargetsForSelector(
         selector,
-        removedMatchChanges.map(({ selector }) => selector.id),
+        unmatchedReleaseTargets.map(({ id }) => id),
       ),
       this.insertComputedPolicyTargetReleaseTargetsForSelector(
         selector,
-        newlyMatchedChanges.map(({ selector }) => selector.id),
+        newlyMatchedReleaseTargets.map(({ id }) => id),
       ),
     ]);
-
-    return [...removedMatchChanges, ...newlyMatchedChanges];
   }
 
   async removeSelector(selector: schema.PolicyTarget) {
-    const previouslyMatchedReleaseTargets =
-      await this.getPreviouslyMatchedReleaseTargets(selector);
-
-    const removedMatchChanges = previouslyMatchedReleaseTargets.map(
-      (releaseTarget) => ({
-        entity: releaseTarget,
-        selector,
-        changeType: MatchChangeType.Removed,
-      }),
-    );
-
     await this.db
       .delete(schema.policyTarget)
       .where(eq(schema.policyTarget.id, selector.id));
-
-    return removedMatchChanges;
   }
 
   async getEntitiesForSelector(selector: schema.PolicyTarget) {
