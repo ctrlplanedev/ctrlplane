@@ -145,6 +145,9 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@ctrlplane/rule-engine':
+        specifier: workspace:*
+        version: link:../../packages/rule-engine
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)

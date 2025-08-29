@@ -1,6 +1,8 @@
 import type * as schema from "@ctrlplane/db/schema";
+import { isPresent } from "ts-is-present";
 
 import type { Workspace } from "./workspace.js";
+import { evaluateReleaseTarget } from "./release-targets/evaluate-release-target.js";
 
 type WorkspaceOptions = {
   workspace: Workspace;
@@ -82,5 +84,9 @@ export class OperationPipeline {
 
     const { addedReleaseTargets } =
       await workspace.releaseTargetManager.computeReleaseTargetChanges();
+
+    const jobsToDispatch = await Promise.all(
+      addedReleaseTargets.map(evaluateReleaseTarget),
+    ).then((jobs) => jobs.filter(isPresent));
   }
 }
