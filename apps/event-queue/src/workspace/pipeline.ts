@@ -79,5 +79,8 @@ export class OperationPipeline {
         ]);
         break;
     }
+
+    const { addedReleaseTargets } =
+      await workspace.releaseTargetManager.computeReleaseTargetChanges();
   }
 }
