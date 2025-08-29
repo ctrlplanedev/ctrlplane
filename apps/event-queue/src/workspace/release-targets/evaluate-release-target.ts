@@ -136,7 +136,7 @@ export const evaluateReleaseTarget = async (
     versionReleaseId: versionRelease.id,
     variableReleaseId: variableRelease.id,
   });
-  if (!hasAnythingChanged) return currentRelease;
+  if (!hasAnythingChanged) return;
 
   const release = await insertNewRelease(versionRelease.id, variableRelease.id);
   return dispatchReleaseJob(release);

@@ -35,6 +35,10 @@ export class Workspace {
       workspaceId: opts.id,
     });
   }
+
+  get id() {
+    return this.opts.id;
+  }
 }
 
 export class WorkspaceManager {
