@@ -1,3 +1,5 @@
+import { DbVersionRepository } from "../repository/db-version-repository.js";
+import { WorkspaceRepository } from "../repository/repository.js";
 import { DbDeploymentResourceSelector } from "../selector/db-deployment-resource.js";
 import { DbDeploymentVersionSelector } from "../selector/db-deployment-version-selector.js";
 import { DbEnvironmentResourceSelector } from "../selector/db-environment-resource.js";
@@ -18,6 +20,7 @@ export class Workspace {
 
   selectorManager: SelectorManager;
   releaseTargetManager: ReleaseTargetManager;
+  repository: WorkspaceRepository;
 
   constructor(private opts: WorkspaceOptions) {
     this.selectorManager = new SelectorManager({
@@ -39,6 +42,9 @@ export class Workspace {
       workspaceId: opts.id,
       policyTargetReleaseTargetSelector:
         this.selectorManager.policyTargetReleaseTargetSelector,
+    });
+    this.repository = new WorkspaceRepository({
+      versionRepository: new DbVersionRepository(opts.id),
     });
   }
 
