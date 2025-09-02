@@ -25,11 +25,7 @@ type WorkspaceOptions = {
 };
 
 export class OperationPipeline {
-  private promise: Promise<OperationPipeline>;
-
-  private constructor(private opts: WorkspaceOptions) {
-    this.promise = Promise.resolve(this);
-  }
+  private constructor(private opts: WorkspaceOptions) {}
 
   static update(workspace: Workspace) {
     return new OperationPipeline({ workspace, operation: "update" });
