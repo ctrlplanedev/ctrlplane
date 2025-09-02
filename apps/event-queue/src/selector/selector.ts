@@ -1,6 +1,8 @@
 import type {
   Deployment,
+  DeploymentVersion,
   Environment,
+  PolicyDeploymentVersionSelector,
   PolicyTarget,
   ReleaseTarget,
   Resource,
@@ -26,6 +28,10 @@ type SelectorManagerOptions = {
   environmentResourceSelector: Selector<Environment, Resource>;
   deploymentResourceSelector: Selector<Deployment, Resource>;
   policyTargetReleaseTargetSelector: Selector<PolicyTarget, ReleaseTarget>;
+  deploymentVersionSelector: Selector<
+    PolicyDeploymentVersionSelector,
+    DeploymentVersion
+  >;
 };
 
 export class SelectorManager {

@@ -1,4 +1,5 @@
 import { DbDeploymentResourceSelector } from "../selector/db-deployment-resource.js";
+import { DbDeploymentVersionSelector } from "../selector/db-deployment-version-selector.js";
 import { DbEnvironmentResourceSelector } from "../selector/db-environment-resource.js";
 import { DbPolicyTargetReleaseTargetSelector } from "../selector/db-policy-target-release-target.js";
 import { SelectorManager } from "../selector/selector.js";
@@ -30,6 +31,9 @@ export class Workspace {
         new DbPolicyTargetReleaseTargetSelector({
           workspaceId: opts.id,
         }),
+      deploymentVersionSelector: new DbDeploymentVersionSelector({
+        workspaceId: opts.id,
+      }),
     });
     this.releaseTargetManager = new ReleaseTargetManager({
       workspaceId: opts.id,
