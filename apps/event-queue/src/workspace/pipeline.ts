@@ -3,7 +3,6 @@ import { isPresent } from "ts-is-present";
 
 import type { Workspace } from "./workspace.js";
 import { dispatchJob } from "../job-dispatch/index.js";
-import { evaluateReleaseTarget } from "./release-targets/evaluate-release-target.js";
 
 type WorkspaceOptions = {
   workspace: Workspace;
@@ -57,6 +56,7 @@ export class OperationPipeline {
       this.opts;
 
     const manager = workspace.selectorManager;
+    const { releaseTargetManager } = workspace;
 
     switch (operation) {
       case "update":
@@ -83,7 +83,7 @@ export class OperationPipeline {
       await workspace.releaseTargetManager.computeReleaseTargetChanges();
 
     const jobsToDispatch = await Promise.all(
-      addedReleaseTargets.map(evaluateReleaseTarget),
+      addedReleaseTargets.map((rt) => releaseTargetManager.evaluate(rt)),
     ).then((jobs) => jobs.filter(isPresent));
 
     await Promise.all(
