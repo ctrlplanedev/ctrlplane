@@ -11,15 +11,11 @@ export interface Repository<T extends Entity> {
   exists(id: string): Promise<boolean> | boolean;
 }
 
-export interface VersionRepository
-  extends Repository<schema.DeploymentVersion> {
-  getAllForDeployment(
-    deploymentId: string,
-  ): Promise<schema.DeploymentVersion[]> | schema.DeploymentVersion[];
-}
-
 type WorkspaceRepositoryOptions = {
-  versionRepository: VersionRepository;
+  versionRepository: Repository<schema.DeploymentVersion>;
+  versionReleaseRepository: Repository<
+    typeof schema.versionRelease.$inferSelect
+  >;
 };
 
 export class WorkspaceRepository {
@@ -27,5 +23,9 @@ export class WorkspaceRepository {
 
   get versionRepository() {
     return this.opts.versionRepository;
+  }
+
+  get versionReleaseRepository() {
+    return this.opts.versionReleaseRepository;
   }
 }

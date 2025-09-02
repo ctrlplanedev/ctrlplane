@@ -4,9 +4,11 @@ import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { VersionRepository } from "./repository.js";
+import type { Repository } from "./repository.js";
 
-export class DbVersionRepository implements VersionRepository {
+export class DbVersionRepository
+  implements Repository<schema.DeploymentVersion>
+{
   private readonly db: Tx;
   private readonly workspaceId: string;
   constructor(workspaceId: string, tx?: Tx) {
@@ -21,14 +23,6 @@ export class DbVersionRepository implements VersionRepository {
       .then(takeFirstOrNull);
   }
 
-  getAllForDeployment(
-    deploymentId: string,
-  ): Promise<schema.DeploymentVersion[]> {
-    return this.db
-      .select()
-      .from(schema.deploymentVersion)
-      .where(eq(schema.deploymentVersion.deploymentId, deploymentId));
-  }
   getAll(): Promise<schema.DeploymentVersion[]> {
     return this.db
       .select()
