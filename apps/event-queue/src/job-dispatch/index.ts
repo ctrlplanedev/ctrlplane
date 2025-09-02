@@ -5,6 +5,8 @@ import { dispatchJobUpdated } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
+import { dispatchGithubJob } from "./github.js";
+
 const log = logger.child({ module: "job-dispatch" });
 
 const getJobAgent = async (job: schema.Job) => {
@@ -43,10 +45,9 @@ export const dispatchJob = async (job: schema.Job, workspaceId: string) => {
   }
 
   if (jobAgent.type === String(JobAgentType.GithubApp)) {
-    log.info(`Dispatching job ${job.id} to GitHub app`);
-
     try {
       log.info(`Dispatching job ${job.id} to GitHub app`);
+      await dispatchGithubJob(job);
     } catch (error: any) {
       log.error(`Error dispatching job ${job.id} to GitHub app`, {
         error: error.message,

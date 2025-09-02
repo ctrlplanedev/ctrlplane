@@ -21,6 +21,10 @@ export const env = createEnv({
       .refine((arr) => arr.length > 0, {
         message: "KAFKA_BROKERS must be a non-empty list of brokers",
       }),
+    GITHUB_BOT_APP_ID: z.string().optional(),
+    GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
+    GITHUB_BOT_CLIENT_ID: z.string().optional(),
+    GITHUB_BOT_CLIENT_SECRET: z.string().optional(),
   },
   runtimeEnv: process.env,
 });
