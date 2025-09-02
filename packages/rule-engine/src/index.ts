@@ -6,3 +6,4 @@ export * from "./types.js";
 export * from "./manager/version-manager.js";
 export * from "./manager/variable-manager.js";
 export * from "./manager/variables/index.js";
+export * from "./rules/index.js";

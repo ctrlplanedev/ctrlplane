@@ -1,5 +1,7 @@
 import type * as schema from "@ctrlplane/db/schema";
 
+import type { VersionRuleRepository } from "./rules/repository";
+
 type Entity = { id: string };
 
 export interface Repository<T extends Entity> {
@@ -16,6 +18,7 @@ type WorkspaceRepositoryOptions = {
   versionReleaseRepository: Repository<
     typeof schema.versionRelease.$inferSelect
   >;
+  versionRuleRepository: VersionRuleRepository;
 };
 
 export class WorkspaceRepository {
@@ -27,5 +30,9 @@ export class WorkspaceRepository {
 
   get versionReleaseRepository() {
     return this.opts.versionReleaseRepository;
+  }
+
+  get versionRuleRepository() {
+    return this.opts.versionRuleRepository;
   }
 }
