@@ -33,6 +33,8 @@ export class Workspace {
     });
     this.releaseTargetManager = new ReleaseTargetManager({
       workspaceId: opts.id,
+      policyTargetReleaseTargetSelector:
+        this.selectorManager.policyTargetReleaseTargetSelector,
     });
   }
 

@@ -31,6 +31,10 @@ type SelectorManagerOptions = {
 export class SelectorManager {
   constructor(private opts: SelectorManagerOptions) {}
 
+  get policyTargetReleaseTargetSelector() {
+    return this.opts.policyTargetReleaseTargetSelector;
+  }
+
   async updateResource(resource: Resource) {
     const [environmentChanges, deploymentChanges] = await Promise.all([
       this.opts.environmentResourceSelector.upsertEntity(resource),
