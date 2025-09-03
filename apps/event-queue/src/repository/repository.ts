@@ -14,6 +14,8 @@ export interface Repository<T extends Entity> {
 }
 
 type WorkspaceRepositoryOptions = {
+  policyRepository: Repository<schema.Policy>;
+
   versionRepository: Repository<schema.DeploymentVersion>;
   versionReleaseRepository: Repository<
     typeof schema.versionRelease.$inferSelect
@@ -23,6 +25,10 @@ type WorkspaceRepositoryOptions = {
 
 export class WorkspaceRepository {
   constructor(private readonly opts: WorkspaceRepositoryOptions) {}
+
+  get policyRepository() {
+    return this.opts.policyRepository;
+  }
 
   get versionRepository() {
     return this.opts.versionRepository;
