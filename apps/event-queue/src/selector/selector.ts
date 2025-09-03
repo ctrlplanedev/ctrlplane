@@ -45,6 +45,14 @@ export class SelectorManager {
     return this.opts.deploymentVersionSelector;
   }
 
+  get environmentResourceSelector() {
+    return this.opts.environmentResourceSelector;
+  }
+
+  get deploymentResourceSelector() {
+    return this.opts.deploymentResourceSelector;
+  }
+
   async updateResource(resource: Resource) {
     const [environmentChanges, deploymentChanges] = await Promise.all([
       this.opts.environmentResourceSelector.upsertEntity(resource),

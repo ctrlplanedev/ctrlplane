@@ -1,100 +1,56 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
-import { desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { VariableReleaseManager } from "@ctrlplane/rule-engine";
 
-import type { Selector } from "../../selector/selector";
 import type { Workspace } from "../workspace.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
 type ReleaseTargetManagerOptions = {
   workspace: Workspace;
-  policyTargetReleaseTargetSelector: Selector<
-    schema.PolicyTarget,
-    schema.ReleaseTarget
-  >;
   db?: Tx;
 };
 
 export class ReleaseTargetManager {
   private db: Tx;
   private workspace: Workspace;
-  private policyTargetReleaseTargetSelector: Selector<
-    schema.PolicyTarget,
-    schema.ReleaseTarget
-  >;
 
   constructor(opts: ReleaseTargetManagerOptions) {
     this.db = opts.db ?? dbClient;
     this.workspace = opts.workspace;
-    this.policyTargetReleaseTargetSelector =
-      opts.policyTargetReleaseTargetSelector;
   }
 
   private async getEnvironments() {
-    const environmentDbResult = await this.db
-      .select()
-      .from(schema.environment)
-      .innerJoin(
-        schema.system,
-        eq(schema.environment.systemId, schema.system.id),
-      )
-      .innerJoin(
-        schema.computedEnvironmentResource,
-        eq(
-          schema.computedEnvironmentResource.environmentId,
-          schema.environment.id,
-        ),
-      )
-      .innerJoin(
-        schema.resource,
-        eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
-      )
-      .where(eq(schema.system.workspaceId, this.workspace.id));
-
-    return _.chain(environmentDbResult)
-      .groupBy((row) => row.environment.id)
-      .map((groupedRows) => {
-        const { environment } = groupedRows[0]!;
-        const resources = groupedRows.map((row) => row.resource);
+    const environments =
+      await this.workspace.repository.environmentRepository.getAll();
+    return Promise.all(
+      environments.map(async (environment) => {
+        const resources =
+          await this.workspace.selectorManager.environmentResourceSelector.getEntitiesForSelector(
+            environment,
+          );
         return { ...environment, resources };
-      })
-      .value();
+      }),
+    );
   }
 
   private async getDeployments() {
-    const deploymentDbResult = await this.db
-      .select()
-      .from(schema.deployment)
-      .innerJoin(
-        schema.computedDeploymentResource,
-        eq(
-          schema.computedDeploymentResource.deploymentId,
-          schema.deployment.id,
-        ),
-      )
-      .innerJoin(
-        schema.resource,
-        eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
-      )
-      .innerJoin(
-        schema.system,
-        eq(schema.deployment.systemId, schema.system.id),
-      )
-      .where(eq(schema.system.workspaceId, this.workspace.id));
-
-    return _.chain(deploymentDbResult)
-      .groupBy((row) => row.deployment.id)
-      .map((groupedRows) => {
-        const { deployment } = groupedRows[0]!;
-        const resources = groupedRows.map((row) => row.resource);
+    const deployments =
+      await this.workspace.repository.deploymentRepository.getAll();
+    return Promise.all(
+      deployments.map(async (deployment) => {
+        const resources =
+          await this.workspace.selectorManager.deploymentResourceSelector.getEntitiesForSelector(
+            deployment,
+          );
         return { ...deployment, resources };
-      })
-      .value();
+      }),
+    );
   }
 
   private async determineReleaseTargets() {
@@ -134,15 +90,7 @@ export class ReleaseTargetManager {
   }
 
   private async getExistingReleaseTargets() {
-    return this.db
-      .select()
-      .from(schema.releaseTarget)
-      .innerJoin(
-        schema.resource,
-        eq(schema.releaseTarget.resourceId, schema.resource.id),
-      )
-      .where(eq(schema.resource.workspaceId, this.workspace.id))
-      .then((rows) => rows.map((row) => row.release_target));
+    return this.workspace.repository.releaseTargetRepository.getAll();
   }
 
   async computeReleaseTargetChanges() {
@@ -201,29 +149,52 @@ export class ReleaseTargetManager {
   }
 
   private async getCurrentRelease(releaseTarget: schema.ReleaseTarget) {
-    const currentRelease = await this.db
-      .select()
-      .from(schema.release)
-      .innerJoin(
-        schema.versionRelease,
-        eq(schema.release.versionReleaseId, schema.versionRelease.id),
-      )
-      .innerJoin(
-        schema.variableSetRelease,
-        eq(schema.release.variableReleaseId, schema.variableSetRelease.id),
-      )
-      .where(eq(schema.versionRelease.releaseTargetId, releaseTarget.id))
-      .orderBy(desc(schema.release.createdAt))
-      .limit(1)
-      .then(takeFirstOrNull);
+    const allVersionReleases =
+      await this.workspace.repository.versionReleaseRepository.getAll();
+    const allVariableReleases =
+      await this.workspace.repository.variableReleaseRepository.getAll();
+    const versionReleasesForTarget = new Map(
+      allVersionReleases
+        .filter(
+          (versionRelease) =>
+            versionRelease.releaseTargetId === releaseTarget.id,
+        )
+        .map((versionRelease) => [versionRelease.id, versionRelease]),
+    );
+    const variableReleasesForTarget = new Map(
+      allVariableReleases
+        .filter(
+          (variableRelease) =>
+            variableRelease.releaseTargetId === releaseTarget.id,
+        )
+        .map((variableRelease) => [variableRelease.id, variableRelease]),
+    );
 
-    if (currentRelease == null) return null;
-
-    return {
-      ...currentRelease.release,
-      currentVersionRelease: currentRelease.version_release,
-      currentVariableRelease: currentRelease.variable_set_release,
-    };
+    const allReleases =
+      await this.workspace.repository.releaseRepository.getAll();
+    return allReleases
+      .filter(
+        (release) =>
+          versionReleasesForTarget.has(release.versionReleaseId) &&
+          variableReleasesForTarget.has(release.variableReleaseId),
+      )
+      .map((release) => {
+        const currentVersionRelease = versionReleasesForTarget.get(
+          release.versionReleaseId,
+        );
+        const currentVariableRelease = variableReleasesForTarget.get(
+          release.variableReleaseId,
+        );
+        if (currentVersionRelease == null || currentVariableRelease == null)
+          return null;
+        return {
+          ...release,
+          currentVersionRelease,
+          currentVariableRelease,
+        };
+      })
+      .filter(isPresent)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
   }
 
   private async createReleaseJob(release: typeof schema.release.$inferSelect) {
