@@ -118,11 +118,6 @@ export class JobManager {
     return job;
   }
 
-  private async updateJob(job: schema.Job, status: JobStatus, message: string) {
-    const updatedJob = { ...job, status, message };
-    return this.workspace.repository.jobRepository.update(updatedJob);
-  }
-
   async dispatchJob(job: schema.Job) {
     const jobAgentId = job.jobAgentId;
     if (jobAgentId == null) {
@@ -143,10 +138,12 @@ export class JobManager {
           error: error.message,
         });
 
-        const updatedJob = await this.updateJob(
-          job,
-          JobStatus.InvalidIntegration,
-          `Error dispatching job to GitHub app: ${error.message}`,
+        const updatedJob = await this.workspace.repository.jobRepository.update(
+          {
+            ...job,
+            status: JobStatus.InvalidIntegration,
+            message: `Error dispatching job to GitHub app: ${error.message}`,
+          },
         );
 
         await dispatchJobUpdated(job, updatedJob, this.workspace.id);
