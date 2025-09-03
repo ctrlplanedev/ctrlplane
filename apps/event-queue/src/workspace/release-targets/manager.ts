@@ -1,11 +1,8 @@
-import type { Tx } from "@ctrlplane/db";
+import type * as schema from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
-import { db as dbClient } from "@ctrlplane/db/client";
-import { createReleaseJob } from "@ctrlplane/db/queries";
-import * as schema from "@ctrlplane/db/schema";
+import { db } from "@ctrlplane/db/client";
 import { VariableReleaseManager } from "@ctrlplane/rule-engine";
 
 import type { Workspace } from "../workspace.js";
@@ -13,15 +10,12 @@ import { VersionManager } from "./evaluate/version-manager.js";
 
 type ReleaseTargetManagerOptions = {
   workspace: Workspace;
-  db?: Tx;
 };
 
 export class ReleaseTargetManager {
-  private db: Tx;
   private workspace: Workspace;
 
   constructor(opts: ReleaseTargetManagerOptions) {
-    this.db = opts.db ?? dbClient;
     this.workspace = opts.workspace;
   }
 
@@ -142,7 +136,7 @@ export class ReleaseTargetManager {
 
   private async handleVariableRelease(releaseTarget: schema.ReleaseTarget) {
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
-    const varrm = new VariableReleaseManager(this.db, rtWithWorkspace);
+    const varrm = new VariableReleaseManager(db, rtWithWorkspace);
     const { chosenCandidate } = await varrm.evaluate();
     const { release } = await varrm.upsertRelease(chosenCandidate);
     return release;
@@ -198,18 +192,14 @@ export class ReleaseTargetManager {
   }
 
   private async createReleaseJob(release: typeof schema.release.$inferSelect) {
-    const existingReleaseJob = await this.db
-      .select()
-      .from(schema.releaseJob)
-      .where(eq(schema.releaseJob.releaseId, release.id))
-      .then(takeFirstOrNull);
+    const allReleaseJobs =
+      await this.workspace.repository.releaseJobRepository.getAll();
+    const existingReleaseJob = allReleaseJobs.find(
+      (r) => r.releaseId === release.id,
+    );
     if (existingReleaseJob != null) return;
 
-    const newReleaseJob = await this.db.transaction(async (tx) =>
-      createReleaseJob(tx, release),
-    );
-
-    return newReleaseJob;
+    return this.workspace.jobManager.createReleaseJob(release);
   }
 
   private getHasAnythingChanged(
@@ -230,11 +220,12 @@ export class ReleaseTargetManager {
     versionReleaseId: string,
     variableReleaseId: string,
   ) {
-    return this.db
-      .insert(schema.release)
-      .values({ versionReleaseId, variableReleaseId })
-      .returning()
-      .then(takeFirst);
+    return this.workspace.repository.releaseRepository.create({
+      id: crypto.randomUUID(),
+      versionReleaseId,
+      variableReleaseId,
+      createdAt: new Date(),
+    });
   }
 
   async evaluate(releaseTarget: schema.ReleaseTarget) {

@@ -28,11 +28,20 @@ type WorkspaceRepositoryOptions = {
   versionReleaseRepository: Repository<
     typeof schema.versionRelease.$inferSelect
   >;
+
   variableReleaseRepository: Repository<
     typeof schema.variableSetRelease.$inferSelect
   >;
+  variableReleaseValueRepository: Repository<
+    typeof schema.variableSetReleaseValue.$inferSelect
+  >;
+  variableValueSnapshotRepository: Repository<
+    typeof schema.variableValueSnapshot.$inferSelect
+  >;
 
+  jobAgentRepository: Repository<typeof schema.jobAgent.$inferSelect>;
   jobRepository: Repository<typeof schema.job.$inferSelect>;
+  jobVariableRepository: Repository<typeof schema.jobVariable.$inferSelect>;
   releaseJobRepository: Repository<typeof schema.releaseJob.$inferSelect>;
 };
 
@@ -75,15 +84,31 @@ export class WorkspaceRepository {
     return this.opts.versionReleaseRepository;
   }
 
-  get variableReleaseRepository() {
-    return this.opts.variableReleaseRepository;
+  get jobAgentRepository() {
+    return this.opts.jobAgentRepository;
   }
 
   get jobRepository() {
     return this.opts.jobRepository;
   }
 
+  get jobVariableRepository() {
+    return this.opts.jobVariableRepository;
+  }
+
   get releaseJobRepository() {
     return this.opts.releaseJobRepository;
+  }
+
+  get variableReleaseRepository() {
+    return this.opts.variableReleaseRepository;
+  }
+
+  get variableReleaseValueRepository() {
+    return this.opts.variableReleaseValueRepository;
+  }
+
+  get variableValueSnapshotRepository() {
+    return this.opts.variableValueSnapshotRepository;
   }
 }

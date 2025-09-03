@@ -2,7 +2,6 @@ import type * as schema from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
 import type { Workspace } from "./workspace.js";
-import { dispatchJob } from "../job-dispatch/index.js";
 
 type WorkspaceOptions = {
   workspace: Workspace;
@@ -57,6 +56,7 @@ export class OperationPipeline {
 
     const manager = workspace.selectorManager;
     const { releaseTargetManager } = workspace;
+    const { jobManager } = workspace;
 
     switch (operation) {
       case "update":
@@ -86,8 +86,6 @@ export class OperationPipeline {
       addedReleaseTargets.map((rt) => releaseTargetManager.evaluate(rt)),
     ).then((jobs) => jobs.filter(isPresent));
 
-    await Promise.all(
-      jobsToDispatch.map((job) => dispatchJob(job, workspace.id)),
-    );
+    await Promise.all(jobsToDispatch.map((job) => jobManager.dispatchJob(job)));
   }
 }
