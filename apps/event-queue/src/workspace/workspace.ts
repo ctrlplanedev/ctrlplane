@@ -1,6 +1,7 @@
 import { JobManager } from "../job-dispatch/job-manager.js";
 import { DbDeploymentRepository } from "../repository/db-deployment-repository.js";
 import { DbEnvironmentRepository } from "../repository/db-environment-repository.js";
+import { DbPolicyRepository } from "../repository/db-policy-repository.js";
 import { DbResourceRepository } from "../repository/db-resource-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { WorkspaceRepository } from "../repository/repository.js";
@@ -55,6 +56,7 @@ export class Workspace {
       environmentRepository: new DbEnvironmentRepository(opts.id),
       deploymentRepository: new DbDeploymentRepository(opts.id),
       resourceRepository: new DbResourceRepository(opts.id),
+      policyRepository: new DbPolicyRepository(opts.id),
     });
     this.jobManager = new JobManager(this);
   }
