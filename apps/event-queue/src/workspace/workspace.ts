@@ -41,9 +41,7 @@ export class Workspace {
       }),
     });
     this.releaseTargetManager = new ReleaseTargetManager({
-      workspaceId: opts.id,
-      policyTargetReleaseTargetSelector:
-        this.selectorManager.policyTargetReleaseTargetSelector,
+      workspace: this,
     });
     this.repository = new WorkspaceRepository({
       versionRepository: new DbVersionRepository(opts.id),
