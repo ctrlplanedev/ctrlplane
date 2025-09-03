@@ -1,27 +1,18 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import {
-  allRules,
-  desc,
-  eq,
-  inArray,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import {
-  mergePolicies,
-  VariableReleaseManager,
-  VersionReleaseManager,
-} from "@ctrlplane/rule-engine";
+import { VariableReleaseManager } from "@ctrlplane/rule-engine";
 
 import type { Selector } from "../../selector/selector";
+import type { Workspace } from "../workspace.js";
+import { VersionManager } from "./evaluate/version-manager.js";
 
 type ReleaseTargetManagerOptions = {
-  workspaceId: string;
+  workspace: Workspace;
   policyTargetReleaseTargetSelector: Selector<
     schema.PolicyTarget,
     schema.ReleaseTarget
@@ -31,7 +22,7 @@ type ReleaseTargetManagerOptions = {
 
 export class ReleaseTargetManager {
   private db: Tx;
-  private workspaceId: string;
+  private workspace: Workspace;
   private policyTargetReleaseTargetSelector: Selector<
     schema.PolicyTarget,
     schema.ReleaseTarget
@@ -39,7 +30,7 @@ export class ReleaseTargetManager {
 
   constructor(opts: ReleaseTargetManagerOptions) {
     this.db = opts.db ?? dbClient;
-    this.workspaceId = opts.workspaceId;
+    this.workspace = opts.workspace;
     this.policyTargetReleaseTargetSelector =
       opts.policyTargetReleaseTargetSelector;
   }
@@ -63,7 +54,7 @@ export class ReleaseTargetManager {
         schema.resource,
         eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
       )
-      .where(eq(schema.system.workspaceId, this.workspaceId));
+      .where(eq(schema.system.workspaceId, this.workspace.id));
 
     return _.chain(environmentDbResult)
       .groupBy((row) => row.environment.id)
@@ -94,7 +85,7 @@ export class ReleaseTargetManager {
         schema.system,
         eq(schema.deployment.systemId, schema.system.id),
       )
-      .where(eq(schema.system.workspaceId, this.workspaceId));
+      .where(eq(schema.system.workspaceId, this.workspace.id));
 
     return _.chain(deploymentDbResult)
       .groupBy((row) => row.deployment.id)
@@ -150,7 +141,7 @@ export class ReleaseTargetManager {
         schema.resource,
         eq(schema.releaseTarget.resourceId, schema.resource.id),
       )
-      .where(eq(schema.resource.workspaceId, this.workspaceId))
+      .where(eq(schema.resource.workspaceId, this.workspace.id))
       .then((rows) => rows.map((row) => row.release_target));
   }
 
@@ -190,30 +181,12 @@ export class ReleaseTargetManager {
   }
 
   private getReleaseTargetWithWorkspace(releaseTarget: schema.ReleaseTarget) {
-    return { ...releaseTarget, workspaceId: this.workspaceId };
-  }
-
-  private async getPolicy(releaseTarget: schema.ReleaseTarget) {
-    const policyTargets =
-      await this.policyTargetReleaseTargetSelector.getSelectorsForEntity(
-        releaseTarget,
-      );
-    if (policyTargets.length === 0) return null;
-
-    const policyIds = policyTargets.map((pt) => pt.policyId);
-    const policies = await this.db.query.policy.findMany({
-      where: inArray(schema.policy.id, policyIds),
-      with: allRules,
-    });
-
-    return mergePolicies(policies);
+    return { ...releaseTarget, workspaceId: this.workspace.id };
   }
 
   private async handleVersionRelease(releaseTarget: schema.ReleaseTarget) {
-    const policy = (await this.getPolicy(releaseTarget)) ?? undefined;
-    const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
-    const vrm = new VersionReleaseManager(this.db, rtWithWorkspace);
-    const { chosenCandidate } = await vrm.evaluate({ policy });
+    const vrm = new VersionManager(releaseTarget, this.workspace);
+    const { chosenCandidate } = await vrm.evaluate();
     if (chosenCandidate == null) return null;
     const { release } = await vrm.upsertRelease(chosenCandidate.id);
     return release;
