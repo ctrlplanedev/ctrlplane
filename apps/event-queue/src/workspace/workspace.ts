@@ -1,9 +1,15 @@
 import { JobManager } from "../job-dispatch/job-manager.js";
 import { DbDeploymentRepository } from "../repository/db-deployment-repository.js";
 import { DbEnvironmentRepository } from "../repository/db-environment-repository.js";
+import { DbJobAgentRepository } from "../repository/db-job-agent-repository.js";
 import { DbPolicyRepository } from "../repository/db-policy-repository.js";
+import { DbReleaseRepository } from "../repository/db-release-repository.js";
 import { DbReleaseTargetRepository } from "../repository/db-release-target-repository.js";
 import { DbResourceRepository } from "../repository/db-resource-repository.js";
+import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
+import { DbVariableReleaseValueRepository } from "../repository/db-variable-release-value-repository.js";
+import { DbVariableReleaseValueSnapshotRepository } from "../repository/db-variable-release-value-snapshot-repository.js";
+import { DbVersionReleaseRepository } from "../repository/db-version-release-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbDeploymentResourceSelector } from "../selector/db-deployment-resource.js";
@@ -58,7 +64,16 @@ export class Workspace {
       deploymentRepository: new DbDeploymentRepository(opts.id),
       resourceRepository: new DbResourceRepository(opts.id),
       policyRepository: new DbPolicyRepository(opts.id),
+      jobAgentRepository: new DbJobAgentRepository(opts.id),
       releaseTargetRepository: new DbReleaseTargetRepository(opts.id),
+      releaseRepository: new DbReleaseRepository(opts.id),
+      versionReleaseRepository: new DbVersionReleaseRepository(opts.id),
+      variableReleaseRepository: new DbVariableReleaseRepository(opts.id),
+      variableReleaseValueRepository: new DbVariableReleaseValueRepository(
+        opts.id,
+      ),
+      variableValueSnapshotRepository:
+        new DbVariableReleaseValueSnapshotRepository(opts.id),
     });
     this.jobManager = new JobManager(this);
   }
