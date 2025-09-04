@@ -15,6 +15,7 @@ import { DbVariableReleaseValueSnapshotRepository } from "../repository/db-varia
 import { DbVersionReleaseRepository } from "../repository/db-version-release-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { WorkspaceRepository } from "../repository/repository.js";
+import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentResourceSelector } from "../selector/db-deployment-resource.js";
 import { DbDeploymentVersionSelector } from "../selector/db-deployment-version-selector.js";
 import { DbEnvironmentResourceSelector } from "../selector/db-environment-resource.js";
@@ -22,13 +23,7 @@ import { DbPolicyTargetReleaseTargetSelector } from "../selector/db-policy-targe
 import { SelectorManager } from "../selector/selector.js";
 import { ReleaseTargetManager } from "./release-targets/manager.js";
 
-type WorkspaceOptions = {
-  id: string;
-  selectorManager: SelectorManager;
-  releaseTargetManager: ReleaseTargetManager;
-  repository: WorkspaceRepository;
-  jobManager: JobManager;
-};
+type WorkspaceOptions = { id: string };
 
 export class Workspace {
   static async load(id: string) {
@@ -80,6 +75,7 @@ export class Workspace {
       ),
       variableValueSnapshotRepository:
         new DbVariableReleaseValueSnapshotRepository(opts.id),
+      versionRuleRepository: new DbVersionRuleRepository(opts.id),
     });
     this.jobManager = new JobManager(this);
   }

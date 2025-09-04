@@ -6,6 +6,7 @@ import type {
 } from "@ctrlplane/rule-engine";
 
 import { allRules, eq } from "@ctrlplane/db";
+import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
   getConcurrencyRule,
@@ -19,7 +20,12 @@ import {
 import type { VersionRuleRepository } from "./repository";
 
 export class DbVersionRuleRepository implements VersionRuleRepository {
-  constructor(private readonly db: Tx) {}
+  private readonly workspaceId: string;
+  private db: Tx;
+  constructor(workspaceId: string, tx?: Tx) {
+    this.workspaceId = workspaceId;
+    this.db = tx ?? dbClient;
+  }
 
   async getRules(
     policyId: string,
