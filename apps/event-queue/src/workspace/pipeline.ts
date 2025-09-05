@@ -6,7 +6,7 @@ import type { Workspace } from "./workspace.js";
 type WorkspaceOptions = {
   workspace: Workspace;
 
-  operation: "create" | "update" | "delete";
+  operation: "update" | "delete";
 
   resource?: schema.Resource;
   environment?: schema.Environment;
@@ -53,12 +53,9 @@ export class OperationPipeline {
     return this;
   }
 
-  private async createDeploymentVersion(
+  private async getReleaseTargetsForDeploymentVersion(
     deploymentVersion: schema.DeploymentVersion,
   ) {
-    await this.opts.workspace.selectorManager.deploymentVersionSelector.upsertEntity(
-      deploymentVersion,
-    );
     const allReleaseTargets =
       await this.opts.workspace.repository.releaseTargetRepository.getAll();
     const targetsForDeployment = allReleaseTargets.filter(
@@ -66,6 +63,26 @@ export class OperationPipeline {
     );
     this.opts.releaseTargets = {
       toEvaluate: targetsForDeployment,
+      removed: [],
+    };
+  }
+
+  private async getReleaseTargetsForPolicy(policy: schema.Policy) {
+    const allPolicyTargets =
+      await this.opts.workspace.selectorManager.policyTargetReleaseTargetSelector.getAllSelectors();
+    const policyTargets = allPolicyTargets.filter(
+      (pt) => pt.policyId === policy.id,
+    );
+    const releaseTargets = await Promise.all(
+      policyTargets.map((pt) =>
+        this.opts.workspace.selectorManager.policyTargetReleaseTargetSelector.getEntitiesForSelector(
+          pt,
+        ),
+      ),
+    ).then((releaseTargets) => releaseTargets.flat());
+
+    this.opts.releaseTargets = {
+      toEvaluate: releaseTargets,
       removed: [],
     };
   }
@@ -89,11 +106,16 @@ export class OperationPipeline {
     const { jobManager } = workspace;
 
     switch (operation) {
-      case "create":
-        if (this.opts.deploymentVersion != null)
-          await this.createDeploymentVersion(this.opts.deploymentVersion);
-        break;
       case "update":
+        if (this.opts.deploymentVersion != null) {
+          await workspace.selectorManager.deploymentVersionSelector.upsertEntity(
+            this.opts.deploymentVersion,
+          );
+          await this.getReleaseTargetsForDeploymentVersion(
+            this.opts.deploymentVersion,
+          );
+          break;
+        }
         await Promise.all([
           resource ? manager.updateResource(resource) : Promise.resolve(),
           environment
@@ -104,6 +126,15 @@ export class OperationPipeline {
         await this.getReleaseTargetChanges();
         break;
       case "delete":
+        if (this.opts.deploymentVersion != null) {
+          await workspace.selectorManager.deploymentVersionSelector.removeEntity(
+            this.opts.deploymentVersion,
+          );
+          await this.getReleaseTargetsForDeploymentVersion(
+            this.opts.deploymentVersion,
+          );
+          break;
+        }
         await Promise.all([
           resource ? manager.removeResource(resource) : Promise.resolve(),
           environment
