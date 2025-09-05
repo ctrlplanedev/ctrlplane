@@ -9,6 +9,10 @@ export enum Event {
   DeploymentUpdated = "deployment.updated",
   DeploymentDeleted = "deployment.deleted",
 
+  DeploymentVersionCreated = "deployment-version.created",
+  DeploymentVersionUpdated = "deployment-version.updated",
+  DeploymentVersionDeleted = "deployment-version.deleted",
+
   EnvironmentCreated = "environment.created",
   EnvironmentUpdated = "environment.updated",
   EnvironmentDeleted = "environment.deleted",
@@ -30,6 +34,18 @@ export enum Event {
   SystemDeleted = "system.deleted",
 }
 
+export type FullPolicy = schema.Policy & {
+  targets: schema.PolicyTarget[];
+  denyWindows: schema.PolicyRuleDenyWindow[];
+  deploymentVersionSelector: schema.PolicyDeploymentVersionSelector | null;
+  versionAnyApprovals: schema.PolicyRuleAnyApproval | null;
+  versionUserApprovals: schema.PolicyRuleUserApproval[];
+  versionRoleApprovals: schema.PolicyRuleRoleApproval[];
+  concurrency: schema.PolicyRuleConcurrency | null;
+  environmentVersionRollout: schema.PolicyRuleEnvironmentVersionRollout | null;
+  maxRetries: schema.PolicyRuleMaxRetries | null;
+};
+
 export type EventPayload = {
   [Event.ResourceCreated]: schema.Resource;
   [Event.ResourceUpdated]: {
@@ -43,15 +59,21 @@ export type EventPayload = {
     current: schema.Deployment;
   };
   [Event.DeploymentDeleted]: schema.Deployment;
+  [Event.DeploymentVersionCreated]: schema.DeploymentVersion;
+  [Event.DeploymentVersionUpdated]: {
+    previous: schema.DeploymentVersion;
+    current: schema.DeploymentVersion;
+  };
+  [Event.DeploymentVersionDeleted]: schema.DeploymentVersion;
   [Event.EnvironmentCreated]: schema.Environment;
   [Event.EnvironmentUpdated]: {
     previous: schema.Environment;
     current: schema.Environment;
   };
   [Event.EnvironmentDeleted]: schema.Environment;
-  [Event.PolicyCreated]: schema.Policy;
-  [Event.PolicyUpdated]: { previous: schema.Policy; current: schema.Policy };
-  [Event.PolicyDeleted]: schema.Policy;
+  [Event.PolicyCreated]: FullPolicy;
+  [Event.PolicyUpdated]: { previous: FullPolicy; current: FullPolicy };
+  [Event.PolicyDeleted]: FullPolicy;
   [Event.JobCreated]: schema.Job;
   [Event.JobUpdated]: { previous: schema.Job; current: schema.Job };
   [Event.JobDeleted]: schema.Job;
