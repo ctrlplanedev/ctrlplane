@@ -12,7 +12,7 @@ type WorkspaceOptions = {
   environment?: schema.Environment;
   deployment?: schema.Deployment;
   deploymentVersion?: schema.DeploymentVersion;
-  policy?: schema.Policy;
+  policy?: schema.Policy & { targets: schema.PolicyTarget[] };
   job?: schema.Job;
   jobAgent?: schema.JobAgent;
 
@@ -53,6 +53,23 @@ export class OperationPipeline {
     return this;
   }
 
+  private async createDeploymentVersion(
+    deploymentVersion: schema.DeploymentVersion,
+  ) {
+    await this.opts.workspace.selectorManager.deploymentVersionSelector.upsertEntity(
+      deploymentVersion,
+    );
+    const allReleaseTargets =
+      await this.opts.workspace.repository.releaseTargetRepository.getAll();
+    const targetsForDeployment = allReleaseTargets.filter(
+      (rt) => rt.deploymentId === deploymentVersion.deploymentId,
+    );
+    this.opts.releaseTargets = {
+      toEvaluate: targetsForDeployment,
+      removed: [],
+    };
+  }
+
   async getReleaseTargetChanges() {
     const { addedReleaseTargets, removedReleaseTargets } =
       await this.opts.workspace.releaseTargetManager.computeReleaseTargetChanges();
@@ -73,22 +90,8 @@ export class OperationPipeline {
 
     switch (operation) {
       case "create":
-        if (this.opts.deploymentVersion != null) {
-          await this.opts.workspace.repository.versionRepository.create(
-            this.opts.deploymentVersion,
-          );
-          const allReleaseTargets =
-            await workspace.repository.releaseTargetRepository.getAll();
-          const targetsForDeployment = allReleaseTargets.filter(
-            (rt) =>
-              rt.deploymentId ===
-              (this.opts.deploymentVersion?.deploymentId ?? ""),
-          );
-          this.opts.releaseTargets = {
-            toEvaluate: targetsForDeployment,
-            removed: [],
-          };
-        }
+        if (this.opts.deploymentVersion != null)
+          await this.createDeploymentVersion(this.opts.deploymentVersion);
         break;
       case "update":
         await Promise.all([
