@@ -1,3 +1,4 @@
+import type { FullPolicy } from "@ctrlplane/events";
 import type {
   FilterRule,
   PreValidationRule,
@@ -5,6 +6,8 @@ import type {
 } from "@ctrlplane/rule-engine";
 
 export interface VersionRuleRepository {
+  upsertPolicyRules(policy: FullPolicy): Promise<void>;
+  removePolicyRules(policyId: string): Promise<void>;
   getRules(
     policyId: string,
     releaseTargetId: string,

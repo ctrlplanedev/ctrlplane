@@ -17,6 +17,7 @@ import {
   newEnvironment,
   updatedEnvironment,
 } from "./environments.js";
+import { deletedPolicy, newPolicy, updatedPolicy } from "./policy.js";
 import { deletedResource, newResource, updatedResource } from "./resources.js";
 
 const handlers: Record<Event, Handler<any>> = {
@@ -32,6 +33,9 @@ const handlers: Record<Event, Handler<any>> = {
   [Event.DeploymentVersionCreated]: newDeploymentVersion,
   [Event.DeploymentVersionUpdated]: updatedDeploymentVersion,
   [Event.DeploymentVersionDeleted]: deletedDeploymentVersion,
+  [Event.PolicyCreated]: newPolicy,
+  [Event.PolicyUpdated]: updatedPolicy,
+  [Event.PolicyDeleted]: deletedPolicy,
 };
 
 export type Handler<T extends keyof EventPayload> = (

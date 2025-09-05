@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { FullPolicy } from "@ctrlplane/events";
 import { isPresent } from "ts-is-present";
 
 import type { Workspace } from "./workspace.js";
@@ -12,7 +13,7 @@ type WorkspaceOptions = {
   environment?: schema.Environment;
   deployment?: schema.Deployment;
   deploymentVersion?: schema.DeploymentVersion;
-  policy?: schema.Policy & { targets: schema.PolicyTarget[] };
+  policy?: FullPolicy;
   job?: schema.Job;
   jobAgent?: schema.JobAgent;
 
@@ -53,6 +54,11 @@ export class OperationPipeline {
     return this;
   }
 
+  policy(policy: FullPolicy) {
+    this.opts.policy = policy;
+    return this;
+  }
+
   private async getReleaseTargetsForDeploymentVersion(
     deploymentVersion: schema.DeploymentVersion,
   ) {
@@ -87,6 +93,44 @@ export class OperationPipeline {
     };
   }
 
+  private async updatePolicy(policy: FullPolicy) {
+    const { targets } = policy;
+    await Promise.all(
+      targets.map((target) =>
+        this.opts.workspace.selectorManager.policyTargetReleaseTargetSelector.upsertSelector(
+          target,
+        ),
+      ),
+    );
+
+    await this.opts.workspace.repository.versionRuleRepository.upsertPolicyRules(
+      policy,
+    );
+
+    await this.opts.workspace.repository.policyRepository.update(policy);
+    await this.getReleaseTargetsForPolicy(policy);
+  }
+
+  private async removePolicy(policy: schema.Policy) {
+    await this.getReleaseTargetsForPolicy(policy);
+    const allPolicyTargets =
+      await this.opts.workspace.selectorManager.policyTargetReleaseTargetSelector.getAllSelectors();
+    const policyTargets = allPolicyTargets.filter(
+      (pt) => pt.policyId === policy.id,
+    );
+    await Promise.all(
+      policyTargets.map((pt) =>
+        this.opts.workspace.selectorManager.policyTargetReleaseTargetSelector.removeSelector(
+          pt,
+        ),
+      ),
+    );
+    await this.opts.workspace.repository.versionRuleRepository.removePolicyRules(
+      policy.id,
+    );
+    await this.opts.workspace.repository.policyRepository.delete(policy.id);
+  }
+
   async getReleaseTargetChanges() {
     const { addedReleaseTargets, removedReleaseTargets } =
       await this.opts.workspace.releaseTargetManager.computeReleaseTargetChanges();
@@ -116,6 +160,10 @@ export class OperationPipeline {
           );
           break;
         }
+        if (this.opts.policy != null) {
+          await this.updatePolicy(this.opts.policy);
+          break;
+        }
         await Promise.all([
           resource ? manager.updateResource(resource) : Promise.resolve(),
           environment
@@ -133,6 +181,10 @@ export class OperationPipeline {
           await this.getReleaseTargetsForDeploymentVersion(
             this.opts.deploymentVersion,
           );
+          break;
+        }
+        if (this.opts.policy != null) {
+          await this.removePolicy(this.opts.policy);
           break;
         }
         await Promise.all([
