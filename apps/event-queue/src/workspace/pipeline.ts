@@ -6,7 +6,7 @@ import type { Workspace } from "./workspace.js";
 type WorkspaceOptions = {
   workspace: Workspace;
 
-  operation: "update" | "delete";
+  operation: "create" | "update" | "delete";
 
   resource?: schema.Resource;
   environment?: schema.Environment;
@@ -17,7 +17,7 @@ type WorkspaceOptions = {
   jobAgent?: schema.JobAgent;
 
   releaseTargets?: {
-    new: schema.ReleaseTarget[];
+    toEvaluate: schema.ReleaseTarget[];
     removed: schema.ReleaseTarget[];
   };
 };
@@ -48,7 +48,20 @@ export class OperationPipeline {
     return this;
   }
 
-  getReleaseTargetChanges() {}
+  deploymentVersion(deploymentVersion: schema.DeploymentVersion) {
+    this.opts.deploymentVersion = deploymentVersion;
+    return this;
+  }
+
+  async getReleaseTargetChanges() {
+    const { addedReleaseTargets, removedReleaseTargets } =
+      await this.opts.workspace.releaseTargetManager.computeReleaseTargetChanges();
+
+    this.opts.releaseTargets = {
+      toEvaluate: addedReleaseTargets,
+      removed: removedReleaseTargets,
+    };
+  }
 
   async dispatch() {
     const { operation, workspace, resource, environment, deployment } =
@@ -59,6 +72,24 @@ export class OperationPipeline {
     const { jobManager } = workspace;
 
     switch (operation) {
+      case "create":
+        if (this.opts.deploymentVersion != null) {
+          await this.opts.workspace.repository.versionRepository.create(
+            this.opts.deploymentVersion,
+          );
+          const allReleaseTargets =
+            await workspace.repository.releaseTargetRepository.getAll();
+          const targetsForDeployment = allReleaseTargets.filter(
+            (rt) =>
+              rt.deploymentId ===
+              (this.opts.deploymentVersion?.deploymentId ?? ""),
+          );
+          this.opts.releaseTargets = {
+            toEvaluate: targetsForDeployment,
+            removed: [],
+          };
+        }
+        break;
       case "update":
         await Promise.all([
           resource ? manager.updateResource(resource) : Promise.resolve(),
@@ -67,6 +98,7 @@ export class OperationPipeline {
             : Promise.resolve(),
           deployment ? manager.updateDeployment(deployment) : Promise.resolve(),
         ]);
+        await this.getReleaseTargetChanges();
         break;
       case "delete":
         await Promise.all([
@@ -76,14 +108,14 @@ export class OperationPipeline {
             : Promise.resolve(),
           deployment ? manager.removeDeployment(deployment) : Promise.resolve(),
         ]);
+        await this.getReleaseTargetChanges();
         break;
     }
 
-    const { addedReleaseTargets } =
-      await workspace.releaseTargetManager.computeReleaseTargetChanges();
-
     const jobsToDispatch = await Promise.all(
-      addedReleaseTargets.map((rt) => releaseTargetManager.evaluate(rt)),
+      (this.opts.releaseTargets?.toEvaluate ?? []).map((rt) =>
+        releaseTargetManager.evaluate(rt),
+      ),
     ).then((jobs) => jobs.filter(isPresent));
 
     await Promise.all(jobsToDispatch.map((job) => jobManager.dispatchJob(job)));
