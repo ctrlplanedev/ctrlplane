@@ -1,4 +1,4 @@
-import { JobManager } from "../job-dispatch/job-manager.js";
+import { JobManager } from "../job-manager/job-manager.js";
 import { DbDeploymentRepository } from "../repository/db-deployment-repository.js";
 import { DbEnvironmentRepository } from "../repository/db-environment-repository.js";
 import { DbJobAgentRepository } from "../repository/db-job-agent-repository.js";
