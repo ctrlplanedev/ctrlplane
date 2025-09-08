@@ -1,3 +1,4 @@
+import type * as schema from "@ctrlplane/db/schema";
 import type { FullPolicy } from "@ctrlplane/events";
 import type {
   FilterRule,
@@ -12,4 +13,6 @@ export interface VersionRuleRepository {
     policyId: string,
     releaseTargetId: string,
   ): Promise<(FilterRule<Version> | PreValidationRule)[]>;
+
+  getRetryRule(policyId: string): Promise<schema.PolicyRuleMaxRetries | null>;
 }

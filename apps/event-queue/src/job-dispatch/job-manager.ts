@@ -3,7 +3,12 @@ import _ from "lodash";
 
 import { dispatchJobUpdated } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
-import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
+import {
+  exitedStatus,
+  failedStatuses,
+  JobAgentType,
+  JobStatus,
+} from "@ctrlplane/validators/jobs";
 
 import type { Workspace } from "../workspace/workspace.js";
 import { dispatchGithubJob } from "./github.js";
@@ -11,6 +16,108 @@ import { dispatchGithubJob } from "./github.js";
 export class JobManager {
   private log = logger.child({ module: "job-manager" });
   constructor(private workspace: Workspace) {}
+
+  private getIsJobJustCompleted(previous: schema.Job, current: schema.Job) {
+    const isPreviousStatusExited = exitedStatus.includes(
+      previous.status as JobStatus,
+    );
+    const isCurrentStatusExited = exitedStatus.includes(
+      current.status as JobStatus,
+    );
+    return !isPreviousStatusExited && isCurrentStatusExited;
+  }
+
+  private async getReleaseTarget(jobId: string) {
+    const allReleaseJobs =
+      await this.workspace.repository.releaseJobRepository.getAll();
+    const releaseJob = allReleaseJobs.find((r) => r.jobId === jobId);
+    if (releaseJob == null) return null;
+    const release = await this.workspace.repository.releaseRepository.get(
+      releaseJob.releaseId,
+    );
+    if (release == null) return null;
+    const versionRelease =
+      await this.workspace.repository.versionReleaseRepository.get(
+        release.versionReleaseId,
+      );
+    if (versionRelease == null) return null;
+    const releaseTarget =
+      await this.workspace.repository.releaseTargetRepository.get(
+        versionRelease.releaseTargetId,
+      );
+    return releaseTarget ?? null;
+  }
+
+  private async getReleaseFromJob(job: schema.Job) {
+    const allReleaseJobs =
+      await this.workspace.repository.releaseJobRepository.getAll();
+    const releaseJob = allReleaseJobs.find((r) => r.jobId === job.id);
+    if (releaseJob == null) return null;
+    const release = await this.workspace.repository.releaseRepository.get(
+      releaseJob.releaseId,
+    );
+    return release ?? null;
+  }
+
+  private async getNumJobsForRelease(
+    release: typeof schema.release.$inferSelect,
+  ) {
+    const allReleaseJobs =
+      await this.workspace.repository.releaseJobRepository.getAll();
+    return allReleaseJobs.filter((r) => r.releaseId === release.id).length;
+  }
+
+  private async maybeRetryJob(
+    releaseTarget: schema.ReleaseTarget,
+    job: schema.Job,
+  ) {
+    const isJobFailed = failedStatuses.includes(job.status as JobStatus);
+    if (!isJobFailed) return false;
+    const policyTargets =
+      await this.workspace.selectorManager.policyTargetReleaseTargetSelector.getSelectorsForEntity(
+        releaseTarget,
+      );
+    const policyTargetIds = new Set(policyTargets.map((pt) => pt.policyId));
+
+    const allPolicies =
+      await this.workspace.repository.policyRepository.getAll();
+    const matchedPolicies = allPolicies
+      .filter((p) => policyTargetIds.has(p.id))
+      .sort((a, b) => b.priority - a.priority);
+    for (const policy of matchedPolicies) {
+      const retryRule =
+        await this.workspace.repository.versionRuleRepository.getRetryRule(
+          policy.id,
+        );
+      if (retryRule == null) continue;
+
+      const release = await this.getReleaseFromJob(job);
+      if (release == null) return false;
+
+      const numJobsForRelease = await this.getNumJobsForRelease(release);
+      if (numJobsForRelease >= retryRule.maxRetries) return false;
+
+      const newJob = await this.createReleaseJob(release);
+      await this.dispatchJob(newJob);
+
+      return true;
+    }
+
+    return false;
+  }
+
+  async updateJob(previous: schema.Job, current: schema.Job) {
+    const updatedJob =
+      await this.workspace.repository.jobRepository.update(current);
+    if (!this.getIsJobJustCompleted(previous, updatedJob)) return;
+    const releaseTarget = await this.getReleaseTarget(updatedJob.id);
+    if (releaseTarget == null) return;
+
+    const didRetry = await this.maybeRetryJob(releaseTarget, updatedJob);
+    if (didRetry) return;
+
+    await this.workspace.releaseTargetManager.evaluate(releaseTarget);
+  }
 
   private async getJobAgentWithConfig(
     versionRelease: typeof schema.versionRelease.$inferSelect,

@@ -21,17 +21,17 @@ export enum Event {
   PolicyUpdated = "policy.updated",
   PolicyDeleted = "policy.deleted",
 
-  JobCreated = "job.created",
+  // JobCreated = "job.created",
   JobUpdated = "job.updated",
-  JobDeleted = "job.deleted",
+  // JobDeleted = "job.deleted",
 
-  ReleaseCreated = "release.created",
-  ReleaseUpdated = "release.updated",
-  ReleaseDeleted = "release.deleted",
+  // ReleaseCreated = "release.created",
+  // ReleaseUpdated = "release.updated",
+  // ReleaseDeleted = "release.deleted",
 
-  SystemCreated = "system.created",
-  SystemUpdated = "system.updated",
-  SystemDeleted = "system.deleted",
+  // SystemCreated = "system.created",
+  // SystemUpdated = "system.updated",
+  // SystemDeleted = "system.deleted",
 }
 
 export type FullPolicy = schema.Policy & {
@@ -74,12 +74,12 @@ export type EventPayload = {
   [Event.PolicyCreated]: FullPolicy;
   [Event.PolicyUpdated]: { previous: FullPolicy; current: FullPolicy };
   [Event.PolicyDeleted]: FullPolicy;
-  [Event.JobCreated]: schema.Job;
   [Event.JobUpdated]: { previous: schema.Job; current: schema.Job };
-  [Event.JobDeleted]: schema.Job;
-  [Event.SystemCreated]: schema.System;
-  [Event.SystemUpdated]: { previous: schema.System; current: schema.System };
-  [Event.SystemDeleted]: schema.System;
+  // [Event.JobCreated]: schema.Job;
+  // [Event.JobDeleted]: schema.Job;
+  // [Event.SystemCreated]: schema.System;
+  // [Event.SystemUpdated]: { previous: schema.System; current: schema.System };
+  // [Event.SystemDeleted]: schema.System;
 };
 
 export type Message<T extends keyof EventPayload> = {

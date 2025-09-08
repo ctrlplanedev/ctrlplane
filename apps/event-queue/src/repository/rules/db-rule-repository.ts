@@ -6,7 +6,12 @@ import type {
   Version,
 } from "@ctrlplane/rule-engine";
 
-import { allRules, buildConflictUpdateColumns, eq } from "@ctrlplane/db";
+import {
+  allRules,
+  buildConflictUpdateColumns,
+  eq,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -274,5 +279,13 @@ export class DbVersionRuleRepository implements VersionRuleRepository {
       lockRule,
       releaseTargetConcurrencyRule,
     ];
+  }
+
+  async getRetryRule(policyId: string) {
+    return this.db
+      .select()
+      .from(schema.policyRuleRetry)
+      .where(eq(schema.policyRuleRetry.policyId, policyId))
+      .then(takeFirstOrNull);
   }
 }

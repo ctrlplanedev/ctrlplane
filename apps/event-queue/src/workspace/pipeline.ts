@@ -59,6 +59,11 @@ export class OperationPipeline {
     return this;
   }
 
+  job(job: schema.Job) {
+    this.opts.job = job;
+    return this;
+  }
+
   private async getReleaseTargetsForDeploymentVersion(
     deploymentVersion: schema.DeploymentVersion,
   ) {
@@ -158,12 +163,18 @@ export class OperationPipeline {
           await this.getReleaseTargetsForDeploymentVersion(
             this.opts.deploymentVersion,
           );
-          break;
         }
-        if (this.opts.policy != null) {
-          await this.updatePolicy(this.opts.policy);
-          break;
+
+        if (this.opts.policy != null) await this.updatePolicy(this.opts.policy);
+
+        if (this.opts.job != null) {
+          const previous = await workspace.repository.jobRepository.get(
+            this.opts.job.id,
+          );
+          if (previous == null) throw new Error("Job not found");
+          await jobManager.updateJob(previous, this.opts.job);
         }
+
         await Promise.all([
           resource ? manager.updateResource(resource) : Promise.resolve(),
           environment
@@ -171,7 +182,9 @@ export class OperationPipeline {
             : Promise.resolve(),
           deployment ? manager.updateDeployment(deployment) : Promise.resolve(),
         ]);
-        await this.getReleaseTargetChanges();
+
+        if (resource != null || environment != null || deployment != null)
+          await this.getReleaseTargetChanges();
         break;
       case "delete":
         if (this.opts.deploymentVersion != null) {
@@ -181,12 +194,10 @@ export class OperationPipeline {
           await this.getReleaseTargetsForDeploymentVersion(
             this.opts.deploymentVersion,
           );
-          break;
         }
-        if (this.opts.policy != null) {
-          await this.removePolicy(this.opts.policy);
-          break;
-        }
+
+        if (this.opts.policy != null) await this.removePolicy(this.opts.policy);
+
         await Promise.all([
           resource ? manager.removeResource(resource) : Promise.resolve(),
           environment
@@ -194,7 +205,9 @@ export class OperationPipeline {
             : Promise.resolve(),
           deployment ? manager.removeDeployment(deployment) : Promise.resolve(),
         ]);
-        await this.getReleaseTargetChanges();
+
+        if (resource != null || environment != null || deployment != null)
+          await this.getReleaseTargetChanges();
         break;
     }
 
