@@ -3,6 +3,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { db } from "@ctrlplane/db/client";
+import { logger } from "@ctrlplane/logger";
 import { VariableReleaseManager } from "@ctrlplane/rule-engine";
 
 import type { Workspace } from "../workspace.js";
@@ -11,6 +12,8 @@ import { VersionManager } from "./evaluate/version-manager.js";
 type ReleaseTargetManagerOptions = {
   workspace: Workspace;
 };
+
+const log = logger.child({ module: "release-target-manager" });
 
 export class ReleaseTargetManager {
   private workspace: Workspace;
@@ -87,6 +90,28 @@ export class ReleaseTargetManager {
     return this.workspace.repository.releaseTargetRepository.getAll();
   }
 
+  private async persistAddedReleaseTargets(
+    releaseTargets: schema.ReleaseTarget[],
+  ) {
+    await Promise.all(
+      releaseTargets.map((releaseTarget) =>
+        this.workspace.repository.releaseTargetRepository.create(releaseTarget),
+      ),
+    );
+  }
+
+  private async persistRemovedReleaseTargets(
+    releaseTargets: schema.ReleaseTarget[],
+  ) {
+    await Promise.all(
+      releaseTargets.map((releaseTarget) =>
+        this.workspace.repository.releaseTargetRepository.delete(
+          releaseTarget.id,
+        ),
+      ),
+    );
+  }
+
   async computeReleaseTargetChanges() {
     const [existingReleaseTargets, computedReleaseTargets] = await Promise.all([
       this.getExistingReleaseTargets(),
@@ -118,6 +143,11 @@ export class ReleaseTargetManager {
               computedReleaseTarget.deploymentId,
         ),
     );
+
+    await Promise.all([
+      this.persistRemovedReleaseTargets(removedReleaseTargets),
+      this.persistAddedReleaseTargets(addedReleaseTargets),
+    ]);
 
     return { removedReleaseTargets, addedReleaseTargets };
   }
@@ -229,32 +259,37 @@ export class ReleaseTargetManager {
   }
 
   async evaluate(releaseTarget: schema.ReleaseTarget) {
-    const [versionRelease, variableRelease] = await Promise.all([
-      this.handleVersionRelease(releaseTarget),
-      this.handleVariableRelease(releaseTarget),
-    ]);
+    try {
+      const [versionRelease, variableRelease] = await Promise.all([
+        this.handleVersionRelease(releaseTarget),
+        this.handleVariableRelease(releaseTarget),
+      ]);
 
-    if (versionRelease == null) return;
+      if (versionRelease == null) return;
 
-    const currentRelease = await this.getCurrentRelease(releaseTarget);
-    if (currentRelease == null) {
+      const currentRelease = await this.getCurrentRelease(releaseTarget);
+      if (currentRelease == null) {
+        const release = await this.insertNewRelease(
+          versionRelease.id,
+          variableRelease.id,
+        );
+        return this.createReleaseJob(release);
+      }
+
+      const hasAnythingChanged = this.getHasAnythingChanged(currentRelease, {
+        versionReleaseId: versionRelease.id,
+        variableReleaseId: variableRelease.id,
+      });
+      if (!hasAnythingChanged) return;
+
       const release = await this.insertNewRelease(
         versionRelease.id,
         variableRelease.id,
       );
       return this.createReleaseJob(release);
+    } catch (error) {
+      log.error("Error inserting new release: ", { error });
+      throw error;
     }
-
-    const hasAnythingChanged = this.getHasAnythingChanged(currentRelease, {
-      versionReleaseId: versionRelease.id,
-      variableReleaseId: variableRelease.id,
-    });
-    if (!hasAnythingChanged) return;
-
-    const release = await this.insertNewRelease(
-      versionRelease.id,
-      variableRelease.id,
-    );
-    return this.createReleaseJob(release);
   }
 }
