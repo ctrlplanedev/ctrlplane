@@ -2,13 +2,11 @@ import { z } from "zod";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-
-const updateResourceVariableQueue = getQueue(Channel.UpdateResourceVariable);
 
 export const resourceVariables = createTRPCRouter({
   // For direct variables only
@@ -36,7 +34,7 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await updateResourceVariableQueue.add(variable.id, variable);
+      await eventDispatcher.dispatchResourceVariableCreated(variable);
       return variable;
     }),
 
@@ -61,7 +59,7 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await updateResourceVariableQueue.add(variable.id, variable);
+      await eventDispatcher.dispatchResourceVariableCreated(variable);
       return variable;
     }),
 
@@ -84,6 +82,12 @@ export const resourceVariables = createTRPCRouter({
       },
     })
     .mutation(async ({ ctx, input }) => {
+      const prevVariable = await ctx.db
+        .select()
+        .from(schema.resourceVariable)
+        .where(eq(schema.resourceVariable.id, input.id))
+        .then(takeFirst);
+
       const { sensitive } = input.data;
       const value = sensitive
         ? variablesAES256().encrypt(String(input.data.value))
@@ -96,7 +100,10 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst)
         .then(async (variable) => {
-          await updateResourceVariableQueue.add(variable.id, variable);
+          await eventDispatcher.dispatchResourceVariableUpdated(
+            prevVariable,
+            variable,
+          );
           return variable;
         });
     }),
@@ -124,7 +131,7 @@ export const resourceVariables = createTRPCRouter({
         .returning()
         .then(takeFirst)
         .then(async (variable) => {
-          await updateResourceVariableQueue.add(variable.id, variable);
+          await eventDispatcher.dispatchResourceVariableDeleted(variable);
           return variable;
         }),
     ),

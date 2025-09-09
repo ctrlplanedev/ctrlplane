@@ -6,7 +6,7 @@ import { z } from "zod";
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, dispatchQueueJob, getQueue } from "@ctrlplane/events";
+import { Channel, eventDispatcher, getQueue } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -57,9 +57,13 @@ const handleDeployment = async (
     return;
   }
 
-  await dispatchQueueJob()
-    .toEvaluate()
-    .releaseTargets(releaseTargets, { skipDuplicateCheck: true });
+  await Promise.all(
+    releaseTargets.map((releaseTarget) =>
+      eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget, {
+        skipDuplicateCheck: true,
+      }),
+    ),
+  );
 };
 
 const redeployProcedure = protectedProcedure

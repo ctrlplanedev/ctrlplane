@@ -1,3 +1,4 @@
+import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -21,16 +22,32 @@ import {
   system,
   updateDeploymentVariable,
 } from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import * as schema from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { byDeploymentId } from "./by-deployment-id";
 import { valueRouter } from "./deployment-variable-value";
 
-const updateDeploymentVariableQueue = getQueue(
-  Channel.UpdateDeploymentVariable,
-);
+const getVariableAndValues = async (tx: Tx, variableId: string) =>
+  tx
+    .select()
+    .from(schema.deploymentVariable)
+    .where(eq(schema.deploymentVariable.id, variableId))
+    .innerJoin(
+      schema.deploymentVariableValue,
+      eq(
+        schema.deploymentVariableValue.variableId,
+        schema.deploymentVariable.id,
+      ),
+    )
+    .then((rows) => {
+      if (rows.length === 0) return null;
+      const variable = rows[0]!.deployment_variable;
+      const values = rows.map((r) => r.deployment_variable_value);
+      return { ...variable, values };
+    });
 
 export const deploymentVariableRouter = createTRPCRouter({
   value: valueRouter,
@@ -113,10 +130,12 @@ export const deploymentVariableRouter = createTRPCRouter({
         data: createDeploymentVariable,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { deploymentId, data } = input;
       const variable = await upsertDeploymentVariable(deploymentId, data);
-      await updateDeploymentVariableQueue.add(variable.id, variable);
+      const fullVar = await getVariableAndValues(ctx.db, variable.id);
+      if (fullVar == null) throw new Error("Variable not found");
+      await eventDispatcher.dispatchDeploymentVariableCreated(fullVar);
       return variable;
     }),
 
@@ -128,18 +147,24 @@ export const deploymentVariableRouter = createTRPCRouter({
           .on({ type: "deploymentVariable", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateDeploymentVariable }))
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const prevVariable = await getVariableAndValues(ctx.db, input.id);
+      if (prevVariable == null) throw new Error("Variable not found");
+
+      const updatedVariable = await ctx.db
         .update(deploymentVariable)
         .set(input.data)
         .where(eq(deploymentVariable.id, input.id))
         .returning()
-        .then(takeFirst)
-        .then(async (variable) => {
-          await updateDeploymentVariableQueue.add(variable.id, variable);
-          return variable;
-        }),
-    ),
+        .then(takeFirst);
+      const fullVar = await getVariableAndValues(ctx.db, updatedVariable.id);
+      if (fullVar == null) throw new Error("Variable not found");
+      await eventDispatcher.dispatchDeploymentVariableUpdated(
+        prevVariable,
+        fullVar,
+      );
+      return updatedVariable;
+    }),
 
   delete: protectedProcedure
     .meta({
@@ -156,9 +181,8 @@ export const deploymentVariableRouter = createTRPCRouter({
         .where(eq(deploymentVariable.id, input))
         .returning()
         .then(takeFirst)
-        .then(async (variable) => {
-          await updateDeploymentVariableQueue.add(variable.id, variable);
-          return variable;
+        .then((variable) => {
+          eventDispatcher.dispatchDeploymentVariableDeleted(variable);
         }),
     ),
 });

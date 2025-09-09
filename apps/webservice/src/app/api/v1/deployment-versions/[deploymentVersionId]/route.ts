@@ -13,7 +13,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -212,8 +212,8 @@ export const PATCH = request()
       );
       if (!shouldTrigger) return NextResponse.json(deploymentVersion);
 
-      getQueue(Channel.NewDeploymentVersion).add(
-        deploymentVersion.id,
+      await eventDispatcher.dispatchDeploymentVersionUpdated(
+        prevDeploymentVersion,
         deploymentVersion,
       );
 

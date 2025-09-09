@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { eq, takeFirstOrNull, upsertEnv } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -38,13 +38,13 @@ export const POST = request()
       const environment = await upsertEnv(db, body);
 
       if (existingEnv != null)
-        await getQueue(Channel.UpdateEnvironment).add(environment.id, {
-          ...environment,
-          oldSelector: existingEnv.resourceSelector,
-        });
+        await eventDispatcher.dispatchEnvironmentUpdated(
+          existingEnv,
+          environment,
+        );
 
       if (existingEnv == null)
-        await getQueue(Channel.NewEnvironment).add(environment.id, environment);
+        await eventDispatcher.dispatchEnvironmentCreated(environment);
 
       return NextResponse.json(environment);
     },

@@ -5,12 +5,7 @@ import { z } from "zod";
 import { getResource, upsertResources } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import {
-  Channel,
-  dispatchResourceCreated,
-  dispatchResourceUpdated,
-  getQueue,
-} from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { getAffectedVariables } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -63,18 +58,6 @@ const patchBodySchema = schema.createResource
       ),
   });
 
-const sendResourceEvent = async (
-  previous: schema.Resource | null,
-  current: schema.Resource,
-) => {
-  if (previous == null) {
-    await dispatchResourceCreated(current, "api");
-    return;
-  }
-
-  await dispatchResourceUpdated(previous, current, "api");
-};
-
 export const POST = request()
   .use(authn)
   .use(parseBody(patchBodySchema))
@@ -106,16 +89,14 @@ export const POST = request()
             { error: "Failed to update resources" },
             { status: INTERNAL_SERVER_ERROR },
           );
-        const queueChannel =
-          existingResource != null
-            ? Channel.UpdatedResource
-            : Channel.NewResource;
 
-        getQueue(queueChannel).add(insertedResource.id, insertedResource, {
-          jobId: insertedResource.id,
-        });
-
-        await sendResourceEvent(existingResource, insertedResource);
+        if (existingResource != null)
+          await eventDispatcher.dispatchResourceUpdated(
+            existingResource,
+            insertedResource,
+          );
+        if (existingResource == null)
+          await eventDispatcher.dispatchResourceCreated(insertedResource);
 
         const affectedVariables = getAffectedVariables(
           existingResource?.variables ?? [],
@@ -123,8 +104,8 @@ export const POST = request()
         );
 
         for (const variable of affectedVariables)
-          await getQueue(Channel.UpdateResourceVariable).add(
-            variable.id,
+          await eventDispatcher.dispatchResourceVariableUpdated(
+            variable,
             variable,
           );
 

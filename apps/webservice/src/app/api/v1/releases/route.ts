@@ -11,7 +11,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
@@ -125,11 +125,15 @@ export const POST = request()
         (prevVersion.status !== DeploymentVersionStatus.Ready &&
           depVersion.status === DeploymentVersionStatus.Ready);
 
-      if (shouldTrigger)
-        await getQueue(Channel.NewDeploymentVersion).add(
-          depVersion.id,
-          depVersion,
-        );
+      if (shouldTrigger) {
+        if (prevVersion != null)
+          await eventDispatcher.dispatchDeploymentVersionUpdated(
+            prevVersion,
+            depVersion,
+          );
+        if (prevVersion == null)
+          await eventDispatcher.dispatchDeploymentVersionCreated(depVersion);
+      }
 
       return NextResponse.json(
         { ...depVersion, metadata },

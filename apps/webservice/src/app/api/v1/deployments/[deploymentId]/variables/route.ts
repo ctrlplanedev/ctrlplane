@@ -10,7 +10,7 @@ import {
   upsertDeploymentVariable,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { getResolvedDirectValue } from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -176,10 +176,7 @@ export const POST = request()
 
       const variable = await upsertDeploymentVariable(deploymentId, body);
 
-      await getQueue(Channel.UpdateDeploymentVariable).add(
-        variable.id,
-        variable,
-      );
+      await eventDispatcher.dispatchDeploymentVariableCreated(variable);
 
       const defaultValue = await getDefaultValue(db, variable);
 

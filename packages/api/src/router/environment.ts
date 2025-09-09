@@ -12,7 +12,7 @@ import {
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -182,7 +182,7 @@ export const environmentRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       ctx.db.transaction(async (db) => {
         const env = await upsertEnv(db, input);
-        await getQueue(Channel.NewEnvironment).add(env.id, env);
+        await eventDispatcher.dispatchEnvironmentCreated(env);
         return env;
       }),
     ),
@@ -210,10 +210,10 @@ export const environmentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      getQueue(Channel.UpdateEnvironment).add(input.id, {
-        ...updatedEnv,
-        oldSelector: oldEnv.environment.resourceSelector,
-      });
+      await eventDispatcher.dispatchEnvironmentUpdated(
+        oldEnv.environment,
+        updatedEnv,
+      );
 
       return updatedEnv;
     }),
@@ -226,12 +226,16 @@ export const environmentRouter = createTRPCRouter({
           .on({ type: "environment", id: input }),
     })
     .input(z.string().uuid())
-    .mutation(({ input }) =>
-      getQueue(Channel.DeleteEnvironment).add(
-        input,
-        { id: input },
-        { deduplication: { id: input } },
-      ),
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(environment)
+        .where(eq(environment.id, input))
+        .then(takeFirst)
+        .then((env) => {
+          eventDispatcher.dispatchEnvironmentDeleted(env);
+          return env;
+        }),
     ),
 
   resources: protectedProcedure

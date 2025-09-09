@@ -5,7 +5,7 @@ import { INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import { eq, rulesAndTargets } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { updatePolicyInTx } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -89,6 +89,7 @@ export const PATCH = request()
 
       const existingPolicy = await db.query.policy.findFirst({
         where: eq(SCHEMA.policy.id, policyId),
+        with: rulesAndTargets,
       });
 
       if (!existingPolicy)
@@ -100,7 +101,12 @@ export const PATCH = request()
       const policy = await db.transaction(async (tx) =>
         updatePolicyInTx(tx, policyId, body),
       );
-      await getQueue(Channel.UpdatePolicy).add(policy.id, policy);
+      const fullPolicy = await db.query.policy.findFirst({
+        where: eq(SCHEMA.policy.id, policyId),
+        with: rulesAndTargets,
+      });
+      if (fullPolicy == null) throw new Error("Policy not found");
+      await eventDispatcher.dispatchPolicyUpdated(existingPolicy, fullPolicy);
 
       return NextResponse.json(policy);
     } catch (error) {

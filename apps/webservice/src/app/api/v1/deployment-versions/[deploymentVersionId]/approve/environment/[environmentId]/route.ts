@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { and, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -107,9 +107,11 @@ export const POST = request()
       ),
     });
 
-    await dispatchQueueJob()
-      .toEvaluate()
-      .releaseTargets(affectedReleaseTargets);
+    await Promise.all(
+      affectedReleaseTargets.map((rt) =>
+        eventDispatcher.dispatchEvaluateReleaseTarget(rt),
+      ),
+    );
 
     return NextResponse.json(record);
   });

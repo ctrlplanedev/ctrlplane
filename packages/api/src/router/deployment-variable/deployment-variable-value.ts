@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import {
@@ -8,24 +9,29 @@ import {
   upsertReferenceVariableValue,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 
-const updateDeploymentVariableQueue = getQueue(
-  Channel.UpdateDeploymentVariable,
-);
-
-const addVariableToQueue = async (db: Tx, variableId: string) => {
-  const variable = await db
+const getVariableAndValues = async (tx: Tx, variableId: string) =>
+  tx
     .select()
     .from(schema.deploymentVariable)
     .where(eq(schema.deploymentVariable.id, variableId))
-    .then(takeFirst);
-
-  await updateDeploymentVariableQueue.add(variable.id, variable);
-};
+    .innerJoin(
+      schema.deploymentVariableValue,
+      eq(
+        schema.deploymentVariableValue.variableId,
+        schema.deploymentVariable.id,
+      ),
+    )
+    .then((rows) => {
+      if (rows.length === 0) return null;
+      const variable = rows[0]!.deployment_variable;
+      const values = rows.map((r) => r.deployment_variable_value);
+      return { ...variable, values };
+    });
 
 const directValueRouter = createTRPCRouter({
   create: protectedProcedure
@@ -43,10 +49,25 @@ const directValueRouter = createTRPCRouter({
         }),
     })
     .mutation(async ({ ctx, input }) => {
+      const prevVariable = await getVariableAndValues(ctx.db, input.variableId);
+      if (prevVariable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
       const insertedValue = await ctx.db.transaction((tx) =>
         upsertDirectVariableValue(tx, input.variableId, input.data),
       );
-      await addVariableToQueue(ctx.db, input.variableId);
+      const variable = await getVariableAndValues(ctx.db, input.variableId);
+      if (variable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
+      await eventDispatcher.dispatchDeploymentVariableUpdated(
+        prevVariable,
+        variable,
+      );
       return insertedValue;
     }),
 
@@ -65,10 +86,31 @@ const directValueRouter = createTRPCRouter({
         }),
     })
     .mutation(async ({ ctx, input }) => {
+      const { variableId } = await ctx.db
+        .select()
+        .from(schema.deploymentVariableValue)
+        .where(eq(schema.deploymentVariableValue.id, input.id))
+        .then(takeFirst);
+
+      const prevVariable = await getVariableAndValues(ctx.db, variableId);
+      if (prevVariable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
       const updatedValue = await ctx.db.transaction((tx) =>
         upsertDirectVariableValue(tx, input.id, input.data),
       );
-      await addVariableToQueue(ctx.db, updatedValue.variableId);
+      const variable = await getVariableAndValues(ctx.db, variableId);
+      if (variable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
+      await eventDispatcher.dispatchDeploymentVariableUpdated(
+        prevVariable,
+        variable,
+      );
       return updatedValue;
     }),
 });
@@ -89,10 +131,25 @@ const referenceValueRouter = createTRPCRouter({
         }),
     })
     .mutation(async ({ ctx, input }) => {
+      const prevVariable = await getVariableAndValues(ctx.db, input.variableId);
+      if (prevVariable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
       const insertedValue = await ctx.db.transaction((tx) =>
         upsertReferenceVariableValue(tx, input.variableId, input.data),
       );
-      await addVariableToQueue(ctx.db, input.variableId);
+      const variable = await getVariableAndValues(ctx.db, input.variableId);
+      if (variable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
+      await eventDispatcher.dispatchDeploymentVariableUpdated(
+        prevVariable,
+        variable,
+      );
       return insertedValue;
     }),
 
@@ -111,10 +168,30 @@ const referenceValueRouter = createTRPCRouter({
         }),
     })
     .mutation(async ({ ctx, input }) => {
+      const { variableId } = await ctx.db
+        .select()
+        .from(schema.deploymentVariableValue)
+        .where(eq(schema.deploymentVariableValue.id, input.id))
+        .then(takeFirst);
+      const prevVariable = await getVariableAndValues(ctx.db, variableId);
+      if (prevVariable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
       const updatedValue = await ctx.db.transaction((tx) =>
         upsertReferenceVariableValue(tx, input.id, input.data),
       );
-      await addVariableToQueue(ctx.db, updatedValue.variableId);
+      const variable = await getVariableAndValues(ctx.db, variableId);
+      if (variable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
+      await eventDispatcher.dispatchDeploymentVariableUpdated(
+        prevVariable,
+        variable,
+      );
       return updatedValue;
     }),
 });
@@ -131,9 +208,36 @@ export const valueRouter = createTRPCRouter({
           id: input,
         }),
     })
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const { variableId } = await ctx.db
+        .select()
+        .from(schema.deploymentVariableValue)
+        .where(eq(schema.deploymentVariableValue.id, input))
+        .then(takeFirst);
+
+      const prevVariable = await getVariableAndValues(ctx.db, variableId);
+      if (prevVariable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
+
+      const deletedValue = await ctx.db
         .delete(schema.deploymentVariableValue)
-        .where(eq(schema.deploymentVariableValue.id, input)),
-    ),
+        .where(eq(schema.deploymentVariableValue.id, input))
+        .returning()
+        .then(takeFirst);
+
+      const variable = await getVariableAndValues(ctx.db, variableId);
+      if (variable == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Variable not found",
+        });
+      await eventDispatcher.dispatchDeploymentVariableUpdated(
+        prevVariable,
+        variable,
+      );
+      return deletedValue;
+    }),
 });

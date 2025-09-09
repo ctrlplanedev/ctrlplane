@@ -21,7 +21,7 @@ import {
   getResourceRelationshipRules,
 } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
@@ -386,8 +386,8 @@ export const resourceRouter = createTRPCRouter({
       const resources = await ctx.db.query.resource.findMany({
         where: and(inArray(schema.resource.id, input), isNotDeleted),
       });
-      await getQueue(Channel.DeleteResource).addBulk(
-        resources.map((r) => ({ name: r.id, data: r })),
+      await Promise.all(
+        resources.map((r) => eventDispatcher.dispatchResourceDeleted(r)),
       );
       return resources;
     }),

@@ -1,7 +1,7 @@
 import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 
 import { getEventsForDeploymentRemoved, handleEvent } from "./events/index.js";
 
@@ -63,10 +63,10 @@ export const updateDeployment = async (
       prevDeployment.systemId,
     );
 
-  getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
-    new: updatedDeployment,
-    old: prevDeployment,
-  });
+  await eventDispatcher.dispatchDeploymentUpdated(
+    prevDeployment,
+    updatedDeployment,
+  );
 
   const sys = await db
     .select()

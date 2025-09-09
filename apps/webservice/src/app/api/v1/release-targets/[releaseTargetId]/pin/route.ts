@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -92,7 +92,7 @@ export const POST = request()
         );
 
       await pinVersion(db, releaseTargetId, version.id);
-      await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
+      await eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget);
 
       return NextResponse.json({ success: true });
     } catch (error) {

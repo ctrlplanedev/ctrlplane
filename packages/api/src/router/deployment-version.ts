@@ -16,7 +16,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { jobCondition } from "@ctrlplane/validators/jobs";
 import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
@@ -230,7 +230,7 @@ export const versionRouter = createTRPCRouter({
       if (versionDeps.length > 0)
         await ctx.db.insert(SCHEMA.versionDependency).values(versionDeps);
 
-      getQueue(Channel.NewDeploymentVersion).add(rel.id, rel);
+      await eventDispatcher.dispatchDeploymentVersionCreated(rel);
 
       return rel;
     }),
@@ -239,19 +239,22 @@ export const versionRouter = createTRPCRouter({
     .input(
       z.object({ id: z.string().uuid(), data: SCHEMA.updateDeploymentVersion }),
     )
-    .mutation(async ({ input: { id, data } }) =>
-      db
+    .mutation(async ({ input: { id, data } }) => {
+      const prev = await db
+        .select()
+        .from(SCHEMA.deploymentVersion)
+        .where(eq(SCHEMA.deploymentVersion.id, id))
+        .then(takeFirst);
+
+      const updated = await db
         .update(SCHEMA.deploymentVersion)
         .set(data)
         .where(eq(SCHEMA.deploymentVersion.id, id))
         .returning()
-        .then(takeFirst)
-        .then((rel) =>
-          getQueue(Channel.NewDeploymentVersion)
-            .add(rel.id, rel)
-            .then(() => rel),
-        ),
-    ),
+        .then(takeFirst);
+
+      await eventDispatcher.dispatchDeploymentVersionUpdated(prev, updated);
+    }),
 
   status: createTRPCRouter({
     bySystemDirectory: protectedProcedure

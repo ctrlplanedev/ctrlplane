@@ -1,7 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { dispatchJobUpdated } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import {
   exitedStatus,
@@ -253,7 +252,7 @@ export class JobManager {
           },
         );
 
-        await dispatchJobUpdated(job, updatedJob, this.workspace.id);
+        await this.updateJob(job, updatedJob);
       }
     }
   }

@@ -2,8 +2,9 @@ import type { z } from "zod";
 import { NextResponse } from "next/server";
 import { INTERNAL_SERVER_ERROR } from "http-status";
 
+import { eq, rulesAndTargets } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { createPolicyInTx } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -28,8 +29,13 @@ export const POST = request()
     async ({ db, body }) => {
       try {
         const policy = await db.transaction((tx) => createPolicyInTx(tx, body));
-        await getQueue(Channel.NewPolicy).add(policy.id, policy);
-        return NextResponse.json(policy);
+        const fullPolicy = await db.query.policy.findFirst({
+          where: eq(SCHEMA.policy.id, policy.id),
+          with: rulesAndTargets,
+        });
+        if (fullPolicy == null) throw new Error("Policy not found");
+        await eventDispatcher.dispatchPolicyCreated(fullPolicy);
+        return NextResponse.json(fullPolicy);
       } catch (error) {
         log.error("Failed to create policy", { error });
         return NextResponse.json(

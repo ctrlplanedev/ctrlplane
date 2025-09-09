@@ -1,7 +1,7 @@
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 const getReleaseTargetsAffectedByRolloutRule = (
@@ -62,7 +62,11 @@ const triggerPolicyEvaluation = async () => {
       );
       totalProcessed += releaseTargets.length;
 
-      await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
+      await Promise.all(
+        releaseTargets.map((rt) =>
+          eventDispatcher.dispatchEvaluateReleaseTarget(rt),
+        ),
+      );
 
       offset += PAGE_SIZE;
     } catch (error) {

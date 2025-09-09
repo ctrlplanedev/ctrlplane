@@ -12,7 +12,7 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, dispatchQueueJob, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import {
   getAffectedVariables,
@@ -160,7 +160,8 @@ export const PATCH = request()
       };
 
       const isChanged = isResourceChanged(resource, res);
-      if (isChanged) await dispatchQueueJob().toUpdatedResource([res]);
+      if (isChanged)
+        await eventDispatcher.dispatchResourceUpdated(resource, res);
 
       const affectedVariables = getAffectedVariables(
         prevVariables,
@@ -168,10 +169,24 @@ export const PATCH = request()
       );
 
       for (const variable of affectedVariables)
-        await getQueue(Channel.UpdateResourceVariable).add(
-          variable.id,
+        await eventDispatcher.dispatchResourceVariableUpdated(
+          variable,
           variable,
         );
+
+      const isConfigChanged = !_.isEqual(resource.config, res.config);
+      if (isConfigChanged) {
+        const releaseTargets = await db.query.releaseTarget.findMany({
+          where: eq(schema.releaseTarget.resourceId, res.id),
+        });
+        await Promise.all(
+          releaseTargets.map((rt) =>
+            eventDispatcher.dispatchEvaluateReleaseTarget(rt, {
+              skipDuplicateCheck: true,
+            }),
+          ),
+        );
+      }
 
       return NextResponse.json(resourceWithMeta);
     } catch (err) {
@@ -209,7 +224,7 @@ export const DELETE = request()
           { status: 404 },
         );
 
-      await getQueue(Channel.DeleteResource).add(resource.id, resource);
+      await eventDispatcher.dispatchResourceDeleted(resource);
       return NextResponse.json({ success: true });
     },
   );

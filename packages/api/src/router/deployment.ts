@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { updateDeployment } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -107,7 +107,7 @@ const hookRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        await getQueue(Channel.NewDeployment).add(dep.id, dep);
+        await eventDispatcher.dispatchDeploymentCreated(dep);
 
         return { ...h, runhook: rh };
       }),
@@ -230,7 +230,7 @@ export const deploymentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst)
         .then((dep) => {
-          getQueue(Channel.NewDeployment).add(dep.id, dep);
+          eventDispatcher.dispatchDeploymentCreated(dep);
           return dep;
         }),
     ),
@@ -253,12 +253,16 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "deployment", id: input }),
     })
     .input(z.string().uuid())
-    .mutation(({ input }) =>
-      getQueue(Channel.DeleteDeployment).add(
-        input,
-        { id: input },
-        { deduplication: { id: input } },
-      ),
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(SCHEMA.deployment)
+        .where(eq(SCHEMA.deployment.id, input))
+        .then(takeFirst)
+        .then((dep) => {
+          eventDispatcher.dispatchDeploymentDeleted(dep);
+          return dep;
+        }),
     ),
 
   byId: protectedProcedure

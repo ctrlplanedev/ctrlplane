@@ -4,7 +4,7 @@ import { and, eq, getResource, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -129,7 +129,7 @@ export const DELETE = request()
       .set({ deletedAt: new Date() })
       .where(eq(schema.resource.id, resource.id));
 
-    await getQueue(Channel.DeleteResource).add(resource.id, resource);
+    await eventDispatcher.dispatchResourceDeleted(resource);
 
     return NextResponse.json({ success: true });
   });

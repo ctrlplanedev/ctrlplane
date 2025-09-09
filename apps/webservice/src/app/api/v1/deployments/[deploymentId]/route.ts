@@ -5,7 +5,7 @@ import httpStatus from "http-status";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -123,10 +123,10 @@ export const PATCH = request()
         for (const eh of exitHooks)
           await upsertExitHook(db, updatedDeployment, eh);
 
-      await getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
-        new: updatedDeployment,
-        old: deployment,
-      });
+      await eventDispatcher.dispatchDeploymentUpdated(
+        deployment,
+        updatedDeployment,
+      );
 
       return NextResponse.json(updatedDeployment);
     } catch (error) {

@@ -14,7 +14,7 @@ import {
 } from "@ctrlplane/db";
 import { createPolicy, policy, updatePolicy } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { createPolicyInTx, updatePolicyInTx } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -225,7 +225,12 @@ export const policyRouter = createTRPCRouter({
       const policy = await ctx.db.transaction((tx) =>
         createPolicyInTx(tx, input),
       );
-      await getQueue(Channel.NewPolicy).add(policy.id, policy);
+      const fullPolicy = await ctx.db.query.policy.findFirst({
+        where: eq(schema.policy.id, policy.id),
+        with: rulesAndTargets,
+      });
+      if (fullPolicy == null) throw new Error("Policy not found");
+      await eventDispatcher.dispatchPolicyCreated(fullPolicy);
       return policy;
     }),
 
@@ -238,10 +243,22 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updatePolicy }))
     .mutation(async ({ ctx, input }) => {
+      const prevPolicy = await ctx.db.query.policy.findFirst({
+        where: eq(schema.policy.id, input.id),
+        with: rulesAndTargets,
+      });
+      if (prevPolicy == null) throw new Error("Policy not found");
+
       const policy = await ctx.db.transaction((tx) =>
         updatePolicyInTx(tx, input.id, input.data),
       );
-      await getQueue(Channel.UpdatePolicy).add(policy.id, policy);
+
+      const fullPolicy = await ctx.db.query.policy.findFirst({
+        where: eq(schema.policy.id, policy.id),
+        with: rulesAndTargets,
+      });
+      if (fullPolicy == null) throw new Error("Policy not found");
+      await eventDispatcher.dispatchPolicyUpdated(prevPolicy, fullPolicy);
       return policy;
     }),
 
@@ -258,6 +275,15 @@ export const policyRouter = createTRPCRouter({
         .delete(policy)
         .where(eq(policy.id, input))
         .returning()
-        .then(takeFirst),
+        .then(takeFirst)
+        .then(async (policy) => {
+          const fullPolicy = await ctx.db.query.policy.findFirst({
+            where: eq(schema.policy.id, policy.id),
+            with: rulesAndTargets,
+          });
+          if (fullPolicy == null) throw new Error("Policy not found");
+          await eventDispatcher.dispatchPolicyDeleted(fullPolicy);
+          return policy;
+        }),
     ),
 });

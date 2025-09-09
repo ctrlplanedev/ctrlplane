@@ -3,7 +3,7 @@ import { NOT_FOUND } from "http-status";
 
 import { eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
@@ -59,11 +59,7 @@ export const DELETE = request()
           { status: NOT_FOUND },
         );
 
-      await getQueue(Channel.DeleteEnvironment).add(
-        environmentId,
-        { id: environmentId },
-        { deduplication: { id: environmentId } },
-      );
+      await eventDispatcher.dispatchEnvironmentDeleted(findEnv);
 
       return NextResponse.json(findEnv);
     },

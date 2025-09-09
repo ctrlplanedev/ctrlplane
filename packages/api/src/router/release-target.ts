@@ -11,7 +11,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import { exitedStatus } from "@ctrlplane/validators/jobs";
 
@@ -322,7 +322,7 @@ export const releaseTargetRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
+      await eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget);
 
       return releaseTarget;
     }),
@@ -344,7 +344,7 @@ export const releaseTargetRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      await dispatchQueueJob().toEvaluate().releaseTargets([releaseTarget]);
+      await eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget);
 
       return releaseTarget;
     }),

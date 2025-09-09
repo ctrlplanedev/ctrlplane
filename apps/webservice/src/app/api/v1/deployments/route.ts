@@ -4,7 +4,7 @@ import httpStatus from "http-status";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -47,10 +47,10 @@ export const POST = request()
           .returning()
           .then(takeFirst);
 
-        await getQueue(Channel.UpdateDeployment).add(updatedDeployment.id, {
-          new: updatedDeployment,
-          old: existingDeployment,
-        });
+        await eventDispatcher.dispatchDeploymentUpdated(
+          existingDeployment,
+          updatedDeployment,
+        );
 
         if (exitHooks != null)
           for (const eh of exitHooks)
@@ -70,10 +70,7 @@ export const POST = request()
         for (const eh of exitHooks)
           await upsertExitHook(ctx.db, newDeployment, eh);
 
-      await getQueue(Channel.NewDeployment).add(
-        newDeployment.id,
-        newDeployment,
-      );
+      await eventDispatcher.dispatchDeploymentCreated(newDeployment);
 
       return NextResponse.json(newDeployment, { status: httpStatus.CREATED });
     } catch (error) {

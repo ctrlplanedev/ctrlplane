@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { and, eq, isNotNull, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -27,7 +27,11 @@ const pinReleaseTargetsToVersion = async (
     )
     .returning();
 
-  await dispatchQueueJob().toEvaluate().releaseTargets(releaseTargets);
+  await Promise.all(
+    releaseTargets.map((releaseTarget) =>
+      eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget),
+    ),
+  );
 
   return releaseTargets;
 };

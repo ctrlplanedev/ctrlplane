@@ -11,9 +11,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { getAffectedVariables } from "@ctrlplane/rule-engine";
 
-import { dispatchQueueJob } from "../dispatch-jobs.js";
-import { getQueue } from "../index.js";
-import { Channel } from "../types.js";
+import { eventDispatcher } from "../index.js";
 import { groupResourcesByHook } from "./group-resources-by-hook.js";
 
 const log = logger.child({ label: "upsert-resources" });
@@ -101,8 +99,8 @@ export const handleResourceProviderScan = async (
           ),
         );
 
-    const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
-    const deleteJobs = toDelete.map((r) => ({ name: r.id, data: r }));
+    // const insertJobs = insertedResources.map((r) => ({ name: r.id, data: r }));
+    // const deleteJobs = toDelete.map((r) => ({ name: r.id, data: r }));
     const changedResources = updatedResources.filter((r) => {
       const previous = previousResources.find(
         (pr) =>
@@ -112,18 +110,31 @@ export const handleResourceProviderScan = async (
       return isResourceChanged(previous, r);
     });
 
-    await getQueue(Channel.DeleteResource).addBulk(deleteJobs);
-    await getQueue(Channel.NewResource).addBulk(insertJobs);
-    if (changedResources.length > 0)
-      await dispatchQueueJob().toUpdatedResource(changedResources);
+    await Promise.all(
+      insertedResources.map((r) => eventDispatcher.dispatchResourceCreated(r)),
+    );
+    await Promise.all(
+      toDelete.map((r) => eventDispatcher.dispatchResourceDeleted(r)),
+    );
+
+    if (changedResources.length > 0) {
+      await Promise.all(
+        changedResources.map(async (r) => {
+          const previous = previousResources.find(
+            (pr) =>
+              pr.identifier === r.identifier &&
+              pr.workspaceId === r.workspaceId,
+          );
+          if (previous != null)
+            await eventDispatcher.dispatchResourceUpdated(previous, r);
+        }),
+      );
+    }
 
     for (const resource of insertedResources) {
       const { variables } = resource;
       for (const variable of variables)
-        await getQueue(Channel.UpdateResourceVariable).add(
-          variable.id,
-          variable,
-        );
+        await eventDispatcher.dispatchResourceVariableCreated(variable);
     }
 
     for (const resource of updatedResources) {
@@ -131,11 +142,15 @@ export const handleResourceProviderScan = async (
       const previousVars = previousVariables[resource.identifier] ?? [];
 
       const affectedVariables = getAffectedVariables(previousVars, variables);
-      for (const variable of affectedVariables)
-        await getQueue(Channel.UpdateResourceVariable).add(
-          variable.id,
-          variable,
+      for (const variable of affectedVariables) {
+        const prev = previousVariables[resource.identifier]?.find(
+          (v) => v.key === variable.key,
         );
+        if (prev != null)
+          await eventDispatcher.dispatchResourceVariableUpdated(prev, variable);
+        if (prev == null)
+          await eventDispatcher.dispatchResourceVariableCreated(variable);
+      }
     }
 
     log.info("completed handling resource provider scan");

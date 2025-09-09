@@ -12,7 +12,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
@@ -172,11 +172,17 @@ export const POST = request()
       const upsertedVersion = await upsertVersion(db, body);
 
       const isVersionChanged = !_.isEqual(prevVersion, upsertedVersion);
-      if (isVersionChanged)
-        getQueue(Channel.NewDeploymentVersion).add(
-          upsertedVersion.id,
-          upsertedVersion,
-        );
+      if (isVersionChanged) {
+        if (prevVersion != null)
+          await eventDispatcher.dispatchDeploymentVersionUpdated(
+            prevVersion,
+            upsertedVersion,
+          );
+        if (prevVersion == null)
+          await eventDispatcher.dispatchDeploymentVersionCreated(
+            upsertedVersion,
+          );
+      }
 
       return NextResponse.json(upsertedVersion, { status: httpStatus.CREATED });
     } catch (error) {
