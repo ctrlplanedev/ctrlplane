@@ -1,13 +1,26 @@
+import type * as schema from "@ctrlplane/db/schema";
 import type { Event } from "@ctrlplane/events";
 
 import type { Handler } from ".";
 import { OperationPipeline } from "../workspace/pipeline.js";
 import { WorkspaceManager } from "../workspace/workspace.js";
 
+const getResourceWithDates = (resource: schema.Resource) => {
+  const createdAt = new Date(resource.createdAt);
+  const updatedAt =
+    resource.updatedAt != null ? new Date(resource.updatedAt) : null;
+  const lockedAt =
+    resource.lockedAt != null ? new Date(resource.lockedAt) : null;
+  const deletedAt =
+    resource.deletedAt != null ? new Date(resource.deletedAt) : null;
+  return { ...resource, createdAt, updatedAt, lockedAt, deletedAt };
+};
+
 export const newResource: Handler<Event.ResourceCreated> = async (event) => {
   const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
   if (ws == null) return;
-  await OperationPipeline.update(ws).resource(event.payload).dispatch();
+  const resource = getResourceWithDates(event.payload);
+  await OperationPipeline.update(ws).resource(resource).dispatch();
 };
 
 export const updatedResource: Handler<Event.ResourceUpdated> = async (
@@ -15,7 +28,8 @@ export const updatedResource: Handler<Event.ResourceUpdated> = async (
 ) => {
   const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
   if (ws == null) return;
-  await OperationPipeline.update(ws).resource(event.payload.current).dispatch();
+  const current = getResourceWithDates(event.payload.current);
+  await OperationPipeline.update(ws).resource(current).dispatch();
 };
 
 export const deletedResource: Handler<Event.ResourceDeleted> = async (

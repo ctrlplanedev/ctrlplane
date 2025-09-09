@@ -9,7 +9,9 @@ export const newEnvironment: Handler<Event.EnvironmentCreated> = async (
 ) => {
   const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
   if (ws == null) return;
-  await OperationPipeline.update(ws).environment(event.payload).dispatch();
+  const createdAt = new Date(event.payload.createdAt);
+  const environment = { ...event.payload, createdAt };
+  await OperationPipeline.update(ws).environment(environment).dispatch();
 };
 
 export const updatedEnvironment: Handler<Event.EnvironmentUpdated> = async (
@@ -17,9 +19,9 @@ export const updatedEnvironment: Handler<Event.EnvironmentUpdated> = async (
 ) => {
   const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
   if (ws == null) return;
-  await OperationPipeline.update(ws)
-    .environment(event.payload.current)
-    .dispatch();
+  const createdAt = new Date(event.payload.current.createdAt);
+  const environment = { ...event.payload.current, createdAt };
+  await OperationPipeline.update(ws).environment(environment).dispatch();
 };
 
 export const deletedEnvironment: Handler<Event.EnvironmentDeleted> = async (
