@@ -3,9 +3,7 @@ package kafka
 import (
 	"context"
 	"os"
-	"time"
 
-	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/logger"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -46,7 +44,7 @@ func RunConsumer(ctx context.Context) error {
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
-	reader := events.NewEventHandler()
+	// reader := events.NewEventHandler()
 
 	for {
 		select {
@@ -56,20 +54,20 @@ func RunConsumer(ctx context.Context) error {
 		default:
 		}
 
-		msg, err := c.ReadMessage(time.Second)
+		// msg, err := c.ReadMessage(time.Second)
 
-		if err != nil {
-			if err.(kafka.Error).IsTimeout() {
-				continue
-			}
-			log.Error("Consumer error", "error", err)
-			continue
-		}
+		// if err != nil {
+		// 	if err.(kafka.Error).IsTimeout() {
+		// 		continue
+		// 	}
+		// 	log.Error("Consumer error", "error", err)
+		// 	continue
+		// }
 
-		if err := reader.ListenAndRoute(ctx, msg); err != nil {
-			log.Error("Failed to read message", "error", err)
-			continue
-		}
+		// if err := reader.ListenAndRoute(ctx, msg); err != nil {
+		// 	log.Error("Failed to read message", "error", err)
+		// 	continue
+		// }
 
 		// NOTE: we do not commit the message. if the process ends and we need to rebuild the state,
 		// we need to start from the beginning of the topic.
