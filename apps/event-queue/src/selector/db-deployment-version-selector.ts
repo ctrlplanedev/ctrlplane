@@ -141,11 +141,38 @@ export class DbDeploymentVersionSelector
     ).then((results) => results.filter(isPresent));
   }
   getAllEntities(): Promise<schema.DeploymentVersion[]> {
-    throw new Error("Method not implemented.");
+    return this.db
+      .select()
+      .from(schema.deploymentVersion)
+      .innerJoin(
+        schema.deployment,
+        eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
+      )
+      .innerJoin(
+        schema.system,
+        eq(schema.deployment.systemId, schema.system.id),
+      )
+      .where(eq(schema.system.workspaceId, this.workspaceId))
+      .then((results) => results.map((result) => result.deployment_version));
   }
+
   getAllSelectors(): Promise<schema.PolicyDeploymentVersionSelector[]> {
-    throw new Error("Method not implemented.");
+    return this.db
+      .select()
+      .from(schema.policyRuleDeploymentVersionSelector)
+      .innerJoin(
+        schema.policy,
+        eq(
+          schema.policyRuleDeploymentVersionSelector.policyId,
+          schema.policy.id,
+        ),
+      )
+      .where(eq(schema.policy.workspaceId, this.workspaceId))
+      .then((results) =>
+        results.map((result) => result.policy_rule_deployment_version_selector),
+      );
   }
+
   isMatch(
     entity: schema.DeploymentVersion,
     selector: schema.PolicyDeploymentVersionSelector,
