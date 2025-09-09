@@ -32,12 +32,19 @@ export const start = async () => {
         return;
       }
 
-      const handler = getHandler(event.eventType);
+      const handler = getHandler(String(event.eventType));
+      if (handler == null) {
+        logger.error("No handler found for event type", {
+          eventType: event.eventType,
+        });
+        return;
+      }
 
       try {
         await handler(event);
       } catch (error) {
-        logger.error("Failed to handle event", { error });
+        console.error("Failed to handle event", JSON.stringify(error, null, 2));
+        logger.error("Failed to handle event", { error, event });
       }
     },
   });

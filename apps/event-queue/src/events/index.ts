@@ -46,10 +46,16 @@ export type Handler<T extends keyof EventPayload> = (
   event: Message<T>,
 ) => Promise<void> | void;
 
-export const getHandler = <T extends keyof EventPayload = any>(
-  event: T,
-): Handler<T> => {
-  return handlers[event];
+export const getHandler = (eventType: string): Handler<any> | null => {
+  const eventKey = Object.keys(Event).find(
+    (key) => String(Event[key as keyof typeof Event]) === eventType,
+  );
+  if (eventKey == null) {
+    logger.error("No handler found for event type", { eventType });
+    return null;
+  }
+
+  return handlers[eventType as keyof typeof handlers];
 };
 
 export const parseKafkaMessage = <T extends keyof EventPayload = any>(
