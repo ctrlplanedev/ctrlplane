@@ -148,6 +148,9 @@ importers:
       '@ctrlplane/rule-engine':
         specifier: workspace:*
         version: link:../../packages/rule-engine
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
       '@octokit/auth-app':
         specifier: 'catalog:'
         version: 7.1.5
