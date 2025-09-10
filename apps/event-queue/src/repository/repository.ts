@@ -17,6 +17,9 @@ type WorkspaceRepositoryOptions = {
   environmentRepository: Repository<schema.Environment>;
   deploymentRepository: Repository<schema.Deployment>;
   resourceRepository: Repository<schema.Resource>;
+  resourceVariableRepository: Repository<
+    typeof schema.resourceVariable.$inferSelect
+  >;
   releaseTargetRepository: Repository<schema.ReleaseTarget>;
 
   policyRepository: Repository<schema.Policy>;
@@ -61,6 +64,10 @@ export class WorkspaceRepository {
 
   get resourceRepository() {
     return this.opts.resourceRepository;
+  }
+
+  get resourceVariableRepository() {
+    return this.opts.resourceVariableRepository;
   }
 
   get releaseTargetRepository() {

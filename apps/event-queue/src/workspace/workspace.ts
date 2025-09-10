@@ -11,6 +11,7 @@ import { DbReleaseJobRepository } from "../repository/db-release-job-repository.
 import { DbReleaseRepository } from "../repository/db-release-repository.js";
 import { DbReleaseTargetRepository } from "../repository/db-release-target-repository.js";
 import { DbResourceRepository } from "../repository/db-resource-repository.js";
+import { DbResourceVariableRepository } from "../repository/db-resource-variable-repository.js";
 import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
 import { DbVariableReleaseValueRepository } from "../repository/db-variable-release-value-repository.js";
 import { DbVariableReleaseValueSnapshotRepository } from "../repository/db-variable-release-value-snapshot-repository.js";
@@ -63,6 +64,7 @@ export class Workspace {
       environmentRepository: new DbEnvironmentRepository(opts.id),
       deploymentRepository: new DbDeploymentRepository(opts.id),
       resourceRepository: new DbResourceRepository(opts.id),
+      resourceVariableRepository: new DbResourceVariableRepository(opts.id),
       policyRepository: new DbPolicyRepository(opts.id),
       jobAgentRepository: new DbJobAgentRepository(opts.id),
       jobRepository: new DbJobRepository(opts.id),
