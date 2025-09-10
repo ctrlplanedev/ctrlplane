@@ -25,23 +25,23 @@ export class KafkaEventDispatcher implements EventDispatcher {
     await resourceDispatch.dispatchResourceDeleted(resource);
   }
 
-  dispatchResourceVariableCreated(
-    _: typeof schema.resourceVariable.$inferSelect,
+  async dispatchResourceVariableCreated(
+    variable: typeof schema.resourceVariable.$inferSelect,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    await resourceDispatch.dispatchResourceVariableCreated(variable);
   }
 
-  dispatchResourceVariableUpdated(
-    _: typeof schema.resourceVariable.$inferSelect,
-    __: typeof schema.resourceVariable.$inferSelect,
+  async dispatchResourceVariableUpdated(
+    previous: typeof schema.resourceVariable.$inferSelect,
+    current: typeof schema.resourceVariable.$inferSelect,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    await resourceDispatch.dispatchResourceVariableUpdated(previous, current);
   }
 
-  dispatchResourceVariableDeleted(
-    _: typeof schema.resourceVariable.$inferSelect,
+  async dispatchResourceVariableDeleted(
+    variable: typeof schema.resourceVariable.$inferSelect,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    await resourceDispatch.dispatchResourceVariableDeleted(variable);
   }
 
   async dispatchEnvironmentCreated(
