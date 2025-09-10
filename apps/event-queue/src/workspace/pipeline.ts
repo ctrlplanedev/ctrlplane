@@ -10,6 +10,7 @@ type WorkspaceOptions = {
   operation: "update" | "delete";
 
   resource?: schema.Resource;
+  resourceVariable?: schema.ResourceVariable;
   environment?: schema.Environment;
   deployment?: schema.Deployment;
   deploymentVersion?: schema.DeploymentVersion;

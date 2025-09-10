@@ -7,7 +7,7 @@ import * as schema from "@ctrlplane/db/schema";
 import type { Repository } from "./repository";
 
 export class DbResourceVariableRepository
-  implements Repository<typeof schema.resourceVariable.$inferSelect>
+  implements Repository<schema.ResourceVariable>
 {
   private readonly db: Tx;
   private readonly workspaceId: string;
@@ -17,8 +17,35 @@ export class DbResourceVariableRepository
     this.workspaceId = workspaceId;
   }
 
-  get(id: string) {
-    return this.db
+  private getResourceVariableFromDbResult(
+    variable: typeof schema.resourceVariable.$inferSelect,
+  ): schema.ResourceVariable {
+    if (variable.valueType === "reference")
+      return {
+        ...variable,
+        reference: variable.reference ?? "",
+        path: variable.path ?? [],
+        defaultValue:
+          typeof variable.defaultValue === "object"
+            ? JSON.stringify(variable.defaultValue)
+            : variable.defaultValue,
+        value: null,
+        valueType: "reference",
+      };
+
+    return {
+      ...variable,
+      key: variable.key,
+      value: variable.value ?? "",
+      sensitive: variable.sensitive,
+      reference: null,
+      path: null,
+      valueType: "direct",
+    };
+  }
+
+  async get(id: string) {
+    const variable = await this.db
       .select()
       .from(schema.resourceVariable)
       .innerJoin(
@@ -33,10 +60,14 @@ export class DbResourceVariableRepository
       )
       .then(takeFirstOrNull)
       .then((row) => row?.resource_variable ?? null);
+
+    if (variable == null) return null;
+
+    return this.getResourceVariableFromDbResult(variable);
   }
 
-  getAll() {
-    return this.db
+  async getAll() {
+    const variables = await this.db
       .select()
       .from(schema.resourceVariable)
       .innerJoin(
@@ -45,23 +76,29 @@ export class DbResourceVariableRepository
       )
       .where(eq(schema.resource.workspaceId, this.workspaceId))
       .then((rows) => rows.map((row) => row.resource_variable));
+
+    return variables.map((variable) =>
+      this.getResourceVariableFromDbResult(variable),
+    );
   }
 
-  create(entity: typeof schema.resourceVariable.$inferSelect) {
+  create(entity: schema.ResourceVariable) {
     return this.db
       .insert(schema.resourceVariable)
       .values(entity)
       .returning()
-      .then(takeFirst);
+      .then(takeFirst)
+      .then((variable) => this.getResourceVariableFromDbResult(variable));
   }
 
-  update(entity: typeof schema.resourceVariable.$inferSelect) {
+  update(entity: schema.ResourceVariable) {
     return this.db
       .update(schema.resourceVariable)
       .set(entity)
       .where(eq(schema.resourceVariable.id, entity.id))
       .returning()
-      .then(takeFirst);
+      .then(takeFirst)
+      .then((variable) => this.getResourceVariableFromDbResult(variable));
   }
 
   delete(id: string) {
@@ -69,7 +106,10 @@ export class DbResourceVariableRepository
       .delete(schema.resourceVariable)
       .where(eq(schema.resourceVariable.id, id))
       .returning()
-      .then(takeFirstOrNull);
+      .then(takeFirstOrNull)
+      .then((variable) =>
+        variable ? this.getResourceVariableFromDbResult(variable) : null,
+      );
   }
 
   exists(id: string) {

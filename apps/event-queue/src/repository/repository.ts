@@ -17,9 +17,7 @@ type WorkspaceRepositoryOptions = {
   environmentRepository: Repository<schema.Environment>;
   deploymentRepository: Repository<schema.Deployment>;
   resourceRepository: Repository<schema.Resource>;
-  resourceVariableRepository: Repository<
-    typeof schema.resourceVariable.$inferSelect
-  >;
+  resourceVariableRepository: Repository<schema.ResourceVariable>;
   releaseTargetRepository: Repository<schema.ReleaseTarget>;
 
   policyRepository: Repository<schema.Policy>;
