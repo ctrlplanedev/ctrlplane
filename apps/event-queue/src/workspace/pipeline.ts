@@ -98,6 +98,36 @@ export class OperationPipeline {
     };
   }
 
+  private async upsertJob(job: schema.Job) {
+    const previous = await this.opts.workspace.repository.jobRepository.get(
+      job.id,
+    );
+    if (previous == null) throw new Error("Job not found");
+    await this.opts.workspace.jobManager.updateJob(previous, job);
+  }
+
+  private async upsertDeploymentVersion(
+    deploymentVersion: schema.DeploymentVersion,
+  ) {
+    await this.opts.workspace.selectorManager.deploymentVersionSelector.upsertEntity(
+      deploymentVersion,
+    );
+    await this.markDeploymentReleaseTargetsAsStale(
+      deploymentVersion.deploymentId,
+    );
+  }
+
+  private async removeDeploymentVersion(
+    deploymentVersion: schema.DeploymentVersion,
+  ) {
+    await this.opts.workspace.selectorManager.deploymentVersionSelector.removeEntity(
+      deploymentVersion,
+    );
+    await this.markDeploymentReleaseTargetsAsStale(
+      deploymentVersion.deploymentId,
+    );
+  }
+
   private async upsertDeploymentVariable(
     deploymentVariable: schema.DeploymentVariable,
   ) {
@@ -239,8 +269,18 @@ export class OperationPipeline {
   }
 
   async dispatch() {
-    const { operation, workspace, resource, environment, deployment } =
-      this.opts;
+    const {
+      operation,
+      workspace,
+      resource,
+      environment,
+      deployment,
+      deploymentVersion,
+      policy,
+      job,
+      deploymentVariable,
+      deploymentVariableValue,
+    } = this.opts;
 
     const manager = workspace.selectorManager;
     const { releaseTargetManager } = workspace;
@@ -248,69 +288,45 @@ export class OperationPipeline {
 
     switch (operation) {
       case "update":
-        if (this.opts.deploymentVersion != null) {
-          await workspace.selectorManager.deploymentVersionSelector.upsertEntity(
-            this.opts.deploymentVersion,
-          );
-          await this.markDeploymentReleaseTargetsAsStale(
-            this.opts.deploymentVersion.deploymentId,
-          );
-        }
-
-        if (this.opts.policy != null) await this.updatePolicy(this.opts.policy);
-
-        if (this.opts.job != null) {
-          const previous = await workspace.repository.jobRepository.get(
-            this.opts.job.id,
-          );
-          if (previous == null) throw new Error("Job not found");
-          await jobManager.updateJob(previous, this.opts.job);
-        }
-
-        if (this.opts.deploymentVariable != null)
-          await this.upsertDeploymentVariable(this.opts.deploymentVariable);
-        if (this.opts.deploymentVariableValue != null)
-          await this.upsertDeploymentVariableValue(
-            this.opts.deploymentVariableValue,
-          );
-
         await Promise.all([
           resource ? manager.updateResource(resource) : Promise.resolve(),
           environment
             ? manager.updateEnvironment(environment)
             : Promise.resolve(),
           deployment ? manager.updateDeployment(deployment) : Promise.resolve(),
+          deploymentVersion
+            ? this.upsertDeploymentVersion(deploymentVersion)
+            : Promise.resolve(),
+          policy ? this.updatePolicy(policy) : Promise.resolve(),
+          job ? this.upsertJob(job) : Promise.resolve(),
+          deploymentVariable
+            ? this.upsertDeploymentVariable(deploymentVariable)
+            : Promise.resolve(),
+          deploymentVariableValue
+            ? this.upsertDeploymentVariableValue(deploymentVariableValue)
+            : Promise.resolve(),
         ]);
 
         if (resource != null || environment != null || deployment != null)
           await this.getReleaseTargetChanges();
         break;
       case "delete":
-        if (this.opts.deploymentVersion != null) {
-          await workspace.selectorManager.deploymentVersionSelector.removeEntity(
-            this.opts.deploymentVersion,
-          );
-          await this.markDeploymentReleaseTargetsAsStale(
-            this.opts.deploymentVersion.deploymentId,
-          );
-        }
-
-        if (this.opts.policy != null) await this.removePolicy(this.opts.policy);
-
-        if (this.opts.deploymentVariable != null)
-          await this.removeDeploymentVariable(this.opts.deploymentVariable);
-
-        if (this.opts.deploymentVariableValue != null)
-          await this.removeDeploymentVariableValue(
-            this.opts.deploymentVariableValue,
-          );
-
         await Promise.all([
           resource ? manager.removeResource(resource) : Promise.resolve(),
           environment
             ? manager.removeEnvironment(environment)
             : Promise.resolve(),
           deployment ? manager.removeDeployment(deployment) : Promise.resolve(),
+          deploymentVersion
+            ? this.removeDeploymentVersion(deploymentVersion)
+            : Promise.resolve(),
+          policy ? this.removePolicy(policy) : Promise.resolve(),
+          deploymentVariable
+            ? this.removeDeploymentVariable(deploymentVariable)
+            : Promise.resolve(),
+          deploymentVariableValue
+            ? this.removeDeploymentVariableValue(deploymentVariableValue)
+            : Promise.resolve(),
         ]);
 
         if (resource != null || environment != null || deployment != null)
