@@ -5,6 +5,14 @@ import { Event } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
 import {
+  deletedDeploymentVariable,
+  deletedDeploymentVariableValue,
+  newDeploymentVariable,
+  newDeploymentVariableValue,
+  updatedDeploymentVariable,
+  updatedDeploymentVariableValue,
+} from "./deployment-variables.js";
+import {
   deletedDeploymentVersion,
   newDeploymentVersion,
   updatedDeploymentVersion,
@@ -33,6 +41,12 @@ const handlers: Record<Event, Handler<any>> = {
   [Event.DeploymentCreated]: newDeployment,
   [Event.DeploymentUpdated]: updatedDeployment,
   [Event.DeploymentDeleted]: deletedDeployment,
+  [Event.DeploymentVariableCreated]: newDeploymentVariable,
+  [Event.DeploymentVariableUpdated]: updatedDeploymentVariable,
+  [Event.DeploymentVariableDeleted]: deletedDeploymentVariable,
+  [Event.DeploymentVariableValueCreated]: newDeploymentVariableValue,
+  [Event.DeploymentVariableValueUpdated]: updatedDeploymentVariableValue,
+  [Event.DeploymentVariableValueDeleted]: deletedDeploymentVariableValue,
   [Event.DeploymentVersionCreated]: newDeploymentVersion,
   [Event.DeploymentVersionUpdated]: updatedDeploymentVersion,
   [Event.DeploymentVersionDeleted]: deletedDeploymentVersion,

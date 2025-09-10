@@ -56,6 +56,18 @@ export class OperationPipeline {
     return this;
   }
 
+  deploymentVariable(deploymentVariable: schema.DeploymentVariable) {
+    this.opts.deploymentVariable = deploymentVariable;
+    return this;
+  }
+
+  deploymentVariableValue(
+    deploymentVariableValue: schema.DeploymentVariableValue,
+  ) {
+    this.opts.deploymentVariableValue = deploymentVariableValue;
+    return this;
+  }
+
   policy(policy: FullPolicy) {
     this.opts.policy = policy;
     return this;

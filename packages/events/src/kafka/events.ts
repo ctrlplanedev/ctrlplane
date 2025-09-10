@@ -9,6 +9,14 @@ export enum Event {
   DeploymentUpdated = "deployment.updated",
   DeploymentDeleted = "deployment.deleted",
 
+  DeploymentVariableCreated = "deployment-variable.created",
+  DeploymentVariableUpdated = "deployment-variable.updated",
+  DeploymentVariableDeleted = "deployment-variable.deleted",
+
+  DeploymentVariableValueCreated = "deployment-variable-value.created",
+  DeploymentVariableValueUpdated = "deployment-variable-value.updated",
+  DeploymentVariableValueDeleted = "deployment-variable-value.deleted",
+
   DeploymentVersionCreated = "deployment-version.created",
   DeploymentVersionUpdated = "deployment-version.updated",
   DeploymentVersionDeleted = "deployment-version.deleted",
@@ -59,6 +67,18 @@ export type EventPayload = {
     current: schema.Deployment;
   };
   [Event.DeploymentDeleted]: schema.Deployment;
+  [Event.DeploymentVariableCreated]: schema.DeploymentVariable;
+  [Event.DeploymentVariableUpdated]: {
+    previous: schema.DeploymentVariable;
+    current: schema.DeploymentVariable;
+  };
+  [Event.DeploymentVariableDeleted]: schema.DeploymentVariable;
+  [Event.DeploymentVariableValueCreated]: schema.DeploymentVariableValue;
+  [Event.DeploymentVariableValueUpdated]: {
+    previous: schema.DeploymentVariableValue;
+    current: schema.DeploymentVariableValue;
+  };
+  [Event.DeploymentVariableValueDeleted]: schema.DeploymentVariableValue;
   [Event.DeploymentVersionCreated]: schema.DeploymentVersion;
   [Event.DeploymentVersionUpdated]: {
     previous: schema.DeploymentVersion;
