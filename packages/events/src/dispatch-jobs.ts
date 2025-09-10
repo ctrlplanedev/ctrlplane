@@ -281,10 +281,29 @@ export class BullMQEventDispatcher implements EventDispatcher {
   }
 
   async dispatchDeploymentVariableUpdated(
-    previous: schema.DeploymentVariable,
+    _: schema.DeploymentVariable,
     current: schema.DeploymentVariable,
   ): Promise<void> {
     await getQueue(Channel.UpdateDeploymentVariable).add(current.id, current);
+  }
+
+  async dispatchDeploymentVariableValueCreated(
+    _: schema.DeploymentVariableValue,
+  ): Promise<void> {
+    await Promise.resolve();
+  }
+
+  async dispatchDeploymentVariableValueUpdated(
+    _: schema.DeploymentVariableValue,
+    __: schema.DeploymentVariableValue,
+  ): Promise<void> {
+    await Promise.resolve();
+  }
+
+  async dispatchDeploymentVariableValueDeleted(
+    _: schema.DeploymentVariableValue,
+  ): Promise<void> {
+    await Promise.resolve();
   }
 
   async dispatchDeploymentVariableDeleted(

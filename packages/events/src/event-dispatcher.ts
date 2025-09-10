@@ -67,6 +67,17 @@ export interface EventDispatcher {
     deploymentVariable: schema.DeploymentVariable,
   ): Promise<void>;
 
+  dispatchDeploymentVariableValueCreated(
+    deploymentVariableValue: schema.DeploymentVariableValue,
+  ): Promise<void>;
+  dispatchDeploymentVariableValueUpdated(
+    previous: schema.DeploymentVariableValue,
+    current: schema.DeploymentVariableValue,
+  ): Promise<void>;
+  dispatchDeploymentVariableValueDeleted(
+    deploymentVariableValue: schema.DeploymentVariableValue,
+  ): Promise<void>;
+
   dispatchPolicyCreated(policy: FullPolicy): Promise<void>;
   dispatchPolicyUpdated(
     previous: FullPolicy,

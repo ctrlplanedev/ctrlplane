@@ -1,6 +1,7 @@
 import type * as schema from "@ctrlplane/db/schema";
 
 import type { EventDispatcher, FullPolicy } from "../../event-dispatcher.js";
+import * as deploymentVariableDispatch from "./deployment-variable.js";
 import * as deploymentVersionDispatch from "./deployment-version.js";
 import * as deploymentDispatch from "./deployment.js";
 import * as environmentDispatch from "./environment.js";
@@ -107,23 +108,56 @@ export class KafkaEventDispatcher implements EventDispatcher {
     );
   }
 
-  dispatchDeploymentVariableCreated(
-    _: schema.DeploymentVariable,
+  async dispatchDeploymentVariableCreated(
+    deploymentVariable: schema.DeploymentVariable,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    await deploymentVariableDispatch.dispatchDeploymentVariableCreated(
+      deploymentVariable,
+    );
   }
 
-  dispatchDeploymentVariableUpdated(
-    _: schema.DeploymentVariable,
-    __: schema.DeploymentVariable,
+  async dispatchDeploymentVariableUpdated(
+    previous: schema.DeploymentVariable,
+    current: schema.DeploymentVariable,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    await deploymentVariableDispatch.dispatchDeploymentVariableUpdated(
+      previous,
+      current,
+    );
   }
 
-  dispatchDeploymentVariableDeleted(
-    _: schema.DeploymentVariable,
+  async dispatchDeploymentVariableDeleted(
+    deploymentVariable: schema.DeploymentVariable,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    await deploymentVariableDispatch.dispatchDeploymentVariableDeleted(
+      deploymentVariable,
+    );
+  }
+
+  async dispatchDeploymentVariableValueCreated(
+    deploymentVariableValue: schema.DeploymentVariableValue,
+  ): Promise<void> {
+    await deploymentVariableDispatch.dispatchDeploymentVariableValueCreated(
+      deploymentVariableValue,
+    );
+  }
+
+  async dispatchDeploymentVariableValueUpdated(
+    previous: schema.DeploymentVariableValue,
+    current: schema.DeploymentVariableValue,
+  ): Promise<void> {
+    await deploymentVariableDispatch.dispatchDeploymentVariableValueUpdated(
+      previous,
+      current,
+    );
+  }
+
+  async dispatchDeploymentVariableValueDeleted(
+    deploymentVariableValue: schema.DeploymentVariableValue,
+  ): Promise<void> {
+    await deploymentVariableDispatch.dispatchDeploymentVariableValueDeleted(
+      deploymentVariableValue,
+    );
   }
 
   async dispatchPolicyCreated(policy: FullPolicy): Promise<void> {
