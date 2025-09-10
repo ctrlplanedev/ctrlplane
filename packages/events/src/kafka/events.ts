@@ -36,7 +36,7 @@ export enum Event {
   // JobCreated = "job.created",
   JobUpdated = "job.updated",
   // JobDeleted = "job.deleted",
-  EvaluateReleaseTargets = "evaluate-release-targets",
+  EvaluateReleaseTarget = "evaluate-release-target",
 
   // ReleaseCreated = "release.created",
   // ReleaseUpdated = "release.updated",
@@ -106,7 +106,7 @@ export type EventPayload = {
   [Event.PolicyUpdated]: { previous: FullPolicy; current: FullPolicy };
   [Event.PolicyDeleted]: FullPolicy;
   [Event.JobUpdated]: { previous: schema.Job; current: schema.Job };
-  [Event.EvaluateReleaseTargets]: schema.ReleaseTarget[];
+  [Event.EvaluateReleaseTarget]: schema.ReleaseTarget;
   // [Event.JobCreated]: schema.Job;
   // [Event.JobDeleted]: schema.Job;
   // [Event.SystemCreated]: schema.System;

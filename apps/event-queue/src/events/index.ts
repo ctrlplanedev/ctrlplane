@@ -29,7 +29,7 @@ import {
 } from "./environments.js";
 import { updateJob } from "./job.js";
 import { deletedPolicy, newPolicy, updatedPolicy } from "./policy.js";
-import { evaluateReleaseTargets } from "./release-targets.js";
+import { evaluateReleaseTarget } from "./release-targets.js";
 import {
   deletedResource,
   deletedResourceVariable,
@@ -65,7 +65,7 @@ const handlers: Record<Event, Handler<any>> = {
   [Event.PolicyUpdated]: updatedPolicy,
   [Event.PolicyDeleted]: deletedPolicy,
   [Event.JobUpdated]: updateJob,
-  [Event.EvaluateReleaseTargets]: evaluateReleaseTargets,
+  [Event.EvaluateReleaseTarget]: evaluateReleaseTarget,
 };
 
 export type Handler<T extends keyof EventPayload> = (
