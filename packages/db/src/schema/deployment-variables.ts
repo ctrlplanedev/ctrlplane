@@ -74,7 +74,9 @@ export const deploymentVariableValue = pgTable(
   ],
 );
 
-type BaseVariableValue = typeof deploymentVariableValue.$inferSelect;
+type BaseVariableValue = typeof deploymentVariableValue.$inferSelect & {
+  isDefault?: boolean;
+};
 
 // Direct values
 export const deploymentVariableValueDirect = pgTable(

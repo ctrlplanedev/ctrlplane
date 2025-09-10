@@ -1,5 +1,7 @@
 import { JobManager } from "../job-manager/job-manager.js";
 import { DbDeploymentRepository } from "../repository/db-deployment-repository.js";
+import { DbDeploymentVariableRepository } from "../repository/db-deployment-variable-repository.js";
+import { DbDeploymentVariableValueRepository } from "../repository/db-deployment-variable-value-repository.js";
 import { DbEnvironmentRepository } from "../repository/db-environment-repository.js";
 import { DbJobAgentRepository } from "../repository/db-job-agent-repository.js";
 import { DbJobRepository } from "../repository/db-job-repository.js";
@@ -76,6 +78,9 @@ export class Workspace {
       variableValueSnapshotRepository:
         new DbVariableReleaseValueSnapshotRepository(opts.id),
       versionRuleRepository: new DbVersionRuleRepository(opts.id),
+      deploymentVariableRepository: new DbDeploymentVariableRepository(opts.id),
+      deploymentVariableValueRepository:
+        new DbDeploymentVariableValueRepository(opts.id),
     });
     this.jobManager = new JobManager(this);
   }
