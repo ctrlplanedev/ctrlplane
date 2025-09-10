@@ -43,8 +43,11 @@ export const start = async () => {
       try {
         await handler(event);
       } catch (error) {
-        console.error("Failed to handle event", JSON.stringify(error, null, 2));
-        logger.error("Failed to handle event", { error, event });
+        logger.error("Failed to handle event", {
+          error: error instanceof Error ? error.message : error,
+          stack: error instanceof Error ? error.stack : undefined,
+          event,
+        });
       }
     },
   });
