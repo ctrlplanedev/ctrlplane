@@ -7,7 +7,7 @@ import type { Workspace } from "./workspace.js";
 type WorkspaceOptions = {
   workspace: Workspace;
 
-  operation: "update" | "delete";
+  operation: "update" | "delete" | "evaluate";
 
   resource?: schema.Resource;
   resourceVariable?: typeof schema.resourceVariable.$inferSelect;
@@ -35,6 +35,10 @@ export class OperationPipeline {
 
   static delete(workspace: Workspace) {
     return new OperationPipeline({ workspace, operation: "delete" });
+  }
+
+  static evaluate(workspace: Workspace) {
+    return new OperationPipeline({ workspace, operation: "evaluate" });
   }
 
   resource(resource: schema.Resource) {
@@ -83,6 +87,16 @@ export class OperationPipeline {
 
   job(job: schema.Job) {
     this.opts.job = job;
+    return this;
+  }
+
+  releaseTargets(releaseTargets: schema.ReleaseTarget[]) {
+    if (this.opts.releaseTargets == null)
+      this.opts.releaseTargets = {
+        toEvaluate: [],
+        removed: [],
+      };
+    this.opts.releaseTargets.toEvaluate.push(...releaseTargets);
     return this;
   }
 
