@@ -7,6 +7,7 @@ import * as deploymentDispatch from "./deployment.js";
 import * as environmentDispatch from "./environment.js";
 import * as jobDispatch from "./job.js";
 import * as policyDispatch from "./policy.js";
+import * as releaseTargetDispatch from "./release-target.js";
 import * as resourceDispatch from "./resource.js";
 
 export class KafkaEventDispatcher implements EventDispatcher {
@@ -182,10 +183,10 @@ export class KafkaEventDispatcher implements EventDispatcher {
     await jobDispatch.dispatchJobUpdated(previous, current);
   }
 
-  dispatchEvaluateReleaseTarget(
-    _: schema.ReleaseTarget,
-    __?: { skipDuplicateCheck?: boolean },
+  async dispatchEvaluateReleaseTarget(
+    releaseTarget: schema.ReleaseTarget,
+    _?: { skipDuplicateCheck?: boolean },
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    await releaseTargetDispatch.dispatchEvaluateReleaseTarget(releaseTarget);
   }
 }
