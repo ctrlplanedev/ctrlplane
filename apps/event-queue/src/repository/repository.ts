@@ -29,6 +29,9 @@ type WorkspaceRepositoryOptions = {
     typeof schema.versionRelease.$inferSelect
   >;
 
+  deploymentVariableRepository: Repository<schema.DeploymentVariable>;
+  deploymentVariableValueRepository: Repository<schema.DeploymentVariableValue>;
+
   variableReleaseRepository: Repository<
     typeof schema.variableSetRelease.$inferSelect
   >;
@@ -110,5 +113,13 @@ export class WorkspaceRepository {
 
   get variableValueSnapshotRepository() {
     return this.opts.variableValueSnapshotRepository;
+  }
+
+  get deploymentVariableRepository() {
+    return this.opts.deploymentVariableRepository;
+  }
+
+  get deploymentVariableValueRepository() {
+    return this.opts.deploymentVariableValueRepository;
   }
 }

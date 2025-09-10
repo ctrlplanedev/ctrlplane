@@ -13,6 +13,8 @@ type WorkspaceOptions = {
   environment?: schema.Environment;
   deployment?: schema.Deployment;
   deploymentVersion?: schema.DeploymentVersion;
+  deploymentVariable?: schema.DeploymentVariable;
+  deploymentVariableValue?: schema.DeploymentVariableValue;
   policy?: FullPolicy;
   job?: schema.Job;
   jobAgent?: schema.JobAgent;
@@ -64,16 +66,14 @@ export class OperationPipeline {
     return this;
   }
 
-  private async getReleaseTargetsForDeploymentVersion(
-    deploymentVersion: schema.DeploymentVersion,
-  ) {
+  private async markDeploymentReleaseTargetsAsStale(deploymentId: string) {
     const allReleaseTargets =
       await this.opts.workspace.repository.releaseTargetRepository.getAll();
-    const targetsForDeployment = allReleaseTargets.filter(
-      (rt) => rt.deploymentId === deploymentVersion.deploymentId,
+    const releaseTargets = allReleaseTargets.filter(
+      (rt) => rt.deploymentId === deploymentId,
     );
     this.opts.releaseTargets = {
-      toEvaluate: targetsForDeployment,
+      toEvaluate: releaseTargets,
       removed: [],
     };
   }
@@ -96,6 +96,98 @@ export class OperationPipeline {
       toEvaluate: releaseTargets,
       removed: [],
     };
+  }
+
+  private async upsertDeploymentVariable(
+    deploymentVariable: schema.DeploymentVariable,
+  ) {
+    const existing =
+      await this.opts.workspace.repository.deploymentVariableRepository.get(
+        deploymentVariable.id,
+      );
+    if (existing == null)
+      await this.opts.workspace.repository.deploymentVariableRepository.create(
+        deploymentVariable,
+      );
+    if (existing != null)
+      await this.opts.workspace.repository.deploymentVariableRepository.update(
+        deploymentVariable,
+      );
+
+    await this.markDeploymentReleaseTargetsAsStale(
+      deploymentVariable.deploymentId,
+    );
+  }
+
+  private async removeDeploymentVariable(
+    deploymentVariable: schema.DeploymentVariable,
+  ) {
+    const allDeploymentVariableValues =
+      await this.opts.workspace.repository.deploymentVariableValueRepository.getAll();
+    const deploymentVariableValues = allDeploymentVariableValues.filter(
+      (dv) => dv.variableId === deploymentVariable.id,
+    );
+    await Promise.all(
+      deploymentVariableValues.map((dv) =>
+        this.opts.workspace.repository.deploymentVariableValueRepository.delete(
+          dv.id,
+        ),
+      ),
+    );
+
+    await this.opts.workspace.repository.deploymentVariableRepository.delete(
+      deploymentVariable.id,
+    );
+    await this.markDeploymentReleaseTargetsAsStale(
+      deploymentVariable.deploymentId,
+    );
+  }
+
+  private async upsertDeploymentVariableValue(
+    deploymentVariableValue: schema.DeploymentVariableValue,
+  ) {
+    const existing =
+      await this.opts.workspace.repository.deploymentVariableValueRepository.get(
+        deploymentVariableValue.id,
+      );
+    if (existing == null)
+      await this.opts.workspace.repository.deploymentVariableValueRepository.create(
+        deploymentVariableValue,
+      );
+    if (existing != null)
+      await this.opts.workspace.repository.deploymentVariableValueRepository.update(
+        deploymentVariableValue,
+      );
+
+    const deploymentVariable =
+      await this.opts.workspace.repository.deploymentVariableRepository.get(
+        deploymentVariableValue.variableId,
+      );
+    if (deploymentVariable == null)
+      throw new Error("Deployment variable not found");
+
+    await this.markDeploymentReleaseTargetsAsStale(
+      deploymentVariable.deploymentId,
+    );
+  }
+
+  private async removeDeploymentVariableValue(
+    deploymentVariableValue: schema.DeploymentVariableValue,
+  ) {
+    await this.opts.workspace.repository.deploymentVariableValueRepository.delete(
+      deploymentVariableValue.id,
+    );
+
+    const deploymentVariable =
+      await this.opts.workspace.repository.deploymentVariableRepository.get(
+        deploymentVariableValue.variableId,
+      );
+    if (deploymentVariable == null)
+      throw new Error("Deployment variable not found");
+
+    await this.markDeploymentReleaseTargetsAsStale(
+      deploymentVariable.deploymentId,
+    );
   }
 
   private async updatePolicy(policy: FullPolicy) {
@@ -160,8 +252,8 @@ export class OperationPipeline {
           await workspace.selectorManager.deploymentVersionSelector.upsertEntity(
             this.opts.deploymentVersion,
           );
-          await this.getReleaseTargetsForDeploymentVersion(
-            this.opts.deploymentVersion,
+          await this.markDeploymentReleaseTargetsAsStale(
+            this.opts.deploymentVersion.deploymentId,
           );
         }
 
@@ -174,6 +266,13 @@ export class OperationPipeline {
           if (previous == null) throw new Error("Job not found");
           await jobManager.updateJob(previous, this.opts.job);
         }
+
+        if (this.opts.deploymentVariable != null)
+          await this.upsertDeploymentVariable(this.opts.deploymentVariable);
+        if (this.opts.deploymentVariableValue != null)
+          await this.upsertDeploymentVariableValue(
+            this.opts.deploymentVariableValue,
+          );
 
         await Promise.all([
           resource ? manager.updateResource(resource) : Promise.resolve(),
@@ -191,12 +290,20 @@ export class OperationPipeline {
           await workspace.selectorManager.deploymentVersionSelector.removeEntity(
             this.opts.deploymentVersion,
           );
-          await this.getReleaseTargetsForDeploymentVersion(
-            this.opts.deploymentVersion,
+          await this.markDeploymentReleaseTargetsAsStale(
+            this.opts.deploymentVersion.deploymentId,
           );
         }
 
         if (this.opts.policy != null) await this.removePolicy(this.opts.policy);
+
+        if (this.opts.deploymentVariable != null)
+          await this.removeDeploymentVariable(this.opts.deploymentVariable);
+
+        if (this.opts.deploymentVariableValue != null)
+          await this.removeDeploymentVariableValue(
+            this.opts.deploymentVariableValue,
+          );
 
         await Promise.all([
           resource ? manager.removeResource(resource) : Promise.resolve(),
