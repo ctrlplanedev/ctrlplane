@@ -98,6 +98,14 @@ export class ReleaseTargetManager {
         this.workspace.repository.releaseTargetRepository.create(releaseTarget),
       ),
     );
+
+    await Promise.all(
+      releaseTargets.map((releaseTarget) =>
+        this.workspace.selectorManager.policyTargetReleaseTargetSelector.upsertEntity(
+          releaseTarget,
+        ),
+      ),
+    );
   }
 
   private async persistRemovedReleaseTargets(
@@ -107,6 +115,14 @@ export class ReleaseTargetManager {
       releaseTargets.map((releaseTarget) =>
         this.workspace.repository.releaseTargetRepository.delete(
           releaseTarget.id,
+        ),
+      ),
+    );
+
+    await Promise.all(
+      releaseTargets.map((releaseTarget) =>
+        this.workspace.selectorManager.policyTargetReleaseTargetSelector.removeEntity(
+          releaseTarget,
         ),
       ),
     );
