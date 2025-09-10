@@ -29,12 +29,22 @@ import {
 } from "./environments.js";
 import { updateJob } from "./job.js";
 import { deletedPolicy, newPolicy, updatedPolicy } from "./policy.js";
-import { deletedResource, newResource, updatedResource } from "./resources.js";
+import {
+  deletedResource,
+  deletedResourceVariable,
+  newResource,
+  newResourceVariable,
+  updatedResource,
+  updatedResourceVariable,
+} from "./resources.js";
 
 const handlers: Record<Event, Handler<any>> = {
   [Event.ResourceCreated]: newResource,
   [Event.ResourceUpdated]: updatedResource,
   [Event.ResourceDeleted]: deletedResource,
+  [Event.ResourceVariableCreated]: newResourceVariable,
+  [Event.ResourceVariableUpdated]: updatedResourceVariable,
+  [Event.ResourceVariableDeleted]: deletedResourceVariable,
   [Event.EnvironmentCreated]: newEnvironment,
   [Event.EnvironmentUpdated]: updatedEnvironment,
   [Event.EnvironmentDeleted]: deletedEnvironment,

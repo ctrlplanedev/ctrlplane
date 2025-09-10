@@ -5,6 +5,10 @@ export enum Event {
   ResourceUpdated = "resource.updated",
   ResourceDeleted = "resource.deleted",
 
+  ResourceVariableCreated = "resource-variable.created",
+  ResourceVariableUpdated = "resource-variable.updated",
+  ResourceVariableDeleted = "resource-variable.deleted",
+
   DeploymentCreated = "deployment.created",
   DeploymentUpdated = "deployment.updated",
   DeploymentDeleted = "deployment.deleted",
@@ -61,6 +65,12 @@ export type EventPayload = {
     current: schema.Resource;
   };
   [Event.ResourceDeleted]: schema.Resource;
+  [Event.ResourceVariableCreated]: schema.ResourceVariable;
+  [Event.ResourceVariableUpdated]: {
+    previous: schema.ResourceVariable;
+    current: schema.ResourceVariable;
+  };
+  [Event.ResourceVariableDeleted]: schema.ResourceVariable;
   [Event.DeploymentCreated]: schema.Deployment;
   [Event.DeploymentUpdated]: {
     previous: schema.Deployment;

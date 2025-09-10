@@ -42,6 +42,11 @@ export class OperationPipeline {
     return this;
   }
 
+  resourceVariable(resourceVariable: schema.ResourceVariable) {
+    this.opts.resourceVariable = resourceVariable;
+    return this;
+  }
+
   environment(environment: schema.Environment) {
     this.opts.environment = environment;
     return this;
@@ -271,6 +276,47 @@ export class OperationPipeline {
     await this.opts.workspace.repository.policyRepository.delete(policy.id);
   }
 
+  private async markResourceReleaseTargetsAsStale(resourceId: string) {
+    const allReleaseTargets =
+      await this.opts.workspace.repository.releaseTargetRepository.getAll();
+    const releaseTargets = allReleaseTargets.filter(
+      (rt) => rt.resourceId === resourceId,
+    );
+    this.opts.releaseTargets = {
+      toEvaluate: releaseTargets,
+      removed: [],
+    };
+  }
+
+  private async upsertResourceVariable(
+    resourceVariable: schema.ResourceVariable,
+  ) {
+    const existing =
+      await this.opts.workspace.repository.resourceVariableRepository.get(
+        resourceVariable.id,
+      );
+    if (existing == null)
+      await this.opts.workspace.repository.resourceVariableRepository.create(
+        resourceVariable,
+      );
+    if (existing != null)
+      await this.opts.workspace.repository.resourceVariableRepository.update(
+        resourceVariable,
+      );
+
+    await this.markResourceReleaseTargetsAsStale(resourceVariable.resourceId);
+  }
+
+  private async removeResourceVariable(
+    resourceVariable: schema.ResourceVariable,
+  ) {
+    await this.opts.workspace.repository.resourceVariableRepository.delete(
+      resourceVariable.id,
+    );
+
+    await this.markResourceReleaseTargetsAsStale(resourceVariable.resourceId);
+  }
+
   async getReleaseTargetChanges() {
     const { addedReleaseTargets, removedReleaseTargets } =
       await this.opts.workspace.releaseTargetManager.computeReleaseTargetChanges();
@@ -286,6 +332,7 @@ export class OperationPipeline {
       operation,
       workspace,
       resource,
+      resourceVariable,
       environment,
       deployment,
       deploymentVersion,
@@ -303,6 +350,9 @@ export class OperationPipeline {
       case "update":
         await Promise.all([
           resource ? manager.updateResource(resource) : Promise.resolve(),
+          resourceVariable
+            ? this.upsertResourceVariable(resourceVariable)
+            : Promise.resolve(),
           environment
             ? manager.updateEnvironment(environment)
             : Promise.resolve(),
@@ -326,6 +376,9 @@ export class OperationPipeline {
       case "delete":
         await Promise.all([
           resource ? manager.removeResource(resource) : Promise.resolve(),
+          resourceVariable
+            ? this.removeResourceVariable(resourceVariable)
+            : Promise.resolve(),
           environment
             ? manager.removeEnvironment(environment)
             : Promise.resolve(),

@@ -39,3 +39,29 @@ export const deletedResource: Handler<Event.ResourceDeleted> = async (
   if (ws == null) return;
   await OperationPipeline.delete(ws).resource(event.payload).dispatch();
 };
+
+export const newResourceVariable: Handler<
+  Event.ResourceVariableCreated
+> = async (event) => {
+  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+  if (ws == null) return;
+  await OperationPipeline.update(ws).resourceVariable(event.payload).dispatch();
+};
+
+export const updatedResourceVariable: Handler<
+  Event.ResourceVariableUpdated
+> = async (event) => {
+  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+  if (ws == null) return;
+  await OperationPipeline.update(ws)
+    .resourceVariable(event.payload.current)
+    .dispatch();
+};
+
+export const deletedResourceVariable: Handler<
+  Event.ResourceVariableDeleted
+> = async (event) => {
+  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+  if (ws == null) return;
+  await OperationPipeline.delete(ws).resourceVariable(event.payload).dispatch();
+};
