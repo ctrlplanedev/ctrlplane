@@ -63,7 +63,10 @@ export class DbVariableReleaseValueSnapshotRepository
       )
       .innerJoin(
         schema.variableSetRelease,
-        eq(schema.variableSetValue.variableSetId, schema.variableSetRelease.id),
+        eq(
+          schema.variableSetReleaseValue.variableSetReleaseId,
+          schema.variableSetRelease.id,
+        ),
       )
       .innerJoin(
         schema.releaseTarget,
