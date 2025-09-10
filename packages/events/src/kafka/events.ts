@@ -65,12 +65,12 @@ export type EventPayload = {
     current: schema.Resource;
   };
   [Event.ResourceDeleted]: schema.Resource;
-  [Event.ResourceVariableCreated]: schema.ResourceVariable;
+  [Event.ResourceVariableCreated]: typeof schema.resourceVariable.$inferSelect;
   [Event.ResourceVariableUpdated]: {
-    previous: schema.ResourceVariable;
-    current: schema.ResourceVariable;
+    previous: typeof schema.resourceVariable.$inferSelect;
+    current: typeof schema.resourceVariable.$inferSelect;
   };
-  [Event.ResourceVariableDeleted]: schema.ResourceVariable;
+  [Event.ResourceVariableDeleted]: typeof schema.resourceVariable.$inferSelect;
   [Event.DeploymentCreated]: schema.Deployment;
   [Event.DeploymentUpdated]: {
     previous: schema.Deployment;

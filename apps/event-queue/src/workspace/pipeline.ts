@@ -10,7 +10,7 @@ type WorkspaceOptions = {
   operation: "update" | "delete";
 
   resource?: schema.Resource;
-  resourceVariable?: schema.ResourceVariable;
+  resourceVariable?: typeof schema.resourceVariable.$inferSelect;
   environment?: schema.Environment;
   deployment?: schema.Deployment;
   deploymentVersion?: schema.DeploymentVersion;
@@ -42,7 +42,9 @@ export class OperationPipeline {
     return this;
   }
 
-  resourceVariable(resourceVariable: schema.ResourceVariable) {
+  resourceVariable(
+    resourceVariable: typeof schema.resourceVariable.$inferSelect,
+  ) {
     this.opts.resourceVariable = resourceVariable;
     return this;
   }
@@ -289,7 +291,7 @@ export class OperationPipeline {
   }
 
   private async upsertResourceVariable(
-    resourceVariable: schema.ResourceVariable,
+    resourceVariable: typeof schema.resourceVariable.$inferSelect,
   ) {
     const existing =
       await this.opts.workspace.repository.resourceVariableRepository.get(
@@ -308,7 +310,7 @@ export class OperationPipeline {
   }
 
   private async removeResourceVariable(
-    resourceVariable: schema.ResourceVariable,
+    resourceVariable: typeof schema.resourceVariable.$inferSelect,
   ) {
     await this.opts.workspace.repository.resourceVariableRepository.delete(
       resourceVariable.id,
