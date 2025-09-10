@@ -3,6 +3,7 @@ import type { ReleaseManager } from "@ctrlplane/rule-engine";
 import { isPresent } from "ts-is-present";
 
 import { VersionRuleEngine } from "@ctrlplane/rule-engine";
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import type { Workspace } from "../../workspace.js";
 
@@ -64,6 +65,7 @@ export class VersionManager implements ReleaseManager {
     const allVersions = await this.versions.getAll();
     let versionsToEvaluate = allVersions
       .filter((v) => v.deploymentId === this.releaseTarget.deploymentId)
+      .filter((v) => v.status === DeploymentVersionStatus.Ready)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     const allSelectors = await this.versionSelectors.getAllSelectors();
