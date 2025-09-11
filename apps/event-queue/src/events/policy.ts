@@ -20,6 +20,13 @@ export const updatedPolicy: Handler<Event.PolicyUpdated> = async (event) => {
   const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
   if (ws == null) return;
   const policy = getPolicyWithDates(event.payload.current);
+  await Promise.all(
+    event.payload.previous.targets.map((target) =>
+      ws.selectorManager.policyTargetReleaseTargetSelector.removeSelector(
+        target,
+      ),
+    ),
+  );
   await OperationPipeline.update(ws).policy(policy).dispatch();
 };
 
