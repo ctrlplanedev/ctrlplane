@@ -71,6 +71,7 @@ export const DELETE = request()
           .delete(SCHEMA.deployment)
           .where(eq(SCHEMA.deployment.id, deploymentId));
 
+        await eventDispatcher.dispatchDeploymentDeleted(deployment);
         return NextResponse.json(deployment);
       } catch (error) {
         logger.error("Failed to delete deployment", { error });
