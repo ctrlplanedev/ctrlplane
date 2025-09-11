@@ -1,4 +1,6 @@
+import type { ResourceRelationshipManager } from "../relationships/resource-relationship-manager.js";
 import { JobManager } from "../job-manager/job-manager.js";
+import { DbResourceRelationshipManager } from "../relationships/db-resource-relationship-manager.js";
 import { DbDeploymentRepository } from "../repository/db-deployment-repository.js";
 import { DbDeploymentVariableRepository } from "../repository/db-deployment-variable-repository.js";
 import { DbDeploymentVariableValueRepository } from "../repository/db-deployment-variable-value-repository.js";
@@ -39,6 +41,7 @@ export class Workspace {
   releaseTargetManager: ReleaseTargetManager;
   repository: WorkspaceRepository;
   jobManager: JobManager;
+  resourceRelationshipManager: ResourceRelationshipManager;
 
   constructor(private opts: WorkspaceOptions) {
     this.selectorManager = new SelectorManager({
@@ -85,6 +88,9 @@ export class Workspace {
         new DbDeploymentVariableValueRepository(opts.id),
     });
     this.jobManager = new JobManager(this);
+    this.resourceRelationshipManager = new DbResourceRelationshipManager(
+      opts.id,
+    );
   }
 
   get id() {

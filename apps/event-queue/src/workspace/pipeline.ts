@@ -304,6 +304,50 @@ export class OperationPipeline {
     };
   }
 
+  private async upsertResource(resource: schema.Resource) {
+    await this.opts.workspace.selectorManager.updateResource(resource);
+    await this.opts.workspace.resourceRelationshipManager.upsertResource(
+      resource,
+    );
+    const children = await this.opts.workspace.resourceRelationshipManager
+      .getResourceChildren(resource)
+      .then((children) => children.map((c) => c.target));
+    const allReleaseTargets =
+      await this.opts.workspace.repository.releaseTargetRepository.getAll();
+    const releaseTargets = allReleaseTargets.filter((rt) =>
+      children.some((c) => c.id === rt.resourceId),
+    );
+    this.opts.releaseTargets = {
+      toEvaluate: [
+        ...(this.opts.releaseTargets?.toEvaluate ?? []),
+        ...releaseTargets,
+      ],
+      removed: this.opts.releaseTargets?.removed ?? [],
+    };
+  }
+
+  private async removeResource(resource: schema.Resource) {
+    await this.opts.workspace.selectorManager.removeResource(resource);
+    await this.opts.workspace.resourceRelationshipManager.deleteResource(
+      resource,
+    );
+    const children = await this.opts.workspace.resourceRelationshipManager
+      .getResourceChildren(resource)
+      .then((children) => children.map((c) => c.target));
+    const allReleaseTargets =
+      await this.opts.workspace.repository.releaseTargetRepository.getAll();
+    const releaseTargets = allReleaseTargets.filter((rt) =>
+      children.some((c) => c.id === rt.resourceId),
+    );
+    this.opts.releaseTargets = {
+      toEvaluate: [
+        ...(this.opts.releaseTargets?.toEvaluate ?? []),
+        ...releaseTargets,
+      ],
+      removed: this.opts.releaseTargets?.removed ?? [],
+    };
+  }
+
   private async upsertResourceVariable(
     resourceVariable: typeof schema.resourceVariable.$inferSelect,
   ) {
@@ -338,8 +382,14 @@ export class OperationPipeline {
       await this.opts.workspace.releaseTargetManager.computeReleaseTargetChanges();
 
     this.opts.releaseTargets = {
-      toEvaluate: addedReleaseTargets,
-      removed: removedReleaseTargets,
+      toEvaluate: [
+        ...(this.opts.releaseTargets?.toEvaluate ?? []),
+        ...addedReleaseTargets,
+      ],
+      removed: [
+        ...(this.opts.releaseTargets?.removed ?? []),
+        ...removedReleaseTargets,
+      ],
     };
   }
 
@@ -365,7 +415,7 @@ export class OperationPipeline {
     switch (operation) {
       case "update":
         await Promise.all([
-          resource ? manager.updateResource(resource) : Promise.resolve(),
+          resource ? this.upsertResource(resource) : Promise.resolve(),
           resourceVariable
             ? this.upsertResourceVariable(resourceVariable)
             : Promise.resolve(),
@@ -391,7 +441,7 @@ export class OperationPipeline {
         break;
       case "delete":
         await Promise.all([
-          resource ? manager.removeResource(resource) : Promise.resolve(),
+          resource ? this.removeResource(resource) : Promise.resolve(),
           resourceVariable
             ? this.removeResourceVariable(resourceVariable)
             : Promise.resolve(),
