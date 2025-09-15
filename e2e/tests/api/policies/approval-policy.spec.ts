@@ -108,7 +108,7 @@ test.describe("Approval Policy", () => {
 
     expect(versionResponse.response.status).toBe(201);
 
-    await page.waitForTimeout(10_000);
+    await page.waitForTimeout(20_000);
     const releases = await getReleasesForTarget(api, builder, environmentId!);
 
     const releaseForVersion = releases.find(
@@ -149,7 +149,7 @@ test.describe("Approval Policy", () => {
 
     expect(approvalResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(10_000);
+    await page.waitForTimeout(20_000);
 
     const releases = await getReleasesForTarget(api, builder, environmentId!);
     const releaseForVersion = releases.find(
@@ -190,7 +190,7 @@ test.describe("Approval Policy", () => {
 
     expect(approvalResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(10_000);
+    await page.waitForTimeout(20_000);
 
     const releases = await getReleasesForTarget(api, builder, environmentId!);
     const releaseForVersion = releases.find(
@@ -236,7 +236,7 @@ test.describe("Approval Policy", () => {
 
     const resourceId = createResourceResponse.data!.id;
 
-    await page.waitForTimeout(5_000);
+    await page.waitForTimeout(20_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -248,8 +248,6 @@ test.describe("Approval Policy", () => {
       (rt) => rt.environment.id === environmentId,
     );
     expect(releaseTarget).toBeDefined();
-
-    await page.waitForTimeout(10_000);
 
     const releasesResponse = await api.GET(
       "/v1/release-targets/{releaseTargetId}/releases",
@@ -317,7 +315,7 @@ test.describe("Approval Policy", () => {
     expect(resourceResponse.response.status).toBe(200);
     const resourceId = resourceResponse.data!.id;
 
-    await page.waitForTimeout(10_000);
+    await page.waitForTimeout(20_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -469,7 +467,7 @@ test.describe("Approval Policy", () => {
     expect(resourceResponse.response.status).toBe(200);
     const resourceId = resourceResponse.data!.id;
 
-    await page.waitForTimeout(10_000);
+    await page.waitForTimeout(20_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
