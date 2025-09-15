@@ -37,8 +37,8 @@ resources:
 policies:
   - name: "{{ prefix }}"
     targets:
-      - environmentSelector:
-          type: name
+      - resourceSelector:
+          type: identifier
           operator: contains
           value: "{{ prefix }}"
     versionAnyApprovals:

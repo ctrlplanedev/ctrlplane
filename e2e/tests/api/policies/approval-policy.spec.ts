@@ -2,8 +2,9 @@ import path from "path";
 import { faker } from "@faker-js/faker";
 import { expect } from "@playwright/test";
 import _ from "lodash";
+import { Client } from "openapi-fetch";
 
-import { cleanupImportedEntities, EntitiesBuilder } from "../../../api";
+import { cleanupImportedEntities, EntitiesBuilder, paths } from "../../../api";
 import { test } from "../../fixtures";
 
 const yamlPath = path.join(__dirname, "approval-policy.spec.yaml");
@@ -27,12 +28,75 @@ test.describe("Approval Policy", () => {
     await cleanupImportedEntities(api, builder.refs, workspace.id);
   });
 
+  const createEnvironment = async (
+    api: Client<paths, `${string}/${string}`>,
+    builder: EntitiesBuilder,
+  ) => {
+    const { prefix } = builder.refs;
+    const environmentResponse = await api.POST("/v1/environments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        resourceSelector: {
+          type: "identifier",
+          operator: "contains",
+          value: prefix,
+        },
+      },
+    });
+
+    expect(environmentResponse.response.status).toBe(200);
+    const environmentId = environmentResponse.data!.id;
+    return environmentId;
+  };
+
+  const getReleasesForTarget = async (
+    api: Client<paths, `${string}/${string}`>,
+    builder: EntitiesBuilder,
+    environmentId: string,
+  ) => {
+    const resource = builder.refs.resources[0]!;
+    const resourceResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+      {
+        params: {
+          path: {
+            workspaceId: builder.workspace.id,
+            identifier: resource.identifier,
+          },
+        },
+      },
+    );
+    expect(resourceResponse.response.status).toBe(200);
+    const resourceId = resourceResponse.data!.id;
+
+    const releaseTargetResponse = await api.GET(
+      "/v1/resources/{resourceId}/release-targets",
+      { params: { path: { resourceId } } },
+    );
+
+    expect(releaseTargetResponse.response.status).toBe(200);
+    const releaseTarget = releaseTargetResponse.data?.find(
+      (rt) => rt.environment.id === environmentId,
+    );
+
+    expect(releaseTarget).toBeDefined();
+
+    const releasesResponse = await api.GET(
+      "/v1/release-targets/{releaseTargetId}/releases",
+      { params: { path: { releaseTargetId: releaseTarget!.id } } },
+    );
+
+    expect(releasesResponse.response.status).toBe(200);
+    return releasesResponse.data ?? [];
+  };
+
   test("should not allow a release to be created if the version is not approved", async ({
     api,
-    workspace,
     page,
   }) => {
-    const { id: workspaceId } = workspace;
+    const environmentId = await createEnvironment(api, builder);
+
     const deployment = builder.refs.deployments[0]!;
     const tag = faker.string.alphanumeric(10);
     const versionResponse = await api.POST("/v1/deployment-versions", {
@@ -44,39 +108,10 @@ test.describe("Approval Policy", () => {
 
     expect(versionResponse.response.status).toBe(201);
 
-    const resource = builder.refs.resources[0]!;
-    const resourceResponse = await api.GET(
-      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
-      {
-        params: {
-          path: {
-            workspaceId,
-            identifier: resource.identifier,
-          },
-        },
-      },
-    );
-
-    expect(resourceResponse.response.status).toBe(200);
-    const resourceId = resourceResponse.data!.id;
-
-    const releaseTargetResponse = await api.GET(
-      "/v1/resources/{resourceId}/release-targets",
-      { params: { path: { resourceId } } },
-    );
-
-    expect(releaseTargetResponse.response.status).toBe(200);
-    const releaseTarget = releaseTargetResponse.data![0];
-
     await page.waitForTimeout(10_000);
+    const releases = await getReleasesForTarget(api, builder, environmentId!);
 
-    const releasesResponse = await api.GET(
-      "/v1/release-targets/{releaseTargetId}/releases",
-      { params: { path: { releaseTargetId: releaseTarget.id } } },
-    );
-
-    expect(releasesResponse.response.status).toBe(200);
-    const releaseForVersion = releasesResponse.data?.find(
+    const releaseForVersion = releases.find(
       (release) => release.version.tag === tag,
     );
 
@@ -85,10 +120,9 @@ test.describe("Approval Policy", () => {
 
   test("should allow a release to be created if the version is approved", async ({
     api,
-    workspace,
     page,
   }) => {
-    const { id: workspaceId } = workspace;
+    const environmentId = await createEnvironment(api, builder);
     const deployment = builder.refs.deployments[0]!;
     const tag = faker.string.alphanumeric(10);
     const versionResponse = await api.POST("/v1/deployment-versions", {
@@ -101,11 +135,12 @@ test.describe("Approval Policy", () => {
     expect(versionResponse.response.status).toBe(201);
 
     const approvalResponse = await api.POST(
-      "/v1/deployment-versions/{deploymentVersionId}/approve",
+      "/v1/deployment-versions/{deploymentVersionId}/approve/environment/{environmentId}",
       {
         params: {
           path: {
             deploymentVersionId: versionResponse.data!.id,
+            environmentId,
           },
         },
         body: {},
@@ -114,39 +149,10 @@ test.describe("Approval Policy", () => {
 
     expect(approvalResponse.response.status).toBe(200);
 
-    const resource = builder.refs.resources[0]!;
-    const resourceResponse = await api.GET(
-      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
-      {
-        params: {
-          path: {
-            workspaceId,
-            identifier: resource.identifier,
-          },
-        },
-      },
-    );
-
-    expect(resourceResponse.response.status).toBe(200);
-    const resourceId = resourceResponse.data!.id;
-
-    const releaseTargetResponse = await api.GET(
-      "/v1/resources/{resourceId}/release-targets",
-      { params: { path: { resourceId } } },
-    );
-
-    expect(releaseTargetResponse.response.status).toBe(200);
-    const releaseTarget = releaseTargetResponse.data![0];
-
     await page.waitForTimeout(10_000);
 
-    const releasesResponse = await api.GET(
-      "/v1/release-targets/{releaseTargetId}/releases",
-      { params: { path: { releaseTargetId: releaseTarget.id } } },
-    );
-
-    expect(releasesResponse.response.status).toBe(200);
-    const releaseForVersion = releasesResponse.data?.find(
+    const releases = await getReleasesForTarget(api, builder, environmentId!);
+    const releaseForVersion = releases.find(
       (release) => release.version.tag === tag,
     );
 
@@ -155,10 +161,9 @@ test.describe("Approval Policy", () => {
 
   test("should not allow a release to be created if the version is rejected", async ({
     api,
-    workspace,
     page,
   }) => {
-    const { id: workspaceId } = workspace;
+    const environmentId = await createEnvironment(api, builder);
     const deployment = builder.refs.deployments[0]!;
     const tag = faker.string.alphanumeric(10);
     const versionResponse = await api.POST("/v1/deployment-versions", {
@@ -171,11 +176,12 @@ test.describe("Approval Policy", () => {
     expect(versionResponse.response.status).toBe(201);
 
     const approvalResponse = await api.POST(
-      "/v1/deployment-versions/{deploymentVersionId}/approve",
+      "/v1/deployment-versions/{deploymentVersionId}/reject/environment/{environmentId}",
       {
         params: {
           path: {
             deploymentVersionId: versionResponse.data!.id,
+            environmentId,
           },
         },
         body: {},
@@ -184,43 +190,14 @@ test.describe("Approval Policy", () => {
 
     expect(approvalResponse.response.status).toBe(200);
 
-    const resource = builder.refs.resources[0]!;
-    const resourceResponse = await api.GET(
-      `/v1/workspaces/{workspaceId}/resources/identifier/{identifier}`,
-      {
-        params: {
-          path: {
-            workspaceId,
-            identifier: resource.identifier,
-          },
-        },
-      },
-    );
-
-    expect(resourceResponse.response.status).toBe(200);
-    const resourceId = resourceResponse.data!.id;
-
-    const releaseTargetResponse = await api.GET(
-      "/v1/resources/{resourceId}/release-targets",
-      { params: { path: { resourceId } } },
-    );
-
-    expect(releaseTargetResponse.response.status).toBe(200);
-    const releaseTarget = releaseTargetResponse.data![0];
-
     await page.waitForTimeout(10_000);
 
-    const releasesResponse = await api.GET(
-      "/v1/release-targets/{releaseTargetId}/releases",
-      { params: { path: { releaseTargetId: releaseTarget.id } } },
-    );
-
-    expect(releasesResponse.response.status).toBe(200);
-    const releaseForVersion = releasesResponse.data?.find(
+    const releases = await getReleasesForTarget(api, builder, environmentId!);
+    const releaseForVersion = releases.find(
       (release) => release.version.tag === tag,
     );
 
-    expect(releaseForVersion).toBeDefined();
+    expect(releaseForVersion).toBeUndefined();
   });
 
   test("should not allow a release to be created for a new resource if the version is not approved", async ({
@@ -229,6 +206,8 @@ test.describe("Approval Policy", () => {
     page,
   }) => {
     const { id: workspaceId } = workspace;
+
+    const environmentId = await createEnvironment(api, builder);
     const system = builder.refs.system;
     const systemPrefix = system.slug.split("-")[0]!;
     const deployment = builder.refs.deployments[0]!;
@@ -257,19 +236,24 @@ test.describe("Approval Policy", () => {
 
     const resourceId = createResourceResponse.data!.id;
 
+    await page.waitForTimeout(5_000);
+
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
       { params: { path: { resourceId } } },
     );
 
     expect(releaseTargetResponse.response.status).toBe(200);
-    const releaseTarget = releaseTargetResponse.data![0];
+    const releaseTarget = releaseTargetResponse.data?.find(
+      (rt) => rt.environment.id === environmentId,
+    );
+    expect(releaseTarget).toBeDefined();
 
     await page.waitForTimeout(10_000);
 
     const releasesResponse = await api.GET(
       "/v1/release-targets/{releaseTargetId}/releases",
-      { params: { path: { releaseTargetId: releaseTarget.id } } },
+      { params: { path: { releaseTargetId: releaseTarget!.id } } },
     );
 
     expect(releasesResponse.response.status).toBe(200);
