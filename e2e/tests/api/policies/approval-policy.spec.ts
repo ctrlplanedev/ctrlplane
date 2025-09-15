@@ -281,8 +281,8 @@ test.describe("Approval Policy", () => {
 
     expect(versionResponse.response.status).toBe(201);
 
-    const environment1 = builder.refs.environments[0]!;
-    const environment2 = builder.refs.environments[1]!;
+    const environment1id = await createEnvironment(api, builder);
+    const environment2id = await createEnvironment(api, builder);
 
     const approvalResponse = await api.POST(
       "/v1/deployment-versions/{deploymentVersionId}/approve/environment/{environmentId}",
@@ -290,7 +290,7 @@ test.describe("Approval Policy", () => {
         params: {
           path: {
             deploymentVersionId: versionResponse.data!.id,
-            environmentId: environment1.id,
+            environmentId: environment1id,
           },
         },
         body: {
@@ -317,6 +317,8 @@ test.describe("Approval Policy", () => {
     expect(resourceResponse.response.status).toBe(200);
     const resourceId = resourceResponse.data!.id;
 
+    await page.waitForTimeout(10_000);
+
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
       { params: { path: { resourceId } } },
@@ -324,7 +326,7 @@ test.describe("Approval Policy", () => {
 
     expect(releaseTargetResponse.response.status).toBe(200);
     const releaseTarget1 = releaseTargetResponse.data?.find(
-      (rt) => rt.environment.id === environment1.id,
+      (rt) => rt.environment.id === environment1id,
     );
 
     expect(releaseTarget1).toBeDefined();
@@ -342,7 +344,7 @@ test.describe("Approval Policy", () => {
     expect(release1).toBeDefined();
 
     const releaseTarget2 = releaseTargetResponse.data?.find(
-      (rt) => rt.environment.id === environment2.id,
+      (rt) => rt.environment.id === environment2id,
     );
 
     expect(releaseTarget2).toBeDefined();
@@ -399,8 +401,6 @@ test.describe("Approval Policy", () => {
     });
 
     expect(policyResponse.response.status).toBe(200);
-
-    await page.waitForTimeout(5_000);
 
     const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const environmentResponse = await api.POST("/v1/environments", {
@@ -468,6 +468,8 @@ test.describe("Approval Policy", () => {
 
     expect(resourceResponse.response.status).toBe(200);
     const resourceId = resourceResponse.data!.id;
+
+    await page.waitForTimeout(10_000);
 
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
