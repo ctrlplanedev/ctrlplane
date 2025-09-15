@@ -20,6 +20,7 @@ export const start = async () => {
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
+      const start = performance.now();
       logger.info("Received event", {
         topic,
         partition,
@@ -42,11 +43,30 @@ export const start = async () => {
 
       try {
         await handler(event);
+        const end = performance.now();
+        const duration = end - start;
+        if (duration >= 500) {
+          logger.warn("Handled event, but took longer than 500ms", {
+            event,
+            eventType: event.eventType,
+            duration: `${duration}ms`,
+          });
+          return;
+        }
+
+        logger.info("Successfully handled event", {
+          event,
+          eventType: event.eventType,
+          duration: `${end - start}ms`,
+        });
       } catch (error) {
+        const end = performance.now();
         logger.error("Failed to handle event", {
           error: error instanceof Error ? error.message : error,
           stack: error instanceof Error ? error.stack : undefined,
           event,
+          eventType: event.eventType,
+          duration: `${end - start}ms`,
         });
       }
     },
