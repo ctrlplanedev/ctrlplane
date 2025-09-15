@@ -170,6 +170,7 @@ test.describe("Resource Variables API", () => {
   test("reference variables from related resources", async ({
     api,
     workspace,
+    page,
   }) => {
     const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
     const reference = faker.string.alphanumeric(10).toLowerCase();
@@ -235,6 +236,8 @@ test.describe("Resource Variables API", () => {
     });
 
     expect(relationship.response.status).toBe(200);
+
+    await page.waitForTimeout(15_000);
 
     // Verify reference resolves
     const getTarget = await api.GET(
@@ -327,12 +330,22 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = builder.refs.deployments[0]!;
+    const deploymentResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        slug: faker.string.alphanumeric(10),
+      },
+    });
+    expect(deploymentResponse.response.status).toBe(201);
+    const deploymentId = deploymentResponse.data?.id ?? "";
+
+    await page.waitForTimeout(5_000);
 
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
-          deploymentId: deployment.id,
+          deploymentId: deploymentId,
         },
       },
       body: {
@@ -357,12 +370,12 @@ test.describe("Resource Variables API", () => {
 
     await api.POST("/v1/deployment-versions", {
       body: {
-        deploymentId: deployment.id,
+        deploymentId: deploymentId,
         tag: faker.string.alphanumeric(10),
       },
     });
 
-    await page.waitForTimeout(5_000);
+    await page.waitForTimeout(15_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -380,7 +393,7 @@ test.describe("Resource Variables API", () => {
     const releaseTarget = releaseTargets.find(
       (rt) =>
         rt.resource.id === targetResourceId &&
-        rt.deployment.id === deployment.id,
+        rt.deployment.id === deploymentId,
     );
 
     expect(releaseTarget).toBeDefined();
@@ -487,12 +500,22 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = builder.refs.deployments[0]!;
+    const deploymentResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        slug: faker.string.alphanumeric(10),
+      },
+    });
+    expect(deploymentResponse.response.status).toBe(201);
+    const deploymentId = deploymentResponse.data?.id ?? "";
+
+    await page.waitForTimeout(5_000);
 
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
-          deploymentId: deployment.id,
+          deploymentId: deploymentId,
         },
       },
       body: {
@@ -517,12 +540,12 @@ test.describe("Resource Variables API", () => {
 
     await api.POST("/v1/deployment-versions", {
       body: {
-        deploymentId: deployment.id,
+        deploymentId: deploymentId,
         tag: faker.string.alphanumeric(10),
       },
     });
 
-    await page.waitForTimeout(5_000);
+    await page.waitForTimeout(15_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -540,7 +563,7 @@ test.describe("Resource Variables API", () => {
     const releaseTarget = releaseTargets.find(
       (rt) =>
         rt.resource.id === targetResourceId &&
-        rt.deployment.id === deployment.id,
+        rt.deployment.id === deploymentId,
     );
 
     expect(releaseTarget).toBeDefined();
@@ -648,12 +671,22 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = builder.refs.deployments[0]!;
+    const deploymentResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        slug: faker.string.alphanumeric(10),
+      },
+    });
+    expect(deploymentResponse.response.status).toBe(201);
+    const deploymentId = deploymentResponse.data?.id ?? "";
+
+    await page.waitForTimeout(5_000);
 
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
-          deploymentId: deployment.id,
+          deploymentId: deploymentId,
         },
       },
       body: {
@@ -678,12 +711,12 @@ test.describe("Resource Variables API", () => {
 
     await api.POST("/v1/deployment-versions", {
       body: {
-        deploymentId: deployment.id,
+        deploymentId: deploymentId,
         tag: faker.string.alphanumeric(10),
       },
     });
 
-    await page.waitForTimeout(5_000);
+    await page.waitForTimeout(15_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -701,7 +734,7 @@ test.describe("Resource Variables API", () => {
     const releaseTarget = releaseTargets.find(
       (rt) =>
         rt.resource.id === targetResourceId &&
-        rt.deployment.id === deployment.id,
+        rt.deployment.id === deploymentId,
     );
 
     expect(releaseTarget).toBeDefined();
@@ -764,7 +797,18 @@ test.describe("Resource Variables API", () => {
     expect(resourceResponse.data?.id).toBeDefined();
     const resourceId = resourceResponse.data?.id;
 
-    const deployment = builder.refs.deployments[0]!;
+    const deploymentResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        slug: faker.string.alphanumeric(10),
+      },
+    });
+    expect(deploymentResponse.response.status).toBe(201);
+    const deploymentId = deploymentResponse.data?.id ?? "";
+
+    await page.waitForTimeout(5_000);
+
     const key = faker.string.alphanumeric(10);
     const lowerPriorityValue = faker.string.alphanumeric(10);
     const higherPriorityValue = faker.string.alphanumeric(10);
@@ -772,7 +816,7 @@ test.describe("Resource Variables API", () => {
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
-          deploymentId: deployment.id,
+          deploymentId: deploymentId,
         },
       },
       body: {
@@ -807,7 +851,7 @@ test.describe("Resource Variables API", () => {
     const tag = faker.string.alphanumeric(10);
     await api.POST("/v1/deployment-versions", {
       body: {
-        deploymentId: deployment.id,
+        deploymentId: deploymentId,
         tag,
       },
     });
@@ -829,7 +873,7 @@ test.describe("Resource Variables API", () => {
 
     const releaseTarget = releaseTargets.find(
       (rt) =>
-        rt.resource.id === resourceId && rt.deployment.id === deployment.id,
+        rt.resource.id === resourceId && rt.deployment.id === deploymentId,
     );
 
     expect(releaseTarget).toBeDefined();
@@ -925,14 +969,24 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = builder.refs.deployments[0]!;
+    const deploymentResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        slug: faker.string.alphanumeric(10),
+      },
+    });
+    expect(deploymentResponse.response.status).toBe(201);
+    const deploymentId = deploymentResponse.data?.id ?? "";
+
+    await page.waitForTimeout(5_000);
 
     const key = faker.string.alphanumeric(10);
 
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
-          deploymentId: deployment.id,
+          deploymentId: deploymentId,
         },
       },
       body: {
@@ -957,7 +1011,7 @@ test.describe("Resource Variables API", () => {
 
     await api.POST("/v1/deployment-versions", {
       body: {
-        deploymentId: deployment.id,
+        deploymentId: deploymentId,
         tag: faker.string.alphanumeric(10),
       },
     });
@@ -980,7 +1034,7 @@ test.describe("Resource Variables API", () => {
     });
     expect(patchResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(5_000);
+    await page.waitForTimeout(15_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -998,7 +1052,7 @@ test.describe("Resource Variables API", () => {
     const releaseTarget = releaseTargets.find(
       (rt) =>
         rt.resource.id === targetResourceId &&
-        rt.deployment.id === deployment.id,
+        rt.deployment.id === deploymentId,
     );
 
     expect(releaseTarget).toBeDefined();
@@ -1101,14 +1155,22 @@ test.describe("Resource Variables API", () => {
     expect(relationship.response.status).toBe(200);
 
     // Create a deployment variable with reference type
-    const deployment = builder.refs.deployments[0]!;
+    const deploymentResponse = await api.POST("/v1/deployments", {
+      body: {
+        name: faker.string.alphanumeric(10),
+        systemId: builder.refs.system.id,
+        slug: faker.string.alphanumeric(10),
+      },
+    });
+    expect(deploymentResponse.response.status).toBe(201);
+    const deploymentId = deploymentResponse.data?.id ?? "";
 
     const key = faker.string.alphanumeric(10);
 
     await api.POST("/v1/deployments/{deploymentId}/variables", {
       params: {
         path: {
-          deploymentId: deployment.id,
+          deploymentId: deploymentId,
         },
       },
       body: {
@@ -1133,7 +1195,7 @@ test.describe("Resource Variables API", () => {
 
     await api.POST("/v1/deployment-versions", {
       body: {
-        deploymentId: deployment.id,
+        deploymentId: deploymentId,
         tag: faker.string.alphanumeric(10),
       },
     });
@@ -1148,7 +1210,7 @@ test.describe("Resource Variables API", () => {
     );
 
     expect(deleteTargetResponse.response.status).toBe(200);
-    await page.waitForTimeout(5_000);
+    await page.waitForTimeout(15_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
@@ -1166,7 +1228,7 @@ test.describe("Resource Variables API", () => {
     const releaseTarget = releaseTargets.find(
       (rt) =>
         rt.resource.id === targetResourceId &&
-        rt.deployment.id === deployment.id,
+        rt.deployment.id === deploymentId,
     );
 
     expect(releaseTarget).toBeDefined();
