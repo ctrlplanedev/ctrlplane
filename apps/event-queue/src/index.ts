@@ -49,7 +49,7 @@ export const start = async () => {
           logger.warn("Handled event, but took longer than 500ms", {
             event,
             eventType: event.eventType,
-            duration: `${duration}ms`,
+            duration: `${duration.toFixed(2)}ms`,
           });
           return;
         }
@@ -57,16 +57,17 @@ export const start = async () => {
         logger.info("Successfully handled event", {
           event,
           eventType: event.eventType,
-          duration: `${end - start}ms`,
+          duration: `${duration.toFixed(2)}ms`,
         });
       } catch (error) {
         const end = performance.now();
+        const duration = end - start;
         logger.error("Failed to handle event", {
           error: error instanceof Error ? error.message : error,
           stack: error instanceof Error ? error.stack : undefined,
           event,
           eventType: event.eventType,
-          duration: `${end - start}ms`,
+          duration: `${duration.toFixed(2)}ms`,
         });
       }
     },
