@@ -6,7 +6,25 @@ import { WorkspaceManager } from "../workspace/workspace.js";
 
 const getPolicyWithDates = (policy: FullPolicy) => {
   const createdAt = new Date(policy.createdAt);
-  return { ...policy, createdAt };
+  return {
+    ...policy,
+    createdAt,
+    versionAnyApprovals:
+      policy.versionAnyApprovals != null
+        ? {
+            ...policy.versionAnyApprovals,
+            createdAt: new Date(policy.versionAnyApprovals.createdAt),
+          }
+        : null,
+    versionUserApprovals: policy.versionUserApprovals.map((approval) => ({
+      ...approval,
+      createdAt: new Date(approval.createdAt),
+    })),
+    versionRoleApprovals: policy.versionRoleApprovals.map((approval) => ({
+      ...approval,
+      createdAt: new Date(approval.createdAt),
+    })),
+  };
 };
 
 export const newPolicy: Handler<Event.PolicyCreated> = async (event) => {
