@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import { NextResponse } from "next/server";
-import { NOT_FOUND } from "http-status";
+import { CONFLICT, NOT_FOUND } from "http-status";
 import { z } from "zod";
 
 import { and, eq } from "@ctrlplane/db";
@@ -75,10 +75,13 @@ export const POST = request()
       environmentId,
       user.id,
     );
-    if (existingRecord == null)
+    if (
+      existingRecord != null &&
+      existingRecord.status === schema.ApprovalStatus.Rejected
+    )
       return NextResponse.json(
-        { error: "User has not approved this version and environment" },
-        { status: NOT_FOUND },
+        { error: "User has already rejected this version and environment" },
+        { status: CONFLICT },
       );
 
     const record = await db
@@ -91,7 +94,17 @@ export const POST = request()
         approvedAt: null,
         environmentId,
       })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: [
+          schema.policyRuleAnyApprovalRecord.deploymentVersionId,
+          schema.policyRuleAnyApprovalRecord.environmentId,
+          schema.policyRuleAnyApprovalRecord.userId,
+        ],
+        set: {
+          status: schema.ApprovalStatus.Rejected,
+          reason: body.reason,
+        },
+      })
       .returning();
 
     return NextResponse.json(record);
