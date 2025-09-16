@@ -1,11 +1,9 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
-import { isAfter } from "date-fns";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
-import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -66,15 +64,15 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     throw new Error(`Job not found: externalId=${id} name=${name}`);
 
   const updatedAt = new Date(updated_at);
-  // safeguard against out of order events, if the job's updatedAt is after the webhook event
-  // this means a more recent event has already been processed, so just skip
-  if (isAfter(job.updatedAt, updatedAt)) {
-    logger.warn(`Skipping out of order event for job ${job.id}`, {
-      job,
-      event,
-    });
-    return;
-  }
+  // // safeguard against out of order events, if the job's updatedAt is after the webhook event
+  // // this means a more recent event has already been processed, so just skip
+  // if (isAfter(job.updatedAt, updatedAt)) {
+  //   logger.warn(`Skipping out of order event for job ${job.id}`, {
+  //     job,
+  //     event,
+  //   });
+  //   return;
+  // }
 
   const status =
     conclusion != null
