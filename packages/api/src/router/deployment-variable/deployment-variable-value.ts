@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import { TRPCError } from "@trpc/server";
+import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import {
@@ -19,7 +20,7 @@ const getVariableAndValues = async (tx: Tx, variableId: string) =>
     .select()
     .from(schema.deploymentVariable)
     .where(eq(schema.deploymentVariable.id, variableId))
-    .innerJoin(
+    .leftJoin(
       schema.deploymentVariableValue,
       eq(
         schema.deploymentVariableValue.variableId,
@@ -29,7 +30,9 @@ const getVariableAndValues = async (tx: Tx, variableId: string) =>
     .then((rows) => {
       if (rows.length === 0) return null;
       const variable = rows[0]!.deployment_variable;
-      const values = rows.map((r) => r.deployment_variable_value);
+      const values = rows
+        .map((r) => r.deployment_variable_value)
+        .filter(isPresent);
       return { ...variable, values };
     });
 

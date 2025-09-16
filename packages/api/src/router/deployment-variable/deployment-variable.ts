@@ -34,18 +34,20 @@ const getVariableAndValues = async (tx: Tx, variableId: string) =>
   tx
     .select()
     .from(schema.deploymentVariable)
-    .where(eq(schema.deploymentVariable.id, variableId))
-    .innerJoin(
+    .leftJoin(
       schema.deploymentVariableValue,
       eq(
         schema.deploymentVariableValue.variableId,
         schema.deploymentVariable.id,
       ),
     )
+    .where(eq(schema.deploymentVariable.id, variableId))
     .then((rows) => {
       if (rows.length === 0) return null;
       const variable = rows[0]!.deployment_variable;
-      const values = rows.map((r) => r.deployment_variable_value);
+      const values = rows
+        .map((r) => r.deployment_variable_value)
+        .filter(isPresent);
       return { ...variable, values };
     });
 
