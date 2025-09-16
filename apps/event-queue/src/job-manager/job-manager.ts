@@ -172,14 +172,14 @@ export class JobManager {
   ) {
     const allValues =
       await this.workspace.repository.variableReleaseValueRepository.getAll();
-    const valueIds = new Set(
+    const snapshotIds = new Set(
       allValues
         .filter((v) => v.variableSetReleaseId === variableRelease.id)
-        .map((v) => v.id),
+        .map((v) => v.variableValueSnapshotId),
     );
     const allSnapshots =
       await this.workspace.repository.variableValueSnapshotRepository.getAll();
-    const snapshots = allSnapshots.filter((s) => valueIds.has(s.id));
+    const snapshots = allSnapshots.filter((s) => snapshotIds.has(s.id));
     return Promise.all(
       snapshots.map((s) =>
         this.workspace.repository.jobVariableRepository.create({
