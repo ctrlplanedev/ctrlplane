@@ -54,10 +54,6 @@ const getReleaseJob = async (
     .select()
     .from(schema.releaseJob)
     .innerJoin(
-      schema.versionRelease,
-      eq(schema.releaseJob.releaseId, schema.releaseJob.releaseId),
-    )
-    .innerJoin(
       schema.release,
       eq(schema.releaseJob.releaseId, schema.release.id),
     )
