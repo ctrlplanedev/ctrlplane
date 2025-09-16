@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import { Kafka } from "kafkajs";
 
 import { logger } from "@ctrlplane/logger";
@@ -75,3 +76,29 @@ export const start = async () => {
 };
 
 start();
+
+const port = env.PORT;
+const server = createServer((req, res) => {
+  if (req.url === "/healthz") {
+    res.writeHead(200);
+    res.end("ok");
+    return;
+  }
+
+  res.writeHead(404);
+  res.end();
+});
+
+const closeServer = () => server.close(() => process.exit(0));
+
+server.listen(port, () => {
+  logger.info(`Health check endpoint listening on port ${port}`);
+});
+
+const shutdown = () => {
+  logger.warn("Exiting...");
+  consumer.disconnect().then(closeServer);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

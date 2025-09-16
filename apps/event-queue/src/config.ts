@@ -25,6 +25,7 @@ export const env = createEnv({
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
     GITHUB_BOT_CLIENT_ID: z.string().optional(),
     GITHUB_BOT_CLIENT_SECRET: z.string().optional(),
+    PORT: z.number().default(3124),
   },
   runtimeEnv: process.env,
 });
