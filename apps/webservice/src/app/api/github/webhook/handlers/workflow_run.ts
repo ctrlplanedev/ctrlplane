@@ -1,6 +1,6 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
@@ -48,6 +48,19 @@ const getJob = async (externalId: number, name: string) => {
     .then(takeFirstOrNull);
 };
 
+const updateLinks = async (jobId: string, links: Record<string, string>) =>
+  db
+    .insert(schema.jobMetadata)
+    .values({
+      jobId,
+      key: String(ReservedMetadataKey.Links),
+      value: JSON.stringify(links),
+    })
+    .onConflictDoUpdate({
+      target: [schema.jobMetadata.jobId, schema.jobMetadata.key],
+      set: buildConflictUpdateColumns(schema.jobMetadata, ["value"]),
+    });
+
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   const {
     id,
@@ -90,6 +103,8 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   const externalId = id.toString();
   const Run = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
   const Workflow = `${Run}/workflow`;
+  await updateLinks(job.id, { Run, Workflow });
+
   await updateJob(
     job.id,
     { status, externalId, startedAt, completedAt, updatedAt },
