@@ -23,6 +23,7 @@ type WorkspaceOptions = {
   releaseTargets?: {
     toEvaluate: schema.ReleaseTarget[];
     removed: schema.ReleaseTarget[];
+    skipDuplicateCheck?: boolean;
   };
 };
 
@@ -90,11 +91,15 @@ export class OperationPipeline {
     return this;
   }
 
-  releaseTargets(releaseTargets: schema.ReleaseTarget[]) {
+  releaseTargets(
+    releaseTargets: schema.ReleaseTarget[],
+    opts?: { skipDuplicateCheck?: boolean },
+  ) {
     if (this.opts.releaseTargets == null)
       this.opts.releaseTargets = {
         toEvaluate: [],
         removed: [],
+        skipDuplicateCheck: opts?.skipDuplicateCheck ?? false,
       };
     this.opts.releaseTargets.toEvaluate.push(...releaseTargets);
     return this;
@@ -468,7 +473,9 @@ export class OperationPipeline {
 
     const jobsToDispatch = await Promise.all(
       (this.opts.releaseTargets?.toEvaluate ?? []).map((rt) =>
-        releaseTargetManager.evaluate(rt),
+        releaseTargetManager.evaluate(rt, {
+          skipDuplicateCheck: this.opts.releaseTargets?.skipDuplicateCheck,
+        }),
       ),
     ).then((jobs) => jobs.filter(isPresent));
 

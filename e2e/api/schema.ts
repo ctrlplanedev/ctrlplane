@@ -544,6 +544,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/release-targets/{releaseTargetId}/redeploy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Redeploy a release target */
+    post: operations["redeployReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/release-targets/{releaseTargetId}/releases": {
     parameters: {
       query?: never;
@@ -3545,6 +3562,52 @@ export interface operations {
         };
       };
       /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  redeployReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Release target not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
       500: {
         headers: {
           [name: string]: unknown;

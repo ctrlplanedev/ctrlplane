@@ -10,6 +10,6 @@ export const evaluateReleaseTarget: Handler<
   const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
   if (ws == null) return;
   await OperationPipeline.evaluate(ws)
-    .releaseTargets([event.payload])
+    .releaseTargets([event.payload.releaseTarget], event.payload.opts)
     .dispatch();
 };

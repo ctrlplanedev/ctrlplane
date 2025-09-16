@@ -106,7 +106,10 @@ export type EventPayload = {
   [Event.PolicyUpdated]: { previous: FullPolicy; current: FullPolicy };
   [Event.PolicyDeleted]: FullPolicy;
   [Event.JobUpdated]: { previous: schema.Job; current: schema.Job };
-  [Event.EvaluateReleaseTarget]: schema.ReleaseTarget;
+  [Event.EvaluateReleaseTarget]: {
+    releaseTarget: schema.ReleaseTarget;
+    opts?: { skipDuplicateCheck?: boolean };
+  };
   // [Event.JobCreated]: schema.Job;
   // [Event.JobDeleted]: schema.Job;
   // [Event.SystemCreated]: schema.System;

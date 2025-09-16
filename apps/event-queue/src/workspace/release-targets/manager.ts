@@ -237,7 +237,13 @@ export class ReleaseTargetManager {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
   }
 
-  private async createReleaseJob(release: typeof schema.release.$inferSelect) {
+  private async createReleaseJob(
+    release: typeof schema.release.$inferSelect,
+    skipDuplicateCheck?: boolean,
+  ) {
+    if (skipDuplicateCheck)
+      return this.workspace.jobManager.createReleaseJob(release);
+
     const allReleaseJobs =
       await this.workspace.repository.releaseJobRepository.getAll();
     const existingReleaseJob = allReleaseJobs.find(
@@ -274,7 +280,10 @@ export class ReleaseTargetManager {
     });
   }
 
-  async evaluate(releaseTarget: schema.ReleaseTarget) {
+  async evaluate(
+    releaseTarget: schema.ReleaseTarget,
+    opts?: { skipDuplicateCheck?: boolean },
+  ) {
     try {
       const [versionRelease, variableRelease] = await Promise.all([
         this.handleVersionRelease(releaseTarget),
@@ -291,6 +300,9 @@ export class ReleaseTargetManager {
         );
         return this.createReleaseJob(release);
       }
+
+      if (opts?.skipDuplicateCheck)
+        return this.createReleaseJob(currentRelease, true);
 
       const hasAnythingChanged = this.getHasAnythingChanged(currentRelease, {
         versionReleaseId: versionRelease.id,

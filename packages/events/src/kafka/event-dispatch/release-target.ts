@@ -19,6 +19,7 @@ const getWorkspaceId = async (releaseTargetId: string) =>
 
 export const dispatchEvaluateReleaseTarget = async (
   releaseTarget: schema.ReleaseTarget,
+  opts?: { skipDuplicateCheck?: boolean },
   source?: "api" | "scheduler" | "user-action",
 ) =>
   getWorkspaceId(releaseTarget.id).then((workspaceId) =>
@@ -28,6 +29,6 @@ export const dispatchEvaluateReleaseTarget = async (
       eventId: releaseTarget.id,
       timestamp: Date.now(),
       source: source ?? "api",
-      payload: releaseTarget,
+      payload: { releaseTarget, opts },
     }),
   );

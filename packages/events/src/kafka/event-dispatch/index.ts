@@ -185,8 +185,11 @@ export class KafkaEventDispatcher implements EventDispatcher {
 
   async dispatchEvaluateReleaseTarget(
     releaseTarget: schema.ReleaseTarget,
-    _?: { skipDuplicateCheck?: boolean },
+    opts?: { skipDuplicateCheck?: boolean },
   ): Promise<void> {
-    await releaseTargetDispatch.dispatchEvaluateReleaseTarget(releaseTarget);
+    await releaseTargetDispatch.dispatchEvaluateReleaseTarget(
+      releaseTarget,
+      opts,
+    );
   }
 }
