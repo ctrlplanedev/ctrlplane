@@ -21,63 +21,20 @@ export class DbVariableReleaseValueSnapshotRepository
     return this.db
       .select()
       .from(schema.variableValueSnapshot)
-      .innerJoin(
-        schema.variableSetReleaseValue,
-        eq(
-          schema.variableValueSnapshot.id,
-          schema.variableSetReleaseValue.variableValueSnapshotId,
-        ),
-      )
-      .innerJoin(
-        schema.variableSetRelease,
-        eq(schema.variableSetValue.variableSetId, schema.variableSetRelease.id),
-      )
-      .innerJoin(
-        schema.releaseTarget,
-        eq(schema.variableSetRelease.releaseTargetId, schema.releaseTarget.id),
-      )
-      .innerJoin(
-        schema.resource,
-        eq(schema.releaseTarget.resourceId, schema.resource.id),
-      )
       .where(
         and(
-          eq(schema.variableSetValue.id, id),
-          eq(schema.resource.workspaceId, this.workspaceId),
+          eq(schema.variableValueSnapshot.id, id),
+          eq(schema.variableValueSnapshot.workspaceId, this.workspaceId),
         ),
       )
-      .then(takeFirstOrNull)
-      .then((row) => row?.variable_value_snapshot ?? null);
+      .then(takeFirstOrNull);
   }
 
   getAll() {
     return this.db
       .select()
       .from(schema.variableValueSnapshot)
-      .innerJoin(
-        schema.variableSetReleaseValue,
-        eq(
-          schema.variableValueSnapshot.id,
-          schema.variableSetReleaseValue.variableValueSnapshotId,
-        ),
-      )
-      .innerJoin(
-        schema.variableSetRelease,
-        eq(
-          schema.variableSetReleaseValue.variableSetReleaseId,
-          schema.variableSetRelease.id,
-        ),
-      )
-      .innerJoin(
-        schema.releaseTarget,
-        eq(schema.variableSetRelease.releaseTargetId, schema.releaseTarget.id),
-      )
-      .innerJoin(
-        schema.resource,
-        eq(schema.releaseTarget.resourceId, schema.resource.id),
-      )
-      .where(eq(schema.resource.workspaceId, this.workspaceId))
-      .then((rows) => rows.map((row) => row.variable_value_snapshot));
+      .where(eq(schema.variableValueSnapshot.workspaceId, this.workspaceId));
   }
 
   create(entity: typeof schema.variableValueSnapshot.$inferSelect) {
