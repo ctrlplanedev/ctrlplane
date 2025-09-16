@@ -228,12 +228,25 @@ export class OperationPipeline {
         deploymentVariableValue,
       );
 
+    const upsertedValue =
+      await this.opts.workspace.repository.deploymentVariableValueRepository.get(
+        deploymentVariableValue.id,
+      );
+    if (upsertedValue == null)
+      throw new Error("Deployment variable value not found");
+
     const deploymentVariable =
       await this.opts.workspace.repository.deploymentVariableRepository.get(
         deploymentVariableValue.variableId,
       );
     if (deploymentVariable == null)
       throw new Error("Deployment variable not found");
+
+    if (deploymentVariableValue.isDefault)
+      await this.opts.workspace.repository.deploymentVariableRepository.update({
+        ...deploymentVariable,
+        defaultValueId: upsertedValue.id,
+      });
 
     await this.markDeploymentReleaseTargetsAsStale(
       deploymentVariable.deploymentId,

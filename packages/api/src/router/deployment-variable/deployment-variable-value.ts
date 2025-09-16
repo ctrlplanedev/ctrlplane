@@ -52,25 +52,13 @@ const directValueRouter = createTRPCRouter({
         }),
     })
     .mutation(async ({ ctx, input }) => {
-      const prevVariable = await getVariableAndValues(ctx.db, input.variableId);
-      if (prevVariable == null)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Variable not found",
-        });
       const insertedValue = await ctx.db.transaction((tx) =>
         upsertDirectVariableValue(tx, input.variableId, input.data),
       );
-      const variable = await getVariableAndValues(ctx.db, input.variableId);
-      if (variable == null)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Variable not found",
-        });
-      await eventDispatcher.dispatchDeploymentVariableUpdated(
-        prevVariable,
-        variable,
-      );
+      await eventDispatcher.dispatchDeploymentVariableValueCreated({
+        ...insertedValue,
+        isDefault: input.data.isDefault,
+      });
       return insertedValue;
     }),
 
