@@ -13,7 +13,7 @@ import {
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { Selector } from "./selector.js";
+import type { Selector } from "../selector.js";
 
 type DbDeploymentResourceSelectorOptions = {
   workspaceId: string;
