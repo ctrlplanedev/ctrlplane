@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { FullResource } from "@ctrlplane/events";
 
 import type { VersionRuleRepository } from "./rules/repository";
 
@@ -16,7 +17,7 @@ export interface Repository<T extends Entity> {
 type WorkspaceRepositoryOptions = {
   environmentRepository: Repository<schema.Environment>;
   deploymentRepository: Repository<schema.Deployment>;
-  resourceRepository: Repository<schema.Resource>;
+  resourceRepository: Repository<FullResource>;
   resourceVariableRepository: Repository<
     typeof schema.resourceVariable.$inferSelect
   >;

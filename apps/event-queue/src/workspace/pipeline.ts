@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { FullPolicy } from "@ctrlplane/events";
+import type { FullPolicy, FullResource } from "@ctrlplane/events";
 import { isPresent } from "ts-is-present";
 
 import type { Workspace } from "./workspace.js";
@@ -9,7 +9,7 @@ type WorkspaceOptions = {
 
   operation: "update" | "delete" | "evaluate";
 
-  resource?: schema.Resource;
+  resource?: FullResource;
   resourceVariable?: typeof schema.resourceVariable.$inferSelect;
   environment?: schema.Environment;
   deployment?: schema.Deployment;
@@ -42,7 +42,7 @@ export class OperationPipeline {
     return new OperationPipeline({ workspace, operation: "evaluate" });
   }
 
-  resource(resource: schema.Resource) {
+  resource(resource: FullResource) {
     this.opts.resource = resource;
     return this;
   }
@@ -322,7 +322,7 @@ export class OperationPipeline {
     };
   }
 
-  private async upsertResource(resource: schema.Resource) {
+  private async upsertResource(resource: FullResource) {
     await this.opts.workspace.selectorManager.updateResource(resource);
     await this.opts.workspace.resourceRelationshipManager.upsertResource(
       resource,
@@ -344,7 +344,7 @@ export class OperationPipeline {
     };
   }
 
-  private async removeResource(resource: schema.Resource) {
+  private async removeResource(resource: FullResource) {
     await this.opts.workspace.selectorManager.removeResource(resource);
     await this.opts.workspace.resourceRelationshipManager.deleteResource(
       resource,

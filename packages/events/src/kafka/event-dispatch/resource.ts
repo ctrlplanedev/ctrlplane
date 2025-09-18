@@ -5,45 +5,66 @@ import * as schema from "@ctrlplane/db/schema";
 import { sendEvent } from "../client.js";
 import { Event } from "../events.js";
 
+const getFullResource = async (resource: schema.Resource) => {
+  const metadataResult = await db
+    .select()
+    .from(schema.resourceMetadata)
+    .where(eq(schema.resourceMetadata.resourceId, resource.id));
+  const metadata = Object.fromEntries(
+    metadataResult.map((m) => [m.key, m.value]),
+  );
+  return { ...resource, metadata };
+};
+
 export const dispatchResourceCreated = (
   resource: schema.Resource,
   source?: "api" | "scheduler" | "user-action",
 ) =>
-  sendEvent({
-    workspaceId: resource.workspaceId,
-    eventType: Event.ResourceCreated,
-    eventId: resource.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: resource,
-  });
+  getFullResource(resource).then((fullResource) =>
+    sendEvent({
+      workspaceId: resource.workspaceId,
+      eventType: Event.ResourceCreated,
+      eventId: resource.id,
+      timestamp: Date.now(),
+      source: source ?? "api",
+      payload: fullResource,
+    }),
+  );
 
-export const dispatchResourceUpdated = (
+export const dispatchResourceUpdated = async (
   previous: schema.Resource,
   current: schema.Resource,
   source?: "api" | "scheduler" | "user-action",
-) =>
+) => {
+  const [previousFullResource, currentFullResource] = await Promise.all([
+    getFullResource(previous),
+    getFullResource(current),
+  ]);
+
   sendEvent({
     workspaceId: current.workspaceId,
     eventType: Event.ResourceUpdated,
     eventId: current.id,
     timestamp: Date.now(),
     source: source ?? "api",
-    payload: { previous, current },
+    payload: { previous: previousFullResource, current: currentFullResource },
   });
+};
 
 export const dispatchResourceDeleted = (
   resource: schema.Resource,
   source?: "api" | "scheduler" | "user-action",
 ) =>
-  sendEvent({
-    workspaceId: resource.workspaceId,
-    eventType: Event.ResourceDeleted,
-    eventId: resource.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: resource,
-  });
+  getFullResource(resource).then((fullResource) =>
+    sendEvent({
+      workspaceId: resource.workspaceId,
+      eventType: Event.ResourceDeleted,
+      eventId: resource.id,
+      timestamp: Date.now(),
+      source: source ?? "api",
+      payload: fullResource,
+    }),
+  );
 
 export const getWorkspaceIdForResource = async (resourceId: string) =>
   db

@@ -59,13 +59,17 @@ export type FullPolicy = schema.Policy & {
   maxRetries: schema.PolicyRuleMaxRetries | null;
 };
 
+export type FullResource = schema.Resource & {
+  metadata: Record<string, string>;
+};
+
 export type EventPayload = {
-  [Event.ResourceCreated]: schema.Resource;
+  [Event.ResourceCreated]: FullResource;
   [Event.ResourceUpdated]: {
-    previous: schema.Resource;
-    current: schema.Resource;
+    previous: FullResource;
+    current: FullResource;
   };
-  [Event.ResourceDeleted]: schema.Resource;
+  [Event.ResourceDeleted]: FullResource;
   [Event.ResourceVariableCreated]: typeof schema.resourceVariable.$inferSelect;
   [Event.ResourceVariableUpdated]: {
     previous: typeof schema.resourceVariable.$inferSelect;

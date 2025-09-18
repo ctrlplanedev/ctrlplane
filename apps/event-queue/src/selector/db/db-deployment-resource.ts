@@ -1,4 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
+import type { FullResource } from "@ctrlplane/events";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import {
@@ -21,7 +23,7 @@ type DbDeploymentResourceSelectorOptions = {
 };
 
 export class DbDeploymentResourceSelector
-  implements Selector<schema.Deployment, schema.Resource>
+  implements Selector<schema.Deployment, FullResource>
 {
   private db: Tx;
   private workspaceId: string;
@@ -151,7 +153,7 @@ export class DbDeploymentResourceSelector
     );
   }
 
-  async upsertEntity(entity: schema.Resource) {
+  async upsertEntity(entity: FullResource) {
     await this.upsertResource(entity);
     const [previouslyMatchedDeployments, currentlyMatchingDeployments] =
       await Promise.all([
@@ -317,18 +319,38 @@ export class DbDeploymentResourceSelector
   }
 
   async getEntitiesForSelector(selector: schema.Deployment) {
-    return this.db
+    const dbResult = await this.db
       .select()
       .from(schema.computedDeploymentResource)
       .innerJoin(
         schema.resource,
         eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
       )
-      .where(eq(schema.computedDeploymentResource.deploymentId, selector.id))
-      .then((results) => results.map(({ resource }) => resource));
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
+      .where(eq(schema.computedDeploymentResource.deploymentId, selector.id));
+
+    return _.chain(dbResult)
+      .groupBy((row) => row.resource.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { resource } = first;
+        const metadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return { ...resource, metadata };
+      })
+      .value()
+      .filter(isPresent);
   }
 
-  async getSelectorsForEntity(entity: schema.Resource) {
+  async getSelectorsForEntity(entity: FullResource) {
     return this.db
       .select()
       .from(schema.computedDeploymentResource)
@@ -353,10 +375,36 @@ export class DbDeploymentResourceSelector
   }
 
   async getAllEntities() {
-    return this.db
+    const dbResult = await this.db
       .select()
       .from(schema.resource)
-      .where(eq(schema.resource.workspaceId, this.workspaceId));
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, this.workspaceId),
+          isNull(schema.resource.deletedAt),
+        ),
+      );
+
+    return _.chain(dbResult)
+      .groupBy((row) => row.resource.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { resource } = first;
+        const metadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return { ...resource, metadata };
+      })
+      .value()
+      .filter(isPresent);
   }
 
   async getAllSelectors() {

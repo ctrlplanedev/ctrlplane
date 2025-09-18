@@ -1,4 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
+import type { FullResource } from "@ctrlplane/events";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import {
@@ -22,7 +24,7 @@ type DbEnvironmentResourceSelectorOptions = {
 };
 
 export class DbEnvironmentResourceSelector
-  implements Selector<schema.Environment, schema.Resource>
+  implements Selector<schema.Environment, FullResource>
 {
   private db: Tx;
   private workspaceId: string;
@@ -154,7 +156,7 @@ export class DbEnvironmentResourceSelector
     );
   }
 
-  async upsertEntity(entity: schema.Resource) {
+  async upsertEntity(entity: FullResource) {
     await this.upsertResource(entity);
     const [previouslyMatchedEnvironments, currentlyMatchingEnvironments] =
       await Promise.all([
@@ -188,7 +190,7 @@ export class DbEnvironmentResourceSelector
     ]);
   }
 
-  async removeEntity(entity: schema.Resource) {
+  async removeEntity(entity: FullResource) {
     const previouslyMatchedEnvironments =
       await this.getPreviouslyMatchedEnvironments(entity);
 
@@ -311,18 +313,38 @@ export class DbEnvironmentResourceSelector
       .where(eq(schema.environment.id, selector.id));
   }
 
-  getEntitiesForSelector(
+  async getEntitiesForSelector(
     selector: schema.Environment,
-  ): Promise<schema.Resource[]> {
-    return this.db
+  ): Promise<FullResource[]> {
+    const dbResult = await this.db
       .select()
       .from(schema.computedEnvironmentResource)
       .innerJoin(
         schema.resource,
         eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
       )
-      .where(eq(schema.computedEnvironmentResource.environmentId, selector.id))
-      .then((rows) => rows.map(({ resource }) => resource));
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
+      .where(eq(schema.computedEnvironmentResource.environmentId, selector.id));
+
+    return _.chain(dbResult)
+      .groupBy((row) => row.resource.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { resource } = first;
+        const metadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return { ...resource, metadata };
+      })
+      .value()
+      .filter(isPresent);
   }
 
   getSelectorsForEntity(
@@ -342,16 +364,37 @@ export class DbEnvironmentResourceSelector
       .then((rows) => rows.map(({ environment }) => environment));
   }
 
-  getAllEntities(): Promise<schema.Resource[]> {
-    return this.db
+  async getAllEntities(): Promise<FullResource[]> {
+    const dbResult = await this.db
       .select()
       .from(schema.resource)
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
       .where(
         and(
           eq(schema.resource.workspaceId, this.workspaceId),
           isNull(schema.resource.deletedAt),
         ),
       );
+
+    return _.chain(dbResult)
+      .groupBy((row) => row.resource.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { resource } = first;
+        const metadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return { ...resource, metadata };
+      })
+      .value()
+      .filter(isPresent);
   }
 
   getAllSelectors(): Promise<schema.Environment[]> {
@@ -367,7 +410,7 @@ export class DbEnvironmentResourceSelector
   }
 
   async isMatch(
-    entity: schema.Resource,
+    entity: FullResource,
     selector: schema.Environment,
   ): Promise<boolean> {
     const matchResult = await this.db
