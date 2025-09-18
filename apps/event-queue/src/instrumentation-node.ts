@@ -12,7 +12,7 @@ import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 
 const sdk = new NodeSDK({
   resource: new Resource({
-    [ATTR_SERVICE_NAME]: "ctrlplane/event-worker",
+    [ATTR_SERVICE_NAME]: "ctrlplane/event-queue",
   }),
   spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter()) as any],
   logRecordProcessors: [new BatchLogRecordProcessor(new OTLPLogExporter())],
@@ -41,7 +41,7 @@ const sdk = new NodeSDK({
       "@opentelemetry/instrumentation-winston": {
         enabled: true,
         logHook: (span, record) => {
-          record["resource.service.name"] = "ctrlplane/event-worker";
+          record["resource.service.name"] = "ctrlplane/event-queue";
         },
       },
     }),
@@ -55,3 +55,11 @@ try {
 } catch (error) {
   console.error("Error initializing tracing", error);
 }
+
+process.on("SIGTERM", () => {
+  sdk
+    .shutdown()
+    .then(() => console.log("Tracing shutdown"))
+    .catch((error) => console.error("Error shutting down tracing", error))
+    .finally(() => process.exit(0));
+});
