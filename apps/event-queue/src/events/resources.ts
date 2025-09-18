@@ -1,5 +1,8 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { Event } from "@ctrlplane/events";
+import { trace } from "@opentelemetry/api";
+
+import { makeWithSpan } from "@ctrlplane/logger";
 
 import type { Handler } from ".";
 import { OperationPipeline } from "../workspace/pipeline.js";
@@ -16,12 +19,19 @@ const getResourceWithDates = (resource: schema.Resource) => {
   return { ...resource, createdAt, updatedAt, lockedAt, deletedAt };
 };
 
-export const newResource: Handler<Event.ResourceCreated> = async (event) => {
-  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-  if (ws == null) return;
-  const resource = getResourceWithDates(event.payload);
-  await OperationPipeline.update(ws).resource(resource).dispatch();
-};
+const newResourceTracer = trace.getTracer("new-resource");
+const withSpan = makeWithSpan(newResourceTracer);
+
+export const newResource: Handler<Event.ResourceCreated> = withSpan(
+  "new-resource",
+  async (span, event) => {
+    span.setAttribute("resource.id", event.payload.id);
+    const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+    if (ws == null) return;
+    const resource = getResourceWithDates(event.payload);
+    await OperationPipeline.update(ws).resource(resource).dispatch();
+  },
+);
 
 export const updatedResource: Handler<Event.ResourceUpdated> = async (
   event,
