@@ -1,9 +1,11 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 import {
   ComparisonOperator,
   ConditionType,
+  MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
@@ -12,8 +14,23 @@ import {
   StringConditionOperatorFn,
 } from "./common.js";
 
+const metadataMatchesSelector = (
+  resource: schema.Resource & { metadata: Record<string, string> },
+  cond: MetadataCondition,
+) => {
+  if (cond.operator === MetadataOperator.Null)
+    return resource.metadata[cond.key] == null;
+  const metadataValue = resource.metadata[cond.key];
+  if (metadataValue == null) return false;
+
+  return StringConditionOperatorFn[cond.operator ?? "equals"](
+    metadataValue,
+    cond.value,
+  );
+};
+
 export const resourceMatchesSelector = (
-  resource: schema.Resource,
+  resource: schema.Resource & { metadata: Record<string, string> },
   selector: ResourceCondition,
 ): boolean => {
   if (selector.type === ResourceConditionType.Id)
@@ -54,7 +71,8 @@ export const resourceMatchesSelector = (
     );
   }
 
-  if (selector.type === ResourceConditionType.Metadata) return false;
+  if (selector.type === ResourceConditionType.Metadata)
+    return metadataMatchesSelector(resource, selector);
 
   if (selector.conditions.length === 0) return false;
 
