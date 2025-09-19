@@ -26,7 +26,9 @@ export const environmentMatchesSelector = (
   const subCon = selector.conditions.map((c) =>
     environmentMatchesSelector(environment, c),
   );
-  if (selector.operator === ComparisonOperator.And)
-    return subCon.every((c) => c);
-  return subCon.some((c) => c);
+  const isConditionMet =
+    selector.operator === ComparisonOperator.And
+      ? subCon.every((c) => c)
+      : subCon.some((c) => c);
+  return selector.not ? !isConditionMet : isConditionMet;
 };
