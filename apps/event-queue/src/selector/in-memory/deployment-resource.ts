@@ -2,7 +2,7 @@ import type { FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import { and, eq, inArray, isNotNull, isNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
@@ -119,6 +119,39 @@ export class InMemoryDeploymentResourceSelector
         .insert(schema.computedDeploymentResource)
         .values(computed)
         .onConflictDoNothing();
+
+    const staleComputed = await dbClient
+      .select()
+      .from(schema.computedDeploymentResource)
+      .innerJoin(
+        schema.resource,
+        eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, workspaceId),
+          isNotNull(schema.resource.deletedAt),
+        ),
+      );
+
+    await Promise.all(
+      staleComputed.map((stale) =>
+        dbClient
+          .delete(schema.computedDeploymentResource)
+          .where(
+            and(
+              eq(
+                schema.computedDeploymentResource.resourceId,
+                stale.resource.id,
+              ),
+              eq(
+                schema.computedDeploymentResource.deploymentId,
+                stale.computed_deployment_resource.deploymentId,
+              ),
+            ),
+          ),
+      ),
+    );
 
     return inMemoryDeploymentResourceSelector;
   }
