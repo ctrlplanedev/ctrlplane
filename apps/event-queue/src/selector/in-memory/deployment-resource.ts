@@ -48,7 +48,7 @@ export class InMemoryDeploymentResourceSelector
 
       for (const selector of opts.initialSelectors) {
         const match =
-          selector.resourceSelector == null ||
+          selector.resourceSelector != null &&
           resourceMatchesSelector(entity, selector.resourceSelector);
         if (match) this.matches.get(entity.id)?.add(selector.id);
       }
