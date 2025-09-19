@@ -1,6 +1,8 @@
-import type * as schema from "@ctrlplane/db/schema";
 import _ from "lodash";
 
+import { takeFirst } from "@ctrlplane/db";
+import { db as dbClient } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import {
   exitedStatus,
@@ -148,26 +150,87 @@ export class JobManager {
   }
 
   private async createJob(
+    releaseId: string,
     jobAgentId: string,
     jobAgentConfig: Record<string, any>,
+    jobVariables: {
+      id: string;
+      key: string;
+      value: any;
+      sensitive: boolean;
+    }[],
   ) {
-    return this.workspace.repository.jobRepository.create({
-      id: crypto.randomUUID(),
-      jobAgentId,
-      jobAgentConfig,
-      status: JobStatus.Pending,
-      message: null,
-      externalId: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      reason: "policy_passing",
-      startedAt: null,
-      completedAt: null,
-    });
+    try {
+      const job = await dbClient.transaction(async (tx) => {
+        const j = await tx
+          .insert(schema.job)
+          .values({
+            id: crypto.randomUUID(),
+            jobAgentId,
+            jobAgentConfig,
+            status: JobStatus.Pending,
+            reason: "policy_passing",
+          })
+          .returning()
+          .then(takeFirst);
+
+        await tx.insert(schema.jobVariable).values(
+          jobVariables.map((v) => ({
+            ...v,
+            jobId: j.id,
+          })),
+        );
+
+        await tx.insert(schema.releaseJob).values({
+          id: crypto.randomUUID(),
+          releaseId,
+          jobId: j.id,
+        });
+
+        return j;
+      });
+
+      return job;
+    } catch (error) {
+      this.log.error(`Failed to create job`, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+
+    // const job = await this.workspace.repository.jobRepository.create({
+    //   id: crypto.randomUUID(),
+    //   jobAgentId,
+    //   jobAgentConfig,
+    //   status: JobStatus.Pending,
+    //   message: null,
+    //   externalId: null,
+    //   createdAt: new Date(),
+    //   updatedAt: new Date(),
+    //   reason: "policy_passing",
+    //   startedAt: null,
+    //   completedAt: null,
+    // });
+
+    // await Promise.all(
+    //   jobVariables.map((v) =>
+    //     this.workspace.repository.jobVariableRepository.create({
+    //       ...v,
+    //       jobId: job.id,
+    //     }),
+    //   ),
+    // );
+
+    // await this.workspace.repository.releaseJobRepository.create({
+    //   id: crypto.randomUUID(),
+    //   releaseId,
+    //   jobId: job.id,
+    // });
+
+    // return job;
   }
 
-  private async createJobVariables(
-    jobId: string,
+  private async getJobVariables(
     variableRelease: typeof schema.variableSetRelease.$inferSelect,
   ) {
     const allValues =
@@ -180,17 +243,12 @@ export class JobManager {
     const allSnapshots =
       await this.workspace.repository.variableValueSnapshotRepository.getAll();
     const snapshots = allSnapshots.filter((s) => snapshotIds.has(s.id));
-    return Promise.all(
-      snapshots.map((s) =>
-        this.workspace.repository.jobVariableRepository.create({
-          id: crypto.randomUUID(),
-          jobId,
-          key: s.key,
-          value: s.value,
-          sensitive: s.sensitive,
-        }),
-      ),
-    );
+    return snapshots.map((s) => ({
+      id: crypto.randomUUID(),
+      key: s.key,
+      value: s.value,
+      sensitive: s.sensitive,
+    }));
   }
 
   async createReleaseJob(release: typeof schema.release.$inferSelect) {
@@ -201,10 +259,6 @@ export class JobManager {
     if (versionRelease == null)
       throw new Error(`Version release ${release.versionReleaseId} not found`);
 
-    const { jobAgent, jobAgentConfig } =
-      await this.getJobAgentWithConfig(versionRelease);
-    const job = await this.createJob(jobAgent.id, jobAgentConfig);
-
     const variableRelease =
       await this.workspace.repository.variableReleaseRepository.get(
         release.variableReleaseId,
@@ -214,14 +268,16 @@ export class JobManager {
         `Variable release ${release.variableReleaseId} not found`,
       );
 
-    await this.createJobVariables(job.id, variableRelease);
-    await this.workspace.repository.releaseJobRepository.create({
-      id: crypto.randomUUID(),
-      releaseId: release.id,
-      jobId: job.id,
-    });
+    const jobVariables = await this.getJobVariables(variableRelease);
 
-    return job;
+    const { jobAgent, jobAgentConfig } =
+      await this.getJobAgentWithConfig(versionRelease);
+    return this.createJob(
+      release.id,
+      jobAgent.id,
+      jobAgentConfig,
+      jobVariables,
+    );
   }
 
   async dispatchJob(job: schema.Job) {
