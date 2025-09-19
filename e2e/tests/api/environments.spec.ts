@@ -15,6 +15,8 @@ test.describe("Environments API", () => {
     await builder.upsertSystemFixture();
     await builder.upsertResourcesFixtures();
     await builder.upsertDeploymentFixtures();
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {

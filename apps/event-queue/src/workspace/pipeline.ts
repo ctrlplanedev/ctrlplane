@@ -322,6 +322,30 @@ export class OperationPipeline {
     };
   }
 
+  private async upsertEnvironment(environment: schema.Environment) {
+    const existing =
+      await this.opts.workspace.repository.environmentRepository.get(
+        environment.id,
+      );
+    if (existing == null)
+      await this.opts.workspace.repository.environmentRepository.create(
+        environment,
+      );
+    if (existing != null)
+      await this.opts.workspace.repository.environmentRepository.update(
+        environment,
+      );
+
+    await this.opts.workspace.selectorManager.updateEnvironment(environment);
+  }
+
+  private async removeEnvironment(environment: schema.Environment) {
+    await this.opts.workspace.repository.environmentRepository.delete(
+      environment.id,
+    );
+    await this.opts.workspace.selectorManager.removeEnvironment(environment);
+  }
+
   private async upsertDeployment(deployment: schema.Deployment) {
     const existing =
       await this.opts.workspace.repository.deploymentRepository.get(
@@ -458,7 +482,6 @@ export class OperationPipeline {
       deploymentVariableValue,
     } = this.opts;
 
-    const manager = workspace.selectorManager;
     const { releaseTargetManager } = workspace;
     const { jobManager } = workspace;
 
@@ -469,9 +492,7 @@ export class OperationPipeline {
           resourceVariable
             ? this.upsertResourceVariable(resourceVariable)
             : Promise.resolve(),
-          environment
-            ? manager.updateEnvironment(environment)
-            : Promise.resolve(),
+          environment ? this.upsertEnvironment(environment) : Promise.resolve(),
           deployment ? this.upsertDeployment(deployment) : Promise.resolve(),
           deploymentVersion
             ? this.upsertDeploymentVersion(deploymentVersion)
@@ -495,9 +516,7 @@ export class OperationPipeline {
           resourceVariable
             ? this.removeResourceVariable(resourceVariable)
             : Promise.resolve(),
-          environment
-            ? manager.removeEnvironment(environment)
-            : Promise.resolve(),
+          environment ? this.removeEnvironment(environment) : Promise.resolve(),
           deployment ? this.removeDeployment(deployment) : Promise.resolve(),
           deploymentVersion
             ? this.removeDeploymentVersion(deploymentVersion)

@@ -22,9 +22,9 @@ import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
-import { DbEnvironmentResourceSelector } from "../selector/db/db-environment-resource.js";
 import { DbPolicyTargetReleaseTargetSelector } from "../selector/db/db-policy-target-release-target.js";
 import { InMemoryDeploymentResourceSelector } from "../selector/in-memory/deployment-resource.js";
+import { InMemoryEnvironmentResourceSelector } from "../selector/in-memory/environment-resource.js";
 import { SelectorManager } from "../selector/selector.js";
 import { ReleaseTargetManager } from "./release-targets/manager.js";
 
@@ -37,6 +37,8 @@ export class Workspace {
   static async load(id: string) {
     const deploymentResourceSelector =
       await InMemoryDeploymentResourceSelector.create(id);
+    const environmentResourceSelector =
+      await InMemoryEnvironmentResourceSelector.create(id);
 
     const selectorManager = new SelectorManager({
       deploymentResourceSelector,
@@ -47,9 +49,7 @@ export class Workspace {
       deploymentVersionSelector: new DbDeploymentVersionSelector({
         workspaceId: id,
       }),
-      environmentResourceSelector: new DbEnvironmentResourceSelector({
-        workspaceId: id,
-      }),
+      environmentResourceSelector,
     });
 
     const ws = new Workspace({ id, selectorManager });
