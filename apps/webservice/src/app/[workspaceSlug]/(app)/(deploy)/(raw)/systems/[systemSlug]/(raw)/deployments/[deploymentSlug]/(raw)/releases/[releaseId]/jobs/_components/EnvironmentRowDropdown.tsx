@@ -31,7 +31,7 @@ type EnvironmentRowDropdownProps = {
   releaseTargets: {
     id: string;
     resource: { id: string; name: string };
-    latestJob: { id: string; status: JobStatus };
+    latestJob?: { id: string; status: JobStatus };
   }[];
 };
 

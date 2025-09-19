@@ -199,7 +199,7 @@ export const EnvironmentCollapsibleRow: React.FC<{
               deployment={deployment}
               environment={environment}
               version={version}
-              releaseTargets={releaseTargetsWithLatestJob}
+              releaseTargets={releaseTargets}
             />
           }
         </TableCell>

@@ -38,7 +38,7 @@ type Job = { id: string; status: JobStatus };
 type ReleaseTarget = {
   id: string;
   resource: { id: string; name: string };
-  latestJob: Job;
+  latestJob?: Job;
 };
 
 const ALL_JOBS_STATUS = "all";
@@ -57,9 +57,11 @@ const useFilterByJobStatus = (releaseTargets: ReleaseTarget[]) => {
       return;
     }
 
-    const filteredReleaseTargets = releaseTargets.filter(
-      ({ latestJob }) => latestJob.status === status,
-    );
+    const filteredReleaseTargets = releaseTargets.filter(({ latestJob }) => {
+      if (selectedStatus === ALL_JOBS_STATUS) return true;
+      if (latestJob == null) return false;
+      return latestJob.status === selectedStatus;
+    });
     setFilteredReleaseTargets(filteredReleaseTargets);
   };
 
