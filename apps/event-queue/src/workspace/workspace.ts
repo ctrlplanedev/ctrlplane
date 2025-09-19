@@ -21,18 +21,38 @@ import { DbVersionReleaseRepository } from "../repository/db-version-release-rep
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
-import { DbDeploymentResourceSelector } from "../selector/db/db-deployment-resource.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
 import { DbEnvironmentResourceSelector } from "../selector/db/db-environment-resource.js";
 import { DbPolicyTargetReleaseTargetSelector } from "../selector/db/db-policy-target-release-target.js";
+import { InMemoryDeploymentResourceSelector } from "../selector/in-memory/deployment-resource.js";
 import { SelectorManager } from "../selector/selector.js";
 import { ReleaseTargetManager } from "./release-targets/manager.js";
 
-type WorkspaceOptions = { id: string };
+type WorkspaceOptions = {
+  id: string;
+  selectorManager: SelectorManager;
+};
 
 export class Workspace {
   static async load(id: string) {
-    const ws = new Workspace({ id });
+    const deploymentResourceSelector =
+      await InMemoryDeploymentResourceSelector.create(id);
+
+    const selectorManager = new SelectorManager({
+      deploymentResourceSelector,
+      policyTargetReleaseTargetSelector:
+        new DbPolicyTargetReleaseTargetSelector({
+          workspaceId: id,
+        }),
+      deploymentVersionSelector: new DbDeploymentVersionSelector({
+        workspaceId: id,
+      }),
+      environmentResourceSelector: new DbEnvironmentResourceSelector({
+        workspaceId: id,
+      }),
+    });
+
+    const ws = new Workspace({ id, selectorManager });
 
     return Promise.resolve(ws);
   }
@@ -44,21 +64,7 @@ export class Workspace {
   resourceRelationshipManager: ResourceRelationshipManager;
 
   constructor(private opts: WorkspaceOptions) {
-    this.selectorManager = new SelectorManager({
-      environmentResourceSelector: new DbEnvironmentResourceSelector({
-        workspaceId: opts.id,
-      }),
-      deploymentResourceSelector: new DbDeploymentResourceSelector({
-        workspaceId: opts.id,
-      }),
-      policyTargetReleaseTargetSelector:
-        new DbPolicyTargetReleaseTargetSelector({
-          workspaceId: opts.id,
-        }),
-      deploymentVersionSelector: new DbDeploymentVersionSelector({
-        workspaceId: opts.id,
-      }),
-    });
+    this.selectorManager = opts.selectorManager;
     this.releaseTargetManager = new ReleaseTargetManager({
       workspace: this,
     });
