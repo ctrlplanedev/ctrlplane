@@ -80,17 +80,22 @@ export class DbResourceRepository implements Repository<FullResource> {
         .values({ ...entity, workspaceId: this.workspaceId })
         .returning()
         .then(takeFirst);
-      const metadata = await tx
-        .insert(schema.resourceMetadata)
-        .values(
-          Object.entries(entity.metadata).map(([key, value]) => ({
-            resourceId: resource.id,
-            key,
-            value,
-          })),
-        )
-        .returning()
-        .then((rows) => Object.fromEntries(rows.map((r) => [r.key, r.value])));
+      const metadata =
+        Object.keys(entity.metadata).length > 0
+          ? await tx
+              .insert(schema.resourceMetadata)
+              .values(
+                Object.entries(entity.metadata).map(([key, value]) => ({
+                  resourceId: resource.id,
+                  key,
+                  value,
+                })),
+              )
+              .returning()
+              .then((rows) =>
+                Object.fromEntries(rows.map((r) => [r.key, r.value])),
+              )
+          : {};
       return { ...resource, metadata };
     });
   }
@@ -113,28 +118,36 @@ export class DbResourceRepository implements Repository<FullResource> {
         (key) => !entity.metadata[key],
       );
 
-      await tx
-        .delete(schema.resourceMetadata)
-        .where(inArray(schema.resourceMetadata.key, removedKeys));
+      if (removedKeys.length > 0)
+        await tx
+          .delete(schema.resourceMetadata)
+          .where(inArray(schema.resourceMetadata.key, removedKeys));
 
-      const metadata = await tx
-        .insert(schema.resourceMetadata)
-        .values(
-          Object.entries(entity.metadata).map(([key, value]) => ({
-            resourceId: resource.id,
-            key,
-            value,
-          })),
-        )
-        .onConflictDoUpdate({
-          target: [
-            schema.resourceMetadata.resourceId,
-            schema.resourceMetadata.key,
-          ],
-          set: buildConflictUpdateColumns(schema.resourceMetadata, ["value"]),
-        })
-        .returning()
-        .then((rows) => Object.fromEntries(rows.map((r) => [r.key, r.value])));
+      const metadata =
+        Object.keys(entity.metadata).length > 0
+          ? await tx
+              .insert(schema.resourceMetadata)
+              .values(
+                Object.entries(entity.metadata).map(([key, value]) => ({
+                  resourceId: resource.id,
+                  key,
+                  value,
+                })),
+              )
+              .onConflictDoUpdate({
+                target: [
+                  schema.resourceMetadata.resourceId,
+                  schema.resourceMetadata.key,
+                ],
+                set: buildConflictUpdateColumns(schema.resourceMetadata, [
+                  "value",
+                ]),
+              })
+              .returning()
+              .then((rows) =>
+                Object.fromEntries(rows.map((r) => [r.key, r.value])),
+              )
+          : {};
 
       return { ...resource, metadata };
     });
