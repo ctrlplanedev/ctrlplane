@@ -174,12 +174,13 @@ export class JobManager {
           .returning()
           .then(takeFirst);
 
-        await tx.insert(schema.jobVariable).values(
-          jobVariables.map((v) => ({
-            ...v,
-            jobId: j.id,
-          })),
-        );
+        if (jobVariables.length > 0)
+          await tx.insert(schema.jobVariable).values(
+            jobVariables.map((v) => ({
+              ...v,
+              jobId: j.id,
+            })),
+          );
 
         await tx.insert(schema.releaseJob).values({
           id: crypto.randomUUID(),
@@ -197,37 +198,6 @@ export class JobManager {
       });
       throw error;
     }
-
-    // const job = await this.workspace.repository.jobRepository.create({
-    //   id: crypto.randomUUID(),
-    //   jobAgentId,
-    //   jobAgentConfig,
-    //   status: JobStatus.Pending,
-    //   message: null,
-    //   externalId: null,
-    //   createdAt: new Date(),
-    //   updatedAt: new Date(),
-    //   reason: "policy_passing",
-    //   startedAt: null,
-    //   completedAt: null,
-    // });
-
-    // await Promise.all(
-    //   jobVariables.map((v) =>
-    //     this.workspace.repository.jobVariableRepository.create({
-    //       ...v,
-    //       jobId: job.id,
-    //     }),
-    //   ),
-    // );
-
-    // await this.workspace.repository.releaseJobRepository.create({
-    //   id: crypto.randomUUID(),
-    //   releaseId,
-    //   jobId: job.id,
-    // });
-
-    // return job;
   }
 
   private async getJobVariables(
