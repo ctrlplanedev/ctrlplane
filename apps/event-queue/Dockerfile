@@ -46,7 +46,7 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=81920"
+ENV NODE_OPTIONS="--max-old-space-size=20480"
 
 EXPOSE 3124
 
