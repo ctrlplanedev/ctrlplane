@@ -6,6 +6,8 @@ import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "./workspace.js";
 
+const log = logger.child({ module: "operation-pipeline" });
+
 type WorkspaceOptions = {
   workspace: Workspace;
 
@@ -569,6 +571,8 @@ export class OperationPipeline {
         break;
     }
 
+    log.info("Evaluating release targets");
+    const evaluateStart = performance.now();
     const jobsToDispatch = await Promise.all(
       (this.opts.releaseTargets?.toEvaluate ?? []).map((rt) =>
         releaseTargetManager.evaluate(rt, {
@@ -576,6 +580,10 @@ export class OperationPipeline {
         }),
       ),
     ).then((jobs) => jobs.filter(isPresent));
+
+    const evaluateEnd = performance.now();
+    const evaluateDuration = evaluateEnd - evaluateStart;
+    log.info(`Release target evaluation took ${evaluateDuration.toFixed(2)}ms`);
 
     await Promise.all(jobsToDispatch.map((job) => jobManager.dispatchJob(job)));
   }

@@ -147,6 +147,8 @@ export class ReleaseTargetManager {
   }
 
   async computeReleaseTargetChanges() {
+    log.info("Computing release target changes");
+    const start = performance.now();
     const [existingReleaseTargets, computedReleaseTargets] = await Promise.all([
       this.getExistingReleaseTargets(),
       this.determineReleaseTargets(),
@@ -182,6 +184,10 @@ export class ReleaseTargetManager {
       this.persistRemovedReleaseTargets(removedReleaseTargets),
       this.persistAddedReleaseTargets(addedReleaseTargets),
     ]);
+
+    const end = performance.now();
+    const duration = end - start;
+    log.info(`Release target changes computed took ${duration.toFixed(2)}ms`);
 
     return { removedReleaseTargets, addedReleaseTargets };
   }
