@@ -3,13 +3,7 @@ import type { FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import {
-  buildConflictUpdateColumns,
-  eq,
-  inArray,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -74,103 +68,31 @@ export class DbResourceRepository implements Repository<FullResource> {
   }
 
   async create(entity: FullResource) {
-    return this.db.transaction(async (tx) => {
-      const resource = await tx
-        .insert(schema.resource)
-        .values({ ...entity, workspaceId: this.workspaceId })
-        .returning()
-        .then(takeFirst);
-      const metadata =
-        Object.keys(entity.metadata).length > 0
-          ? await tx
-              .insert(schema.resourceMetadata)
-              .values(
-                Object.entries(entity.metadata).map(([key, value]) => ({
-                  resourceId: resource.id,
-                  key,
-                  value,
-                })),
-              )
-              .returning()
-              .then((rows) =>
-                Object.fromEntries(rows.map((r) => [r.key, r.value])),
-              )
-          : {};
-      return { ...resource, metadata };
-    });
+    await this.db
+      .insert(schema.resource)
+      .values({ ...entity, workspaceId: this.workspaceId })
+      .returning()
+      .then(takeFirst);
+    return entity;
   }
   async update(entity: FullResource) {
-    return this.db.transaction(async (tx) => {
-      const resource = await tx
-        .update(schema.resource)
-        .set(entity)
-        .where(eq(schema.resource.id, entity.id))
-        .returning()
-        .then(takeFirst);
-
-      const existingMetadata = await tx
-        .select()
-        .from(schema.resourceMetadata)
-        .where(eq(schema.resourceMetadata.resourceId, entity.id));
-
-      const currentKeys = new Set(existingMetadata.map((m) => m.key));
-      const removedKeys = Array.from(currentKeys).filter(
-        (key) => !entity.metadata[key],
-      );
-
-      if (removedKeys.length > 0)
-        await tx
-          .delete(schema.resourceMetadata)
-          .where(inArray(schema.resourceMetadata.key, removedKeys));
-
-      const metadata =
-        Object.keys(entity.metadata).length > 0
-          ? await tx
-              .insert(schema.resourceMetadata)
-              .values(
-                Object.entries(entity.metadata).map(([key, value]) => ({
-                  resourceId: resource.id,
-                  key,
-                  value,
-                })),
-              )
-              .onConflictDoUpdate({
-                target: [
-                  schema.resourceMetadata.resourceId,
-                  schema.resourceMetadata.key,
-                ],
-                set: buildConflictUpdateColumns(schema.resourceMetadata, [
-                  "value",
-                ]),
-              })
-              .returning()
-              .then((rows) =>
-                Object.fromEntries(rows.map((r) => [r.key, r.value])),
-              )
-          : {};
-
-      return { ...resource, metadata };
-    });
+    await this.db
+      .update(schema.resource)
+      .set(entity)
+      .where(eq(schema.resource.id, entity.id))
+      .returning()
+      .then(takeFirst);
+    return entity;
   }
   async delete(id: string) {
-    return this.db.transaction(async (tx) => {
-      const resource = await tx
-        .update(schema.resource)
-        .set({ deletedAt: new Date() })
-        .where(eq(schema.resource.id, id))
-        .returning()
-        .then(takeFirstOrNull);
-
-      if (resource == null) return null;
-
-      const metadata = await tx
-        .delete(schema.resourceMetadata)
-        .where(eq(schema.resourceMetadata.resourceId, id))
-        .returning()
-        .then((rows) => Object.fromEntries(rows.map((r) => [r.key, r.value])));
-
-      return { ...resource, metadata };
-    });
+    const resource = await this.db
+      .update(schema.resource)
+      .set({ deletedAt: new Date() })
+      .where(eq(schema.resource.id, id))
+      .returning()
+      .then(takeFirstOrNull);
+    if (resource == null) return null;
+    return { ...resource, metadata: {} };
   }
   async exists(id: string) {
     return this.db
