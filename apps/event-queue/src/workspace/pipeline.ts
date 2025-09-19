@@ -2,6 +2,8 @@ import type * as schema from "@ctrlplane/db/schema";
 import type { FullPolicy, FullResource } from "@ctrlplane/events";
 import { isPresent } from "ts-is-present";
 
+import { logger } from "@ctrlplane/logger";
+
 import type { Workspace } from "./workspace.js";
 
 type WorkspaceOptions = {
@@ -371,14 +373,34 @@ export class OperationPipeline {
   }
 
   private async upsertResource(resource: FullResource) {
-    const existing =
-      await this.opts.workspace.repository.resourceRepository.get(resource.id);
-    if (existing == null)
-      await this.opts.workspace.repository.resourceRepository.create(resource);
-    if (existing != null)
-      await this.opts.workspace.repository.resourceRepository.update(resource);
-
-    await this.opts.workspace.selectorManager.updateResource(resource);
+    try {
+      const existing =
+        await this.opts.workspace.repository.resourceRepository.get(
+          resource.id,
+        );
+      logger.info("Existing resource", { existing });
+      if (existing == null) {
+        logger.info("Creating resource", { resource });
+        await this.opts.workspace.repository.resourceRepository.create(
+          resource,
+        );
+        logger.info("Created resource", { resource });
+      }
+      if (existing != null) {
+        logger.info("Updating resource", { resource });
+        await this.opts.workspace.repository.resourceRepository.update(
+          resource,
+        );
+        logger.info("Updated resource", { resource });
+      }
+      logger.info("Updating resource in selector", { resource });
+      await this.opts.workspace.selectorManager.updateResource(resource);
+      logger.info("Updated resource in selector", { resource });
+    } catch (error) {
+      const e = error instanceof Error ? error : new Error(String(error));
+      logger.error("Error upserting resource", { error: e });
+      throw e;
+    }
     // await this.opts.workspace.resourceRelationshipManager.upsertResource(
     //   resource,
     // );
@@ -400,8 +422,20 @@ export class OperationPipeline {
   }
 
   private async removeResource(resource: FullResource) {
-    await this.opts.workspace.repository.resourceRepository.delete(resource.id);
-    await this.opts.workspace.selectorManager.removeResource(resource);
+    try {
+      logger.info("Deleting resource", { resource });
+      await this.opts.workspace.repository.resourceRepository.delete(
+        resource.id,
+      );
+      logger.info("Deleted resource", { resource });
+      logger.info("Removing resource in selector", { resource });
+      await this.opts.workspace.selectorManager.removeResource(resource);
+      logger.info("Removed resource in selector", { resource });
+    } catch (error) {
+      const e = error instanceof Error ? error : new Error(String(error));
+      logger.error("Error removing resource", { error: e });
+      throw e;
+    }
     // await this.opts.workspace.resourceRelationshipManager.deleteResource(
     //   resource,
     // );
