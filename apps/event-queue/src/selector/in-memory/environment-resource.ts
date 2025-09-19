@@ -5,9 +5,14 @@ import { isPresent } from "ts-is-present";
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 import type { Selector } from "../selector.js";
 import { resourceMatchesSelector } from "./resource-match.js";
+
+const log = logger.child({
+  module: "in-memory-environment-resource-selector",
+});
 
 type InMemoryEnvironmentResourceSelectorOptions = {
   initialEntities: FullResource[];
@@ -109,11 +114,20 @@ export class InMemoryEnvironmentResourceSelector
       for (const environmentId of environmentIds)
         computed.push({ resourceId, environmentId });
 
-    if (computed.length > 0)
-      await dbClient
-        .insert(schema.computedEnvironmentResource)
-        .values(computed)
-        .onConflictDoNothing();
+    log.info(
+      `Inserting ${computed.length} initial computed environment resources`,
+    );
+
+    if (computed.length > 0) {
+      const batchSize = 500;
+      for (let i = 0; i < computed.length; i += batchSize) {
+        const batch = computed.slice(i, i + batchSize);
+        await dbClient
+          .insert(schema.computedEnvironmentResource)
+          .values(batch)
+          .onConflictDoNothing();
+      }
+    }
 
     return inMemoryEnvironmentResourceSelector;
   }
