@@ -174,10 +174,23 @@ export class OperationPipeline {
   private async upsertDeploymentVariable(
     deploymentVariable: schema.DeploymentVariable,
   ) {
+    log.info("Upserting deployment variable");
+    const upsertStart = performance.now();
+
+    log.info("Checking existing deployment variable");
+    const checkExistingStart = performance.now();
     const existing =
       await this.opts.workspace.repository.deploymentVariableRepository.get(
         deploymentVariable.id,
       );
+    const checkExistingEnd = performance.now();
+    const checkExistingDuration = checkExistingEnd - checkExistingStart;
+    log.info(
+      `Checking existing deployment variable took ${checkExistingDuration.toFixed(2)}ms`,
+    );
+
+    log.info("Repository upserting deployment variable");
+    const repoUpsertStart = performance.now();
     if (existing == null)
       await this.opts.workspace.repository.deploymentVariableRepository.create(
         deploymentVariable,
@@ -186,9 +199,27 @@ export class OperationPipeline {
       await this.opts.workspace.repository.deploymentVariableRepository.update(
         deploymentVariable,
       );
+    const repoUpsertEnd = performance.now();
+    const repoUpsertDuration = repoUpsertEnd - repoUpsertStart;
+    log.info(
+      `Repository upserting deployment variable took ${repoUpsertDuration.toFixed(2)}ms`,
+    );
 
+    log.info("Marking deployment release targets as stale");
+    const markStart = performance.now();
     await this.markDeploymentReleaseTargetsAsStale(
       deploymentVariable.deploymentId,
+    );
+    const markEnd = performance.now();
+    const markDuration = markEnd - markStart;
+    log.info(
+      `Marking deployment release targets as stale took ${markDuration.toFixed(2)}ms`,
+    );
+
+    const upsertEnd = performance.now();
+    const upsertDuration = upsertEnd - upsertStart;
+    log.info(
+      `Upserting deployment variable took ${upsertDuration.toFixed(2)}ms`,
     );
   }
 
