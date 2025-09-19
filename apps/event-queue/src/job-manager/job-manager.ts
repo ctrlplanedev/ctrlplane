@@ -240,6 +240,7 @@ export class JobManager {
       );
 
     const jobVariables = await this.getJobVariables(variableRelease);
+    console.log("jobVariables", JSON.stringify(jobVariables, null, 2));
 
     const { jobAgent, jobAgentConfig } =
       await this.getJobAgentWithConfig(versionRelease);
