@@ -317,16 +317,21 @@ export class ReleaseTargetManager {
       if (versionRelease == null) return;
 
       const currentRelease = await this.getCurrentRelease(releaseTarget);
+      console.log("currentRelease", JSON.stringify(currentRelease, null, 2));
+      log.info("Current release", { currentRelease });
       if (currentRelease == null) {
         const release = await this.insertNewRelease(
           versionRelease.id,
           variableRelease.id,
         );
+        log.info("creating new release because current release is null");
         return this.createReleaseJob(release);
       }
 
-      if (opts?.skipDuplicateCheck)
+      if (opts?.skipDuplicateCheck) {
+        log.info("skipping duplicate check");
         return this.createReleaseJob(currentRelease, true);
+      }
 
       const hasAnythingChanged = this.getHasAnythingChanged(currentRelease, {
         versionReleaseId: versionRelease.id,
@@ -334,6 +339,11 @@ export class ReleaseTargetManager {
       });
       if (!hasAnythingChanged) return;
 
+      log.info("releasing because version or variable release has changed", {
+        currentRelease,
+        versionReleaseId: versionRelease.id,
+        variableReleaseId: variableRelease.id,
+      });
       const release = await this.insertNewRelease(
         versionRelease.id,
         variableRelease.id,
