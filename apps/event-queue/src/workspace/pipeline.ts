@@ -322,7 +322,38 @@ export class OperationPipeline {
     };
   }
 
+  private async upsertDeployment(deployment: schema.Deployment) {
+    const existing =
+      await this.opts.workspace.repository.deploymentRepository.get(
+        deployment.id,
+      );
+    if (existing == null)
+      await this.opts.workspace.repository.deploymentRepository.create(
+        deployment,
+      );
+    if (existing != null)
+      await this.opts.workspace.repository.deploymentRepository.update(
+        deployment,
+      );
+
+    await this.opts.workspace.selectorManager.updateDeployment(deployment);
+  }
+
+  private async removeDeployment(deployment: schema.Deployment) {
+    await this.opts.workspace.repository.deploymentRepository.delete(
+      deployment.id,
+    );
+    await this.opts.workspace.selectorManager.removeDeployment(deployment);
+  }
+
   private async upsertResource(resource: FullResource) {
+    const existing =
+      await this.opts.workspace.repository.resourceRepository.get(resource.id);
+    if (existing == null)
+      await this.opts.workspace.repository.resourceRepository.create(resource);
+    if (existing != null)
+      await this.opts.workspace.repository.resourceRepository.update(resource);
+
     await this.opts.workspace.selectorManager.updateResource(resource);
     // await this.opts.workspace.resourceRelationshipManager.upsertResource(
     //   resource,
@@ -345,6 +376,7 @@ export class OperationPipeline {
   }
 
   private async removeResource(resource: FullResource) {
+    await this.opts.workspace.repository.resourceRepository.delete(resource.id);
     await this.opts.workspace.selectorManager.removeResource(resource);
     // await this.opts.workspace.resourceRelationshipManager.deleteResource(
     //   resource,
@@ -440,7 +472,7 @@ export class OperationPipeline {
           environment
             ? manager.updateEnvironment(environment)
             : Promise.resolve(),
-          deployment ? manager.updateDeployment(deployment) : Promise.resolve(),
+          deployment ? this.upsertDeployment(deployment) : Promise.resolve(),
           deploymentVersion
             ? this.upsertDeploymentVersion(deploymentVersion)
             : Promise.resolve(),
@@ -466,7 +498,7 @@ export class OperationPipeline {
           environment
             ? manager.removeEnvironment(environment)
             : Promise.resolve(),
-          deployment ? manager.removeDeployment(deployment) : Promise.resolve(),
+          deployment ? this.removeDeployment(deployment) : Promise.resolve(),
           deploymentVersion
             ? this.removeDeploymentVersion(deploymentVersion)
             : Promise.resolve(),
