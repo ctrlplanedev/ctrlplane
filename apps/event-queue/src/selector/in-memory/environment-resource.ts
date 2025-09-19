@@ -2,17 +2,12 @@ import type { FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNotNull, isNull } from "@ctrlplane/db";
+import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Selector } from "../selector.js";
 import { resourceMatchesSelector } from "./resource-match.js";
-
-const log = logger.child({
-  module: "in-memory-environment-resource-selector",
-});
 
 type InMemoryEnvironmentResourceSelectorOptions = {
   initialEntities: FullResource[];
@@ -120,39 +115,6 @@ export class InMemoryEnvironmentResourceSelector
         .values(computed)
         .onConflictDoNothing();
 
-    const staleComputed = await dbClient
-      .select()
-      .from(schema.computedEnvironmentResource)
-      .innerJoin(
-        schema.resource,
-        eq(schema.computedEnvironmentResource.resourceId, schema.resource.id),
-      )
-      .where(
-        and(
-          eq(schema.resource.workspaceId, workspaceId),
-          isNotNull(schema.resource.deletedAt),
-        ),
-      );
-
-    await Promise.all(
-      staleComputed.map((stale) =>
-        dbClient
-          .delete(schema.computedEnvironmentResource)
-          .where(
-            and(
-              eq(
-                schema.computedEnvironmentResource.resourceId,
-                stale.resource.id,
-              ),
-              eq(
-                schema.computedEnvironmentResource.environmentId,
-                stale.computed_environment_resource.environmentId,
-              ),
-            ),
-          ),
-      ),
-    );
-
     return inMemoryEnvironmentResourceSelector;
   }
 
@@ -197,25 +159,16 @@ export class InMemoryEnvironmentResourceSelector
           ),
         );
 
-    await Promise.all(
-      newlyMatchedSelectors.map(async (selectorId) => {
-        try {
-          await dbClient
-            .insert(schema.computedEnvironmentResource)
-            .values({ resourceId: entity.id, environmentId: selectorId })
-            .onConflictDoNothing();
-        } catch (e) {
-          log.error(
-            "Error inserting computed environment resource for entity",
-            {
-              error: e instanceof Error ? e.message : String(e),
-              resourceId: entity.id,
-              environmentId: selectorId,
-            },
-          );
-        }
-      }),
-    );
+    if (newlyMatchedSelectors.length > 0)
+      await dbClient
+        .insert(schema.computedEnvironmentResource)
+        .values(
+          newlyMatchedSelectors.map((selectorId) => ({
+            resourceId: entity.id,
+            environmentId: selectorId,
+          })),
+        )
+        .onConflictDoNothing();
   }
   async removeEntity(entity: FullResource): Promise<void> {
     this.entities.delete(entity.id);
@@ -264,25 +217,16 @@ export class InMemoryEnvironmentResourceSelector
           ),
         );
 
-    await Promise.all(
-      newlyMatchedEntities.map(async (entityId) => {
-        try {
-          await dbClient
-            .insert(schema.computedEnvironmentResource)
-            .values({ resourceId: entityId, environmentId: selector.id })
-            .onConflictDoNothing();
-        } catch (e) {
-          log.error(
-            "Error inserting computed environment resource for selector",
-            {
-              error: e instanceof Error ? e.message : String(e),
-              resourceId: entityId,
-              environmentId: selector.id,
-            },
-          );
-        }
-      }),
-    );
+    if (newlyMatchedEntities.length > 0)
+      await dbClient
+        .insert(schema.computedEnvironmentResource)
+        .values(
+          newlyMatchedEntities.map((entityId) => ({
+            resourceId: entityId,
+            environmentId: selector.id,
+          })),
+        )
+        .onConflictDoNothing();
   }
   async removeSelector(selector: schema.Environment): Promise<void> {
     this.selectors.delete(selector.id);

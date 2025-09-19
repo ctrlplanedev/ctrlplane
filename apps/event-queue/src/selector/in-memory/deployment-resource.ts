@@ -2,17 +2,12 @@ import type { FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNotNull, isNull } from "@ctrlplane/db";
+import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Selector } from "../selector.js";
 import { resourceMatchesSelector } from "./resource-match.js";
-
-const log = logger.child({
-  module: "in-memory-deployment-resource-selector",
-});
 
 type InMemoryDeploymentResourceSelectorOptions = {
   initialEntities: FullResource[];
@@ -120,39 +115,6 @@ export class InMemoryDeploymentResourceSelector
         .values(computed)
         .onConflictDoNothing();
 
-    const staleComputed = await dbClient
-      .select()
-      .from(schema.computedDeploymentResource)
-      .innerJoin(
-        schema.resource,
-        eq(schema.computedDeploymentResource.resourceId, schema.resource.id),
-      )
-      .where(
-        and(
-          eq(schema.resource.workspaceId, workspaceId),
-          isNotNull(schema.resource.deletedAt),
-        ),
-      );
-
-    await Promise.all(
-      staleComputed.map((stale) =>
-        dbClient
-          .delete(schema.computedDeploymentResource)
-          .where(
-            and(
-              eq(
-                schema.computedDeploymentResource.resourceId,
-                stale.resource.id,
-              ),
-              eq(
-                schema.computedDeploymentResource.deploymentId,
-                stale.computed_deployment_resource.deploymentId,
-              ),
-            ),
-          ),
-      ),
-    );
-
     return inMemoryDeploymentResourceSelector;
   }
 
@@ -199,22 +161,16 @@ export class InMemoryDeploymentResourceSelector
           ),
         );
 
-    await Promise.all(
-      newlyMatchedDeployments.map(async (deploymentId) => {
-        try {
-          await dbClient
-            .insert(schema.computedDeploymentResource)
-            .values({ resourceId: entity.id, deploymentId })
-            .onConflictDoNothing();
-        } catch (e) {
-          log.error("Error inserting computed deployment resource for entity", {
-            error: e instanceof Error ? e.message : String(e),
+    if (newlyMatchedDeployments.length > 0)
+      await dbClient
+        .insert(schema.computedDeploymentResource)
+        .values(
+          newlyMatchedDeployments.map((deploymentId) => ({
             resourceId: entity.id,
             deploymentId,
-          });
-        }
-      }),
-    );
+          })),
+        )
+        .onConflictDoNothing();
   }
   async removeEntity(entity: FullResource): Promise<void> {
     this.entities.delete(entity.id);
@@ -263,25 +219,16 @@ export class InMemoryDeploymentResourceSelector
           ),
         );
 
-    await Promise.all(
-      newlyMatchedResources.map(async (resourceId) => {
-        try {
-          await dbClient
-            .insert(schema.computedDeploymentResource)
-            .values({ resourceId, deploymentId: selector.id })
-            .onConflictDoNothing();
-        } catch (e) {
-          log.error(
-            "Error inserting computed deployment resource for selector",
-            {
-              error: e instanceof Error ? e.message : String(e),
-              resourceId,
-              deploymentId: selector.id,
-            },
-          );
-        }
-      }),
-    );
+    if (newlyMatchedResources.length > 0)
+      await dbClient
+        .insert(schema.computedDeploymentResource)
+        .values(
+          newlyMatchedResources.map((resourceId) => ({
+            resourceId,
+            deploymentId: selector.id,
+          })),
+        )
+        .onConflictDoNothing();
   }
   async removeSelector(selector: schema.Deployment): Promise<void> {
     this.selectors.delete(selector.id);
