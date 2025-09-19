@@ -1,5 +1,4 @@
-import type * as schema from "@ctrlplane/db/schema";
-import type { Event } from "@ctrlplane/events";
+import type { Event, FullResource } from "@ctrlplane/events";
 import { trace } from "@opentelemetry/api";
 
 import { makeWithSpan } from "@ctrlplane/logger";
@@ -8,7 +7,7 @@ import type { Handler } from ".";
 import { OperationPipeline } from "../workspace/pipeline.js";
 import { WorkspaceManager } from "../workspace/workspace.js";
 
-const getResourceWithDates = (resource: schema.Resource) => {
+const getResourceWithDates = (resource: FullResource) => {
   const createdAt = new Date(resource.createdAt);
   const updatedAt =
     resource.updatedAt != null ? new Date(resource.updatedAt) : null;
