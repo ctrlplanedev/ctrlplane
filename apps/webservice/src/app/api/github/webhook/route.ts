@@ -1,7 +1,4 @@
-import type {
-  PullRequestEvent,
-  WorkflowRunEvent,
-} from "@octokit/webhooks-types";
+import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { Webhooks } from "@octokit/webhooks";
@@ -10,7 +7,6 @@ import { logger } from "@ctrlplane/logger";
 import { GithubEvent } from "@ctrlplane/validators/github";
 
 import { env } from "~/env";
-import { handlePullRequestWebhookEvent } from "./handlers/pull_request";
 import { handleWorkflowWebhookEvent } from "./handlers/workflow_run";
 
 const log = logger.child({ module: "github-webhook" });
@@ -33,8 +29,8 @@ export const POST = async (req: NextRequest) => {
     const event = req.headers.get("x-github-event")?.toString();
     if (event === GithubEvent.WorkflowRun)
       await handleWorkflowWebhookEvent(data as WorkflowRunEvent);
-    if (event === GithubEvent.PullRequest)
-      await handlePullRequestWebhookEvent(data as PullRequestEvent);
+    // if (event === GithubEvent.PullRequest)
+    //   await handlePullRequestWebhookEvent(data as PullRequestEvent);
     return new NextResponse("OK");
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
