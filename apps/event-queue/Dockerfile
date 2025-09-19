@@ -50,6 +50,6 @@ ENV NODE_OPTIONS="--max-old-space-size=81920"
 
 EXPOSE 3124
 
-WORKDIR apps/event-queue/dist/
+WORKDIR /app/apps/event-queue/dist/
 
 CMD ["node", "-r", "./instrumentation-node.js", "index.js"]

@@ -46,6 +46,6 @@ USER nodejs
 
 ENV NODE_ENV=production
 
-WORKDIR apps/pty-proxy/dist/
+WORKDIR /app/apps/pty-proxy/dist/
 
 CMD ["node", "index.js"]
