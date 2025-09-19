@@ -324,46 +324,46 @@ export class OperationPipeline {
 
   private async upsertResource(resource: FullResource) {
     await this.opts.workspace.selectorManager.updateResource(resource);
-    await this.opts.workspace.resourceRelationshipManager.upsertResource(
-      resource,
-    );
-    const children = await this.opts.workspace.resourceRelationshipManager
-      .getResourceChildren(resource)
-      .then((children) => children.map((c) => c.target));
-    const allReleaseTargets =
-      await this.opts.workspace.repository.releaseTargetRepository.getAll();
-    const releaseTargets = allReleaseTargets.filter((rt) =>
-      children.some((c) => c.id === rt.resourceId),
-    );
-    this.opts.releaseTargets = {
-      toEvaluate: [
-        ...(this.opts.releaseTargets?.toEvaluate ?? []),
-        ...releaseTargets,
-      ],
-      removed: this.opts.releaseTargets?.removed ?? [],
-    };
+    // await this.opts.workspace.resourceRelationshipManager.upsertResource(
+    //   resource,
+    // );
+    // const children = await this.opts.workspace.resourceRelationshipManager
+    //   .getResourceChildren(resource)
+    //   .then((children) => children.map((c) => c.target));
+    // const allReleaseTargets =
+    //   await this.opts.workspace.repository.releaseTargetRepository.getAll();
+    // const releaseTargets = allReleaseTargets.filter((rt) =>
+    //   children.some((c) => c.id === rt.resourceId),
+    // );
+    // this.opts.releaseTargets = {
+    //   toEvaluate: [
+    //     ...(this.opts.releaseTargets?.toEvaluate ?? []),
+    //     ...releaseTargets,
+    //   ],
+    //   removed: this.opts.releaseTargets?.removed ?? [],
+    // };
   }
 
   private async removeResource(resource: FullResource) {
     await this.opts.workspace.selectorManager.removeResource(resource);
-    await this.opts.workspace.resourceRelationshipManager.deleteResource(
-      resource,
-    );
-    const children = await this.opts.workspace.resourceRelationshipManager
-      .getResourceChildren(resource)
-      .then((children) => children.map((c) => c.target));
-    const allReleaseTargets =
-      await this.opts.workspace.repository.releaseTargetRepository.getAll();
-    const releaseTargets = allReleaseTargets.filter((rt) =>
-      children.some((c) => c.id === rt.resourceId),
-    );
-    this.opts.releaseTargets = {
-      toEvaluate: [
-        ...(this.opts.releaseTargets?.toEvaluate ?? []),
-        ...releaseTargets,
-      ],
-      removed: this.opts.releaseTargets?.removed ?? [],
-    };
+    // await this.opts.workspace.resourceRelationshipManager.deleteResource(
+    //   resource,
+    // );
+    // const children = await this.opts.workspace.resourceRelationshipManager
+    //   .getResourceChildren(resource)
+    //   .then((children) => children.map((c) => c.target));
+    // const allReleaseTargets =
+    //   await this.opts.workspace.repository.releaseTargetRepository.getAll();
+    // const releaseTargets = allReleaseTargets.filter((rt) =>
+    //   children.some((c) => c.id === rt.resourceId),
+    // );
+    // this.opts.releaseTargets = {
+    //   toEvaluate: [
+    //     ...(this.opts.releaseTargets?.toEvaluate ?? []),
+    //     ...releaseTargets,
+    //   ],
+    //   removed: this.opts.releaseTargets?.removed ?? [],
+    // };
   }
 
   private async upsertResourceVariable(
