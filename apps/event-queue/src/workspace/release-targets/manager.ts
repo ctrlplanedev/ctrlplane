@@ -62,6 +62,24 @@ export class ReleaseTargetManager {
       for (const deployment of deployments) {
         if (environment.systemId != deployment.systemId) continue;
 
+        // special case, if a deployment has no resource selector, we just include all resources from the environment
+        if (deployment.resourceSelector == null) {
+          for (const resource of environment.resources) {
+            const releaseTargetInsert: schema.ReleaseTarget = {
+              id: crypto.randomUUID(),
+              resourceId: resource.id,
+              environmentId: environment.id,
+              deploymentId: deployment.id,
+              desiredReleaseId: null,
+              desiredVersionId: null,
+            };
+
+            releaseTargets.push(releaseTargetInsert);
+          }
+
+          continue;
+        }
+
         const commonResources = _.intersectionBy(
           environment.resources,
           deployment.resources,

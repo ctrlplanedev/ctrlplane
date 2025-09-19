@@ -23,7 +23,7 @@ const entityMatchesSelector = (
   entity: FullResource,
   selector: schema.Deployment,
 ) => {
-  if (selector.resourceSelector == null) return true;
+  if (selector.resourceSelector == null) return false;
   return resourceMatchesSelector(entity, selector.resourceSelector);
 };
 
