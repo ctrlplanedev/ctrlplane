@@ -1,3 +1,5 @@
+import { logger } from "@ctrlplane/logger";
+
 import type { ResourceRelationshipManager } from "../relationships/resource-relationship-manager.js";
 import { JobManager } from "../job-manager/job-manager.js";
 import { DbResourceRelationshipManager } from "../relationships/db-resource-relationship-manager.js";
@@ -28,6 +30,10 @@ import { InMemoryEnvironmentResourceSelector } from "../selector/in-memory/envir
 import { SelectorManager } from "../selector/selector.js";
 import { ReleaseTargetManager } from "./release-targets/manager.js";
 
+const log = logger.child({ module: "workspace-engine" });
+
+log.info("Workspace constructor");
+
 type WorkspaceOptions = {
   id: string;
   selectorManager: SelectorManager;
@@ -35,10 +41,17 @@ type WorkspaceOptions = {
 
 export class Workspace {
   static async load(id: string) {
+    log.info("Loading workspace", { id });
+
+    log.info("Creating deployment resource selector");
     const deploymentResourceSelector =
       await InMemoryDeploymentResourceSelector.create(id);
+    log.info("Deployment resource selector created");
+
+    log.info("Creating environment resource selector");
     const environmentResourceSelector =
       await InMemoryEnvironmentResourceSelector.create(id);
+    log.info("Environment resource selector created");
 
     const selectorManager = new SelectorManager({
       deploymentResourceSelector,
