@@ -43,7 +43,10 @@ export const start = async () => {
       }
 
       try {
-        await handler(event);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Event handler timeout")), 60_000),
+        );
+        await Promise.race([handler(event), timeoutPromise]);
         const end = performance.now();
         const duration = end - start;
         if (duration >= 500) {
