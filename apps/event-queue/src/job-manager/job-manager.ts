@@ -114,8 +114,8 @@ export class JobManager {
     const releaseTarget = await this.getReleaseTarget(updatedJob.id);
     if (releaseTarget == null) return;
 
-    const didRetry = await this.maybeRetryJob(releaseTarget, updatedJob);
-    if (didRetry) return;
+    // const didRetry = await this.maybeRetryJob(releaseTarget, updatedJob);
+    // if (didRetry) return;
 
     // TODO: Uncomment this when shit isn't fucked up
     // await this.workspace.releaseTargetManager.evaluate(releaseTarget);
