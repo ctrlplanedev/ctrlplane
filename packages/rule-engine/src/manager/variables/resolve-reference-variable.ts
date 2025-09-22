@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { and, eq } from "@ctrlplane/db";
+import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
@@ -101,6 +101,7 @@ const getSourceResourceCandidates = (
       eq(schema.resource.workspaceId, relationship.workspaceId),
       eq(schema.resource.kind, relationship.sourceKind),
       eq(schema.resource.version, relationship.sourceVersion),
+      isNull(schema.resource.deletedAt),
     ),
     with: { metadata: true },
   });
