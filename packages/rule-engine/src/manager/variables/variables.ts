@@ -58,7 +58,10 @@ export class VariableManager {
   }
 
   async getVariables(): Promise<MaybeVariable[]> {
-    return Promise.all(this.options.keys.map((key) => this.getVariable(key)));
+    const variables: MaybeVariable[] = [];
+    for (const key of this.options.keys)
+      variables.push(await this.getVariable(key));
+    return variables;
   }
 
   async getVariable(key: string): Promise<MaybeVariable> {
