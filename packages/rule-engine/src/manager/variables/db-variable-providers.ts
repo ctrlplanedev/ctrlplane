@@ -100,7 +100,11 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
     if (variable == null) return null;
 
     const { values, defaultValue } = variable;
+    if (defaultValue != null)
+      console.log("Has default value", { defaultValue });
+
     for (const value of values) {
+      console.log("Resolving value", { value });
       const resolvedValue = await resolveVariableValue(
         this.db,
         this.options.resourceId,
@@ -108,10 +112,13 @@ export class DatabaseDeploymentVariableProvider implements VariableProvider {
       );
       if (resolvedValue == null) continue;
 
+      console.log("Resolved value", { resolvedValue });
+
       return { id: variable.id, key, ...resolvedValue };
     }
 
     if (defaultValue != null) {
+      console.log("Resolving default value", { defaultValue });
       const resolvedValue = await resolveVariableValue(
         this.db,
         this.options.resourceId,
