@@ -411,24 +411,16 @@ export class OperationPipeline {
         await this.opts.workspace.repository.resourceRepository.get(
           resource.id,
         );
-      logger.info("Existing resource", { existing });
-      if (existing == null) {
-        logger.info("Creating resource", { resource });
+      if (existing == null)
         await this.opts.workspace.repository.resourceRepository.create(
           resource,
         );
-        logger.info("Created resource", { resource });
-      }
-      if (existing != null) {
-        logger.info("Updating resource", { resource });
+      if (existing != null)
         await this.opts.workspace.repository.resourceRepository.update(
           resource,
         );
-        logger.info("Updated resource", { resource });
-      }
-      logger.info("Updating resource in selector", { resource });
+
       await this.opts.workspace.selectorManager.updateResource(resource);
-      logger.info("Updated resource in selector", { resource });
     } catch (error) {
       const e = error instanceof Error ? error : new Error(String(error));
       logger.error("Error upserting resource", { error: e });
