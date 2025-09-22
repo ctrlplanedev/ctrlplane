@@ -5,6 +5,9 @@ on:
     branches: ["*"]
     paths:
       - apps/event-queue/**
+      - packages/db/**
+      - packages/rule-engine/**
+      - packages/validators/**
       - packages/logger/**
       - packages/events/**
       - .github/workflows/apps-event-queue.yaml
@@ -13,6 +16,9 @@ on:
     branches: ["main"]
     paths:
       - apps/event-queue/**
+      - packages/db/**
+      - packages/rule-engine/**
+      - packages/validators/**
       - packages/logger/**
       - packages/events/**
       - .github/workflows/apps-event-queue.yaml
