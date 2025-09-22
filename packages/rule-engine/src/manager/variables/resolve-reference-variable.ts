@@ -4,6 +4,7 @@ import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
+import { variablesAES256 } from "@ctrlplane/secrets";
 
 const log = logger.child({ module: "resolve-reference-variable" });
 
@@ -145,6 +146,31 @@ const validateSourceResourceCandidate = (
   return true;
 };
 
+const getFullSource = async (
+  sourceResource: schema.Resource & { metadata: schema.ResourceMetadata[] },
+) => {
+  const allVariables = await db.query.resourceVariable.findMany({
+    where: eq(schema.resourceVariable.resourceId, sourceResource.id),
+  });
+
+  const metadata = Object.fromEntries(
+    sourceResource.metadata.map((m) => [m.key, m.value]),
+  );
+
+  const directVariables = Object.fromEntries(
+    allVariables
+      .filter((v) => v.valueType === "direct")
+      .map((v) => {
+        const { value, key } = v;
+        if (v.sensitive) return [key, variablesAES256().decrypt(String(value))];
+        if (typeof value === "object") return [key, JSON.stringify(value)];
+        return [key, value];
+      }),
+  );
+
+  return { ...sourceResource, metadata, variables: directVariables };
+};
+
 export const getReferenceVariableValue = async (
   resourceId: string,
   variable:
@@ -186,8 +212,11 @@ export const getReferenceVariableValue = async (
 
     log.info("found source resource", { sourceResource });
 
+    const fullSource = await getFullSource(sourceResource);
+    log.info("got full source", { fullSource });
+
     const resolvedPath =
-      _.get(sourceResource, variable.path, variable.defaultValue) ?? null;
+      _.get(fullSource, variable.path, variable.defaultValue) ?? null;
     log.info("got resolved path", { resolvedPath });
 
     return resolvedPath as string | number | boolean | object | null;
