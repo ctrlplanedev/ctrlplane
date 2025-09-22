@@ -320,17 +320,26 @@ export class ReleaseTargetManager {
       console.log("currentRelease", JSON.stringify(currentRelease, null, 2));
       log.info("Current release", { currentRelease });
       if (currentRelease == null) {
+        log.info("creating new release because current release is null");
         const release = await this.insertNewRelease(
           versionRelease.id,
           variableRelease.id,
         );
-        log.info("creating new release because current release is null");
-        return this.createReleaseJob(release);
+        const job = await this.createReleaseJob(release);
+        log.info("created new release job because current release is null", {
+          job,
+        });
+        return job;
       }
 
       if (opts?.skipDuplicateCheck) {
         log.info("skipping duplicate check");
-        return this.createReleaseJob(currentRelease, true);
+        const job = await this.createReleaseJob(currentRelease, true);
+        log.info(
+          "created new release job because duplicate check was skipped",
+          { job },
+        );
+        return job;
       }
 
       const hasAnythingChanged = this.getHasAnythingChanged(currentRelease, {
@@ -348,7 +357,12 @@ export class ReleaseTargetManager {
         versionRelease.id,
         variableRelease.id,
       );
-      return this.createReleaseJob(release);
+      const job = await this.createReleaseJob(release);
+      log.info(
+        "created new release job because version or variable release has changed",
+        { job },
+      );
+      return job;
     } catch (error) {
       log.error("Error inserting new release: ", { error });
       throw error;

@@ -604,17 +604,24 @@ export class OperationPipeline {
 
     log.info("Evaluating release targets");
     const evaluateStart = performance.now();
-    const jobsToDispatch = await Promise.all(
+
+    const jobsToDispatch = await Promise.allSettled(
       (this.opts.releaseTargets?.toEvaluate ?? []).map((rt) =>
         releaseTargetManager.evaluate(rt, {
           skipDuplicateCheck: this.opts.releaseTargets?.skipDuplicateCheck,
         }),
       ),
-    ).then((jobs) => jobs.filter(isPresent));
+    ).then((promiseResults) =>
+      promiseResults
+        .map((p) => (p.status === "fulfilled" ? p.value : null))
+        .filter(isPresent),
+    );
 
     const evaluateEnd = performance.now();
     const evaluateDuration = evaluateEnd - evaluateStart;
-    log.info(`Release target evaluation took ${evaluateDuration.toFixed(2)}ms`);
+    log.info(
+      `Release target evaluation took ${evaluateDuration.toFixed(2)}ms, found ${jobsToDispatch.length} jobs to dispatch`,
+    );
 
     await Promise.all(jobsToDispatch.map((job) => jobManager.dispatchJob(job)));
   }
