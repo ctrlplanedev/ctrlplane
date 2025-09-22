@@ -13,6 +13,8 @@ const kafka = new Kafka({
 
 const consumer = kafka.consumer({ groupId: "ctrlplane-events" });
 
+const EVENT_TIMEOUT = 120_000;
+
 export const start = async () => {
   logger.info("Starting event queue", { brokers: env.KAFKA_BROKERS });
   await consumer.connect();
@@ -44,7 +46,15 @@ export const start = async () => {
 
       try {
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Event handler timeout")), 60_000),
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `Event handler timeout: took longer than ${EVENT_TIMEOUT}ms for event ${JSON.stringify(event)}`,
+                ),
+              ),
+            EVENT_TIMEOUT,
+          ),
         );
         await Promise.race([handler(event), timeoutPromise]);
         const end = performance.now();
