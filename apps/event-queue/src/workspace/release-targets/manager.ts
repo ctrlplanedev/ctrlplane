@@ -309,10 +309,16 @@ export class ReleaseTargetManager {
     opts?: { skipDuplicateCheck?: boolean },
   ) {
     try {
+      log.info("Evaluating release target", { releaseTarget });
       const [versionRelease, variableRelease] = await Promise.all([
         this.handleVersionRelease(releaseTarget),
         this.handleVariableRelease(releaseTarget),
       ]);
+
+      log.info("Version and variable releases evaluated", {
+        versionRelease,
+        variableRelease,
+      });
 
       if (versionRelease == null) return;
 

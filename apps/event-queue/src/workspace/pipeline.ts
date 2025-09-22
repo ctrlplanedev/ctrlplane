@@ -590,7 +590,9 @@ export class OperationPipeline {
         break;
     }
 
-    log.info("Evaluating release targets");
+    log.info(
+      `Evaluating ${this.opts.releaseTargets?.toEvaluate.length ?? 0} release targets`,
+    );
     const evaluateStart = performance.now();
 
     const jobsToDispatch = await Promise.allSettled(

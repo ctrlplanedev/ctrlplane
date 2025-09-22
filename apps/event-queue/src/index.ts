@@ -13,7 +13,7 @@ const kafka = new Kafka({
 
 const consumer = kafka.consumer({ groupId: "ctrlplane-events" });
 
-const EVENT_TIMEOUT = 120_000;
+const EVENT_TIMEOUT = 240_000;
 
 export const start = async () => {
   logger.info("Starting event queue", { brokers: env.KAFKA_BROKERS });
