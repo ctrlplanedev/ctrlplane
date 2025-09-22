@@ -84,9 +84,5 @@ export const getDeploymentVariables = async (tx: Tx, deploymentId: string) => {
     }),
   );
 
-  log.info("Variables with values");
-  for (const v of variablesWithValues)
-    log.info("Variable with values", JSON.stringify(v, null, 2));
-
   return variablesWithValues;
 };
