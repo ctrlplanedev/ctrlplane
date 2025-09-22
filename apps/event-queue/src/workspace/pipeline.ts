@@ -448,14 +448,10 @@ export class OperationPipeline {
 
   private async removeResource(resource: FullResource) {
     try {
-      logger.info("Deleting resource", { resource });
       await this.opts.workspace.repository.resourceRepository.delete(
         resource.id,
       );
-      logger.info("Deleted resource", { resource });
-      logger.info("Removing resource in selector", { resource });
       await this.opts.workspace.selectorManager.removeResource(resource);
-      logger.info("Removed resource in selector", { resource });
     } catch (error) {
       const e = error instanceof Error ? error : new Error(String(error));
       logger.error("Error removing resource", { error: e });
