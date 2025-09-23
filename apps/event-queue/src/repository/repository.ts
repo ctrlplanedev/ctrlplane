@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { FullResource } from "@ctrlplane/events";
+import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 
 import type { VersionRuleRepository } from "./rules/repository";
 
@@ -21,7 +21,7 @@ type WorkspaceRepositoryOptions = {
   resourceVariableRepository: Repository<
     typeof schema.resourceVariable.$inferSelect
   >;
-  releaseTargetRepository: Repository<schema.ReleaseTarget>;
+  releaseTargetRepository: Repository<FullReleaseTarget>;
 
   policyRepository: Repository<schema.Policy>;
   versionRuleRepository: VersionRuleRepository;

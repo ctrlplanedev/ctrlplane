@@ -16,11 +16,10 @@ test.describe("Release Redeploy API", () => {
     await builder.upsertResourcesFixtures();
     await builder.upsertEnvironmentFixtures();
     await builder.upsertDeploymentFixtures();
-    await builder.upsertDeploymentVersionFixtures();
     await builder.upsertAgentFixtures();
-
     const agentId = builder.refs.getAgentLike("agent").id;
     await builder.upsertDeploymentFixtures(agentId);
+    await builder.upsertDeploymentVersionFixtures();
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   });
 

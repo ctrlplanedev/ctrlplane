@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { FullReleaseTarget } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
@@ -56,7 +57,7 @@ export class ReleaseTargetManager {
       this.getDeployments(),
     ]);
 
-    const releaseTargets: schema.ReleaseTarget[] = [];
+    const releaseTargets: FullReleaseTarget[] = [];
 
     for (const environment of environments) {
       for (const deployment of deployments) {
@@ -65,13 +66,16 @@ export class ReleaseTargetManager {
         // special case, if a deployment has no resource selector, we just include all resources from the environment
         if (deployment.resourceSelector == null) {
           for (const resource of environment.resources) {
-            const releaseTargetInsert: schema.ReleaseTarget = {
+            const releaseTargetInsert: FullReleaseTarget = {
               id: crypto.randomUUID(),
               resourceId: resource.id,
               environmentId: environment.id,
               deploymentId: deployment.id,
               desiredReleaseId: null,
               desiredVersionId: null,
+              resource,
+              environment,
+              deployment,
             };
 
             releaseTargets.push(releaseTargetInsert);
@@ -87,13 +91,16 @@ export class ReleaseTargetManager {
         );
 
         for (const resource of commonResources) {
-          const releaseTargetInsert: schema.ReleaseTarget = {
+          const releaseTargetInsert: FullReleaseTarget = {
             id: crypto.randomUUID(),
             resourceId: resource.id,
             environmentId: environment.id,
             deploymentId: deployment.id,
             desiredReleaseId: null,
             desiredVersionId: null,
+            resource,
+            environment,
+            deployment,
           };
 
           releaseTargets.push(releaseTargetInsert);
@@ -109,7 +116,7 @@ export class ReleaseTargetManager {
   }
 
   private async persistAddedReleaseTargets(
-    releaseTargets: schema.ReleaseTarget[],
+    releaseTargets: FullReleaseTarget[],
   ) {
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
@@ -127,7 +134,7 @@ export class ReleaseTargetManager {
   }
 
   private async persistRemovedReleaseTargets(
-    releaseTargets: schema.ReleaseTarget[],
+    releaseTargets: FullReleaseTarget[],
   ) {
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
@@ -192,11 +199,11 @@ export class ReleaseTargetManager {
     return { removedReleaseTargets, addedReleaseTargets };
   }
 
-  private getReleaseTargetWithWorkspace(releaseTarget: schema.ReleaseTarget) {
+  private getReleaseTargetWithWorkspace(releaseTarget: FullReleaseTarget) {
     return { ...releaseTarget, workspaceId: this.workspace.id };
   }
 
-  private async handleVersionRelease(releaseTarget: schema.ReleaseTarget) {
+  private async handleVersionRelease(releaseTarget: FullReleaseTarget) {
     const vrm = new VersionManager(releaseTarget, this.workspace);
     const { chosenCandidate } = await vrm.evaluate();
     if (chosenCandidate == null) return null;
@@ -204,7 +211,7 @@ export class ReleaseTargetManager {
     return release;
   }
 
-  private async handleVariableRelease(releaseTarget: schema.ReleaseTarget) {
+  private async handleVariableRelease(releaseTarget: FullReleaseTarget) {
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
     const varrm = new VariableReleaseManager(db, rtWithWorkspace);
     const { chosenCandidate } = await varrm.evaluate();
@@ -212,7 +219,7 @@ export class ReleaseTargetManager {
     return release;
   }
 
-  private async getCurrentRelease(releaseTarget: schema.ReleaseTarget) {
+  private async getCurrentRelease(releaseTarget: FullReleaseTarget) {
     const allVersionReleases =
       await this.workspace.repository.versionReleaseRepository.getAll();
     const allVariableReleases =
@@ -305,7 +312,7 @@ export class ReleaseTargetManager {
   }
 
   async evaluate(
-    releaseTarget: schema.ReleaseTarget,
+    releaseTarget: FullReleaseTarget,
     opts?: { skipDuplicateCheck?: boolean },
   ) {
     try {

@@ -1,4 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
+import type { FullReleaseTarget } from "@ctrlplane/events";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import {
@@ -20,7 +22,7 @@ type DbPolicyTargetReleaseTargetSelectorOptions = {
 };
 
 export class DbPolicyTargetReleaseTargetSelector
-  implements Selector<schema.PolicyTarget, schema.ReleaseTarget>
+  implements Selector<schema.PolicyTarget, FullReleaseTarget>
 {
   private db: Tx;
   private workspaceId: string;
@@ -169,7 +171,7 @@ export class DbPolicyTargetReleaseTargetSelector
     );
   }
 
-  async upsertEntity(entity: schema.ReleaseTarget) {
+  async upsertEntity(entity: FullReleaseTarget) {
     await this.upsertReleaseTarget(entity);
     const [previouslyMatchedPolicyTargets, currentlyMatchingPolicyTargets] =
       await Promise.all([
@@ -203,7 +205,7 @@ export class DbPolicyTargetReleaseTargetSelector
     ]);
   }
 
-  async removeEntity(entity: schema.ReleaseTarget) {
+  async removeEntity(entity: FullReleaseTarget) {
     await this.db
       .delete(schema.releaseTarget)
       .where(eq(schema.releaseTarget.id, entity.id));
@@ -369,7 +371,7 @@ export class DbPolicyTargetReleaseTargetSelector
   }
 
   async getEntitiesForSelector(selector: schema.PolicyTarget) {
-    return this.db
+    const dbResult = await this.db
       .select()
       .from(schema.computedPolicyTargetReleaseTarget)
       .innerJoin(
@@ -379,13 +381,50 @@ export class DbPolicyTargetReleaseTargetSelector
           schema.releaseTarget.id,
         ),
       )
+      .innerJoin(
+        schema.resource,
+        eq(schema.releaseTarget.resourceId, schema.resource.id),
+      )
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
+      .innerJoin(
+        schema.environment,
+        eq(schema.releaseTarget.environmentId, schema.environment.id),
+      )
+      .innerJoin(
+        schema.deployment,
+        eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+      )
       .where(
         eq(
           schema.computedPolicyTargetReleaseTarget.policyTargetId,
           selector.id,
         ),
-      )
-      .then((rows) => rows.map((row) => row.release_target));
+      );
+
+    return _.chain(dbResult)
+      .groupBy((row) => row.release_target.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { release_target, resource, environment, deployment } = first;
+        const resourceMetadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return {
+          ...release_target,
+          resource: { ...resource, metadata: resourceMetadata },
+          environment,
+          deployment,
+        };
+      })
+      .value()
+      .filter(isPresent);
   }
 
   async getSelectorsForEntity(entity: schema.ReleaseTarget) {
@@ -406,15 +445,48 @@ export class DbPolicyTargetReleaseTargetSelector
   }
 
   async getAllEntities() {
-    return this.db
+    const dbResult = await this.db
       .select()
       .from(schema.releaseTarget)
       .innerJoin(
         schema.resource,
         eq(schema.releaseTarget.resourceId, schema.resource.id),
       )
-      .where(eq(schema.resource.workspaceId, this.workspaceId))
-      .then((rows) => rows.map((row) => row.release_target));
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
+      .innerJoin(
+        schema.environment,
+        eq(schema.releaseTarget.environmentId, schema.environment.id),
+      )
+      .innerJoin(
+        schema.deployment,
+        eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+      )
+      .where(eq(schema.resource.workspaceId, this.workspaceId));
+
+    return _.chain(dbResult)
+      .groupBy((row) => row.release_target.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { release_target, resource, environment, deployment } = first;
+        const resourceMetadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return {
+          ...release_target,
+          resource: { ...resource, metadata: resourceMetadata },
+          environment,
+          deployment,
+        };
+      })
+      .value()
+      .filter(isPresent);
   }
 
   async getAllSelectors() {

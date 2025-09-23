@@ -6,7 +6,6 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import {
   exitedStatus,
-  failedStatuses,
   JobAgentType,
   JobStatus,
 } from "@ctrlplane/validators/jobs";
@@ -68,44 +67,44 @@ export class JobManager {
     return allReleaseJobs.filter((r) => r.releaseId === release.id).length;
   }
 
-  private async maybeRetryJob(
-    releaseTarget: schema.ReleaseTarget,
-    job: schema.Job,
-  ) {
-    const isJobFailed = failedStatuses.includes(job.status as JobStatus);
-    if (!isJobFailed) return false;
-    const policyTargets =
-      await this.workspace.selectorManager.policyTargetReleaseTargetSelector.getSelectorsForEntity(
-        releaseTarget,
-      );
-    const policyTargetIds = new Set(policyTargets.map((pt) => pt.policyId));
+  // private async maybeRetryJob(
+  //   releaseTarget: schema.ReleaseTarget,
+  //   job: schema.Job,
+  // ) {
+  //   const isJobFailed = failedStatuses.includes(job.status as JobStatus);
+  //   if (!isJobFailed) return false;
+  //   const policyTargets =
+  //     await this.workspace.selectorManager.policyTargetReleaseTargetSelector.getSelectorsForEntity(
+  //       releaseTarget,
+  //     );
+  //   const policyTargetIds = new Set(policyTargets.map((pt) => pt.policyId));
 
-    const allPolicies =
-      await this.workspace.repository.policyRepository.getAll();
-    const matchedPolicies = allPolicies
-      .filter((p) => policyTargetIds.has(p.id))
-      .sort((a, b) => b.priority - a.priority);
-    for (const policy of matchedPolicies) {
-      const retryRule =
-        await this.workspace.repository.versionRuleRepository.getRetryRule(
-          policy.id,
-        );
-      if (retryRule == null) continue;
+  //   const allPolicies =
+  //     await this.workspace.repository.policyRepository.getAll();
+  //   const matchedPolicies = allPolicies
+  //     .filter((p) => policyTargetIds.has(p.id))
+  //     .sort((a, b) => b.priority - a.priority);
+  //   for (const policy of matchedPolicies) {
+  //     const retryRule =
+  //       await this.workspace.repository.versionRuleRepository.getRetryRule(
+  //         policy.id,
+  //       );
+  //     if (retryRule == null) continue;
 
-      const release = await this.getReleaseFromJob(job);
-      if (release == null) return false;
+  //     const release = await this.getReleaseFromJob(job);
+  //     if (release == null) return false;
 
-      const numJobsForRelease = await this.getNumJobsForRelease(release);
-      if (numJobsForRelease >= retryRule.maxRetries) return false;
+  //     const numJobsForRelease = await this.getNumJobsForRelease(release);
+  //     if (numJobsForRelease >= retryRule.maxRetries) return false;
 
-      const newJob = await this.createReleaseJob(release);
-      await this.dispatchJob(newJob);
+  //     const newJob = await this.createReleaseJob(release);
+  //     await this.dispatchJob(newJob);
 
-      return true;
-    }
+  //     return true;
+  //   }
 
-    return false;
-  }
+  //   return false;
+  // }
 
   async updateJob(previous: schema.Job, current: schema.Job) {
     const updatedJob =
@@ -240,7 +239,6 @@ export class JobManager {
       );
 
     const jobVariables = await this.getJobVariables(variableRelease);
-    console.log("jobVariables", JSON.stringify(jobVariables, null, 2));
 
     const { jobAgent, jobAgentConfig } =
       await this.getJobAgentWithConfig(versionRelease);

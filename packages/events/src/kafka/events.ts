@@ -63,6 +63,12 @@ export type FullResource = schema.Resource & {
   metadata: Record<string, string>;
 };
 
+export type FullReleaseTarget = schema.ReleaseTarget & {
+  resource: FullResource;
+  environment: schema.Environment;
+  deployment: schema.Deployment;
+};
+
 export type EventPayload = {
   [Event.ResourceCreated]: FullResource;
   [Event.ResourceUpdated]: {
@@ -111,7 +117,7 @@ export type EventPayload = {
   [Event.PolicyDeleted]: FullPolicy;
   [Event.JobUpdated]: { previous: schema.Job; current: schema.Job };
   [Event.EvaluateReleaseTarget]: {
-    releaseTarget: schema.ReleaseTarget;
+    releaseTarget: FullReleaseTarget;
     opts?: { skipDuplicateCheck?: boolean };
   };
   // [Event.JobCreated]: schema.Job;

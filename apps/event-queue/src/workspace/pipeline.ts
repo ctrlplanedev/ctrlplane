@@ -1,5 +1,9 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { FullPolicy, FullResource } from "@ctrlplane/events";
+import type {
+  FullPolicy,
+  FullReleaseTarget,
+  FullResource,
+} from "@ctrlplane/events";
 import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
@@ -25,8 +29,8 @@ type WorkspaceOptions = {
   jobAgent?: schema.JobAgent;
 
   releaseTargets?: {
-    toEvaluate: schema.ReleaseTarget[];
-    removed: schema.ReleaseTarget[];
+    toEvaluate: FullReleaseTarget[];
+    removed: FullReleaseTarget[];
     skipDuplicateCheck?: boolean;
   };
 };
@@ -96,7 +100,7 @@ export class OperationPipeline {
   }
 
   releaseTargets(
-    releaseTargets: schema.ReleaseTarget[],
+    releaseTargets: FullReleaseTarget[],
     opts?: { skipDuplicateCheck?: boolean },
   ) {
     if (this.opts.releaseTargets == null)

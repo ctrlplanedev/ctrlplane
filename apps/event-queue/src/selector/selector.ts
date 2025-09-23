@@ -4,9 +4,8 @@ import type {
   Environment,
   PolicyDeploymentVersionSelector,
   PolicyTarget,
-  ReleaseTarget,
 } from "@ctrlplane/db/schema";
-import type { FullResource } from "@ctrlplane/events";
+import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 
 export interface Selector<S, E> {
   upsertEntity(entity: E): Promise<void>;
@@ -27,7 +26,7 @@ export interface Selector<S, E> {
 type SelectorManagerOptions = {
   environmentResourceSelector: Selector<Environment, FullResource>;
   deploymentResourceSelector: Selector<Deployment, FullResource>;
-  policyTargetReleaseTargetSelector: Selector<PolicyTarget, ReleaseTarget>;
+  policyTargetReleaseTargetSelector: Selector<PolicyTarget, FullReleaseTarget>;
   deploymentVersionSelector: Selector<
     PolicyDeploymentVersionSelector,
     DeploymentVersion
@@ -87,13 +86,13 @@ export class SelectorManager {
     return this.opts.deploymentResourceSelector.removeSelector(deployment);
   }
 
-  async upsertReleaseTarget(releaseTarget: ReleaseTarget) {
+  async upsertReleaseTarget(releaseTarget: FullReleaseTarget) {
     return this.opts.policyTargetReleaseTargetSelector.upsertEntity(
       releaseTarget,
     );
   }
 
-  async removeReleaseTarget(releaseTarget: ReleaseTarget) {
+  async removeReleaseTarget(releaseTarget: FullReleaseTarget) {
     return this.opts.policyTargetReleaseTargetSelector.removeEntity(
       releaseTarget,
     );
