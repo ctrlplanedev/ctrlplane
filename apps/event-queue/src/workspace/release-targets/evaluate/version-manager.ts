@@ -1,4 +1,4 @@
-import type * as schema from "@ctrlplane/db/schema";
+import type { FullReleaseTarget } from "@ctrlplane/events";
 import type { ReleaseManager } from "@ctrlplane/rule-engine";
 import { isPresent } from "ts-is-present";
 
@@ -9,7 +9,7 @@ import type { Workspace } from "../../workspace.js";
 
 export class VersionManager implements ReleaseManager {
   constructor(
-    private readonly releaseTarget: schema.ReleaseTarget,
+    private readonly releaseTarget: FullReleaseTarget,
     private readonly workspace: Workspace,
   ) {}
 
