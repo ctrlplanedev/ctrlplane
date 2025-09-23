@@ -309,66 +309,37 @@ export class ReleaseTargetManager {
     opts?: { skipDuplicateCheck?: boolean },
   ) {
     try {
-      log.info("Evaluating release target", { releaseTarget });
       const [versionRelease, variableRelease] = await Promise.all([
         this.handleVersionRelease(releaseTarget),
         this.handleVariableRelease(releaseTarget),
       ]);
 
-      log.info("Version and variable releases evaluated", {
-        versionRelease,
-        variableRelease,
-      });
-
       if (versionRelease == null) return;
 
       const currentRelease = await this.getCurrentRelease(releaseTarget);
-      console.log("currentRelease", JSON.stringify(currentRelease, null, 2));
-      log.info("Current release", { currentRelease });
       if (currentRelease == null) {
-        log.info("creating new release because current release is null");
         const release = await this.insertNewRelease(
           versionRelease.id,
           variableRelease.id,
         );
-        const job = await this.createReleaseJob(release);
-        log.info("created new release job because current release is null", {
-          job,
-        });
-        return job;
-      }
-
-      if (opts?.skipDuplicateCheck) {
-        log.info("skipping duplicate check");
-        const job = await this.createReleaseJob(currentRelease, true);
-        log.info(
-          "created new release job because duplicate check was skipped",
-          { job },
-        );
-        return job;
+        return this.createReleaseJob(release);
       }
 
       const hasAnythingChanged = this.getHasAnythingChanged(currentRelease, {
         versionReleaseId: versionRelease.id,
         variableReleaseId: variableRelease.id,
       });
-      if (!hasAnythingChanged) return;
+      if (!hasAnythingChanged) {
+        if (opts?.skipDuplicateCheck)
+          return this.createReleaseJob(currentRelease, true);
+        return;
+      }
 
-      log.info("releasing because version or variable release has changed", {
-        currentRelease,
-        versionReleaseId: versionRelease.id,
-        variableReleaseId: variableRelease.id,
-      });
       const release = await this.insertNewRelease(
         versionRelease.id,
         variableRelease.id,
       );
-      const job = await this.createReleaseJob(release);
-      log.info(
-        "created new release job because version or variable release has changed",
-        { job },
-      );
-      return job;
+      return this.createReleaseJob(release);
     } catch (error) {
       log.error("Error inserting new release: ", { error });
       throw error;
