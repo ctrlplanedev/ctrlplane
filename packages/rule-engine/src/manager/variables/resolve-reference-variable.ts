@@ -178,14 +178,11 @@ export const getReferenceVariableValue = async (
     | schema.ReferenceDeploymentVariableValue,
 ) => {
   try {
-    log.info("resolving reference variable", { variable, resourceId });
     const { reference } = variable;
     const resource = await getResource(resourceId);
     if (resource == null) throw new Error("Resource not found");
-    log.info("got resource", { resource });
     const relationship = await getRelationship(reference, resource.workspaceId);
     if (relationship == null) throw new Error("Relationship not found");
-    log.info("got relationship", { relationship });
 
     const { targetMetadataEquals } = relationship;
 
@@ -195,13 +192,9 @@ export const getReferenceVariableValue = async (
       targetMetadataEquals,
     );
     if (!targetResourceSatisfied) return variable.defaultValue ?? null;
-    log.info("validated relationship target rule matches resource");
 
     const sourceResourceCandidates =
       await getSourceResourceCandidates(relationship);
-    log.info(
-      `found ${sourceResourceCandidates.length} source resource candidates`,
-    );
     if (sourceResourceCandidates.length === 0)
       return variable.defaultValue ?? null;
 
@@ -210,14 +203,10 @@ export const getReferenceVariableValue = async (
     );
     if (sourceResource == null) return variable.defaultValue ?? null;
 
-    log.info("found source resource", { sourceResource });
-
     const fullSource = await getFullSource(sourceResource);
-    log.info("got full source", { fullSource });
 
     const resolvedPath =
       _.get(fullSource, variable.path, variable.defaultValue) ?? null;
-    log.info("got resolved path", { resolvedPath });
 
     return resolvedPath as string | number | boolean | object | null;
   } catch (error) {
