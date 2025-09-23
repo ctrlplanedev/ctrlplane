@@ -4,6 +4,7 @@ import { buildConflictUpdateColumns, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -62,6 +63,8 @@ const updateLinks = async (jobId: string, links: Record<string, string>) =>
     });
 
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
+  logger.info("Handling github workflow run event", { event });
+
   const {
     id,
     status: externalStatus,
