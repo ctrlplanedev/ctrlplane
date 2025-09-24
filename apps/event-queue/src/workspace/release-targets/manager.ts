@@ -136,7 +136,15 @@ export class ReleaseTargetManager {
   }
 
   private async getExistingReleaseTargets() {
-    return this.workspace.repository.releaseTargetRepository.getAll();
+    const start = performance.now();
+    const releaseTargets =
+      await this.workspace.repository.releaseTargetRepository.getAll();
+    const end = performance.now();
+    const duration = end - start;
+    log.info(
+      `Retrieving existing release targets took ${duration.toFixed(2)}ms`,
+    );
+    return releaseTargets;
   }
 
   private async persistAddedReleaseTargets(
