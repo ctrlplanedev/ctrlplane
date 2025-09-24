@@ -4,7 +4,6 @@ import type {
   FullReleaseTarget,
   FullResource,
 } from "@ctrlplane/events";
-import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -599,17 +598,19 @@ export class OperationPipeline {
     );
     const evaluateStart = performance.now();
 
-    const jobsToDispatch = await Promise.allSettled(
-      (this.opts.releaseTargets?.toEvaluate ?? []).map((rt) =>
-        releaseTargetManager.evaluate(rt, {
+    const jobsToDispatch: schema.Job[] = [];
+
+    for (const rt of this.opts.releaseTargets?.toEvaluate ?? []) {
+      try {
+        const job = await releaseTargetManager.evaluate(rt, {
           skipDuplicateCheck: this.opts.releaseTargets?.skipDuplicateCheck,
-        }),
-      ),
-    ).then((promiseResults) =>
-      promiseResults
-        .map((p) => (p.status === "fulfilled" ? p.value : null))
-        .filter(isPresent),
-    );
+        });
+        if (job == null) continue;
+        jobsToDispatch.push(job);
+      } catch (error) {
+        log.error("Error evaluating release target", { error });
+      }
+    }
 
     const evaluateEnd = performance.now();
     const evaluateDuration = evaluateEnd - evaluateStart;

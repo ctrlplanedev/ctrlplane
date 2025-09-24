@@ -204,18 +204,26 @@ export class ReleaseTargetManager {
   }
 
   private async handleVersionRelease(releaseTarget: FullReleaseTarget) {
+    const start = performance.now();
     const vrm = new VersionManager(releaseTarget, this.workspace);
     const { chosenCandidate } = await vrm.evaluate();
     if (chosenCandidate == null) return null;
     const { release } = await vrm.upsertRelease(chosenCandidate.id);
+    const end = performance.now();
+    const duration = end - start;
+    log.info(`Version release handled took ${duration.toFixed(2)}ms`);
     return release;
   }
 
   private async handleVariableRelease(releaseTarget: FullReleaseTarget) {
+    const start = performance.now();
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
     const varrm = new VariableReleaseManager(db, rtWithWorkspace);
     const { chosenCandidate } = await varrm.evaluate();
     const { release } = await varrm.upsertRelease(chosenCandidate);
+    const end = performance.now();
+    const duration = end - start;
+    log.info(`Variable release handled took ${duration.toFixed(2)}ms`);
     return release;
   }
 
