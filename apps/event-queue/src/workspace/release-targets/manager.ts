@@ -142,12 +142,20 @@ export class ReleaseTargetManager {
   private async persistAddedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
+    const repoStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.repository.releaseTargetRepository.create(releaseTarget),
       ),
     );
 
+    const repoEnd = performance.now();
+    const repoDuration = repoEnd - repoStart;
+    log.info(
+      `Persisting added release targets to repository took ${repoDuration.toFixed(2)}ms`,
+    );
+
+    const selectorStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.selectorManager.policyTargetReleaseTargetSelector.upsertEntity(
@@ -155,11 +163,18 @@ export class ReleaseTargetManager {
         ),
       ),
     );
+
+    const selectorEnd = performance.now();
+    const selectorDuration = selectorEnd - selectorStart;
+    log.info(
+      `Persisting added release targets to selector took ${selectorDuration.toFixed(2)}ms`,
+    );
   }
 
   private async persistRemovedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
+    const repoStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.repository.releaseTargetRepository.delete(
@@ -168,12 +183,25 @@ export class ReleaseTargetManager {
       ),
     );
 
+    const repoEnd = performance.now();
+    const repoDuration = repoEnd - repoStart;
+    log.info(
+      `Persisting removed release targets to repository took ${repoDuration.toFixed(2)}ms`,
+    );
+
+    const selectorStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.selectorManager.policyTargetReleaseTargetSelector.removeEntity(
           releaseTarget,
         ),
       ),
+    );
+
+    const selectorEnd = performance.now();
+    const selectorDuration = selectorEnd - selectorStart;
+    log.info(
+      `Persisting removed release targets to selector took ${selectorDuration.toFixed(2)}ms`,
     );
   }
 
@@ -184,6 +212,8 @@ export class ReleaseTargetManager {
       this.getExistingReleaseTargets(),
       this.determineReleaseTargets(),
     ]);
+
+    const computingChangesStart = performance.now();
 
     const removedReleaseTargets = existingReleaseTargets.filter(
       (existingReleaseTarget) =>
@@ -209,6 +239,13 @@ export class ReleaseTargetManager {
             existingReleaseTarget.deploymentId ===
               computedReleaseTarget.deploymentId,
         ),
+    );
+
+    const computingChangesEnd = performance.now();
+    const computingChangesDuration =
+      computingChangesEnd - computingChangesStart;
+    log.info(
+      `Computing release target changes took ${computingChangesDuration.toFixed(2)}ms`,
     );
 
     await Promise.all([
