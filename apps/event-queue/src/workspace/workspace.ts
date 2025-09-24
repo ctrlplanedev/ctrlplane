@@ -12,7 +12,6 @@ import { DbJobRepository } from "../repository/db-job-repository.js";
 import { DbJobVariableRepository } from "../repository/db-job-variable-repository.js";
 import { DbPolicyRepository } from "../repository/db-policy-repository.js";
 import { DbReleaseJobRepository } from "../repository/db-release-job-repository.js";
-import { DbReleaseRepository } from "../repository/db-release-repository.js";
 import { DbResourceRepository } from "../repository/db-resource-repository.js";
 import { DbResourceVariableRepository } from "../repository/db-resource-variable-repository.js";
 import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
@@ -21,6 +20,7 @@ import { DbVariableReleaseValueSnapshotRepository } from "../repository/db-varia
 import { DbVersionReleaseRepository } from "../repository/db-version-release-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { InMemoryReleaseTargetRepository } from "../repository/in-memory/release-target.js";
+import { InMemoryReleaseRepository } from "../repository/in-memory/release.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
@@ -66,8 +66,11 @@ const createSelectorManager = async (id: string) => {
 const createRepository = async (id: string) => {
   log.info(`Creating repository for workspace ${id}`);
 
-  const inMemoryReleaseTargetRepository =
-    await InMemoryReleaseTargetRepository.create(id);
+  const [inMemoryReleaseTargetRepository, inMemoryReleaseRepository] =
+    await Promise.all([
+      InMemoryReleaseTargetRepository.create(id),
+      InMemoryReleaseRepository.create(id),
+    ]);
 
   return new WorkspaceRepository({
     versionRepository: new DbVersionRepository(id),
@@ -81,7 +84,7 @@ const createRepository = async (id: string) => {
     jobVariableRepository: new DbJobVariableRepository(id),
     releaseJobRepository: new DbReleaseJobRepository(id),
     releaseTargetRepository: inMemoryReleaseTargetRepository,
-    releaseRepository: new DbReleaseRepository(id),
+    releaseRepository: inMemoryReleaseRepository,
     versionReleaseRepository: new DbVersionReleaseRepository(id),
     variableReleaseRepository: new DbVariableReleaseRepository(id),
     variableReleaseValueRepository: new DbVariableReleaseValueRepository(id),
