@@ -16,11 +16,11 @@ import { DbResourceVariableRepository } from "../repository/db-resource-variable
 import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
 import { DbVariableReleaseValueRepository } from "../repository/db-variable-release-value-repository.js";
 import { DbVariableReleaseValueSnapshotRepository } from "../repository/db-variable-release-value-snapshot-repository.js";
-import { DbVersionReleaseRepository } from "../repository/db-version-release-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { InMemoryReleaseTargetRepository } from "../repository/in-memory/release-target.js";
 import { InMemoryReleaseRepository } from "../repository/in-memory/release.js";
 import { InMemoryResourceRepository } from "../repository/in-memory/resource.js";
+import { InMemoryVersionReleaseRepository } from "../repository/in-memory/version-release.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
@@ -70,10 +70,12 @@ const createRepository = async (id: string) => {
     inMemoryReleaseTargetRepository,
     inMemoryReleaseRepository,
     inMemoryResourceRepository,
+    inMemoryVersionReleaseRepository,
   ] = await Promise.all([
     InMemoryReleaseTargetRepository.create(id),
     InMemoryReleaseRepository.create(id),
     InMemoryResourceRepository.create(id),
+    InMemoryVersionReleaseRepository.create(id),
   ]);
 
   return new WorkspaceRepository({
@@ -89,7 +91,7 @@ const createRepository = async (id: string) => {
     releaseJobRepository: new DbReleaseJobRepository(id),
     releaseTargetRepository: inMemoryReleaseTargetRepository,
     releaseRepository: inMemoryReleaseRepository,
-    versionReleaseRepository: new DbVersionReleaseRepository(id),
+    versionReleaseRepository: inMemoryVersionReleaseRepository,
     variableReleaseRepository: new DbVariableReleaseRepository(id),
     variableReleaseValueRepository: new DbVariableReleaseValueRepository(id),
     variableValueSnapshotRepository:
