@@ -62,6 +62,17 @@ export class VersionManager implements ReleaseManager {
   }
 
   private async findVersionsForEvaluation(policyIds: Set<string>) {
+    if (this.releaseTarget.desiredVersionId != null) {
+      const desiredVersion = await this.versions.get(
+        this.releaseTarget.desiredVersionId,
+      );
+      if (desiredVersion == null)
+        throw new Error(
+          `Desired version ${this.releaseTarget.desiredVersionId} not found`,
+        );
+      return [desiredVersion];
+    }
+
     const allVersions = await this.versions.getAll();
     let versionsToEvaluate = allVersions
       .filter((v) => v.deploymentId === this.releaseTarget.deploymentId)
