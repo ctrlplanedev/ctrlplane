@@ -222,6 +222,7 @@ export class JobManager {
   }
 
   async createReleaseJob(release: typeof schema.release.$inferSelect) {
+    const start = performance.now();
     const versionRelease =
       await this.workspace.repository.versionReleaseRepository.get(
         release.versionReleaseId,
@@ -242,12 +243,17 @@ export class JobManager {
 
     const { jobAgent, jobAgentConfig } =
       await this.getJobAgentWithConfig(versionRelease);
-    return this.createJob(
+    const job = await this.createJob(
       release.id,
       jobAgent.id,
       jobAgentConfig,
       jobVariables,
     );
+
+    const end = performance.now();
+    const duration = end - start;
+    this.log.info(`Creating release job took ${duration.toFixed(2)}ms`);
+    return job;
   }
 
   async dispatchJob(job: schema.Job) {

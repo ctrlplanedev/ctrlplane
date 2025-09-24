@@ -24,9 +24,16 @@ export class ReleaseTargetManager {
   }
 
   private async getEnvironments() {
+    const startGetEnvironments = performance.now();
     const environments =
       await this.workspace.repository.environmentRepository.getAll();
-    return Promise.all(
+    const endGetEnvironments = performance.now();
+    const getEnvironmentsDuration = endGetEnvironments - startGetEnvironments;
+    log.info(
+      `Retrieving environments took ${getEnvironmentsDuration.toFixed(2)}ms`,
+    );
+    const startGetResources = performance.now();
+    const result = await Promise.all(
       environments.map(async (environment) => {
         const resources =
           await this.workspace.selectorManager.environmentResourceSelector.getEntitiesForSelector(
@@ -35,12 +42,23 @@ export class ReleaseTargetManager {
         return { ...environment, resources };
       }),
     );
+    const endGetResources = performance.now();
+    const getResourcesDuration = endGetResources - startGetResources;
+    log.info(`Retrieving resources took ${getResourcesDuration.toFixed(2)}ms`);
+    return result;
   }
 
   private async getDeployments() {
+    const startGetDeployments = performance.now();
     const deployments =
       await this.workspace.repository.deploymentRepository.getAll();
-    return Promise.all(
+    const endGetDeployments = performance.now();
+    const getDeploymentsDuration = endGetDeployments - startGetDeployments;
+    log.info(
+      `Retrieving deployments took ${getDeploymentsDuration.toFixed(2)}ms`,
+    );
+    const startGetResources = performance.now();
+    const result = await Promise.all(
       deployments.map(async (deployment) => {
         const resources =
           await this.workspace.selectorManager.deploymentResourceSelector.getEntitiesForSelector(
@@ -49,6 +67,10 @@ export class ReleaseTargetManager {
         return { ...deployment, resources };
       }),
     );
+    const endGetResources = performance.now();
+    const getResourcesDuration = endGetResources - startGetResources;
+    log.info(`Retrieving resources took ${getResourcesDuration.toFixed(2)}ms`);
+    return result;
   }
 
   private async determineReleaseTargets() {
@@ -273,22 +295,31 @@ export class ReleaseTargetManager {
   }
 
   private async handleVersionRelease(releaseTarget: FullReleaseTarget) {
+    const start = performance.now();
     const vrm = new VersionManager(releaseTarget, this.workspace);
     const { chosenCandidate } = await vrm.evaluate();
     if (chosenCandidate == null) return null;
     const { release } = await vrm.upsertRelease(chosenCandidate.id);
+    const end = performance.now();
+    const duration = end - start;
+    log.info(`Handling version release took ${duration.toFixed(2)}ms`);
     return release;
   }
 
   private async handleVariableRelease(releaseTarget: FullReleaseTarget) {
+    const start = performance.now();
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
     const varrm = new VariableReleaseManager(db, rtWithWorkspace);
     const { chosenCandidate } = await varrm.evaluate();
     const { release } = await varrm.upsertRelease(chosenCandidate);
+    const end = performance.now();
+    const duration = end - start;
+    log.info(`Handling variable release took ${duration.toFixed(2)}ms`);
     return release;
   }
 
   private async getCurrentRelease(releaseTarget: FullReleaseTarget) {
+    const start = performance.now();
     const allVersionReleases =
       await this.workspace.repository.versionReleaseRepository.getAll();
     const allVariableReleases =
@@ -312,7 +343,7 @@ export class ReleaseTargetManager {
 
     const allReleases =
       await this.workspace.repository.releaseRepository.getAll();
-    return allReleases
+    const result = allReleases
       .filter(
         (release) =>
           versionReleasesForTarget.has(release.versionReleaseId) &&
@@ -335,6 +366,10 @@ export class ReleaseTargetManager {
       })
       .filter(isPresent)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+    const end = performance.now();
+    const duration = end - start;
+    log.info(`Getting current release took ${duration.toFixed(2)}ms`);
+    return result;
   }
 
   private async createReleaseJob(
