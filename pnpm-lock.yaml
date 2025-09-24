@@ -148,6 +148,9 @@ importers:
       '@ctrlplane/rule-engine':
         specifier: workspace:*
         version: link:../../packages/rule-engine
+      '@ctrlplane/secrets':
+        specifier: workspace:*
+        version: link:../../packages/secrets
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../../packages/validators
