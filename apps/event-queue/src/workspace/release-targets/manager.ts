@@ -52,10 +52,23 @@ export class ReleaseTargetManager {
   }
 
   private async determineReleaseTargets() {
+    const start = performance.now();
+    const startEntityRetrieval = performance.now();
     const [environments, deployments] = await Promise.all([
       this.getEnvironments(),
       this.getDeployments(),
     ]);
+
+    log.info(
+      `Retrieved ${environments.length} environments and ${deployments.length} deployments`,
+    );
+    const endEntityRetrieval = performance.now();
+    const entityRetrievalDuration = endEntityRetrieval - startEntityRetrieval;
+    log.info(
+      `Retrieving environments and deployments took ${entityRetrievalDuration.toFixed(2)}ms`,
+    );
+
+    const startReleaseTargetCalculation = performance.now();
 
     const releaseTargets: FullReleaseTarget[] = [];
 
@@ -107,6 +120,17 @@ export class ReleaseTargetManager {
         }
       }
     }
+
+    const endReleaseTargetCalculation = performance.now();
+    const releaseTargetCalculationDuration =
+      endReleaseTargetCalculation - startReleaseTargetCalculation;
+    log.info(
+      `Calculating release targets took ${releaseTargetCalculationDuration.toFixed(2)}ms`,
+    );
+
+    const end = performance.now();
+    const duration = end - start;
+    log.info(`Determining release targets took ${duration.toFixed(2)}ms`);
 
     return releaseTargets;
   }
