@@ -12,7 +12,6 @@ import { DbJobRepository } from "../repository/db-job-repository.js";
 import { DbJobVariableRepository } from "../repository/db-job-variable-repository.js";
 import { DbPolicyRepository } from "../repository/db-policy-repository.js";
 import { DbReleaseJobRepository } from "../repository/db-release-job-repository.js";
-import { DbResourceRepository } from "../repository/db-resource-repository.js";
 import { DbResourceVariableRepository } from "../repository/db-resource-variable-repository.js";
 import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
 import { DbVariableReleaseValueRepository } from "../repository/db-variable-release-value-repository.js";
@@ -21,6 +20,7 @@ import { DbVersionReleaseRepository } from "../repository/db-version-release-rep
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { InMemoryReleaseTargetRepository } from "../repository/in-memory/release-target.js";
 import { InMemoryReleaseRepository } from "../repository/in-memory/release.js";
+import { InMemoryResourceRepository } from "../repository/in-memory/resource.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
@@ -66,17 +66,21 @@ const createSelectorManager = async (id: string) => {
 const createRepository = async (id: string) => {
   log.info(`Creating repository for workspace ${id}`);
 
-  const [inMemoryReleaseTargetRepository, inMemoryReleaseRepository] =
-    await Promise.all([
-      InMemoryReleaseTargetRepository.create(id),
-      InMemoryReleaseRepository.create(id),
-    ]);
+  const [
+    inMemoryReleaseTargetRepository,
+    inMemoryReleaseRepository,
+    inMemoryResourceRepository,
+  ] = await Promise.all([
+    InMemoryReleaseTargetRepository.create(id),
+    InMemoryReleaseRepository.create(id),
+    InMemoryResourceRepository.create(id),
+  ]);
 
   return new WorkspaceRepository({
     versionRepository: new DbVersionRepository(id),
     environmentRepository: new DbEnvironmentRepository(id),
     deploymentRepository: new DbDeploymentRepository(id),
-    resourceRepository: new DbResourceRepository(id),
+    resourceRepository: inMemoryResourceRepository,
     resourceVariableRepository: new DbResourceVariableRepository(id),
     policyRepository: new DbPolicyRepository(id),
     jobAgentRepository: new DbJobAgentRepository(id),
