@@ -22,7 +22,7 @@ test.describe("Environment Version Rollout Policy", () => {
     await builder.upsertEnvironmentFixtures();
     await builder.upsertDeploymentFixtures();
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
@@ -32,6 +32,7 @@ test.describe("Environment Version Rollout Policy", () => {
   test("should rollout versions in a linear fashion", async ({
     api,
     workspace,
+    page,
   }) => {
     const { prefix } = builder.refs;
 
@@ -87,6 +88,8 @@ test.describe("Environment Version Rollout Policy", () => {
     expect(deploymentVersionResponse.data).toBeDefined();
     const deploymentVersion = deploymentVersionResponse.data!;
 
+    await page.waitForTimeout(5_000);
+
     const rolloutResponse = await api.GET(
       `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,
       {
@@ -128,6 +131,7 @@ test.describe("Environment Version Rollout Policy", () => {
   test("should rollout versions in a linear normalized fashion", async ({
     api,
     workspace,
+    page,
   }) => {
     const { prefix } = builder.refs;
 
@@ -167,7 +171,7 @@ test.describe("Environment Version Rollout Policy", () => {
     const policy = policyResponse.data!;
     expect(policy.environmentVersionRollout).toBeDefined();
     const environmentVersionRollout = policy.environmentVersionRollout!;
-    expect(environmentVersionRollout.rolloutType).toBe("linear-normalized");
+    expect(environmentVersionRollout.rolloutType).toBe("linear_normalized");
 
     const deploymentVersionResponse = await api.POST(
       "/v1/deployment-versions",
@@ -182,6 +186,8 @@ test.describe("Environment Version Rollout Policy", () => {
     expect(deploymentVersionResponse.response.status).toBe(201);
     expect(deploymentVersionResponse.data).toBeDefined();
     const deploymentVersion = deploymentVersionResponse.data!;
+
+    await page.waitForTimeout(5_000);
 
     const rolloutResponse = await api.GET(
       `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,
@@ -225,6 +231,7 @@ test.describe("Environment Version Rollout Policy", () => {
   test("should rollout versions in a exponential fashion", async ({
     api,
     workspace,
+    page,
   }) => {
     const { prefix } = builder.refs;
 
@@ -282,6 +289,8 @@ test.describe("Environment Version Rollout Policy", () => {
     expect(deploymentVersionResponse.data).toBeDefined();
     const deploymentVersion = deploymentVersionResponse.data!;
 
+    await page.waitForTimeout(5_000);
+
     const rolloutResponse = await api.GET(
       `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,
       {
@@ -324,6 +333,7 @@ test.describe("Environment Version Rollout Policy", () => {
   test("should rollout versions in a exponential normalized fashion", async ({
     api,
     workspace,
+    page,
   }) => {
     const { prefix } = builder.refs;
 
@@ -366,7 +376,7 @@ test.describe("Environment Version Rollout Policy", () => {
     expect(policy.environmentVersionRollout).toBeDefined();
     const environmentVersionRollout = policy.environmentVersionRollout!;
     expect(environmentVersionRollout.rolloutType).toBe(
-      "exponential-normalized",
+      "exponential_normalized",
     );
 
     const deploymentVersionResponse = await api.POST(
@@ -382,6 +392,8 @@ test.describe("Environment Version Rollout Policy", () => {
     expect(deploymentVersionResponse.response.status).toBe(201);
     expect(deploymentVersionResponse.data).toBeDefined();
     const deploymentVersion = deploymentVersionResponse.data!;
+
+    await page.waitForTimeout(5_000);
 
     const rolloutResponse = await api.GET(
       `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,
@@ -428,6 +440,7 @@ test.describe("Environment Version Rollout Policy", () => {
   test("rollout times should be null if policy requires approvals and the deployment version has no approvals", async ({
     api,
     workspace,
+    page,
   }) => {
     const { prefix } = builder.refs;
 
@@ -484,6 +497,8 @@ test.describe("Environment Version Rollout Policy", () => {
     expect(deploymentVersionResponse.data).toBeDefined();
     const deploymentVersion = deploymentVersionResponse.data!;
 
+    await page.waitForTimeout(5_000);
+
     const rolloutResponse = await api.GET(
       `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,
       {
@@ -509,6 +524,7 @@ test.describe("Environment Version Rollout Policy", () => {
   test("should rollout versions in a linear fashion with start time being the latest approval time", async ({
     api,
     workspace,
+    page,
   }) => {
     const { prefix } = builder.refs;
 
@@ -578,6 +594,8 @@ test.describe("Environment Version Rollout Policy", () => {
       },
     );
     expect(approvalResponse.response.status).toBe(200);
+
+    await page.waitForTimeout(5_000);
 
     const rolloutResponse = await api.GET(
       `/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout`,

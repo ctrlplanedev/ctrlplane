@@ -19,7 +19,7 @@ test.describe("Release Targets API", () => {
     await builder.upsertEnvironmentFixtures();
     await builder.upsertDeploymentFixtures();
 
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
   });
 
   test.afterAll(async ({ api, workspace }) => {
@@ -57,7 +57,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(28_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -114,8 +114,6 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(1_000);
-
     const updatePolicyResponse = await api.PATCH("/v1/policies/{policyId}", {
       params: { path: { policyId } },
       body: {
@@ -133,7 +131,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -217,7 +215,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -263,7 +261,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(28_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -337,7 +335,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -426,7 +424,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -472,7 +470,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(28_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -548,7 +546,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -638,7 +636,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(26_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -689,7 +687,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(28_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -795,7 +793,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -878,7 +876,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(28_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -982,7 +980,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1065,7 +1063,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(28_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1171,7 +1169,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1259,7 +1257,7 @@ test.describe("Release Targets API", () => {
     expect(policyIdResponse).toBeDefined();
     const policyId = policyIdResponse ?? "";
 
-    await page.waitForTimeout(28_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1413,7 +1411,7 @@ test.describe("Release Targets API", () => {
 
     expect(updatePolicyResponse.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",
@@ -1607,7 +1605,7 @@ test.describe("Release Targets API", () => {
 
     expect(resource.response.status).toBe(200);
 
-    await page.waitForTimeout(27_000);
+    await page.waitForTimeout(10_000);
 
     const releaseTargetsResponse = await api.GET(
       "/v1/policies/{policyId}/release-targets",

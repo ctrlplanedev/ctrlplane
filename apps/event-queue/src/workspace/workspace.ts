@@ -24,9 +24,9 @@ import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
-import { DbPolicyTargetReleaseTargetSelector } from "../selector/db/db-policy-target-release-target.js";
 import { InMemoryDeploymentResourceSelector } from "../selector/in-memory/deployment-resource.js";
 import { InMemoryEnvironmentResourceSelector } from "../selector/in-memory/environment-resource.js";
+import { InMemoryPolicyTargetReleaseTargetSelector } from "../selector/in-memory/policy-target-release-target.js";
 import { SelectorManager } from "../selector/selector.js";
 import { ReleaseTargetManager } from "./release-targets/manager.js";
 
@@ -53,12 +53,14 @@ export class Workspace {
       await InMemoryEnvironmentResourceSelector.create(id);
     log.info("Environment resource selector created");
 
+    log.info("Creating policy target release target selector");
+    const policyTargetReleaseTargetSelector =
+      await InMemoryPolicyTargetReleaseTargetSelector.create(id);
+    log.info("Policy target release target selector created");
+
     const selectorManager = new SelectorManager({
       deploymentResourceSelector,
-      policyTargetReleaseTargetSelector:
-        new DbPolicyTargetReleaseTargetSelector({
-          workspaceId: id,
-        }),
+      policyTargetReleaseTargetSelector,
       deploymentVersionSelector: new DbDeploymentVersionSelector({
         workspaceId: id,
       }),
