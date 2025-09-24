@@ -13,7 +13,6 @@ import { DbJobVariableRepository } from "../repository/db-job-variable-repositor
 import { DbPolicyRepository } from "../repository/db-policy-repository.js";
 import { DbReleaseJobRepository } from "../repository/db-release-job-repository.js";
 import { DbReleaseRepository } from "../repository/db-release-repository.js";
-import { DbReleaseTargetRepository } from "../repository/db-release-target-repository.js";
 import { DbResourceRepository } from "../repository/db-resource-repository.js";
 import { DbResourceVariableRepository } from "../repository/db-resource-variable-repository.js";
 import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
@@ -21,6 +20,7 @@ import { DbVariableReleaseValueRepository } from "../repository/db-variable-rele
 import { DbVariableReleaseValueSnapshotRepository } from "../repository/db-variable-release-value-snapshot-repository.js";
 import { DbVersionReleaseRepository } from "../repository/db-version-release-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
+import { InMemoryReleaseTargetRepository } from "../repository/in-memory/release-target.js";
 import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
@@ -37,37 +37,72 @@ log.info("Workspace constructor");
 type WorkspaceOptions = {
   id: string;
   selectorManager: SelectorManager;
+  repository: WorkspaceRepository;
+};
+
+const createSelectorManager = async (id: string) => {
+  log.info(`Creating selector manager for workspace ${id}`);
+
+  const [
+    deploymentResourceSelector,
+    environmentResourceSelector,
+    policyTargetReleaseTargetSelector,
+  ] = await Promise.all([
+    InMemoryDeploymentResourceSelector.create(id),
+    InMemoryEnvironmentResourceSelector.create(id),
+    InMemoryPolicyTargetReleaseTargetSelector.create(id),
+  ]);
+
+  return new SelectorManager({
+    deploymentResourceSelector,
+    environmentResourceSelector,
+    policyTargetReleaseTargetSelector,
+    deploymentVersionSelector: new DbDeploymentVersionSelector({
+      workspaceId: id,
+    }),
+  });
+};
+
+const createRepository = async (id: string) => {
+  log.info(`Creating repository for workspace ${id}`);
+
+  const inMemoryReleaseTargetRepository =
+    await InMemoryReleaseTargetRepository.create(id);
+
+  return new WorkspaceRepository({
+    versionRepository: new DbVersionRepository(id),
+    environmentRepository: new DbEnvironmentRepository(id),
+    deploymentRepository: new DbDeploymentRepository(id),
+    resourceRepository: new DbResourceRepository(id),
+    resourceVariableRepository: new DbResourceVariableRepository(id),
+    policyRepository: new DbPolicyRepository(id),
+    jobAgentRepository: new DbJobAgentRepository(id),
+    jobRepository: new DbJobRepository(id),
+    jobVariableRepository: new DbJobVariableRepository(id),
+    releaseJobRepository: new DbReleaseJobRepository(id),
+    releaseTargetRepository: inMemoryReleaseTargetRepository,
+    releaseRepository: new DbReleaseRepository(id),
+    versionReleaseRepository: new DbVersionReleaseRepository(id),
+    variableReleaseRepository: new DbVariableReleaseRepository(id),
+    variableReleaseValueRepository: new DbVariableReleaseValueRepository(id),
+    variableValueSnapshotRepository:
+      new DbVariableReleaseValueSnapshotRepository(id),
+    versionRuleRepository: new DbVersionRuleRepository(id),
+    deploymentVariableRepository: new DbDeploymentVariableRepository(id),
+    deploymentVariableValueRepository: new DbDeploymentVariableValueRepository(
+      id,
+    ),
+  });
 };
 
 export class Workspace {
   static async load(id: string) {
-    log.info("Loading workspace", { id });
+    const [selectorManager, repository] = await Promise.all([
+      createSelectorManager(id),
+      createRepository(id),
+    ]);
 
-    log.info("Creating deployment resource selector");
-    const deploymentResourceSelector =
-      await InMemoryDeploymentResourceSelector.create(id);
-    log.info("Deployment resource selector created");
-
-    log.info("Creating environment resource selector");
-    const environmentResourceSelector =
-      await InMemoryEnvironmentResourceSelector.create(id);
-    log.info("Environment resource selector created");
-
-    log.info("Creating policy target release target selector");
-    const policyTargetReleaseTargetSelector =
-      await InMemoryPolicyTargetReleaseTargetSelector.create(id);
-    log.info("Policy target release target selector created");
-
-    const selectorManager = new SelectorManager({
-      deploymentResourceSelector,
-      policyTargetReleaseTargetSelector,
-      deploymentVersionSelector: new DbDeploymentVersionSelector({
-        workspaceId: id,
-      }),
-      environmentResourceSelector,
-    });
-
-    const ws = new Workspace({ id, selectorManager });
+    const ws = new Workspace({ id, selectorManager, repository });
 
     return Promise.resolve(ws);
   }
@@ -83,31 +118,7 @@ export class Workspace {
     this.releaseTargetManager = new ReleaseTargetManager({
       workspace: this,
     });
-    this.repository = new WorkspaceRepository({
-      versionRepository: new DbVersionRepository(opts.id),
-      environmentRepository: new DbEnvironmentRepository(opts.id),
-      deploymentRepository: new DbDeploymentRepository(opts.id),
-      resourceRepository: new DbResourceRepository(opts.id),
-      resourceVariableRepository: new DbResourceVariableRepository(opts.id),
-      policyRepository: new DbPolicyRepository(opts.id),
-      jobAgentRepository: new DbJobAgentRepository(opts.id),
-      jobRepository: new DbJobRepository(opts.id),
-      jobVariableRepository: new DbJobVariableRepository(opts.id),
-      releaseJobRepository: new DbReleaseJobRepository(opts.id),
-      releaseTargetRepository: new DbReleaseTargetRepository(opts.id),
-      releaseRepository: new DbReleaseRepository(opts.id),
-      versionReleaseRepository: new DbVersionReleaseRepository(opts.id),
-      variableReleaseRepository: new DbVariableReleaseRepository(opts.id),
-      variableReleaseValueRepository: new DbVariableReleaseValueRepository(
-        opts.id,
-      ),
-      variableValueSnapshotRepository:
-        new DbVariableReleaseValueSnapshotRepository(opts.id),
-      versionRuleRepository: new DbVersionRuleRepository(opts.id),
-      deploymentVariableRepository: new DbDeploymentVariableRepository(opts.id),
-      deploymentVariableValueRepository:
-        new DbDeploymentVariableValueRepository(opts.id),
-    });
+    this.repository = opts.repository;
     this.jobManager = new JobManager(this);
     this.resourceRelationshipManager = new DbResourceRelationshipManager(
       opts.id,
