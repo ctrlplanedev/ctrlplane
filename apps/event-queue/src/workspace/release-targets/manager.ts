@@ -24,16 +24,9 @@ export class ReleaseTargetManager {
   }
 
   private async getEnvironments() {
-    const startGetEnvironments = performance.now();
     const environments =
       await this.workspace.repository.environmentRepository.getAll();
-    const endGetEnvironments = performance.now();
-    const getEnvironmentsDuration = endGetEnvironments - startGetEnvironments;
-    log.info(
-      `Retrieving environments took ${getEnvironmentsDuration.toFixed(2)}ms`,
-    );
-    const startGetResources = performance.now();
-    const result = await Promise.all(
+    return Promise.all(
       environments.map(async (environment) => {
         const resources =
           await this.workspace.selectorManager.environmentResourceSelector.getEntitiesForSelector(
@@ -42,23 +35,12 @@ export class ReleaseTargetManager {
         return { ...environment, resources };
       }),
     );
-    const endGetResources = performance.now();
-    const getResourcesDuration = endGetResources - startGetResources;
-    log.info(`Retrieving resources took ${getResourcesDuration.toFixed(2)}ms`);
-    return result;
   }
 
   private async getDeployments() {
-    const startGetDeployments = performance.now();
     const deployments =
       await this.workspace.repository.deploymentRepository.getAll();
-    const endGetDeployments = performance.now();
-    const getDeploymentsDuration = endGetDeployments - startGetDeployments;
-    log.info(
-      `Retrieving deployments took ${getDeploymentsDuration.toFixed(2)}ms`,
-    );
-    const startGetResources = performance.now();
-    const result = await Promise.all(
+    return Promise.all(
       deployments.map(async (deployment) => {
         const resources =
           await this.workspace.selectorManager.deploymentResourceSelector.getEntitiesForSelector(
@@ -67,30 +49,13 @@ export class ReleaseTargetManager {
         return { ...deployment, resources };
       }),
     );
-    const endGetResources = performance.now();
-    const getResourcesDuration = endGetResources - startGetResources;
-    log.info(`Retrieving resources took ${getResourcesDuration.toFixed(2)}ms`);
-    return result;
   }
 
   private async determineReleaseTargets() {
-    const start = performance.now();
-    const startEntityRetrieval = performance.now();
     const [environments, deployments] = await Promise.all([
       this.getEnvironments(),
       this.getDeployments(),
     ]);
-
-    log.info(
-      `Retrieved ${environments.length} environments and ${deployments.length} deployments`,
-    );
-    const endEntityRetrieval = performance.now();
-    const entityRetrievalDuration = endEntityRetrieval - startEntityRetrieval;
-    log.info(
-      `Retrieving environments and deployments took ${entityRetrievalDuration.toFixed(2)}ms`,
-    );
-
-    const startReleaseTargetCalculation = performance.now();
 
     const releaseTargets: FullReleaseTarget[] = [];
 
@@ -143,49 +108,22 @@ export class ReleaseTargetManager {
       }
     }
 
-    const endReleaseTargetCalculation = performance.now();
-    const releaseTargetCalculationDuration =
-      endReleaseTargetCalculation - startReleaseTargetCalculation;
-    log.info(
-      `Calculating release targets took ${releaseTargetCalculationDuration.toFixed(2)}ms`,
-    );
-
-    const end = performance.now();
-    const duration = end - start;
-    log.info(`Determining release targets took ${duration.toFixed(2)}ms`);
-
     return releaseTargets;
   }
 
   private async getExistingReleaseTargets() {
-    const start = performance.now();
-    const releaseTargets =
-      await this.workspace.repository.releaseTargetRepository.getAll();
-    const end = performance.now();
-    const duration = end - start;
-    log.info(
-      `Retrieving existing release targets took ${duration.toFixed(2)}ms`,
-    );
-    return releaseTargets;
+    return this.workspace.repository.releaseTargetRepository.getAll();
   }
 
   private async persistAddedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
-    const repoStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.repository.releaseTargetRepository.create(releaseTarget),
       ),
     );
 
-    const repoEnd = performance.now();
-    const repoDuration = repoEnd - repoStart;
-    log.info(
-      `Persisting added release targets to repository took ${repoDuration.toFixed(2)}ms`,
-    );
-
-    const selectorStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.selectorManager.policyTargetReleaseTargetSelector.upsertEntity(
@@ -193,18 +131,11 @@ export class ReleaseTargetManager {
         ),
       ),
     );
-
-    const selectorEnd = performance.now();
-    const selectorDuration = selectorEnd - selectorStart;
-    log.info(
-      `Persisting added release targets to selector took ${selectorDuration.toFixed(2)}ms`,
-    );
   }
 
   private async persistRemovedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
-    const repoStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.repository.releaseTargetRepository.delete(
@@ -213,25 +144,12 @@ export class ReleaseTargetManager {
       ),
     );
 
-    const repoEnd = performance.now();
-    const repoDuration = repoEnd - repoStart;
-    log.info(
-      `Persisting removed release targets to repository took ${repoDuration.toFixed(2)}ms`,
-    );
-
-    const selectorStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.selectorManager.policyTargetReleaseTargetSelector.removeEntity(
           releaseTarget,
         ),
       ),
-    );
-
-    const selectorEnd = performance.now();
-    const selectorDuration = selectorEnd - selectorStart;
-    log.info(
-      `Persisting removed release targets to selector took ${selectorDuration.toFixed(2)}ms`,
     );
   }
 
@@ -242,8 +160,6 @@ export class ReleaseTargetManager {
       this.getExistingReleaseTargets(),
       this.determineReleaseTargets(),
     ]);
-
-    const computingChangesStart = performance.now();
 
     const removedReleaseTargets = existingReleaseTargets.filter(
       (existingReleaseTarget) =>
@@ -271,13 +187,6 @@ export class ReleaseTargetManager {
         ),
     );
 
-    const computingChangesEnd = performance.now();
-    const computingChangesDuration =
-      computingChangesEnd - computingChangesStart;
-    log.info(
-      `Computing release target changes took ${computingChangesDuration.toFixed(2)}ms`,
-    );
-
     await Promise.all([
       this.persistRemovedReleaseTargets(removedReleaseTargets),
       this.persistAddedReleaseTargets(addedReleaseTargets),
@@ -295,31 +204,22 @@ export class ReleaseTargetManager {
   }
 
   private async handleVersionRelease(releaseTarget: FullReleaseTarget) {
-    const start = performance.now();
     const vrm = new VersionManager(releaseTarget, this.workspace);
     const { chosenCandidate } = await vrm.evaluate();
     if (chosenCandidate == null) return null;
     const { release } = await vrm.upsertRelease(chosenCandidate.id);
-    const end = performance.now();
-    const duration = end - start;
-    log.info(`Handling version release took ${duration.toFixed(2)}ms`);
     return release;
   }
 
   private async handleVariableRelease(releaseTarget: FullReleaseTarget) {
-    const start = performance.now();
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
     const varrm = new VariableReleaseManager(db, rtWithWorkspace);
     const { chosenCandidate } = await varrm.evaluate();
     const { release } = await varrm.upsertRelease(chosenCandidate);
-    const end = performance.now();
-    const duration = end - start;
-    log.info(`Handling variable release took ${duration.toFixed(2)}ms`);
     return release;
   }
 
   private async getCurrentRelease(releaseTarget: FullReleaseTarget) {
-    const start = performance.now();
     const allVersionReleases =
       await this.workspace.repository.versionReleaseRepository.getAll();
     const allVariableReleases =
@@ -343,7 +243,7 @@ export class ReleaseTargetManager {
 
     const allReleases =
       await this.workspace.repository.releaseRepository.getAll();
-    const result = allReleases
+    return allReleases
       .filter(
         (release) =>
           versionReleasesForTarget.has(release.versionReleaseId) &&
@@ -366,10 +266,6 @@ export class ReleaseTargetManager {
       })
       .filter(isPresent)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-    const end = performance.now();
-    const duration = end - start;
-    log.info(`Getting current release took ${duration.toFixed(2)}ms`);
-    return result;
   }
 
   private async createReleaseJob(
