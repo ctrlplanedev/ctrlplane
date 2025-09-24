@@ -4,6 +4,8 @@ import type {
   FullReleaseTarget,
   FullResource,
 } from "@ctrlplane/events";
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -600,16 +602,28 @@ export class OperationPipeline {
 
     const jobsToDispatch: schema.Job[] = [];
 
-    for (const rt of this.opts.releaseTargets?.toEvaluate ?? []) {
-      try {
-        const job = await releaseTargetManager.evaluate(rt, {
-          skipDuplicateCheck: this.opts.releaseTargets?.skipDuplicateCheck,
-        });
-        if (job == null) continue;
-        jobsToDispatch.push(job);
-      } catch (error) {
-        log.error("Error evaluating release target", { error });
-      }
+    const releaseTargetsToEvaluate = this.opts.releaseTargets?.toEvaluate ?? [];
+    const batches = _.chunk(releaseTargetsToEvaluate, 10);
+
+    for (const batch of batches) {
+      const batchStart = performance.now();
+      const jobs = await Promise.allSettled(
+        batch.map((rt) =>
+          releaseTargetManager.evaluate(rt, {
+            skipDuplicateCheck: this.opts.releaseTargets?.skipDuplicateCheck,
+          }),
+        ),
+      ).then((results) =>
+        results
+          .map((r) => (r.status === "fulfilled" ? r.value : null))
+          .filter(isPresent),
+      );
+      jobsToDispatch.push(...jobs);
+      const batchEnd = performance.now();
+      const batchDuration = batchEnd - batchStart;
+      log.info(
+        `Evaluating batch of ${batch.length} release targets took ${batchDuration.toFixed(2)}ms`,
+      );
     }
 
     const evaluateEnd = performance.now();
