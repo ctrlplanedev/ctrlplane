@@ -8,6 +8,8 @@ import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
+const log = logger.child({ module: "github-webhook" });
+
 type Conclusion = Exclude<WorkflowRunEvent["workflow_run"]["conclusion"], null>;
 const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
   if (conclusion === "success") return JobStatus.Successful;
@@ -63,7 +65,10 @@ const updateLinks = async (jobId: string, links: Record<string, string>) =>
     });
 
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
-  logger.info("Handling github workflow run event", { event });
+  log.info("Handling github workflow run event", {
+    externalId: event.workflow_run.id,
+    event,
+  });
 
   const {
     id,
