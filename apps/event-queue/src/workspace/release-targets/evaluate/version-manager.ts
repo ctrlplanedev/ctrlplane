@@ -105,7 +105,9 @@ export class VersionManager implements ReleaseManager {
   async evaluate() {
     const policyIds = await this.getPoliciesIds();
     const allPolicies = await this.policies.getAll();
-    const policies = allPolicies.filter((p) => policyIds.has(p.id));
+    const policies = allPolicies
+      .filter((p) => p.enabled)
+      .filter((p) => policyIds.has(p.id));
 
     const policyRules = await Promise.all(
       policies.map((p) => this.rules.getRules(p.id, this.releaseTarget.id)),
