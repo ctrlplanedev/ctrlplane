@@ -22,7 +22,7 @@ import {
 } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { eventDispatcher } from "@ctrlplane/events";
-import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
+import { getReferenceVariableValueDb } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
@@ -120,7 +120,10 @@ export const resourceRouter = createTRPCRouter({
 
       const resolvedReferenceVariables = await Promise.all(
         referenceVariables.map(async (v) => {
-          const resolvedValue = await getReferenceVariableValue(resource.id, v);
+          const resolvedValue = await getReferenceVariableValueDb(
+            resource.id,
+            v,
+          );
           return { ...v, resolvedValue };
         }),
       );

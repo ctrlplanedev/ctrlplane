@@ -5,7 +5,7 @@ import { db } from "@ctrlplane/db/client";
 import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { eventDispatcher } from "@ctrlplane/events";
-import { getReferenceVariableValue } from "@ctrlplane/rule-engine";
+import { getReferenceVariableValueDb } from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -59,7 +59,7 @@ export const GET = request()
       }
 
       if (v.valueType === "reference") {
-        const resolvedValue = await getReferenceVariableValue(
+        const resolvedValue = await getReferenceVariableValueDb(
           resource.id,
           v as schema.ReferenceResourceVariable,
         );

@@ -31,6 +31,7 @@ const getVariableValueWithMatchedResources = async (
       r.id,
       variableValue,
       isDefault,
+      false,
     );
     if (resolvedValue == null) return null;
     const { value, sensitive } = resolvedValue;

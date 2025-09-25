@@ -16,7 +16,7 @@ import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import {
   getAffectedVariables,
-  getReferenceVariableValue,
+  getReferenceVariableValueDb,
 } from "@ctrlplane/rule-engine";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -61,7 +61,7 @@ export const GET = request()
         }
 
         if (v.valueType === "reference") {
-          const resolvedValue = await getReferenceVariableValue(
+          const resolvedValue = await getReferenceVariableValueDb(
             resourceId,
             v as schema.ReferenceResourceVariable,
           );

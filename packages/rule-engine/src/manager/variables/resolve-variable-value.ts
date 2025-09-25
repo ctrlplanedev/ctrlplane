@@ -5,7 +5,10 @@ import { and, eq, selector } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
-import { getReferenceVariableValue } from "./resolve-reference-variable.js";
+import {
+  getReferenceVariableValue,
+  getReferenceVariableValueDb,
+} from "./resolve-reference-variable.js";
 
 export const getResolvedDirectValue = (directValue: {
   value: string | number | boolean | object | null;
@@ -48,6 +51,7 @@ export const resolveVariableValue = async (
   resourceId: string,
   variableValue: schema.DeploymentVariableValue,
   isDefault = false,
+  inMemory = true,
 ) => {
   const isSelectingResource = isDefault
     ? true
@@ -64,10 +68,9 @@ export const resolveVariableValue = async (
       sensitive: variableValue.sensitive,
     };
 
-  const resolvedValue = await getReferenceVariableValue(
-    resourceId,
-    variableValue,
-  );
+  const resolvedValue = inMemory
+    ? await getReferenceVariableValue(resourceId, variableValue)
+    : await getReferenceVariableValueDb(resourceId, variableValue);
   return {
     value: resolvedValue,
     sensitive: false,

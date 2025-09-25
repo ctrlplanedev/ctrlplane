@@ -2,6 +2,7 @@ import _ from "lodash";
 
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import { getResourceParents } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -207,6 +208,39 @@ export const getReferenceVariableValue = async (
 
     const resolvedPath =
       _.get(fullSource, variable.path, variable.defaultValue) ?? null;
+
+    return resolvedPath as string | number | boolean | object | null;
+  } catch (error) {
+    log.error("Error resolving reference variable", { error, variable });
+    return variable.defaultValue ?? null;
+  }
+};
+
+export const getReferenceVariableValueDb = async (
+  resourceId: string,
+  variable:
+    | schema.ReferenceResourceVariable
+    | schema.ReferenceDeploymentVariableValue,
+) => {
+  try {
+    log.info("resolving reference variable", { variable, resourceId });
+    const {
+      relationships,
+      getParentsWithMetadataAndVars: getParentsWithMetadataAndVars,
+    } = await getResourceParents(db, resourceId);
+    log.info("got resource parents", { relationships });
+    const relationshipSources = await getParentsWithMetadataAndVars();
+    log.info("got relationship sources", { relationshipSources });
+
+    const sourceId = relationships[variable.reference]?.source.id ?? "";
+    const sourceResource = relationshipSources[sourceId];
+    log.info("got source resource", { sourceResource });
+
+    if (sourceResource == null) return variable.defaultValue ?? null;
+
+    const resolvedPath =
+      _.get(sourceResource, variable.path, variable.defaultValue) ?? null;
+    log.info("got resolved path", { resolvedPath });
 
     return resolvedPath as string | number | boolean | object | null;
   } catch (error) {
