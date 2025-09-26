@@ -19,6 +19,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "~/app/api/v1/auth";
 import { parseBody } from "~/app/api/v1/body-parser";
 import { request } from "~/app/api/v1/middleware";
+import { getExistingVariable, isVariableChanged } from "./variable-diff-check";
 
 const log = logger.child({
   route: "/v1/deployments/[deploymentId]/variables",
@@ -174,9 +175,23 @@ export const POST = request()
           { status: NOT_FOUND },
         );
 
+      const existingVariable = await getExistingVariable(
+        deploymentId,
+        body.key,
+      );
+
       const variable = await upsertDeploymentVariable(deploymentId, body);
 
-      await eventDispatcher.dispatchDeploymentVariableCreated(variable);
+      if (existingVariable == null)
+        await eventDispatcher.dispatchDeploymentVariableCreated(variable);
+      if (
+        existingVariable != null &&
+        isVariableChanged(existingVariable, variable)
+      )
+        await eventDispatcher.dispatchDeploymentVariableUpdated(
+          existingVariable,
+          variable,
+        );
 
       const defaultValue = await getDefaultValue(db, variable);
 
