@@ -85,22 +85,28 @@ export class VariableReleaseManager implements ReleaseManager {
     return [...existingSnapshots, ...newSnapshots];
   }
 
+  private getStringifiedValue(value: any) {
+    if (value == null) return null;
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  }
+
   async upsertRelease(variables: MaybeVariable[]) {
     const latestRelease = await this.findLatestRelease();
 
     const oldVars = _(latestRelease?.values ?? [])
-      .map((v) => [v.variableValueSnapshot.key, v.variableValueSnapshot.value])
+      .map((v) => [
+        v.variableValueSnapshot.key,
+        this.getStringifiedValue(v.variableValueSnapshot.value),
+      ])
       .fromPairs()
       .value();
 
     const newVars = _(variables)
       .compact()
-      .map((v) => [v.key, v.value])
+      .map((v) => [v.key, this.getStringifiedValue(v.value)])
       .fromPairs()
       .value();
-
-    log.info("oldVars", { oldVars });
-    log.info("newVars", { newVars });
 
     const isSame = _.isEqual(oldVars, newVars);
     if (latestRelease != null && isSame)
