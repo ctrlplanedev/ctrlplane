@@ -3,7 +3,7 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import { useParams } from "next/navigation";
-import { IconBoltOff, IconClock, IconCubeOff } from "@tabler/icons-react";
+import { IconBoltOff, IconCubeOff, IconHourglass } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 
 import { Skeleton } from "@ctrlplane/ui/skeleton";
@@ -52,8 +52,8 @@ const NoReleaseTargetsCell: React.FC = () => {
   );
 };
 
-const BlockedByActiveJobsCell: React.FC<{ blockingVersionId: string }> = ({
-  blockingVersionId,
+const BlockedByActiveJobsCell: React.FC<{ versionId: string }> = ({
+  versionId,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
@@ -63,14 +63,14 @@ const BlockedByActiveJobsCell: React.FC<{ blockingVersionId: string }> = ({
     .workspace(workspaceSlug)
     .system(system.slug)
     .deployment(deployment.slug)
-    .release(blockingVersionId)
+    .release(versionId)
     .jobs();
 
   return (
     <Cell
       Icon={
         <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-          <IconClock className="h-4 w-4" strokeWidth={2} />
+          <IconHourglass className="h-4 w-4" strokeWidth={2} />
         </div>
       }
       url={deploymentUrl}
@@ -138,9 +138,7 @@ const DeploymentVersionEnvironmentCell: React.FC = () => {
     return <ApprovalRequiredCell policies={approvalRequired.policies} />;
 
   if (blockingRelease != null)
-    return (
-      <BlockedByActiveJobsCell blockingVersionId={blockingRelease.versionId} />
-    );
+    return <BlockedByActiveJobsCell versionId={deploymentVersion.id} />;
 
   const hasNoJobAgent = deployment.jobAgentId == null;
   if (hasNoJobAgent) return <NoJobAgentCell />;
