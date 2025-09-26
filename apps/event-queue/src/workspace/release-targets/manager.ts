@@ -3,11 +3,10 @@ import type { FullReleaseTarget } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { db } from "@ctrlplane/db/client";
 import { logger } from "@ctrlplane/logger";
-import { VariableReleaseManager } from "@ctrlplane/rule-engine";
 
 import type { Workspace } from "../workspace.js";
+import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
 type ReleaseTargetManagerOptions = {
@@ -254,7 +253,7 @@ export class ReleaseTargetManager {
   private async handleVariableRelease(releaseTarget: FullReleaseTarget) {
     const start = performance.now();
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
-    const varrm = new VariableReleaseManager(db, rtWithWorkspace);
+    const varrm = new VariableReleaseManager(rtWithWorkspace, this.workspace);
     const { chosenCandidate } = await varrm.evaluate();
     const { release } = await varrm.upsertRelease(chosenCandidate);
     const end = performance.now();
