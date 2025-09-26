@@ -337,13 +337,6 @@ export class ReleaseTargetManager {
           versionRelease.id,
           variableRelease.id,
         );
-        log.info(
-          "inserted new release for release target because no current release was found",
-          {
-            releaseTargetId: releaseTarget.id,
-            releaseId: release.id,
-          },
-        );
         return this.createReleaseJob(release);
       }
 
@@ -352,30 +345,10 @@ export class ReleaseTargetManager {
         variableReleaseId: variableRelease.id,
       });
       if (!hasAnythingChanged) {
-        if (opts?.skipDuplicateCheck) {
-          log.info(
-            "creating release job for release target because no changes were found BUT skipDuplicateCheck is true",
-            {
-              releaseTargetId: releaseTarget.id,
-              releaseId: currentRelease.id,
-            },
-          );
+        if (opts?.skipDuplicateCheck)
           return this.createReleaseJob(currentRelease, true);
-        }
-
         return;
       }
-
-      log.info(
-        "inserting new release for release target because changes were found",
-        {
-          releaseTargetId: releaseTarget.id,
-          versionReleaseId: versionRelease.id,
-          variableReleaseId: variableRelease.id,
-          previousVersionReleaseId: currentRelease.currentVersionRelease.id,
-          previousVariableReleaseId: currentRelease.currentVariableRelease.id,
-        },
-      );
 
       const release = await this.insertNewRelease(
         versionRelease.id,

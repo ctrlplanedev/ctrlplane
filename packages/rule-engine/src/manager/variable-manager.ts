@@ -99,6 +99,9 @@ export class VariableReleaseManager implements ReleaseManager {
       .fromPairs()
       .value();
 
+    log.info("oldVars", { oldVars });
+    log.info("newVars", { newVars });
+
     const isSame = _.isEqual(oldVars, newVars);
     if (latestRelease != null && isSame)
       return { created: false, release: latestRelease };
