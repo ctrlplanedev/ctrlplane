@@ -6,11 +6,13 @@ import { z } from "zod";
 import {
   eq,
   takeFirst,
+  takeFirstOrNull,
   upsertDirectVariableValue,
   upsertReferenceVariableValue,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { eventDispatcher } from "@ctrlplane/events";
+import { resolveVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
@@ -187,6 +189,60 @@ const referenceValueRouter = createTRPCRouter({
     }),
 });
 
+const resolveForResource = protectedProcedure
+  .input(
+    z.object({
+      resourceId: z.string().uuid(),
+      valueId: z.string().uuid(),
+    }),
+  )
+  .query(async ({ ctx, input }) => {
+    const { resourceId, valueId } = input;
+    const value = await ctx.db
+      .select()
+      .from(schema.deploymentVariableValue)
+      .where(eq(schema.deploymentVariableValue.id, valueId))
+      .then(takeFirst);
+
+    const [directValue, referenceValue] = await Promise.all([
+      ctx.db
+        .select()
+        .from(schema.deploymentVariableValueDirect)
+        .where(
+          eq(schema.deploymentVariableValueDirect.variableValueId, valueId),
+        )
+        .then(takeFirstOrNull),
+      ctx.db
+        .select()
+        .from(schema.deploymentVariableValueReference)
+        .where(
+          eq(schema.deploymentVariableValueReference.variableValueId, valueId),
+        )
+        .then(takeFirstOrNull),
+    ]);
+
+    const variableValue = directValue ?? referenceValue ?? null;
+    if (variableValue == null) return null;
+
+    const fullValue = { ...variableValue, ...value };
+
+    const variable = await ctx.db
+      .select()
+      .from(schema.deploymentVariable)
+      .where(eq(schema.deploymentVariable.id, value.variableId))
+      .then(takeFirst);
+
+    const isDefault = variable.defaultValueId === valueId;
+
+    return resolveVariableValue(
+      ctx.db,
+      resourceId,
+      fullValue,
+      isDefault,
+      false,
+    );
+  });
+
 export const valueRouter = createTRPCRouter({
   direct: directValueRouter,
   reference: referenceValueRouter,
@@ -231,4 +287,5 @@ export const valueRouter = createTRPCRouter({
       );
       return deletedValue;
     }),
+  resolveForResource,
 });

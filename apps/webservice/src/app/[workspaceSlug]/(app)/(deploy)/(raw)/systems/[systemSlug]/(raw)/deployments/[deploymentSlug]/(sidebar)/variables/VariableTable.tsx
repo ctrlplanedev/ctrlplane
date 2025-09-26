@@ -9,6 +9,7 @@ import {
   IconDotsVertical,
   IconLink,
 } from "@tabler/icons-react";
+import { useInView } from "react-intersection-observer";
 
 import * as schema from "@ctrlplane/db/schema";
 import { cn } from "@ctrlplane/ui";
@@ -20,6 +21,7 @@ import {
   CollapsibleTrigger,
 } from "@ctrlplane/ui/collapsible";
 import { Input } from "@ctrlplane/ui/input";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import {
   Tooltip,
@@ -31,6 +33,7 @@ import {
 import type { VariableData, VariableValue } from "./variable-data";
 import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/resources/ResourceIcon";
 import { urls } from "~/app/urls";
+import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
 import { VariableValueDropdown } from "./VariableValueDropdown";
@@ -50,13 +53,54 @@ const VariableSearchInput: React.FC<{
   </div>
 );
 
+const ResolvedValue: React.FC<{
+  resource: schema.Resource;
+  valueId: string;
+}> = ({ resource, valueId }) => {
+  const { data: resolvedValue, isLoading } =
+    api.deployment.variable.value.resolveForResource.useQuery({
+      resourceId: resource.id,
+      valueId,
+    });
+
+  if (isLoading) return <Skeleton className="h-6 w-20" />;
+
+  if (resolvedValue == null)
+    return (
+      <span className="rounded-md border border-blue-800/40 bg-blue-950/20 px-2 py-0.5 font-mono text-blue-300/90">
+        null
+      </span>
+    );
+
+  return (
+    <span className="rounded-md border border-blue-800/40 bg-blue-950/20 px-2 py-0.5 font-mono text-blue-300/90">
+      {typeof resolvedValue.value === "object"
+        ? JSON.stringify(resolvedValue.value)
+        : String(resolvedValue.value)}
+    </span>
+  );
+};
+
+const LazyResolvedValue: React.FC<{
+  resource: schema.Resource;
+  valueId: string;
+}> = ({ resource, valueId }) => {
+  const { ref, inView } = useInView();
+
+  return (
+    <div ref={ref}>
+      {inView && <ResolvedValue resource={resource} valueId={valueId} />}
+      {!inView && <Skeleton className="h-6 w-20" />}
+    </div>
+  );
+};
+
 const ResourceRow: React.FC<{
-  resource: schema.Resource & {
-    resolvedValue: string | number | boolean | object | null;
-  };
+  resource: schema.Resource;
   workspaceUrls: ReturnType<typeof urls.workspace>;
+  valueId: string;
   valueType: "direct" | "reference";
-}> = ({ resource, workspaceUrls, valueType }) => (
+}> = ({ resource, workspaceUrls, valueId, valueType }) => (
   <TableRow className="border-none">
     <TableCell className="h-10 cursor-pointer py-0 pl-[56px]" colSpan={2}>
       <Link
@@ -76,11 +120,7 @@ const ResourceRow: React.FC<{
             </span>
           </div>
           {valueType === "reference" && (
-            <span className="rounded-md border border-blue-800/40 bg-blue-950/20 px-2 py-0.5 font-mono text-blue-300/90">
-              {typeof resource.resolvedValue === "object"
-                ? JSON.stringify(resource.resolvedValue)
-                : String(resource.resolvedValue)}
-            </span>
+            <LazyResolvedValue resource={resource} valueId={valueId} />
           )}
         </div>
       </Link>
@@ -284,6 +324,7 @@ const VariableValueRow: React.FC<{
               key={resource.id}
               resource={resource}
               workspaceUrls={workspaceUrls}
+              valueId={value.id}
               valueType={
                 schema.isDeploymentVariableValueDirect(value)
                   ? "direct"

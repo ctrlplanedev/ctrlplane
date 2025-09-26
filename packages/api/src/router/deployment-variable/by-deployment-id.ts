@@ -1,10 +1,14 @@
 import type { Tx } from "@ctrlplane/db";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { eq, getDeploymentVariables } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  getDeploymentVariables,
+  inArray,
+  selector,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { resolveVariableValue } from "@ctrlplane/rule-engine";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../../trpc";
@@ -19,27 +23,28 @@ const getReleaseTargets = async (db: Tx, deploymentId: string) =>
     )
     .where(eq(schema.releaseTarget.deploymentId, deploymentId));
 
-const getVariableValueWithMatchedResources = async (
+type ValueWithResource = schema.DeploymentVariableValue & {
+  resources: schema.Resource[];
+};
+
+const getValueWithMatchedResources = async (
   db: Tx,
   variableValue: schema.DeploymentVariableValue,
-  resources: schema.Resource[],
-  isDefault = false,
-) => {
-  const matchedResourcesPromises = resources.map(async (r) => {
-    const resolvedValue = await resolveVariableValue(
-      db,
-      r.id,
-      variableValue,
-      isDefault,
-      false,
+  resourceIds: Set<string>,
+): Promise<ValueWithResource> => {
+  const { resourceSelector } = variableValue;
+  if (resourceSelector == null) return { ...variableValue, resources: [] };
+
+  const matchedResources = await db
+    .select()
+    .from(schema.resource)
+    .where(
+      and(
+        inArray(schema.resource.id, Array.from(resourceIds)),
+        selector().query().resources().where(resourceSelector).sql(),
+      ),
     );
-    if (resolvedValue == null) return null;
-    const { value, sensitive } = resolvedValue;
-    return { ...r, resolvedValue: sensitive ? "***" : value };
-  });
-  const matchedResources = await Promise.all(matchedResourcesPromises).then(
-    (resolved) => resolved.filter(isPresent),
-  );
+
   return { ...variableValue, resources: matchedResources };
 };
 
@@ -51,37 +56,37 @@ const getVariableWithMatchedResources = async (
   resources: schema.Resource[],
 ) => {
   const { values, defaultValue } = variable;
-  const nonDefaultValues = values.filter(
-    (v) => variable.defaultValueId !== v.id,
-  );
-  const valuesWithResources = await Promise.all(
-    nonDefaultValues.map((v) =>
-      getVariableValueWithMatchedResources(db, v, resources),
-    ),
-  );
-  const matchedResourceIds = new Set(
-    valuesWithResources.flatMap((v) => v.resources.map((r) => r.id)),
-  );
-  const unmatchedResources = resources.filter(
-    (r) => !matchedResourceIds.has(r.id),
-  );
+  const nonDefaultValues = values
+    .filter((v) => variable.defaultValueId !== v.id)
+    .sort((a, b) => a.priority - b.priority);
+
+  const unmatchedResourceIds = new Set(resources.map((r) => r.id));
+  const valuesWithResources: ValueWithResource[] = [];
+
+  for (const value of nonDefaultValues) {
+    const valueWithResources = await getValueWithMatchedResources(
+      db,
+      value,
+      unmatchedResourceIds,
+    );
+    valuesWithResources.push(valueWithResources);
+    for (const resource of valueWithResources.resources)
+      unmatchedResourceIds.delete(resource.id);
+  }
+
   const defaultValueWithResources =
     defaultValue != null
-      ? await getVariableValueWithMatchedResources(
-          db,
-          defaultValue,
-          unmatchedResources,
-          true,
-        )
+      ? {
+          ...defaultValue,
+          resources: resources.filter((r) => unmatchedResourceIds.has(r.id)),
+        }
       : undefined;
-
-  const defaultValueArray =
-    defaultValueWithResources != null ? [defaultValueWithResources] : [];
-  const valuesWithDefaultAtEnd = [...valuesWithResources, ...defaultValueArray];
+  if (defaultValueWithResources != null)
+    valuesWithResources.unshift(defaultValueWithResources);
 
   return {
     ...variable,
-    values: valuesWithDefaultAtEnd,
+    values: valuesWithResources,
     defaultValue: defaultValueWithResources,
   };
 };
