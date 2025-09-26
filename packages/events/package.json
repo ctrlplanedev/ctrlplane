@@ -30,6 +30,7 @@
     "ioredis": "catalog:",
     "kafkajs": "^2.2.4",
     "lodash": "catalog:",
+    "ts-is-present": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

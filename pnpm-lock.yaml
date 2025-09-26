@@ -1377,6 +1377,9 @@ importers:
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
+      ts-is-present:
+        specifier: 'catalog:'
+        version: 1.2.2
       zod:
         specifier: 'catalog:'
         version: 3.24.2
