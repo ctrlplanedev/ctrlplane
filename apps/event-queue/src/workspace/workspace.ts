@@ -1,3 +1,10 @@
+import type { FullResource } from "@ctrlplane/events";
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
+
+import { and, eq, isNull } from "@ctrlplane/db";
+import { db as dbClient } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import type { ResourceRelationshipManager } from "../relationships/resource-relationship-manager.js";
@@ -40,7 +47,43 @@ type WorkspaceOptions = {
   repository: WorkspaceRepository;
 };
 
-const createSelectorManager = async (id: string) => {
+const getInitialResources = async (id: string): Promise<FullResource[]> => {
+  const dbResult = await dbClient
+    .select()
+    .from(schema.resource)
+    .leftJoin(
+      schema.resourceMetadata,
+      eq(schema.resource.id, schema.resourceMetadata.resourceId),
+    )
+    .where(
+      and(
+        eq(schema.resource.workspaceId, id),
+        isNull(schema.resource.deletedAt),
+      ),
+    );
+
+  return _.chain(dbResult)
+    .groupBy((row) => row.resource.id)
+    .map((group) => {
+      const [first] = group;
+      if (first == null) return null;
+      const { resource } = first;
+      const metadata = Object.fromEntries(
+        group
+          .map((r) => r.resource_metadata)
+          .filter(isPresent)
+          .map((m) => [m.key, m.value]),
+      );
+      return { ...resource, metadata };
+    })
+    .value()
+    .filter(isPresent);
+};
+
+const createSelectorManager = async (
+  id: string,
+  initialResources: FullResource[],
+) => {
   log.info(`Creating selector manager for workspace ${id}`);
 
   const [
@@ -48,8 +91,8 @@ const createSelectorManager = async (id: string) => {
     environmentResourceSelector,
     policyTargetReleaseTargetSelector,
   ] = await Promise.all([
-    InMemoryDeploymentResourceSelector.create(id),
-    InMemoryEnvironmentResourceSelector.create(id),
+    InMemoryDeploymentResourceSelector.create(id, initialResources),
+    InMemoryEnvironmentResourceSelector.create(id, initialResources),
     InMemoryPolicyTargetReleaseTargetSelector.create(id),
   ]);
 
@@ -63,18 +106,19 @@ const createSelectorManager = async (id: string) => {
   });
 };
 
-const createRepository = async (id: string) => {
+const createRepository = async (
+  id: string,
+  initialResources: FullResource[],
+) => {
   log.info(`Creating repository for workspace ${id}`);
 
   const [
     inMemoryReleaseTargetRepository,
     inMemoryReleaseRepository,
-    inMemoryResourceRepository,
     inMemoryVersionReleaseRepository,
   ] = await Promise.all([
     InMemoryReleaseTargetRepository.create(id),
     InMemoryReleaseRepository.create(id),
-    InMemoryResourceRepository.create(id),
     InMemoryVersionReleaseRepository.create(id),
   ]);
 
@@ -82,7 +126,9 @@ const createRepository = async (id: string) => {
     versionRepository: new DbVersionRepository(id),
     environmentRepository: new DbEnvironmentRepository(id),
     deploymentRepository: new DbDeploymentRepository(id),
-    resourceRepository: inMemoryResourceRepository,
+    resourceRepository: new InMemoryResourceRepository({
+      initialEntities: initialResources,
+    }),
     resourceVariableRepository: new DbResourceVariableRepository(id),
     policyRepository: new DbPolicyRepository(id),
     jobAgentRepository: new DbJobAgentRepository(id),
@@ -106,9 +152,10 @@ const createRepository = async (id: string) => {
 
 export class Workspace {
   static async load(id: string) {
+    const initialResources = await getInitialResources(id);
     const [selectorManager, repository] = await Promise.all([
-      createSelectorManager(id),
-      createRepository(id),
+      createSelectorManager(id, initialResources),
+      createRepository(id, initialResources),
     ]);
 
     const ws = new Workspace({ id, selectorManager, repository });

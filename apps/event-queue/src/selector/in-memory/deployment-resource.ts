@@ -2,7 +2,7 @@ import type { FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
@@ -59,38 +59,7 @@ export class InMemoryDeploymentResourceSelector
     return this.matches;
   }
 
-  static async create(workspaceId: string) {
-    const allEntitiesDbResult = await dbClient
-      .select()
-      .from(schema.resource)
-      .leftJoin(
-        schema.resourceMetadata,
-        eq(schema.resource.id, schema.resourceMetadata.resourceId),
-      )
-      .where(
-        and(
-          eq(schema.resource.workspaceId, workspaceId),
-          isNull(schema.resource.deletedAt),
-        ),
-      );
-
-    const allEntities = _.chain(allEntitiesDbResult)
-      .groupBy((row) => row.resource.id)
-      .map((group) => {
-        const [first] = group;
-        if (first == null) return null;
-        const { resource } = first;
-        const metadata = Object.fromEntries(
-          group
-            .map((r) => r.resource_metadata)
-            .filter(isPresent)
-            .map((m) => [m.key, m.value]),
-        );
-        return { ...resource, metadata };
-      })
-      .value()
-      .filter(isPresent);
-
+  static async create(workspaceId: string, initialEntities: FullResource[]) {
     const allSelectors = await dbClient
       .select()
       .from(schema.deployment)
@@ -103,7 +72,7 @@ export class InMemoryDeploymentResourceSelector
 
     const inMemoryDeploymentResourceSelector =
       new InMemoryDeploymentResourceSelector({
-        initialEntities: allEntities,
+        initialEntities,
         initialSelectors: allSelectors,
       });
 
