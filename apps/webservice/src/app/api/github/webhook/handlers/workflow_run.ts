@@ -51,6 +51,9 @@ const getJob = async (externalId: number, name: string) => {
     .then(takeFirstOrNull);
 };
 
+const updateJobInDb = async (jobId: string, data: schema.UpdateJob) =>
+  db.update(schema.job).set(data).where(eq(schema.job.id, jobId));
+
 const updateLinks = async (jobId: string, links: Record<string, string>) =>
   db
     .insert(schema.jobMetadata)
@@ -85,16 +88,6 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     throw new Error(`Job not found: externalId=${id} name=${name}`);
 
   const updatedAt = new Date(updated_at);
-  // // safeguard against out of order events, if the job's updatedAt is after the webhook event
-  // // this means a more recent event has already been processed, so just skip
-  // if (isAfter(job.updatedAt, updatedAt)) {
-  //   logger.warn(`Skipping out of order event for job ${job.id}`, {
-  //     job,
-  //     event,
-  //   });
-  //   return;
-  // }
-
   const status =
     conclusion != null
       ? convertConclusion(conclusion)
@@ -102,20 +95,16 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
 
   const startedAt = new Date(run_started_at);
   const isJobCompleted = exitedStatus.includes(status as JobStatus);
-
-  // the workflow run object doesn't have an explicit completedAt field
-  // but if the job is in an exited state, the updated_at field works as a proxy
-  // since thats the last time the job was updated
   const completedAt = isJobCompleted ? updatedAt : null;
 
   const externalId = id.toString();
   const Run = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
   const Workflow = `${Run}/workflow`;
-  await updateLinks(job.id, { Run, Workflow });
+  const updates = { status, externalId, startedAt, completedAt, updatedAt };
+  await updateJobInDb(job.id, updates);
 
-  await updateJob(
-    job.id,
-    { status, externalId, startedAt, completedAt, updatedAt },
-    { [String(ReservedMetadataKey.Links)]: { Run, Workflow } } as any,
-  );
+  const links = { Run, Workflow };
+  await updateLinks(job.id, links);
+  const metadata = { [String(ReservedMetadataKey.Links)]: links };
+  await updateJob(job.id, updates, metadata);
 };
