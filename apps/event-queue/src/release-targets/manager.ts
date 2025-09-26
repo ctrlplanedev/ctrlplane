@@ -5,7 +5,7 @@ import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
 
-import type { Workspace } from "../workspace.js";
+import type { Workspace } from "../workspace/workspace.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 

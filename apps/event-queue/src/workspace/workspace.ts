@@ -3,6 +3,7 @@ import { logger } from "@ctrlplane/logger";
 import type { ResourceRelationshipManager } from "../relationships/resource-relationship-manager.js";
 import { JobManager } from "../job-manager/job-manager.js";
 import { DbResourceRelationshipManager } from "../relationships/db-resource-relationship-manager.js";
+import { ReleaseTargetManager } from "../release-targets/manager.js";
 import { DbDeploymentRepository } from "../repository/db-deployment-repository.js";
 import { DbDeploymentVariableRepository } from "../repository/db-deployment-variable-repository.js";
 import { DbDeploymentVariableValueRepository } from "../repository/db-deployment-variable-value-repository.js";
@@ -28,7 +29,6 @@ import { InMemoryDeploymentResourceSelector } from "../selector/in-memory/deploy
 import { InMemoryEnvironmentResourceSelector } from "../selector/in-memory/environment-resource.js";
 import { InMemoryPolicyTargetReleaseTargetSelector } from "../selector/in-memory/policy-target-release-target.js";
 import { SelectorManager } from "../selector/selector.js";
-import { ReleaseTargetManager } from "./release-targets/manager.js";
 
 const log = logger.child({ module: "workspace-engine" });
 

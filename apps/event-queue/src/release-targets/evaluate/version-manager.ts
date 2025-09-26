@@ -5,7 +5,7 @@ import { isPresent } from "ts-is-present";
 import { VersionRuleEngine } from "@ctrlplane/rule-engine";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
-import type { Workspace } from "../../workspace.js";
+import type { Workspace } from "../../workspace/workspace.js";
 
 export class VersionManager implements ReleaseManager {
   constructor(

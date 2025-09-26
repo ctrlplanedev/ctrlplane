@@ -10,7 +10,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 import { VariableManager } from "@ctrlplane/rule-engine";
 
-import type { Workspace } from "../../workspace.js";
+import type { Workspace } from "../../workspace/workspace.js";
 
 const log = logger.child({ component: "variable-release-manager" });
 
