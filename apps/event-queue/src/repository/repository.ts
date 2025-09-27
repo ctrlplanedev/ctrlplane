@@ -50,6 +50,11 @@ type WorkspaceRepositoryOptions = {
   jobRepository: Repository<typeof schema.job.$inferSelect>;
   jobVariableRepository: Repository<typeof schema.jobVariable.$inferSelect>;
   releaseJobRepository: Repository<typeof schema.releaseJob.$inferSelect>;
+
+  resourceRelationshipRuleRepository: Repository<schema.ResourceRelationshipRule>;
+  resourceRelationshipRuleTargetMetadataEqualsRepository: Repository<schema.ResourceRelationshipRuleTargetMetadataEquals>;
+  resourceRelationshipRuleSourceMetadataEqualsRepository: Repository<schema.ResourceRelationshipRuleSourceMetadataEquals>;
+  resourceRelationshipRuleMetadataMatchRepository: Repository<schema.ResourceRelationshipRuleMetadataMatch>;
 };
 
 export class WorkspaceRepository {
@@ -129,5 +134,21 @@ export class WorkspaceRepository {
 
   get deploymentVariableValueRepository() {
     return this.opts.deploymentVariableValueRepository;
+  }
+
+  get resourceRelationshipRuleRepository() {
+    return this.opts.resourceRelationshipRuleRepository;
+  }
+
+  get resourceRelationshipRuleTargetMetadataEqualsRepository() {
+    return this.opts.resourceRelationshipRuleTargetMetadataEqualsRepository;
+  }
+
+  get resourceRelationshipRuleSourceMetadataEqualsRepository() {
+    return this.opts.resourceRelationshipRuleSourceMetadataEqualsRepository;
+  }
+
+  get resourceRelationshipRuleMetadataMatchRepository() {
+    return this.opts.resourceRelationshipRuleMetadataMatchRepository;
   }
 }

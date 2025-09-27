@@ -8,9 +8,9 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
-import { VariableManager } from "@ctrlplane/rule-engine";
 
 import type { Workspace } from "../../workspace/workspace.js";
+import { getVariableManager } from "./variables/variable-manager.js";
 
 const log = logger.child({ component: "variable-release-manager" });
 
@@ -19,6 +19,12 @@ export class VariableReleaseManager implements ReleaseManager {
     private readonly releaseTarget: FullReleaseTarget,
     private readonly workspace: Workspace,
   ) {}
+
+  private getStringifiedValue(value: any) {
+    if (value == null) return null;
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  }
 
   private async getReleaseValues(releaseId: string) {
     const [allValues, allSnapshots] = await Promise.all([
@@ -65,7 +71,10 @@ export class VariableReleaseManager implements ReleaseManager {
       await this.workspace.repository.variableValueSnapshotRepository.getAll();
     return allSnapshots.filter((snapshot) =>
       variables.some(
-        (v) => v.key === snapshot.key && v.value === snapshot.value,
+        (v) =>
+          v.key === snapshot.key &&
+          this.getStringifiedValue(v.value) ===
+            this.getStringifiedValue(snapshot.value),
       ),
     );
   }
@@ -88,12 +97,6 @@ export class VariableReleaseManager implements ReleaseManager {
     );
 
     return [...existingSnapshots, ...newSnapshots];
-  }
-
-  private getStringifiedValue(value: any) {
-    if (value == null) return null;
-    if (typeof value === "object") return JSON.stringify(value);
-    return String(value);
   }
 
   async upsertRelease(variables: MaybeVariable[]) {
@@ -142,7 +145,8 @@ export class VariableReleaseManager implements ReleaseManager {
 
   async evaluate() {
     try {
-      const variableManager = await VariableManager.database(
+      const variableManager = await getVariableManager(
+        this.workspace,
         this.releaseTarget,
       );
       const variables = await variableManager.getVariables();
