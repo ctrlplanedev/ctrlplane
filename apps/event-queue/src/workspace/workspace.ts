@@ -24,13 +24,13 @@ import { DbResourceRelationshipRuleMetadataMatchRepository } from "../repository
 import { DbResourceRelationshipRuleRepository } from "../repository/db-resource-relationship-rule-repository.js";
 import { DbResourceRelationshipRuleSourceMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-source-metadata-equals-repository.js";
 import { DbResourceRelationshipRuleTargetMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-target-metadata-equals-repository.js";
-import { DbResourceVariableRepository } from "../repository/db-resource-variable-repository.js";
 import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
 import { DbVariableReleaseValueRepository } from "../repository/db-variable-release-value-repository.js";
 import { DbVariableReleaseValueSnapshotRepository } from "../repository/db-variable-release-value-snapshot-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { InMemoryReleaseTargetRepository } from "../repository/in-memory/release-target.js";
 import { InMemoryReleaseRepository } from "../repository/in-memory/release.js";
+import { InMemoryResourceVariableRepository } from "../repository/in-memory/resource-variable.js";
 import { InMemoryResourceRepository } from "../repository/in-memory/resource.js";
 import { InMemoryVersionReleaseRepository } from "../repository/in-memory/version-release.js";
 import { WorkspaceRepository } from "../repository/repository.js";
@@ -120,10 +120,12 @@ const createRepository = async (
     inMemoryReleaseTargetRepository,
     inMemoryReleaseRepository,
     inMemoryVersionReleaseRepository,
+    inMemoryResourceVariableRepository,
   ] = await Promise.all([
     InMemoryReleaseTargetRepository.create(id),
     InMemoryReleaseRepository.create(id),
     InMemoryVersionReleaseRepository.create(id),
+    InMemoryResourceVariableRepository.create(id),
   ]);
 
   return new WorkspaceRepository({
@@ -133,7 +135,7 @@ const createRepository = async (
     resourceRepository: new InMemoryResourceRepository({
       initialEntities: initialResources,
     }),
-    resourceVariableRepository: new DbResourceVariableRepository(id),
+    resourceVariableRepository: inMemoryResourceVariableRepository,
     policyRepository: new DbPolicyRepository(id),
     jobAgentRepository: new DbJobAgentRepository(id),
     jobRepository: new DbJobRepository(id),
