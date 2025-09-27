@@ -176,15 +176,6 @@ export class DeploymentVariableProvider implements VariableProvider {
     key: string,
     variableValue: schema.DeploymentVariableValue,
   ): Promise<MaybeVariable> {
-    if (variableValue.resourceSelector == null) return null;
-    if (
-      !resourceMatchesSelector(
-        this.releaseTarget.resource,
-        variableValue.resourceSelector,
-      )
-    )
-      return null;
-
     if (schema.isDeploymentVariableValueDirect(variableValue)) {
       const resolvedValue = this.resolveDirectValue(variableValue);
       return {
@@ -234,7 +225,10 @@ export class DeploymentVariableProvider implements VariableProvider {
     const { values, defaultValue } = deploymentVariable;
     const sortedValues = values.sort((a, b) => a.priority - b.priority);
 
+    const { resource } = this.releaseTarget;
     for (const value of sortedValues) {
+      if (value.resourceSelector == null) continue;
+      if (!resourceMatchesSelector(resource, value.resourceSelector)) continue;
       const resolvedValue = await this.resolveVariableValue(key, value);
       if (resolvedValue != null) return resolvedValue;
     }

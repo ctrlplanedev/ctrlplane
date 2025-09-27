@@ -1,6 +1,8 @@
 import type { FullReleaseTarget } from "@ctrlplane/events";
 import type { MaybeVariable, VariableProvider } from "@ctrlplane/rule-engine";
 
+import { variablesAES256 } from "@ctrlplane/secrets";
+
 import type { Workspace } from "../../../workspace/workspace";
 
 export class ResourceVariableProvider implements VariableProvider {
@@ -23,14 +25,29 @@ export class ResourceVariableProvider implements VariableProvider {
     }));
   }
 
+  private resolveVariableValue(variable: {
+    value: string | number | boolean | object | null;
+    sensitive: boolean;
+  }) {
+    const { value, sensitive } = variable;
+    if (!sensitive) return value;
+
+    const strValue =
+      typeof value === "object" ? JSON.stringify(value) : String(value);
+    return variablesAES256().decrypt(strValue);
+  }
+
   async getVariable(key: string): Promise<MaybeVariable> {
     const variables = await this.getVariables();
     const variable = variables.find((v) => v.key === key) ?? null;
     if (variable == null) return null;
+
+    const resolvedValue = this.resolveVariableValue(variable);
+
     return {
       id: variable.id,
       key,
-      value: variable.value,
+      value: resolvedValue,
       sensitive: variable.sensitive,
     };
   }
