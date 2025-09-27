@@ -3,10 +3,13 @@ import type { MaybeVariable, VariableProvider } from "@ctrlplane/rule-engine";
 import _ from "lodash";
 
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
 import type { Workspace } from "../../../workspace/workspace.js";
 import { resourceMatchesSelector } from "../../../selector/in-memory/resource-match.js";
+
+const log = logger.child({ component: "deployment-variable-provider" });
 
 export class DeploymentVariableProvider implements VariableProvider {
   constructor(
@@ -219,6 +222,7 @@ export class DeploymentVariableProvider implements VariableProvider {
   }
 
   async getVariable(key: string): Promise<MaybeVariable> {
+    const now = performance.now();
     const deploymentVariable = await this.getDeploymentVariable(key);
     if (deploymentVariable == null) return null;
 
@@ -237,6 +241,10 @@ export class DeploymentVariableProvider implements VariableProvider {
       const resolvedValue = await this.resolveVariableValue(key, defaultValue);
       if (resolvedValue != null) return resolvedValue;
     }
+
+    const end = performance.now();
+    const duration = end - now;
+    log.info(`Deployment variable resolution took ${duration.toFixed(2)}ms`);
 
     return {
       id: deploymentVariable.id,
