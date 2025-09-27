@@ -65,7 +65,7 @@ export const deletedDeploymentVariable: Handler<Event.DeploymentVariableDeleted>
       span.setAttribute("workspace.id", event.workspaceId);
       const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
       if (ws == null) return;
-      await OperationPipeline.update(ws)
+      await OperationPipeline.delete(ws)
         .deploymentVariable(event.payload)
         .dispatch();
     },
@@ -139,7 +139,7 @@ export const deletedDeploymentVariableValue: Handler<Event.DeploymentVariableVal
       span.setAttribute("workspace.id", event.workspaceId);
       const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
       if (ws == null) return;
-      await OperationPipeline.update(ws)
+      await OperationPipeline.delete(ws)
         .deploymentVariableValue(event.payload)
         .dispatch();
     },
