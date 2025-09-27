@@ -100,6 +100,7 @@ export class VariableReleaseManager implements ReleaseManager {
   }
 
   async upsertRelease(variables: MaybeVariable[]) {
+    const now = performance.now();
     const latestRelease = await this.findLatestRelease();
 
     const oldVars = _(latestRelease?.values ?? [])
@@ -117,12 +118,21 @@ export class VariableReleaseManager implements ReleaseManager {
       .value();
 
     const isSame = _.isEqual(oldVars, newVars);
-    if (latestRelease != null && isSame)
+    if (latestRelease != null && isSame) {
+      const end = performance.now();
+      const duration = end - now;
+      log.info(`Variable release upsert took ${duration.toFixed(2)}ms`);
       return { created: false, release: latestRelease };
+    }
 
     const release = await this.insertRelease(this.releaseTarget.id);
     const vars = _.compact(variables);
-    if (vars.length === 0) return { created: true, release };
+    if (vars.length === 0) {
+      const end = performance.now();
+      const duration = end - now;
+      log.info(`Variable release upsert took ${duration.toFixed(2)}ms`);
+      return { created: true, release };
+    }
     const valueSnapshots = await this.getValueSnapshotsForRelease(vars);
     if (valueSnapshots.length === 0)
       throw new Error(
@@ -140,16 +150,23 @@ export class VariableReleaseManager implements ReleaseManager {
       ),
     );
 
+    const end = performance.now();
+    const duration = end - now;
+    log.info(`Variable release upsert took ${duration.toFixed(2)}ms`);
     return { created: true, release };
   }
 
   async evaluate() {
     try {
+      const now = performance.now();
       const variableManager = await getVariableManager(
         this.workspace,
         this.releaseTarget,
       );
       const variables = await variableManager.getVariables();
+      const end = performance.now();
+      const duration = end - now;
+      log.info(`Variable release evaluation took ${duration.toFixed(2)}ms`);
       return { chosenCandidate: variables };
     } catch (error) {
       log.error("Error evaluating variable release", { error });
