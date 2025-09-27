@@ -29,6 +29,7 @@ export class DeploymentVariableProvider implements VariableProvider {
   }
 
   private async getRuleByReference(reference: string) {
+    const now = performance.now();
     const allRelationshipRules =
       await this.workspace.repository.resourceRelationshipRuleRepository.getAll();
     const relationshipRule = allRelationshipRules.find(
@@ -54,6 +55,12 @@ export class DeploymentVariableProvider implements VariableProvider {
     const sourceMetadataEquals = allRelationshipRuleSourceMetadataEquals.filter(
       (r) => r.resourceRelationshipRuleId === relationshipRule.id,
     );
+
+    const end = performance.now();
+    const duration = end - now;
+    log.info(
+      `Getting relationship rule by reference took ${duration.toFixed(2)}ms`,
+    );
     return {
       ...relationshipRule,
       metadataKeysMatch,
@@ -66,6 +73,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     relationshipRule: schema.ResourceRelationshipRule,
     targetMetadataEqualsRules: schema.ResourceRelationshipRuleTargetMetadataEquals[],
   ) {
+    const now = performance.now();
     const { resource } = this.releaseTarget;
     const { targetKind, targetVersion } = relationshipRule;
     const targetKindSatisfied =
@@ -79,25 +87,34 @@ export class DeploymentVariableProvider implements VariableProvider {
       if (targetMetadata == null || targetMetadata !== t.value) return false;
     }
 
+    const end = performance.now();
+    const duration = end - now;
+    log.info(`Target resource matches rule took ${duration.toFixed(2)}ms`);
     return true;
   }
 
   private async getSourceResourceCandidates(
     relationshipRule: schema.ResourceRelationshipRule,
   ) {
+    const now = performance.now();
     const { sourceKind, sourceVersion } = relationshipRule;
     const allResources =
       await this.workspace.repository.resourceRepository.getAll();
-    return allResources.filter(
+    const resources = allResources.filter(
       (r) =>
         r.kind === sourceKind &&
         r.version === sourceVersion &&
         r.deletedAt == null,
     );
+    const end = performance.now();
+    const duration = end - now;
+    log.info(
+      `Getting source resource candidates took ${duration.toFixed(2)}ms`,
+    );
+    return resources;
   }
 
   private sourceResourceMatchesRule(
-    relationshipRule: schema.ResourceRelationshipRule,
     sourceMetadataEqualsRules: schema.ResourceRelationshipRuleSourceMetadataEquals[],
     metadataKeysMatchRules: schema.ResourceRelationshipRuleMetadataMatch[],
     candidate: FullResource,
@@ -160,17 +177,27 @@ export class DeploymentVariableProvider implements VariableProvider {
       await this.getSourceResourceCandidates(relationshipRule);
     if (sourceResourceCandidates.length === 0) return defaultValue;
 
+    const sourceResourceSearchStart = performance.now();
     const sourceResource = sourceResourceCandidates.find((r) =>
       this.sourceResourceMatchesRule(
-        relationshipRule,
         sourceMetadataEquals,
         metadataKeysMatch,
         r,
       ),
     );
+    const sourceResourceSearchEnd = performance.now();
+    const sourceResourceSearchDuration =
+      sourceResourceSearchEnd - sourceResourceSearchStart;
+    log.info(
+      `Source resource search took ${sourceResourceSearchDuration.toFixed(2)}ms`,
+    );
     if (sourceResource == null) return defaultValue;
 
+    const fullSourceStart = performance.now();
     const fullSource = await this.getFullSource(sourceResource);
+    const fullSourceEnd = performance.now();
+    const fullSourceDuration = fullSourceEnd - fullSourceStart;
+    log.info(`Full source retrieval took ${fullSourceDuration.toFixed(2)}ms`);
     const resolvedPath = _.get(fullSource, path, defaultValue);
     return resolvedPath as string | number | boolean | object | null;
   }
