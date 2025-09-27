@@ -203,13 +203,21 @@ export class DeploymentVariableProvider implements VariableProvider {
   }
 
   private async getDeploymentVariable(key: string) {
+    const now = performance.now();
     const allDeploymentVariables =
       await this.workspace.repository.deploymentVariableRepository.getAll();
     const deploymentVariable = allDeploymentVariables.find(
       (v) =>
         v.deploymentId === this.releaseTarget.deploymentId && v.key === key,
     );
-    if (deploymentVariable == null) return null;
+    if (deploymentVariable == null) {
+      const end = performance.now();
+      const duration = end - now;
+      log.info(
+        `Getting actual deployment variable took ${duration.toFixed(2)}ms`,
+      );
+      return null;
+    }
     const allDeploymentVariableValues =
       await this.workspace.repository.deploymentVariableValueRepository.getAll();
     const values = allDeploymentVariableValues.filter(
@@ -218,11 +226,16 @@ export class DeploymentVariableProvider implements VariableProvider {
     const defaultValue = values.find(
       (value) => value.id === deploymentVariable.defaultValueId,
     );
+    const end = performance.now();
+    const duration = end - now;
+    log.info(
+      `Getting actual deployment variable took ${duration.toFixed(2)}ms`,
+    );
     return { ...deploymentVariable, values, defaultValue };
   }
 
   async getVariable(key: string): Promise<MaybeVariable> {
-    const now = performance.now();
+    log.info(`Resolving deployment variable ${key}`);
     const deploymentVariable = await this.getDeploymentVariable(key);
     if (deploymentVariable == null) return null;
 
@@ -232,8 +245,20 @@ export class DeploymentVariableProvider implements VariableProvider {
     const { resource } = this.releaseTarget;
     for (const value of sortedValues) {
       if (value.resourceSelector == null) continue;
-      if (!resourceMatchesSelector(resource, value.resourceSelector)) continue;
+      const matchStart = performance.now();
+      const match = resourceMatchesSelector(resource, value.resourceSelector);
+      const matchEnd = performance.now();
+      const matchDuration = matchEnd - matchStart;
+      log.info(`Resource matches selector took ${matchDuration.toFixed(2)}ms`);
+      if (!match) continue;
+
+      const resolveStart = performance.now();
       const resolvedValue = await this.resolveVariableValue(key, value);
+      const resolveEnd = performance.now();
+      const resolveDuration = resolveEnd - resolveStart;
+      log.info(
+        `Resolving deployment variable value took ${resolveDuration.toFixed(2)}ms`,
+      );
       if (resolvedValue != null) return resolvedValue;
     }
 
@@ -241,10 +266,6 @@ export class DeploymentVariableProvider implements VariableProvider {
       const resolvedValue = await this.resolveVariableValue(key, defaultValue);
       if (resolvedValue != null) return resolvedValue;
     }
-
-    const end = performance.now();
-    const duration = end - now;
-    log.info(`Deployment variable resolution took ${duration.toFixed(2)}ms`);
 
     return {
       id: deploymentVariable.id,
