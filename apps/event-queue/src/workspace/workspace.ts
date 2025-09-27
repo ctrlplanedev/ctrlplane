@@ -33,6 +33,7 @@ import { WorkspaceRepository } from "../repository/repository.js";
 import { DbVersionRuleRepository } from "../repository/rules/db-rule-repository.js";
 import { DbDeploymentVersionSelector } from "../selector/db/db-deployment-version-selector.js";
 import { InMemoryDeploymentResourceSelector } from "../selector/in-memory/deployment-resource.js";
+import { InMemoryDeploymentVariableValueResourceSelector } from "../selector/in-memory/deployment-variable-value-resource.js";
 import { InMemoryEnvironmentResourceSelector } from "../selector/in-memory/environment-resource.js";
 import { InMemoryPolicyTargetReleaseTargetSelector } from "../selector/in-memory/policy-target-release-target.js";
 import { SelectorManager } from "../selector/selector.js";
@@ -90,10 +91,15 @@ const createSelectorManager = async (
     deploymentResourceSelector,
     environmentResourceSelector,
     policyTargetReleaseTargetSelector,
+    deploymentVariableValueResourceSelector,
   ] = await Promise.all([
     InMemoryDeploymentResourceSelector.create(id, initialResources),
     InMemoryEnvironmentResourceSelector.create(id, initialResources),
     InMemoryPolicyTargetReleaseTargetSelector.create(id),
+    InMemoryDeploymentVariableValueResourceSelector.create(
+      id,
+      initialResources,
+    ),
   ]);
 
   return new SelectorManager({
@@ -103,6 +109,7 @@ const createSelectorManager = async (
     deploymentVersionSelector: new DbDeploymentVersionSelector({
       workspaceId: id,
     }),
+    deploymentVariableValueResourceSelector,
   });
 };
 

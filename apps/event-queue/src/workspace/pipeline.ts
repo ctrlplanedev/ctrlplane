@@ -288,6 +288,10 @@ export class OperationPipeline {
         defaultValueId: upsertedValue.id,
       });
 
+    await this.opts.workspace.selectorManager.upsertDeploymentVariableValue(
+      upsertedValue,
+    );
+
     await this.markDeploymentReleaseTargetsAsStale(
       deploymentVariable.deploymentId,
     );
@@ -306,6 +310,10 @@ export class OperationPipeline {
       );
     if (deploymentVariable == null)
       throw new Error("Deployment variable not found");
+
+    await this.opts.workspace.selectorManager.removeDeploymentVariableValue(
+      deploymentVariableValue,
+    );
 
     await this.markDeploymentReleaseTargetsAsStale(
       deploymentVariable.deploymentId,

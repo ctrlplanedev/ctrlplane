@@ -1,5 +1,6 @@
 import type {
   Deployment,
+  DeploymentVariableValue,
   DeploymentVersion,
   Environment,
   PolicyDeploymentVersionSelector,
@@ -31,6 +32,10 @@ type SelectorManagerOptions = {
     PolicyDeploymentVersionSelector,
     DeploymentVersion
   >;
+  deploymentVariableValueResourceSelector: Selector<
+    DeploymentVariableValue,
+    FullResource
+  >;
 };
 
 export class SelectorManager {
@@ -52,10 +57,15 @@ export class SelectorManager {
     return this.opts.deploymentResourceSelector;
   }
 
+  get deploymentVariableValueResourceSelector() {
+    return this.opts.deploymentVariableValueResourceSelector;
+  }
+
   async updateResource(resource: FullResource) {
     const [environmentChanges, deploymentChanges] = await Promise.all([
       this.opts.environmentResourceSelector.upsertEntity(resource),
       this.opts.deploymentResourceSelector.upsertEntity(resource),
+      this.opts.deploymentVariableValueResourceSelector.upsertEntity(resource),
     ]);
 
     return { environmentChanges, deploymentChanges };
@@ -73,6 +83,7 @@ export class SelectorManager {
     const [environmentChanges, deploymentChanges] = await Promise.all([
       this.opts.environmentResourceSelector.removeEntity(resource),
       this.opts.deploymentResourceSelector.removeEntity(resource),
+      this.opts.deploymentVariableValueResourceSelector.removeEntity(resource),
     ]);
 
     return { environmentChanges, deploymentChanges };
@@ -107,6 +118,22 @@ export class SelectorManager {
   async removePolicyTargets(policyTarget: PolicyTarget) {
     return this.opts.policyTargetReleaseTargetSelector.removeSelector(
       policyTarget,
+    );
+  }
+
+  async upsertDeploymentVariableValue(
+    deploymentVariableValue: DeploymentVariableValue,
+  ) {
+    return this.opts.deploymentVariableValueResourceSelector.upsertSelector(
+      deploymentVariableValue,
+    );
+  }
+
+  async removeDeploymentVariableValue(
+    deploymentVariableValue: DeploymentVariableValue,
+  ) {
+    return this.opts.deploymentVariableValueResourceSelector.removeSelector(
+      deploymentVariableValue,
     );
   }
 }
