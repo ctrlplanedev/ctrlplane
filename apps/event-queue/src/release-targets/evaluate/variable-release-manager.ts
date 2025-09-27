@@ -8,9 +8,9 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
-import { VariableManager } from "@ctrlplane/rule-engine";
 
 import type { Workspace } from "../../workspace/workspace.js";
+import { getVariableManager } from "./variables/variable-manager.js";
 
 const log = logger.child({ component: "variable-release-manager" });
 
@@ -142,7 +142,8 @@ export class VariableReleaseManager implements ReleaseManager {
 
   async evaluate() {
     try {
-      const variableManager = await VariableManager.database(
+      const variableManager = await getVariableManager(
+        this.workspace,
         this.releaseTarget,
       );
       const variables = await variableManager.getVariables();

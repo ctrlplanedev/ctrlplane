@@ -20,6 +20,10 @@ import { DbJobRepository } from "../repository/db-job-repository.js";
 import { DbJobVariableRepository } from "../repository/db-job-variable-repository.js";
 import { DbPolicyRepository } from "../repository/db-policy-repository.js";
 import { DbReleaseJobRepository } from "../repository/db-release-job-repository.js";
+import { DbResourceRelationshipRuleMetadataMatchRepository } from "../repository/db-resource-relationship-rule-metadata-match-repository.js";
+import { DbResourceRelationshipRuleRepository } from "../repository/db-resource-relationship-rule-repository.js";
+import { DbResourceRelationshipRuleSourceMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-source-metadata-equals-repository.js";
+import { DbResourceRelationshipRuleTargetMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-target-metadata-equals-repository.js";
 import { DbResourceVariableRepository } from "../repository/db-resource-variable-repository.js";
 import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
 import { DbVariableReleaseValueRepository } from "../repository/db-variable-release-value-repository.js";
@@ -147,6 +151,14 @@ const createRepository = async (
     deploymentVariableValueRepository: new DbDeploymentVariableValueRepository(
       id,
     ),
+    resourceRelationshipRuleRepository:
+      new DbResourceRelationshipRuleRepository(id),
+    resourceRelationshipRuleTargetMetadataEqualsRepository:
+      new DbResourceRelationshipRuleTargetMetadataEqualsRepository(id),
+    resourceRelationshipRuleSourceMetadataEqualsRepository:
+      new DbResourceRelationshipRuleSourceMetadataEqualsRepository(id),
+    resourceRelationshipRuleMetadataMatchRepository:
+      new DbResourceRelationshipRuleMetadataMatchRepository(id),
   });
 };
 

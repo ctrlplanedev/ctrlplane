@@ -40,6 +40,13 @@ export class VariableManager {
     return new VariableManager({ ...options, keys }, providers);
   }
 
+  static create(
+    options: VariableManagerOptions,
+    providers: VariableProvider[],
+  ) {
+    return new VariableManager(options, providers);
+  }
+
   private constructor(
     private options: VariableManagerOptions,
     private variableProviders: VariableProvider[],

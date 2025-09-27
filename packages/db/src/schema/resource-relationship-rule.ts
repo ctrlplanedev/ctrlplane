@@ -213,5 +213,7 @@ export type ResourceRelationshipRuleMetadataMatch =
   typeof resourceRelationshipRuleMetadataMatch.$inferSelect;
 export type ResourceRelationshipRuleMetadataEquals =
   typeof resourceRelationshipTargetRuleMetadataEquals.$inferSelect;
+export type ResourceRelationshipRuleTargetMetadataEquals =
+  typeof resourceRelationshipTargetRuleMetadataEquals.$inferSelect;
 export type ResourceRelationshipRuleSourceMetadataEquals =
   typeof resourceRelationshipSourceRuleMetadataEquals.$inferSelect;
