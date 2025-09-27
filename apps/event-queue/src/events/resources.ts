@@ -19,12 +19,13 @@ const getResourceWithDates = (resource: FullResource) => {
 };
 
 const newResourceTracer = trace.getTracer("new-resource");
-const withSpan = makeWithSpan(newResourceTracer);
+const withNewResourceSpan = makeWithSpan(newResourceTracer);
 
-export const newResource: Handler<Event.ResourceCreated> = withSpan(
+export const newResource: Handler<Event.ResourceCreated> = withNewResourceSpan(
   "new-resource",
   async (span, event) => {
     span.setAttribute("resource.id", event.payload.id);
+    span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
     if (ws == null) return;
     const resource = getResourceWithDates(event.payload);
@@ -32,45 +33,86 @@ export const newResource: Handler<Event.ResourceCreated> = withSpan(
   },
 );
 
-export const updatedResource: Handler<Event.ResourceUpdated> = async (
-  event,
-) => {
-  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-  if (ws == null) return;
-  const current = getResourceWithDates(event.payload.current);
-  await OperationPipeline.update(ws).resource(current).dispatch();
-};
+const updatedResourceTracer = trace.getTracer("updated-resource");
+const withUpdatedResourceSpan = makeWithSpan(updatedResourceTracer);
 
-export const deletedResource: Handler<Event.ResourceDeleted> = async (
-  event,
-) => {
-  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-  if (ws == null) return;
-  await OperationPipeline.delete(ws).resource(event.payload).dispatch();
-};
+export const updatedResource: Handler<Event.ResourceUpdated> =
+  withUpdatedResourceSpan("updated-resource", async (span, event) => {
+    span.setAttribute("resource.id", event.payload.current.id);
+    span.setAttribute("workspace.id", event.workspaceId);
+    const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+    if (ws == null) return;
+    const current = getResourceWithDates(event.payload.current);
+    await OperationPipeline.update(ws).resource(current).dispatch();
+  });
 
-export const newResourceVariable: Handler<
-  Event.ResourceVariableCreated
-> = async (event) => {
-  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-  if (ws == null) return;
-  await OperationPipeline.update(ws).resourceVariable(event.payload).dispatch();
-};
+const deletedResourceTracer = trace.getTracer("deleted-resource");
+const withDeletedResourceSpan = makeWithSpan(deletedResourceTracer);
 
-export const updatedResourceVariable: Handler<
-  Event.ResourceVariableUpdated
-> = async (event) => {
-  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-  if (ws == null) return;
-  await OperationPipeline.update(ws)
-    .resourceVariable(event.payload.current)
-    .dispatch();
-};
+export const deletedResource: Handler<Event.ResourceDeleted> =
+  withDeletedResourceSpan("deleted-resource", async (span, event) => {
+    span.setAttribute("resource.id", event.payload.id);
+    span.setAttribute("workspace.id", event.workspaceId);
+    const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+    if (ws == null) return;
+    await OperationPipeline.delete(ws).resource(event.payload).dispatch();
+  });
 
-export const deletedResourceVariable: Handler<
-  Event.ResourceVariableDeleted
-> = async (event) => {
-  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-  if (ws == null) return;
-  await OperationPipeline.delete(ws).resourceVariable(event.payload).dispatch();
-};
+const newResourceVariableTracer = trace.getTracer("new-resource-variable");
+const withNewResourceVariableSpan = makeWithSpan(newResourceVariableTracer);
+
+export const newResourceVariable: Handler<Event.ResourceVariableCreated> =
+  withNewResourceVariableSpan("new-resource-variable", async (span, event) => {
+    span.setAttribute("resource-variable.id", event.payload.id);
+    span.setAttribute("resource.id", event.payload.resourceId);
+    span.setAttribute("workspace.id", event.workspaceId);
+    const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+    if (ws == null) return;
+    await OperationPipeline.update(ws)
+      .resourceVariable(event.payload)
+      .dispatch();
+  });
+
+const updatedResourceVariableTracer = trace.getTracer(
+  "updated-resource-variable",
+);
+const withUpdatedResourceVariableSpan = makeWithSpan(
+  updatedResourceVariableTracer,
+);
+
+export const updatedResourceVariable: Handler<Event.ResourceVariableUpdated> =
+  withUpdatedResourceVariableSpan(
+    "updated-resource-variable",
+    async (span, event) => {
+      span.setAttribute("resource-variable.id", event.payload.current.id);
+      span.setAttribute("resource.id", event.payload.current.resourceId);
+      span.setAttribute("workspace.id", event.workspaceId);
+      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+      if (ws == null) return;
+      await OperationPipeline.update(ws)
+        .resourceVariable(event.payload.current)
+        .dispatch();
+    },
+  );
+
+const deletedResourceVariableTracer = trace.getTracer(
+  "deleted-resource-variable",
+);
+const withDeletedResourceVariableSpan = makeWithSpan(
+  deletedResourceVariableTracer,
+);
+
+export const deletedResourceVariable: Handler<Event.ResourceVariableDeleted> =
+  withDeletedResourceVariableSpan(
+    "deleted-resource-variable",
+    async (span, event) => {
+      span.setAttribute("resource-variable.id", event.payload.id);
+      span.setAttribute("resource.id", event.payload.resourceId);
+      span.setAttribute("workspace.id", event.workspaceId);
+      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+      if (ws == null) return;
+      await OperationPipeline.delete(ws)
+        .resourceVariable(event.payload)
+        .dispatch();
+    },
+  );
