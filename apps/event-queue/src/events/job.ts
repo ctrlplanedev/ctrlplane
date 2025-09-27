@@ -1,6 +1,8 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { Event } from "@ctrlplane/events";
 
+import { makeWithSpan, trace } from "@ctrlplane/logger";
+
 import type { Handler } from ".";
 import { OperationPipeline } from "../workspace/pipeline.js";
 import { WorkspaceManager } from "../workspace/workspace.js";
@@ -14,10 +16,18 @@ const getJobWithDates = (job: schema.Job) => {
   return { ...job, createdAt, updatedAt, startedAt, completedAt };
 };
 
-export const updateJob: Handler<Event.JobUpdated> = async (event) => {
-  const { current } = event.payload;
-  const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-  if (ws == null) return;
-  const job = getJobWithDates(current);
-  await OperationPipeline.update(ws).job(job).dispatch();
-};
+const updatedJobTracer = trace.getTracer("updated-job");
+const withUpdatedJobSpan = makeWithSpan(updatedJobTracer);
+
+export const updateJob: Handler<Event.JobUpdated> = withUpdatedJobSpan(
+  "updated-job",
+  async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
+    span.setAttribute("job.id", event.payload.current.id);
+    span.setAttribute("workspace.id", event.workspaceId);
+    const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+    if (ws == null) return;
+    const job = getJobWithDates(event.payload.current);
+    await OperationPipeline.update(ws).job(job).dispatch();
+  },
+);
