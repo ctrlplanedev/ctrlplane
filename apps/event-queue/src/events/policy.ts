@@ -35,6 +35,7 @@ const withNewPolicySpan = makeWithSpan(newPolicyTracer);
 export const newPolicy: Handler<Event.PolicyCreated> = withNewPolicySpan(
   "new-policy",
   async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("policy.id", event.payload.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
@@ -49,6 +50,7 @@ const withUpdatedPolicySpan = makeWithSpan(updatedPolicyTracer);
 
 export const updatedPolicy: Handler<Event.PolicyUpdated> =
   withUpdatedPolicySpan("updated-policy", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("policy.id", event.payload.current.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
@@ -62,6 +64,7 @@ const withDeletedPolicySpan = makeWithSpan(deletedPolicyTracer);
 
 export const deletedPolicy: Handler<Event.PolicyDeleted> =
   withDeletedPolicySpan("deleted-policy", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("policy.id", event.payload.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);

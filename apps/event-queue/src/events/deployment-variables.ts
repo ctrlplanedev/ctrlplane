@@ -13,6 +13,7 @@ export const newDeploymentVariable: Handler<Event.DeploymentVariableCreated> =
   withNewDeploymentVariableSpan(
     "new-deployment-variable",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("deployment-variable.id", event.payload.id);
       span.setAttribute("deployment.id", event.payload.deploymentId);
       span.setAttribute("workspace.id", event.workspaceId);
@@ -35,6 +36,7 @@ export const updatedDeploymentVariable: Handler<Event.DeploymentVariableUpdated>
   withUpdatedDeploymentVariableSpan(
     "updated-deployment-variable",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("deployment-variable.id", event.payload.current.id);
       span.setAttribute("deployment.id", event.payload.current.deploymentId);
       span.setAttribute("workspace.id", event.workspaceId);
@@ -57,6 +59,7 @@ export const deletedDeploymentVariable: Handler<Event.DeploymentVariableDeleted>
   withDeletedDeploymentVariableSpan(
     "deleted-deployment-variable",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("deployment-variable.id", event.payload.id);
       span.setAttribute("deployment.id", event.payload.deploymentId);
       span.setAttribute("workspace.id", event.workspaceId);
@@ -101,6 +104,7 @@ export const updatedDeploymentVariableValue: Handler<Event.DeploymentVariableVal
   withUpdatedDeploymentVariableValueSpan(
     "updated-deployment-variable-value",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute(
         "deployment-variable-value.id",
         event.payload.current.id,
@@ -129,6 +133,7 @@ export const deletedDeploymentVariableValue: Handler<Event.DeploymentVariableVal
   withDeletedDeploymentVariableValueSpan(
     "deleted-deployment-variable-value",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("deployment-variable-value.id", event.payload.id);
       span.setAttribute("deployment-variable.id", event.payload.variableId);
       span.setAttribute("workspace.id", event.workspaceId);

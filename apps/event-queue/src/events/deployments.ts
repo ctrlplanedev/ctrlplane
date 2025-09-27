@@ -11,6 +11,7 @@ const withNewDeploymentSpan = makeWithSpan(newDeploymentTracer);
 
 export const newDeployment: Handler<Event.DeploymentCreated> =
   withNewDeploymentSpan("new-deployment", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("deployment.id", event.payload.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
@@ -23,6 +24,7 @@ const withUpdatedDeploymentSpan = makeWithSpan(updatedDeploymentTracer);
 
 export const updatedDeployment: Handler<Event.DeploymentUpdated> =
   withUpdatedDeploymentSpan("updated-deployment", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("deployment.id", event.payload.current.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
@@ -37,6 +39,7 @@ const withDeletedDeploymentSpan = makeWithSpan(deletedDeploymentTracer);
 
 export const deletedDeployment: Handler<Event.DeploymentDeleted> =
   withDeletedDeploymentSpan("deleted-deployment", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("deployment.id", event.payload.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);

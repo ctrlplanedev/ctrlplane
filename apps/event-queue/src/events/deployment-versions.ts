@@ -21,6 +21,7 @@ export const newDeploymentVersion: Handler<Event.DeploymentVersionCreated> =
   withNewDeploymentVersionSpan(
     "new-deployment-version",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("deployment-version.id", event.payload.id);
       span.setAttribute("deployment.id", event.payload.deploymentId);
       span.setAttribute("workspace.id", event.workspaceId);
@@ -44,6 +45,7 @@ export const updatedDeploymentVersion: Handler<Event.DeploymentVersionUpdated> =
   withUpdatedDeploymentVersionSpan(
     "updated-deployment-version",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("deployment-version.id", event.payload.current.id);
       span.setAttribute("deployment.id", event.payload.current.deploymentId);
       span.setAttribute("workspace.id", event.workspaceId);
@@ -69,6 +71,7 @@ export const deletedDeploymentVersion: Handler<Event.DeploymentVersionDeleted> =
   withDeletedDeploymentVersionSpan(
     "deleted-deployment-version",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("deployment-version.id", event.payload.id);
       span.setAttribute("deployment.id", event.payload.deploymentId);
       span.setAttribute("workspace.id", event.workspaceId);

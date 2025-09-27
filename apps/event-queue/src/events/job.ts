@@ -22,6 +22,7 @@ const withUpdatedJobSpan = makeWithSpan(updatedJobTracer);
 export const updateJob: Handler<Event.JobUpdated> = withUpdatedJobSpan(
   "updated-job",
   async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("job.id", event.payload.current.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);

@@ -11,6 +11,7 @@ const withNewEnvironmentSpan = makeWithSpan(newEnvironmentTracer);
 
 export const newEnvironment: Handler<Event.EnvironmentCreated> =
   withNewEnvironmentSpan("new-environment", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("environment.id", event.payload.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
@@ -25,6 +26,7 @@ const withUpdatedEnvironmentSpan = makeWithSpan(updatedEnvironmentTracer);
 
 export const updatedEnvironment: Handler<Event.EnvironmentUpdated> =
   withUpdatedEnvironmentSpan("updated-environment", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("environment.id", event.payload.current.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
@@ -39,6 +41,7 @@ const withDeletedEnvironmentSpan = makeWithSpan(deletedEnvironmentTracer);
 
 export const deletedEnvironment: Handler<Event.EnvironmentDeleted> =
   withDeletedEnvironmentSpan("deleted-environment", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("environment.id", event.payload.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);

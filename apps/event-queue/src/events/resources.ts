@@ -63,6 +63,7 @@ const withNewResourceVariableSpan = makeWithSpan(newResourceVariableTracer);
 
 export const newResourceVariable: Handler<Event.ResourceVariableCreated> =
   withNewResourceVariableSpan("new-resource-variable", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("resource-variable.id", event.payload.id);
     span.setAttribute("resource.id", event.payload.resourceId);
     span.setAttribute("workspace.id", event.workspaceId);
@@ -84,6 +85,7 @@ export const updatedResourceVariable: Handler<Event.ResourceVariableUpdated> =
   withUpdatedResourceVariableSpan(
     "updated-resource-variable",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("resource-variable.id", event.payload.current.id);
       span.setAttribute("resource.id", event.payload.current.resourceId);
       span.setAttribute("workspace.id", event.workspaceId);
@@ -106,6 +108,7 @@ export const deletedResourceVariable: Handler<Event.ResourceVariableDeleted> =
   withDeletedResourceVariableSpan(
     "deleted-resource-variable",
     async (span, event) => {
+      span.setAttribute("event.type", event.eventType);
       span.setAttribute("resource-variable.id", event.payload.id);
       span.setAttribute("resource.id", event.payload.resourceId);
       span.setAttribute("workspace.id", event.workspaceId);

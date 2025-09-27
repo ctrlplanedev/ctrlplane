@@ -11,6 +11,7 @@ const withSpan = makeWithSpan(evaluateReleaseTargetTracer);
 
 export const evaluateReleaseTarget: Handler<Event.EvaluateReleaseTarget> =
   withSpan("evaluate-release-target", async (span, event) => {
+    span.setAttribute("event.type", event.eventType);
     span.setAttribute("releaseTarget.id", event.payload.releaseTarget.id);
     span.setAttribute("workspace.id", event.workspaceId);
     const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
