@@ -172,7 +172,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
     // Create target resource
@@ -271,7 +271,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const reference = faker.string.alphanumeric(10).toLowerCase();
     // Create source resource
     const sourceResource = await api.POST("/v1/resources", {
@@ -435,7 +435,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const reference = faker.string.alphanumeric(10).toLowerCase();
     // Create target resource
     const sourceResource = await api.POST("/v1/resources", {
@@ -605,7 +605,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const reference = faker.string.alphanumeric(10).toLowerCase();
     // Create target resource
     const sourceResource = await api.POST("/v1/resources", {
@@ -776,7 +776,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const resourceIdentifier = faker.string.alphanumeric(10).toLowerCase();
 
     const resourceResponse = await api.POST("/v1/resources", {
@@ -907,7 +907,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
     // Create source resource
@@ -1094,7 +1094,7 @@ test.describe("Resource Variables API", () => {
     workspace,
     page,
   }) => {
-    const systemPrefix = builder.refs.system.slug.split("-")[0]!.toLowerCase();
+    const systemPrefix = builder.refs.system.slug.split("-")[0]!;
     const reference = faker.string.alphanumeric(10).toLowerCase();
 
     // Create source resource

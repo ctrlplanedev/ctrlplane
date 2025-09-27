@@ -223,7 +223,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     if (deploymentVariable == null) return null;
 
     const { values, defaultValue } = deploymentVariable;
-    const sortedValues = values.sort((a, b) => a.priority - b.priority);
+    const sortedValues = values.sort((a, b) => b.priority - a.priority);
 
     const { resource } = this.releaseTarget;
     for (const value of sortedValues) {

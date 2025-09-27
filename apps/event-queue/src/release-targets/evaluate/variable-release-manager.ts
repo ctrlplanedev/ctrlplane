@@ -20,6 +20,12 @@ export class VariableReleaseManager implements ReleaseManager {
     private readonly workspace: Workspace,
   ) {}
 
+  private getStringifiedValue(value: any) {
+    if (value == null) return null;
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  }
+
   private async getReleaseValues(releaseId: string) {
     const [allValues, allSnapshots] = await Promise.all([
       this.workspace.repository.variableReleaseValueRepository.getAll(),
@@ -65,7 +71,10 @@ export class VariableReleaseManager implements ReleaseManager {
       await this.workspace.repository.variableValueSnapshotRepository.getAll();
     return allSnapshots.filter((snapshot) =>
       variables.some(
-        (v) => v.key === snapshot.key && v.value === snapshot.value,
+        (v) =>
+          v.key === snapshot.key &&
+          this.getStringifiedValue(v.value) ===
+            this.getStringifiedValue(snapshot.value),
       ),
     );
   }
@@ -88,12 +97,6 @@ export class VariableReleaseManager implements ReleaseManager {
     );
 
     return [...existingSnapshots, ...newSnapshots];
-  }
-
-  private getStringifiedValue(value: any) {
-    if (value == null) return null;
-    if (typeof value === "object") return JSON.stringify(value);
-    return String(value);
   }
 
   async upsertRelease(variables: MaybeVariable[]) {
