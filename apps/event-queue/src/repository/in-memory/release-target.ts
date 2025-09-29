@@ -9,7 +9,7 @@ import type { Repository } from "../repository";
 import { createSpanWrapper } from "../../traces.js";
 
 const getInitialEntities = createSpanWrapper(
-  "getInitialEntities",
+  "release-target-getInitialEntities",
   async (_span, workspaceId: string) =>
     dbClient
       .select()
@@ -38,7 +38,7 @@ const getInitialEntities = createSpanWrapper(
 );
 
 const getInitialResourceMeta = createSpanWrapper(
-  "getInitialResourceMeta",
+  "release-target-getInitialResourceMeta",
   async (_span, workspaceId: string) =>
     dbClient
       .select()

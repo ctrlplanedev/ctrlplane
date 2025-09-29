@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import { createSpanWrapper } from "src/traces";
 
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
@@ -13,21 +14,10 @@ type InMemoryVariableReleaseValueRepositoryOptions = {
   tx?: Tx;
 };
 
-export class InMemoryVariableReleaseValueRepository
-  implements Repository<VariableReleaseValue>
-{
-  private entities: Map<string, VariableReleaseValue>;
-  private readonly db: Tx;
-
-  constructor(opts: InMemoryVariableReleaseValueRepositoryOptions) {
-    this.entities = new Map();
-    for (const entity of opts.initialEntities)
-      this.entities.set(entity.id, entity);
-    this.db = opts.tx ?? dbClient;
-  }
-
-  static async create(workspaceId: string) {
-    const initialEntities = await dbClient
+const getInitialEntities = createSpanWrapper(
+  "variable-release-value-getInitialEntities",
+  async (_span, workspaceId: string) => {
+    return dbClient
       .select()
       .from(schema.variableSetReleaseValue)
       .innerJoin(
@@ -47,6 +37,24 @@ export class InMemoryVariableReleaseValueRepository
       )
       .where(eq(schema.resource.workspaceId, workspaceId))
       .then((rows) => rows.map((row) => row.variable_set_release_value));
+  },
+);
+
+export class InMemoryVariableReleaseValueRepository
+  implements Repository<VariableReleaseValue>
+{
+  private entities: Map<string, VariableReleaseValue>;
+  private readonly db: Tx;
+
+  constructor(opts: InMemoryVariableReleaseValueRepositoryOptions) {
+    this.entities = new Map();
+    for (const entity of opts.initialEntities)
+      this.entities.set(entity.id, entity);
+    this.db = opts.tx ?? dbClient;
+  }
+
+  static async create(workspaceId: string) {
+    const initialEntities = await getInitialEntities(workspaceId);
 
     return new InMemoryVariableReleaseValueRepository({
       initialEntities,

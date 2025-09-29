@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import { createSpanWrapper } from "src/traces";
 
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
@@ -8,20 +9,23 @@ import type { Repository } from "../repository";
 
 type VersionRelease = typeof schema.versionRelease.$inferSelect;
 
-const getInitialEntities = async (workspaceId: string) =>
-  dbClient
-    .select()
-    .from(schema.versionRelease)
-    .innerJoin(
-      schema.releaseTarget,
-      eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
-    )
-    .innerJoin(
-      schema.resource,
-      eq(schema.releaseTarget.resourceId, schema.resource.id),
-    )
-    .where(eq(schema.resource.workspaceId, workspaceId))
-    .then((rows) => rows.map((row) => row.version_release));
+const getInitialEntities = createSpanWrapper(
+  "version-release-getInitialEntities",
+  async (_span, workspaceId: string) =>
+    dbClient
+      .select()
+      .from(schema.versionRelease)
+      .innerJoin(
+        schema.releaseTarget,
+        eq(schema.versionRelease.releaseTargetId, schema.releaseTarget.id),
+      )
+      .innerJoin(
+        schema.resource,
+        eq(schema.releaseTarget.resourceId, schema.resource.id),
+      )
+      .where(eq(schema.resource.workspaceId, workspaceId))
+      .then((rows) => rows.map((row) => row.version_release)),
+);
 
 type InMemoryVersionReleaseRepositoryOptions = {
   initialEntities: VersionRelease[];

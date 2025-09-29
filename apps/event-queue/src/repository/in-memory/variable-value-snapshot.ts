@@ -5,12 +5,16 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "../repository";
+import { createSpanWrapper } from "../../traces.js";
 
-const getInitialEntities = async (workspaceId: string) =>
-  dbClient
-    .select()
-    .from(schema.variableValueSnapshot)
-    .where(eq(schema.variableValueSnapshot.workspaceId, workspaceId));
+const getInitialEntities = createSpanWrapper(
+  "variable-value-snapshot-getInitialEntities",
+  async (_span, workspaceId: string) =>
+    dbClient
+      .select()
+      .from(schema.variableValueSnapshot)
+      .where(eq(schema.variableValueSnapshot.workspaceId, workspaceId)),
+);
 
 type InMemoryVariableValueSnapshotRepositoryOptions = {
   initialEntities: (typeof schema.variableValueSnapshot.$inferSelect)[];
