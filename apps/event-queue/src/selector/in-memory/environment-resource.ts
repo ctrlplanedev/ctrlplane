@@ -101,7 +101,7 @@ export class InMemoryEnvironmentResourceSelector
     return inMemoryEnvironmentResourceSelector;
   }
 
-  async upsertEntity(entity: FullResource): Promise<void> {
+  upsertEntity(entity: FullResource): void {
     if (this.matches.get(entity.id) == null)
       this.matches.set(entity.id, new Set());
     this.entities.set(entity.id, entity);
@@ -130,7 +130,7 @@ export class InMemoryEnvironmentResourceSelector
       this.matches.get(entity.id)?.add(selectorId);
 
     if (unmatchedSelectors.length > 0)
-      await dbClient
+      dbClient
         .delete(schema.computedEnvironmentResource)
         .where(
           and(
@@ -140,10 +140,17 @@ export class InMemoryEnvironmentResourceSelector
               unmatchedSelectors,
             ),
           ),
-        );
+        )
+        .catch((error) => {
+          log.error("Error deleting computed environment resources", {
+            error,
+            entityId: entity.id,
+            unmatchedSelectors,
+          });
+        });
 
     if (newlyMatchedSelectors.length > 0)
-      await dbClient
+      dbClient
         .insert(schema.computedEnvironmentResource)
         .values(
           newlyMatchedSelectors.map((selectorId) => ({
@@ -151,17 +158,31 @@ export class InMemoryEnvironmentResourceSelector
             environmentId: selectorId,
           })),
         )
-        .onConflictDoNothing();
-  }
-  async removeEntity(entity: FullResource): Promise<void> {
-    this.entities.delete(entity.id);
-    this.matches.delete(entity.id);
-    await dbClient
-      .delete(schema.computedEnvironmentResource)
-      .where(eq(schema.computedEnvironmentResource.resourceId, entity.id));
+        .onConflictDoNothing()
+        .catch((error) => {
+          log.error("Error inserting computed environment resources", {
+            error,
+            entityId: entity.id,
+            newlyMatchedSelectors,
+          });
+        });
   }
 
-  async upsertSelector(selector: schema.Environment): Promise<void> {
+  removeEntity(entity: FullResource): void {
+    this.entities.delete(entity.id);
+    this.matches.delete(entity.id);
+    dbClient
+      .delete(schema.computedEnvironmentResource)
+      .where(eq(schema.computedEnvironmentResource.resourceId, entity.id))
+      .catch((error) => {
+        log.error("Error deleting computed environment resources", {
+          error,
+          entityId: entity.id,
+        });
+      });
+  }
+
+  upsertSelector(selector: schema.Environment): void {
     this.selectors.set(selector.id, selector);
 
     const previouslyMatchingEntities: string[] = [];
@@ -188,7 +209,7 @@ export class InMemoryEnvironmentResourceSelector
       this.matches.get(entityId)?.add(selector.id);
 
     if (unmatchedEntities.length > 0)
-      await dbClient
+      dbClient
         .delete(schema.computedEnvironmentResource)
         .where(
           and(
@@ -198,10 +219,17 @@ export class InMemoryEnvironmentResourceSelector
               unmatchedEntities,
             ),
           ),
-        );
+        )
+        .catch((error) => {
+          log.error("Error deleting computed environment resources", {
+            error,
+            selectorId: selector.id,
+            unmatchedEntities,
+          });
+        });
 
     if (newlyMatchedEntities.length > 0)
-      await dbClient
+      dbClient
         .insert(schema.computedEnvironmentResource)
         .values(
           newlyMatchedEntities.map((entityId) => ({
@@ -209,52 +237,56 @@ export class InMemoryEnvironmentResourceSelector
             environmentId: selector.id,
           })),
         )
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .catch((error) => {
+          log.error("Error inserting computed environment resources", {
+            error,
+            selectorId: selector.id,
+            newlyMatchedEntities,
+          });
+        });
   }
-  async removeSelector(selector: schema.Environment): Promise<void> {
+  removeSelector(selector: schema.Environment): void {
     this.selectors.delete(selector.id);
 
     for (const environmentIds of this.matches.values())
       if (environmentIds.has(selector.id)) environmentIds.delete(selector.id);
 
-    await dbClient
+    dbClient
       .delete(schema.computedEnvironmentResource)
-      .where(eq(schema.computedEnvironmentResource.environmentId, selector.id));
+      .where(eq(schema.computedEnvironmentResource.environmentId, selector.id))
+      .catch((error) => {
+        log.error("Error deleting computed environment resources", {
+          error,
+          selectorId: selector.id,
+        });
+      });
   }
-  getEntitiesForSelector(
-    selector: schema.Environment,
-  ): Promise<FullResource[]> {
+  getEntitiesForSelector(selector: schema.Environment): FullResource[] {
     const entityIds: string[] = [];
     for (const [entityId, selectorIds] of this.matches)
       if (selectorIds.has(selector.id)) entityIds.push(entityId);
 
-    return Promise.resolve(
-      entityIds
-        .map((entityId) => this.entities.get(entityId))
-        .filter(isPresent),
-    );
+    return entityIds
+      .map((entityId) => this.entities.get(entityId))
+      .filter(isPresent);
   }
 
-  getSelectorsForEntity(entity: FullResource): Promise<schema.Environment[]> {
+  getSelectorsForEntity(entity: FullResource): schema.Environment[] {
     const matchingSelectorIds =
       this.matches.get(entity.id) ?? new Set<string>();
     const matchingSelectors = Array.from(matchingSelectorIds)
       .map((selectorId) => this.selectors.get(selectorId))
       .filter(isPresent);
-    return Promise.resolve(matchingSelectors);
+    return matchingSelectors;
   }
-  getAllEntities(): Promise<FullResource[]> {
-    return Promise.resolve(Array.from(this.entities.values()));
+  getAllEntities(): FullResource[] {
+    return Array.from(this.entities.values());
   }
-  getAllSelectors(): Promise<schema.Environment[]> {
-    return Promise.resolve(Array.from(this.selectors.values()));
+  getAllSelectors(): schema.Environment[] {
+    return Array.from(this.selectors.values());
   }
-  isMatch(
-    entity: FullResource,
-    selector: schema.Environment,
-  ): Promise<boolean> {
-    return Promise.resolve(
-      this.matches.get(entity.id)?.has(selector.id) ?? false,
-    );
+  isMatch(entity: FullResource, selector: schema.Environment): boolean {
+    return this.matches.get(entity.id)?.has(selector.id) ?? false;
   }
 }

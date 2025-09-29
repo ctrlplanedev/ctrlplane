@@ -101,7 +101,7 @@ export class InMemoryDeploymentResourceSelector
     return inMemoryDeploymentResourceSelector;
   }
 
-  async upsertEntity(entity: FullResource): Promise<void> {
+  upsertEntity(entity: FullResource): void {
     if (this.matches.get(entity.id) == null)
       this.matches.set(entity.id, new Set());
     this.entities.set(entity.id, entity);
@@ -132,7 +132,7 @@ export class InMemoryDeploymentResourceSelector
       this.matches.get(entity.id)?.add(deploymentId);
 
     if (unmatchedDeployments.length > 0)
-      await dbClient
+      dbClient
         .delete(schema.computedDeploymentResource)
         .where(
           and(
@@ -142,10 +142,17 @@ export class InMemoryDeploymentResourceSelector
               unmatchedDeployments,
             ),
           ),
-        );
+        )
+        .catch((error) => {
+          log.error("Error deleting computed deployment resources", {
+            error,
+            entityId: entity.id,
+            unmatchedDeployments,
+          });
+        });
 
     if (newlyMatchedDeployments.length > 0)
-      await dbClient
+      dbClient
         .insert(schema.computedDeploymentResource)
         .values(
           newlyMatchedDeployments.map((deploymentId) => ({
@@ -153,17 +160,30 @@ export class InMemoryDeploymentResourceSelector
             deploymentId,
           })),
         )
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .catch((error) => {
+          log.error("Error inserting computed deployment resources", {
+            error,
+            entityId: entity.id,
+            newlyMatchedDeployments,
+          });
+        });
   }
-  async removeEntity(entity: FullResource): Promise<void> {
+  removeEntity(entity: FullResource): void {
     this.entities.delete(entity.id);
     this.matches.delete(entity.id);
-    await dbClient
+    dbClient
       .delete(schema.computedDeploymentResource)
-      .where(eq(schema.computedDeploymentResource.resourceId, entity.id));
+      .where(eq(schema.computedDeploymentResource.resourceId, entity.id))
+      .catch((error) => {
+        log.error("Error deleting computed deployment resources", {
+          error,
+          entityId: entity.id,
+        });
+      });
   }
 
-  async upsertSelector(selector: schema.Deployment): Promise<void> {
+  upsertSelector(selector: schema.Deployment): void {
     this.selectors.set(selector.id, selector);
 
     const previouslyMatchingResources: string[] = [];
@@ -190,7 +210,7 @@ export class InMemoryDeploymentResourceSelector
       this.matches.get(resourceId)?.add(selector.id);
 
     if (unmatchedResources.length > 0)
-      await dbClient
+      dbClient
         .delete(schema.computedDeploymentResource)
         .where(
           and(
@@ -200,10 +220,17 @@ export class InMemoryDeploymentResourceSelector
               unmatchedResources,
             ),
           ),
-        );
+        )
+        .catch((error) => {
+          log.error("Error deleting computed deployment resources", {
+            error,
+            selectorId: selector.id,
+            unmatchedResources,
+          });
+        });
 
     if (newlyMatchedResources.length > 0)
-      await dbClient
+      dbClient
         .insert(schema.computedDeploymentResource)
         .values(
           newlyMatchedResources.map((resourceId) => ({
@@ -211,47 +238,56 @@ export class InMemoryDeploymentResourceSelector
             deploymentId: selector.id,
           })),
         )
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .catch((error) => {
+          log.error("Error inserting computed deployment resources", {
+            error,
+            selectorId: selector.id,
+            newlyMatchedResources,
+          });
+        });
   }
-  async removeSelector(selector: schema.Deployment): Promise<void> {
+  removeSelector(selector: schema.Deployment): void {
     this.selectors.delete(selector.id);
 
     for (const deploymentIds of this.matches.values())
       if (deploymentIds.has(selector.id)) deploymentIds.delete(selector.id);
 
-    await dbClient
+    dbClient
       .delete(schema.computedDeploymentResource)
-      .where(eq(schema.computedDeploymentResource.deploymentId, selector.id));
+      .where(eq(schema.computedDeploymentResource.deploymentId, selector.id))
+      .catch((error) => {
+        log.error("Error deleting computed deployment resources", {
+          error,
+          selectorId: selector.id,
+        });
+      });
   }
-  getEntitiesForSelector(selector: schema.Deployment): Promise<FullResource[]> {
+  getEntitiesForSelector(selector: schema.Deployment): FullResource[] {
     const resourceIds: string[] = [];
     for (const [resourceId, deploymentIds] of this.matches)
       if (deploymentIds.has(selector.id)) resourceIds.push(resourceId);
 
-    return Promise.resolve(
-      resourceIds
-        .map((resourceId) => this.entities.get(resourceId))
-        .filter(isPresent),
-    );
+    return resourceIds
+      .map((resourceId) => this.entities.get(resourceId))
+      .filter(isPresent);
   }
 
-  getSelectorsForEntity(entity: FullResource): Promise<schema.Deployment[]> {
+  getSelectorsForEntity(entity: FullResource): schema.Deployment[] {
     const matchingDeploymentIds =
       this.matches.get(entity.id) ?? new Set<string>();
     const matchingDeployments = Array.from(matchingDeploymentIds)
       .map((deploymentId) => this.selectors.get(deploymentId))
       .filter(isPresent);
-    return Promise.resolve(matchingDeployments);
+    return matchingDeployments;
   }
-  getAllEntities(): Promise<FullResource[]> {
-    return Promise.resolve(Array.from(this.entities.values()));
+  getAllEntities(): FullResource[] {
+    return Array.from(this.entities.values());
   }
-  getAllSelectors(): Promise<schema.Deployment[]> {
-    return Promise.resolve(Array.from(this.selectors.values()));
+  getAllSelectors(): schema.Deployment[] {
+    return Array.from(this.selectors.values());
   }
-  isMatch(entity: FullResource, selector: schema.Deployment): Promise<boolean> {
-    return Promise.resolve(
-      this.matches.get(entity.id)?.has(selector.id) ?? false,
-    );
+  isMatch(entity: FullResource, selector: schema.Deployment): boolean {
+    return this.matches.get(entity.id)?.has(selector.id) ?? false;
   }
 }

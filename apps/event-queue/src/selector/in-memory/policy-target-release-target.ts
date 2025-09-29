@@ -168,7 +168,7 @@ export class InMemoryPolicyTargetReleaseTargetSelector
     return inMemoryPolicyTargetReleaseTargetSelector;
   }
 
-  async upsertEntity(entity: FullReleaseTarget): Promise<void> {
+  upsertEntity(entity: FullReleaseTarget): void {
     if (this.matches.get(entity.id) == null)
       this.matches.set(entity.id, new Set());
     this.entities.set(entity.id, entity);
@@ -195,47 +195,63 @@ export class InMemoryPolicyTargetReleaseTargetSelector
     for (const selectorId of newlyMatchedSelectors)
       this.matches.get(entity.id)?.add(selectorId);
 
-    const removeComputedPromise =
-      unmatchedSelectors.length > 0
-        ? await dbClient
-            .delete(schema.computedPolicyTargetReleaseTarget)
-            .where(
-              and(
-                eq(
-                  schema.computedPolicyTargetReleaseTarget.releaseTargetId,
-                  entity.id,
-                ),
-                inArray(
-                  schema.computedPolicyTargetReleaseTarget.policyTargetId,
-                  unmatchedSelectors,
-                ),
-              ),
-            )
-        : Promise.resolve();
-    const insertComputedPromise =
-      newlyMatchedSelectors.length > 0
-        ? await dbClient
-            .insert(schema.computedPolicyTargetReleaseTarget)
-            .values(
-              newlyMatchedSelectors.map((selectorId) => ({
-                releaseTargetId: entity.id,
-                policyTargetId: selectorId,
-              })),
-            )
-            .onConflictDoNothing()
-        : Promise.resolve();
-    await Promise.all([removeComputedPromise, insertComputedPromise]);
+    if (unmatchedSelectors.length > 0)
+      dbClient
+        .delete(schema.computedPolicyTargetReleaseTarget)
+        .where(
+          and(
+            eq(
+              schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+              entity.id,
+            ),
+            inArray(
+              schema.computedPolicyTargetReleaseTarget.policyTargetId,
+              unmatchedSelectors,
+            ),
+          ),
+        )
+        .catch((error) => {
+          log.error("Error deleting computed policy target release targets", {
+            error,
+            entityId: entity.id,
+            unmatchedSelectors,
+          });
+        });
+
+    if (newlyMatchedSelectors.length > 0)
+      dbClient
+        .insert(schema.computedPolicyTargetReleaseTarget)
+        .values(
+          newlyMatchedSelectors.map((selectorId) => ({
+            releaseTargetId: entity.id,
+            policyTargetId: selectorId,
+          })),
+        )
+        .onConflictDoNothing()
+        .catch((error) => {
+          log.error("Error inserting computed policy target release targets", {
+            error,
+            entityId: entity.id,
+            newlyMatchedSelectors,
+          });
+        });
   }
-  async removeEntity(entity: FullReleaseTarget): Promise<void> {
+  removeEntity(entity: FullReleaseTarget): void {
     this.entities.delete(entity.id);
     this.matches.delete(entity.id);
-    await dbClient
+    dbClient
       .delete(schema.computedPolicyTargetReleaseTarget)
       .where(
         eq(schema.computedPolicyTargetReleaseTarget.releaseTargetId, entity.id),
-      );
+      )
+      .catch((error) => {
+        log.error("Error deleting computed policy target release targets", {
+          error,
+          entityId: entity.id,
+        });
+      });
   }
-  async upsertSelector(selector: schema.PolicyTarget): Promise<void> {
+  upsertSelector(selector: schema.PolicyTarget): void {
     this.selectors.set(selector.id, selector);
 
     const previouslyMatchingEntities = Array.from(this.matches.entries())
@@ -258,86 +274,87 @@ export class InMemoryPolicyTargetReleaseTargetSelector
     for (const entityId of newlyMatchedEntities)
       this.matches.get(entityId)?.add(selector.id);
 
-    const removeComputedPromise =
-      unmatchedEntities.length > 0
-        ? await dbClient
-            .delete(schema.computedPolicyTargetReleaseTarget)
-            .where(
-              and(
-                eq(
-                  schema.computedPolicyTargetReleaseTarget.policyTargetId,
-                  selector.id,
-                ),
-                inArray(
-                  schema.computedPolicyTargetReleaseTarget.releaseTargetId,
-                  unmatchedEntities,
-                ),
-              ),
-            )
-        : Promise.resolve();
+    if (unmatchedEntities.length > 0)
+      dbClient
+        .delete(schema.computedPolicyTargetReleaseTarget)
+        .where(
+          and(
+            eq(
+              schema.computedPolicyTargetReleaseTarget.policyTargetId,
+              selector.id,
+            ),
+            inArray(
+              schema.computedPolicyTargetReleaseTarget.releaseTargetId,
+              unmatchedEntities,
+            ),
+          ),
+        )
+        .catch((error) => {
+          log.error("Error deleting computed policy target release targets", {
+            error,
+            selectorId: selector.id,
+            unmatchedEntities,
+          });
+        });
 
-    const insertComputedPromise =
-      newlyMatchedEntities.length > 0
-        ? await dbClient
-            .insert(schema.computedPolicyTargetReleaseTarget)
-            .values(
-              newlyMatchedEntities.map((entityId) => ({
-                releaseTargetId: entityId,
-                policyTargetId: selector.id,
-              })),
-            )
-            .onConflictDoNothing()
-        : Promise.resolve();
-
-    await Promise.all([removeComputedPromise, insertComputedPromise]);
+    if (newlyMatchedEntities.length > 0)
+      dbClient
+        .insert(schema.computedPolicyTargetReleaseTarget)
+        .values(
+          newlyMatchedEntities.map((entityId) => ({
+            releaseTargetId: entityId,
+            policyTargetId: selector.id,
+          })),
+        )
+        .onConflictDoNothing()
+        .catch((error) => {
+          log.error("Error inserting computed policy target release targets", {
+            error,
+            selectorId: selector.id,
+            newlyMatchedEntities,
+          });
+        });
   }
-  async removeSelector(selector: schema.PolicyTarget): Promise<void> {
+  removeSelector(selector: schema.PolicyTarget): void {
     this.selectors.delete(selector.id);
 
     for (const selectorIds of this.matches.values())
       if (selectorIds.has(selector.id)) selectorIds.delete(selector.id);
 
-    await dbClient
+    dbClient
       .delete(schema.computedPolicyTargetReleaseTarget)
       .where(
         eq(
           schema.computedPolicyTargetReleaseTarget.policyTargetId,
           selector.id,
         ),
-      );
+      )
+      .catch((error) => {
+        log.error("Error deleting computed policy target release targets", {
+          error,
+          selectorId: selector.id,
+        });
+      });
   }
 
-  getEntitiesForSelector(
-    selector: schema.PolicyTarget,
-  ): Promise<FullReleaseTarget[]> {
-    return Promise.resolve(
-      Array.from(this.matches.entries())
-        .filter(([, selectorIds]) => selectorIds.has(selector.id))
-        .map(([entityId]) => this.entities.get(entityId))
-        .filter(isPresent),
-    );
+  getEntitiesForSelector(selector: schema.PolicyTarget): FullReleaseTarget[] {
+    return Array.from(this.matches.entries())
+      .filter(([, selectorIds]) => selectorIds.has(selector.id))
+      .map(([entityId]) => this.entities.get(entityId))
+      .filter(isPresent);
   }
-  getSelectorsForEntity(
-    entity: FullReleaseTarget,
-  ): Promise<schema.PolicyTarget[]> {
-    return Promise.resolve(
-      Array.from(this.matches.get(entity.id) ?? new Set<string>())
-        .map((selectorId) => this.selectors.get(selectorId))
-        .filter(isPresent),
-    );
+  getSelectorsForEntity(entity: FullReleaseTarget): schema.PolicyTarget[] {
+    return Array.from(this.matches.get(entity.id) ?? new Set<string>())
+      .map((selectorId) => this.selectors.get(selectorId))
+      .filter(isPresent);
   }
-  getAllEntities(): Promise<FullReleaseTarget[]> {
-    return Promise.resolve(Array.from(this.entities.values()));
+  getAllEntities(): FullReleaseTarget[] {
+    return Array.from(this.entities.values());
   }
-  getAllSelectors(): Promise<schema.PolicyTarget[]> {
-    return Promise.resolve(Array.from(this.selectors.values()));
+  getAllSelectors(): schema.PolicyTarget[] {
+    return Array.from(this.selectors.values());
   }
-  isMatch(
-    entity: FullReleaseTarget,
-    selector: schema.PolicyTarget,
-  ): Promise<boolean> {
-    return Promise.resolve(
-      this.matches.get(entity.id)?.has(selector.id) ?? false,
-    );
+  isMatch(entity: FullReleaseTarget, selector: schema.PolicyTarget): boolean {
+    return this.matches.get(entity.id)?.has(selector.id) ?? false;
   }
 }

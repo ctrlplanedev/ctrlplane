@@ -10,19 +10,19 @@ import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 import { Trace } from "../traces.js";
 
 export interface Selector<S, E> {
-  upsertEntity(entity: E): Promise<void>;
-  removeEntity(entity: E): Promise<void>;
+  upsertEntity(entity: E): Promise<void> | void;
+  removeEntity(entity: E): Promise<void> | void;
 
-  upsertSelector(selector: S): Promise<void>;
-  removeSelector(selector: S): Promise<void>;
+  upsertSelector(selector: S): Promise<void> | void;
+  removeSelector(selector: S): Promise<void> | void;
 
-  getEntitiesForSelector(selector: S): Promise<E[]>;
-  getSelectorsForEntity(entity: E): Promise<S[]>;
+  getEntitiesForSelector(selector: S): Promise<E[]> | E[];
+  getSelectorsForEntity(entity: E): Promise<S[]> | S[];
 
-  getAllEntities(): Promise<E[]>;
-  getAllSelectors(): Promise<S[]>;
+  getAllEntities(): Promise<E[]> | E[];
+  getAllSelectors(): Promise<S[]> | S[];
 
-  isMatch(entity: E, selector: S): Promise<boolean>;
+  isMatch(entity: E, selector: S): Promise<boolean> | boolean;
 }
 
 type SelectorManagerOptions = {
