@@ -5,8 +5,31 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "../repository";
+import { createSpanWrapper } from "../../traces.js";
 
 type ResourceVariable = typeof schema.resourceVariable.$inferSelect;
+
+const getInitialEntities = createSpanWrapper(
+  "resource-variable-getInitialEntities",
+  async (span, workspaceId: string) => {
+    const initialEntities = await dbClient
+      .select()
+      .from(schema.resourceVariable)
+      .innerJoin(
+        schema.resource,
+        eq(schema.resourceVariable.resourceId, schema.resource.id),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, workspaceId),
+          isNull(schema.resource.deletedAt),
+        ),
+      )
+      .then((rows) => rows.map((row) => row.resource_variable));
+    span.setAttributes({ "resource-variable.count": initialEntities.length });
+    return initialEntities;
+  },
+);
 
 type InMemoryResourceVariableRepositoryOptions = {
   initialEntities: ResourceVariable[];
@@ -27,20 +50,7 @@ export class InMemoryResourceVariableRepository
   }
 
   static async create(workspaceId: string) {
-    const initialEntities = await dbClient
-      .select()
-      .from(schema.resourceVariable)
-      .innerJoin(
-        schema.resource,
-        eq(schema.resourceVariable.resourceId, schema.resource.id),
-      )
-      .where(
-        and(
-          eq(schema.resource.workspaceId, workspaceId),
-          isNull(schema.resource.deletedAt),
-        ),
-      )
-      .then((rows) => rows.map((row) => row.resource_variable));
+    const initialEntities = await getInitialEntities(workspaceId);
     return new InMemoryResourceVariableRepository({
       initialEntities,
       tx: dbClient,

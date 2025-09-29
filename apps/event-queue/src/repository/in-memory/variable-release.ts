@@ -5,8 +5,30 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "../repository";
+import { createSpanWrapper } from "../../traces.js";
 
 type VariableRelease = typeof schema.variableSetRelease.$inferSelect;
+
+const getInitialEntities = createSpanWrapper(
+  "variable-release-getInitialEntities",
+  async (span, workspaceId: string) => {
+    const initialEntities = await dbClient
+      .select()
+      .from(schema.variableSetRelease)
+      .innerJoin(
+        schema.releaseTarget,
+        eq(schema.variableSetRelease.releaseTargetId, schema.releaseTarget.id),
+      )
+      .innerJoin(
+        schema.resource,
+        eq(schema.releaseTarget.resourceId, schema.resource.id),
+      )
+      .where(eq(schema.resource.workspaceId, workspaceId))
+      .then((rows) => rows.map((row) => row.variable_set_release));
+    span.setAttributes({ "variable-release.count": initialEntities.length });
+    return initialEntities;
+  },
+);
 
 type InMemoryVariableReleaseRepositoryOptions = {
   initialEntities: VariableRelease[];
@@ -27,19 +49,7 @@ export class InMemoryVariableReleaseRepository
   }
 
   static async create(workspaceId: string) {
-    const initialEntities = await dbClient
-      .select()
-      .from(schema.variableSetRelease)
-      .innerJoin(
-        schema.releaseTarget,
-        eq(schema.variableSetRelease.releaseTargetId, schema.releaseTarget.id),
-      )
-      .innerJoin(
-        schema.resource,
-        eq(schema.releaseTarget.resourceId, schema.resource.id),
-      )
-      .where(eq(schema.resource.workspaceId, workspaceId))
-      .then((rows) => rows.map((row) => row.variable_set_release));
+    const initialEntities = await getInitialEntities(workspaceId);
 
     return new InMemoryVariableReleaseRepository({
       initialEntities,

@@ -10,8 +10,8 @@ import { createSpanWrapper } from "../../traces.js";
 
 const getInitialEntities = createSpanWrapper(
   "release-target-getInitialEntities",
-  async (_span, workspaceId: string) =>
-    dbClient
+  async (span, workspaceId: string) => {
+    const rows = await dbClient
       .select()
       .from(schema.releaseTarget)
       .innerJoin(
@@ -34,7 +34,10 @@ const getInitialEntities = createSpanWrapper(
           environment: row.environment,
           deployment: row.deployment,
         })),
-      ),
+      );
+    span.setAttributes({ "release-target.count": rows.length });
+    return rows;
+  },
 );
 
 const getInitialResourceMeta = createSpanWrapper(

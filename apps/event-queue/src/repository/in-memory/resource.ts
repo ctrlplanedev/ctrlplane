@@ -1,11 +1,54 @@
 import type { Tx } from "@ctrlplane/db";
 import type { FullResource } from "@ctrlplane/events";
+import _ from "lodash";
 
-import { eq } from "@ctrlplane/db";
+import { and, eq, isNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "../repository";
+import { createSpanWrapper } from "../../traces.js";
+
+const isPresent = <T>(value: T | null | undefined): value is T => value != null;
+
+const getInitialEntities = createSpanWrapper(
+  "resource-getInitialEntities",
+  async (span, workspaceId: string) => {
+    const dbResult = await dbClient
+      .select()
+      .from(schema.resource)
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, workspaceId),
+          isNull(schema.resource.deletedAt),
+        ),
+      );
+
+    const initialEntities = _.chain(dbResult)
+      .groupBy((row) => row.resource.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { resource } = first;
+        const metadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return { ...resource, metadata };
+      })
+      .value()
+      .filter(isPresent);
+
+    span.setAttributes({ "resource.count": initialEntities.length });
+    return initialEntities;
+  },
+);
 
 type InMemoryResourceRepositoryOptions = {
   initialEntities: FullResource[];
@@ -21,6 +64,15 @@ export class InMemoryResourceRepository implements Repository<FullResource> {
     for (const entity of opts.initialEntities)
       this.entities.set(entity.id, entity);
     this.db = opts.tx ?? dbClient;
+  }
+
+  static async create(workspaceId: string) {
+    const initialEntities = await getInitialEntities(workspaceId);
+
+    return new InMemoryResourceRepository({
+      initialEntities,
+      tx: dbClient,
+    });
   }
 
   get(id: string) {

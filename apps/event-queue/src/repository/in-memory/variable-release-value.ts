@@ -16,8 +16,8 @@ type InMemoryVariableReleaseValueRepositoryOptions = {
 
 const getInitialEntities = createSpanWrapper(
   "variable-release-value-getInitialEntities",
-  async (_span, workspaceId: string) => {
-    return dbClient
+  async (span, workspaceId: string) => {
+    const initialEntities = await dbClient
       .select()
       .from(schema.variableSetReleaseValue)
       .innerJoin(
@@ -37,6 +37,10 @@ const getInitialEntities = createSpanWrapper(
       )
       .where(eq(schema.resource.workspaceId, workspaceId))
       .then((rows) => rows.map((row) => row.variable_set_release_value));
+    span.setAttributes({
+      "variable-release-value.count": initialEntities.length,
+    });
+    return initialEntities;
   },
 );
 
