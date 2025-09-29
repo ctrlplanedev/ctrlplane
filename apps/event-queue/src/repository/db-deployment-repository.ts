@@ -33,7 +33,7 @@ export class DbDeploymentRepository implements Repository<schema.Deployment> {
       .then((row) => row?.deployment ?? null);
   }
 
-  @Trace()
+  @Trace("db-deployment-repository-getAll")
   async getAll() {
     return this.db
       .select()

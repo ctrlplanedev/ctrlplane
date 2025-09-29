@@ -28,7 +28,7 @@ export class DbJobAgentRepository implements Repository<schema.JobAgent> {
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace("db-job-agent-repository-getAll")
   getAll() {
     return this.db
       .select()

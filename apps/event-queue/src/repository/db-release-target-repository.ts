@@ -67,7 +67,7 @@ export class DbReleaseTargetRepository
     };
   }
 
-  @Trace()
+  @Trace("db-release-target-repository-getAll")
   async getAll() {
     const dbResult = await this.db
       .select()

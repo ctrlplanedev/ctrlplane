@@ -31,7 +31,7 @@ export class DbVariableReleaseValueSnapshotRepository
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace("db-variable-release-value-snapshot-repository-getAll")
   getAll() {
     return this.db
       .select()

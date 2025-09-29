@@ -34,7 +34,7 @@ export class DbDeploymentVariableRepository
       .then((row) => row?.deployment_variable ?? null);
   }
 
-  @Trace()
+  @Trace("db-deployment-variable-repository-getAll")
   getAll() {
     return this.db
       .select()

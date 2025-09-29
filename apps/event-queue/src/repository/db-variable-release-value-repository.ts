@@ -47,7 +47,7 @@ export class DbVariableReleaseValueRepository
       .then((row) => row?.variable_set_release_value ?? null);
   }
 
-  @Trace()
+  @Trace("db-variable-release-value-repository-getAll")
   getAll() {
     return this.db
       .select()

@@ -40,7 +40,7 @@ export class DbVersionReleaseRepository
       .then((row) => row?.version_release ?? null);
   }
 
-  @Trace()
+  @Trace("db-version-release-repository-getAll")
   getAll() {
     return this.db
       .select()

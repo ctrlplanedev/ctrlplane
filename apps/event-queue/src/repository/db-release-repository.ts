@@ -44,7 +44,7 @@ export class DbReleaseRepository
       .then((row) => row?.release ?? null);
   }
 
-  @Trace()
+  @Trace("db-release-repository-getAll")
   getAll() {
     return this.db
       .select()

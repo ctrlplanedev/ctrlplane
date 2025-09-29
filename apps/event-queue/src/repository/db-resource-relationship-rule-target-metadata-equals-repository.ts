@@ -25,7 +25,9 @@ export class DbResourceRelationshipRuleTargetMetadataEqualsRepository
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace(
+    "db-resource-relationship-rule-target-metadata-equals-repository-getAll",
+  )
   getAll() {
     return this.db
       .select()

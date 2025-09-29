@@ -25,7 +25,7 @@ export class DbReleaseJobRepository
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace("db-release-job-repository-getAll")
   async getAll() {
     return this.db
       .select()

@@ -23,7 +23,7 @@ export class DbJobRepository implements Repository<schema.Job> {
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace("db-job-repository-getAll")
   async getAll() {
     const deploymentJobsPromise = this.db
       .select()

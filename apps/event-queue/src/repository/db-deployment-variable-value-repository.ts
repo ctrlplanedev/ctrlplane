@@ -77,7 +77,7 @@ export class DbDeploymentVariableValueRepository
     return null;
   }
 
-  @Trace()
+  @Trace("db-deployment-variable-value-repository-getAll")
   async getAll() {
     const results = await this.db
       .select()

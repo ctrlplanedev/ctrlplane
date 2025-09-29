@@ -40,7 +40,7 @@ export class DbVariableReleaseRepository
       .then((row) => row?.variable_set_release ?? null);
   }
 
-  @Trace()
+  @Trace("db-variable-release-repository-getAll")
   getAll() {
     return this.db
       .select()

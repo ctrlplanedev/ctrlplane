@@ -41,7 +41,7 @@ export class DbResourceRepository implements Repository<FullResource> {
       });
   }
 
-  @Trace()
+  @Trace("db-resource-repository-getAll")
   async getAll() {
     const dbResult = await this.db
       .select()

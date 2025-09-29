@@ -24,7 +24,7 @@ export class DbVersionRepository
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace("db-version-repository-getAll")
   getAll(): Promise<schema.DeploymentVersion[]> {
     return this.db
       .select()

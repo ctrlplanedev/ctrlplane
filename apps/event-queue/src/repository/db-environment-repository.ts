@@ -33,7 +33,7 @@ export class DbEnvironmentRepository implements Repository<schema.Environment> {
       .then((row) => row?.environment ?? null);
   }
 
-  @Trace()
+  @Trace("db-environment-repository-getAll")
   async getAll() {
     return this.db
       .select()

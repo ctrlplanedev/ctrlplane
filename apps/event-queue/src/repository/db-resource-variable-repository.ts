@@ -36,7 +36,7 @@ export class DbResourceVariableRepository
       .then((row) => row?.resource_variable ?? null);
   }
 
-  @Trace()
+  @Trace("db-resource-variable-repository-getAll")
   getAll() {
     return this.db
       .select()

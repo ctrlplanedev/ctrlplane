@@ -27,7 +27,7 @@ export class DbPolicyRepository implements Repository<schema.Policy> {
       )
       .then(takeFirstOrNull);
   }
-  @Trace()
+  @Trace("db-policy-repository-getAll")
   async getAll() {
     return this.db
       .select()

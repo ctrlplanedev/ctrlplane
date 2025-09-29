@@ -30,7 +30,7 @@ export class DbResourceRelationshipRuleRepository
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace("db-resource-relationship-rule-repository-getAll")
   getAll() {
     return this.db
       .select()

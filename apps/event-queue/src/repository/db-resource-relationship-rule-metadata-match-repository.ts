@@ -25,7 +25,7 @@ export class DbResourceRelationshipRuleMetadataMatchRepository
       .then(takeFirstOrNull);
   }
 
-  @Trace()
+  @Trace("db-resource-relationship-rule-metadata-match-repository-getAll")
   getAll() {
     return this.db
       .select()
