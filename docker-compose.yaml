@@ -1,7 +1,7 @@
 services:
   postgres:
     platform: linux/amd64
-    image: postgres:16
+    image: postgres:18
     container_name: ctrlplane-postgres
     environment:
       POSTGRES_USER: ctrlplane
