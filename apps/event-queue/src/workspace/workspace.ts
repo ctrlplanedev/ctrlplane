@@ -24,13 +24,13 @@ import { DbResourceRelationshipRuleMetadataMatchRepository } from "../repository
 import { DbResourceRelationshipRuleRepository } from "../repository/db-resource-relationship-rule-repository.js";
 import { DbResourceRelationshipRuleSourceMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-source-metadata-equals-repository.js";
 import { DbResourceRelationshipRuleTargetMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-target-metadata-equals-repository.js";
-import { DbVariableReleaseRepository } from "../repository/db-variable-release-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
 import { InMemoryReleaseTargetRepository } from "../repository/in-memory/release-target.js";
 import { InMemoryReleaseRepository } from "../repository/in-memory/release.js";
 import { InMemoryResourceVariableRepository } from "../repository/in-memory/resource-variable.js";
 import { InMemoryResourceRepository } from "../repository/in-memory/resource.js";
 import { InMemoryVariableReleaseValueRepository } from "../repository/in-memory/variable-release-value.js";
+import { InMemoryVariableReleaseRepository } from "../repository/in-memory/variable-release.js";
 import { InMemoryVariableValueSnapshotRepository } from "../repository/in-memory/variable-value-snapshot.js";
 import { InMemoryVersionReleaseRepository } from "../repository/in-memory/version-release.js";
 import { WorkspaceRepository } from "../repository/repository.js";
@@ -121,6 +121,7 @@ const createRepository = async (
     inMemoryReleaseRepository,
     inMemoryVersionReleaseRepository,
     inMemoryResourceVariableRepository,
+    inMemoryVariableReleaseRepository,
     inMemoryVariableReleaseValueRepository,
     inMemoryVariableValueSnapshotRepository,
   ] = await Promise.all([
@@ -128,6 +129,7 @@ const createRepository = async (
     InMemoryReleaseRepository.create(id),
     InMemoryVersionReleaseRepository.create(id),
     InMemoryResourceVariableRepository.create(id),
+    InMemoryVariableReleaseRepository.create(id),
     InMemoryVariableReleaseValueRepository.create(id),
     InMemoryVariableValueSnapshotRepository.create(id),
   ]);
@@ -148,7 +150,7 @@ const createRepository = async (
     releaseTargetRepository: inMemoryReleaseTargetRepository,
     releaseRepository: inMemoryReleaseRepository,
     versionReleaseRepository: inMemoryVersionReleaseRepository,
-    variableReleaseRepository: new DbVariableReleaseRepository(id),
+    variableReleaseRepository: inMemoryVariableReleaseRepository,
     variableReleaseValueRepository: inMemoryVariableReleaseValueRepository,
     variableValueSnapshotRepository: inMemoryVariableValueSnapshotRepository,
     versionRuleRepository: new DbVersionRuleRepository(id),
