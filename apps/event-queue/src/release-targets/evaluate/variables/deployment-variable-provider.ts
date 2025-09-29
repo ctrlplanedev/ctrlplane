@@ -8,6 +8,7 @@ import { variablesAES256 } from "@ctrlplane/secrets";
 
 import type { Workspace } from "../../../workspace/workspace.js";
 import { resourceMatchesSelector } from "../../../selector/in-memory/resource-match.js";
+import { Trace } from "../../../traces.js";
 
 const log = logger.child({ component: "deployment-variable-provider" });
 
@@ -17,6 +18,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     private readonly releaseTarget: FullReleaseTarget,
   ) {}
 
+  @Trace()
   private resolveDirectValue(
     variableValue: schema.DirectDeploymentVariableValue,
   ) {
@@ -28,6 +30,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return variablesAES256().decrypt(strVal);
   }
 
+  @Trace()
   private async getRuleByReference(reference: string) {
     const now = performance.now();
     const allRelationshipRules =
@@ -69,6 +72,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     };
   }
 
+  @Trace()
   private targetResourceMatchesRule(
     relationshipRule: schema.ResourceRelationshipRule,
     targetMetadataEqualsRules: schema.ResourceRelationshipRuleTargetMetadataEquals[],
@@ -93,6 +97,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return true;
   }
 
+  @Trace()
   private async getSourceResourceCandidates(
     relationshipRule: schema.ResourceRelationshipRule,
   ) {
@@ -114,6 +119,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return resources;
   }
 
+  @Trace()
   private sourceResourceMatchesRule(
     sourceMetadataEqualsRules: schema.ResourceRelationshipRuleSourceMetadataEquals[],
     metadataKeysMatchRules: schema.ResourceRelationshipRuleMetadataMatch[],
@@ -139,6 +145,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return true;
   }
 
+  @Trace()
   private async getFullSource(
     resource: FullResource,
   ): Promise<
@@ -161,6 +168,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return { ...resource, variables };
   }
 
+  @Trace()
   private async resolveReferenceValue(
     variableValue: schema.ReferenceDeploymentVariableValue,
   ) {
@@ -229,6 +237,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return null;
   }
 
+  @Trace()
   private async getDeploymentVariable(key: string) {
     const now = performance.now();
     const allDeploymentVariables =
@@ -261,6 +270,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return { ...deploymentVariable, values, defaultValue };
   }
 
+  @Trace()
   async getVariable(key: string): Promise<MaybeVariable> {
     log.info(`Resolving deployment variable ${key}`);
     const deploymentVariable = await this.getDeploymentVariable(key);

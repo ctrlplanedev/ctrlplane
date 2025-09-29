@@ -10,6 +10,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../../workspace/workspace.js";
+import { Trace } from "../../traces.js";
 import { getVariableManager } from "./variables/variable-manager.js";
 
 const log = logger.child({ component: "variable-release-manager" });
@@ -26,6 +27,7 @@ export class VariableReleaseManager implements ReleaseManager {
     return String(value);
   }
 
+  @Trace()
   private async getReleaseValues(releaseId: string) {
     const [allValues, allSnapshots] = await Promise.all([
       this.workspace.repository.variableReleaseValueRepository.getAll(),
@@ -43,6 +45,7 @@ export class VariableReleaseManager implements ReleaseManager {
       .filter(isPresent);
   }
 
+  @Trace()
   private async findLatestRelease() {
     const allReleases =
       await this.workspace.repository.variableReleaseRepository.getAll();
@@ -79,6 +82,7 @@ export class VariableReleaseManager implements ReleaseManager {
     );
   }
 
+  @Trace()
   private async getValueSnapshotsForRelease(variables: Variable<any>[]) {
     const existingSnapshots = await this.getExistingValueSnapshots(variables);
     const newVarsToInsert = variables.filter(
@@ -99,6 +103,7 @@ export class VariableReleaseManager implements ReleaseManager {
     return [...existingSnapshots, ...newSnapshots];
   }
 
+  @Trace()
   async upsertRelease(variables: MaybeVariable[]) {
     const now = performance.now();
     const latestRelease = await this.findLatestRelease();
@@ -156,6 +161,7 @@ export class VariableReleaseManager implements ReleaseManager {
     return { created: true, release };
   }
 
+  @Trace()
   async evaluate() {
     try {
       const now = performance.now();

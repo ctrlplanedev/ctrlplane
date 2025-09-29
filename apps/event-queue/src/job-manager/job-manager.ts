@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { Trace } from "src/traces.js";
 
 import { takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
@@ -119,6 +120,7 @@ export class JobManager {
     await this.workspace.releaseTargetManager.evaluate(releaseTarget);
   }
 
+  @Trace()
   private async getJobAgentWithConfig(
     versionRelease: typeof schema.versionRelease.$inferSelect,
   ) {

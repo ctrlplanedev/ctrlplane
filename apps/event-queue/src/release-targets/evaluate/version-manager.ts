@@ -6,6 +6,7 @@ import { VersionRuleEngine } from "@ctrlplane/rule-engine";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import type { Workspace } from "../../workspace/workspace.js";
+import { Trace } from "../../traces.js";
 
 export class VersionManager implements ReleaseManager {
   constructor(
@@ -37,6 +38,7 @@ export class VersionManager implements ReleaseManager {
     return this.workspace.repository.versionRuleRepository;
   }
 
+  @Trace()
   private async findLatestRelease() {
     const allReleases = await this.releases.getAll();
     const releasesForTarget = allReleases.filter(
@@ -47,6 +49,7 @@ export class VersionManager implements ReleaseManager {
     )[0];
   }
 
+  @Trace()
   async upsertRelease(versionId: string) {
     const latestRelease = await this.findLatestRelease();
     if (latestRelease?.versionId === versionId)
@@ -61,6 +64,7 @@ export class VersionManager implements ReleaseManager {
     return { created: true, release };
   }
 
+  @Trace()
   private async findVersionsForEvaluation(policyIds: Set<string>) {
     if (this.releaseTarget.desiredVersionId != null) {
       const desiredVersion = await this.versions.get(
@@ -94,6 +98,7 @@ export class VersionManager implements ReleaseManager {
     return versionsToEvaluate;
   }
 
+  @Trace()
   private async getPoliciesIds() {
     const policyTargets =
       await this.policyTargetSelectors.getSelectorsForEntity(
@@ -102,6 +107,7 @@ export class VersionManager implements ReleaseManager {
     return new Set<string>(policyTargets.map((pt) => pt.policyId));
   }
 
+  @Trace()
   async evaluate() {
     const policyIds = await this.getPoliciesIds();
     const allPolicies = await this.policies.getAll();

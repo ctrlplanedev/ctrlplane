@@ -103,7 +103,7 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
 });
 
 const tracer = trace.getTracer("trpc");
-const withSpan = makeWithSpan(tracer);
+const { createSpanWrapper: withSpan } = makeWithSpan(tracer);
 const spanProcedure = loggedProcedure.use(
   withSpan("trpc", async (span, { ctx, next, ...rest }) => {
     span.setAttribute("trpc.path", rest.path);

@@ -19,7 +19,7 @@ import {
 } from "@ctrlplane/rule-engine";
 
 const tracer = trace.getTracer("evaluate-release-target");
-const withSpan = makeWithSpan(tracer);
+const { createSpanWrapper: withSpan } = makeWithSpan(tracer);
 const log = logger.child({ module: "evaluate-release-target" });
 
 const getReleaseTarget = async (

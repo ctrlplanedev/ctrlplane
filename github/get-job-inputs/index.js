@@ -27416,6 +27416,14 @@ var core = __nccwpck_require__(7184);
 // settings & const
 const PATH_PARAM_RE = /\{[^{}]+\}/g;
 
+const supportsRequestInitExt = () => {
+  return (
+    typeof process === "object" &&
+    Number.parseInt(process?.versions?.node?.substring(0, 2)) >= 18 &&
+    process.versions.undici
+  );
+};
+
 /**
  * Returns a cheap, non-cryptographically-secure random ID
  * Courtesy of @imranbarbhuiya (https://github.com/imranbarbhuiya)
@@ -27436,8 +27444,10 @@ function createClient(clientOptions) {
     querySerializer: globalQuerySerializer,
     bodySerializer: globalBodySerializer,
     headers: baseHeaders,
+    requestInitExt = undefined,
     ...baseOptions
   } = { ...clientOptions };
+  requestInitExt = supportsRequestInitExt() ? requestInitExt : undefined;
   baseUrl = removeTrailingSlash(baseUrl);
   const middlewares = [];
 
@@ -27459,8 +27469,9 @@ function createClient(clientOptions) {
       body,
       ...init
     } = fetchOptions || {};
+    let finalBaseUrl = baseUrl;
     if (localBaseUrl) {
-      baseUrl = removeTrailingSlash(localBaseUrl);
+      finalBaseUrl = removeTrailingSlash(localBaseUrl) ?? baseUrl;
     }
 
     let querySerializer =
@@ -27477,29 +27488,47 @@ function createClient(clientOptions) {
             });
     }
 
-    const serializedBody = body === undefined ? undefined : bodySerializer(body);
-
-    const defaultHeaders =
+    const serializedBody =
+      body === undefined
+        ? undefined
+        : bodySerializer(
+            body,
+            // Note: we declare mergeHeaders() both here and below because it’s a bit of a chicken-or-egg situation:
+            // bodySerializer() needs all headers so we aren’t dropping ones set by the user, however,
+            // the result of this ALSO sets the lowest-priority content-type header. So we re-merge below,
+            // setting the content-type at the very beginning to be overwritten.
+            // Lastly, based on the way headers work, it’s not a simple “present-or-not” check becauase null intentionally un-sets headers.
+            mergeHeaders(baseHeaders, headers, params.header),
+          );
+    const finalHeaders = mergeHeaders(
       // with no body, we should not to set Content-Type
       serializedBody === undefined ||
-      // if serialized body is FormData; browser will correctly set Content-Type & boundary expression
-      serializedBody instanceof FormData
+        // if serialized body is FormData; browser will correctly set Content-Type & boundary expression
+        serializedBody instanceof FormData
         ? {}
         : {
             "Content-Type": "application/json",
-          };
+          },
+      baseHeaders,
+      headers,
+      params.header,
+    );
 
     const requestInit = {
       redirect: "follow",
       ...baseOptions,
       ...init,
       body: serializedBody,
-      headers: mergeHeaders(defaultHeaders, baseHeaders, headers, params.header),
+      headers: finalHeaders,
     };
 
     let id;
     let options;
-    let request = new CustomRequest(createFinalURL(schemaPath, { baseUrl, params, querySerializer }), requestInit);
+    let request = new CustomRequest(
+      createFinalURL(schemaPath, { baseUrl: finalBaseUrl, params, querySerializer }),
+      requestInit,
+    );
+    let response;
 
     /** Add custom parameters to Request object */
     for (const key in init) {
@@ -27513,7 +27542,7 @@ function createClient(clientOptions) {
 
       // middleware (request)
       options = Object.freeze({
-        baseUrl,
+        baseUrl: finalBaseUrl,
         fetch,
         parseAs,
         querySerializer,
@@ -27529,44 +27558,91 @@ function createClient(clientOptions) {
             id,
           });
           if (result) {
-            if (!(result instanceof CustomRequest)) {
-              throw new Error("onRequest: must return new Request() when modifying the request");
+            if (result instanceof CustomRequest) {
+              request = result;
+            } else if (result instanceof Response) {
+              response = result;
+              break;
+            } else {
+              throw new Error("onRequest: must return new Request() or Response() when modifying the request");
             }
-            request = result;
           }
         }
       }
     }
 
-    // fetch!
-    let response = await fetch(request);
+    if (!response) {
+      // fetch!
+      try {
+        response = await fetch(request, requestInitExt);
+      } catch (error) {
+        let errorAfterMiddleware = error;
+        // middleware (error)
+        // execute in reverse-array order (first priority gets last transform)
+        if (middlewares.length) {
+          for (let i = middlewares.length - 1; i >= 0; i--) {
+            const m = middlewares[i];
+            if (m && typeof m === "object" && typeof m.onError === "function") {
+              const result = await m.onError({
+                request,
+                error: errorAfterMiddleware,
+                schemaPath,
+                params,
+                options,
+                id,
+              });
+              if (result) {
+                // if error is handled by returning a response, skip remaining middleware
+                if (result instanceof Response) {
+                  errorAfterMiddleware = undefined;
+                  response = result;
+                  break;
+                }
 
-    // middleware (response)
-    // execute in reverse-array order (first priority gets last transform)
-    if (middlewares.length) {
-      for (let i = middlewares.length - 1; i >= 0; i--) {
-        const m = middlewares[i];
-        if (m && typeof m === "object" && typeof m.onResponse === "function") {
-          const result = await m.onResponse({
-            request,
-            response,
-            schemaPath,
-            params,
-            options,
-            id,
-          });
-          if (result) {
-            if (!(result instanceof Response)) {
-              throw new Error("onResponse: must return new Response() when modifying the response");
+                if (result instanceof Error) {
+                  errorAfterMiddleware = result;
+                  continue;
+                }
+
+                throw new Error("onError: must return new Response() or instance of Error");
+              }
             }
-            response = result;
+          }
+        }
+
+        // rethrow error if not handled by middleware
+        if (errorAfterMiddleware) {
+          throw errorAfterMiddleware;
+        }
+      }
+
+      // middleware (response)
+      // execute in reverse-array order (first priority gets last transform)
+      if (middlewares.length) {
+        for (let i = middlewares.length - 1; i >= 0; i--) {
+          const m = middlewares[i];
+          if (m && typeof m === "object" && typeof m.onResponse === "function") {
+            const result = await m.onResponse({
+              request,
+              response,
+              schemaPath,
+              params,
+              options,
+              id,
+            });
+            if (result) {
+              if (!(result instanceof Response)) {
+                throw new Error("onResponse: must return new Response() when modifying the response");
+              }
+              response = result;
+            }
           }
         }
       }
     }
 
     // handle empty content
-    if (response.status === 204 || response.headers.get("Content-Length") === "0") {
+    if (response.status === 204 || request.method === "HEAD" || response.headers.get("Content-Length") === "0") {
       return response.ok ? { data: undefined, response } : { error: undefined, response };
     }
 
@@ -27590,6 +27666,9 @@ function createClient(clientOptions) {
   }
 
   return {
+    request(method, url, init) {
+      return coreFetch(url, { ...init, method: method.toUpperCase() });
+    },
     /** Call a GET endpoint */
     GET(url, init) {
       return coreFetch(url, { ...init, method: "GET" });
@@ -27628,8 +27707,8 @@ function createClient(clientOptions) {
         if (!m) {
           continue;
         }
-        if (typeof m !== "object" || !("onRequest" in m || "onResponse" in m)) {
-          throw new Error("Middleware must be an object with one of `onRequest()` or `onResponse()`");
+        if (typeof m !== "object" || !("onRequest" in m || "onResponse" in m || "onError" in m)) {
+          throw new Error("Middleware must be an object with one of `onRequest()`, `onResponse() or `onError()`");
         }
         middlewares.push(m);
       }
@@ -27652,30 +27731,30 @@ class PathCallForwarder {
     this.url = url;
   }
 
-  GET(init) {
+  GET = (init) => {
     return this.client.GET(this.url, init);
-  }
-  PUT(init) {
+  };
+  PUT = (init) => {
     return this.client.PUT(this.url, init);
-  }
-  POST(init) {
+  };
+  POST = (init) => {
     return this.client.POST(this.url, init);
-  }
-  DELETE(init) {
+  };
+  DELETE = (init) => {
     return this.client.DELETE(this.url, init);
-  }
-  OPTIONS(init) {
+  };
+  OPTIONS = (init) => {
     return this.client.OPTIONS(this.url, init);
-  }
-  HEAD(init) {
+  };
+  HEAD = (init) => {
     return this.client.HEAD(this.url, init);
-  }
-  PATCH(init) {
+  };
+  PATCH = (init) => {
     return this.client.PATCH(this.url, init);
-  }
-  TRACE(init) {
+  };
+  TRACE = (init) => {
     return this.client.TRACE(this.url, init);
-  }
+  };
 }
 
 class PathClientProxyHandler {
@@ -27928,9 +28007,18 @@ function defaultPathSerializer(pathname, pathParams) {
  * Serialize body object to string
  * @type {import("./index.js").defaultBodySerializer}
  */
-function defaultBodySerializer(body) {
+function defaultBodySerializer(body, headers) {
   if (body instanceof FormData) {
     return body;
+  }
+  if (headers) {
+    const contentType =
+      headers.get instanceof Function
+        ? (headers.get("Content-Type") ?? headers.get("content-type"))
+        : (headers["Content-Type"] ?? headers["content-type"]);
+    if (contentType === "application/x-www-form-urlencoded") {
+      return new URLSearchParams(body).toString();
+    }
   }
   return JSON.stringify(body);
 }
@@ -27992,130 +28080,129 @@ function removeTrailingSlash(url) {
 }
 
 ;// CONCATENATED MODULE: ../../packages/node-sdk/dist/index.js
+// src/index.ts
 
 function dist_createClient(options) {
-    return createClient({
-        baseUrl: options.baseUrl ?? "https://app.ctrlplane.com",
-        ...options,
-        fetch: (input) => {
-            const url = new URL(input.url);
-            url.pathname = `/api${url.pathname}`;
-            return fetch(new Request(url.toString(), input));
-        },
-        headers: { "x-api-key": options?.apiKey },
+  return createClient({
+    baseUrl: options.baseUrl ?? "https://app.ctrlplane.com",
+    ...options,
+    fetch: (input) => {
+      const url = new URL(input.url);
+      url.pathname = `/api${url.pathname}`;
+      return fetch(new Request(url.toString(), input));
+    },
+    headers: { "x-api-key": options?.apiKey }
+  });
+}
+var ResourceProvider = class {
+  /**
+   * Creates a new TargetProvider instance
+   * @param options - Configuration options
+   * @param options.workspaceId - ID of the workspace
+   * @param options.name - Name of the target provider
+   * @param client - API client instance
+   */
+  constructor(options, client) {
+    this.options = options;
+    this.client = client;
+  }
+  provider = null;
+  /**
+   * Gets the resource provider details, caching the result
+   * @returns The resource provider details
+   */
+  async get() {
+    if (this.provider != null) {
+      return this.provider;
+    }
+    const { data } = await this.client.GET(
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+      { params: { path: this.options } }
+    );
+    this.provider = data;
+    return this.provider;
+  }
+  /**
+   * Sets the resources for this provider
+   * @param resources - Array of resources to set
+   * @returns The API response
+   * @throws Error if the scanner is not found
+   */
+  async set(resources) {
+    const scanner = await this.get();
+    if (scanner == null) throw new Error("Scanner not found");
+    return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
+      params: { path: { providerId: scanner.id } },
+      body: { resources: uniqBy(resources, (t) => t.identifier) }
     });
-}
-/**
- * Class for managing target providers in the Ctrlplane API
- */
-class ResourceProvider {
-    options;
-    client;
-    /**
-     * Creates a new TargetProvider instance
-     * @param options - Configuration options
-     * @param options.workspaceId - ID of the workspace
-     * @param options.name - Name of the target provider
-     * @param client - API client instance
-     */
-    constructor(options, client) {
-        this.options = options;
-        this.client = client;
+  }
+};
+var JobAgent = class {
+  constructor(options, client) {
+    this.options = options;
+    this.client = client;
+  }
+  agent = null;
+  async get() {
+    if (this.agent != null) {
+      return this.agent;
     }
-    provider = null;
-    /**
-     * Gets the resource provider details, caching the result
-     * @returns The resource provider details
-     */
-    async get() {
-        if (this.provider != null) {
-            return this.provider;
-        }
-        const { data } = await this.client.GET("/v1/workspaces/{workspaceId}/resource-providers/name/{name}", { params: { path: this.options } });
-        this.provider = data;
-        return this.provider;
-    }
-    /**
-     * Sets the resources for this provider
-     * @param resources - Array of resources to set
-     * @returns The API response
-     * @throws Error if the scanner is not found
-     */
-    async set(resources) {
-        const scanner = await this.get();
-        if (scanner == null)
-            throw new Error("Scanner not found");
-        return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
-            params: { path: { providerId: scanner.id } },
-            body: { resources: uniqBy(resources, (t) => t.identifier) },
-        });
-    }
-}
-class JobAgent {
-    options;
-    client;
-    constructor(options, client) {
-        this.options = options;
-        this.client = client;
-    }
-    agent = null;
-    async get() {
-        if (this.agent != null) {
-            return this.agent;
-        }
-        const { data } = await this.client.PATCH("/v1/job-agents/name", {
-            body: this.options,
-        });
-        this.agent = data;
-        return this.agent;
-    }
-    async next() {
-        const { data } = await this.client.GET("/v1/job-agents/{agentId}/queue/next", { params: { path: { agentId: this.agent.id } } });
-        return data.jobs.map((job) => new Job(job, this.client)) ?? [];
-    }
-    async running() {
-        const { data } = await this.client.GET("/v1/job-agents/{agentId}/jobs/running", { params: { path: { agentId: this.agent.id } } });
-        return data.jobs.map((job) => new Job(job, this.client)) ?? [];
-    }
-}
-class Job {
-    job;
-    client;
-    constructor(job, client) {
-        this.job = job;
-        this.client = client;
-    }
-    acknowledge() {
-        return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
-            params: { path: { jobId: this.job.id } },
-        });
-    }
-    get() {
-        return this.client
-            .GET("/v1/jobs/{jobId}", {
-            params: { path: { jobId: this.job.id } },
-        })
-            .then(({ data }) => data);
-    }
-    update(update) {
-        return this.client.PATCH("/v1/jobs/{jobId}", {
-            params: { path: { jobId: this.job.id } },
-            body: update,
-        });
-    }
-}
+    const { data } = await this.client.PATCH("/v1/job-agents/name", {
+      body: this.options
+    });
+    this.agent = data;
+    return this.agent;
+  }
+  async next() {
+    const { data } = await this.client.GET(
+      "/v1/job-agents/{agentId}/queue/next",
+      { params: { path: { agentId: this.agent.id } } }
+    );
+    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+  }
+  async running() {
+    const { data } = await this.client.GET(
+      "/v1/job-agents/{agentId}/jobs/running",
+      { params: { path: { agentId: this.agent.id } } }
+    );
+    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+  }
+};
+var Job = class {
+  constructor(job, client) {
+    this.job = job;
+    this.client = client;
+  }
+  acknowledge() {
+    return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
+      params: { path: { jobId: this.job.id } }
+    });
+  }
+  get() {
+    return this.client.GET("/v1/jobs/{jobId}", {
+      params: { path: { jobId: this.job.id } }
+    }).then(({ data }) => data);
+  }
+  update(update) {
+    return this.client.PATCH("/v1/jobs/{jobId}", {
+      params: { path: { jobId: this.job.id } },
+      body: update
+    });
+  }
+};
 function uniqBy(arr, iteratee) {
-    const seen = new Map();
-    return arr.filter((item) => {
-        const key = iteratee(item);
-        if (seen.has(key)) {
-            return false;
-        }
-        seen.set(key, true);
-        return true;
-    });
+  const seen = /* @__PURE__ */ new Map();
+  return arr.filter((item) => {
+    const key = iteratee(item);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.set(key, true);
+    return true;
+  });
 }
 
+//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./src/sdk.ts
 
 
@@ -28170,7 +28257,7 @@ async function run() {
             core.error(`Invalid Job data`);
             return;
         }
-        const { variables, resource, release, version, environment, runbook, deployment, approval, } = data;
+        const { variables, resource, version, environment, runbook, deployment, approval, } = data;
         setOutputsRecursively(null, {
             base: { url: baseUrl },
             variable: variables,

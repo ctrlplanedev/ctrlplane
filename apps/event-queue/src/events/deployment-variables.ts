@@ -1,146 +1,69 @@
 import type { Event } from "@ctrlplane/events";
 
-import { makeWithSpan, trace } from "@ctrlplane/logger";
-
 import type { Handler } from ".";
 import { OperationPipeline } from "../workspace/pipeline.js";
-import { WorkspaceManager } from "../workspace/workspace.js";
 
-const newDeploymentVariableTracer = trace.getTracer("new-deployment-variable");
-const withNewDeploymentVariableSpan = makeWithSpan(newDeploymentVariableTracer);
+export const newDeploymentVariable: Handler<
+  Event.DeploymentVariableCreated
+> = async (event, ws, span) => {
+  span.setAttribute("event.type", event.eventType);
+  span.setAttribute("deployment-variable.id", event.payload.id);
+  span.setAttribute("deployment.id", event.payload.deploymentId);
+  span.setAttribute("workspace.id", event.workspaceId);
+  await OperationPipeline.update(ws)
+    .deploymentVariable(event.payload)
+    .dispatch();
+};
 
-export const newDeploymentVariable: Handler<Event.DeploymentVariableCreated> =
-  withNewDeploymentVariableSpan(
-    "new-deployment-variable",
-    async (span, event) => {
-      span.setAttribute("event.type", event.eventType);
-      span.setAttribute("deployment-variable.id", event.payload.id);
-      span.setAttribute("deployment.id", event.payload.deploymentId);
-      span.setAttribute("workspace.id", event.workspaceId);
-      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-      if (ws == null) return;
-      await OperationPipeline.update(ws)
-        .deploymentVariable(event.payload)
-        .dispatch();
-    },
-  );
+export const updatedDeploymentVariable: Handler<
+  Event.DeploymentVariableUpdated
+> = async (event, ws, span) => {
+  span.setAttribute("deployment-variable.id", event.payload.current.id);
+  span.setAttribute("deployment.id", event.payload.current.deploymentId);
 
-const updatedDeploymentVariableTracer = trace.getTracer(
-  "updated-deployment-variable",
-);
-const withUpdatedDeploymentVariableSpan = makeWithSpan(
-  updatedDeploymentVariableTracer,
-);
+  await OperationPipeline.update(ws)
+    .deploymentVariable(event.payload.current)
+    .dispatch();
+};
 
-export const updatedDeploymentVariable: Handler<Event.DeploymentVariableUpdated> =
-  withUpdatedDeploymentVariableSpan(
-    "updated-deployment-variable",
-    async (span, event) => {
-      span.setAttribute("event.type", event.eventType);
-      span.setAttribute("deployment-variable.id", event.payload.current.id);
-      span.setAttribute("deployment.id", event.payload.current.deploymentId);
-      span.setAttribute("workspace.id", event.workspaceId);
-      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-      if (ws == null) return;
-      await OperationPipeline.update(ws)
-        .deploymentVariable(event.payload.current)
-        .dispatch();
-    },
-  );
+export const deletedDeploymentVariable: Handler<
+  Event.DeploymentVariableDeleted
+> = async (event, ws, span) => {
+  span.setAttribute("deployment.id", event.payload.deploymentId);
 
-const deletedDeploymentVariableTracer = trace.getTracer(
-  "deleted-deployment-variable",
-);
-const withDeletedDeploymentVariableSpan = makeWithSpan(
-  deletedDeploymentVariableTracer,
-);
+  await OperationPipeline.delete(ws)
+    .deploymentVariable(event.payload)
+    .dispatch();
+};
 
-export const deletedDeploymentVariable: Handler<Event.DeploymentVariableDeleted> =
-  withDeletedDeploymentVariableSpan(
-    "deleted-deployment-variable",
-    async (span, event) => {
-      span.setAttribute("event.type", event.eventType);
-      span.setAttribute("deployment-variable.id", event.payload.id);
-      span.setAttribute("deployment.id", event.payload.deploymentId);
-      span.setAttribute("workspace.id", event.workspaceId);
-      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-      if (ws == null) return;
-      await OperationPipeline.delete(ws)
-        .deploymentVariable(event.payload)
-        .dispatch();
-    },
-  );
+export const newDeploymentVariableValue: Handler<
+  Event.DeploymentVariableValueCreated
+> = async (event, ws, span) => {
+  span.setAttribute("deployment-variable-value.id", event.payload.id);
+  span.setAttribute("deployment-variable.id", event.payload.variableId);
 
-const newDeploymentVariableValueTracer = trace.getTracer(
-  "new-deployment-variable-value",
-);
-const withNewDeploymentVariableValueSpan = makeWithSpan(
-  newDeploymentVariableValueTracer,
-);
+  await OperationPipeline.update(ws)
+    .deploymentVariableValue(event.payload)
+    .dispatch();
+};
 
-export const newDeploymentVariableValue: Handler<Event.DeploymentVariableValueCreated> =
-  withNewDeploymentVariableValueSpan(
-    "new-deployment-variable-value",
-    async (span, event) => {
-      span.setAttribute("deployment-variable-value.id", event.payload.id);
-      span.setAttribute("deployment-variable.id", event.payload.variableId);
-      span.setAttribute("workspace.id", event.workspaceId);
-      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-      if (ws == null) return;
-      await OperationPipeline.update(ws)
-        .deploymentVariableValue(event.payload)
-        .dispatch();
-    },
-  );
+export const updatedDeploymentVariableValue: Handler<
+  Event.DeploymentVariableValueUpdated
+> = async (event, ws, span) => {
+  span.setAttribute("deployment-variable-value.id", event.payload.current.id);
+  span.setAttribute("deployment-variable.id", event.payload.current.variableId);
 
-const updatedDeploymentVariableValueTracer = trace.getTracer(
-  "updated-deployment-variable-value",
-);
-const withUpdatedDeploymentVariableValueSpan = makeWithSpan(
-  updatedDeploymentVariableValueTracer,
-);
+  await OperationPipeline.update(ws)
+    .deploymentVariableValue(event.payload.current)
+    .dispatch();
+};
 
-export const updatedDeploymentVariableValue: Handler<Event.DeploymentVariableValueUpdated> =
-  withUpdatedDeploymentVariableValueSpan(
-    "updated-deployment-variable-value",
-    async (span, event) => {
-      span.setAttribute("event.type", event.eventType);
-      span.setAttribute(
-        "deployment-variable-value.id",
-        event.payload.current.id,
-      );
-      span.setAttribute(
-        "deployment-variable.id",
-        event.payload.current.variableId,
-      );
-      span.setAttribute("workspace.id", event.workspaceId);
-      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-      if (ws == null) return;
-      await OperationPipeline.update(ws)
-        .deploymentVariableValue(event.payload.current)
-        .dispatch();
-    },
-  );
+export const deletedDeploymentVariableValue: Handler<
+  Event.DeploymentVariableValueDeleted
+> = async (event, ws, span) => {
+  span.setAttribute("deployment-variable.id", event.payload.variableId);
 
-const deletedDeploymentVariableValueTracer = trace.getTracer(
-  "deleted-deployment-variable-value",
-);
-const withDeletedDeploymentVariableValueSpan = makeWithSpan(
-  deletedDeploymentVariableValueTracer,
-);
-
-export const deletedDeploymentVariableValue: Handler<Event.DeploymentVariableValueDeleted> =
-  withDeletedDeploymentVariableValueSpan(
-    "deleted-deployment-variable-value",
-    async (span, event) => {
-      span.setAttribute("event.type", event.eventType);
-      span.setAttribute("deployment-variable-value.id", event.payload.id);
-      span.setAttribute("deployment-variable.id", event.payload.variableId);
-      span.setAttribute("workspace.id", event.workspaceId);
-      const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
-      if (ws == null) return;
-      await OperationPipeline.delete(ws)
-        .deploymentVariableValue(event.payload)
-        .dispatch();
-    },
-  );
+  await OperationPipeline.delete(ws)
+    .deploymentVariableValue(event.payload)
+    .dispatch();
+};

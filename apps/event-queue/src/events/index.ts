@@ -1,9 +1,13 @@
 import type { EventPayload, Message } from "@ctrlplane/events";
+import type { Span } from "@ctrlplane/logger";
 import type { KafkaMessage } from "kafkajs";
 
 import { Event } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 
+import type { Workspace } from "../workspace/workspace.js";
+import { createSpanWrapper } from "../traces.js";
+import { WorkspaceManager } from "../workspace/workspace.js";
 import {
   deletedDeploymentVariable,
   deletedDeploymentVariableValue,
@@ -39,7 +43,7 @@ import {
   updatedResourceVariable,
 } from "./resources.js";
 
-const handlers: Record<Event, Handler<any>> = {
+const workspaceHandlers: Record<Event, Handler<any>> = {
   [Event.ResourceCreated]: newResource,
   [Event.ResourceUpdated]: updatedResource,
   [Event.ResourceDeleted]: deletedResource,
@@ -70,9 +74,11 @@ const handlers: Record<Event, Handler<any>> = {
 
 export type Handler<T extends keyof EventPayload> = (
   event: Message<T>,
+  workspace: Workspace,
+  span: Span,
 ) => Promise<void> | void;
 
-export const getHandler = (eventType: string): Handler<any> | null => {
+export const getHandler = (eventType: string) => {
   const eventKey = Object.keys(Event).find(
     (key) => String(Event[key as keyof typeof Event]) === eventType,
   );
@@ -81,7 +87,18 @@ export const getHandler = (eventType: string): Handler<any> | null => {
     return null;
   }
 
-  return handlers[eventType as keyof typeof handlers];
+  const func = workspaceHandlers[eventType as keyof typeof workspaceHandlers];
+
+  return createSpanWrapper(eventType, async (span, event) => {
+    span.setAttribute("event.type", eventType);
+    span.setAttribute("workspace.id", event.workspaceId);
+    if ("id" in event.payload) span.setAttribute("event.id", event.payload.id);
+
+    const ws = await WorkspaceManager.getOrLoad(event.workspaceId);
+    if (ws == null) return;
+
+    return func(event, ws, span);
+  });
 };
 
 export const parseKafkaMessage = <T extends keyof EventPayload = any>(

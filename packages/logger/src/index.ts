@@ -4,10 +4,23 @@ import { SpanStatusCode, trace } from "@opentelemetry/api";
 import { OpenTelemetryTransportV3 } from "@opentelemetry/winston-transport";
 import * as winston from "winston";
 
+/**
+ * Logger utilities integrated with OpenTelemetry and Winston.
+ * Provides a configured `logger` and helpers to wrap functions/spans.
+ */
+/** Re-export commonly used OpenTelemetry types and helpers. */
 export { trace, Tracer, Span, SpanStatusCode };
 
 const { LOG_LEVEL, NODE_ENV } = process.env;
 
+/**
+ * Create a Winston logger configured with console and OpenTelemetry transports.
+ *
+ * - Colorized, timestamped format for non-production; compact JSON-like for production.
+ *
+ * @param level - Minimum log level (e.g. "error", "warn", "info", "verbose", "debug", "silly").
+ * @returns Configured Winston logger instance.
+ */
 function createLogger(level: string) {
   const format = [
     winston.format.colorize(),
@@ -45,38 +58,40 @@ function createLogger(level: string) {
   });
 }
 
+/**
+ * Shared application logger.
+ *
+ * Level defaults to `LOG_LEVEL` env var or "verbose".
+ */
 export const logger = createLogger(LOG_LEVEL ?? "verbose");
 
-export const withSpan =
-  (tracer: Tracer) =>
-  async <T>(
-    name: string,
-    operation: (span: Span) => Promise<T>,
-    attributes: Record<string, string> = {},
-  ): Promise<T> => {
-    return tracer.startActiveSpan(name, async (span) => {
-      try {
-        Object.entries(attributes).forEach(([key, value]) => {
-          span.setAttribute(key, value);
-        });
-        const result = await operation(span);
-        return result;
-      } catch (error) {
-        span.recordException(error as Error);
-        span.setStatus({ code: SpanStatusCode.ERROR });
-        throw error;
-      } finally {
-        span.end();
-      }
-    });
-  };
-
+/**
+ * Factory for span helpers bound to a specific OpenTelemetry tracer.
+ *
+ * Provides:
+ * - `createSpanWrapper`: Wraps async/sync functions to run inside a named span with error status handling.
+ * - `wrapFnWithSpan`: Convenience wrapper preserving original function signature.
+ *
+ * @param tracer - OpenTelemetry tracer to start spans on.
+ * @returns Helpers to create span-wrapped functions.
+ */
 export function makeWithSpan(tracer: Tracer) {
-  return function withSpan<T extends any[], R>(
+  /**
+   * Wrap a function so it runs inside an active OpenTelemetry span.
+   *
+   * The span is ended automatically and marked as error if the function throws.
+   *
+   * @typeParam T - Tuple of argument types of the wrapped function.
+   * @typeParam R - Return type of the wrapped function.
+   * @param name - Span name.
+   * @param fn - Function to execute within the span. Receives the span as first argument.
+   * @returns A function that, when called, starts the span and returns a Promise of the original result.
+   */
+  function createSpanWrapper<T extends any[], R>(
     name: string,
     fn: (span: Span, ...args: T) => Promise<R> | R,
   ): (...args: T) => Promise<R> {
-    return async function wrapped(...args: T): Promise<R> {
+    return async function spanWrappedFunction(...args: T): Promise<R> {
       return tracer.startActiveSpan(name, async (span) => {
         try {
           return await fn(span, ...args);
@@ -91,5 +106,21 @@ export function makeWithSpan(tracer: Tracer) {
         }
       });
     };
-  };
+  }
+
+  /**
+   * Convenience wrapper around `createSpanWrapper` that preserves the target function's signature.
+   *
+   * @param name - Span name.
+   * @param fn - Function to execute within the span.
+   * @returns A Promise-returning function mirroring `fn`'s parameters and return type.
+   */
+  function wrapFnWithSpan<T extends (...args: any[]) => any>(
+    name: string,
+    fn: T,
+  ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
+    return (...args: Parameters<T>) => createSpanWrapper(name, fn)(...args);
+  }
+
+  return { createSpanWrapper, wrapFnWithSpan };
 }

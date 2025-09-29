@@ -57,6 +57,7 @@ export const start = async () => {
           ),
         );
         await Promise.race([handler(event), timeoutPromise]);
+
         const end = performance.now();
         const duration = end - start;
         if (duration >= 500) {

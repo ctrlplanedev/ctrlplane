@@ -3,7 +3,7 @@ import type { Tx } from "@ctrlplane/db";
 import { allRules, and, desc, eq, inArray, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
-import { withSpan } from "../span.js";
+import { createSpanWrapper } from "../span.js";
 
 /**
  * Gets applicable policies for a given workspace and release repository.
@@ -20,7 +20,7 @@ import { withSpan } from "../span.js";
  * @returns Promise resolving to array of matching policies with their targets
  * and deny windows
  */
-export const getApplicablePolicies = withSpan(
+export const getApplicablePolicies = createSpanWrapper(
   "getApplicablePolicies",
   async (span, tx: Tx, releaseTargetId: string) => {
     span.setAttribute("release.target.id", releaseTargetId);

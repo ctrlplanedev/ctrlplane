@@ -5,6 +5,7 @@ import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
 import type { Workspace } from "../../../workspace/workspace";
+import { Trace } from "../../../traces.js";
 
 const log = logger.child({ component: "resource-variable-provider" });
 
@@ -14,6 +15,7 @@ export class ResourceVariableProvider implements VariableProvider {
     private readonly releaseTarget: FullReleaseTarget,
   ) {}
 
+  @Trace()
   private async getVariables() {
     const allResourceVariables =
       await this.workspace.repository.resourceVariableRepository.getAll();
@@ -28,6 +30,7 @@ export class ResourceVariableProvider implements VariableProvider {
     }));
   }
 
+  @Trace()
   private resolveVariableValue(variable: {
     value: string | number | boolean | object | null;
     sensitive: boolean;
@@ -40,6 +43,7 @@ export class ResourceVariableProvider implements VariableProvider {
     return variablesAES256().decrypt(strValue);
   }
 
+  @Trace()
   async getVariable(key: string): Promise<MaybeVariable> {
     const now = performance.now();
     const variables = await this.getVariables();
