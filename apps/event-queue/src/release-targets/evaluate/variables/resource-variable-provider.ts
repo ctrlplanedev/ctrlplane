@@ -1,13 +1,10 @@
 import type { FullReleaseTarget } from "@ctrlplane/events";
 import type { MaybeVariable, VariableProvider } from "@ctrlplane/rule-engine";
 
-import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
 import type { Workspace } from "../../../workspace/workspace";
 import { Trace } from "../../../traces.js";
-
-const log = logger.child({ component: "resource-variable-provider" });
 
 export class ResourceVariableProvider implements VariableProvider {
   constructor(

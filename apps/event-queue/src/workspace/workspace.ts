@@ -1,5 +1,6 @@
 import type { FullResource } from "@ctrlplane/events";
 import _ from "lodash";
+import { wrapFnWithSpan } from "src/traces.js";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, isNull } from "@ctrlplane/db";
@@ -203,14 +204,15 @@ export class Workspace {
 export class WorkspaceManager {
   private static result: Record<string, Workspace> = {};
 
-  static async getOrLoad(id: string) {
-    const workspace = WorkspaceManager.get(id);
-    if (!workspace) {
-      const ws = await Workspace.load(id);
-      WorkspaceManager.set(id, ws);
-    }
-
-    return workspace;
+  static getOrLoad(id: string) {
+    return wrapFnWithSpan("workspaceLoad", async () => {
+      const workspace = WorkspaceManager.get(id);
+      if (!workspace) {
+        const ws = await Workspace.load(id);
+        WorkspaceManager.set(id, ws);
+      }
+      return workspace;
+    });
   }
 
   static get(id: string) {

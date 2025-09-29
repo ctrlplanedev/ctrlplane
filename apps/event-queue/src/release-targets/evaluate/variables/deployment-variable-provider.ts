@@ -103,6 +103,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return resources;
   }
 
+  @Trace()
   private sourceResourceMatchesRule(
     sourceMetadataEqualsRules: schema.ResourceRelationshipRuleSourceMetadataEquals[],
     metadataKeysMatchRules: schema.ResourceRelationshipRuleMetadataMatch[],
@@ -182,6 +183,7 @@ export class DeploymentVariableProvider implements VariableProvider {
     return resolvedPath as string | number | boolean | object | null;
   }
 
+  @Trace()
   private async resolveVariableValue(
     key: string,
     variableValue: schema.DeploymentVariableValue,

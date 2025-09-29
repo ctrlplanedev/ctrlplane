@@ -18,6 +18,7 @@ export class JobManager {
   private log = logger.child({ module: "job-manager" });
   constructor(private workspace: Workspace) {}
 
+  @Trace()
   private getIsJobJustCompleted(previous: schema.Job, current: schema.Job) {
     const isPreviousStatusExited = exitedStatus.includes(
       previous.status as JobStatus,
@@ -28,6 +29,7 @@ export class JobManager {
     return !isPreviousStatusExited && isCurrentStatusExited;
   }
 
+  @Trace()
   private async getReleaseTarget(jobId: string) {
     const allReleaseJobs =
       await this.workspace.repository.releaseJobRepository.getAll();

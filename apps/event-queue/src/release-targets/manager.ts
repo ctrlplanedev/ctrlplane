@@ -6,6 +6,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
+import { Trace } from "../traces.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
@@ -22,6 +23,7 @@ export class ReleaseTargetManager {
     this.workspace = opts.workspace;
   }
 
+  @Trace()
   private async getEnvironments() {
     const environments =
       await this.workspace.repository.environmentRepository.getAll();
@@ -50,6 +52,7 @@ export class ReleaseTargetManager {
     );
   }
 
+  @Trace()
   private async determineReleaseTargets() {
     const [environments, deployments] = await Promise.all([
       this.getEnvironments(),
@@ -114,6 +117,7 @@ export class ReleaseTargetManager {
     return this.workspace.repository.releaseTargetRepository.getAll();
   }
 
+  @Trace()
   private async persistAddedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
@@ -152,6 +156,7 @@ export class ReleaseTargetManager {
     );
   }
 
+  @Trace()
   async computeReleaseTargetChanges() {
     log.info("Computing release target changes");
 
@@ -194,10 +199,12 @@ export class ReleaseTargetManager {
     return { removedReleaseTargets, addedReleaseTargets };
   }
 
+  @Trace()
   private getReleaseTargetWithWorkspace(releaseTarget: FullReleaseTarget) {
     return { ...releaseTarget, workspaceId: this.workspace.id };
   }
 
+  @Trace()
   private async handleVersionRelease(releaseTarget: FullReleaseTarget) {
     const vrm = new VersionManager(releaseTarget, this.workspace);
     const { chosenCandidate } = await vrm.evaluate();
@@ -206,6 +213,7 @@ export class ReleaseTargetManager {
     return release;
   }
 
+  @Trace()
   private async handleVariableRelease(releaseTarget: FullReleaseTarget) {
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
     const varrm = new VariableReleaseManager(rtWithWorkspace, this.workspace);
@@ -214,6 +222,7 @@ export class ReleaseTargetManager {
     return release;
   }
 
+  @Trace()
   private async getCurrentRelease(releaseTarget: FullReleaseTarget) {
     const allVersionReleases =
       await this.workspace.repository.versionReleaseRepository.getAll();
@@ -263,6 +272,7 @@ export class ReleaseTargetManager {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
   }
 
+  @Trace()
   private async createReleaseJob(
     release: typeof schema.release.$inferSelect,
     skipDuplicateCheck?: boolean,
@@ -280,6 +290,7 @@ export class ReleaseTargetManager {
     return this.workspace.jobManager.createReleaseJob(release);
   }
 
+  @Trace()
   private getHasAnythingChanged(
     currentRelease: {
       currentVersionRelease: { id: string };
@@ -294,6 +305,7 @@ export class ReleaseTargetManager {
     return !isVersionUnchanged || !areVariablesUnchanged;
   }
 
+  @Trace()
   private async insertNewRelease(
     versionReleaseId: string,
     variableReleaseId: string,
@@ -306,6 +318,7 @@ export class ReleaseTargetManager {
     });
   }
 
+  @Trace()
   async evaluate(
     releaseTarget: FullReleaseTarget,
     opts?: { skipDuplicateCheck?: boolean },

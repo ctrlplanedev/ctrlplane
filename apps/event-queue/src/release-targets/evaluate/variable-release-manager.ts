@@ -61,6 +61,7 @@ export class VariableReleaseManager implements ReleaseManager {
     return { ...latestRelease, values: releaseValues };
   }
 
+  @Trace()
   private async insertRelease(releaseTargetId: string) {
     return this.workspace.repository.variableReleaseRepository.create({
       id: crypto.randomUUID(),
@@ -69,6 +70,7 @@ export class VariableReleaseManager implements ReleaseManager {
     });
   }
 
+  @Trace()
   private async getExistingValueSnapshots(variables: Variable<any>[]) {
     const allSnapshots =
       await this.workspace.repository.variableValueSnapshotRepository.getAll();
