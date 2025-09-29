@@ -1,11 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
-import { createSpanWrapper } from "src/traces";
 
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "../repository";
+import { createSpanWrapper } from "../../traces.js";
 
 type VariableReleaseValue = typeof schema.variableSetReleaseValue.$inferSelect;
 
