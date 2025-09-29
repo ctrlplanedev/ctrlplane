@@ -3,13 +3,8 @@ import type { Tx } from "@ctrlplane/db";
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "../repository";
-
-const log = logger.child({
-  module: "in-memory-release-repository",
-});
 
 type Release = typeof schema.release.$inferSelect;
 
@@ -64,49 +59,26 @@ export class InMemoryReleaseRepository implements Repository<Release> {
     return Array.from(this.entities.values());
   }
 
-  create(entity: Release) {
+  async create(entity: Release) {
     this.entities.set(entity.id, entity);
-    this.db
-      .insert(schema.release)
-      .values(entity)
-      .onConflictDoNothing()
-      .catch((error) => {
-        log.error("Error creating release", {
-          error,
-          entityId: entity.id,
-        });
-      });
+    await this.db.insert(schema.release).values(entity).onConflictDoNothing();
     return entity;
   }
 
-  update(entity: Release) {
+  async update(entity: Release) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .update(schema.release)
       .set(entity)
-      .where(eq(schema.release.id, entity.id))
-      .catch((error) => {
-        log.error("Error updating release", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .where(eq(schema.release.id, entity.id));
     return entity;
   }
 
-  delete(id: string) {
+  async delete(id: string) {
     const existing = this.entities.get(id);
     if (existing == null) return null;
     this.entities.delete(id);
-    this.db
-      .delete(schema.release)
-      .where(eq(schema.release.id, id))
-      .catch((error) => {
-        log.error("Error deleting release", {
-          error,
-          entityId: id,
-        });
-      });
+    await this.db.delete(schema.release).where(eq(schema.release.id, id));
     return existing;
   }
 

@@ -3,13 +3,8 @@ import type { Tx } from "@ctrlplane/db";
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "../repository";
-
-const log = logger.child({
-  module: "in-memory-resource-variable-repository",
-});
 
 type ResourceVariable = typeof schema.resourceVariable.$inferSelect;
 
@@ -60,49 +55,31 @@ export class InMemoryResourceVariableRepository
     return Array.from(this.entities.values());
   }
 
-  create(entity: ResourceVariable) {
+  async create(entity: ResourceVariable) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .insert(schema.resourceVariable)
       .values(entity)
-      .onConflictDoNothing()
-      .catch((error) => {
-        log.error("Error creating resource variable", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .onConflictDoNothing();
     return entity;
   }
 
-  update(entity: ResourceVariable) {
+  async update(entity: ResourceVariable) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .update(schema.resourceVariable)
       .set(entity)
-      .where(eq(schema.resourceVariable.id, entity.id))
-      .catch((error) => {
-        log.error("Error updating resource variable", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .where(eq(schema.resourceVariable.id, entity.id));
     return entity;
   }
 
-  delete(id: string) {
+  async delete(id: string) {
     const entity = this.entities.get(id);
     if (entity == null) return null;
     this.entities.delete(id);
-    this.db
+    await this.db
       .delete(schema.resourceVariable)
-      .where(eq(schema.resourceVariable.id, id))
-      .catch((error) => {
-        log.error("Error deleting resource variable", {
-          error,
-          entityId: id,
-        });
-      });
+      .where(eq(schema.resourceVariable.id, id));
     return entity;
   }
 

@@ -3,13 +3,8 @@ import type { Tx } from "@ctrlplane/db";
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "../repository";
-
-const log = logger.child({
-  module: "in-memory-variable-value-snapshot-repository",
-});
 
 const getInitialEntities = async (workspaceId: string) =>
   dbClient
@@ -54,49 +49,31 @@ export class InMemoryVariableValueSnapshotRepository
     return Array.from(this.entities.values());
   }
 
-  create(entity: typeof schema.variableValueSnapshot.$inferSelect) {
+  async create(entity: typeof schema.variableValueSnapshot.$inferSelect) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .insert(schema.variableValueSnapshot)
       .values(entity)
-      .onConflictDoNothing()
-      .catch((error) => {
-        log.error("Error creating variable value snapshot", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .onConflictDoNothing();
     return entity;
   }
 
-  update(entity: typeof schema.variableValueSnapshot.$inferSelect) {
+  async update(entity: typeof schema.variableValueSnapshot.$inferSelect) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .update(schema.variableValueSnapshot)
       .set(entity)
-      .where(eq(schema.variableValueSnapshot.id, entity.id))
-      .catch((error) => {
-        log.error("Error updating variable value snapshot", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .where(eq(schema.variableValueSnapshot.id, entity.id));
     return entity;
   }
 
-  delete(id: string) {
+  async delete(id: string) {
     const entity = this.entities.get(id);
     if (entity == null) return null;
     this.entities.delete(id);
-    this.db
+    await this.db
       .delete(schema.variableValueSnapshot)
-      .where(eq(schema.variableValueSnapshot.id, id))
-      .catch((error) => {
-        log.error("Error deleting variable value snapshot", {
-          error,
-          entityId: id,
-        });
-      });
+      .where(eq(schema.variableValueSnapshot.id, id));
     return entity;
   }
 

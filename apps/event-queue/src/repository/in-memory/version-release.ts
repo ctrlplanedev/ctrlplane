@@ -3,13 +3,8 @@ import type { Tx } from "@ctrlplane/db";
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "../repository";
-
-const log = logger.child({
-  module: "in-memory-version-release-repository",
-});
 
 type VersionRelease = typeof schema.versionRelease.$inferSelect;
 
@@ -64,49 +59,31 @@ export class InMemoryVersionReleaseRepository
     return Array.from(this.entities.values());
   }
 
-  create(entity: VersionRelease) {
+  async create(entity: VersionRelease) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .insert(schema.versionRelease)
       .values(entity)
-      .onConflictDoNothing()
-      .catch((error) => {
-        log.error("Error creating version release", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .onConflictDoNothing();
     return entity;
   }
 
-  update(entity: VersionRelease) {
+  async update(entity: VersionRelease) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .update(schema.versionRelease)
       .set(entity)
-      .where(eq(schema.versionRelease.id, entity.id))
-      .catch((error) => {
-        log.error("Error updating version release", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .where(eq(schema.versionRelease.id, entity.id));
     return entity;
   }
 
-  delete(id: string) {
+  async delete(id: string) {
     const entity = this.entities.get(id);
     if (entity == null) return null;
     this.entities.delete(id);
-    this.db
+    await this.db
       .delete(schema.versionRelease)
-      .where(eq(schema.versionRelease.id, id))
-      .catch((error) => {
-        log.error("Error deleting version release", {
-          error,
-          entityId: id,
-        });
-      });
+      .where(eq(schema.versionRelease.id, id));
     return entity;
   }
 

@@ -4,13 +4,8 @@ import type { FullReleaseTarget } from "@ctrlplane/events";
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "../repository";
-
-const log = logger.child({
-  module: "in-memory-release-target-repository",
-});
 
 const getInitialEntities = async (workspaceId: string) =>
   dbClient
@@ -98,50 +93,32 @@ export class InMemoryReleaseTargetRepository
     return Array.from(this.entities.values());
   }
 
-  create(entity: FullReleaseTarget) {
+  async create(entity: FullReleaseTarget) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .insert(schema.releaseTarget)
       .values(entity)
-      .onConflictDoNothing()
-      .catch((error) => {
-        log.error("Error creating release target", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .onConflictDoNothing();
     return entity;
   }
 
-  update(entity: FullReleaseTarget) {
+  async update(entity: FullReleaseTarget) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .update(schema.releaseTarget)
       .set(entity)
-      .where(eq(schema.releaseTarget.id, entity.id))
-      .catch((error) => {
-        log.error("Error updating release target", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .where(eq(schema.releaseTarget.id, entity.id));
 
     return entity;
   }
 
-  delete(id: string) {
+  async delete(id: string) {
     const existing = this.entities.get(id);
     if (existing == null) return null;
     this.entities.delete(id);
-    this.db
+    await this.db
       .delete(schema.releaseTarget)
-      .where(eq(schema.releaseTarget.id, id))
-      .catch((error) => {
-        log.error("Error deleting release target", {
-          error,
-          entityId: id,
-        });
-      });
+      .where(eq(schema.releaseTarget.id, id));
     return existing;
   }
 

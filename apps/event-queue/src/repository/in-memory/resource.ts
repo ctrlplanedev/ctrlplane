@@ -4,13 +4,8 @@ import type { FullResource } from "@ctrlplane/events";
 import { eq } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "../repository";
-
-const log = logger.child({
-  module: "in-memory-resource-repository",
-});
 
 type InMemoryResourceRepositoryOptions = {
   initialEntities: FullResource[];
@@ -36,49 +31,26 @@ export class InMemoryResourceRepository implements Repository<FullResource> {
     return Array.from(this.entities.values());
   }
 
-  create(entity: FullResource) {
+  async create(entity: FullResource) {
     this.entities.set(entity.id, entity);
-    this.db
-      .insert(schema.resource)
-      .values(entity)
-      .onConflictDoNothing()
-      .catch((error) => {
-        log.error("Error creating resource", {
-          error,
-          entityId: entity.id,
-        });
-      });
+    await this.db.insert(schema.resource).values(entity).onConflictDoNothing();
     return entity;
   }
 
-  update(entity: FullResource) {
+  async update(entity: FullResource) {
     this.entities.set(entity.id, entity);
-    this.db
+    await this.db
       .update(schema.resource)
       .set(entity)
-      .where(eq(schema.resource.id, entity.id))
-      .catch((error) => {
-        log.error("Error updating resource", {
-          error,
-          entityId: entity.id,
-        });
-      });
+      .where(eq(schema.resource.id, entity.id));
     return entity;
   }
 
-  delete(id: string) {
+  async delete(id: string) {
     const entity = this.entities.get(id);
     if (entity == null) return null;
     this.entities.delete(id);
-    this.db
-      .delete(schema.resource)
-      .where(eq(schema.resource.id, id))
-      .catch((error) => {
-        log.error("Error deleting resource", {
-          error,
-          entityId: id,
-        });
-      });
+    await this.db.delete(schema.resource).where(eq(schema.resource.id, id));
     return entity;
   }
 
