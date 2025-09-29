@@ -7,6 +7,8 @@ import type {
 } from "@ctrlplane/db/schema";
 import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 
+import { Trace } from "../traces.js";
+
 export interface Selector<S, E> {
   upsertEntity(entity: E): Promise<void>;
   removeEntity(entity: E): Promise<void>;
@@ -52,6 +54,7 @@ export class SelectorManager {
     return this.opts.deploymentResourceSelector;
   }
 
+  @Trace()
   async updateResource(resource: FullResource) {
     const [environmentChanges, deploymentChanges] = await Promise.all([
       this.opts.environmentResourceSelector.upsertEntity(resource),

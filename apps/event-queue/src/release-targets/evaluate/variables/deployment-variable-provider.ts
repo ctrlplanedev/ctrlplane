@@ -119,7 +119,6 @@ export class DeploymentVariableProvider implements VariableProvider {
     return resources;
   }
 
-  @Trace()
   private sourceResourceMatchesRule(
     sourceMetadataEqualsRules: schema.ResourceRelationshipRuleSourceMetadataEquals[],
     metadataKeysMatchRules: schema.ResourceRelationshipRuleMetadataMatch[],

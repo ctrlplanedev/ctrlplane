@@ -10,6 +10,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "./workspace.js";
+import { Trace } from "../traces.js";
 
 const log = logger.child({ module: "operation-pipeline" });
 
@@ -114,6 +115,7 @@ export class OperationPipeline {
     return this;
   }
 
+  @Trace()
   private async markDeploymentReleaseTargetsAsStale(deploymentId: string) {
     const allReleaseTargets =
       await this.opts.workspace.repository.releaseTargetRepository.getAll();
@@ -126,6 +128,7 @@ export class OperationPipeline {
     };
   }
 
+  @Trace()
   private async getReleaseTargetsForPolicy(policy: schema.Policy) {
     const allPolicyTargets =
       await this.opts.workspace.selectorManager.policyTargetReleaseTargetSelector.getAllSelectors();
@@ -146,6 +149,7 @@ export class OperationPipeline {
     };
   }
 
+  @Trace()
   private async upsertJob(job: schema.Job) {
     const previous = await this.opts.workspace.repository.jobRepository.get(
       job.id,
@@ -154,6 +158,7 @@ export class OperationPipeline {
     await this.opts.workspace.jobManager.updateJob(previous, job);
   }
 
+  @Trace()
   private async upsertDeploymentVersion(
     deploymentVersion: schema.DeploymentVersion,
   ) {
@@ -165,6 +170,7 @@ export class OperationPipeline {
     );
   }
 
+  @Trace()
   private async removeDeploymentVersion(
     deploymentVersion: schema.DeploymentVersion,
   ) {
@@ -176,6 +182,7 @@ export class OperationPipeline {
     );
   }
 
+  @Trace()
   private async upsertDeploymentVariable(
     deploymentVariable: schema.DeploymentVariable,
   ) {
@@ -228,6 +235,7 @@ export class OperationPipeline {
     );
   }
 
+  @Trace()
   private async removeDeploymentVariable(
     deploymentVariable: schema.DeploymentVariable,
   ) {
@@ -252,6 +260,7 @@ export class OperationPipeline {
     );
   }
 
+  @Trace()
   private async upsertDeploymentVariableValue(
     deploymentVariableValue: schema.DeploymentVariableValue,
   ) {
@@ -293,6 +302,7 @@ export class OperationPipeline {
     );
   }
 
+  @Trace()
   private async removeDeploymentVariableValue(
     deploymentVariableValue: schema.DeploymentVariableValue,
   ) {
@@ -312,6 +322,7 @@ export class OperationPipeline {
     );
   }
 
+  @Trace()
   private async updatePolicy(policy: FullPolicy) {
     const { targets } = policy;
     await Promise.all(
@@ -330,6 +341,7 @@ export class OperationPipeline {
     await this.getReleaseTargetsForPolicy(policy);
   }
 
+  @Trace()
   private async removePolicy(policy: schema.Policy) {
     await this.getReleaseTargetsForPolicy(policy);
     const allPolicyTargets =
@@ -350,6 +362,7 @@ export class OperationPipeline {
     await this.opts.workspace.repository.policyRepository.delete(policy.id);
   }
 
+  @Trace()
   private async markResourceReleaseTargetsAsStale(resourceId: string) {
     const allReleaseTargets =
       await this.opts.workspace.repository.releaseTargetRepository.getAll();
@@ -362,6 +375,7 @@ export class OperationPipeline {
     };
   }
 
+  @Trace()
   private async upsertEnvironment(environment: schema.Environment) {
     const existing =
       await this.opts.workspace.repository.environmentRepository.get(
@@ -379,6 +393,7 @@ export class OperationPipeline {
     await this.opts.workspace.selectorManager.updateEnvironment(environment);
   }
 
+  @Trace()
   private async removeEnvironment(environment: schema.Environment) {
     await this.opts.workspace.repository.environmentRepository.delete(
       environment.id,
@@ -386,6 +401,7 @@ export class OperationPipeline {
     await this.opts.workspace.selectorManager.removeEnvironment(environment);
   }
 
+  @Trace()
   private async upsertDeployment(deployment: schema.Deployment) {
     const existing =
       await this.opts.workspace.repository.deploymentRepository.get(
@@ -403,6 +419,7 @@ export class OperationPipeline {
     await this.opts.workspace.selectorManager.updateDeployment(deployment);
   }
 
+  @Trace()
   private async removeDeployment(deployment: schema.Deployment) {
     await this.opts.workspace.repository.deploymentRepository.delete(
       deployment.id,
@@ -410,6 +427,7 @@ export class OperationPipeline {
     await this.opts.workspace.selectorManager.removeDeployment(deployment);
   }
 
+  @Trace()
   private async upsertResource(resource: FullResource) {
     try {
       const existing =
@@ -451,6 +469,7 @@ export class OperationPipeline {
     // };
   }
 
+  @Trace()
   private async removeResource(resource: FullResource) {
     try {
       await this.opts.workspace.repository.resourceRepository.delete(
@@ -482,6 +501,7 @@ export class OperationPipeline {
     // };
   }
 
+  @Trace()
   private async upsertResourceVariable(
     resourceVariable: typeof schema.resourceVariable.$inferSelect,
   ) {
@@ -501,6 +521,7 @@ export class OperationPipeline {
     await this.markResourceReleaseTargetsAsStale(resourceVariable.resourceId);
   }
 
+  @Trace()
   private async removeResourceVariable(
     resourceVariable: typeof schema.resourceVariable.$inferSelect,
   ) {
@@ -511,6 +532,7 @@ export class OperationPipeline {
     await this.markResourceReleaseTargetsAsStale(resourceVariable.resourceId);
   }
 
+  @Trace()
   async getReleaseTargetChanges() {
     const { addedReleaseTargets, removedReleaseTargets } =
       await this.opts.workspace.releaseTargetManager.computeReleaseTargetChanges();
@@ -527,6 +549,7 @@ export class OperationPipeline {
     };
   }
 
+  @Trace()
   async dispatch() {
     const {
       operation,
