@@ -105,7 +105,6 @@ export class VariableReleaseManager implements ReleaseManager {
 
   @Trace()
   async upsertRelease(variables: MaybeVariable[]) {
-    const now = performance.now();
     const latestRelease = await this.findLatestRelease();
 
     const oldVars = _(latestRelease?.values ?? [])
@@ -124,18 +123,12 @@ export class VariableReleaseManager implements ReleaseManager {
 
     const isSame = _.isEqual(oldVars, newVars);
     if (latestRelease != null && isSame) {
-      const end = performance.now();
-      const duration = end - now;
-      log.info(`Variable release upsert took ${duration.toFixed(2)}ms`);
       return { created: false, release: latestRelease };
     }
 
     const release = await this.insertRelease(this.releaseTarget.id);
     const vars = _.compact(variables);
     if (vars.length === 0) {
-      const end = performance.now();
-      const duration = end - now;
-      log.info(`Variable release upsert took ${duration.toFixed(2)}ms`);
       return { created: true, release };
     }
     const valueSnapshots = await this.getValueSnapshotsForRelease(vars);
@@ -155,24 +148,17 @@ export class VariableReleaseManager implements ReleaseManager {
       ),
     );
 
-    const end = performance.now();
-    const duration = end - now;
-    log.info(`Variable release upsert took ${duration.toFixed(2)}ms`);
     return { created: true, release };
   }
 
   @Trace()
   async evaluate() {
     try {
-      const now = performance.now();
       const variableManager = await getVariableManager(
         this.workspace,
         this.releaseTarget,
       );
       const variables = await variableManager.getVariables();
-      const end = performance.now();
-      const duration = end - now;
-      log.info(`Variable release evaluation took ${duration.toFixed(2)}ms`);
       return { chosenCandidate: variables };
     } catch (error) {
       log.error("Error evaluating variable release", { error });

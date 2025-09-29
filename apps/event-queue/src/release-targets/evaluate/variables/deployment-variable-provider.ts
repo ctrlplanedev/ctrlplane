@@ -32,7 +32,6 @@ export class DeploymentVariableProvider implements VariableProvider {
 
   @Trace()
   private async getRuleByReference(reference: string) {
-    const now = performance.now();
     const allRelationshipRules =
       await this.workspace.repository.resourceRelationshipRuleRepository.getAll();
     const relationshipRule = allRelationshipRules.find(
@@ -59,11 +58,6 @@ export class DeploymentVariableProvider implements VariableProvider {
       (r) => r.resourceRelationshipRuleId === relationshipRule.id,
     );
 
-    const end = performance.now();
-    const duration = end - now;
-    log.info(
-      `Getting relationship rule by reference took ${duration.toFixed(2)}ms`,
-    );
     return {
       ...relationshipRule,
       metadataKeysMatch,
@@ -77,7 +71,6 @@ export class DeploymentVariableProvider implements VariableProvider {
     relationshipRule: schema.ResourceRelationshipRule,
     targetMetadataEqualsRules: schema.ResourceRelationshipRuleTargetMetadataEquals[],
   ) {
-    const now = performance.now();
     const { resource } = this.releaseTarget;
     const { targetKind, targetVersion } = relationshipRule;
     const targetKindSatisfied =
@@ -91,9 +84,6 @@ export class DeploymentVariableProvider implements VariableProvider {
       if (targetMetadata == null || targetMetadata !== t.value) return false;
     }
 
-    const end = performance.now();
-    const duration = end - now;
-    log.info(`Target resource matches rule took ${duration.toFixed(2)}ms`);
     return true;
   }
 
@@ -101,7 +91,6 @@ export class DeploymentVariableProvider implements VariableProvider {
   private async getSourceResourceCandidates(
     relationshipRule: schema.ResourceRelationshipRule,
   ) {
-    const now = performance.now();
     const { sourceKind, sourceVersion } = relationshipRule;
     const allResources =
       await this.workspace.repository.resourceRepository.getAll();
@@ -110,11 +99,6 @@ export class DeploymentVariableProvider implements VariableProvider {
         r.kind === sourceKind &&
         r.version === sourceVersion &&
         r.deletedAt == null,
-    );
-    const end = performance.now();
-    const duration = end - now;
-    log.info(
-      `Getting source resource candidates took ${duration.toFixed(2)}ms`,
     );
     return resources;
   }
@@ -184,7 +168,6 @@ export class DeploymentVariableProvider implements VariableProvider {
       await this.getSourceResourceCandidates(relationshipRule);
     if (sourceResourceCandidates.length === 0) return defaultValue;
 
-    const sourceResourceSearchStart = performance.now();
     const sourceResource = sourceResourceCandidates.find((r) =>
       this.sourceResourceMatchesRule(
         sourceMetadataEquals,
@@ -192,19 +175,9 @@ export class DeploymentVariableProvider implements VariableProvider {
         r,
       ),
     );
-    const sourceResourceSearchEnd = performance.now();
-    const sourceResourceSearchDuration =
-      sourceResourceSearchEnd - sourceResourceSearchStart;
-    log.info(
-      `Source resource search took ${sourceResourceSearchDuration.toFixed(2)}ms`,
-    );
     if (sourceResource == null) return defaultValue;
 
-    const fullSourceStart = performance.now();
     const fullSource = await this.getFullSource(sourceResource);
-    const fullSourceEnd = performance.now();
-    const fullSourceDuration = fullSourceEnd - fullSourceStart;
-    log.info(`Full source retrieval took ${fullSourceDuration.toFixed(2)}ms`);
     const resolvedPath = _.get(fullSource, path, defaultValue);
     return resolvedPath as string | number | boolean | object | null;
   }
@@ -238,7 +211,6 @@ export class DeploymentVariableProvider implements VariableProvider {
 
   @Trace()
   private async getDeploymentVariable(key: string) {
-    const now = performance.now();
     const allDeploymentVariables =
       await this.workspace.repository.deploymentVariableRepository.getAll();
     const deploymentVariable = allDeploymentVariables.find(
@@ -246,11 +218,6 @@ export class DeploymentVariableProvider implements VariableProvider {
         v.deploymentId === this.releaseTarget.deploymentId && v.key === key,
     );
     if (deploymentVariable == null) {
-      const end = performance.now();
-      const duration = end - now;
-      log.info(
-        `Getting actual deployment variable took ${duration.toFixed(2)}ms`,
-      );
       return null;
     }
     const allDeploymentVariableValues =
@@ -260,11 +227,6 @@ export class DeploymentVariableProvider implements VariableProvider {
     );
     const defaultValue = values.find(
       (value) => value.id === deploymentVariable.defaultValueId,
-    );
-    const end = performance.now();
-    const duration = end - now;
-    log.info(
-      `Getting actual deployment variable took ${duration.toFixed(2)}ms`,
     );
     return { ...deploymentVariable, values, defaultValue };
   }
@@ -281,20 +243,10 @@ export class DeploymentVariableProvider implements VariableProvider {
     const { resource } = this.releaseTarget;
     for (const value of sortedValues) {
       if (value.resourceSelector == null) continue;
-      const matchStart = performance.now();
       const match = resourceMatchesSelector(resource, value.resourceSelector);
-      const matchEnd = performance.now();
-      const matchDuration = matchEnd - matchStart;
-      log.info(`Resource matches selector took ${matchDuration.toFixed(2)}ms`);
       if (!match) continue;
 
-      const resolveStart = performance.now();
       const resolvedValue = await this.resolveVariableValue(key, value);
-      const resolveEnd = performance.now();
-      const resolveDuration = resolveEnd - resolveStart;
-      log.info(
-        `Resolving deployment variable value took ${resolveDuration.toFixed(2)}ms`,
-      );
       if (resolvedValue != null) return resolvedValue;
     }
 

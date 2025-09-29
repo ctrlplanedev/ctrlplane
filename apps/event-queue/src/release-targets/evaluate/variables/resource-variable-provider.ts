@@ -45,15 +45,11 @@ export class ResourceVariableProvider implements VariableProvider {
 
   @Trace()
   async getVariable(key: string): Promise<MaybeVariable> {
-    const now = performance.now();
     const variables = await this.getVariables();
     const variable = variables.find((v) => v.key === key) ?? null;
     if (variable == null) return null;
 
     const resolvedValue = this.resolveVariableValue(variable);
-    const end = performance.now();
-    const duration = end - now;
-    log.info(`Resource variable resolution took ${duration.toFixed(2)}ms`);
 
     return {
       id: variable.id,

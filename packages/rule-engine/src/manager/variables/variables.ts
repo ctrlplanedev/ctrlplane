@@ -3,7 +3,6 @@ import type { Tx } from "@ctrlplane/db";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import type { ReleaseTargetIdentifier } from "../../types.js";
 import type { MaybeVariable, VariableProvider } from "./types.js";
@@ -12,8 +11,6 @@ import {
   DatabaseResourceVariableProvider,
   DatabaseSystemVariableSetProvider,
 } from "./db-variable-providers.js";
-
-const log = logger.child({ component: "variable-manager" });
 
 const getDeploymentVariableKeys = async (options: {
   deploymentId: string;
@@ -69,20 +66,10 @@ export class VariableManager {
   }
 
   async getVariable(key: string): Promise<MaybeVariable> {
-    const now = performance.now();
     for (const provider of this.variableProviders) {
-      const now = performance.now();
       const variable = await provider.getVariable(key);
-      const end = performance.now();
-      const duration = end - now;
-      log.info(
-        `Variable ${key} resolution took ${duration.toFixed(2)}ms for provider ${provider.constructor.name}`,
-      );
       if (variable) return variable;
     }
-    const end = performance.now();
-    const duration = end - now;
-    log.info(`Variable ${key} resolution took ${duration.toFixed(2)}ms`);
     return { key, value: null, sensitive: false };
   }
 }

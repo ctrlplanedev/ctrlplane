@@ -187,22 +187,14 @@ export class OperationPipeline {
     deploymentVariable: schema.DeploymentVariable,
   ) {
     log.info("Upserting deployment variable");
-    const upsertStart = performance.now();
 
     log.info("Checking existing deployment variable");
-    const checkExistingStart = performance.now();
     const existing =
       await this.opts.workspace.repository.deploymentVariableRepository.get(
         deploymentVariable.id,
       );
-    const checkExistingEnd = performance.now();
-    const checkExistingDuration = checkExistingEnd - checkExistingStart;
-    log.info(
-      `Checking existing deployment variable took ${checkExistingDuration.toFixed(2)}ms`,
-    );
 
     log.info("Repository upserting deployment variable");
-    const repoUpsertStart = performance.now();
     if (existing == null)
       await this.opts.workspace.repository.deploymentVariableRepository.create(
         deploymentVariable,
@@ -211,27 +203,10 @@ export class OperationPipeline {
       await this.opts.workspace.repository.deploymentVariableRepository.update(
         deploymentVariable,
       );
-    const repoUpsertEnd = performance.now();
-    const repoUpsertDuration = repoUpsertEnd - repoUpsertStart;
-    log.info(
-      `Repository upserting deployment variable took ${repoUpsertDuration.toFixed(2)}ms`,
-    );
 
     log.info("Marking deployment release targets as stale");
-    const markStart = performance.now();
     await this.markDeploymentReleaseTargetsAsStale(
       deploymentVariable.deploymentId,
-    );
-    const markEnd = performance.now();
-    const markDuration = markEnd - markStart;
-    log.info(
-      `Marking deployment release targets as stale took ${markDuration.toFixed(2)}ms`,
-    );
-
-    const upsertEnd = performance.now();
-    const upsertDuration = upsertEnd - upsertStart;
-    log.info(
-      `Upserting deployment variable took ${upsertDuration.toFixed(2)}ms`,
     );
   }
 
@@ -621,7 +596,6 @@ export class OperationPipeline {
     log.info(
       `Evaluating ${this.opts.releaseTargets?.toEvaluate.length ?? 0} release targets`,
     );
-    const evaluateStart = performance.now();
 
     const jobsToDispatch: schema.Job[] = [];
 
@@ -629,7 +603,6 @@ export class OperationPipeline {
     const batches = _.chunk(releaseTargetsToEvaluate, 10);
 
     for (const batch of batches) {
-      const batchStart = performance.now();
       const jobs = await Promise.allSettled(
         batch.map((rt) =>
           releaseTargetManager.evaluate(rt, {
@@ -642,17 +615,10 @@ export class OperationPipeline {
           .filter(isPresent),
       );
       jobsToDispatch.push(...jobs);
-      const batchEnd = performance.now();
-      const batchDuration = batchEnd - batchStart;
-      log.info(
-        `Evaluating batch of ${batch.length} release targets took ${batchDuration.toFixed(2)}ms`,
-      );
     }
 
-    const evaluateEnd = performance.now();
-    const evaluateDuration = evaluateEnd - evaluateStart;
     log.info(
-      `Release target evaluation took ${evaluateDuration.toFixed(2)}ms, found ${jobsToDispatch.length} jobs to dispatch`,
+      `Release target evaluation found ${jobsToDispatch.length} jobs to dispatch`,
     );
 
     await Promise.all(jobsToDispatch.map((job) => jobManager.dispatchJob(job)));

@@ -51,7 +51,6 @@ export class ReleaseTargetManager {
   }
 
   private async determineReleaseTargets() {
-    const determineReleaseTargetsStart = performance.now();
     const [environments, deployments] = await Promise.all([
       this.getEnvironments(),
       this.getDeployments(),
@@ -108,13 +107,6 @@ export class ReleaseTargetManager {
       }
     }
 
-    const determineReleaseTargetsEnd = performance.now();
-    const determineReleaseTargetsDuration =
-      determineReleaseTargetsEnd - determineReleaseTargetsStart;
-    log.info(
-      `Determining release targets took ${determineReleaseTargetsDuration.toFixed(2)}ms`,
-    );
-
     return releaseTargets;
   }
 
@@ -125,7 +117,6 @@ export class ReleaseTargetManager {
   private async persistAddedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
-    const persistAddedReleaseTargetsStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.repository.releaseTargetRepository.create(releaseTarget),
@@ -139,18 +130,11 @@ export class ReleaseTargetManager {
         ),
       ),
     );
-    const persistAddedReleaseTargetsEnd = performance.now();
-    const persistAddedReleaseTargetsDuration =
-      persistAddedReleaseTargetsEnd - persistAddedReleaseTargetsStart;
-    log.info(
-      `Persisting added release targets took ${persistAddedReleaseTargetsDuration.toFixed(2)}ms`,
-    );
   }
 
   private async persistRemovedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
-    const persistRemovedReleaseTargetsStart = performance.now();
     await Promise.all(
       releaseTargets.map((releaseTarget) =>
         this.workspace.repository.releaseTargetRepository.delete(
@@ -166,31 +150,15 @@ export class ReleaseTargetManager {
         ),
       ),
     );
-    const persistRemovedReleaseTargetsEnd = performance.now();
-    const persistRemovedReleaseTargetsDuration =
-      persistRemovedReleaseTargetsEnd - persistRemovedReleaseTargetsStart;
-    log.info(
-      `Persisting removed release targets took ${persistRemovedReleaseTargetsDuration.toFixed(2)}ms`,
-    );
   }
 
   async computeReleaseTargetChanges() {
     log.info("Computing release target changes");
-    const start = performance.now();
 
-    const getCurrentStateStart = performance.now();
     const [existingReleaseTargets, computedReleaseTargets] = await Promise.all([
       this.getExistingReleaseTargets(),
       this.determineReleaseTargets(),
     ]);
-
-    const getCurrentStateEnd = performance.now();
-    const getCurrentStateDuration = getCurrentStateEnd - getCurrentStateStart;
-    log.info(
-      `Getting current state took ${getCurrentStateDuration.toFixed(2)}ms`,
-    );
-
-    const computeChangesStart = performance.now();
 
     const removedReleaseTargets = existingReleaseTargets.filter(
       (existingReleaseTarget) =>
@@ -218,18 +186,10 @@ export class ReleaseTargetManager {
         ),
     );
 
-    const computeChangesEnd = performance.now();
-    const computeChangesDuration = computeChangesEnd - computeChangesStart;
-    log.info(`Computing changes took ${computeChangesDuration.toFixed(2)}ms`);
-
     await Promise.all([
       this.persistRemovedReleaseTargets(removedReleaseTargets),
       this.persistAddedReleaseTargets(addedReleaseTargets),
     ]);
-
-    const end = performance.now();
-    const duration = end - start;
-    log.info(`Release target changes computed took ${duration.toFixed(2)}ms`);
 
     return { removedReleaseTargets, addedReleaseTargets };
   }
@@ -239,26 +199,18 @@ export class ReleaseTargetManager {
   }
 
   private async handleVersionRelease(releaseTarget: FullReleaseTarget) {
-    const start = performance.now();
     const vrm = new VersionManager(releaseTarget, this.workspace);
     const { chosenCandidate } = await vrm.evaluate();
     if (chosenCandidate == null) return null;
     const { release } = await vrm.upsertRelease(chosenCandidate.id);
-    const end = performance.now();
-    const duration = end - start;
-    log.info(`Version release handled took ${duration.toFixed(2)}ms`);
     return release;
   }
 
   private async handleVariableRelease(releaseTarget: FullReleaseTarget) {
-    const start = performance.now();
     const rtWithWorkspace = this.getReleaseTargetWithWorkspace(releaseTarget);
     const varrm = new VariableReleaseManager(rtWithWorkspace, this.workspace);
     const { chosenCandidate } = await varrm.evaluate();
     const { release } = await varrm.upsertRelease(chosenCandidate);
-    const end = performance.now();
-    const duration = end - start;
-    log.info(`Variable release handled took ${duration.toFixed(2)}ms`);
     return release;
   }
 

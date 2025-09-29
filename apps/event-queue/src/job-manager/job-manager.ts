@@ -208,7 +208,6 @@ export class JobManager {
 
   @Trace()
   async createReleaseJob(release: typeof schema.release.$inferSelect) {
-    const start = performance.now();
     const versionRelease =
       await this.workspace.repository.versionReleaseRepository.get(
         release.versionReleaseId,
@@ -236,9 +235,6 @@ export class JobManager {
       jobVariables,
     );
 
-    const end = performance.now();
-    const duration = end - start;
-    this.log.info(`Creating release job took ${duration.toFixed(2)}ms`);
     return job;
   }
 
