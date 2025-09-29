@@ -18,6 +18,7 @@ import type {
   ResourceRelationshipManager,
   Rule,
 } from "./resource-relationship-manager";
+import { Trace } from "../traces.js";
 
 export class DbResourceRelationshipManager
   implements ResourceRelationshipManager
@@ -70,6 +71,7 @@ export class DbResourceRelationshipManager
       .then(takeFirstOrNull);
   }
 
+  @Trace()
   getAllRelationshipRules(): Promise<schema.ResourceRelationshipRule[]> {
     return this.db
       .select()
@@ -108,6 +110,7 @@ export class DbResourceRelationshipManager
       .then(takeFirstOrNull);
   }
 
+  @Trace()
   async getResourceChildren(
     resource: schema.Resource,
   ): Promise<{ rule: Rule; target: schema.Resource }[]> {
@@ -118,6 +121,7 @@ export class DbResourceRelationshipManager
     }));
   }
 
+  @Trace()
   async getResourceParents(
     resource: schema.Resource,
   ): Promise<{ rule: Rule; source: schema.Resource }[]> {
