@@ -3,8 +3,13 @@ import type { Tx } from "@ctrlplane/db";
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "../repository";
+
+const log = logger.child({
+  module: "in-memory-resource-variable-repository",
+});
 
 type ResourceVariable = typeof schema.resourceVariable.$inferSelect;
 
@@ -55,31 +60,49 @@ export class InMemoryResourceVariableRepository
     return Array.from(this.entities.values());
   }
 
-  async create(entity: ResourceVariable) {
+  create(entity: ResourceVariable) {
     this.entities.set(entity.id, entity);
-    await this.db
+    this.db
       .insert(schema.resourceVariable)
       .values(entity)
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .catch((error) => {
+        log.error("Error creating resource variable", {
+          error,
+          entityId: entity.id,
+        });
+      });
     return entity;
   }
 
-  async update(entity: ResourceVariable) {
+  update(entity: ResourceVariable) {
     this.entities.set(entity.id, entity);
-    await this.db
+    this.db
       .update(schema.resourceVariable)
       .set(entity)
-      .where(eq(schema.resourceVariable.id, entity.id));
+      .where(eq(schema.resourceVariable.id, entity.id))
+      .catch((error) => {
+        log.error("Error updating resource variable", {
+          error,
+          entityId: entity.id,
+        });
+      });
     return entity;
   }
 
-  async delete(id: string) {
+  delete(id: string) {
     const entity = this.entities.get(id);
     if (entity == null) return null;
     this.entities.delete(id);
-    await this.db
+    this.db
       .delete(schema.resourceVariable)
-      .where(eq(schema.resourceVariable.id, id));
+      .where(eq(schema.resourceVariable.id, id))
+      .catch((error) => {
+        log.error("Error deleting resource variable", {
+          error,
+          entityId: id,
+        });
+      });
     return entity;
   }
 
