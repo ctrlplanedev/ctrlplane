@@ -11,7 +11,7 @@ import {
 } from "@ctrlplane/validators/jobs";
 
 import type { Workspace } from "../workspace/workspace.js";
-import { Trace } from "../../src/traces.js";
+import { Trace } from "../traces.js";
 import { dispatchGithubJob } from "./github.js";
 
 export class JobManager {
