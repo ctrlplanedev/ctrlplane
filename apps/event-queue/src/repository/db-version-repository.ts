@@ -5,6 +5,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository.js";
+import { Trace } from "../traces.js";
 
 export class DbVersionRepository
   implements Repository<schema.DeploymentVersion>
@@ -23,6 +24,7 @@ export class DbVersionRepository
       .then(takeFirstOrNull);
   }
 
+  @Trace()
   getAll(): Promise<schema.DeploymentVersion[]> {
     return this.db
       .select()

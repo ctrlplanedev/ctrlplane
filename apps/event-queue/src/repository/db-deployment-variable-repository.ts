@@ -5,6 +5,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository";
+import { Trace } from "../traces.js";
 
 export class DbDeploymentVariableRepository
   implements Repository<schema.DeploymentVariable>
@@ -33,6 +34,7 @@ export class DbDeploymentVariableRepository
       .then((row) => row?.deployment_variable ?? null);
   }
 
+  @Trace()
   getAll() {
     return this.db
       .select()

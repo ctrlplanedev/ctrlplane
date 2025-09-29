@@ -7,6 +7,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import type { Repository } from "./repository";
+import { Trace } from "../traces.js";
 
 const log = logger.child({ module: "DbDeploymentVariableValueRepository" });
 
@@ -76,6 +77,7 @@ export class DbDeploymentVariableValueRepository
     return null;
   }
 
+  @Trace()
   async getAll() {
     const results = await this.db
       .select()

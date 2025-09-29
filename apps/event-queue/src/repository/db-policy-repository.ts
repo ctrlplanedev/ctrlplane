@@ -5,6 +5,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository.js";
+import { Trace } from "../traces.js";
 
 export class DbPolicyRepository implements Repository<schema.Policy> {
   private readonly db: Tx;
@@ -26,6 +27,7 @@ export class DbPolicyRepository implements Repository<schema.Policy> {
       )
       .then(takeFirstOrNull);
   }
+  @Trace()
   async getAll() {
     return this.db
       .select()

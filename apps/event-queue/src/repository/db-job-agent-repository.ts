@@ -5,6 +5,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository.js";
+import { Trace } from "../traces.js";
 
 export class DbJobAgentRepository implements Repository<schema.JobAgent> {
   private readonly db: Tx;
@@ -27,6 +28,7 @@ export class DbJobAgentRepository implements Repository<schema.JobAgent> {
       .then(takeFirstOrNull);
   }
 
+  @Trace()
   getAll() {
     return this.db
       .select()

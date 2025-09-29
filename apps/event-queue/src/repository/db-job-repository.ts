@@ -5,6 +5,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository.js";
+import { Trace } from "../traces.js";
 
 export class DbJobRepository implements Repository<schema.Job> {
   private readonly db: Tx;
@@ -22,6 +23,7 @@ export class DbJobRepository implements Repository<schema.Job> {
       .then(takeFirstOrNull);
   }
 
+  @Trace()
   async getAll() {
     const deploymentJobsPromise = this.db
       .select()

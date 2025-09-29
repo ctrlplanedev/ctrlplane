@@ -5,6 +5,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository.js";
+import { Trace } from "../traces.js";
 
 export class DbDeploymentRepository implements Repository<schema.Deployment> {
   private readonly db: Tx;
@@ -31,6 +32,8 @@ export class DbDeploymentRepository implements Repository<schema.Deployment> {
       .then(takeFirstOrNull)
       .then((row) => row?.deployment ?? null);
   }
+
+  @Trace()
   async getAll() {
     return this.db
       .select()

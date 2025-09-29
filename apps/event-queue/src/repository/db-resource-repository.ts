@@ -8,6 +8,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository.js";
+import { Trace } from "../traces.js";
 
 export class DbResourceRepository implements Repository<FullResource> {
   private readonly db: Tx;
@@ -39,6 +40,8 @@ export class DbResourceRepository implements Repository<FullResource> {
         return { ...resource, metadata };
       });
   }
+
+  @Trace()
   async getAll() {
     const dbResult = await this.db
       .select()

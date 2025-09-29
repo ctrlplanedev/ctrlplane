@@ -6,43 +6,50 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "../repository";
+import { createSpanWrapper } from "../../traces.js";
 
-const getInitialEntities = async (workspaceId: string) =>
-  dbClient
-    .select()
-    .from(schema.releaseTarget)
-    .innerJoin(
-      schema.resource,
-      eq(schema.releaseTarget.resourceId, schema.resource.id),
-    )
-    .innerJoin(
-      schema.environment,
-      eq(schema.releaseTarget.environmentId, schema.environment.id),
-    )
-    .innerJoin(
-      schema.deployment,
-      eq(schema.releaseTarget.deploymentId, schema.deployment.id),
-    )
-    .where(eq(schema.resource.workspaceId, workspaceId))
-    .then((rows) =>
-      rows.map((row) => ({
-        ...row.release_target,
-        resource: row.resource,
-        environment: row.environment,
-        deployment: row.deployment,
-      })),
-    );
+const getInitialEntities = createSpanWrapper(
+  "getInitialEntities",
+  async (_span, workspaceId: string) =>
+    dbClient
+      .select()
+      .from(schema.releaseTarget)
+      .innerJoin(
+        schema.resource,
+        eq(schema.releaseTarget.resourceId, schema.resource.id),
+      )
+      .innerJoin(
+        schema.environment,
+        eq(schema.releaseTarget.environmentId, schema.environment.id),
+      )
+      .innerJoin(
+        schema.deployment,
+        eq(schema.releaseTarget.deploymentId, schema.deployment.id),
+      )
+      .where(eq(schema.resource.workspaceId, workspaceId))
+      .then((rows) =>
+        rows.map((row) => ({
+          ...row.release_target,
+          resource: row.resource,
+          environment: row.environment,
+          deployment: row.deployment,
+        })),
+      ),
+);
 
-const getInitialResourceMeta = async (workspaceId: string) =>
-  dbClient
-    .select()
-    .from(schema.resourceMetadata)
-    .innerJoin(
-      schema.resource,
-      eq(schema.resourceMetadata.resourceId, schema.resource.id),
-    )
-    .where(eq(schema.resource.workspaceId, workspaceId))
-    .then((rows) => rows.map((row) => row.resource_metadata));
+const getInitialResourceMeta = createSpanWrapper(
+  "getInitialResourceMeta",
+  async (_span, workspaceId: string) =>
+    dbClient
+      .select()
+      .from(schema.resourceMetadata)
+      .innerJoin(
+        schema.resource,
+        eq(schema.resourceMetadata.resourceId, schema.resource.id),
+      )
+      .where(eq(schema.resource.workspaceId, workspaceId))
+      .then((rows) => rows.map((row) => row.resource_metadata)),
+);
 
 type InMemoryReleaseTargetRepositoryOptions = {
   initialEntities: FullReleaseTarget[];

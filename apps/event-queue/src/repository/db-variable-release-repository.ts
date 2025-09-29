@@ -5,6 +5,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository";
+import { Trace } from "../traces.js";
 
 export class DbVariableReleaseRepository
   implements Repository<typeof schema.variableSetRelease.$inferSelect>
@@ -39,6 +40,7 @@ export class DbVariableReleaseRepository
       .then((row) => row?.variable_set_release ?? null);
   }
 
+  @Trace()
   getAll() {
     return this.db
       .select()

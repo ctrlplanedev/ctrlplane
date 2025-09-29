@@ -5,6 +5,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository";
+import { Trace } from "../traces.js";
 
 export class DbResourceRelationshipRuleMetadataMatchRepository
   implements Repository<schema.ResourceRelationshipRuleMetadataMatch>
@@ -24,6 +25,7 @@ export class DbResourceRelationshipRuleMetadataMatchRepository
       .then(takeFirstOrNull);
   }
 
+  @Trace()
   getAll() {
     return this.db
       .select()

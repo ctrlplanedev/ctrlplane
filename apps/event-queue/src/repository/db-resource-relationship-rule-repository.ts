@@ -5,6 +5,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository";
+import { Trace } from "../traces.js";
 
 export class DbResourceRelationshipRuleRepository
   implements Repository<schema.ResourceRelationshipRule>
@@ -29,6 +30,7 @@ export class DbResourceRelationshipRuleRepository
       .then(takeFirstOrNull);
   }
 
+  @Trace()
   getAll() {
     return this.db
       .select()

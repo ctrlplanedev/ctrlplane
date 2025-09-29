@@ -8,6 +8,7 @@ import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { Repository } from "./repository";
+import { Trace } from "../traces.js";
 
 export class DbReleaseTargetRepository
   implements Repository<FullReleaseTarget>
@@ -66,6 +67,7 @@ export class DbReleaseTargetRepository
     };
   }
 
+  @Trace()
   async getAll() {
     const dbResult = await this.db
       .select()
