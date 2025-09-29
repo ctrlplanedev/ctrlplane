@@ -49,25 +49,6 @@ export class JobManager {
     return releaseTarget ?? null;
   }
 
-  private async getReleaseFromJob(job: schema.Job) {
-    const allReleaseJobs =
-      await this.workspace.repository.releaseJobRepository.getAll();
-    const releaseJob = allReleaseJobs.find((r) => r.jobId === job.id);
-    if (releaseJob == null) return null;
-    const release = await this.workspace.repository.releaseRepository.get(
-      releaseJob.releaseId,
-    );
-    return release ?? null;
-  }
-
-  private async getNumJobsForRelease(
-    release: typeof schema.release.$inferSelect,
-  ) {
-    const allReleaseJobs =
-      await this.workspace.repository.releaseJobRepository.getAll();
-    return allReleaseJobs.filter((r) => r.releaseId === release.id).length;
-  }
-
   // private async maybeRetryJob(
   //   releaseTarget: schema.ReleaseTarget,
   //   job: schema.Job,
@@ -107,6 +88,7 @@ export class JobManager {
   //   return false;
   // }
 
+  @Trace()
   async updateJob(previous: schema.Job, current: schema.Job) {
     const updatedJob =
       await this.workspace.repository.jobRepository.update(current);
@@ -150,6 +132,7 @@ export class JobManager {
     };
   }
 
+  @Trace()
   private async createJob(
     releaseId: string,
     jobAgentId: string,
@@ -201,6 +184,7 @@ export class JobManager {
     }
   }
 
+  @Trace()
   private async getJobVariables(
     variableRelease: typeof schema.variableSetRelease.$inferSelect,
   ) {
@@ -222,6 +206,7 @@ export class JobManager {
     }));
   }
 
+  @Trace()
   async createReleaseJob(release: typeof schema.release.$inferSelect) {
     const start = performance.now();
     const versionRelease =
@@ -257,6 +242,7 @@ export class JobManager {
     return job;
   }
 
+  @Trace()
   async dispatchJob(job: schema.Job) {
     const jobAgentId = job.jobAgentId;
     if (jobAgentId == null) {
