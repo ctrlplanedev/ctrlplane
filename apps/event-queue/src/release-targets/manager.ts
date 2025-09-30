@@ -1,11 +1,12 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { FullReleaseTarget } from "@ctrlplane/events";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
-import { Trace, wrapFnWithSpan } from "../traces.js";
+import { Trace } from "../traces.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
@@ -60,41 +61,14 @@ export class ReleaseTargetManager {
 
     const releaseTargets: FullReleaseTarget[] = [];
 
-    wrapFnWithSpan("determineReleaseTargets-computeReleasTargets", () => {
-      for (const environment of environments) {
-        for (const deployment of deployments) {
-          if (environment.systemId != deployment.systemId) continue;
+    for (const environment of environments) {
+      for (const deployment of deployments) {
+        if (environment.systemId != deployment.systemId) continue;
 
-          // special case, if a deployment has no resource selector, we
-          // just include all resources from the environment
-          if (deployment.resourceSelector == null) {
-            for (const resource of environment.resources) {
-              const releaseTargetInsert: FullReleaseTarget = {
-                id: crypto.randomUUID(),
-                resourceId: resource.id,
-                environmentId: environment.id,
-                deploymentId: deployment.id,
-                desiredReleaseId: null,
-                desiredVersionId: null,
-                resource,
-                environment,
-                deployment,
-              };
-
-              releaseTargets.push(releaseTargetInsert);
-            }
-
-            continue;
-          }
-
-          const deploymentResourceIds = new Set(
-            deployment.resources.map((r) => r.id),
-          );
-          const commonResources = environment.resources.filter((r) =>
-            deploymentResourceIds.has(r.id),
-          );
-
-          for (const resource of commonResources) {
+        // special case, if a deployment has no resource selector, we
+        // just include all resources from the environment
+        if (deployment.resourceSelector == null) {
+          for (const resource of environment.resources) {
             const releaseTargetInsert: FullReleaseTarget = {
               id: crypto.randomUUID(),
               resourceId: resource.id,
@@ -109,9 +83,40 @@ export class ReleaseTargetManager {
 
             releaseTargets.push(releaseTargetInsert);
           }
+
+          continue;
+        }
+
+        // const deploymentResourceIds = new Set(
+        //   deployment.resources.map((r) => r.id),
+        // );
+        // const commonResources = environment.resources.filter((r) =>
+        //   deploymentResourceIds.has(r.id),
+        // );
+
+        const commonResources = _.intersectionBy(
+          environment.resources,
+          deployment.resources,
+          (r) => r.id,
+        );
+
+        for (const resource of commonResources) {
+          const releaseTargetInsert: FullReleaseTarget = {
+            id: crypto.randomUUID(),
+            resourceId: resource.id,
+            environmentId: environment.id,
+            deploymentId: deployment.id,
+            desiredReleaseId: null,
+            desiredVersionId: null,
+            resource,
+            environment,
+            deployment,
+          };
+
+          releaseTargets.push(releaseTargetInsert);
         }
       }
-    });
+    }
 
     return releaseTargets;
   }
@@ -168,22 +173,47 @@ export class ReleaseTargetManager {
       this.determineReleaseTargets(),
     ]);
 
-    const makeKey = (rt: {
-      resourceId: string;
-      environmentId: string;
-      deploymentId: string;
-    }) => `${rt.resourceId}|${rt.environmentId}|${rt.deploymentId}`;
-
-    const existingKeys = new Set(existingReleaseTargets.map(makeKey));
-    const computedKeys = new Set(computedReleaseTargets.map(makeKey));
-
     const removedReleaseTargets = existingReleaseTargets.filter(
-      (rt) => !computedKeys.has(makeKey(rt)),
+      (existingReleaseTarget) =>
+        !computedReleaseTargets.some(
+          (computedReleaseTarget) =>
+            computedReleaseTarget.resourceId ===
+              existingReleaseTarget.resourceId &&
+            computedReleaseTarget.environmentId ===
+              existingReleaseTarget.environmentId &&
+            computedReleaseTarget.deploymentId ===
+              existingReleaseTarget.deploymentId,
+        ),
     );
 
     const addedReleaseTargets = computedReleaseTargets.filter(
-      (rt) => !existingKeys.has(makeKey(rt)),
+      (computedReleaseTarget) =>
+        !existingReleaseTargets.some(
+          (existingReleaseTarget) =>
+            existingReleaseTarget.resourceId ===
+              computedReleaseTarget.resourceId &&
+            existingReleaseTarget.environmentId ===
+              computedReleaseTarget.environmentId &&
+            existingReleaseTarget.deploymentId ===
+              computedReleaseTarget.deploymentId,
+        ),
     );
+    // const makeKey = (rt: {
+    //   resourceId: string;
+    //   environmentId: string;
+    //   deploymentId: string;
+    // }) => `${rt.resourceId}|${rt.environmentId}|${rt.deploymentId}`;
+
+    // const existingKeys = new Set(existingReleaseTargets.map(makeKey));
+    // const computedKeys = new Set(computedReleaseTargets.map(makeKey));
+
+    // const removedReleaseTargets = existingReleaseTargets.filter(
+    //   (rt) => !computedKeys.has(makeKey(rt)),
+    // );
+
+    // const addedReleaseTargets = computedReleaseTargets.filter(
+    //   (rt) => !existingKeys.has(makeKey(rt)),
+    // );
 
     await Promise.all([
       this.persistRemovedReleaseTargets(removedReleaseTargets),
