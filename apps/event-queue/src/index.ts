@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import type { IMemberAssignment } from "kafkajs";
 import { Kafka } from "kafkajs";
 
 import { logger } from "@ctrlplane/logger";
@@ -11,15 +12,44 @@ const kafka = new Kafka({
   brokers: env.KAFKA_BROKERS,
 });
 
+const topic = "ctrlplane-events";
 const consumer = kafka.consumer({ groupId: "ctrlplane-events" });
 
-const EVENT_TIMEOUT = 240_000;
+let ready = false;
+let lastAssignment: IMemberAssignment | null = null;
 
 export const start = async () => {
   logger.info("Starting event queue", { brokers: env.KAFKA_BROKERS });
+
   await consumer.connect();
-  await consumer.subscribe({ topic: "ctrlplane-events", fromBeginning: false });
-  logger.info("Subscribed to ctrlplane-events topic");
+  await consumer.subscribe({ topic, fromBeginning: false });
+
+  const ev = consumer.events;
+
+  consumer.on(ev.GROUP_JOIN, (e) => {
+    const { memberAssignment } = e.payload;
+    logger.info("Group joined", { memberAssignment });
+    lastAssignment = memberAssignment;
+    ready = true;
+  });
+
+  consumer.on(ev.REBALANCING, (event) => {
+    logger.info("Group rebalancing", { event });
+    ready = false;
+  });
+
+  consumer.on(ev.DISCONNECT, () => {
+    ready = false;
+    logger.warn("Not ready: disconnected");
+  });
+
+  consumer.on(ev.CRASH, (e) => {
+    ready = false;
+    logger.error("Consumer crashed", {
+      event: e.payload.error.message,
+      cause: e.payload.error.cause,
+    });
+  });
 
   await consumer.run({
     partitionsConsumedConcurrently: env.KAFKA_PARTITIONS_CONSUMED_CONCURRENTLY,
@@ -45,18 +75,7 @@ export const start = async () => {
       }
 
       try {
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `Event handler timeout: took longer than ${EVENT_TIMEOUT}ms for event ${JSON.stringify(event)}`,
-                ),
-              ),
-            EVENT_TIMEOUT,
-          ),
-        );
-        await Promise.race([handler(event), timeoutPromise]);
+        await handler(event);
 
         logger.info("Successfully handled event", {
           event,
@@ -81,6 +100,24 @@ const server = createServer((req, res) => {
   if (req.url === "/healthz") {
     res.writeHead(200);
     res.end("ok");
+    return;
+  }
+
+  if (req.url === "/assignment") {
+    res.writeHead(200);
+    res.end(JSON.stringify(lastAssignment));
+    return;
+  }
+
+  if (req.url === "/ready") {
+    if (ready) {
+      res.writeHead(200);
+      res.end("ok");
+      return;
+    }
+
+    res.writeHead(503);
+    res.end("not-ready");
     return;
   }
 

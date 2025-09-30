@@ -116,6 +116,7 @@ export class JobManager {
     );
     if (deployment == null)
       throw new Error(`Deployment ${version.deploymentId} not found`);
+
     if (deployment.jobAgentId == null)
       throw new Error(`Deployment ${version.deploymentId} has no job agent`);
 

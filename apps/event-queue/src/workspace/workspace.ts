@@ -40,6 +40,7 @@ import { InMemoryDeploymentResourceSelector } from "../selector/in-memory/deploy
 import { InMemoryEnvironmentResourceSelector } from "../selector/in-memory/environment-resource.js";
 import { InMemoryPolicyTargetReleaseTargetSelector } from "../selector/in-memory/policy-target-release-target.js";
 import { SelectorManager } from "../selector/selector.js";
+import { createSpanWrapper, Trace } from "../traces.js";
 
 const log = logger.child({ module: "workspace-engine" });
 
@@ -51,127 +52,129 @@ type WorkspaceOptions = {
   repository: WorkspaceRepository;
 };
 
-const getInitialResources = async (id: string): Promise<FullResource[]> => {
-  const dbResult = await dbClient
-    .select()
-    .from(schema.resource)
-    .leftJoin(
-      schema.resourceMetadata,
-      eq(schema.resource.id, schema.resourceMetadata.resourceId),
-    )
-    .where(
-      and(
-        eq(schema.resource.workspaceId, id),
-        isNull(schema.resource.deletedAt),
-      ),
-    );
-
-  return _.chain(dbResult)
-    .groupBy((row) => row.resource.id)
-    .map((group) => {
-      const [first] = group;
-      if (first == null) return null;
-      const { resource } = first;
-      const metadata = Object.fromEntries(
-        group
-          .map((r) => r.resource_metadata)
-          .filter(isPresent)
-          .map((m) => [m.key, m.value]),
+const getInitialResources = createSpanWrapper(
+  "workspace-getInitialResources",
+  async (_span, id: string): Promise<FullResource[]> => {
+    const dbResult = await dbClient
+      .select()
+      .from(schema.resource)
+      .leftJoin(
+        schema.resourceMetadata,
+        eq(schema.resource.id, schema.resourceMetadata.resourceId),
+      )
+      .where(
+        and(
+          eq(schema.resource.workspaceId, id),
+          isNull(schema.resource.deletedAt),
+        ),
       );
-      return { ...resource, metadata };
-    })
-    .value()
-    .filter(isPresent);
-};
 
-const createSelectorManager = async (
-  id: string,
-  initialResources: FullResource[],
-) => {
-  log.info(`Creating selector manager for workspace ${id}`);
+    return _.chain(dbResult)
+      .groupBy((row) => row.resource.id)
+      .map((group) => {
+        const [first] = group;
+        if (first == null) return null;
+        const { resource } = first;
+        const metadata = Object.fromEntries(
+          group
+            .map((r) => r.resource_metadata)
+            .filter(isPresent)
+            .map((m) => [m.key, m.value]),
+        );
+        return { ...resource, metadata };
+      })
+      .value()
+      .filter(isPresent);
+  },
+);
 
-  const [
-    deploymentResourceSelector,
-    environmentResourceSelector,
-    policyTargetReleaseTargetSelector,
-  ] = await Promise.all([
-    InMemoryDeploymentResourceSelector.create(id, initialResources),
-    InMemoryEnvironmentResourceSelector.create(id, initialResources),
-    InMemoryPolicyTargetReleaseTargetSelector.create(id),
-  ]);
+const createSelectorManager = createSpanWrapper(
+  "workspace-createSelectorManager",
+  async (_span, id: string, initialResources: FullResource[]) => {
+    log.info(`Creating selector manager for workspace ${id}`);
 
-  return new SelectorManager({
-    deploymentResourceSelector,
-    environmentResourceSelector,
-    policyTargetReleaseTargetSelector,
-    deploymentVersionSelector: new DbDeploymentVersionSelector({
-      workspaceId: id,
-    }),
-  });
-};
+    const [
+      deploymentResourceSelector,
+      environmentResourceSelector,
+      policyTargetReleaseTargetSelector,
+    ] = await Promise.all([
+      InMemoryDeploymentResourceSelector.create(id, initialResources),
+      InMemoryEnvironmentResourceSelector.create(id, initialResources),
+      InMemoryPolicyTargetReleaseTargetSelector.create(id),
+    ]);
 
-const createRepository = async (
-  id: string,
-  initialResources: FullResource[],
-) => {
-  log.info(`Creating repository for workspace ${id}`);
+    return new SelectorManager({
+      deploymentResourceSelector,
+      environmentResourceSelector,
+      policyTargetReleaseTargetSelector,
+      deploymentVersionSelector: new DbDeploymentVersionSelector({
+        workspaceId: id,
+      }),
+    });
+  },
+);
 
-  const [
-    inMemoryDeploymentRepository,
-    inMemoryEnvironmentRepository,
-    inMemoryReleaseTargetRepository,
-    inMemoryReleaseRepository,
-    inMemoryVersionReleaseRepository,
-    inMemoryResourceVariableRepository,
-    inMemoryVariableReleaseRepository,
-    inMemoryVariableReleaseValueRepository,
-    inMemoryVariableValueSnapshotRepository,
-  ] = await Promise.all([
-    InMemoryDeploymentRepository.create(id),
-    InMemoryEnvironmentRepository.create(id),
-    InMemoryReleaseTargetRepository.create(id),
-    InMemoryReleaseRepository.create(id),
-    InMemoryVersionReleaseRepository.create(id),
-    InMemoryResourceVariableRepository.create(id),
-    InMemoryVariableReleaseRepository.create(id),
-    InMemoryVariableReleaseValueRepository.create(id),
-    InMemoryVariableValueSnapshotRepository.create(id),
-  ]);
+const createRepository = createSpanWrapper(
+  "workspace-createRepository",
+  async (_span, id: string, initialResources: FullResource[]) => {
+    log.info(`Creating repository for workspace ${id}`);
 
-  return new WorkspaceRepository({
-    versionRepository: new DbVersionRepository(id),
-    environmentRepository: inMemoryEnvironmentRepository,
-    deploymentRepository: inMemoryDeploymentRepository,
-    resourceRepository: new InMemoryResourceRepository({
-      initialEntities: initialResources,
-    }),
-    resourceVariableRepository: inMemoryResourceVariableRepository,
-    policyRepository: new DbPolicyRepository(id),
-    jobAgentRepository: new DbJobAgentRepository(id),
-    jobRepository: new DbJobRepository(id),
-    jobVariableRepository: new DbJobVariableRepository(id),
-    releaseJobRepository: new DbReleaseJobRepository(id),
-    releaseTargetRepository: inMemoryReleaseTargetRepository,
-    releaseRepository: inMemoryReleaseRepository,
-    versionReleaseRepository: inMemoryVersionReleaseRepository,
-    variableReleaseRepository: inMemoryVariableReleaseRepository,
-    variableReleaseValueRepository: inMemoryVariableReleaseValueRepository,
-    variableValueSnapshotRepository: inMemoryVariableValueSnapshotRepository,
-    versionRuleRepository: new DbVersionRuleRepository(id),
-    deploymentVariableRepository: new DbDeploymentVariableRepository(id),
-    deploymentVariableValueRepository: new DbDeploymentVariableValueRepository(
-      id,
-    ),
-    resourceRelationshipRuleRepository:
-      new DbResourceRelationshipRuleRepository(id),
-    resourceRelationshipRuleTargetMetadataEqualsRepository:
-      new DbResourceRelationshipRuleTargetMetadataEqualsRepository(id),
-    resourceRelationshipRuleSourceMetadataEqualsRepository:
-      new DbResourceRelationshipRuleSourceMetadataEqualsRepository(id),
-    resourceRelationshipRuleMetadataMatchRepository:
-      new DbResourceRelationshipRuleMetadataMatchRepository(id),
-  });
-};
+    const [
+      inMemoryDeploymentRepository,
+      inMemoryEnvironmentRepository,
+      inMemoryReleaseTargetRepository,
+      inMemoryReleaseRepository,
+      inMemoryVersionReleaseRepository,
+      inMemoryResourceVariableRepository,
+      inMemoryVariableReleaseRepository,
+      inMemoryVariableReleaseValueRepository,
+      inMemoryVariableValueSnapshotRepository,
+    ] = await Promise.all([
+      InMemoryDeploymentRepository.create(id),
+      InMemoryEnvironmentRepository.create(id),
+      InMemoryReleaseTargetRepository.create(id),
+      InMemoryReleaseRepository.create(id),
+      InMemoryVersionReleaseRepository.create(id),
+      InMemoryResourceVariableRepository.create(id),
+      InMemoryVariableReleaseRepository.create(id),
+      InMemoryVariableReleaseValueRepository.create(id),
+      InMemoryVariableValueSnapshotRepository.create(id),
+    ]);
+
+    return new WorkspaceRepository({
+      versionRepository: new DbVersionRepository(id),
+      environmentRepository: inMemoryEnvironmentRepository,
+      deploymentRepository: inMemoryDeploymentRepository,
+      resourceRepository: new InMemoryResourceRepository({
+        initialEntities: initialResources,
+      }),
+      resourceVariableRepository: inMemoryResourceVariableRepository,
+      policyRepository: new DbPolicyRepository(id),
+      jobAgentRepository: new DbJobAgentRepository(id),
+      jobRepository: new DbJobRepository(id),
+      jobVariableRepository: new DbJobVariableRepository(id),
+      releaseJobRepository: new DbReleaseJobRepository(id),
+      releaseTargetRepository: inMemoryReleaseTargetRepository,
+      releaseRepository: inMemoryReleaseRepository,
+      versionReleaseRepository: inMemoryVersionReleaseRepository,
+      variableReleaseRepository: inMemoryVariableReleaseRepository,
+      variableReleaseValueRepository: inMemoryVariableReleaseValueRepository,
+      variableValueSnapshotRepository: inMemoryVariableValueSnapshotRepository,
+      versionRuleRepository: new DbVersionRuleRepository(id),
+      deploymentVariableRepository: new DbDeploymentVariableRepository(id),
+      deploymentVariableValueRepository:
+        new DbDeploymentVariableValueRepository(id),
+      resourceRelationshipRuleRepository:
+        new DbResourceRelationshipRuleRepository(id),
+      resourceRelationshipRuleTargetMetadataEqualsRepository:
+        new DbResourceRelationshipRuleTargetMetadataEqualsRepository(id),
+      resourceRelationshipRuleSourceMetadataEqualsRepository:
+        new DbResourceRelationshipRuleSourceMetadataEqualsRepository(id),
+      resourceRelationshipRuleMetadataMatchRepository:
+        new DbResourceRelationshipRuleMetadataMatchRepository(id),
+    });
+  },
+);
 
 export class Workspace {
   static async load(id: string) {
@@ -212,6 +215,7 @@ export class Workspace {
 export class WorkspaceManager {
   private static result: Record<string, Workspace> = {};
 
+  @Trace()
   static async getOrLoad(id: string) {
     const workspace = WorkspaceManager.get(id);
     if (!workspace) {
