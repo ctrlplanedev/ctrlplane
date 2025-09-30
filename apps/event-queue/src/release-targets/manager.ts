@@ -1,6 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { FullReleaseTarget } from "@ctrlplane/events";
-import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
@@ -169,30 +168,21 @@ export class ReleaseTargetManager {
       this.determineReleaseTargets(),
     ]);
 
+    const makeKey = (rt: {
+      resourceId: string;
+      environmentId: string;
+      deploymentId: string;
+    }) => `${rt.resourceId}|${rt.environmentId}|${rt.deploymentId}`;
+
+    const existingKeys = new Set(existingReleaseTargets.map(makeKey));
+    const computedKeys = new Set(computedReleaseTargets.map(makeKey));
+
     const removedReleaseTargets = existingReleaseTargets.filter(
-      (existingReleaseTarget) =>
-        !computedReleaseTargets.some(
-          (computedReleaseTarget) =>
-            computedReleaseTarget.resourceId ===
-              existingReleaseTarget.resourceId &&
-            computedReleaseTarget.environmentId ===
-              existingReleaseTarget.environmentId &&
-            computedReleaseTarget.deploymentId ===
-              existingReleaseTarget.deploymentId,
-        ),
+      (rt) => !computedKeys.has(makeKey(rt)),
     );
 
     const addedReleaseTargets = computedReleaseTargets.filter(
-      (computedReleaseTarget) =>
-        !existingReleaseTargets.some(
-          (existingReleaseTarget) =>
-            existingReleaseTarget.resourceId ===
-              computedReleaseTarget.resourceId &&
-            existingReleaseTarget.environmentId ===
-              computedReleaseTarget.environmentId &&
-            existingReleaseTarget.deploymentId ===
-              computedReleaseTarget.deploymentId,
-        ),
+      (rt) => !existingKeys.has(makeKey(rt)),
     );
 
     await Promise.all([
