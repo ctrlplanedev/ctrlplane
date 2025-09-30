@@ -198,6 +198,30 @@ export class ReleaseTargetManager {
   }
 
   @Trace()
+  private getDiffFromPreviousAndNew(
+    prevTargets: FullReleaseTarget[],
+    newTargets: FullReleaseTarget[],
+  ) {
+    const makeKey = (rt: {
+      resourceId: string;
+      environmentId: string;
+      deploymentId: string;
+    }) => `${rt.resourceId}|${rt.environmentId}|${rt.deploymentId}`;
+
+    const previousKeys = new Set(prevTargets.map(makeKey));
+    const newKeys = new Set(newTargets.map(makeKey));
+
+    const removedReleaseTargets = prevTargets.filter(
+      (rt) => !newKeys.has(makeKey(rt)),
+    );
+    const addedReleaseTargets = newTargets.filter(
+      (rt) => !previousKeys.has(makeKey(rt)),
+    );
+
+    return { removedReleaseTargets, addedReleaseTargets };
+  }
+
+  @Trace()
   async computeReleaseTargetChanges() {
     log.info("Computing release target changes");
 
@@ -206,47 +230,11 @@ export class ReleaseTargetManager {
       this.determineReleaseTargets(),
     ]);
 
-    const removedReleaseTargets = existingReleaseTargets.filter(
-      (existingReleaseTarget) =>
-        !computedReleaseTargets.some(
-          (computedReleaseTarget) =>
-            computedReleaseTarget.resourceId ===
-              existingReleaseTarget.resourceId &&
-            computedReleaseTarget.environmentId ===
-              existingReleaseTarget.environmentId &&
-            computedReleaseTarget.deploymentId ===
-              existingReleaseTarget.deploymentId,
-        ),
-    );
-
-    const addedReleaseTargets = computedReleaseTargets.filter(
-      (computedReleaseTarget) =>
-        !existingReleaseTargets.some(
-          (existingReleaseTarget) =>
-            existingReleaseTarget.resourceId ===
-              computedReleaseTarget.resourceId &&
-            existingReleaseTarget.environmentId ===
-              computedReleaseTarget.environmentId &&
-            existingReleaseTarget.deploymentId ===
-              computedReleaseTarget.deploymentId,
-        ),
-    );
-    // const makeKey = (rt: {
-    //   resourceId: string;
-    //   environmentId: string;
-    //   deploymentId: string;
-    // }) => `${rt.resourceId}|${rt.environmentId}|${rt.deploymentId}`;
-
-    // const existingKeys = new Set(existingReleaseTargets.map(makeKey));
-    // const computedKeys = new Set(computedReleaseTargets.map(makeKey));
-
-    // const removedReleaseTargets = existingReleaseTargets.filter(
-    //   (rt) => !computedKeys.has(makeKey(rt)),
-    // );
-
-    // const addedReleaseTargets = computedReleaseTargets.filter(
-    //   (rt) => !existingKeys.has(makeKey(rt)),
-    // );
+    const { removedReleaseTargets, addedReleaseTargets } =
+      this.getDiffFromPreviousAndNew(
+        existingReleaseTargets,
+        computedReleaseTargets,
+      );
 
     await Promise.all([
       this.persistRemovedReleaseTargets(removedReleaseTargets),
