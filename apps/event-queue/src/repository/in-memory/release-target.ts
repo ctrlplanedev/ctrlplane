@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import type { FullReleaseTarget } from "@ctrlplane/events";
 
-import { eq } from "@ctrlplane/db";
+import { eq, sql } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -12,29 +12,39 @@ const getInitialEntities = createSpanWrapper(
   "release-target-getInitialEntities",
   async (span, workspaceId: string) => {
     const rows = await dbClient
-      .select()
-      .from(schema.releaseTarget)
-      .innerJoin(
-        schema.resource,
-        eq(schema.releaseTarget.resourceId, schema.resource.id),
+      .execute(
+        sql`
+        select
+  rt.id,
+  rt.resource_id,
+  rt.environment_id,
+  rt.deployment_id,
+  rt.desired_release_id,
+  rt.desired_version_id,
+
+  (to_jsonb(r) || jsonb_build_object('metadata', coalesce(rm.metadata, '{}'::jsonb))) as resource,
+
+  to_jsonb(e) as environment,
+  to_jsonb(d) as deployment
+
+from "release_target" rt
+
+join "resource" r
+  on r.id = rt.resource_id
+ and r.workspace_id = ${workspaceId}
+
+left join lateral (
+  select coalesce(jsonb_object_agg(m.key, to_jsonb(m.value)), '{}'::jsonb) as metadata
+  from "resource_metadata" m
+  where m.resource_id = r.id
+) rm on true
+
+left join "environment" e on e.id = rt.environment_id
+left join "deployment"  d on d.id = rt.deployment_id
+
+      `,
       )
-      .innerJoin(
-        schema.environment,
-        eq(schema.releaseTarget.environmentId, schema.environment.id),
-      )
-      .innerJoin(
-        schema.deployment,
-        eq(schema.releaseTarget.deploymentId, schema.deployment.id),
-      )
-      .where(eq(schema.resource.workspaceId, workspaceId))
-      .then((rows) =>
-        rows.map((row) => ({
-          ...row.release_target,
-          resource: row.resource,
-          environment: row.environment,
-          deployment: row.deployment,
-        })),
-      );
+      .then((results) => results.rows as FullReleaseTarget[]);
     span.setAttributes({ "release-target.count": rows.length });
     return rows;
   },
