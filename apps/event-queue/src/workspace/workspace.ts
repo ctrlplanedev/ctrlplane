@@ -11,10 +11,8 @@ import type { ResourceRelationshipManager } from "../relationships/resource-rela
 import { JobManager } from "../job-manager/job-manager.js";
 import { DbResourceRelationshipManager } from "../relationships/db-resource-relationship-manager.js";
 import { ReleaseTargetManager } from "../release-targets/manager.js";
-import { DbDeploymentRepository } from "../repository/db-deployment-repository.js";
 import { DbDeploymentVariableRepository } from "../repository/db-deployment-variable-repository.js";
 import { DbDeploymentVariableValueRepository } from "../repository/db-deployment-variable-value-repository.js";
-import { DbEnvironmentRepository } from "../repository/db-environment-repository.js";
 import { DbJobAgentRepository } from "../repository/db-job-agent-repository.js";
 import { DbJobRepository } from "../repository/db-job-repository.js";
 import { DbJobVariableRepository } from "../repository/db-job-variable-repository.js";
@@ -25,6 +23,8 @@ import { DbResourceRelationshipRuleRepository } from "../repository/db-resource-
 import { DbResourceRelationshipRuleSourceMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-source-metadata-equals-repository.js";
 import { DbResourceRelationshipRuleTargetMetadataEqualsRepository } from "../repository/db-resource-relationship-rule-target-metadata-equals-repository.js";
 import { DbVersionRepository } from "../repository/db-version-repository.js";
+import { InMemoryDeploymentRepository } from "../repository/in-memory/deployment.js";
+import { InMemoryEnvironmentRepository } from "../repository/in-memory/environment.js";
 import { InMemoryReleaseTargetRepository } from "../repository/in-memory/release-target.js";
 import { InMemoryReleaseRepository } from "../repository/in-memory/release.js";
 import { InMemoryResourceVariableRepository } from "../repository/in-memory/resource-variable.js";
@@ -117,6 +117,8 @@ const createRepository = async (
   log.info(`Creating repository for workspace ${id}`);
 
   const [
+    inMemoryDeploymentRepository,
+    inMemoryEnvironmentRepository,
     inMemoryReleaseTargetRepository,
     inMemoryReleaseRepository,
     inMemoryVersionReleaseRepository,
@@ -125,6 +127,8 @@ const createRepository = async (
     inMemoryVariableReleaseValueRepository,
     inMemoryVariableValueSnapshotRepository,
   ] = await Promise.all([
+    InMemoryDeploymentRepository.create(id),
+    InMemoryEnvironmentRepository.create(id),
     InMemoryReleaseTargetRepository.create(id),
     InMemoryReleaseRepository.create(id),
     InMemoryVersionReleaseRepository.create(id),
@@ -136,8 +140,8 @@ const createRepository = async (
 
   return new WorkspaceRepository({
     versionRepository: new DbVersionRepository(id),
-    environmentRepository: new DbEnvironmentRepository(id),
-    deploymentRepository: new DbDeploymentRepository(id),
+    environmentRepository: inMemoryEnvironmentRepository,
+    deploymentRepository: inMemoryDeploymentRepository,
     resourceRepository: new InMemoryResourceRepository({
       initialEntities: initialResources,
     }),
