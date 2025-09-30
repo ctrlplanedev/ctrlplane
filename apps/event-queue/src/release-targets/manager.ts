@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { FullReleaseTarget } from "@ctrlplane/events";
+import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
@@ -8,17 +8,102 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
-import { Trace } from "../traces.js";
+import { createSpanWrapper, Trace } from "../traces.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
-
-// const pool = workerpool.pool();
 
 type ReleaseTargetManagerOptions = {
   workspace: Workspace;
 };
 
 const log = logger.child({ module: "release-target-manager" });
+
+const computeReleaseTargets = createSpanWrapper(
+  "computeReleaseTargets",
+  (
+    _span,
+    environment: FullReleaseTarget["environment"] & {
+      resources: FullResource[];
+    },
+    deployment: FullReleaseTarget["deployment"] & { resources: FullResource[] },
+  ): FullReleaseTarget[] => {
+    if (environment.systemId != deployment.systemId) return [];
+
+    const releaseTargets: FullReleaseTarget[] = [];
+
+    // special case, if a deployment has no resource selector, we
+    // just include all resources from the environment
+    if (deployment.resourceSelector == null) {
+      for (const resource of environment.resources) {
+        const releaseTargetInsert: FullReleaseTarget = {
+          id: crypto.randomUUID(),
+          resourceId: resource.id,
+          environmentId: environment.id,
+          deploymentId: deployment.id,
+          desiredReleaseId: null,
+          desiredVersionId: null,
+          resource,
+          environment,
+          deployment,
+        };
+
+        releaseTargets.push(releaseTargetInsert);
+      }
+
+      return releaseTargets;
+    }
+
+    const deploymentResourceIds = new Set(
+      deployment.resources.map((r) => r.id),
+    );
+    const commonResources = environment.resources.filter((r) =>
+      deploymentResourceIds.has(r.id),
+    );
+
+    for (const resource of commonResources) {
+      const releaseTargetInsert: FullReleaseTarget = {
+        id: crypto.randomUUID(),
+        resourceId: resource.id,
+        environmentId: environment.id,
+        deploymentId: deployment.id,
+        desiredReleaseId: null,
+        desiredVersionId: null,
+        resource,
+        environment,
+        deployment,
+      };
+
+      releaseTargets.push(releaseTargetInsert);
+    }
+
+    return releaseTargets;
+  },
+);
+
+const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
+  "computeReleaseTargetsForEnvironmentAndDeployment",
+  async (
+    _span,
+    environments: Array<
+      FullReleaseTarget["environment"] & { resources: FullResource[] }
+    >,
+    deployments: Array<
+      FullReleaseTarget["deployment"] & { resources: FullResource[] }
+    >,
+  ) => {
+    const releaseTargets: FullReleaseTarget[] = [];
+
+    for (const environment of environments) {
+      for (const deployment of deployments) {
+        if (environment.systemId != deployment.systemId) continue;
+        releaseTargets.push(
+          ...(await computeReleaseTargets(environment, deployment)),
+        );
+      }
+    }
+    return releaseTargets;
+  },
+);
 
 export class ReleaseTargetManager {
   private workspace: Workspace;
@@ -57,73 +142,13 @@ export class ReleaseTargetManager {
   }
 
   @Trace()
-  private computeReleaseTargetsForEnvironmentAndDeployment(
-    environments: Awaited<ReturnType<typeof this.getEnvironments>>,
-    deployments: Awaited<ReturnType<typeof this.getDeployments>>,
-  ): FullReleaseTarget[] {
-    const releaseTargets: FullReleaseTarget[] = [];
-
-    for (const environment of environments) {
-      for (const deployment of deployments) {
-        if (environment.systemId != deployment.systemId) continue;
-
-        // special case, if a deployment has no resource selector, we
-        // just include all resources from the environment
-        if (deployment.resourceSelector == null) {
-          for (const resource of environment.resources) {
-            const releaseTargetInsert: FullReleaseTarget = {
-              id: crypto.randomUUID(),
-              resourceId: resource.id,
-              environmentId: environment.id,
-              deploymentId: deployment.id,
-              desiredReleaseId: null,
-              desiredVersionId: null,
-              resource,
-              environment,
-              deployment,
-            };
-
-            releaseTargets.push(releaseTargetInsert);
-          }
-
-          continue;
-        }
-
-        const deploymentResourceIds = new Set(
-          deployment.resources.map((r) => r.id),
-        );
-        const commonResources = environment.resources.filter((r) =>
-          deploymentResourceIds.has(r.id),
-        );
-
-        for (const resource of commonResources) {
-          const releaseTargetInsert: FullReleaseTarget = {
-            id: crypto.randomUUID(),
-            resourceId: resource.id,
-            environmentId: environment.id,
-            deploymentId: deployment.id,
-            desiredReleaseId: null,
-            desiredVersionId: null,
-            resource,
-            environment,
-            deployment,
-          };
-
-          releaseTargets.push(releaseTargetInsert);
-        }
-      }
-    }
-    return releaseTargets;
-  }
-
-  @Trace()
   private async determineReleaseTargets() {
     const [environments, deployments] = await Promise.all([
       this.getEnvironments(),
       this.getDeployments(),
     ]);
 
-    return this.computeReleaseTargetsForEnvironmentAndDeployment(
+    return computeReleaseTargetsForEnvironmentAndDeployment(
       environments,
       deployments,
     );
