@@ -54,6 +54,25 @@ const getInitialResourceMeta = createSpanWrapper(
       .then((rows) => rows.map((row) => row.resource_metadata)),
 );
 
+const getFullInitialEntities = createSpanWrapper(
+  "release-target-getFullInitialEntities",
+  (
+    _span,
+    initialEntities: Awaited<ReturnType<typeof getInitialEntities>>,
+    initialResourceMeta: Awaited<ReturnType<typeof getInitialResourceMeta>>,
+  ): FullReleaseTarget[] => {
+    return initialEntities.map((entity) => {
+      const resourceMetadata = Object.fromEntries(
+        initialResourceMeta
+          .filter((meta) => meta.resourceId === entity.resourceId)
+          .map((meta) => [meta.key, meta.value]),
+      );
+      const resource = { ...entity.resource, metadata: resourceMetadata };
+      return { ...entity, resource };
+    });
+  },
+);
+
 type InMemoryReleaseTargetRepositoryOptions = {
   initialEntities: FullReleaseTarget[];
   tx?: Tx;
@@ -78,15 +97,10 @@ export class InMemoryReleaseTargetRepository
       getInitialResourceMeta(workspaceId),
     ]);
 
-    const initialEntities = allEntities.map((entity) => {
-      const resourceMetadata = Object.fromEntries(
-        allResourceMeta
-          .filter((meta) => meta.resourceId === entity.resourceId)
-          .map((meta) => [meta.key, meta.value]),
-      );
-      const resource = { ...entity.resource, metadata: resourceMetadata };
-      return { ...entity, resource };
-    });
+    const initialEntities = await getFullInitialEntities(
+      allEntities,
+      allResourceMeta,
+    );
 
     const inMemoryReleaseTargetRepository = new InMemoryReleaseTargetRepository(
       { initialEntities, tx: dbClient },
