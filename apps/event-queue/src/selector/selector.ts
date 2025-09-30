@@ -23,6 +23,8 @@ export interface Selector<S, E> {
   getAllSelectors(): Promise<S[]> | S[];
 
   isMatch(entity: E, selector: S): Promise<boolean> | boolean;
+
+  reconcile(): Promise<void> | void;
 }
 
 type SelectorManagerOptions = {
@@ -111,5 +113,15 @@ export class SelectorManager {
     return this.opts.policyTargetReleaseTargetSelector.removeSelector(
       policyTarget,
     );
+  }
+
+  @Trace()
+  async reconcile() {
+    await Promise.all([
+      this.opts.policyTargetReleaseTargetSelector.reconcile(),
+      this.opts.deploymentVersionSelector.reconcile(),
+      this.opts.environmentResourceSelector.reconcile(),
+      this.opts.deploymentResourceSelector.reconcile(),
+    ]);
   }
 }

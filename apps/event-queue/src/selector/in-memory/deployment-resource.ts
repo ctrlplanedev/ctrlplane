@@ -2,23 +2,15 @@ import type { FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray } from "@ctrlplane/db";
+import { and, eq, inArray, or } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import type { Selector } from "../selector.js";
 import { Trace } from "../../traces.js";
+import { getFullResources } from "./common.js";
 import { resourceMatchesSelector } from "./resource-match.js";
-
-const log = logger.child({
-  module: "in-memory-deployment-resource-selector",
-});
-
-type InMemoryDeploymentResourceSelectorOptions = {
-  initialEntities: FullResource[];
-  initialSelectors: schema.Deployment[];
-};
 
 const entityMatchesSelector = (
   entity: FullResource,
@@ -28,12 +20,25 @@ const entityMatchesSelector = (
   return resourceMatchesSelector(entity, selector.resourceSelector);
 };
 
+const log = logger.child({
+  module: "in-memory-deployment-resource-selector",
+});
+
+type InMemoryDeploymentResourceSelectorOptions = {
+  initialEntities: FullResource[];
+  initialSelectors: schema.Deployment[];
+  workspaceId: string;
+};
+
+type Match = { resourceId: string; deploymentId: string };
+
 export class InMemoryDeploymentResourceSelector
   implements Selector<schema.Deployment, FullResource>
 {
   private entities: Map<string, FullResource>;
   private selectors: Map<string, schema.Deployment>;
   private matches: Map<string, Set<string>>; // resourceId -> deploymentId
+  private workspaceId: string;
 
   constructor(opts: InMemoryDeploymentResourceSelectorOptions) {
     this.entities = new Map(
@@ -43,6 +48,7 @@ export class InMemoryDeploymentResourceSelector
       opts.initialSelectors.map((selector) => [selector.id, selector]),
     );
     this.matches = new Map();
+    this.workspaceId = opts.workspaceId;
 
     for (const entity of opts.initialEntities) {
       this.matches.set(entity.id, new Set());
@@ -76,6 +82,7 @@ export class InMemoryDeploymentResourceSelector
       new InMemoryDeploymentResourceSelector({
         initialEntities,
         initialSelectors: allSelectors,
+        workspaceId,
       });
 
     const matches = inMemoryDeploymentResourceSelector.selectorMatches;
@@ -289,7 +296,124 @@ export class InMemoryDeploymentResourceSelector
   getAllSelectors(): schema.Deployment[] {
     return Array.from(this.selectors.values());
   }
+  private getMatches(): Map<string, Set<string>> {
+    const copy = new Map<string, Set<string>>();
+    for (const [resourceId, deploymentIds] of this.matches.entries()) {
+      copy.set(resourceId, new Set(deploymentIds));
+    }
+    return copy;
+  }
   isMatch(entity: FullResource, selector: schema.Deployment): boolean {
     return this.matches.get(entity.id)?.has(selector.id) ?? false;
+  }
+
+  @Trace()
+  private async getDbSelectors(): Promise<schema.Deployment[]> {
+    return dbClient
+      .select()
+      .from(schema.deployment)
+      .innerJoin(
+        schema.system,
+        eq(schema.deployment.systemId, schema.system.id),
+      )
+      .where(eq(schema.system.workspaceId, this.workspaceId))
+      .then((rows) => rows.map((row) => row.deployment));
+  }
+
+  private reconcileEntities(dbEntities: FullResource[]): void {
+    this.entities.clear();
+    for (const entity of dbEntities) this.entities.set(entity.id, entity);
+  }
+
+  private reconcileSelectors(dbSelectors: schema.Deployment[]): void {
+    this.selectors.clear();
+    for (const selector of dbSelectors)
+      this.selectors.set(selector.id, selector);
+  }
+
+  private reconcileMatches(
+    dbEntities: FullResource[],
+    dbSelectors: schema.Deployment[],
+  ): void {
+    this.matches.clear();
+    for (const entity of dbEntities) {
+      this.matches.set(entity.id, new Set());
+      for (const selector of dbSelectors)
+        if (entityMatchesSelector(entity, selector))
+          this.matches.get(entity.id)?.add(selector.id);
+    }
+  }
+
+  @Trace()
+  private async removeStaleComputedFromDb(
+    removedComputedDeploymentResources: Match[],
+  ) {
+    if (removedComputedDeploymentResources.length === 0) return;
+    const isStaleDbMatch = or(
+      ...removedComputedDeploymentResources.map((match) =>
+        and(
+          eq(schema.computedDeploymentResource.resourceId, match.resourceId),
+          eq(
+            schema.computedDeploymentResource.deploymentId,
+            match.deploymentId,
+          ),
+        ),
+      ),
+    );
+
+    await dbClient
+      .delete(schema.computedDeploymentResource)
+      .where(isStaleDbMatch);
+  }
+
+  @Trace()
+  private async insertNewComputedToDb(newComputedDeploymentResources: Match[]) {
+    if (newComputedDeploymentResources.length === 0) return;
+    await dbClient
+      .insert(schema.computedDeploymentResource)
+      .values(newComputedDeploymentResources)
+      .onConflictDoNothing();
+  }
+
+  @Trace()
+  private async reconcileComputedDeploymentResources(
+    previousMatches: Map<string, Set<string>>,
+    currentMatches: Map<string, Set<string>>,
+  ) {
+    const removedComputedDeploymentResources: Match[] = [];
+    const newComputedDeploymentResources: Match[] = [];
+
+    for (const [resourceId, deploymentIds] of previousMatches)
+      for (const deploymentId of deploymentIds)
+        if (!currentMatches.get(resourceId)?.has(deploymentId))
+          removedComputedDeploymentResources.push({ resourceId, deploymentId });
+
+    for (const [resourceId, deploymentIds] of currentMatches)
+      for (const deploymentId of deploymentIds)
+        if (!previousMatches.get(resourceId)?.has(deploymentId))
+          newComputedDeploymentResources.push({ resourceId, deploymentId });
+
+    await Promise.all([
+      this.removeStaleComputedFromDb(removedComputedDeploymentResources),
+      this.insertNewComputedToDb(newComputedDeploymentResources),
+    ]);
+  }
+
+  @Trace("deployment-resource-selector-reconcile")
+  async reconcile(): Promise<void> {
+    const previousMatches = this.getMatches();
+    const [dbSelectors, dbEntities] = await Promise.all([
+      this.getDbSelectors(),
+      getFullResources(this.workspaceId),
+    ]);
+
+    this.reconcileSelectors(dbSelectors);
+    this.reconcileEntities(dbEntities);
+    this.reconcileMatches(dbEntities, dbSelectors);
+
+    await this.reconcileComputedDeploymentResources(
+      previousMatches,
+      this.matches,
+    );
   }
 }

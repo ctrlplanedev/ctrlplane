@@ -38,6 +38,8 @@ export enum Event {
   // JobDeleted = "job.deleted",
   EvaluateReleaseTarget = "evaluate-release-target",
 
+  ReconcileWorkspace = "reconcile-workspace",
+
   // ReleaseCreated = "release.created",
   // ReleaseUpdated = "release.updated",
   // ReleaseDeleted = "release.deleted",
@@ -120,6 +122,7 @@ export type EventPayload = {
     releaseTarget: FullReleaseTarget;
     opts?: { skipDuplicateCheck?: boolean };
   };
+  [Event.ReconcileWorkspace]: void;
   // [Event.JobCreated]: schema.Job;
   // [Event.JobDeleted]: schema.Job;
   // [Event.SystemCreated]: schema.System;

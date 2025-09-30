@@ -94,4 +94,6 @@ export interface EventDispatcher {
     releaseTarget: schema.ReleaseTarget,
     opts?: { skipDuplicateCheck?: boolean },
   ): Promise<void>;
+
+  dispatchReconcileWorkspace(workspaceId: string): Promise<void>;
 }

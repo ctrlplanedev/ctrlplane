@@ -7,6 +7,7 @@ import * as deploymentDispatch from "./deployment.js";
 import * as environmentDispatch from "./environment.js";
 import * as jobDispatch from "./job.js";
 import * as policyDispatch from "./policy.js";
+import * as reconcileWorkspaceDispatch from "./reconcile-workspace.js";
 import * as releaseTargetDispatch from "./release-target.js";
 import * as resourceDispatch from "./resource.js";
 
@@ -191,5 +192,9 @@ export class KafkaEventDispatcher implements EventDispatcher {
       releaseTarget,
       opts,
     );
+  }
+
+  async dispatchReconcileWorkspace(workspaceId: string): Promise<void> {
+    await reconcileWorkspaceDispatch.dispatchReconcileWorkspace(workspaceId);
   }
 }

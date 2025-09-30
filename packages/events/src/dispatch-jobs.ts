@@ -358,4 +358,8 @@ export class BullMQEventDispatcher implements EventDispatcher {
       skipDuplicateCheck: opts?.skipDuplicateCheck,
     });
   }
+
+  async dispatchReconcileWorkspace(_workspaceId: string): Promise<void> {
+    await Promise.resolve();
+  }
 }
