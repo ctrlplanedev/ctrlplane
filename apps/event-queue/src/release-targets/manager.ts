@@ -53,12 +53,10 @@ export class ReleaseTargetManager {
   }
 
   @Trace()
-  private async determineReleaseTargets() {
-    const [environments, deployments] = await Promise.all([
-      this.getEnvironments(),
-      this.getDeployments(),
-    ]);
-
+  private computeReleaseTargetsForEnvironmentAndDeployment(
+    environments: Awaited<ReturnType<typeof this.getEnvironments>>,
+    deployments: Awaited<ReturnType<typeof this.getDeployments>>,
+  ): FullReleaseTarget[] {
     const releaseTargets: FullReleaseTarget[] = [];
 
     for (const environment of environments) {
@@ -117,8 +115,20 @@ export class ReleaseTargetManager {
         }
       }
     }
-
     return releaseTargets;
+  }
+
+  @Trace()
+  private async determineReleaseTargets() {
+    const [environments, deployments] = await Promise.all([
+      this.getEnvironments(),
+      this.getDeployments(),
+    ]);
+
+    return this.computeReleaseTargetsForEnvironmentAndDeployment(
+      environments,
+      deployments,
+    );
   }
 
   private async getExistingReleaseTargets() {
