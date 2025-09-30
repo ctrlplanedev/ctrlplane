@@ -8,6 +8,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import type { Selector } from "../selector.js";
+import { Trace } from "../../traces.js";
 import { resourceMatchesSelector } from "./resource-match.js";
 
 const log = logger.child({
@@ -59,6 +60,7 @@ export class InMemoryEnvironmentResourceSelector
     return this.matches;
   }
 
+  @Trace("environment-resource-selector-create")
   static async create(workspaceId: string, initialEntities: FullResource[]) {
     const allSelectors = await dbClient
       .select()
@@ -101,6 +103,7 @@ export class InMemoryEnvironmentResourceSelector
     return inMemoryEnvironmentResourceSelector;
   }
 
+  @Trace("environment-resource-selector-upsertEntity")
   upsertEntity(entity: FullResource): void {
     if (this.matches.get(entity.id) == null)
       this.matches.set(entity.id, new Set());
@@ -182,6 +185,7 @@ export class InMemoryEnvironmentResourceSelector
       });
   }
 
+  @Trace("environment-resource-selector-upsertSelector")
   upsertSelector(selector: schema.Environment): void {
     this.selectors.set(selector.id, selector);
 
@@ -246,6 +250,8 @@ export class InMemoryEnvironmentResourceSelector
           });
         });
   }
+
+  @Trace("environment-resource-selector-removeSelector")
   removeSelector(selector: schema.Environment): void {
     this.selectors.delete(selector.id);
 
@@ -262,6 +268,8 @@ export class InMemoryEnvironmentResourceSelector
         });
       });
   }
+
+  @Trace("environment-resource-selector-getEntitiesForSelector")
   getEntitiesForSelector(selector: schema.Environment): FullResource[] {
     const entityIds: string[] = [];
     for (const [entityId, selectorIds] of this.matches)
@@ -272,6 +280,7 @@ export class InMemoryEnvironmentResourceSelector
       .filter(isPresent);
   }
 
+  @Trace("environment-resource-selector-getSelectorsForEntity")
   getSelectorsForEntity(entity: FullResource): schema.Environment[] {
     const matchingSelectorIds =
       this.matches.get(entity.id) ?? new Set<string>();
@@ -280,12 +289,18 @@ export class InMemoryEnvironmentResourceSelector
       .filter(isPresent);
     return matchingSelectors;
   }
+
+  @Trace("environment-resource-selector-getAllEntities")
   getAllEntities(): FullResource[] {
     return Array.from(this.entities.values());
   }
+
+  @Trace("environment-resource-selector-getAllSelectors")
   getAllSelectors(): schema.Environment[] {
     return Array.from(this.selectors.values());
   }
+
+  @Trace("environment-resource-selector-isMatch")
   isMatch(entity: FullResource, selector: schema.Environment): boolean {
     return this.matches.get(entity.id)?.has(selector.id) ?? false;
   }

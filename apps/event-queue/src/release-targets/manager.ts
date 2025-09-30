@@ -28,13 +28,13 @@ export class ReleaseTargetManager {
     const environments =
       await this.workspace.repository.environmentRepository.getAll();
     return Promise.all(
-      environments.map(async (environment) => {
-        const resources =
+      environments.map(async (environment) => ({
+        ...environment,
+        resources:
           await this.workspace.selectorManager.environmentResourceSelector.getEntitiesForSelector(
             environment,
-          );
-        return { ...environment, resources };
-      }),
+          ),
+      })),
     );
   }
 

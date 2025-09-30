@@ -8,6 +8,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import type { Selector } from "../selector.js";
+import { Trace } from "../../traces.js";
 import { resourceMatchesSelector } from "./resource-match.js";
 
 const log = logger.child({
@@ -59,6 +60,7 @@ export class InMemoryDeploymentResourceSelector
     return this.matches;
   }
 
+  @Trace("deployment-resource-selector-create")
   static async create(workspaceId: string, initialEntities: FullResource[]) {
     const allSelectors = await dbClient
       .select()

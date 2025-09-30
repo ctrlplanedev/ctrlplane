@@ -10,6 +10,7 @@ import { logger } from "@ctrlplane/logger";
 import { configSchema } from "@ctrlplane/validators/github";
 
 import { env } from "../config.js";
+import { createSpanWrapper } from "../traces.js";
 
 const log = logger.child({ module: "job-dispatch-github" });
 
@@ -135,25 +136,32 @@ const handleJobDispatch = async (
   });
 };
 
-export const dispatchGithubJob = async (job: schema.Job) => {
-  log.info(`Dispatching github job ${job.id}...`);
+export const dispatchGithubJob = createSpanWrapper(
+  "dispatch-github-job",
+  async (_span, job: schema.Job) => {
+    log.info(`Dispatching github job ${job.id}...`);
 
-  const config = job.jobAgentConfig;
-  const parsed = parseConfig(job.id, config);
-  const releaseJob = await getReleaseJob(job, parsed);
-  if (releaseJob != null) {
-    const { jobAgentConfig } = releaseJob.deployment_version;
-    const mergedConfig = _.merge(config, jobAgentConfig);
+    const config = job.jobAgentConfig;
+    const parsed = parseConfig(job.id, config);
+    const releaseJob = await getReleaseJob(job, parsed);
+    if (releaseJob != null) {
+      const { jobAgentConfig } = releaseJob.deployment_version;
+      const mergedConfig = _.merge(config, jobAgentConfig);
 
-    const parsedMergedConfig = parseConfig(job.id, mergedConfig);
-    return handleJobDispatch(job, parsedMergedConfig, releaseJob.github_entity);
-  }
+      const parsedMergedConfig = parseConfig(job.id, mergedConfig);
+      return handleJobDispatch(
+        job,
+        parsedMergedConfig,
+        releaseJob.github_entity,
+      );
+    }
 
-  const runbookJob = await getRunbookJob(job);
-  if (runbookJob != null) {
-    log.info(`Dispatching github job ${job.id} to runbook`);
-    return;
-  }
+    const runbookJob = await getRunbookJob(job);
+    if (runbookJob != null) {
+      log.info(`Dispatching github job ${job.id} to runbook`);
+      return;
+    }
 
-  throw new Error(`Unknown job type for job ${job.id}`);
-};
+    throw new Error(`Unknown job type for job ${job.id}`);
+  },
+);

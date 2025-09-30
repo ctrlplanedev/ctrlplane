@@ -8,6 +8,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import type { Selector } from "../selector.js";
+import { Trace } from "../../traces.js";
 import { deploymentMatchesSelector } from "./deployment-match.js";
 import { environmentMatchesSelector } from "./environment-match.js";
 import { resourceMatchesSelector } from "./resource-match.js";
@@ -132,6 +133,7 @@ export class InMemoryPolicyTargetReleaseTargetSelector
     return this.matches;
   }
 
+  @Trace("policy-target-release-target-selector-create")
   static async create(workspaceId: string) {
     const [allEntities, allSelectors] = await Promise.all([
       getAllEntities(workspaceId),

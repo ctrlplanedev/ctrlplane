@@ -253,10 +253,7 @@ export class JobManager {
     if (jobAgent == null) throw new Error(`Job agent ${jobAgentId} not found`);
 
     if (jobAgent.type === String(JobAgentType.GithubApp)) {
-      try {
-        this.log.info(`Dispatching job ${job.id} to GitHub app`);
-        await dispatchGithubJob(job);
-      } catch (error: any) {
+      dispatchGithubJob(job).catch(async (error) => {
         this.log.error(`Error dispatching job ${job.id} to GitHub app`, {
           error: error.message,
         });
@@ -270,7 +267,7 @@ export class JobManager {
         );
 
         await this.updateJob(job, updatedJob);
-      }
+      });
     }
   }
 }
