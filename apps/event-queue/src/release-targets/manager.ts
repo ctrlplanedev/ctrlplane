@@ -3,12 +3,16 @@ import type { FullReleaseTarget } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
+// import workerpool from "workerpool";
+
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
 import { Trace } from "../traces.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
+
+// const pool = workerpool.pool();
 
 type ReleaseTargetManagerOptions = {
   workspace: Workspace;
@@ -85,17 +89,11 @@ export class ReleaseTargetManager {
           continue;
         }
 
-        // const deploymentResourceIds = new Set(
-        //   deployment.resources.map((r) => r.id),
-        // );
-        // const commonResources = environment.resources.filter((r) =>
-        //   deploymentResourceIds.has(r.id),
-        // );
-
-        const commonResources = _.intersectionBy(
-          environment.resources,
-          deployment.resources,
-          (r) => r.id,
+        const deploymentResourceIds = new Set(
+          deployment.resources.map((r) => r.id),
+        );
+        const commonResources = environment.resources.filter((r) =>
+          deploymentResourceIds.has(r.id),
         );
 
         for (const resource of commonResources) {
