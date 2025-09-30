@@ -1,7 +1,5 @@
 import _ from "lodash";
 
-import { takeFirst } from "@ctrlplane/db";
-import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import {
@@ -12,7 +10,7 @@ import {
 
 import type { Workspace } from "../workspace/workspace.js";
 import { Trace } from "../traces.js";
-import { dispatchGithubJob } from "./github.js";
+import { GithubDispatcher } from "./github.js";
 
 export class JobManager {
   private log = logger.child({ module: "job-manager" });
@@ -133,6 +131,55 @@ export class JobManager {
   }
 
   @Trace()
+  private async createJobInRepo(
+    jobAgentId: string,
+    jobAgentConfig: Record<string, any>,
+  ) {
+    return this.workspace.repository.jobRepository.create({
+      id: crypto.randomUUID(),
+      jobAgentId,
+      jobAgentConfig,
+      status: JobStatus.Pending,
+      reason: "policy_passing",
+      createdAt: new Date(),
+      externalId: null,
+      message: null,
+      startedAt: null,
+      completedAt: null,
+      updatedAt: new Date(),
+    });
+  }
+
+  @Trace()
+  private async createJobVariablesInRepo(
+    jobId: string,
+    jobVariables: {
+      id: string;
+      key: string;
+      value: any;
+      sensitive: boolean;
+    }[],
+  ) {
+    return Promise.all(
+      jobVariables.map((v) =>
+        this.workspace.repository.jobVariableRepository.create({
+          ...v,
+          jobId,
+        }),
+      ),
+    );
+  }
+
+  @Trace()
+  private async createReleaseJobInRepo(releaseId: string, jobId: string) {
+    return this.workspace.repository.releaseJobRepository.create({
+      id: crypto.randomUUID(),
+      releaseId,
+      jobId,
+    });
+  }
+
+  @Trace()
   private async createJob(
     releaseId: string,
     jobAgentId: string,
@@ -145,36 +192,10 @@ export class JobManager {
     }[],
   ) {
     try {
-      const job = await dbClient.transaction(async (tx) => {
-        const j = await tx
-          .insert(schema.job)
-          .values({
-            id: crypto.randomUUID(),
-            jobAgentId,
-            jobAgentConfig,
-            status: JobStatus.Pending,
-            reason: "policy_passing",
-          })
-          .returning()
-          .then(takeFirst);
-
-        if (jobVariables.length > 0)
-          await tx.insert(schema.jobVariable).values(
-            jobVariables.map((v) => ({
-              ...v,
-              jobId: j.id,
-            })),
-          );
-
-        await tx.insert(schema.releaseJob).values({
-          id: crypto.randomUUID(),
-          releaseId,
-          jobId: j.id,
-        });
-
-        return j;
-      });
-
+      const job = await this.createJobInRepo(jobAgentId, jobAgentConfig);
+      if (jobVariables.length > 0)
+        await this.createJobVariablesInRepo(job.id, jobVariables);
+      await this.createReleaseJobInRepo(releaseId, job.id);
       return job;
     } catch (error) {
       this.log.error(`Failed to create job`, {
@@ -251,7 +272,8 @@ export class JobManager {
     if (jobAgent == null) throw new Error(`Job agent ${jobAgentId} not found`);
 
     if (jobAgent.type === String(JobAgentType.GithubApp)) {
-      dispatchGithubJob(job).catch(async (error) => {
+      const githubDispatcher = new GithubDispatcher(this.workspace);
+      githubDispatcher.dispatchJob(job).catch(async (error) => {
         this.log.error(`Error dispatching job ${job.id} to GitHub app`, {
           error: error.message,
         });

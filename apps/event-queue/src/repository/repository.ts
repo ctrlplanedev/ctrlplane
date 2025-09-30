@@ -55,6 +55,8 @@ type WorkspaceRepositoryOptions = {
   resourceRelationshipRuleTargetMetadataEqualsRepository: Repository<schema.ResourceRelationshipRuleTargetMetadataEquals>;
   resourceRelationshipRuleSourceMetadataEqualsRepository: Repository<schema.ResourceRelationshipRuleSourceMetadataEquals>;
   resourceRelationshipRuleMetadataMatchRepository: Repository<schema.ResourceRelationshipRuleMetadataMatch>;
+
+  githubEntityRepository: Repository<schema.GithubEntity>;
 };
 
 export class WorkspaceRepository {
@@ -150,5 +152,9 @@ export class WorkspaceRepository {
 
   get resourceRelationshipRuleMetadataMatchRepository() {
     return this.opts.resourceRelationshipRuleMetadataMatchRepository;
+  }
+
+  get githubEntityRepository() {
+    return this.opts.githubEntityRepository;
   }
 }
