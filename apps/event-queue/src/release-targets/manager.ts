@@ -6,7 +6,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
-import { Trace } from "../traces.js";
+import { Trace, wrapFnWithSpan } from "../traces.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
@@ -61,13 +61,41 @@ export class ReleaseTargetManager {
 
     const releaseTargets: FullReleaseTarget[] = [];
 
-    for (const environment of environments) {
-      for (const deployment of deployments) {
-        if (environment.systemId != deployment.systemId) continue;
+    wrapFnWithSpan("determineReleaseTargets-computeReleasTargets", () => {
+      for (const environment of environments) {
+        for (const deployment of deployments) {
+          if (environment.systemId != deployment.systemId) continue;
 
-        // special case, if a deployment has no resource selector, we just include all resources from the environment
-        if (deployment.resourceSelector == null) {
-          for (const resource of environment.resources) {
+          // special case, if a deployment has no resource selector, we
+          // just include all resources from the environment
+          if (deployment.resourceSelector == null) {
+            for (const resource of environment.resources) {
+              const releaseTargetInsert: FullReleaseTarget = {
+                id: crypto.randomUUID(),
+                resourceId: resource.id,
+                environmentId: environment.id,
+                deploymentId: deployment.id,
+                desiredReleaseId: null,
+                desiredVersionId: null,
+                resource,
+                environment,
+                deployment,
+              };
+
+              releaseTargets.push(releaseTargetInsert);
+            }
+
+            continue;
+          }
+
+          const deploymentResourceIds = new Set(
+            deployment.resources.map((r) => r.id),
+          );
+          const commonResources = environment.resources.filter((r) =>
+            deploymentResourceIds.has(r.id),
+          );
+
+          for (const resource of commonResources) {
             const releaseTargetInsert: FullReleaseTarget = {
               id: crypto.randomUUID(),
               resourceId: resource.id,
@@ -82,33 +110,9 @@ export class ReleaseTargetManager {
 
             releaseTargets.push(releaseTargetInsert);
           }
-
-          continue;
-        }
-
-        const commonResources = _.intersectionBy(
-          environment.resources,
-          deployment.resources,
-          (r) => r.id,
-        );
-
-        for (const resource of commonResources) {
-          const releaseTargetInsert: FullReleaseTarget = {
-            id: crypto.randomUUID(),
-            resourceId: resource.id,
-            environmentId: environment.id,
-            deploymentId: deployment.id,
-            desiredReleaseId: null,
-            desiredVersionId: null,
-            resource,
-            environment,
-            deployment,
-          };
-
-          releaseTargets.push(releaseTargetInsert);
         }
       }
-    }
+    });
 
     return releaseTargets;
   }
