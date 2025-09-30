@@ -50,39 +50,6 @@ left join "deployment"  d on d.id = rt.deployment_id
   },
 );
 
-const getInitialResourceMeta = createSpanWrapper(
-  "release-target-getInitialResourceMeta",
-  async (_span, workspaceId: string) =>
-    dbClient
-      .select()
-      .from(schema.resourceMetadata)
-      .innerJoin(
-        schema.resource,
-        eq(schema.resourceMetadata.resourceId, schema.resource.id),
-      )
-      .where(eq(schema.resource.workspaceId, workspaceId))
-      .then((rows) => rows.map((row) => row.resource_metadata)),
-);
-
-const getFullInitialEntities = createSpanWrapper(
-  "release-target-getFullInitialEntities",
-  (
-    _span,
-    initialEntities: Awaited<ReturnType<typeof getInitialEntities>>,
-    initialResourceMeta: Awaited<ReturnType<typeof getInitialResourceMeta>>,
-  ): FullReleaseTarget[] => {
-    return initialEntities.map((entity) => {
-      const resourceMetadata = Object.fromEntries(
-        initialResourceMeta
-          .filter((meta) => meta.resourceId === entity.resourceId)
-          .map((meta) => [meta.key, meta.value]),
-      );
-      const resource = { ...entity.resource, metadata: resourceMetadata };
-      return { ...entity, resource };
-    });
-  },
-);
-
 type InMemoryReleaseTargetRepositoryOptions = {
   initialEntities: FullReleaseTarget[];
   tx?: Tx;
@@ -102,16 +69,7 @@ export class InMemoryReleaseTargetRepository
   }
 
   static async create(workspaceId: string) {
-    const [allEntities, allResourceMeta] = await Promise.all([
-      getInitialEntities(workspaceId),
-      getInitialResourceMeta(workspaceId),
-    ]);
-
-    const initialEntities = await getFullInitialEntities(
-      allEntities,
-      allResourceMeta,
-    );
-
+    const initialEntities = await getInitialEntities(workspaceId);
     const inMemoryReleaseTargetRepository = new InMemoryReleaseTargetRepository(
       { initialEntities, tx: dbClient },
     );
