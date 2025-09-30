@@ -2,7 +2,6 @@ import type * as schema from "@ctrlplane/db/schema";
 import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
-import workerpool from "workerpool";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -17,24 +16,49 @@ type ReleaseTargetManagerOptions = {
 
 const log = logger.child({ module: "release-target-manager" });
 
-const pool = workerpool.pool();
+const computeReleaseTargets = createSpanWrapper(
+  "computeReleaseTargets",
+  (
+    _span,
+    environment: FullReleaseTarget["environment"] & {
+      resources: FullResource[];
+    },
+    deployment: FullReleaseTarget["deployment"] & { resources: FullResource[] },
+  ): FullReleaseTarget[] => {
+    if (environment.systemId != deployment.systemId) return [];
 
-const computeReleaseTargets = (
-  environment: FullReleaseTarget["environment"] & {
-    resources: FullResource[];
-  },
-  deployment: FullReleaseTarget["deployment"] & {
-    resources: FullResource[];
-  },
-): FullReleaseTarget[] => {
-  if (environment.systemId != deployment.systemId) return [];
+    const releaseTargets: FullReleaseTarget[] = [];
 
-  const releaseTargets: FullReleaseTarget[] = [];
+    // special case, if a deployment has no resource selector, we
+    // just include all resources from the environment
+    if (deployment.resourceSelector == null) {
+      for (const resource of environment.resources) {
+        const releaseTargetInsert: FullReleaseTarget = {
+          id: crypto.randomUUID(),
+          resourceId: resource.id,
+          environmentId: environment.id,
+          deploymentId: deployment.id,
+          desiredReleaseId: null,
+          desiredVersionId: null,
+          resource,
+          environment,
+          deployment,
+        };
 
-  // special case, if a deployment has no resource selector, we
-  // just include all resources from the environment
-  if (deployment.resourceSelector == null) {
-    for (const resource of environment.resources) {
+        releaseTargets.push(releaseTargetInsert);
+      }
+
+      return releaseTargets;
+    }
+
+    const deploymentResourceIds = new Set(
+      deployment.resources.map((r) => r.id),
+    );
+    const commonResources = environment.resources.filter((r) =>
+      deploymentResourceIds.has(r.id),
+    );
+
+    for (const resource of commonResources) {
       const releaseTargetInsert: FullReleaseTarget = {
         id: crypto.randomUUID(),
         resourceId: resource.id,
@@ -51,31 +75,8 @@ const computeReleaseTargets = (
     }
 
     return releaseTargets;
-  }
-
-  const deploymentResourceIds = new Set(deployment.resources.map((r) => r.id));
-  const commonResources = environment.resources.filter((r) =>
-    deploymentResourceIds.has(r.id),
-  );
-
-  for (const resource of commonResources) {
-    const releaseTargetInsert: FullReleaseTarget = {
-      id: crypto.randomUUID(),
-      resourceId: resource.id,
-      environmentId: environment.id,
-      deploymentId: deployment.id,
-      desiredReleaseId: null,
-      desiredVersionId: null,
-      resource,
-      environment,
-      deployment,
-    };
-
-    releaseTargets.push(releaseTargetInsert);
-  }
-
-  return releaseTargets;
-};
+  },
+);
 
 const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
   "computeReleaseTargetsForEnvironmentAndDeployment",
@@ -88,19 +89,27 @@ const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
       FullReleaseTarget["deployment"] & { resources: FullResource[] }
     >,
   ) => {
-    const promises = [];
+    const releaseTargets: FullReleaseTarget[] = [];
+
+    const compute: Array<{
+      environment: FullReleaseTarget["environment"] & {
+        resources: FullResource[];
+      };
+      deployment: FullReleaseTarget["deployment"] & {
+        resources: FullResource[];
+      };
+    }> = [];
 
     for (const environment of environments) {
       for (const deployment of deployments) {
         if (environment.systemId != deployment.systemId) continue;
-        promises.push(
-          pool.exec(computeReleaseTargets, [environment, deployment]),
+        compute.push({ environment, deployment });
+        releaseTargets.push(
+          ...(await computeReleaseTargets(environment, deployment)),
         );
       }
     }
-
-    const results = await Promise.all(promises);
-    return results.flat();
+    return releaseTargets;
   },
 );
 
