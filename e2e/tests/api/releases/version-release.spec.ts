@@ -153,6 +153,8 @@ test.describe("Version Release Creation", () => {
     );
     const resourceId = resourceResponse.data?.id ?? "";
 
+    await page.waitForTimeout(12_000);
+
     const releaseTargetResponse = await api.GET(
       "/v1/resources/{resourceId}/release-targets",
       {
@@ -169,8 +171,6 @@ test.describe("Version Release Creation", () => {
       (rt) => rt.deployment.id === deploymentId,
     );
     expect(releaseTarget).toBeDefined();
-
-    await page.waitForTimeout(12_000);
 
     const releaseResponse = await api.GET(
       "/v1/release-targets/{releaseTargetId}/releases",
