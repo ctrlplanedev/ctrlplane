@@ -2,6 +2,7 @@ import type * as schema from "@ctrlplane/db/schema";
 import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
+import workerpool from "workerpool";
 
 // import workerpool from "workerpool";
 
@@ -18,6 +19,8 @@ type ReleaseTargetManagerOptions = {
 
 const log = logger.child({ module: "release-target-manager" });
 
+const pool = workerpool.pool();
+
 const computeReleaseTargets = createSpanWrapper(
   "computeReleaseTargets",
   (
@@ -25,7 +28,9 @@ const computeReleaseTargets = createSpanWrapper(
     environment: FullReleaseTarget["environment"] & {
       resources: FullResource[];
     },
-    deployment: FullReleaseTarget["deployment"] & { resources: FullResource[] },
+    deployment: FullReleaseTarget["deployment"] & {
+      resources: FullResource[];
+    },
   ): FullReleaseTarget[] => {
     if (environment.systemId != deployment.systemId) return [];
 
@@ -91,17 +96,19 @@ const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
       FullReleaseTarget["deployment"] & { resources: FullResource[] }
     >,
   ) => {
-    const releaseTargets: FullReleaseTarget[] = [];
+    const promises = [];
 
     for (const environment of environments) {
       for (const deployment of deployments) {
         if (environment.systemId != deployment.systemId) continue;
-        releaseTargets.push(
-          ...(await computeReleaseTargets(environment, deployment)),
+        promises.push(
+          pool.exec(computeReleaseTargets, [environment, deployment]),
         );
       }
     }
-    return releaseTargets;
+
+    const results = await Promise.all(promises);
+    return results.flat();
   },
 );
 
