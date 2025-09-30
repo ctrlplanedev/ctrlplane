@@ -85,18 +85,18 @@ export class ReleaseTargetManager {
           continue;
         }
 
-        const deploymentResourceIds = new Set(
-          deployment.resources.map((r) => r.id),
-        );
-        const commonResources = environment.resources.filter((r) =>
-          deploymentResourceIds.has(r.id),
-        );
-
-        // const commonResources = _.intersectionBy(
-        //   environment.resources,
-        //   deployment.resources,
-        //   (r) => r.id,
+        // const deploymentResourceIds = new Set(
+        //   deployment.resources.map((r) => r.id),
         // );
+        // const commonResources = environment.resources.filter((r) =>
+        //   deploymentResourceIds.has(r.id),
+        // );
+
+        const commonResources = _.intersectionBy(
+          environment.resources,
+          deployment.resources,
+          (r) => r.id,
+        );
 
         for (const resource of commonResources) {
           const releaseTargetInsert: FullReleaseTarget = {
