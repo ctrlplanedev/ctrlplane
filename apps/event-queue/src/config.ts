@@ -21,6 +21,12 @@ export const env = createEnv({
       .refine((arr) => arr.length > 0, {
         message: "KAFKA_BROKERS must be a non-empty list of brokers",
       }),
+
+    KAFKA_PARTITIONS_CONSUMED_CONCURRENTLY: z
+      .number()
+      .default(5)
+      .transform((val) => parseInt(val.toString())),
+
     GITHUB_BOT_APP_ID: z.string().optional(),
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
     GITHUB_BOT_CLIENT_ID: z.string().optional(),

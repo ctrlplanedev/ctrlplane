@@ -22,6 +22,7 @@ export const start = async () => {
   logger.info("Subscribed to ctrlplane-events topic");
 
   await consumer.run({
+    partitionsConsumedConcurrently: env.KAFKA_PARTITIONS_CONSUMED_CONCURRENTLY,
     eachMessage: async ({ topic, partition, message }) => {
       logger.info("Received event", {
         topic,
