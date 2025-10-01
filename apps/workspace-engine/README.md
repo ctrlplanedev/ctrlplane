@@ -1,97 +1,213 @@
-# Selector Engine
+# Workspace Engine
 
-A high-performance gRPC-based selector engine for matching resources against complex selection criteria.
+A high-performance gRPC-based workspace management service for managing workspace resources with real-time event streaming.
 
 ## Overview
 
-The Selector Engine provides a flexible and efficient way to match resources based on various conditions including IDs, names, metadata, versions, creation dates, and system properties. It supports complex boolean logic with AND/OR operations and nested conditions.
+The Workspace Engine provides a flexible API for creating, managing, and monitoring workspace resources. It includes support for metadata, filtering, pagination, and real-time event streaming to watch workspace changes.
 
 ## Features
 
-- **Bidirectional Streaming**: Efficient processing of large volumes of resources and selectors
-- **Parallel Processing**: Configurable parallel execution for improved performance
-- **Rich Condition Types**: ID, name, metadata, version, date, system properties
-- **Boolean Logic**: AND/OR operations with nested conditions
-- **Real-time Matching**: Stream resources and get immediate matches
+- **Full CRUD Operations**: Create, Read, Update, Delete workspaces
+- **Real-time Event Streaming**: Watch workspace changes via server streaming
+- **Metadata Support**: Attach custom metadata to workspaces
+- **Filtering & Pagination**: Efficient listing with filters and pagination
+- **Status Management**: Track workspace lifecycle states
+- **gRPC Performance**: High-performance Protocol Buffers-based API
 
 ## Quick Start
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.24+
 - Protocol Buffers compiler (`protoc`)
 - `protoc-gen-go` and `protoc-gen-go-grpc` plugins
 
 ### Installation
 
 ```bash
-go mod download
+# Install dependencies
+make deps
+
+# Install protobuf tools (first time only)
+make proto-install
+
+# Generate protobuf code
+make proto
+
+# Build the server
+make build
 ```
 
 ### Running the Server
 
+Default settings (listens on `0.0.0.0:50051`):
+
 ```bash
-go run cmd/server/main.go
+make dev
 ```
 
-The server listens on port 50051 by default.
+Or run the built binary:
 
-### Running the Client
-
-Basic example:
 ```bash
-go run cmd/client/main.go
+./bin/workspace-engine
 ```
 
 With custom parameters:
+
 ```bash
-go run cmd/client/main.go -server=localhost:50051 -resources=1000 -selectors=100
+./bin/workspace-engine --host=localhost --port=9090
+```
+
+Using environment variables:
+
+```bash
+WORKSPACE_ENGINE_HOST=localhost WORKSPACE_ENGINE_PORT=9090 ./bin/workspace-engine
+```
+
+### Running the Example Client
+
+```bash
+go run examples/client/main.go
 ```
 
 ## Building
 
-### Build Server and Client
+### Available Make Targets
 
 ```bash
-make build
-```
-
-### Generate Protocol Buffers
-
-```bash
-make proto
-```
-
-### Run Tests
-
-```bash
-make test
+make all              # Install deps, generate proto, and build (default)
+make deps             # Install Go dependencies
+make proto            # Generate protobuf code
+make proto-install    # Install protobuf tools
+make build            # Build binaries
+make dev              # Run without building
+make test             # Run tests
+make test-coverage    # Run tests with coverage report
+make lint             # Run linter
+make fmt              # Format code
+make clean            # Clean build artifacts
+make install-tools    # Install development tools
+make help             # Show help message
 ```
 
 ## API Overview
 
-The Selector Engine provides four main gRPC endpoints:
+The Workspace Engine provides six main gRPC endpoints:
 
-- `LoadResources`: Stream resources and receive matches
-- `LoadSelectors`: Stream selectors and receive matches  
-- `RemoveResources`: Remove resources by reference
-- `RemoveSelectors`: Remove selectors by reference
+### Unary RPCs
+
+- `CreateWorkspace`: Create a new workspace with metadata
+- `GetWorkspace`: Retrieve a workspace by ID
+- `ListWorkspaces`: List workspaces with optional filtering and pagination
+- `UpdateWorkspace`: Update workspace properties
+- `DeleteWorkspace`: Delete a workspace by ID
+
+### Server Streaming RPCs
+
+- `WatchWorkspaces`: Stream real-time workspace events (create, update, delete)
+
+## Example Usage
+
+```go
+package main
+
+import (
+    "context"
+    "workspace-engine/pkg/client"
+    pb "workspace-engine/pkg/pb"
+)
+
+func main() {
+    // Create client
+    c, err := client.New("localhost:50051")
+    if err != nil {
+        panic(err)
+    }
+    defer c.Close()
+
+    ctx := context.Background()
+
+    // Create workspace
+    ws, err := c.CreateWorkspace(ctx, "my-workspace", "Description", map[string]string{
+        "team": "engineering",
+    })
+
+    // List workspaces
+    workspaces, nextToken, err := c.ListWorkspaces(ctx, 10, "", nil)
+
+    // Watch for changes
+    err = c.WatchWorkspaces(ctx, []string{ws.Id}, func(event *pb.WorkspaceEvent) error {
+        // Handle event
+        return nil
+    })
+}
+```
+
+See `examples/client/main.go` for a complete example.
 
 ## Docker Support
 
 Build and run using Docker:
 
 ```bash
-# Build images
-docker build -f Dockerfile.server -t selector-engine-server .
-docker build -f Dockerfile.client -t selector-engine-client .
+# Build image
+docker build -t workspace-engine:latest -f Dockerfile .
 
 # Run server
-docker run -p 50051:50051 selector-engine-server
-
-# Run client
-docker run selector-engine-client
+docker run -p 50051:50051 workspace-engine:latest
 ```
+
+## Development
+
+### Project Structure
+
+```
+workspace-engine/
+├── main.go                 # Server entry point
+├── proto/                  # Protocol buffer definitions
+│   └── workspace.proto
+├── pkg/
+│   ├── pb/                # Generated protobuf code
+│   ├── server/            # gRPC server implementation
+│   └── client/            # Client library
+├── examples/
+│   └── client/            # Example client usage
+├── Makefile               # Build automation
+└── README.md
+```
+
+### Adding Features
+
+1. Update `proto/workspace.proto` with new messages/services
+2. Run `make proto` to regenerate code
+3. Implement the service in `pkg/server/server.go`
+4. Run `make test` to verify
+
+### Testing
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+make test-coverage
+
+# Format code
+make fmt
+
+# Lint code
+make lint
+```
+
+## Configuration
+
+The server can be configured via flags or environment variables:
+
+| Flag     | Environment Variable    | Default   | Description       |
+| -------- | ----------------------- | --------- | ----------------- |
+| `--host` | `WORKSPACE_ENGINE_HOST` | `0.0.0.0` | Host to listen on |
+| `--port` | `WORKSPACE_ENGINE_PORT` | `50051`   | Port to listen on |
 
 ## License
 

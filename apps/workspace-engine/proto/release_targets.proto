@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package workspace;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "workspace-engine/pkg/pb";
+
+message Resource {
+  string id = 1;
+  string name = 2;
+  string version = 3;
+  string kind = 4;
+  string identifier = 5;
+  string created_at = 6; // ISO8601 string or RFC3339 timestamp
+  string workspace_id = 7;
+  string provider_id = 8; // nullable
+
+  // config can be a deeply nested object, so we use google.protobuf.Struct
+  google.protobuf.Struct config = 9;
+
+  string locked_at = 10; // nullable, ISO8601 string or RFC3339 timestamp
+  string updated_at = 11; // nullable, ISO8601 string or RFC3339 timestamp
+  string deleted_at = 12; // nullable, ISO8601 string or RFC3339 timestamp
+
+  map<string, string> metadata = 13;
+}
+
+message Environment {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string system_id = 4;
+
+  google.protobuf.Struct resource_selector = 5;
+  
+  string created_at = 6;
+}
+
+message Deployment {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string description = 4;
+  string system_id = 5;
+
+  optional string job_agent_id = 6;
+  optional google.protobuf.Struct job_agent_config = 7;
+  optional google.protobuf.Struct resource_selector = 8;
+
+  string created_at = 9; // ISO8601 string or RFC3339 timestamp
+}
+
+message ReleaseTarget {
+  string id = 1;
+  string resource_id = 2;
+  string environment_id = 3;
+  string deployment_id = 4;
+  string created_at = 5;
+
+  Environment environment = 6;
+  Deployment deployment = 7;
+}
+
+message ComputeReleaseTargetsRequest {
+  repeated Environment environments = 1;
+  repeated Deployment deployments = 2;
+  repeated Resource resources = 3;
+}
+
+service ReleaseTargetService {
+  rpc Compute(ComputeReleaseTargetsRequest) returns (stream ReleaseTarget);
+}
+

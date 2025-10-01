@@ -1,12 +1,14 @@
-.PHONY: all build clean proto deps run-server run-client test lint help
+.PHONY: all build clean proto deps run-server run-client test lint help proto-install
 
 # Variables
 BINARY := bin/workspace-engine
 GO := go
 GOLINT := golangci-lint
+PROTO_DIR := proto
+PB_DIR := pkg/pb
 
 # Default target
-all: deps build
+all: deps proto build
 
 # Install dependencies
 deps:
@@ -14,6 +16,23 @@ deps:
 	$(GO) mod download
 	$(GO) mod tidy
 
+# Protocol Buffers
+proto:
+	@echo "Generating protobuf code..."
+	@mkdir -p $(PB_DIR)
+	protoc --go_out=$(PB_DIR) --go_opt=paths=source_relative \
+		--go-grpc_out=$(PB_DIR) --go-grpc_opt=paths=source_relative \
+		--proto_path=$(PROTO_DIR) \
+		$(PROTO_DIR)/*.proto
+	@echo "Protobuf generation complete"
+
+proto-install:
+	@echo "Installing protoc plugins..."
+	$(GO) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	$(GO) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@echo "Please ensure 'protoc' is installed:"
+	@echo "  - macOS: brew install protobuf"
+	@echo "  - Linux: apt-get install protobuf-compiler"
 
 build:
 	@mkdir -p bin
@@ -52,6 +71,7 @@ fmt:
 clean:
 	@echo "Cleaning build artifacts..."
 	rm -rf bin/
+	rm -rf $(PB_DIR)/*.pb.go
 	rm -f coverage.out coverage.html
 	$(GO) clean
 
@@ -71,8 +91,10 @@ install-tools:
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  make all              - Install deps and build (default)"
+	@echo "  make all              - Install deps, generate proto, and build (default)"
 	@echo "  make deps             - Install Go dependencies"
+	@echo "  make proto            - Generate protobuf code"
+	@echo "  make proto-install    - Install protobuf tools"
 	@echo "  make build            - Build binaries"
 	@echo "  make dev              - Run without building"
 	@echo "  make test             - Run tests"

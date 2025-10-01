@@ -1,71 +1,52 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
-	"net/http"
 	_ "net/http/pprof"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 
+	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
-	"workspace-engine/pkg/kafka"
-	"workspace-engine/pkg/logger"
+	pb "workspace-engine/pkg/pb"
+	"workspace-engine/pkg/server/releasetarget"
 )
 
 func main() {
-	ctx := context.Background()
-	pflag.Int("port", 50555, "The server port")
-	pflag.String("log-level", "info", "Log level (debug, info, warn, error)")
+	pflag.String("host", "0.0.0.0", "Host to listen on")
+	pflag.Int("port", 50051, "Port to listen on")
 	pflag.Parse()
 
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-		panic("Failed to bind flags: " + err.Error())
+		log.Fatal("Failed to bind flags", "error", err)
 	}
-	viper.SetEnvPrefix("SELECTOR_ENGINE")
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	viper.SetEnvPrefix("WORKSPACE_ENGINE")
 	viper.AutomaticEnv()
 
-	// Initialize logger singleton
-	logger.Initialize(logger.Config{
-		Level: viper.GetString("log-level"),
-	})
-	log := logger.Get()
-
-	go func() {
-		log.Info("Starting pprof server on :6060")
-		if err := http.ListenAndServe(":6060", nil); err != nil {
-			log.Error("Failed to start pprof server", "error", err)
-		}
-	}()
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	go func() {
-		if err := kafka.RunConsumer(ctx); err != nil {
-			log.Error("received error from kafka consumer", "error", err)
-		}
-	}()
-
+	host := viper.GetString("host")
 	port := viper.GetInt("port")
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	addr := fmt.Sprintf("%s:%d", host, port)
+
+	log.Info("Starting workspace engine", "address", addr)
+
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatal("Failed to listen", "error", err)
+		log.Fatal("Failed to listen", "error", err, "address", addr)
 	}
-	defer lis.Close()
 
-	log.Info("Workspace engine started", "port", port)
+	grpcServer := grpc.NewServer()
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
+	pb.RegisterReleaseTargetServiceServer(grpcServer, releasetarget.New())
 
-	log.Info("Shutting down workspace engine...")
-	cancel()
+	reflection.Register(grpcServer)
+
+	log.Info("gRPC server listening", "address", addr)
+
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatal("Failed to serve", "error", err)
+	}
 }

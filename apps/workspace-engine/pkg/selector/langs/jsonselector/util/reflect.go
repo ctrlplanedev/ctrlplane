@@ -1,0 +1,63 @@
+package util
+
+import (
+	"fmt"
+	"reflect"
+	"time"
+)
+
+func GetProperty(entity any, fieldName string) (reflect.Value, error) {
+	v := reflect.ValueOf(entity)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return reflect.Value{}, fmt.Errorf("entity must be a struct or pointer to struct")
+	}
+
+	// First try to find field by name
+	field := v.FieldByName(fieldName)
+	if !field.IsValid() {
+		// If not found, look for field with matching json tag
+		t := v.Type()
+		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+			if tag := f.Tag.Get("json"); tag == fieldName {
+				field = v.Field(i)
+				break
+			}
+		}
+		if !field.IsValid() {
+			return reflect.Value{}, fmt.Errorf("field %s not found", fieldName)
+		}
+	}
+
+	return field, nil
+}
+
+func GetStringProperty(entity any, fieldName string) (string, error) {
+	field, err := GetProperty(entity, fieldName)
+	if err != nil {
+		return "", err
+	}
+
+	if field.Kind() != reflect.String {
+		return "", fmt.Errorf("field %s is not a string", fieldName)
+	}
+
+	return field.String(), nil
+}
+
+func GetDateProperty(entity any, fieldName string) (time.Time, error) {
+	field, err := GetProperty(entity, fieldName)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	if field.Kind() != reflect.String {
+		return time.Time{}, fmt.Errorf("field %s is not a string", fieldName)
+	}
+
+	return time.Parse(time.RFC3339, field.String())
+}
