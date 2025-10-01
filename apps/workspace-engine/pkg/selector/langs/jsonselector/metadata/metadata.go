@@ -53,8 +53,9 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (MetadataCo
 		return MetadataCondition{}, fmt.Errorf("invalid string operator: %s", condition.Operator)
 	}
 
-	if condition.Property == "metadata" {
-		return MetadataCondition{}, fmt.Errorf("metadata key cannot be 'metadata'")
+	normalizedProperty := condition.GetNormalizedProperty()
+	if normalizedProperty != "Metadata" {
+		return MetadataCondition{}, fmt.Errorf("property must be 'metadata', got '%s'", condition.Property)
 	}
 
 	if condition.MetadataKey == "" {
@@ -63,7 +64,7 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (MetadataCo
 
 	return MetadataCondition{
 		Operator: cstring.StringConditionOperator(condition.Operator),
-		Key:      condition.Property,
+		Key:      condition.MetadataKey,
 		Value:    condition.Value,
 	}, nil
 }

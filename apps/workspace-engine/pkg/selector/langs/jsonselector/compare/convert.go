@@ -8,6 +8,18 @@ import (
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
 
+var propertyAliases = map[string]string{
+	"created-at": "CreatedAt",
+	"deleted-at": "DeletedAt",
+	"updated-at": "UpdatedAt",
+	"metadata":   "Metadata",
+	"version":    "Version",
+	"kind":       "Kind",
+	"identifier": "Identifier",
+	"name":       "Name",
+	"id":         "Id",
+}
+
 func ConvertToSelector(unknownCondition unknown.UnknownCondition) (unknown.MatchableCondition, error) {
 	comparisonCondition, err := ConvertFromUnknownCondition(unknownCondition)
 	if err == nil {

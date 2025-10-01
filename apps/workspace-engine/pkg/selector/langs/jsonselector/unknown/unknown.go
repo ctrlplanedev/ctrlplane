@@ -5,17 +5,35 @@ import (
 	"fmt"
 )
 
-
 type MatchableCondition interface {
 	Matches(entity any) (bool, error)
 }
 
+var propertyAliases = map[string]string{
+	"created-at": "CreatedAt",
+	"deleted-at": "DeletedAt",
+	"updated-at": "UpdatedAt",
+	"metadata":   "Metadata",
+	"version":    "Version",
+	"kind":       "Kind",
+	"identifier": "Identifier",
+	"name":       "Name",
+	"id":         "Id",
+}
+
 type UnknownCondition struct {
-	Property    string               `json:"type"`
-	Operator    string               `json:"operator"`
-	Value       string               `json:"value"`
-	MetadataKey string               `json:"key"`
+	Property    string             `json:"type"`
+	Operator    string             `json:"operator"`
+	Value       string             `json:"value"`
+	MetadataKey string             `json:"key"`
 	Conditions  []UnknownCondition `json:"conditions"`
+}
+
+func (c UnknownCondition) GetNormalizedProperty() string {
+	if alias, ok := propertyAliases[c.Property]; ok {
+		return alias
+	}
+	return c.Property
 }
 
 func ParseFromMap(selectorMap map[string]any) (UnknownCondition, error) {
@@ -28,5 +46,6 @@ func ParseFromMap(selectorMap map[string]any) (UnknownCondition, error) {
 	if err := json.Unmarshal(selectorJSON, &condition); err != nil {
 		return UnknownCondition{}, err
 	}
+
 	return condition, nil
 }

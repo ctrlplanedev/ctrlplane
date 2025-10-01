@@ -31,12 +31,19 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (DateCondit
 		DateOperatorBeforeOrOn: {},
 		DateOperatorAfterOrOn:  {},
 	}
+
+	property := condition.GetNormalizedProperty()
+
+	if property != "CreatedAt" && property != "UpdatedAt" && property != "DeletedAt" {
+		return DateCondition{}, fmt.Errorf("invalid date property: %s", property)
+	}
+
 	if _, ok := validOperators[DateOperator(condition.Operator)]; !ok {
 		return DateCondition{}, fmt.Errorf("invalid date operator: %s", condition.Operator)
 	}
 
 	return DateCondition{
-		Property: condition.Property,
+		Property: property,
 		Operator: DateOperator(condition.Operator),
 		Value:    condition.Value,
 	}, nil

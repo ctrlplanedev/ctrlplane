@@ -33,26 +33,24 @@ func (s *Server) Compute(
 		))
 	defer span.End()
 
-	targetsChan, err := NewComputation(ctx, req).
+	targets, err := NewComputation(ctx, req).
 		FilterEnvironmentResources().
 		FilterDeploymentResources().
-		Stream()
-	
+		Generate()
+
 	if err != nil {
 		span.RecordError(err)
 		return err
 	}
 
 	// Stream all targets to the client
-	targetsStreamed := 0
-	for target := range targetsChan {
+	for _, target := range targets {
 		if err := stream.Send(target); err != nil {
 			span.RecordError(err)
 			return status.Errorf(codes.Internal, "failed to send release target: %v", err)
 		}
-		targetsStreamed++
 	}
 
-	span.SetAttributes(attribute.Int("targets.streamed", targetsStreamed))
+	span.SetAttributes(attribute.Int("targets.streamed", len(targets)))
 	return nil
 }

@@ -8,10 +8,10 @@ import (
 
 // Test entity type
 type testEntity struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created-at"`
-	UpdatedAt string `json:"updated-at"`
+	ID        string
+	Name      string
+	CreatedAt string
+	UpdatedAt string
 }
 
 // Test helper to create entity builder
@@ -46,24 +46,24 @@ var baseTime = time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
 func TestDateCondition_ConditionTypeDate(t *testing.T) {
 	nowStr := baseTime.Format(time.RFC3339)
-	
+
 	condAfter := DateCondition{
-		Property: "created-at",
+		Property: "CreatedAt",
 		Operator: DateOperatorAfter,
 		Value:    nowStr,
 	}
 	condBefore := DateCondition{
-		Property: "created-at",
+		Property: "CreatedAt",
 		Operator: DateOperatorBefore,
 		Value:    nowStr,
 	}
 	condBeforeOrOn := DateCondition{
-		Property: "created-at",
+		Property: "CreatedAt",
 		Operator: DateOperatorBeforeOrOn,
 		Value:    nowStr,
 	}
 	condAfterOrOn := DateCondition{
-		Property: "created-at",
+		Property: "CreatedAt",
 		Operator: DateOperatorAfterOrOn,
 		Value:    nowStr,
 	}
@@ -177,24 +177,24 @@ func TestDateCondition_ConditionTypeDate(t *testing.T) {
 
 func TestDateCondition_ConditionTypeUpdatedAt(t *testing.T) {
 	nowStr := baseTime.Format(time.RFC3339)
-	
+
 	condAfter := DateCondition{
-		Property: "updated-at",
+		Property: "UpdatedAt",
 		Operator: DateOperatorAfter,
 		Value:    nowStr,
 	}
 	condBefore := DateCondition{
-		Property: "updated-at",
+		Property: "UpdatedAt",
 		Operator: DateOperatorBefore,
 		Value:    nowStr,
 	}
 	condBeforeOrOn := DateCondition{
-		Property: "updated-at",
+		Property: "UpdatedAt",
 		Operator: DateOperatorBeforeOrOn,
 		Value:    nowStr,
 	}
 	condAfterOrOn := DateCondition{
-		Property: "updated-at",
+		Property: "UpdatedAt",
 		Operator: DateOperatorAfterOrOn,
 		Value:    nowStr,
 	}
@@ -334,7 +334,7 @@ func TestDateCondition_InvalidDateFormat(t *testing.T) {
 	}
 
 	cond := DateCondition{
-		Property: "created-at",
+		Property: "CreatedAt",
 		Operator: DateOperatorAfter,
 		Value:    baseTime.Format(time.RFC3339),
 	}
@@ -349,7 +349,7 @@ func TestDateCondition_InvalidOperator(t *testing.T) {
 	entity := newEntityBuilder().createdAt(baseTime).build()
 
 	cond := DateCondition{
-		Property: "created-at",
+		Property: "CreatedAt",
 		Operator: "invalid-op", // Invalid operator
 		Value:    baseTime.Format(time.RFC3339),
 	}
@@ -458,7 +458,7 @@ func TestDateCondition_timeTruncation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cond := DateCondition{
-				Property: "created-at",
+				Property: "CreatedAt",
 				Operator: tt.operator,
 				Value:    tt.condTime.Format(time.RFC3339),
 			}
@@ -485,7 +485,7 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 		{
 			name: "valid after operator",
 			condition: unknown.UnknownCondition{
-				Property: "created-at",
+				Property: "CreatedAt",
 				Operator: "after",
 				Value:    baseTime.Format(time.RFC3339),
 			},
@@ -494,7 +494,7 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 		{
 			name: "valid before operator",
 			condition: unknown.UnknownCondition{
-				Property: "created-at",
+				Property: "CreatedAt",
 				Operator: "before",
 				Value:    baseTime.Format(time.RFC3339),
 			},
@@ -503,7 +503,7 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 		{
 			name: "valid before-or-on operator",
 			condition: unknown.UnknownCondition{
-				Property: "created-at",
+				Property: "CreatedAt",
 				Operator: "before-or-on",
 				Value:    baseTime.Format(time.RFC3339),
 			},
@@ -512,7 +512,7 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 		{
 			name: "valid after-or-on operator",
 			condition: unknown.UnknownCondition{
-				Property: "created-at",
+				Property: "CreatedAt",
 				Operator: "after-or-on",
 				Value:    baseTime.Format(time.RFC3339),
 			},
@@ -521,7 +521,7 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 		{
 			name: "valid equals operator",
 			condition: unknown.UnknownCondition{
-				Property: "created-at",
+				Property: "CreatedAt",
 				Operator: "equals",
 				Value:    baseTime.Format(time.RFC3339),
 			},
@@ -530,7 +530,7 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 		{
 			name: "invalid operator",
 			condition: unknown.UnknownCondition{
-				Property: "created-at",
+				Property: "CreatedAt",
 				Operator: "invalid-operator",
 				Value:    baseTime.Format(time.RFC3339),
 			},
@@ -559,4 +559,3 @@ func TestConvertFromUnknownCondition(t *testing.T) {
 		})
 	}
 }
-

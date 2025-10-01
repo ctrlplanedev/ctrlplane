@@ -624,4 +624,3 @@ func TestConvertToSelector_AllConditionTypes(t *testing.T) {
 		})
 	}
 }
-

@@ -43,7 +43,7 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (StringCond
 	}
 
 	return StringCondition{
-		Property: condition.Property,
+		Property: condition.GetNormalizedProperty(),
 		Operator: StringConditionOperator(condition.Operator),
 		Value:    condition.Value,
 	}, nil

@@ -50,11 +50,11 @@ func (c *Computation) FilterEnvironmentResources() *Computation {
 			attribute.Int("resources.total", len(c.req.Resources)),
 		))
 	defer span.End()
-	
+
 	c.errMu.Lock()
 	hasErr := c.err != nil
 	c.errMu.Unlock()
-	
+
 	if hasErr {
 		span.RecordError(c.err)
 		return c
@@ -102,11 +102,11 @@ func (c *Computation) FilterDeploymentResources() *Computation {
 			attribute.Int("resources.total", len(c.req.Resources)),
 		))
 	defer span.End()
-	
+
 	c.errMu.Lock()
 	hasErr := c.err != nil
 	c.errMu.Unlock()
-	
+
 	if hasErr {
 		span.RecordError(c.err)
 		return c
@@ -155,40 +155,24 @@ func (c *Computation) FilterDeploymentResources() *Computation {
 	return c
 }
 
-// Generate waits for filtering to complete, then generates and returns all release targets concurrently
-func (c *Computation) Stream() (chan *pb.ReleaseTarget, error) {
-	ctx, span := tracer.Start(c.ctx, "Stream")
+// Generate waits for filtering and returns all release targets as a slice
+func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
+	_, span := tracer.Start(c.ctx, "Generate")
 	defer span.End()
 
 	// Wait for both environment and deployment filtering to complete
-	_, waitSpan := tracer.Start(ctx, "WaitForFiltering")
 	c.envWg.Wait()
 	c.depWg.Wait()
-	waitSpan.End()
 
 	// Check for errors after filtering completes
 	c.errMu.Lock()
 	err := c.err
 	c.errMu.Unlock()
-	
+
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
-
-	// Log filtering results
-	totalEnvResources := 0
-	for _, resourceSet := range c.envResourceSets {
-		totalEnvResources += len(resourceSet)
-	}
-	totalDepResources := 0
-	for _, resourceSet := range c.depResourceSets {
-		totalDepResources += len(resourceSet)
-	}
-	span.SetAttributes(
-		attribute.Int("env_resource_sets.total", totalEnvResources),
-		attribute.Int("dep_resource_sets.total", totalDepResources),
-	)
 
 	// Build a map for O(1) resource lookups by ID
 	resourceByID := make(map[string]*pb.Resource, len(c.req.Resources))
@@ -196,122 +180,117 @@ func (c *Computation) Stream() (chan *pb.ReleaseTarget, error) {
 		resourceByID[resource.Id] = resource
 	}
 
-	// Channel to collect release targets from concurrent workers
-	targetChan := make(chan *pb.ReleaseTarget, 100)
-	var wg sync.WaitGroup
+	// Calculate exact target count for each environment
+	type envWork struct {
+		env         *pb.Environment
+		resourceIDs []string
+		startIdx    int
+		count       int
+	}
 
-	// Start workers to generate release targets concurrently
-	workersStarted := 0
+	envWorkItems := make([]envWork, 0, len(c.req.Environments))
+	totalTargets := 0
+
 	for _, env := range c.req.Environments {
 		envResourceSet := c.envResourceSets[env.Id]
 		if len(envResourceSet) == 0 {
 			continue
 		}
 
+		// Convert to slice once for faster iteration
+		resourceIDs := make([]string, 0, len(envResourceSet))
+		for resourceID := range envResourceSet {
+			resourceIDs = append(resourceIDs, resourceID)
+		}
+
+		// Calculate exact count for this environment
+		envCount := 0
 		for _, dep := range c.req.Deployments {
-			workersStarted++
-			wg.Add(1)
-			go func(env *pb.Environment, dep *pb.Deployment, envResourceSet ResourceIDSet) {
-				defer wg.Done()
+			if dep.ResourceSelector == nil {
+				envCount += len(resourceIDs)
+			} else {
+				depResourceSet := c.depResourceSets[dep.Id]
+				// Count intersection
+				for _, resourceID := range resourceIDs {
+					if depResourceSet[resourceID] {
+						envCount++
+					}
+				}
+			}
+		}
+
+		if envCount > 0 {
+			envWorkItems = append(envWorkItems, envWork{
+				env:         env,
+				resourceIDs: resourceIDs,
+				startIdx:    totalTargets,
+				count:       envCount,
+			})
+			totalTargets += envCount
+		}
+	}
+
+	// Pre-allocate with exact size - no reallocation needed
+	targets := make([]*pb.ReleaseTarget, totalTargets)
+	var wg sync.WaitGroup
+
+	// Process each environment in parallel with index-based writes (no locks!)
+	for _, work := range envWorkItems {
+		wg.Add(1)
+		go func(work envWork) {
+			defer wg.Done()
+
+			idx := work.startIdx
+			for _, dep := range c.req.Deployments {
+				// Pre-build ID suffix once per env/dep pair (simple concatenation is fastest for short strings)
+				idSuffix := ":" + work.env.Id + ":" + dep.Id
 
 				// If deployment has no selector, all env resources match
 				if dep.ResourceSelector == nil {
-					generateAllReleaseTargets(ctx, env, dep, envResourceSet, resourceByID, targetChan)
-					return
+					for _, resourceID := range work.resourceIDs {
+						resource := resourceByID[resourceID]
+						targets[idx] = &pb.ReleaseTarget{
+							Id:            resource.Id + idSuffix,
+							ResourceId:    resource.Id,
+							EnvironmentId: work.env.Id,
+							DeploymentId:  dep.Id,
+							Environment:   work.env,
+							Deployment:    dep,
+						}
+						idx++
+					}
+					continue
 				}
 
 				depResourceSet := c.depResourceSets[dep.Id]
 				if len(depResourceSet) == 0 {
-					return
+					continue
 				}
 
-				generateMatchingReleaseTargets(ctx, env, dep, envResourceSet, depResourceSet, resourceByID, targetChan)
-			}(env, dep, envResourceSet)
-		}
+				// Write intersection directly to target indices
+				for _, resourceID := range work.resourceIDs {
+					if !depResourceSet[resourceID] {
+						continue
+					}
+					resource := resourceByID[resourceID]
+					targets[idx] = &pb.ReleaseTarget{
+						Id:            resource.Id + idSuffix,
+						ResourceId:    resource.Id,
+						EnvironmentId: work.env.Id,
+						DeploymentId:  dep.Id,
+						Environment:   work.env,
+						Deployment:    dep,
+					}
+					idx++
+				}
+			}
+		}(work)
 	}
 
-	span.SetAttributes(attribute.Int("workers.started", workersStarted))
+	wg.Wait()
+	span.SetAttributes(attribute.Int("targets.generated", len(targets)))
 
-	// Close the channel when all workers are done
-	go func() {
-		wg.Wait()
-		close(targetChan)
-	}()
-
-	return targetChan, nil
-}
-
-// generateAllReleaseTargets creates release targets for all environment resources (used when deployment has no selector)
-func generateAllReleaseTargets(
-	ctx context.Context,
-	env *pb.Environment,
-	dep *pb.Deployment,
-	envResourceSet ResourceIDSet,
-	resourceByID map[string]*pb.Resource,
-	targetChan chan<- *pb.ReleaseTarget,
-) {
-	_, span := tracer.Start(ctx, "generateAllReleaseTargets",
-		trace.WithAttributes(
-			attribute.String("environment.id", env.Id),
-			attribute.String("deployment.id", dep.Id),
-			attribute.Int("resources.count", len(envResourceSet)),
-		))
-	defer span.End()
-
-	targetsGenerated := 0
-	for resourceID := range envResourceSet {
-		resource := resourceByID[resourceID]
-		target := NewReleaseTargetBuilder().
-			ForResource(resource).
-			InEnvironment(env).
-			WithDeployment(dep).
-			Build()
-
-		targetChan <- target
-		targetsGenerated++
-	}
-
-	span.SetAttributes(attribute.Int("targets.generated", targetsGenerated))
-}
-
-// generateMatchingReleaseTargets finds resources common to an environment and deployment, then generates release targets
-func generateMatchingReleaseTargets(
-	ctx context.Context,
-	env *pb.Environment,
-	dep *pb.Deployment,
-	envResourceSet ResourceIDSet,
-	depResourceSet ResourceIDSet,
-	resourceByID map[string]*pb.Resource,
-	targetChan chan<- *pb.ReleaseTarget,
-) {
-	_, span := tracer.Start(ctx, "generateMatchingReleaseTargets",
-		trace.WithAttributes(
-			attribute.String("environment.id", env.Id),
-			attribute.String("deployment.id", dep.Id),
-			attribute.Int("env_resources.count", len(envResourceSet)),
-			attribute.Int("dep_resources.count", len(depResourceSet)),
-		))
-	defer span.End()
-
-	targetsGenerated := 0
-	for resourceID := range envResourceSet {
-		// Check if this resource is also in the deployment's resource set
-		if !depResourceSet[resourceID] {
-			continue
-		}
-
-		resource := resourceByID[resourceID]
-		target := NewReleaseTargetBuilder().
-			ForResource(resource).
-			InEnvironment(env).
-			WithDeployment(dep).
-			Build()
-
-		targetChan <- target
-		targetsGenerated++
-	}
-
-	span.SetAttributes(attribute.Int("targets.generated", targetsGenerated))
+	return targets, nil
 }
 
 // NewResourceIDSet creates a set of resource IDs for O(1) lookup
@@ -390,7 +369,7 @@ func filterResourcesBySelector(
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to parse selector: %w", err)
 	}
-	
+
 	filtered, err := selector.FilterResources(ctx, unknownCondition, resources)
 	if err != nil {
 		span.RecordError(err)

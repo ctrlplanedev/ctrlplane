@@ -64,7 +64,7 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (Comparison
 			return ComparisonCondition{}, err
 		}
 	}
-	
+
 	return ComparisonCondition{
 		Operator:   op,
 		Conditions: matchableConditions,

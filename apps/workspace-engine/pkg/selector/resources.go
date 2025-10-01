@@ -24,7 +24,7 @@ func FilterResources(ctx context.Context, unknownCondition unknown.UnknownCondit
 
 	matchedResources := []*pb.Resource{}
 	for _, resource := range resources {
-		matched, err := selector.Matches(resource);
+		matched, err := selector.Matches(resource)
 		if err != nil {
 			return []*pb.Resource{}, err
 		}

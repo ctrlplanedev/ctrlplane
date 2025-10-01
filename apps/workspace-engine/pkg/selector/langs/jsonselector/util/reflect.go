@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -23,9 +24,14 @@ func GetProperty(entity any, fieldName string) (reflect.Value, error) {
 		t := v.Type()
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
-			if tag := f.Tag.Get("json"); tag == fieldName {
-				field = v.Field(i)
-				break
+			if tag := f.Tag.Get("json"); tag != "" {
+				// JSON tags may have options like "fieldname,omitempty"
+				// We only care about the field name part
+				tagName := strings.Split(tag, ",")[0]
+				if tagName == fieldName {
+					field = v.Field(i)
+					break
+				}
 			}
 		}
 		if !field.IsValid() {
