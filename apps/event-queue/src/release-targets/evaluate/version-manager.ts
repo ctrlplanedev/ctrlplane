@@ -1,3 +1,4 @@
+import type * as schema from "@ctrlplane/db/schema";
 import type { FullReleaseTarget } from "@ctrlplane/events";
 import type { ReleaseManager } from "@ctrlplane/rule-engine";
 import { isPresent } from "ts-is-present";
@@ -108,6 +109,13 @@ export class VersionManager implements ReleaseManager {
   }
 
   @Trace()
+  private async getRules(policies: schema.Policy[]) {
+    return Promise.all(
+      policies.map((p) => this.rules.getRules(p.id, this.releaseTarget.id)),
+    ).then((rules) => rules.flat());
+  }
+
+  @Trace()
   async evaluate() {
     const policyIds = await this.getPoliciesIds();
     const allPolicies = await this.policies.getAll();
@@ -115,9 +123,7 @@ export class VersionManager implements ReleaseManager {
       .filter((p) => p.enabled)
       .filter((p) => policyIds.has(p.id));
 
-    const policyRules = await Promise.all(
-      policies.map((p) => this.rules.getRules(p.id, this.releaseTarget.id)),
-    ).then((rules) => rules.flat());
+    const policyRules = await this.getRules(policies);
     const versions = await this.findVersionsForEvaluation(policyIds);
     return new VersionRuleEngine(policyRules).evaluate(versions);
   }
