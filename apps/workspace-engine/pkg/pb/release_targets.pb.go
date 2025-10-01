@@ -31,12 +31,12 @@ type Resource struct {
 	Identifier  string                 `protobuf:"bytes,5,opt,name=identifier,proto3" json:"identifier,omitempty"`
 	CreatedAt   string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // ISO8601 string or RFC3339 timestamp
 	WorkspaceId string                 `protobuf:"bytes,7,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
-	ProviderId  string                 `protobuf:"bytes,8,opt,name=provider_id,json=providerId,proto3" json:"provider_id,omitempty"` // nullable
+	ProviderId  *string                `protobuf:"bytes,8,opt,name=provider_id,json=providerId,proto3,oneof" json:"provider_id,omitempty"` // nullable
 	// config can be a deeply nested object, so we use google.protobuf.Struct
 	Config        *structpb.Struct  `protobuf:"bytes,9,opt,name=config,proto3" json:"config,omitempty"`
-	LockedAt      string            `protobuf:"bytes,10,opt,name=locked_at,json=lockedAt,proto3" json:"locked_at,omitempty"`    // nullable, ISO8601 string or RFC3339 timestamp
-	UpdatedAt     string            `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // nullable, ISO8601 string or RFC3339 timestamp
-	DeletedAt     string            `protobuf:"bytes,12,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"` // nullable, ISO8601 string or RFC3339 timestamp
+	LockedAt      *string           `protobuf:"bytes,10,opt,name=locked_at,json=lockedAt,proto3,oneof" json:"locked_at,omitempty"`    // nullable, ISO8601 string or RFC3339 timestamp
+	UpdatedAt     *string           `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3,oneof" json:"updated_at,omitempty"` // nullable, ISO8601 string or RFC3339 timestamp
+	DeletedAt     *string           `protobuf:"bytes,12,opt,name=deleted_at,json=deletedAt,proto3,oneof" json:"deleted_at,omitempty"` // nullable, ISO8601 string or RFC3339 timestamp
 	Metadata      map[string]string `protobuf:"bytes,13,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -122,8 +122,8 @@ func (x *Resource) GetWorkspaceId() string {
 }
 
 func (x *Resource) GetProviderId() string {
-	if x != nil {
-		return x.ProviderId
+	if x != nil && x.ProviderId != nil {
+		return *x.ProviderId
 	}
 	return ""
 }
@@ -136,22 +136,22 @@ func (x *Resource) GetConfig() *structpb.Struct {
 }
 
 func (x *Resource) GetLockedAt() string {
-	if x != nil {
-		return x.LockedAt
+	if x != nil && x.LockedAt != nil {
+		return *x.LockedAt
 	}
 	return ""
 }
 
 func (x *Resource) GetUpdatedAt() string {
-	if x != nil {
-		return x.UpdatedAt
+	if x != nil && x.UpdatedAt != nil {
+		return *x.UpdatedAt
 	}
 	return ""
 }
 
 func (x *Resource) GetDeletedAt() string {
-	if x != nil {
-		return x.DeletedAt
+	if x != nil && x.DeletedAt != nil {
+		return *x.DeletedAt
 	}
 	return ""
 }
@@ -257,7 +257,6 @@ type Deployment struct {
 	JobAgentId       *string                `protobuf:"bytes,6,opt,name=job_agent_id,json=jobAgentId,proto3,oneof" json:"job_agent_id,omitempty"`
 	JobAgentConfig   *structpb.Struct       `protobuf:"bytes,7,opt,name=job_agent_config,json=jobAgentConfig,proto3,oneof" json:"job_agent_config,omitempty"`
 	ResourceSelector *structpb.Struct       `protobuf:"bytes,8,opt,name=resource_selector,json=resourceSelector,proto3,oneof" json:"resource_selector,omitempty"`
-	CreatedAt        string                 `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // ISO8601 string or RFC3339 timestamp
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -346,13 +345,6 @@ func (x *Deployment) GetResourceSelector() *structpb.Struct {
 		return x.ResourceSelector
 	}
 	return nil
-}
-
-func (x *Deployment) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return ""
 }
 
 type ReleaseTarget struct {
@@ -555,7 +547,7 @@ var File_release_targets_proto protoreflect.FileDescriptor
 
 const file_release_targets_proto_rawDesc = "" +
 	"\n" +
-	"\x15release_targets.proto\x12\tworkspace\x1a\x1cgoogle/protobuf/struct.proto\"\xe7\x03\n" +
+	"\x15release_targets.proto\x12\tworkspace\x1a\x1cgoogle/protobuf/struct.proto\"\xb7\x04\n" +
 	"\bResource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -566,20 +558,25 @@ const file_release_targets_proto_rawDesc = "" +
 	"identifier\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12!\n" +
-	"\fworkspace_id\x18\a \x01(\tR\vworkspaceId\x12\x1f\n" +
-	"\vprovider_id\x18\b \x01(\tR\n" +
-	"providerId\x12/\n" +
-	"\x06config\x18\t \x01(\v2\x17.google.protobuf.StructR\x06config\x12\x1b\n" +
+	"\fworkspace_id\x18\a \x01(\tR\vworkspaceId\x12$\n" +
+	"\vprovider_id\x18\b \x01(\tH\x00R\n" +
+	"providerId\x88\x01\x01\x12/\n" +
+	"\x06config\x18\t \x01(\v2\x17.google.protobuf.StructR\x06config\x12 \n" +
 	"\tlocked_at\x18\n" +
-	" \x01(\tR\blockedAt\x12\x1d\n" +
+	" \x01(\tH\x01R\blockedAt\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"updated_at\x18\v \x01(\tR\tupdatedAt\x12\x1d\n" +
+	"updated_at\x18\v \x01(\tH\x02R\tupdatedAt\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"deleted_at\x18\f \x01(\tR\tdeletedAt\x12=\n" +
+	"deleted_at\x18\f \x01(\tH\x03R\tdeletedAt\x88\x01\x01\x12=\n" +
 	"\bmetadata\x18\r \x03(\v2!.workspace.Resource.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd5\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_provider_idB\f\n" +
+	"\n" +
+	"_locked_atB\r\n" +
+	"\v_updated_atB\r\n" +
+	"\v_deleted_at\"\xd5\x01\n" +
 	"\vEnvironment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -587,7 +584,7 @@ const file_release_targets_proto_rawDesc = "" +
 	"\tsystem_id\x18\x04 \x01(\tR\bsystemId\x12D\n" +
 	"\x11resource_selector\x18\x05 \x01(\v2\x17.google.protobuf.StructR\x10resourceSelector\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\"\x98\x03\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAt\"\xf9\x02\n" +
 	"\n" +
 	"Deployment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
@@ -598,9 +595,7 @@ const file_release_targets_proto_rawDesc = "" +
 	"\fjob_agent_id\x18\x06 \x01(\tH\x00R\n" +
 	"jobAgentId\x88\x01\x01\x12F\n" +
 	"\x10job_agent_config\x18\a \x01(\v2\x17.google.protobuf.StructH\x01R\x0ejobAgentConfig\x88\x01\x01\x12I\n" +
-	"\x11resource_selector\x18\b \x01(\v2\x17.google.protobuf.StructH\x02R\x10resourceSelector\x88\x01\x01\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\t \x01(\tR\tcreatedAtB\x0f\n" +
+	"\x11resource_selector\x18\b \x01(\v2\x17.google.protobuf.StructH\x02R\x10resourceSelector\x88\x01\x01B\x0f\n" +
 	"\r_job_agent_idB\x13\n" +
 	"\x11_job_agent_configB\x14\n" +
 	"\x12_resource_selector\"\x9c\x02\n" +
@@ -674,6 +669,7 @@ func file_release_targets_proto_init() {
 	if File_release_targets_proto != nil {
 		return
 	}
+	file_release_targets_proto_msgTypes[0].OneofWrappers = []any{}
 	file_release_targets_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -14,14 +14,14 @@ message Resource {
   string identifier = 5;
   string created_at = 6; // ISO8601 string or RFC3339 timestamp
   string workspace_id = 7;
-  string provider_id = 8; // nullable
+  optional string provider_id = 8; // nullable
 
   // config can be a deeply nested object, so we use google.protobuf.Struct
   google.protobuf.Struct config = 9;
 
-  string locked_at = 10; // nullable, ISO8601 string or RFC3339 timestamp
-  string updated_at = 11; // nullable, ISO8601 string or RFC3339 timestamp
-  string deleted_at = 12; // nullable, ISO8601 string or RFC3339 timestamp
+  optional string locked_at = 10; // nullable, ISO8601 string or RFC3339 timestamp
+  optional string updated_at = 11; // nullable, ISO8601 string or RFC3339 timestamp
+  optional string deleted_at = 12; // nullable, ISO8601 string or RFC3339 timestamp
 
   map<string, string> metadata = 13;
 }
@@ -47,8 +47,6 @@ message Deployment {
   optional string job_agent_id = 6;
   optional google.protobuf.Struct job_agent_config = 7;
   optional google.protobuf.Struct resource_selector = 8;
-
-  string created_at = 9; // ISO8601 string or RFC3339 timestamp
 }
 
 message ReleaseTarget {
@@ -75,4 +73,3 @@ message ComputeReleaseTargetsResponse {
 service ReleaseTargetService {
   rpc Compute(ComputeReleaseTargetsRequest) returns (ComputeReleaseTargetsResponse);
 }
-

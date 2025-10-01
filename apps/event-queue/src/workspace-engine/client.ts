@@ -10,7 +10,7 @@ const createTransport = async (workspaceId: string) => {
   return transport;
 };
 
-export const releaseTargetClient = async (workspaceId: string) => {
+export const client = async (workspaceId: string) => {
   const transport = await createTransport(workspaceId);
 
   const releaseTarget = createClient(ReleaseTargetService, transport);

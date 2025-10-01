@@ -54,9 +54,9 @@ export declare type Resource = Message<"workspace.Resource"> & {
   /**
    * nullable
    *
-   * @generated from field: string provider_id = 8;
+   * @generated from field: optional string provider_id = 8;
    */
-  providerId: string;
+  providerId?: string;
 
   /**
    * config can be a deeply nested object, so we use google.protobuf.Struct
@@ -68,23 +68,23 @@ export declare type Resource = Message<"workspace.Resource"> & {
   /**
    * nullable, ISO8601 string or RFC3339 timestamp
    *
-   * @generated from field: string locked_at = 10;
+   * @generated from field: optional string locked_at = 10;
    */
-  lockedAt: string;
+  lockedAt?: string;
 
   /**
    * nullable, ISO8601 string or RFC3339 timestamp
    *
-   * @generated from field: string updated_at = 11;
+   * @generated from field: optional string updated_at = 11;
    */
-  updatedAt: string;
+  updatedAt?: string;
 
   /**
    * nullable, ISO8601 string or RFC3339 timestamp
    *
-   * @generated from field: string deleted_at = 12;
+   * @generated from field: optional string deleted_at = 12;
    */
-  deletedAt: string;
+  deletedAt?: string;
 
   /**
    * @generated from field: map<string, string> metadata = 13;
@@ -182,13 +182,6 @@ export declare type Deployment = Message<"workspace.Deployment"> & {
    * @generated from field: optional google.protobuf.Struct resource_selector = 8;
    */
   resourceSelector?: JsonObject;
-
-  /**
-   * ISO8601 string or RFC3339 timestamp
-   *
-   * @generated from field: string created_at = 9;
-   */
-  createdAt: string;
 };
 
 /**

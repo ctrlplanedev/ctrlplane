@@ -1,12 +1,18 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 import _ from "lodash";
+import {
+  toDeployment,
+  toEnvironment,
+  toResource,
+} from "src/workspace-engine/to.js";
 import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
 import { createSpanWrapper, Trace } from "../traces.js";
+import { client } from "../workspace-engine/client.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
@@ -75,6 +81,25 @@ const computeReleaseTargets = createSpanWrapper(
     }
 
     return releaseTargets;
+  },
+);
+
+const testComputeViaGrpc = createSpanWrapper(
+  "testComputeViaGrpc",
+  async (_span, ws: Workspace) => {
+    const [environments, deployments, resources] = await Promise.all([
+      ws.repository.environmentRepository.getAll(),
+      ws.repository.deploymentRepository.getAll(),
+      ws.repository.resourceRepository.getAll(),
+    ]);
+
+    const c = await client(ws.id);
+    const r = await c.releaseTarget.compute({
+      environments: environments.map(toEnvironment),
+      deployments: deployments.map(toDeployment),
+      resources: resources.map(toResource),
+    });
+    return r.releaseTargets;
   },
 );
 
@@ -233,10 +258,22 @@ export class ReleaseTargetManager {
   async computeReleaseTargetChanges() {
     log.info("Computing release target changes");
 
-    const [existingReleaseTargets, computedReleaseTargets] = await Promise.all([
+    const [
+      existingReleaseTargets,
+      computedReleaseTargets,
+      grpcComputedReleaseTargets,
+    ] = await Promise.all([
       this.getExistingReleaseTargets(),
       this.determineReleaseTargets(),
+      testComputeViaGrpc(this.workspace).catch((error) => {
+        log.error("Error computing release targets via gRPC", { error });
+        return [];
+      }),
     ]);
+
+    log.info("GRPC computed release targets", {
+      grpcComputedReleaseTargets: grpcComputedReleaseTargets.length,
+    });
 
     const { removedReleaseTargets, addedReleaseTargets } =
       this.getDiffFromPreviousAndNew(

@@ -381,22 +381,22 @@ func TestFilterResources_DateConditions(t *testing.T) {
 		{
 			name: "after-or-on operator includes exact match",
 			condition: unknown.UnknownCondition{
-				Property: "updated-at",
+				Property: "created-at",
 				Operator: "after-or-on",
 				Value:    baseTime.Format(time.RFC3339),
 			},
 			resources: []*pb.Resource{
 				{
 					Id:        "1",
-					UpdatedAt: afterTime.Format(time.RFC3339),
+					CreatedAt: afterTime.Format(time.RFC3339),
 				},
 				{
 					Id:        "2",
-					UpdatedAt: beforeTime.Format(time.RFC3339),
+					CreatedAt: beforeTime.Format(time.RFC3339),
 				},
 				{
 					Id:        "3",
-					UpdatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime.Format(time.RFC3339),
 				},
 			},
 			expectedCount: 2,
@@ -406,22 +406,22 @@ func TestFilterResources_DateConditions(t *testing.T) {
 		{
 			name: "before-or-on operator includes exact match",
 			condition: unknown.UnknownCondition{
-				Property: "updated-at",
+				Property: "created-at",
 				Operator: "before-or-on",
 				Value:    baseTime.Format(time.RFC3339),
 			},
 			resources: []*pb.Resource{
 				{
 					Id:        "1",
-					UpdatedAt: afterTime.Format(time.RFC3339),
+					CreatedAt: afterTime.Format(time.RFC3339),
 				},
 				{
 					Id:        "2",
-					UpdatedAt: beforeTime.Format(time.RFC3339),
+					CreatedAt: beforeTime.Format(time.RFC3339),
 				},
 				{
 					Id:        "3",
-					UpdatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime.Format(time.RFC3339),
 				},
 			},
 			expectedCount: 2,
