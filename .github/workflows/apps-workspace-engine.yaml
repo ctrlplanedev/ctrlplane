@@ -5,10 +5,12 @@ on:
     branches: ["*"]
     paths:
       - apps/workspace-engine/**
+      - .github/workflows/apps-workspace-engine.yaml
   push:
     branches: ["main"]
     paths:
       - apps/workspace-engine/**
+      - .github/workflows/apps-workspace-engine.yaml
 
 jobs:
   build:
@@ -21,6 +23,10 @@ jobs:
     strategy:
       matrix:
         platform: [linux/amd64]
+
+    defaults:
+      run:
+        working-directory: apps/workspace-engine
 
     steps:
       - uses: actions/checkout@v4
