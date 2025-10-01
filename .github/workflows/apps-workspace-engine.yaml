@@ -64,6 +64,7 @@ jobs:
         uses: docker/build-push-action@v6
         if: github.ref != 'refs/heads/main'
         with:
+          context: apps/workspace-engine
           push: false
           file: apps/workspace-engine/Dockerfile
           platforms: ${{ matrix.platform }}
@@ -73,6 +74,7 @@ jobs:
         uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/main' && env.DOCKERHUB_LOGIN == 'true'
         with:
+          context: apps/workspace-engine
           push: true
           file: apps/workspace-engine/Dockerfile
           platforms: ${{ matrix.platform }}
