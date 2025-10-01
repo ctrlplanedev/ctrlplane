@@ -68,7 +68,11 @@ message ComputeReleaseTargetsRequest {
   repeated Resource resources = 3;
 }
 
+message ComputeReleaseTargetsResponse {
+  repeated ReleaseTarget release_targets = 1;
+}
+
 service ReleaseTargetService {
-  rpc Compute(ComputeReleaseTargetsRequest) returns (stream ReleaseTarget);
+  rpc Compute(ComputeReleaseTargetsRequest) returns (ComputeReleaseTargetsResponse);
 }
 

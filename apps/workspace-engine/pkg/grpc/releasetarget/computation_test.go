@@ -51,7 +51,7 @@ func createTestEnvironments(count int, withSelector bool) []*pb.Environment {
 		if withSelector {
 			// Selector that matches resources with metadata.env matching the env index
 			env.ResourceSelector = mustNewStructFromMap(map[string]interface{}{
-				"type":     "env",
+				"type":     "metadata",
 				"operator": "equals",
 				"value":    fmt.Sprintf("env-%d", i),
 				"key":      "env",
@@ -74,7 +74,7 @@ func createTestDeployments(count int, withSelector bool) []*pb.Deployment {
 		if withSelector {
 			// Selector that matches resources with metadata.deploy matching the dep index
 			dep.ResourceSelector = mustNewStructFromMap(map[string]interface{}{
-				"type":     "deploy",
+				"type":     "metadata",
 				"operator": "equals",
 				"value":    fmt.Sprintf("dep-%d", i),
 				"key":      "deploy",
@@ -496,7 +496,7 @@ func TestGenerate_MixedSelectors(t *testing.T) {
 			Name:     "Deployment 0",
 			SystemId: "system-1",
 			ResourceSelector: mustNewStructFromMap(map[string]interface{}{
-				"type":     "deploy",
+				"type":     "metadata",
 				"operator": "equals",
 				"value":    "dep-0",
 				"key":      "deploy",
@@ -765,14 +765,14 @@ func BenchmarkFullComputation_Large(b *testing.B) {
 
 	// Create 1000 resources with metadata
 	metadata := make(map[string]map[string]string)
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10000; i++ {
 		id := fmt.Sprintf("resource-%d", i)
 		metadata[id] = map[string]string{
 			"env":    fmt.Sprintf("env-%d", i%10),
 			"deploy": fmt.Sprintf("dep-%d", i%10),
 		}
 	}
-	resources := createTestResources(1000, metadata)
+	resources := createTestResources(10000, metadata)
 	environments := createTestEnvironments(10, true)
 	deployments := createTestDeployments(10, true)
 
@@ -812,10 +812,10 @@ func BenchmarkFullComputation_MixedSelectors(b *testing.B) {
 
 	// Mix of deployments with and without selectors
 	deployments := []*pb.Deployment{
-		{Id: "dep-0", Name: "Deployment 0", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "deploy", "operator": "equals", "value": "dep-0", "key": "deploy"})},
-		{Id: "dep-1", Name: "Deployment 1", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "deploy", "operator": "equals", "value": "dep-1", "key": "deploy"})},
+		{Id: "dep-0", Name: "Deployment 0", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-0", "key": "deploy"})},
+		{Id: "dep-1", Name: "Deployment 1", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-1", "key": "deploy"})},
 		{Id: "dep-2", Name: "Deployment 2", SystemId: "system-1"}, // No selector
-		{Id: "dep-3", Name: "Deployment 3", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "deploy", "operator": "equals", "value": "dep-3", "key": "deploy"})},
+		{Id: "dep-3", Name: "Deployment 3", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-3", "key": "deploy"})},
 		{Id: "dep-4", Name: "Deployment 4", SystemId: "system-1"}, // No selector
 	}
 

@@ -12,6 +12,9 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.9.0",
+    "@connectrpc/connect": "^2.1.0",
+    "@connectrpc/connect-node": "^2.1.0",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
@@ -32,6 +35,7 @@
     "@t3-oss/env-core": "catalog:",
     "dotenv": "^16.4.5",
     "kafkajs": "^2.2.4",
+    "murmurhash-js": "^1.0.0",
     "ts-is-present": "catalog:",
     "workerpool": "^9.3.4",
     "zod": "catalog:"
@@ -40,6 +44,7 @@
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/murmurhash-js": "^1.0.6",
     "@types/node": "catalog:node22",
     "eslint": "catalog:",
     "prettier": "catalog:",

@@ -1,18 +1,12 @@
 import { createServer } from "node:http";
 import type { IMemberAssignment } from "kafkajs";
-import { Kafka } from "kafkajs";
 
 import { logger } from "@ctrlplane/logger";
 
 import { env } from "./config.js";
 import { getHandler, parseKafkaMessage } from "./events/index.js";
+import { kafka, topic } from "./workspace-engine/url.js";
 
-const kafka = new Kafka({
-  clientId: "ctrlplane-events",
-  brokers: env.KAFKA_BROKERS,
-});
-
-const topic = "ctrlplane-events";
 const consumer = kafka.consumer({ groupId: "ctrlplane-events" });
 
 let ready = false;
