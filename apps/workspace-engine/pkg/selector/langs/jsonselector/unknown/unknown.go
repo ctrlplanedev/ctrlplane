@@ -1,8 +1,9 @@
 package unknown
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/goccy/go-json"
 )
 
 type MatchableCondition interface {

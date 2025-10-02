@@ -51,10 +51,10 @@ func initTracer() (func(), error) {
 	// Get OTLP endpoint from environment variable
 	// If not set, the exporter will use the default: http://localhost:4318
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	
+
 	// Strip http:// or https:// prefix if present, as WithEndpoint() expects just host:port
 	endpoint = stripScheme(endpoint)
-	
+
 	// Create resource with service name
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
@@ -69,7 +69,7 @@ func initTracer() (func(), error) {
 	opts := []otlptracehttp.Option{
 		otlptracehttp.WithInsecure(), // Use HTTP instead of HTTPS
 	}
-	
+
 	// Only set endpoint if it's explicitly provided
 	if endpoint != "" {
 		opts = append(opts, otlptracehttp.WithEndpoint(endpoint))
@@ -91,7 +91,7 @@ func initTracer() (func(), error) {
 	// Set global trace provider
 	otel.SetTracerProvider(tp)
 
-	log.Info("OpenTelemetry tracing initialized", 
+	log.Info("OpenTelemetry tracing initialized",
 		"service", serviceName,
 		"endpoint", endpoint)
 

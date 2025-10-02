@@ -7,6 +7,7 @@ toolchain go1.24.5
 require (
 	connectrpc.com/connect v1.19.0
 	github.com/charmbracelet/log v0.4.2
+	github.com/goccy/go-json v0.10.5
 	github.com/spf13/pflag v1.0.7
 	github.com/spf13/viper v1.20.1
 	go.opentelemetry.io/otel v1.38.0

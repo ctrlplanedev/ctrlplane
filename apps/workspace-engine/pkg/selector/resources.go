@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var tracer = otel.Tracer("selector")
@@ -17,12 +18,26 @@ func FilterResources(ctx context.Context, unknownCondition unknown.UnknownCondit
 	_, span := tracer.Start(ctx, "FilterResources")
 	defer span.End()
 
+	span.SetAttributes(attribute.String("selector.type", unknownCondition.Property))
+	span.SetAttributes(attribute.String("selector.operator", unknownCondition.Operator))
+	span.SetAttributes(attribute.String("selector.value", unknownCondition.Value))
+	span.SetAttributes(attribute.String("selector.metadata_key", unknownCondition.MetadataKey))
+	span.SetAttributes(attribute.Int("selector.conditions", len(unknownCondition.Conditions)))
+	span.SetAttributes(attribute.Int("resources.input", len(resources)))
+
 	selector, err := jsonselector.ConvertToSelector(unknownCondition)
 	if err != nil {
 		return []*pb.Resource{}, err
 	}
 
-	matchedResources := []*pb.Resource{}
+	// Pre-allocate with reasonable capacity (assume ~50% match rate to minimize reallocations)
+	// This avoids multiple slice reallocations during append
+	estimatedCapacity := len(resources) / 2
+	if estimatedCapacity < 16 {
+		estimatedCapacity = 16
+	}
+	matchedResources := make([]*pb.Resource, 0, estimatedCapacity)
+
 	for _, resource := range resources {
 		matched, err := selector.Matches(resource)
 		if err != nil {

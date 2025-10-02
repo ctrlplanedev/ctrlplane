@@ -44,3 +44,5 @@ debug
 main
 tmp/
 *.prof
+
+workspace-engine
