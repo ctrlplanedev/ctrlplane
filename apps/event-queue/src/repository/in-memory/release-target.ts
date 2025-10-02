@@ -14,37 +14,38 @@ const getInitialEntities = createSpanWrapper(
     const rows = await dbClient
       .execute(
         sql`
-        select
-  rt.id,
-  rt.resource_id,
-  rt.environment_id,
-  rt.deployment_id,
-  rt.desired_release_id,
-  rt.desired_version_id,
+    select
+      rt.id,
+      rt.resource_id     as "resourceId",
+      rt.environment_id  as "environmentId",
+      rt.deployment_id   as "deploymentId",
+      rt.desired_release_id  as "desiredReleaseId",
+      rt.desired_version_id  as "desiredVersionId",
 
-  (to_jsonb(r) || jsonb_build_object('metadata', coalesce(rm.metadata, '{}'::jsonb))) as resource,
+      (to_jsonb(r) || jsonb_build_object('metadata', coalesce(rm.metadata, '{}'::jsonb))) as "resource",
+      to_jsonb(e) as "environment",
+      to_jsonb(d) as "deployment"
 
-  to_jsonb(e) as environment,
-  to_jsonb(d) as deployment
+    from "release_target" rt
 
-from "release_target" rt
+    join "resource" r
+      on r.id = rt.resource_id
+     and r.workspace_id = ${workspaceId}
 
-join "resource" r
-  on r.id = rt.resource_id
- and r.workspace_id = ${workspaceId}
+    left join lateral (
+      select coalesce(jsonb_object_agg(m.key, to_jsonb(m.value)), '{}'::jsonb) as metadata
+      from "resource_metadata" m
+      where m.resource_id = r.id
+    ) rm on true
 
-left join lateral (
-  select coalesce(jsonb_object_agg(m.key, to_jsonb(m.value)), '{}'::jsonb) as metadata
-  from "resource_metadata" m
-  where m.resource_id = r.id
-) rm on true
-
-left join "environment" e on e.id = rt.environment_id
-left join "deployment"  d on d.id = rt.deployment_id
-
-      `,
+    left join "environment" e on e.id = rt.environment_id
+    left join "deployment"  d on d.id = rt.deployment_id
+    `,
       )
       .then((results) => results.rows as FullReleaseTarget[]);
+
+    console.log("sample result", { sample: rows[0] });
+
     span.setAttributes({ "release-target.count": rows.length });
     return rows;
   },
