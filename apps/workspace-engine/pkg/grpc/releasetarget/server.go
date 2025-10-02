@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/pb/pbconnect"
 
 	"connectrpc.com/connect"
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -32,6 +33,8 @@ func (s *Server) Compute(
 			attribute.Int("request.resources", len(req.Msg.Resources)),
 		))
 	defer span.End()
+
+	log.Info("Compute request", "environments", len(req.Msg.Environments), "deployments", len(req.Msg.Deployments), "resources", len(req.Msg.Resources))
 
 	targets, err := NewComputation(ctx, req.Msg).
 		FilterEnvironmentResources().
