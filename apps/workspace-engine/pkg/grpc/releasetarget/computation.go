@@ -180,84 +180,33 @@ func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
 		resourceByID[resource.Id] = resource
 	}
 
-	// Calculate exact target count for each environment
-	type envWork struct {
-		env         *pb.Environment
-		resourceIDs []string
-		startIdx    int
-		count       int
-	}
-
-	envWorkItems := make([]envWork, 0, len(c.req.Environments))
-	totalTargets := 0
-
-	for _, env := range c.req.Environments {
-		envResourceSet := c.envResourceSets[env.Id]
-		if len(envResourceSet) == 0 {
-			continue
-		}
-
-		// Convert to slice once for faster iteration
-		resourceIDs := make([]string, 0, len(envResourceSet))
-		for resourceID := range envResourceSet {
-			resourceIDs = append(resourceIDs, resourceID)
-		}
-
-		// Calculate exact count for this environment
-		envCount := 0
-		for _, dep := range c.req.Deployments {
-			if dep.ResourceSelector == nil {
-				envCount += len(resourceIDs)
-			} else {
-				depResourceSet := c.depResourceSets[dep.Id]
-				// Count intersection
-				for _, resourceID := range resourceIDs {
-					if depResourceSet[resourceID] {
-						envCount++
-					}
-				}
-			}
-		}
-
-		if envCount > 0 {
-			envWorkItems = append(envWorkItems, envWork{
-				env:         env,
-				resourceIDs: resourceIDs,
-				startIdx:    totalTargets,
-				count:       envCount,
-			})
-			totalTargets += envCount
-		}
-	}
-
-	// Pre-allocate with exact size - no reallocation needed
-	targets := make([]*pb.ReleaseTarget, totalTargets)
+	targets := make([]*pb.ReleaseTarget, 0, len(c.req.Environments)*len(c.req.Deployments))
 	var wg sync.WaitGroup
 
 	// Process each environment in parallel with index-based writes (no locks!)
-	for _, work := range envWorkItems {
+	for _, work := range c.req.Environments {
 		wg.Add(1)
-		go func(work envWork) {
+		go func(env *pb.Environment) {
 			defer wg.Done()
 
-			idx := work.startIdx
+			envResources := c.envResourceSets[env.Id]
 			for _, dep := range c.req.Deployments {
+				deploymentResources := c.depResourceSets[dep.Id]
 				// Pre-build ID suffix once per env/dep pair (simple concatenation is fastest for short strings)
-				idSuffix := ":" + work.env.Id + ":" + dep.Id
+				idSuffix := ":" + env.Id + ":" + dep.Id
 
 				// If deployment has no selector, all env resources match
 				if dep.ResourceSelector == nil {
-					for _, resourceID := range work.resourceIDs {
+					for resourceID := range envResources {
 						resource := resourceByID[resourceID]
-						targets[idx] = &pb.ReleaseTarget{
+						targets = append(targets, &pb.ReleaseTarget{
 							Id:            resource.Id + idSuffix,
 							ResourceId:    resource.Id,
-							EnvironmentId: work.env.Id,
+							EnvironmentId: env.Id,
 							DeploymentId:  dep.Id,
-							Environment:   work.env,
+							Environment:   env,
 							Deployment:    dep,
-						}
-						idx++
+						})
 					}
 					continue
 				}
@@ -267,21 +216,22 @@ func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
 					continue
 				}
 
-				// Write intersection directly to target indices
-				for _, resourceID := range work.resourceIDs {
-					if !depResourceSet[resourceID] {
+				for resourceID := range depResourceSet {
+					if _, has := deploymentResources[resourceID]; !has {
+						continue
+					}
+					if _, has := envResources[resourceID]; !has {
 						continue
 					}
 					resource := resourceByID[resourceID]
-					targets[idx] = &pb.ReleaseTarget{
+					targets = append(targets, &pb.ReleaseTarget{
 						Id:            resource.Id + idSuffix,
 						ResourceId:    resource.Id,
-						EnvironmentId: work.env.Id,
+						EnvironmentId: env.Id,
 						DeploymentId:  dep.Id,
-						Environment:   work.env,
+						Environment:   env,
 						Deployment:    dep,
-					}
-					idx++
+					})
 				}
 			}
 		}(work)

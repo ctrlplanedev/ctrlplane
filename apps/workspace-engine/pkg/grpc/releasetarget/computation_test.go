@@ -10,7 +10,7 @@ import (
 )
 
 // Helper function to create a selector from a map
-func mustNewStructFromMap(m map[string]interface{}) *structpb.Struct {
+func mustNewStructFromMap(m map[string]any) *structpb.Struct {
 	s, err := structpb.NewStruct(m)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create struct: %v", err))

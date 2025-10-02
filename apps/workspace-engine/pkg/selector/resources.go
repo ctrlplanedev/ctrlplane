@@ -32,7 +32,7 @@ func FilterResources(ctx context.Context, unknownCondition unknown.UnknownCondit
 
 	// Pre-allocate with reasonable capacity (assume ~50% match rate to minimize reallocations)
 	// This avoids multiple slice reallocations during append
-	estimatedCapacity := max(len(resources) / 2, 128)
+	estimatedCapacity := max(len(resources)/2, 128)
 	matchedResources := make([]*pb.Resource, 0, estimatedCapacity)
 
 	for _, resource := range resources {
