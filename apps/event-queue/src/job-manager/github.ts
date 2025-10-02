@@ -104,14 +104,14 @@ export class GithubDispatcher implements JobDispatcher {
       inputs: { job_id: job.id },
     });
 
-    await octokit.actions.createWorkflowDispatch({
-      owner: config.owner,
-      repo: config.repo,
-      workflow_id: config.workflowId,
-      ref,
-      inputs: { job_id: job.id },
-      headers,
-    });
+    // await octokit.actions.createWorkflowDispatch({
+    //   owner: config.owner,
+    //   repo: config.repo,
+    //   workflow_id: config.workflowId,
+    //   ref,
+    //   inputs: { job_id: job.id },
+    //   headers,
+    // });
   }
 
   @Trace()
