@@ -5,7 +5,7 @@ import { logger } from "@ctrlplane/logger";
 
 import { env } from "./config.js";
 import { getHandler, parseKafkaMessage } from "./events/index.js";
-import { kafka, topic } from "./workspace-engine/url.js";
+import { getUrl, kafka, topic } from "./workspace-engine/url.js";
 
 const consumer = kafka.consumer({ groupId: "ctrlplane-events" });
 
@@ -17,6 +17,8 @@ export const start = async () => {
 
   await consumer.connect();
   await consumer.subscribe({ topic, fromBeginning: false });
+
+  await getUrl("test");
 
   const ev = consumer.events;
 

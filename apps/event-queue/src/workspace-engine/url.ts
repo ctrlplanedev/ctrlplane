@@ -23,9 +23,14 @@ function partitionForWorkspace(workspaceId: string, numPartitions: number) {
 }
 
 const getWorkspaceEngineUrl = async () => {
+  const statefulSetName = env.WORKSPACE_ENGINE_STATEFUL_SET_NAME;
+  const headlessService = env.WORKSPACE_ENGINE_HEADLESS_SERVICE;
+  const namespace = env.WORKSPACE_ENGINE_NAMESPACE;
+  const port = env.WORKSPACE_ENGINE_PORT;
+
   if (env.NODE_ENV !== "production") {
     return (_: string) => {
-      return "localhost:50051";
+      return `http://localhost:${port}`;
     };
   }
 
@@ -43,11 +48,6 @@ const getWorkspaceEngineUrl = async () => {
 
   return (workspaceId: string) => {
     const p = partitionForWorkspace(workspaceId, partitions);
-    const statefulSetName = env.WORKSPACE_ENGINE_STATEFUL_SET_NAME;
-    const headlessService = env.WORKSPACE_ENGINE_HEADLESS_SERVICE;
-    const namespace = env.WORKSPACE_ENGINE_NAMESPACE;
-    const port = env.WORKSPACE_ENGINE_PORT;
-
     return `${statefulSetName}-${p}.${headlessService}.${namespace}.svc.cluster.local:${port}`;
   };
 };
