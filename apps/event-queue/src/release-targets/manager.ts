@@ -7,12 +7,6 @@ import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
 import { createSpanWrapper, Trace } from "../traces.js";
-import { client } from "../workspace-engine/client.js";
-import {
-  toDeployment,
-  toEnvironment,
-  toResource,
-} from "../workspace-engine/to.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
@@ -95,21 +89,21 @@ const getAllForWorkspace = createSpanWrapper(
   },
 );
 
-const testComputeViaGrpc = createSpanWrapper(
-  "testComputeViaGrpc",
-  async (_span, ws: Workspace) => {
-    const [environments, deployments, resources] = await getAllForWorkspace(ws);
+// const testComputeViaGrpc = createSpanWrapper(
+//   "testComputeViaGrpc",
+//   async (_span, ws: Workspace) => {
+//     const [environments, deployments, resources] = await getAllForWorkspace(ws);
 
-    const c = await client(ws.id);
-    const r = await c.releaseTarget.compute({
-      environments: environments.map(toEnvironment),
-      deployments: deployments.map(toDeployment),
-      resources: resources.map(toResource),
-    });
+//     const c = await client(ws.id);
+//     const r = await c.releaseTarget.compute({
+//       environments: environments.map(toEnvironment),
+//       deployments: deployments.map(toDeployment),
+//       resources: resources.map(toResource),
+//     });
 
-    return r.releaseTargets;
-  },
-);
+//     return r.releaseTargets;
+//   },
+// );
 
 const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
   "computeReleaseTargetsForEnvironmentAndDeployment",
