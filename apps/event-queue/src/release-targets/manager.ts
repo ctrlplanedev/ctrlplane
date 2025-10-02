@@ -160,10 +160,10 @@ const getDiffFromPreviousAndNew = createSpanWrapper(
   "getDiffFromPreviousAndNew",
   (span, prevTargets: FullReleaseTarget[], newTargets: FullReleaseTarget[]) => {
     log.info("sample prev targets", {
-      samplePrevTargets: prevTargets.slice(0, 10),
+      samplePrevTargets: JSON.stringify(prevTargets.slice(0, 10), null, 2),
     });
     log.info("sample new targets", {
-      sampleNewTargets: newTargets.slice(0, 10),
+      sampleNewTargets: JSON.stringify(newTargets.slice(0, 10), null, 2),
     });
     const removedReleaseTargets = prevTargets.filter(
       (existingReleaseTarget) =>
