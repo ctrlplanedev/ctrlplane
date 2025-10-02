@@ -14,37 +14,65 @@ const getInitialEntities = createSpanWrapper(
     const rows = await dbClient
       .execute(
         sql`
-    select
-      rt.id,
-      rt.resource_id     as "resourceId",
-      rt.environment_id  as "environmentId",
-      rt.deployment_id   as "deploymentId",
-      rt.desired_release_id  as "desiredReleaseId",
-      rt.desired_version_id  as "desiredVersionId",
-
-      (to_jsonb(r) || jsonb_build_object('metadata', coalesce(rm.metadata, '{}'::jsonb))) as "resource",
-      to_jsonb(e) as "environment",
-      to_jsonb(d) as "deployment"
-
-    from "release_target" rt
-
-    join "resource" r
-      on r.id = rt.resource_id
-     and r.workspace_id = ${workspaceId}
-
-    left join lateral (
-      select coalesce(jsonb_object_agg(m.key, to_jsonb(m.value)), '{}'::jsonb) as metadata
-      from "resource_metadata" m
-      where m.resource_id = r.id
-    ) rm on true
-
-    left join "environment" e on e.id = rt.environment_id
-    left join "deployment"  d on d.id = rt.deployment_id
+      select
+        rt.id,
+        rt.resource_id    as "resourceId",
+        rt.environment_id as "environmentId",
+        rt.deployment_id  as "deploymentId",
+        rt.desired_release_id as "desiredReleaseId",
+        rt.desired_version_id as "desiredVersionId",
+    
+        jsonb_build_object(
+          'id', r.id,
+          'kind', r.kind,
+          'name', r.name,
+          'config', r.config,
+          'version', r.version,
+          'metadata', coalesce(rm.metadata, '{}'::jsonb),
+          'lockedAt', r.locked_at,
+          'createdAt', r.created_at,
+          'deletedAt', r.deleted_at,
+          'identifier', r.identifier,
+          'updatedAt', r.updated_at,
+          'providerId', r.provider_id,
+          'workspaceId', r.workspace_id
+        ) as "resource",
+    
+        jsonb_build_object(
+          'id', e.id,
+          'name', e.name,
+          'directory', e.directory,
+          'systemId', e.system_id,
+          'createdAt', e.created_at,
+          'description', e.description,
+          'resourceSelector', e.resource_selector
+        ) as "environment",
+    
+        jsonb_build_object(
+          'id', d.id,
+          'name', d.name,
+          'slug', d.slug,
+          'timeout', d.timeout,
+          'systemId', d.system_id,
+          'description', d.description,
+          'retryCount', d.retry_count,
+          'jobAgentId', d.job_agent_id,
+          'jobAgentConfig', d.job_agent_config,
+          'resourceSelector', d.resource_selector
+        ) as "deployment"
+    
+      from "release_target" rt
+      join "resource" r on r.id = rt.resource_id and r.workspace_id = ${workspaceId}
+      left join lateral (
+        select coalesce(jsonb_object_agg(m.key, to_jsonb(m.value)), '{}'::jsonb) as metadata
+        from "resource_metadata" m
+        where m.resource_id = r.id
+      ) rm on true
+      left join "environment" e on e.id = rt.environment_id
+      left join "deployment"  d on d.id = rt.deployment_id
     `,
       )
-      .then((results) => results.rows as FullReleaseTarget[]);
-
-    console.log("sample result", { sample: rows[0] });
+      .then((res) => res.rows as FullReleaseTarget[]);
 
     span.setAttributes({ "release-target.count": rows.length });
     return rows;

@@ -159,12 +159,6 @@ const getExistingReleaseTargets = createSpanWrapper(
 const getDiffFromPreviousAndNew = createSpanWrapper(
   "getDiffFromPreviousAndNew",
   (span, prevTargets: FullReleaseTarget[], newTargets: FullReleaseTarget[]) => {
-    log.info("sample prev targets", {
-      samplePrevTargets: JSON.stringify(prevTargets.slice(0, 10), null, 2),
-    });
-    log.info("sample new targets", {
-      sampleNewTargets: JSON.stringify(newTargets.slice(0, 10), null, 2),
-    });
     const removedReleaseTargets = prevTargets.filter(
       (existingReleaseTarget) =>
         !newTargets.some(
@@ -329,11 +323,6 @@ export class ReleaseTargetManager {
       this.persistRemovedReleaseTargets(removedReleaseTargets),
       this.persistAddedReleaseTargets(addedReleaseTargets),
     ]);
-
-    log.info("Release target changes persisted", {
-      removedReleaseTargets: removedReleaseTargets.length,
-      addedReleaseTargets: addedReleaseTargets.length,
-    });
 
     return { removedReleaseTargets, addedReleaseTargets };
   }
