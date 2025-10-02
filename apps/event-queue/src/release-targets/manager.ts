@@ -266,21 +266,14 @@ export class ReleaseTargetManager {
   async computeReleaseTargetChanges() {
     log.info("Computing release target changes");
 
-    const [
-      existingReleaseTargets,
-      computedReleaseTargets,
-      grpcComputedReleaseTargets,
-    ] = await Promise.all([
+    const [existingReleaseTargets, computedReleaseTargets] = await Promise.all([
       this.getExistingReleaseTargets(),
       this.determineReleaseTargets(),
-      testComputeViaGrpc(this.workspace).catch((error) => {
-        log.error("Error computing release targets via gRPC", { error });
-        return [];
-      }),
     ]);
 
-    log.info("GRPC computed release targets", {
-      grpcComputedReleaseTargets: grpcComputedReleaseTargets.length,
+    testComputeViaGrpc(this.workspace).catch((error) => {
+      log.error("Error computing release targets via gRPC", { error });
+      return [];
     });
 
     const { removedReleaseTargets, addedReleaseTargets } =
