@@ -15,7 +15,7 @@ var tracer = otel.Tracer("selector")
 type Selector any
 
 func FilterResources(ctx context.Context, unknownCondition unknown.UnknownCondition, resources []*pb.Resource) ([]*pb.Resource, error) {
-	_, span := tracer.Start(ctx, "FilterResources")
+	ctx, span := tracer.Start(ctx, "FilterResources")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("selector.type", unknownCondition.Property))
@@ -25,17 +25,14 @@ func FilterResources(ctx context.Context, unknownCondition unknown.UnknownCondit
 	span.SetAttributes(attribute.Int("selector.conditions", len(unknownCondition.Conditions)))
 	span.SetAttributes(attribute.Int("resources.input", len(resources)))
 
-	selector, err := jsonselector.ConvertToSelector(unknownCondition)
+	selector, err := jsonselector.ConvertToSelector(ctx, unknownCondition)
 	if err != nil {
 		return []*pb.Resource{}, err
 	}
 
 	// Pre-allocate with reasonable capacity (assume ~50% match rate to minimize reallocations)
 	// This avoids multiple slice reallocations during append
-	estimatedCapacity := len(resources) / 2
-	if estimatedCapacity < 16 {
-		estimatedCapacity = 16
-	}
+	estimatedCapacity := max(len(resources) / 2, 128)
 	matchedResources := make([]*pb.Resource, 0, estimatedCapacity)
 
 	for _, resource := range resources {

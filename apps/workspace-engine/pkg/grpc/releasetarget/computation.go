@@ -31,24 +31,20 @@ type Computation struct {
 	depWg           sync.WaitGroup
 	err             error
 	errMu           sync.Mutex
-	// Cache parsed selectors to avoid repeated JSON marshal/unmarshal overhead
-	selectorCache   map[string]unknown.UnknownCondition
-	selectorCacheMu sync.RWMutex
 }
 
 // NewComputation creates a new computation with the given context and request
 func NewComputation(ctx context.Context, req *pb.ComputeReleaseTargetsRequest) *Computation {
 	return &Computation{
-		ctx:           ctx,
-		req:           req,
-		selectorCache: make(map[string]unknown.UnknownCondition),
+		ctx: ctx,
+		req: req,
 	}
 }
 
 // FilterEnvironmentResources starts concurrent filtering of environment resources
 // Does not wait - results will be ready when GenerateAndStream is called
 func (c *Computation) FilterEnvironmentResources() *Computation {
-	_, span := tracer.Start(c.ctx, "FilterEnvironmentResources",
+	ctx, span := tracer.Start(c.ctx, "FilterEnvironmentResources",
 		trace.WithAttributes(
 			attribute.Int("environments.count", len(c.req.Environments)),
 			attribute.Int("resources.total", len(c.req.Resources)),
@@ -76,7 +72,7 @@ func (c *Computation) FilterEnvironmentResources() *Computation {
 		go func(env *pb.Environment) {
 			defer c.envWg.Done()
 
-			resources, err := c.getResourcesForEnvironment(env, c.req.Resources)
+			resources, err := getResourcesForEnvironment(ctx, env, c.req.Resources)
 			if err != nil {
 				errOnce.Do(func() {
 					c.errMu.Lock()
@@ -100,7 +96,7 @@ func (c *Computation) FilterEnvironmentResources() *Computation {
 // FilterDeploymentResources starts concurrent filtering of deployment resources
 // Does not wait - results will be ready when GenerateAndStream is called
 func (c *Computation) FilterDeploymentResources() *Computation {
-	_, span := tracer.Start(c.ctx, "FilterDeploymentResources",
+	ctx, span := tracer.Start(c.ctx, "FilterDeploymentResources",
 		trace.WithAttributes(
 			attribute.Int("deployments.count", len(c.req.Deployments)),
 			attribute.Int("resources.total", len(c.req.Resources)),
@@ -136,7 +132,7 @@ func (c *Computation) FilterDeploymentResources() *Computation {
 			defer c.depWg.Done()
 
 			// Filter resources and build a set for O(1) lookup
-			resources, err := c.getResourcesForDeployment(dep, c.req.Resources)
+			resources, err := getResourcesForDeployment(ctx, dep, c.req.Resources)
 			if err != nil {
 				errOnce.Do(func() {
 					c.errMu.Lock()
@@ -308,8 +304,8 @@ func NewResourceIDSet(resources []*pb.Resource) ResourceIDSet {
 
 // getResourcesForEnvironment returns resources for an environment based on its selector
 // If environment has no selector, returns empty list
-func (c *Computation) getResourcesForEnvironment(env *pb.Environment, allResources []*pb.Resource) ([]*pb.Resource, error) {
-	_, span := tracer.Start(c.ctx, "getResourcesForEnvironment",
+func getResourcesForEnvironment(ctx context.Context, env *pb.Environment, allResources []*pb.Resource) ([]*pb.Resource, error) {
+	_, span := tracer.Start(ctx, "getResourcesForEnvironment",
 		trace.WithAttributes(
 			attribute.String("environment.id", env.Id),
 			attribute.Bool("has_selector", env.ResourceSelector != nil),
@@ -321,7 +317,7 @@ func (c *Computation) getResourcesForEnvironment(env *pb.Environment, allResourc
 		return []*pb.Resource{}, nil
 	}
 
-	resources, err := c.filterResourcesBySelector(env.Id, env.ResourceSelector.AsMap(), allResources)
+	resources, err := filterResourcesBySelector(ctx, env.ResourceSelector.AsMap(), allResources)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -333,8 +329,8 @@ func (c *Computation) getResourcesForEnvironment(env *pb.Environment, allResourc
 
 // getResourcesForDeployment returns resources for a deployment based on its selector
 // If deployment has no selector, returns all resources
-func (c *Computation) getResourcesForDeployment(dep *pb.Deployment, allResources []*pb.Resource) ([]*pb.Resource, error) {
-	_, span := tracer.Start(c.ctx, "getResourcesForDeployment",
+func getResourcesForDeployment(ctx context.Context, dep *pb.Deployment, allResources []*pb.Resource) ([]*pb.Resource, error) {
+	_, span := tracer.Start(ctx, "getResourcesForDeployment",
 		trace.WithAttributes(
 			attribute.String("deployment.id", dep.Id),
 			attribute.Bool("has_selector", dep.ResourceSelector != nil),
@@ -346,7 +342,7 @@ func (c *Computation) getResourcesForDeployment(dep *pb.Deployment, allResources
 		return allResources, nil
 	}
 
-	resources, err := c.filterResourcesBySelector(dep.Id, dep.ResourceSelector.AsMap(), allResources)
+	resources, err := filterResourcesBySelector(ctx, dep.ResourceSelector.AsMap(), allResources)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
@@ -356,41 +352,25 @@ func (c *Computation) getResourcesForDeployment(dep *pb.Deployment, allResources
 	return resources, nil
 }
 
-// filterResourcesBySelector filters resources based on a selector with caching
-func (c *Computation) filterResourcesBySelector(
-	cacheKey string,
+// filterResourcesBySelector filters resources based on a selector
+func filterResourcesBySelector(
+	ctx context.Context,
 	selectorMap map[string]any,
 	resources []*pb.Resource,
 ) ([]*pb.Resource, error) {
-	_, span := tracer.Start(c.ctx, "filterResourcesBySelector",
+	_, span := tracer.Start(ctx, "filterResourcesBySelector",
 		trace.WithAttributes(
 			attribute.Int("resources.input", len(resources)),
-			attribute.Bool("cached", false),
 		))
 	defer span.End()
 
-	// Check cache first (read lock)
-	c.selectorCacheMu.RLock()
-	unknownCondition, cached := c.selectorCache[cacheKey]
-	c.selectorCacheMu.RUnlock()
-
-	if !cached {
-		// Parse and cache (write lock)
-		var err error
-		unknownCondition, err = unknown.ParseFromMap(selectorMap)
-		if err != nil {
-			span.RecordError(err)
-			return nil, fmt.Errorf("failed to parse selector: %w", err)
-		}
-
-		c.selectorCacheMu.Lock()
-		c.selectorCache[cacheKey] = unknownCondition
-		c.selectorCacheMu.Unlock()
-	} else {
-		span.SetAttributes(attribute.Bool("cached", true))
+	unknownCondition, err := unknown.ParseFromMap(selectorMap)
+	if err != nil {
+		span.RecordError(err)
+		return nil, fmt.Errorf("failed to parse selector: %w", err)
 	}
 
-	filtered, err := selector.FilterResources(c.ctx, unknownCondition, resources)
+	filtered, err := selector.FilterResources(ctx, unknownCondition, resources)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
