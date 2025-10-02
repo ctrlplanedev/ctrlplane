@@ -15,10 +15,11 @@ let lastAssignment: IMemberAssignment | null = null;
 export const start = async () => {
   logger.info("Starting event queue", { brokers: env.KAFKA_BROKERS });
 
+  logger.info("Running getWorkspaceEngineUrl");
+  console.log(await getUrl("test"));
+
   await consumer.connect();
   await consumer.subscribe({ topic, fromBeginning: false });
-
-  await getUrl("test");
 
   const ev = consumer.events;
 

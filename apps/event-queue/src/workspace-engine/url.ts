@@ -22,7 +22,7 @@ function partitionForWorkspace(workspaceId: string, numPartitions: number) {
   return positive % numPartitions;
 }
 
-const getWorkspaceEngineUrl = async () => {
+export const getWorkspaceEngineUrl = async () => {
   const statefulSetName = env.WORKSPACE_ENGINE_STATEFUL_SET_NAME;
   const headlessService = env.WORKSPACE_ENGINE_HEADLESS_SERVICE;
   const namespace = env.WORKSPACE_ENGINE_NAMESPACE;
