@@ -84,14 +84,21 @@ const computeReleaseTargets = createSpanWrapper(
   },
 );
 
-const testComputeViaGrpc = createSpanWrapper(
-  "testComputeViaGrpc",
-  async (_span, ws: Workspace) => {
-    const [environments, deployments, resources] = await Promise.all([
+const getAllForWorkspace = createSpanWrapper(
+  "getAllForWorkspace",
+  (_, ws: Workspace) => {
+    return Promise.all([
       ws.repository.environmentRepository.getAll(),
       ws.repository.deploymentRepository.getAll(),
       ws.repository.resourceRepository.getAll(),
     ]);
+  },
+);
+
+const testComputeViaGrpc = createSpanWrapper(
+  "testComputeViaGrpc",
+  async (_span, ws: Workspace) => {
+    const [environments, deployments, resources] = await getAllForWorkspace(ws);
 
     const c = await client(ws.id);
     const r = await c.releaseTarget.compute({
@@ -99,6 +106,7 @@ const testComputeViaGrpc = createSpanWrapper(
       deployments: deployments.map(toDeployment),
       resources: resources.map(toResource),
     });
+
     return r.releaseTargets;
   },
 );
