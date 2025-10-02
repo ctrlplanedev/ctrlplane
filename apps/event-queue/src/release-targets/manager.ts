@@ -146,6 +146,16 @@ const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
   },
 );
 
+const getExistingReleaseTargets = createSpanWrapper(
+  "getExistingReleaseTargets",
+  async (span, workspace: Workspace) => {
+    const releaseTargets =
+      await workspace.repository.releaseTargetRepository.getAll();
+    span.setAttribute("existing-release-target.count", releaseTargets.length);
+    return releaseTargets;
+  },
+);
+
 const getDiffFromPreviousAndNew = createSpanWrapper(
   "getDiffFromPreviousAndNew",
   (span, prevTargets: FullReleaseTarget[], newTargets: FullReleaseTarget[]) => {
@@ -247,7 +257,7 @@ export class ReleaseTargetManager {
   }
 
   private async getExistingReleaseTargets() {
-    return this.workspace.repository.releaseTargetRepository.getAll();
+    return getExistingReleaseTargets(this.workspace);
   }
 
   @Trace()
