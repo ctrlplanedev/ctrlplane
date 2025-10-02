@@ -287,6 +287,11 @@ export class ReleaseTargetManager {
       this.persistAddedReleaseTargets(addedReleaseTargets),
     ]);
 
+    log.info("Release target changes persisted", {
+      removedReleaseTargets: removedReleaseTargets.length,
+      addedReleaseTargets: addedReleaseTargets.length,
+    });
+
     return { removedReleaseTargets, addedReleaseTargets };
   }
 
