@@ -146,6 +146,57 @@ const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
   },
 );
 
+const getDiffFromPreviousAndNew = createSpanWrapper(
+  "getDiffFromPreviousAndNew",
+  (span, prevTargets: FullReleaseTarget[], newTargets: FullReleaseTarget[]) => {
+    const removedReleaseTargets = prevTargets.filter(
+      (existingReleaseTarget) =>
+        !newTargets.some(
+          (computedReleaseTarget) =>
+            computedReleaseTarget.resourceId ===
+              existingReleaseTarget.resourceId &&
+            computedReleaseTarget.environmentId ===
+              existingReleaseTarget.environmentId &&
+            computedReleaseTarget.deploymentId ===
+              existingReleaseTarget.deploymentId,
+        ),
+    );
+
+    const addedReleaseTargets = newTargets.filter(
+      (computedReleaseTarget) =>
+        !prevTargets.some(
+          (existingReleaseTarget) =>
+            existingReleaseTarget.resourceId ===
+              computedReleaseTarget.resourceId &&
+            existingReleaseTarget.environmentId ===
+              computedReleaseTarget.environmentId &&
+            existingReleaseTarget.deploymentId ===
+              computedReleaseTarget.deploymentId,
+        ),
+    );
+    // const makeKey = (rt: {
+    //   resourceId: string;
+    //   environmentId: string;
+    //   deploymentId: string;
+    // }) => `${rt.resourceId}|${rt.environmentId}|${rt.deploymentId}`;
+
+    // const previousKeys = new Set(prevTargets.map(makeKey));
+    // const newKeys = new Set(newTargets.map(makeKey));
+
+    // const removedReleaseTargets = prevTargets.filter(
+    //   (rt) => !newKeys.has(makeKey(rt)),
+    // );
+    // const addedReleaseTargets = newTargets.filter(
+    //   (rt) => !previousKeys.has(makeKey(rt)),
+    // );
+
+    span.setAttribute("removedReleaseTargets", removedReleaseTargets.length);
+    span.setAttribute("addedReleaseTargets", addedReleaseTargets.length);
+
+    return { removedReleaseTargets, addedReleaseTargets };
+  },
+);
+
 export class ReleaseTargetManager {
   private workspace: Workspace;
 
@@ -239,62 +290,6 @@ export class ReleaseTargetManager {
   }
 
   @Trace()
-  private getDiffFromPreviousAndNew(
-    prevTargets: FullReleaseTarget[],
-    newTargets: FullReleaseTarget[],
-  ) {
-    const removedReleaseTargets = prevTargets.filter(
-      (existingReleaseTarget) =>
-        !newTargets.some(
-          (computedReleaseTarget) =>
-            computedReleaseTarget.resourceId ===
-              existingReleaseTarget.resourceId &&
-            computedReleaseTarget.environmentId ===
-              existingReleaseTarget.environmentId &&
-            computedReleaseTarget.deploymentId ===
-              existingReleaseTarget.deploymentId,
-        ),
-    );
-
-    const addedReleaseTargets = newTargets.filter(
-      (computedReleaseTarget) =>
-        !prevTargets.some(
-          (existingReleaseTarget) =>
-            existingReleaseTarget.resourceId ===
-              computedReleaseTarget.resourceId &&
-            existingReleaseTarget.environmentId ===
-              computedReleaseTarget.environmentId &&
-            existingReleaseTarget.deploymentId ===
-              computedReleaseTarget.deploymentId,
-        ),
-    );
-    // const makeKey = (rt: {
-    //   resourceId: string;
-    //   environmentId: string;
-    //   deploymentId: string;
-    // }) => `${rt.resourceId}|${rt.environmentId}|${rt.deploymentId}`;
-
-    // const previousKeys = new Set(prevTargets.map(makeKey));
-    // const newKeys = new Set(newTargets.map(makeKey));
-
-    // const removedReleaseTargets = prevTargets.filter(
-    //   (rt) => !newKeys.has(makeKey(rt)),
-    // );
-    // const addedReleaseTargets = newTargets.filter(
-    //   (rt) => !previousKeys.has(makeKey(rt)),
-    // );
-
-    log.info("Removed release targets", {
-      removedReleaseTargets: removedReleaseTargets.length,
-    });
-    log.info("Added release targets", {
-      addedReleaseTargets: addedReleaseTargets.length,
-    });
-
-    return { removedReleaseTargets, addedReleaseTargets };
-  }
-
-  @Trace()
   async computeReleaseTargetChanges() {
     log.info("Computing release target changes");
 
@@ -309,7 +304,7 @@ export class ReleaseTargetManager {
     });
 
     const { removedReleaseTargets, addedReleaseTargets } =
-      this.getDiffFromPreviousAndNew(
+      await getDiffFromPreviousAndNew(
         existingReleaseTargets,
         computedReleaseTargets,
       );
