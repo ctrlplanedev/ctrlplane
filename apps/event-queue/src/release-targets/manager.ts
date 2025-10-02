@@ -309,10 +309,10 @@ export class ReleaseTargetManager {
       this.determineReleaseTargets(),
     ]);
 
-    testComputeViaGrpc(this.workspace).catch((error) => {
-      log.error("Error computing release targets via gRPC", { error });
-      return [];
-    });
+    // testComputeViaGrpc(this.workspace).catch((error) => {
+    //   log.error("Error computing release targets via gRPC", { error });
+    //   return [];
+    // });
 
     const { removedReleaseTargets, addedReleaseTargets } =
       await getDiffFromPreviousAndNew(
