@@ -78,21 +78,6 @@ You are ready to make changes to the code. Do not forget to refresh the browser
 
 Thats it!
 
-## 🤝 Design Partners Wanted!
-
-**We're actively seeking design partners** to collaborate on shaping the future
-of Ctrlplane. If your organization is looking to improve deployment workflows
-and would like early access to new features while providing valuable feedback,
-we'd love to hear from you!
-
-- Get priority support and feature development
-- Influence product roadmap decisions
-- Receive white-glove onboarding assistance
-- Join our exclusive design partner community
-
-**Interested?** Email us at support@ctrlplane.dev to discuss how we can work
-together.
-
 ## :heart: Community
 
 The Ctrlplane community can be found on [GitHub
