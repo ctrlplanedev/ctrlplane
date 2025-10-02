@@ -279,6 +279,7 @@ export class ReleaseTargetManager {
     );
   }
 
+  @Trace()
   private async persistRemovedReleaseTargets(
     releaseTargets: FullReleaseTarget[],
   ) {
