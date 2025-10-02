@@ -7,11 +7,12 @@ import (
 
 func New() *Store {
 	store := &Store{
-		resources:    cmap.New[*pb.Resource](),
-		deployments:  cmap.New[*pb.Deployment](),
-		environments: cmap.New[*pb.Environment](),
-		policies:     cmap.New[*pb.Policy](),
-		systems:      cmap.New[*pb.System](),
+		resources:          cmap.New[*pb.Resource](),
+		deployments:        cmap.New[*pb.Deployment](),
+		environments:       cmap.New[*pb.Environment](),
+		policies:           cmap.New[*pb.Policy](),
+		deploymentVersions: cmap.New[*pb.DeploymentVersion](),
+		systems:            cmap.New[*pb.System](),
 	}
 
 	store.Deployments = &Deployments{
@@ -25,7 +26,10 @@ func New() *Store {
 	store.Resources = &Resources{store: store}
 	store.Policies = &Policies{store: store}
 	store.ReleaseTargets = &ReleaseTargets{store: store}
-	store.DeploymentVersions = &DeploymentVersions{store: store}
+	store.DeploymentVersions = &DeploymentVersions{
+		store:              store,
+		deployableVersions: cmap.New[*pb.DeploymentVersion](),
+	}
 	store.Systems = &Systems{store: store}
 
 	return store

@@ -5,7 +5,13 @@ import (
 	"sync"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var deploymentTracer = otel.Tracer("workspace/store/deployment_versions")
 
 type DeploymentVersions struct {
 	store *Store
@@ -74,6 +80,16 @@ func (d *DeploymentVersions) SyncDeployableVersion(version *pb.DeploymentVersion
 }
 
 func (d *DeploymentVersions) SyncDeployableVersions(ctx context.Context) {
+	_, span := deploymentTracer.Start(ctx, "SyncDeployableVersions",
+		trace.WithAttributes(
+			attribute.Int("deployment_versions.count", d.store.deploymentVersions.Count()),
+			attribute.Int("deployment_versions.policy_count", d.store.policies.Count()),
+		),
+	)
+	defer span.End()
+
+
+	// Reset the deployable versions map										
 	d.deployableVersions = cmap.New[*pb.DeploymentVersion]()
 
 	var wg sync.WaitGroup

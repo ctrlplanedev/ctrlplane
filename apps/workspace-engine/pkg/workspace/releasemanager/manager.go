@@ -3,6 +3,7 @@ package releasemanager
 import (
 	"context"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/releasemanager/versionmanager"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
@@ -11,7 +12,8 @@ import (
 // Manager handles the business logic for release target changes and deployment decisions
 type Manager struct {
 	store *store.Store
-
+	versionManager *versionmanager.Manager
+	
 	// Current state of release targets (what currently exists)
 	currentTargets map[string]*pb.ReleaseTarget
 }
@@ -21,6 +23,7 @@ func New(store *store.Store) *Manager {
 	return &Manager{
 		store:          store,
 		currentTargets: make(map[string]*pb.ReleaseTarget, 1000),
+		versionManager: versionmanager.New(store),
 	}
 }
 
