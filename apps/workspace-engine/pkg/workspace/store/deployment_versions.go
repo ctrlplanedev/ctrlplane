@@ -20,27 +20,27 @@ type DeploymentVersions struct {
 }
 
 func (d *DeploymentVersions) IterBuffered() <-chan cmap.Tuple[string, *pb.DeploymentVersion] {
-	return d.store.deploymentVersions.IterBuffered()
+	return d.store.repo.DeploymentVersions.IterBuffered()
 }
 
 func (d *DeploymentVersions) Has(id string) bool {
-	return d.store.deploymentVersions.Has(id)
+	return d.store.repo.DeploymentVersions.Has(id)
 }
 
 func (d *DeploymentVersions) Items() map[string]*pb.DeploymentVersion {
-	return d.store.deploymentVersions.Items()
+	return d.store.repo.DeploymentVersions.Items()
 }
 
 func (d *DeploymentVersions) Get(id string) (*pb.DeploymentVersion, bool) {
-	return d.store.deploymentVersions.Get(id)
+	return d.store.repo.DeploymentVersions.Get(id)
 }
 
 func (d *DeploymentVersions) Upsert(id string, version *pb.DeploymentVersion) {
-	d.store.deploymentVersions.Set(id, version)
+	d.store.repo.DeploymentVersions.Set(id, version)
 }
 
 func (d *DeploymentVersions) Remove(id string) {
-	d.store.deploymentVersions.Remove(id)
+	d.store.repo.DeploymentVersions.Remove(id)
 	d.deployableVersions.Remove(id)
 }
 
@@ -82,8 +82,8 @@ func (d *DeploymentVersions) SyncDeployableVersion(version *pb.DeploymentVersion
 func (d *DeploymentVersions) SyncDeployableVersions(ctx context.Context) {
 	_, span := deploymentTracer.Start(ctx, "SyncDeployableVersions",
 		trace.WithAttributes(
-			attribute.Int("deployment_versions.count", d.store.deploymentVersions.Count()),
-			attribute.Int("deployment_versions.policy_count", d.store.policies.Count()),
+			attribute.Int("deployment_versions.count", d.store.repo.DeploymentVersions.Count()),
+			attribute.Int("deployment_versions.policy_count", d.store.repo.Policies.Count()),
 		),
 	)
 	defer span.End()
@@ -93,7 +93,7 @@ func (d *DeploymentVersions) SyncDeployableVersions(ctx context.Context) {
 	d.deployableVersions = cmap.New[*pb.DeploymentVersion]()
 
 	var wg sync.WaitGroup
-	for tuple := range d.store.deploymentVersions.IterBuffered() {
+	for tuple := range d.store.repo.DeploymentVersions.IterBuffered() {
 		version := tuple.Val
 		wg.Add(1)
 		go func(v *pb.DeploymentVersion) {

@@ -17,24 +17,24 @@ type Policies struct {
 }
 
 func (p *Policies) IterBuffered() <-chan cmap.Tuple[string, *pb.Policy] {
-	return p.store.policies.IterBuffered()
+	return p.store.repo.Policies.IterBuffered()
 }
 
 func (p *Policies) Get(id string) (*pb.Policy, bool) {
-	return p.store.policies.Get(id)
+	return p.store.repo.Policies.Get(id)
 }
 
 func (p *Policies) Has(id string) bool {
-	return p.store.policies.Has(id)
+	return p.store.repo.Policies.Has(id)
 }
 
 func (p *Policies) Upsert(ctx context.Context, policy *pb.Policy) error {
-	p.store.policies.Set(policy.Id, policy)
+	p.store.repo.Policies.Set(policy.Id, policy)
 	return nil
 }
 
 func (p *Policies) Remove(id string) {
-	p.store.policies.Remove(id)
+	p.store.repo.Policies.Remove(id)
 }
 
 func (p *Policies) AppliesToDeployment(policyId string, deploymentId string) bool {

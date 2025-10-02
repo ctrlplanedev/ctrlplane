@@ -276,8 +276,8 @@ func TestDeploymentVersions_Remove_NonExistent(t *testing.T) {
 	store.DeploymentVersions.Remove("non-existent")
 	
 	// Verify count is still 0
-	if store.deploymentVersions.Count() != 0 {
-		t.Errorf("expected 0 versions, got %d", store.deploymentVersions.Count())
+	if store.repo.DeploymentVersions.Count() != 0 {
+		t.Errorf("expected 0 versions, got %d", store.repo.DeploymentVersions.Count())
 	}
 }
 
@@ -495,7 +495,7 @@ func TestDeploymentVersions_ConcurrentUpsert(t *testing.T) {
 	wg.Wait()
 	
 	expectedCount := numGoroutines * versionsPerGoroutine
-	actualCount := store.deploymentVersions.Count()
+	actualCount := store.repo.DeploymentVersions.Count()
 	
 	if actualCount != expectedCount {
 		t.Errorf("expected %d versions after concurrent upserts, got %d", expectedCount, actualCount)
@@ -659,7 +659,7 @@ func BenchmarkDeploymentVersions_GetDeployableVersions(b *testing.B) {
 			store.DeploymentVersions.deployableVersions.Set(v.Id, v)
 		}
 	}
-	b.Logf("Created %d versions", store.deploymentVersions.Count())
+	b.Logf("Created %d versions", store.repo.DeploymentVersions.Count())
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -680,7 +680,7 @@ func BenchmarkDeploymentVersions_SyncDeployableVersions(b *testing.B) {
 			store.DeploymentVersions.Upsert(v.Id, v)
 		}
 	}
-	b.Logf("Created %d versions", store.deploymentVersions.Count())
+	b.Logf("Created %d versions", store.repo.DeploymentVersions.Count())
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -709,7 +709,7 @@ func BenchmarkDeploymentVersions_SyncDeployableVersion(b *testing.B) {
 		}
 		_ = store.Policies.Upsert(ctx, policy)
 	}
-	b.Logf("Created %d policies", store.policies.Count())
+	b.Logf("Created %d policies", store.repo.Policies.Count())
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -761,7 +761,7 @@ func BenchmarkDeploymentVersions_LargeScale_SyncWithPolicies(b *testing.B) {
 		}
 		_ = store.Policies.Upsert(ctx, policy)
 	}
-	b.Logf("Created %d total policies", store.policies.Count())
+	b.Logf("Created %d total policies", store.repo.Policies.Count())
 	
 	// Add 100,000 deployment versions
 	b.Logf("Creating 100,000 deployment versions...")
@@ -771,7 +771,7 @@ func BenchmarkDeploymentVersions_LargeScale_SyncWithPolicies(b *testing.B) {
 			store.DeploymentVersions.Upsert(v.Id, v)
 		}
 	}
-	b.Logf("Created %d total versions", store.deploymentVersions.Count())
+	b.Logf("Created %d total versions", store.repo.DeploymentVersions.Count())
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -796,7 +796,7 @@ func BenchmarkDeploymentVersions_LargeScale_1MVersionsNoPolicies(b *testing.B) {
 			b.Logf("Created %d versions...", (i+1)*1000)
 		}
 	}
-	b.Logf("Created %d total versions", store.deploymentVersions.Count())
+	b.Logf("Created %d total versions", store.repo.DeploymentVersions.Count())
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -829,7 +829,7 @@ func BenchmarkDeploymentVersions_LargeScale_SyncSingleVersion(b *testing.B) {
 			b.Logf("Created %d policies...", i+1)
 		}
 	}
-	b.Logf("Created %d total policies", store.policies.Count())
+	b.Logf("Created %d total policies", store.repo.Policies.Count())
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

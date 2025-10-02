@@ -13,7 +13,7 @@ type Resources struct {
 }
 
 func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Resource, error) {
-	r.store.resources.Set(resource.Id, resource)
+	r.store.repo.Resources.Set(resource.Id, resource)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -32,7 +32,7 @@ func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Reso
 
 func (r *Resources) recomputeAllEnvironments(ctx context.Context) {
 	// Iterate through all environments and recompute their resource selectors
-	for item := range r.store.environments.IterBuffered() {
+	for item := range r.store.repo.Environments.IterBuffered() {
 		env := item.Val
 		// Fire and forget - errors are logged but don't block
 		if err := r.store.Environments.RecomputeResources(ctx, env.Id); err != nil {
@@ -42,7 +42,7 @@ func (r *Resources) recomputeAllEnvironments(ctx context.Context) {
 }
 
 func (r *Resources) recomputeAllDeployments(ctx context.Context) {
-	for item := range r.store.deployments.IterBuffered() {
+	for item := range r.store.repo.Deployments.IterBuffered() {
 		env := item.Val
 		if err := r.store.Deployments.RecomputeResources(ctx, env.Id); err != nil {
 			log.Error("error recomputing deployment resource selectors", "error", err.Error())
@@ -51,5 +51,5 @@ func (r *Resources) recomputeAllDeployments(ctx context.Context) {
 }
 
 func (r *Resources) Remove(id string) {
-	r.store.resources.Remove(id)
+	r.store.repo.Resources.Remove(id)
 }

@@ -10,14 +10,14 @@ type Systems struct {
 }
 
 func (s *Systems) Upsert(ctx context.Context, system *pb.System) (*pb.System, error) {
-	s.store.systems.Set(system.Id, system)
+	s.store.repo.Systems.Set(system.Id, system)
 	return system, nil
 }
 
 func (s *Systems) Get(id string) (*pb.System, bool) {
-	return s.store.systems.Get(id)
+	return s.store.repo.Systems.Get(id)
 }
 
 func (s *Systems) Has(id string) bool {
-	return s.store.systems.Has(id)
+	return s.store.repo.Systems.Has(id)
 }

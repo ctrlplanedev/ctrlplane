@@ -3,16 +3,12 @@ package store
 import (
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 func New() *Store {
 	store := &Store{
-		resources:          cmap.New[*pb.Resource](),
-		deployments:        cmap.New[*pb.Deployment](),
-		environments:       cmap.New[*pb.Environment](),
-		policies:           cmap.New[*pb.Policy](),
-		deploymentVersions: cmap.New[*pb.DeploymentVersion](),
-		systems:            cmap.New[*pb.System](),
+		repo: repository.New(),
 	}
 
 	store.Deployments = &Deployments{
@@ -36,12 +32,7 @@ func New() *Store {
 }
 
 type Store struct {
-	resources          cmap.ConcurrentMap[string, *pb.Resource]
-	deployments        cmap.ConcurrentMap[string, *pb.Deployment]
-	environments       cmap.ConcurrentMap[string, *pb.Environment]
-	policies           cmap.ConcurrentMap[string, *pb.Policy]
-	deploymentVersions cmap.ConcurrentMap[string, *pb.DeploymentVersion]
-	systems            cmap.ConcurrentMap[string, *pb.System]
+	repo *repository.Repository
 
 	Policies           *Policies
 	Resources          *Resources

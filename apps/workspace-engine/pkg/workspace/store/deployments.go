@@ -16,15 +16,15 @@ type Deployments struct {
 }
 
 func (e *Deployments) IterBuffered() <-chan cmap.Tuple[string, *pb.Deployment] {
-	return e.store.deployments.IterBuffered()
+	return e.store.repo.Deployments.IterBuffered()
 }
 
 func (e *Deployments) Get(id string) (*pb.Deployment, bool) {
-	return e.store.deployments.Get(id)
+	return e.store.repo.Deployments.Get(id)
 }
 
 func (e *Deployments) Has(id string) bool {
-	return e.store.deployments.Has(id)
+	return e.store.repo.Deployments.Has(id)
 }
 
 func (e *Deployments) HasResources(deploymentId string, resourceId string) bool {
@@ -41,7 +41,7 @@ func (e *Deployments) Resources(id string) map[string]*pb.Resource {
 }
 
 func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId string) error {
-	deployment, exists := e.store.deployments.Get(deploymentId)
+	deployment, exists := e.store.repo.Deployments.Get(deploymentId)
 	if !exists {
 		return fmt.Errorf("deployment %s not found", deploymentId)
 	}
@@ -61,8 +61,8 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) err
 		}
 	}
 
-	deploymentResources := make(map[string]*pb.Resource, e.store.resources.Count())
-	for item := range e.store.resources.IterBuffered() {
+	deploymentResources := make(map[string]*pb.Resource, e.store.repo.Resources.Count())
+	for item := range e.store.repo.Resources.IterBuffered() {
 		if condition == nil {
 			deploymentResources[item.Key] = item.Val
 			continue
@@ -76,13 +76,13 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) err
 		}
 	}
 
-	e.store.deployments.Set(deployment.Id, deployment)
+	e.store.repo.Deployments.Set(deployment.Id, deployment)
 	e.resources.Set(deployment.Id, deploymentResources)
 
 	return nil
 }
 
 func (e *Deployments) Remove(id string) {
-	e.store.deployments.Remove(id)
+	e.store.repo.Deployments.Remove(id)
 	e.resources.Remove(id)
 }

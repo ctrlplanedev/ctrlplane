@@ -441,7 +441,7 @@ func TestUpsert_UpdateExisting(t *testing.T) {
 	}
 
 	// Verify the deployment was updated in the workspace
-	storedDeployment, exists := ws.deployments.Get(deployment.Id)
+	storedDeployment, exists := ws.repo.Deployments.Get(deployment.Id)
 	if !exists {
 		t.Fatal("deployment not found after update")
 	}
@@ -496,7 +496,7 @@ func TestRemove(t *testing.T) {
 	}
 
 	// Verify deployment exists
-	_, exists := ws.deployments.Get(deployment.Id)
+	_, exists := ws.repo.Deployments.Get(deployment.Id)
 	if !exists {
 		t.Fatal("deployment should exist before removal")
 	}
@@ -510,7 +510,7 @@ func TestRemove(t *testing.T) {
 	ws.Deployments.Remove(deployment.Id)
 
 	// Verify deployment is removed
-	_, exists = ws.deployments.Get(deployment.Id)
+	_, exists = ws.repo.Deployments.Get(deployment.Id)
 	if exists {
 		t.Error("deployment should not exist after removal")
 	}
@@ -522,8 +522,8 @@ func TestRemove(t *testing.T) {
 	}
 
 	// Verify workspace resources still exist
-	if ws.resources.Count() != 2 {
-		t.Errorf("workspace resources should still exist, got %d resources", ws.resources.Count())
+	if ws.repo.Resources.Count() != 2 {
+		t.Errorf("workspace resources should still exist, got %d resources", ws.repo.Resources.Count())
 	}
 }
 
@@ -535,8 +535,8 @@ func TestRemove_NonExistent(t *testing.T) {
 	ws.Deployments.Remove("non-existent")
 
 	// Verify count is still 0
-	if ws.deployments.Count() != 0 {
-		t.Errorf("expected 0 deployments, got %d", ws.deployments.Count())
+	if ws.repo.Deployments.Count() != 0 {
+		t.Errorf("expected 0 deployments, got %d", ws.repo.Deployments.Count())
 	}
 }
 
@@ -578,8 +578,8 @@ func TestConcurrentUpsert(t *testing.T) {
 	}
 
 	// Verify all deployments were created
-	if ws.deployments.Count() != 5 {
-		t.Errorf("expected 5 deployments, got %d", ws.deployments.Count())
+	if ws.repo.Deployments.Count() != 5 {
+		t.Errorf("expected 5 deployments, got %d", ws.repo.Deployments.Count())
 	}
 }
 
