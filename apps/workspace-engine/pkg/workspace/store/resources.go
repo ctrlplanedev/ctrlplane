@@ -1,4 +1,4 @@
-package workspace
+package store
 
 import (
 	"context"
@@ -9,11 +9,11 @@ import (
 )
 
 type Resources struct {
-	ws *Workspace
+	store *Store
 }
 
 func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Resource, error) {
-	r.ws.resources.Set(resource.Id, resource)
+	r.store.resources.Set(resource.Id, resource)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -32,24 +32,24 @@ func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Reso
 
 func (r *Resources) recomputeAllEnvironments(ctx context.Context) {
 	// Iterate through all environments and recompute their resource selectors
-	for item := range r.ws.environments.IterBuffered() {
+	for item := range r.store.environments.IterBuffered() {
 		env := item.Val
 		// Fire and forget - errors are logged but don't block
-		if err := r.ws.Environments.RecomputeResources(ctx, env.Id); err != nil {
+		if err := r.store.Environments.RecomputeResources(ctx, env.Id); err != nil {
 			log.Error("error recomputing environment resource selectors", "error", err.Error())
 		}
 	}
 }
 
 func (r *Resources) recomputeAllDeployments(ctx context.Context) {
-	for item := range r.ws.deployments.IterBuffered() {
+	for item := range r.store.deployments.IterBuffered() {
 		env := item.Val
-		if err := r.ws.Deployments.RecomputeResources(ctx, env.Id); err != nil {
+		if err := r.store.Deployments.RecomputeResources(ctx, env.Id); err != nil {
 			log.Error("error recomputing deployment resource selectors", "error", err.Error())
 		}
 	}
 }
 
 func (r *Resources) Remove(id string) {
-	r.ws.resources.Remove(id)
+	r.store.resources.Remove(id)
 }

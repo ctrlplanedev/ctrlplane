@@ -407,12 +407,6 @@ func TestGenerate_WithEnvironmentSelectors(t *testing.T) {
 		if target.DeploymentId == "" {
 			t.Error("target DeploymentId is empty")
 		}
-		if target.Environment == nil {
-			t.Error("target Environment is nil")
-		}
-		if target.Deployment == nil {
-			t.Error("target Deployment is nil")
-		}
 	}
 }
 

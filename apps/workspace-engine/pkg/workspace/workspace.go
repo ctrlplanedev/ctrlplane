@@ -4,46 +4,45 @@ import (
 	"context"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/releasemanager"
+	"workspace-engine/pkg/workspace/store"
 )
 
-type ReleaseTargets struct {
-	ws *Workspace
-}
-
 func New() *Workspace {
+	s := store.New()
+	rm := releasemanager.New(s)
 	ws := &Workspace{
-		resources:    cmap.New[*pb.Resource](),
-		deployments:  cmap.New[*pb.Deployment](),
-		environments: cmap.New[*pb.Environment](),
+		store:          s,
+		releasemanager: rm,
 	}
-
-	ws.Resources = &Resources{ws: ws}
-	ws.Deployments = &Deployments{
-		ws:        ws,
-		resources: cmap.New[map[string]*pb.Resource](),
-	}
-	ws.Environments = &Environments{
-		ws:        ws,
-		resources: cmap.New[map[string]*pb.Resource](),
-	}
-	ws.ReleaseTargets = &ReleaseTargets{
-		ws: ws,
-	}
-
 	return ws
 }
 
 type Workspace struct {
 	ID string
 
-	resources    cmap.ConcurrentMap[string, *pb.Resource]
-	deployments  cmap.ConcurrentMap[string, *pb.Deployment]
-	environments cmap.ConcurrentMap[string, *pb.Environment]
+	store          *store.Store
+	releasemanager *releasemanager.Manager
+}
 
-	Environments   *Environments
-	Resources      *Resources
-	Deployments    *Deployments
-	ReleaseTargets *ReleaseTargets
+func (w *Workspace) DeploymentVersions() *store.DeploymentVersions {
+	return w.store.DeploymentVersions
+}
+
+func (w *Workspace) Environments() *store.Environments {
+	return w.store.Environments
+}
+
+func (w *Workspace) Deployments() *store.Deployments {
+	return w.store.Deployments
+}
+
+func (w *Workspace) Resources() *store.Resources {
+	return w.store.Resources
+}
+
+func (w *Workspace) ReleaseTargets() *store.ReleaseTargets {
+	return w.store.ReleaseTargets
 }
 
 func (w *Workspace) GetDeploymentAndEnvironmentReleaseTargets(
@@ -51,19 +50,16 @@ func (w *Workspace) GetDeploymentAndEnvironmentReleaseTargets(
 	deployment *pb.Deployment,
 	environment *pb.Environment,
 ) ([]*pb.ReleaseTarget, error) {
-	environmentResources := w.Environments.Resources(environment.Id)
+	environmentResources := w.Environments().Resources(environment.Id)
 
 	releaseTargets := make([]*pb.ReleaseTarget, len(environmentResources))
 	for _, resource := range environmentResources {
-		isInDeployment := w.Deployments.HasResources(deployment.Id, resource.Id)
-		if isInDeployment && w.resources.Has(resource.Id){
+		isInDeployment := w.Deployments().HasResources(deployment.Id, resource.Id)
+		if isInDeployment {
 			releaseTargets = append(releaseTargets, &pb.ReleaseTarget{
 				DeploymentId:  deployment.Id,
 				EnvironmentId: environment.Id,
 				ResourceId:    resource.Id,
-
-				Environment: environment,
-				Deployment:  deployment,
 			})
 		}
 	}
@@ -71,6 +67,4 @@ func (w *Workspace) GetDeploymentAndEnvironmentReleaseTargets(
 	return releaseTargets, nil
 }
 
-type Workspaces struct {
-	cmap.ConcurrentMap[string, *Workspace]
-}
+var Workspaces = cmap.New[*Workspace]()

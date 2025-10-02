@@ -204,8 +204,6 @@ func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
 							ResourceId:    resource.Id,
 							EnvironmentId: env.Id,
 							DeploymentId:  dep.Id,
-							Environment:   env,
-							Deployment:    dep,
 						})
 					}
 					continue
@@ -229,8 +227,6 @@ func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
 						ResourceId:    resource.Id,
 						EnvironmentId: env.Id,
 						DeploymentId:  dep.Id,
-						Environment:   env,
-						Deployment:    dep,
 					})
 				}
 			}

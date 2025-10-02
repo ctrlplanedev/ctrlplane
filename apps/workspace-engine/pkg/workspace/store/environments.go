@@ -1,4 +1,4 @@
-package workspace
+package store
 
 import (
 	"context"
@@ -10,9 +10,21 @@ import (
 )
 
 type Environments struct {
-	ws *Workspace
+	store *Store
 
 	resources cmap.ConcurrentMap[string, map[string]*pb.Resource]
+}
+
+func (e *Environments) IterBuffered() <-chan cmap.Tuple[string, *pb.Environment] {
+	return e.store.environments.IterBuffered()
+}
+
+func (e *Environments) Get(id string) (*pb.Environment, bool) {
+	return e.store.environments.Get(id)
+}
+
+func (e *Environments) Has(id string) bool {
+	return e.store.environments.Has(id)
 }
 
 func (e *Environments) HasResources(envId string, resourceId string) bool {
@@ -29,7 +41,7 @@ func (e *Environments) Resources(id string) map[string]*pb.Resource {
 }
 
 func (e *Environments) RecomputeResources(ctx context.Context, environmentId string) error {
-	env, exists := e.ws.environments.Get(environmentId)
+	env, exists := e.store.environments.Get(environmentId)
 	if !exists {
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
@@ -50,8 +62,8 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 		}
 	}
 
-	environmentResources := make(map[string]*pb.Resource, e.ws.resources.Count())
-	for item := range e.ws.resources.IterBuffered() {
+	environmentResources := make(map[string]*pb.Resource, e.store.resources.Count())
+	for item := range e.store.resources.IterBuffered() {
 		if condition == nil {
 			environmentResources[item.Key] = item.Val
 			continue
@@ -66,7 +78,7 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 	}
 
 	// Step 3: NOW lock and atomically update both
-	envShard := e.ws.environments.GetShard(environment.Id)
+	envShard := e.store.environments.GetShard(environment.Id)
 	envShard.Lock()
 	defer envShard.Unlock()
 	envShard.Items[environment.Id] = environment
@@ -80,6 +92,6 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 }
 
 func (e *Environments) Remove(id string) {
-	e.ws.environments.Remove(id)
+	e.store.environments.Remove(id)
 	e.resources.Remove(id)
 }

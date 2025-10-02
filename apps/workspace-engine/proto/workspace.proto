@@ -6,6 +6,22 @@ import "google/protobuf/struct.proto";
 
 option go_package = "workspace-engine/pkg/pb";
 
+message Policy {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string created_at = 4;
+
+  repeated PolicyTargetSelector selectors = 5;
+}
+
+message PolicyTargetSelector {
+  string id = 1;
+  optional google.protobuf.Struct deployment_selector = 3;
+  optional google.protobuf.Struct environment_selector = 4;
+  optional google.protobuf.Struct resource_selector = 5;
+}
+
 message Resource {
   string id = 1;
   string name = 2;
@@ -55,9 +71,33 @@ message ReleaseTarget {
   string environment_id = 3;
   string deployment_id = 4;
   string created_at = 5;
+}
 
-  Environment environment = 6;
-  Deployment deployment = 7;
+enum DeploymentVersionStatus {
+  DEPLOYMENT_VERSION_STATUS_UNSPECIFIED = 0;
+  DEPLOYMENT_VERSION_STATUS_BUILDING = 1;
+  DEPLOYMENT_VERSION_STATUS_READY = 2;
+  DEPLOYMENT_VERSION_STATUS_FAILED = 3;
+  DEPLOYMENT_VERSION_STATUS_REJECTED = 4;
+}
+
+message DeploymentVersion {
+  string id = 1;
+  string name = 2;
+  string tag = 3;
+  google.protobuf.Struct config = 4;
+  google.protobuf.Struct job_agent_config = 5;
+  string deployment_id = 6;
+  DeploymentVersionStatus status = 7;
+  optional string message = 8;
+  string created_at = 9;
+}
+
+message System {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string created_at = 4;
 }
 
 message ComputeReleaseTargetsRequest {
@@ -70,6 +110,32 @@ message ComputeReleaseTargetsResponse {
   repeated ReleaseTarget release_targets = 1;
 }
 
+message ListReleaseTargetsRequest {
+  string workspace_id = 1;
+  optional google.protobuf.Struct resource_selector = 2;
+  optional google.protobuf.Struct deployment_selector = 3;
+  optional google.protobuf.Struct environment_selector = 4;
+}
+
+message ListReleaseTargetsResponse {
+  repeated ReleaseTarget release_targets = 1;
+}
+
 service ReleaseTargetService {
   rpc Compute(ComputeReleaseTargetsRequest) returns (ComputeReleaseTargetsResponse);
+
+  rpc All(ListReleaseTargetsRequest) returns (ListReleaseTargetsResponse);
+}
+
+message ListDeploymentsRequest {
+  string workspace_id = 1;
+  optional google.protobuf.Struct deployment_selector = 2;
+}
+
+message ListDeploymentsResponse {
+  repeated Deployment deployments = 1;
+}
+
+service DeploymentService {
+  rpc All(ListDeploymentsRequest) returns (ListDeploymentsResponse);
 }
