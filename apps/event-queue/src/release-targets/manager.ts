@@ -1,11 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { FullReleaseTarget, FullResource } from "@ctrlplane/events";
 import _ from "lodash";
-import {
-  toDeployment,
-  toEnvironment,
-  toResource,
-} from "src/workspace-engine/to.js";
 import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
@@ -13,6 +8,11 @@ import { logger } from "@ctrlplane/logger";
 import type { Workspace } from "../workspace/workspace.js";
 import { createSpanWrapper, Trace } from "../traces.js";
 import { client } from "../workspace-engine/client.js";
+import {
+  toDeployment,
+  toEnvironment,
+  toResource,
+} from "../workspace-engine/to.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
