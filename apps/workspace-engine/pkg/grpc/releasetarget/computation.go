@@ -305,50 +305,30 @@ func NewResourceIDSet(resources []*pb.Resource) ResourceIDSet {
 // getResourcesForEnvironment returns resources for an environment based on its selector
 // If environment has no selector, returns empty list
 func getResourcesForEnvironment(ctx context.Context, env *pb.Environment, allResources []*pb.Resource) ([]*pb.Resource, error) {
-	_, span := tracer.Start(ctx, "getResourcesForEnvironment",
-		trace.WithAttributes(
-			attribute.String("environment.id", env.Id),
-			attribute.Bool("has_selector", env.ResourceSelector != nil),
-		))
-	defer span.End()
-
 	if env.ResourceSelector == nil {
-		span.SetAttributes(attribute.Int("resources.filtered", 0))
 		return []*pb.Resource{}, nil
 	}
 
 	resources, err := filterResourcesBySelector(ctx, env.ResourceSelector.AsMap(), allResources)
 	if err != nil {
-		span.RecordError(err)
 		return nil, err
 	}
 
-	span.SetAttributes(attribute.Int("resources.filtered", len(resources)))
 	return resources, nil
 }
 
 // getResourcesForDeployment returns resources for a deployment based on its selector
 // If deployment has no selector, returns all resources
 func getResourcesForDeployment(ctx context.Context, dep *pb.Deployment, allResources []*pb.Resource) ([]*pb.Resource, error) {
-	_, span := tracer.Start(ctx, "getResourcesForDeployment",
-		trace.WithAttributes(
-			attribute.String("deployment.id", dep.Id),
-			attribute.Bool("has_selector", dep.ResourceSelector != nil),
-		))
-	defer span.End()
-
 	if dep.ResourceSelector == nil {
-		span.SetAttributes(attribute.Int("resources.filtered", len(allResources)))
 		return allResources, nil
 	}
 
 	resources, err := filterResourcesBySelector(ctx, dep.ResourceSelector.AsMap(), allResources)
 	if err != nil {
-		span.RecordError(err)
 		return nil, err
 	}
 
-	span.SetAttributes(attribute.Int("resources.filtered", len(resources)))
 	return resources, nil
 }
 
