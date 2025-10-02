@@ -22,6 +22,22 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
+// stripScheme removes http:// or https:// prefix from a URL
+func stripScheme(endpoint string) string {
+	if len(endpoint) == 0 {
+		return endpoint
+	}
+	// Remove http:// prefix
+	if len(endpoint) > 7 && endpoint[:7] == "http://" {
+		return endpoint[7:]
+	}
+	// Remove https:// prefix
+	if len(endpoint) > 8 && endpoint[:8] == "https://" {
+		return endpoint[8:]
+	}
+	return endpoint
+}
+
 // initTracer initializes an OTLP exporter and registers it as a global tracer provider
 func initTracer() (func(), error) {
 	ctx := context.Background()
@@ -35,6 +51,9 @@ func initTracer() (func(), error) {
 	// Get OTLP endpoint from environment variable
 	// If not set, the exporter will use the default: http://localhost:4318
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	
+	// Strip http:// or https:// prefix if present, as WithEndpoint() expects just host:port
+	endpoint = stripScheme(endpoint)
 	
 	// Create resource with service name
 	res, err := resource.New(ctx,
