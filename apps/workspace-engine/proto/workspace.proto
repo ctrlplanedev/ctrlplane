@@ -73,10 +73,23 @@ message ReleaseTarget {
   string created_at = 5;
 }
 
+message VariableValue {
+  oneof value {
+    double number_value = 1;
+    string string_value = 2;
+    bool bool_value = 3;
+    google.protobuf.Struct object_value = 4;
+    google.protobuf.NullValue null_value = 5;
+  }
+}
+
 message ReleaseTargetDeploy {
   ReleaseTarget release_target = 1;
   DeploymentVersion deployment_version = 2;
-  map<string, google.protobuf.Struct> variables = 3;
+  // Map of variable name to value, which can be number, string, or boolean.
+  map<string, VariableValue> variables = 3;
+
+
   string created_at = 4;
 }
 
@@ -105,36 +118,20 @@ message DeploymentVariableValue {
   string id = 1;
   string deployment_variable_id = 3;
 
-  oneof default_value {
-    double number_value = 4;
-    string string_value = 5;
-    bool bool_value = 6;
-    google.protobuf.Struct object_value = 7;
-    google.protobuf.NullValue null_value = 8;
-  }
+  VariableValue default_value = 4;
 
   oneof value {
-    DirectDeploymentVariableValue    direct_value = 9;
-    ReferenceDeploymentVariableValue reference_value = 10;
-    SensitiveDeploymentVariableValue sensitive_value = 11;
+    VariableValue          direct_value = 5;
+    ReferenceVariableValue reference_value = 6;
+    SensitiveVariableValue sensitive_value = 7;
   }
 }
 
-message SensitiveDeploymentVariableValue {
+message SensitiveVariableValue {
   string value_hash = 1;
 }
 
-message DirectDeploymentVariableValue {
-  oneof value {
-    double number_value = 1;
-    string string_value = 2;
-    bool bool_value = 3;
-    google.protobuf.Struct object_value = 4;
-    google.protobuf.NullValue null_value = 5;
-  }
-}
-
-message ReferenceDeploymentVariableValue {
+message ReferenceVariableValue {
   optional google.protobuf.Struct reference = 1;
   repeated string path = 2;
 }

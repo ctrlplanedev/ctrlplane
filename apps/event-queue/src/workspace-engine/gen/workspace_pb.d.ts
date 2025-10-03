@@ -295,6 +295,52 @@ export declare type ReleaseTarget = Message<"workspace.ReleaseTarget"> & {
 export declare const ReleaseTargetSchema: GenMessage<ReleaseTarget>;
 
 /**
+ * @generated from message workspace.VariableValue
+ */
+export declare type VariableValue = Message<"workspace.VariableValue"> & {
+  /**
+   * @generated from oneof workspace.VariableValue.value
+   */
+  value: {
+    /**
+     * @generated from field: double number_value = 1;
+     */
+    value: number;
+    case: "numberValue";
+  } | {
+    /**
+     * @generated from field: string string_value = 2;
+     */
+    value: string;
+    case: "stringValue";
+  } | {
+    /**
+     * @generated from field: bool bool_value = 3;
+     */
+    value: boolean;
+    case: "boolValue";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct object_value = 4;
+     */
+    value: JsonObject;
+    case: "objectValue";
+  } | {
+    /**
+     * @generated from field: google.protobuf.NullValue null_value = 5;
+     */
+    value: NullValue;
+    case: "nullValue";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message workspace.VariableValue.
+ * Use `create(VariableValueSchema)` to create a new message.
+ */
+export declare const VariableValueSchema: GenMessage<VariableValue>;
+
+/**
  * @generated from message workspace.ReleaseTargetDeploy
  */
 export declare type ReleaseTargetDeploy = Message<"workspace.ReleaseTargetDeploy"> & {
@@ -309,9 +355,11 @@ export declare type ReleaseTargetDeploy = Message<"workspace.ReleaseTargetDeploy
   deploymentVersion?: DeploymentVersion;
 
   /**
-   * @generated from field: map<string, google.protobuf.Struct> variables = 3;
+   * Map of variable name to value, which can be number, string, or boolean.
+   *
+   * @generated from field: map<string, workspace.VariableValue> variables = 3;
    */
-  variables: { [key: string]: JsonObject };
+  variables: { [key: string]: VariableValue };
 
   /**
    * @generated from field: string created_at = 4;
@@ -381,60 +429,30 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
   deploymentVariableId: string;
 
   /**
-   * @generated from oneof workspace.DeploymentVariableValue.default_value
+   * @generated from field: workspace.VariableValue default_value = 4;
    */
-  defaultValue: {
-    /**
-     * @generated from field: double number_value = 4;
-     */
-    value: number;
-    case: "numberValue";
-  } | {
-    /**
-     * @generated from field: string string_value = 5;
-     */
-    value: string;
-    case: "stringValue";
-  } | {
-    /**
-     * @generated from field: bool bool_value = 6;
-     */
-    value: boolean;
-    case: "boolValue";
-  } | {
-    /**
-     * @generated from field: google.protobuf.Struct object_value = 7;
-     */
-    value: JsonObject;
-    case: "objectValue";
-  } | {
-    /**
-     * @generated from field: google.protobuf.NullValue null_value = 8;
-     */
-    value: NullValue;
-    case: "nullValue";
-  } | { case: undefined; value?: undefined };
+  defaultValue?: VariableValue;
 
   /**
    * @generated from oneof workspace.DeploymentVariableValue.value
    */
   value: {
     /**
-     * @generated from field: workspace.DirectDeploymentVariableValue direct_value = 9;
+     * @generated from field: workspace.VariableValue direct_value = 5;
      */
-    value: DirectDeploymentVariableValue;
+    value: VariableValue;
     case: "directValue";
   } | {
     /**
-     * @generated from field: workspace.ReferenceDeploymentVariableValue reference_value = 10;
+     * @generated from field: workspace.ReferenceVariableValue reference_value = 6;
      */
-    value: ReferenceDeploymentVariableValue;
+    value: ReferenceVariableValue;
     case: "referenceValue";
   } | {
     /**
-     * @generated from field: workspace.SensitiveDeploymentVariableValue sensitive_value = 11;
+     * @generated from field: workspace.SensitiveVariableValue sensitive_value = 7;
      */
-    value: SensitiveDeploymentVariableValue;
+    value: SensitiveVariableValue;
     case: "sensitiveValue";
   } | { case: undefined; value?: undefined };
 };
@@ -446,9 +464,9 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
 export declare const DeploymentVariableValueSchema: GenMessage<DeploymentVariableValue>;
 
 /**
- * @generated from message workspace.SensitiveDeploymentVariableValue
+ * @generated from message workspace.SensitiveVariableValue
  */
-export declare type SensitiveDeploymentVariableValue = Message<"workspace.SensitiveDeploymentVariableValue"> & {
+export declare type SensitiveVariableValue = Message<"workspace.SensitiveVariableValue"> & {
   /**
    * @generated from field: string value_hash = 1;
    */
@@ -456,61 +474,15 @@ export declare type SensitiveDeploymentVariableValue = Message<"workspace.Sensit
 };
 
 /**
- * Describes the message workspace.SensitiveDeploymentVariableValue.
- * Use `create(SensitiveDeploymentVariableValueSchema)` to create a new message.
+ * Describes the message workspace.SensitiveVariableValue.
+ * Use `create(SensitiveVariableValueSchema)` to create a new message.
  */
-export declare const SensitiveDeploymentVariableValueSchema: GenMessage<SensitiveDeploymentVariableValue>;
+export declare const SensitiveVariableValueSchema: GenMessage<SensitiveVariableValue>;
 
 /**
- * @generated from message workspace.DirectDeploymentVariableValue
+ * @generated from message workspace.ReferenceVariableValue
  */
-export declare type DirectDeploymentVariableValue = Message<"workspace.DirectDeploymentVariableValue"> & {
-  /**
-   * @generated from oneof workspace.DirectDeploymentVariableValue.value
-   */
-  value: {
-    /**
-     * @generated from field: double number_value = 1;
-     */
-    value: number;
-    case: "numberValue";
-  } | {
-    /**
-     * @generated from field: string string_value = 2;
-     */
-    value: string;
-    case: "stringValue";
-  } | {
-    /**
-     * @generated from field: bool bool_value = 3;
-     */
-    value: boolean;
-    case: "boolValue";
-  } | {
-    /**
-     * @generated from field: google.protobuf.Struct object_value = 4;
-     */
-    value: JsonObject;
-    case: "objectValue";
-  } | {
-    /**
-     * @generated from field: google.protobuf.NullValue null_value = 5;
-     */
-    value: NullValue;
-    case: "nullValue";
-  } | { case: undefined; value?: undefined };
-};
-
-/**
- * Describes the message workspace.DirectDeploymentVariableValue.
- * Use `create(DirectDeploymentVariableValueSchema)` to create a new message.
- */
-export declare const DirectDeploymentVariableValueSchema: GenMessage<DirectDeploymentVariableValue>;
-
-/**
- * @generated from message workspace.ReferenceDeploymentVariableValue
- */
-export declare type ReferenceDeploymentVariableValue = Message<"workspace.ReferenceDeploymentVariableValue"> & {
+export declare type ReferenceVariableValue = Message<"workspace.ReferenceVariableValue"> & {
   /**
    * @generated from field: optional google.protobuf.Struct reference = 1;
    */
@@ -523,10 +495,10 @@ export declare type ReferenceDeploymentVariableValue = Message<"workspace.Refere
 };
 
 /**
- * Describes the message workspace.ReferenceDeploymentVariableValue.
- * Use `create(ReferenceDeploymentVariableValueSchema)` to create a new message.
+ * Describes the message workspace.ReferenceVariableValue.
+ * Use `create(ReferenceVariableValueSchema)` to create a new message.
  */
-export declare const ReferenceDeploymentVariableValueSchema: GenMessage<ReferenceDeploymentVariableValue>;
+export declare const ReferenceVariableValueSchema: GenMessage<ReferenceVariableValue>;
 
 /**
  * @generated from message workspace.DeploymentVersion
