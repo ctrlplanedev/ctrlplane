@@ -3,14 +3,29 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/store/materialized"
 )
+
+func NewReleaseTargets(store *Store) *ReleaseTargets {
+	rt := &ReleaseTargets{}
+	rt.store = store
+	rt.targets = materialized.New(rt.computeTargets)
+	return rt
+}
 
 type ReleaseTargets struct {
 	store *Store
+
+	targets *materialized.MaterializedView[map[string]*pb.ReleaseTarget]
 }
 
 // CurrentState returns the current state of all release targets in the system.
 func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget {
+	r.targets.WaitRecompute()
+	return r.targets.Get()
+}
+
+func (r *ReleaseTargets) computeTargets() (map[string]*pb.ReleaseTarget, error) {
 	releaseTargets := make(map[string]*pb.ReleaseTarget, 1000)
 
 	environments := r.store.Environments
@@ -40,5 +55,5 @@ func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget
 		}
 	}
 
-	return releaseTargets
+	return releaseTargets, nil
 }

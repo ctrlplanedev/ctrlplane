@@ -107,7 +107,7 @@ func TestConcurrentReadWrite(t *testing.T) {
 // TestRecomputeError tests error handling in recompute function
 func TestRecomputeError(t *testing.T) {
 	var shouldError int32 = 1
-	
+
 	rf := func() (int, error) {
 		if atomic.LoadInt32(&shouldError) == 1 {
 			return 0, errors.New("computation failed")
@@ -185,7 +185,7 @@ func TestStartAlreadyStarted(t *testing.T) {
 	started := make(chan struct{})
 	block := make(chan struct{})
 	var callCount int32
-	
+
 	rf := func() (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		// Only close started on first call
@@ -213,19 +213,19 @@ func TestStartAlreadyStarted(t *testing.T) {
 
 	// Release the blocked computation (will unblock both the first run and the pending rerun)
 	close(block)
-	
+
 	// Wait for all computations to complete (including the pending rerun)
 	err = mv.WaitRecompute()
 	if err != nil {
 		t.Errorf("WaitRecompute failed: %v", err)
 	}
-	
+
 	// Should have run twice: original + rerun from pending
 	count := atomic.LoadInt32(&callCount)
 	if count != 2 {
 		t.Errorf("expected 2 calls (original + pending rerun), got %d", count)
 	}
-	
+
 	// Final value should be from second call
 	val := mv.Get()
 	if val != 20 {
@@ -239,7 +239,7 @@ func TestRunWhileInProgress(t *testing.T) {
 	started := make(chan struct{})
 	block := make(chan struct{})
 	var callCount int32
-	
+
 	rf := func() (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		// Only signal started on first call
@@ -291,7 +291,7 @@ func TestRunWhileInProgress(t *testing.T) {
 func TestCoalescingRerun(t *testing.T) {
 	var mu sync.Mutex
 	callTimes := []time.Time{}
-	
+
 	rf := func() (int, error) {
 		mu.Lock()
 		callTimes = append(callTimes, time.Now())
@@ -304,26 +304,26 @@ func TestCoalescingRerun(t *testing.T) {
 
 	// Start first computation
 	mv.StartRecompute()
-	
+
 	// While it's running, trigger multiple times
 	time.Sleep(20 * time.Millisecond) // ensure first has started
 	for i := 0; i < 5; i++ {
 		mv.StartRecompute() // These should all set pending=true
 		time.Sleep(10 * time.Millisecond)
 	}
-	
+
 	// Wait for processing to complete
 	time.Sleep(300 * time.Millisecond)
-	
+
 	mu.Lock()
 	numCalls := len(callTimes)
 	mu.Unlock()
-	
+
 	// Should have exactly 2 calls: original + 1 coalesced re-run
 	if numCalls != 2 {
 		t.Errorf("expected 2 calls (original + coalesced rerun), got %d", numCalls)
 	}
-	
+
 	t.Logf("Coalesced 5 triggers while running into 1 re-run (total 2 calls)")
 }
 
@@ -469,7 +469,7 @@ func TestApplyUpdateWhileRecomputing(t *testing.T) {
 	started := make(chan struct{})
 	block := make(chan struct{})
 	var callCount int32
-	
+
 	rf := func() (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		if n == 1 {
@@ -605,7 +605,7 @@ func TestWithImmediateCompute(t *testing.T) {
 	started := make(chan struct{})
 	block := make(chan struct{})
 	var callCount int32
-	
+
 	rf := func() (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		close(started)

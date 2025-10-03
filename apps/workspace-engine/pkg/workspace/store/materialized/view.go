@@ -42,12 +42,12 @@ func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
 	mv := &MaterializedView[V]{
 		recompute: rf,
 	}
-	
+
 	// Apply options
 	for _, opt := range opts {
 		opt(mv)
 	}
-	
+
 	return mv
 }
 
@@ -69,18 +69,18 @@ func IsAlreadyStarted(err error) bool {
 // If already in progress, marks that a re-run is needed after completion.
 func (m *MaterializedView[V]) StartRecompute() error {
 	m.mu.Lock()
-	
+
 	if m.inProg {
 		// Mark that we need to re-run after current completes
 		m.pending = true
 		m.mu.Unlock()
 		return ErrAlreadyStarted
 	}
-	
+
 	m.inProg = true
 	m.done = make(chan error, 1)
 	m.mu.Unlock()
-	
+
 	go m.runCompute()
 	return nil
 }
@@ -91,11 +91,11 @@ func (m *MaterializedView[V]) WaitRecompute() error {
 	m.mu.RLock()
 	done := m.done
 	m.mu.RUnlock()
-	
+
 	if done == nil {
 		return errors.New("no computation in progress")
 	}
-	
+
 	return <-done
 }
 
@@ -118,7 +118,7 @@ func (m *MaterializedView[V]) RunRecompute() error {
 // Returns the updated value and any error from the update function.
 func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
 	m.mu.Lock()
-	
+
 	// If a full recompute is in progress, mark pending and return current value
 	// The full recompute will capture this update when it completes
 	if m.inProg {
@@ -127,7 +127,7 @@ func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
 		m.mu.Unlock()
 		return val, nil
 	}
-	
+
 	// Apply the update function to the current value
 	newVal, err := updateFn(m.val)
 	if err != nil {
@@ -135,11 +135,11 @@ func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
 		var zero V
 		return zero, err
 	}
-	
+
 	// Update the cached value
 	m.val = newVal
 	m.mu.Unlock()
-	
+
 	return newVal, nil
 }
 
@@ -147,20 +147,20 @@ func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
 // If pending requests came in while running, keeps recomputing until no more pending work.
 func (m *MaterializedView[V]) runCompute() {
 	var lastErr error
-	
+
 	// Keep recomputing while there's pending work
 	for {
 		// Compute without locks
 		val, err := m.recompute()
 		lastErr = err
-		
+
 		m.mu.Lock()
-		
+
 		// Publish result on success
 		if err == nil {
 			m.val = val
 		}
-		
+
 		// Check if more work came in while we were computing
 		if m.pending {
 			m.pending = false
@@ -168,13 +168,13 @@ func (m *MaterializedView[V]) runCompute() {
 			// Loop again to recompute
 			continue
 		}
-		
+
 		// No more pending work - mark complete
 		m.inProg = false
 		done := m.done
 		m.done = nil
 		m.mu.Unlock()
-		
+
 		// Send result to all waiters
 		done <- lastErr
 		close(done)

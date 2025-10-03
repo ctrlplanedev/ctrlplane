@@ -7,11 +7,6 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-type VerisonRelease struct {
-	ReleaseTarget *pb.ReleaseTarget
-	Version       *pb.DeploymentVersion
-}
-
 type Manager struct {
 	store *store.Store
 }
@@ -20,12 +15,13 @@ func New(store *store.Store) *Manager {
 	return &Manager{store: store}
 }
 
-func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) *VerisonRelease {
-	deploymentId := releaseTarget.GetDeploymentId()
-	deployableVersions := m.store.DeploymentVersions.GetDeployableVersions(deploymentId)
+func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (*pb.DeploymentVersion, error) {
+	deployableVersions := m.store.
+		DeploymentVersions.
+		DeployableTo(releaseTarget)
 
 	if len(deployableVersions) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Get the latest version by CreatedAt
@@ -35,8 +31,5 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 
 	latestVersion := deployableVersions[0]
 
-	return &VerisonRelease{
-		ReleaseTarget: releaseTarget,
-		Version:       latestVersion,
-	}
+	return latestVersion, nil
 }

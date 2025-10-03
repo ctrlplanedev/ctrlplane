@@ -31,14 +31,18 @@ export const sendEvent = async <T extends keyof EventPayload>(
   try {
     const messages = Array.isArray(message) ? message : [message];
     const producer = await getProducer();
-    await producer.send({
-      topic: "ctrlplane-events",
-      messages: messages.map((message) => ({
-        key: message.workspaceId,
-        value: JSON.stringify(message),
-        timestamp: message.timestamp.toString(),
-      })),
-    });
+
+    const topics = ["workspace-events", "ctrlplane-events"];
+    for (const topic of topics) {
+      await producer.send({
+        topic,
+        messages: messages.map((message) => ({
+          key: message.workspaceId,
+          value: JSON.stringify(message),
+          timestamp: message.timestamp.toString(),
+        })),
+      });
+    }
     log.info("Sent event", { messages });
   } catch (error) {
     log.error("Failed to send event", { error });

@@ -46,7 +46,7 @@ func (d *DeploymentVersions) Remove(id string) {
 	d.deployableVersions.Remove(id)
 }
 
-func (d *DeploymentVersions) IsDeployable(version *pb.DeploymentVersion) bool {
+func (d *DeploymentVersions) IsDeployable(_ *pb.ReleaseTarget, version *pb.DeploymentVersion) bool {
 	return d.deployableVersions.Has(version.Id)
 }
 
@@ -90,8 +90,7 @@ func (d *DeploymentVersions) RecomputeDeployableVersions(ctx context.Context) {
 	)
 	defer span.End()
 
-
-	// Reset the deployable versions map										
+	// Reset the deployable versions map
 	d.deployableVersions = cmap.New[*pb.DeploymentVersion]()
 
 	var wg sync.WaitGroup
@@ -106,12 +105,12 @@ func (d *DeploymentVersions) RecomputeDeployableVersions(ctx context.Context) {
 	wg.Wait()
 }
 
-func (d *DeploymentVersions) GetDeployableVersions(deploymentId string) []*pb.DeploymentVersion {
+func (d *DeploymentVersions) DeployableTo(releaseTarget *pb.ReleaseTarget) []*pb.DeploymentVersion {
 	deployableVersions := make([]*pb.DeploymentVersion, 1000)
 
 	for tuple := range d.deployableVersions.IterBuffered() {
 		version := tuple.Val
-		if version.DeploymentId == deploymentId {
+		if version.DeploymentId == releaseTarget.DeploymentId {
 			deployableVersions = append(deployableVersions, version)
 		}
 	}

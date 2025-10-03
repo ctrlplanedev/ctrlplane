@@ -73,12 +73,70 @@ message ReleaseTarget {
   string created_at = 5;
 }
 
+message ReleaseTargetDeploy {
+  ReleaseTarget release_target = 1;
+  DeploymentVersion deployment_version = 2;
+  map<string, google.protobuf.Struct> variables = 3;
+  string created_at = 4;
+}
+
 enum DeploymentVersionStatus {
   DEPLOYMENT_VERSION_STATUS_UNSPECIFIED = 0;
   DEPLOYMENT_VERSION_STATUS_BUILDING = 1;
   DEPLOYMENT_VERSION_STATUS_READY = 2;
   DEPLOYMENT_VERSION_STATUS_FAILED = 3;
   DEPLOYMENT_VERSION_STATUS_REJECTED = 4;
+}
+
+// There is no direct equivalent of TypeScript's `|` (union types) in Protocol Buffers (proto3).
+// In proto3, to represent a value that can be one of several types, you use the `oneof` construct.
+// Here is an example of how you might use `oneof` to represent a field that can be one of several types:
+
+message DeploymentVariable {
+  string id = 1;
+  string variable_id = 2;
+  string description = 3;
+  string deployment_id = 4;
+  optional google.protobuf.Struct resource_selector = 5;
+  int32  priority = 6;
+}
+
+message DeploymentVariableValue {
+  string id = 1;
+  string deployment_variable_id = 3;
+
+  oneof default_value {
+    double number_value = 4;
+    string string_value = 5;
+    bool bool_value = 6;
+    google.protobuf.Struct object_value = 7;
+    google.protobuf.NullValue null_value = 8;
+  }
+
+  oneof value {
+    DirectDeploymentVariableValue    direct_value = 9;
+    ReferenceDeploymentVariableValue reference_value = 10;
+    SensitiveDeploymentVariableValue sensitive_value = 11;
+  }
+}
+
+message SensitiveDeploymentVariableValue {
+  string value_hash = 1;
+}
+
+message DirectDeploymentVariableValue {
+  oneof value {
+    double number_value = 1;
+    string string_value = 2;
+    bool bool_value = 3;
+    google.protobuf.Struct object_value = 4;
+    google.protobuf.NullValue null_value = 5;
+  }
+}
+
+message ReferenceDeploymentVariableValue {
+  optional google.protobuf.Struct reference = 1;
+  repeated string path = 2;
 }
 
 message DeploymentVersion {

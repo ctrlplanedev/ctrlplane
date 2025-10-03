@@ -16,7 +16,6 @@ var (
 	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
 )
 
-
 func getEnv(varName string, defaultValue string) string {
 	v := os.Getenv(varName)
 	if v == "" {

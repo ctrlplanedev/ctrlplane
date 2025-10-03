@@ -25,6 +25,10 @@ type Workspace struct {
 	releasemanager *releasemanager.Manager
 }
 
+func (w *Workspace) ReleaseManager() *releasemanager.Manager {
+	return w.releasemanager
+}
+
 func (w *Workspace) DeploymentVersions() *store.DeploymentVersions {
 	return w.store.DeploymentVersions
 }

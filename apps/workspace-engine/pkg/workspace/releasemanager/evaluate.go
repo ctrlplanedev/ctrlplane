@@ -6,17 +6,25 @@ import (
 )
 
 type DeployVersion struct {
-	Version *pb.DeploymentVersion
-	Variables map[string]string
+	Version   *pb.DeploymentVersion
+	Variables map[string]any
 }
 
 func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (*DeployVersion, error) {
-	version := m.versionManager.Evaluate(ctx, releaseTarget)
-
-	deployVersion := &DeployVersion{
-		Version: version.Version,
-		Variables: make(map[string]string),
+	version, err := m.versionManager.Evaluate(ctx, releaseTarget)
+	if err != nil {
+		return nil, err
 	}
 
-	return deployVersion, nil
+	variables, err := m.variableManager.Evaluate(ctx, releaseTarget)
+	if err != nil {
+		return nil, err
+	}
+
+	deployVersion := &DeployVersion{
+		Version:   version,
+		Variables: variables,
+	}
+
+	return deployVersion, err
 }

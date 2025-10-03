@@ -15,7 +15,7 @@ func New() *Store {
 
 	// Initialize Deployments with materialized view
 	deployments := &Deployments{
-		repo: repo,
+		repo:      repo,
 		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
 	}
 

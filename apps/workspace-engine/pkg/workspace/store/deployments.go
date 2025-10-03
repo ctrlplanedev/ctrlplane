@@ -24,7 +24,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 		if !exists {
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
-				
+
 		var condition unknown.MatchableCondition
 		if deployment.ResourceSelector != nil {
 			unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.AsMap())
@@ -36,7 +36,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 				return nil, fmt.Errorf("failed to convert selector for deployment %s: %w", deployment.Id, err)
 			}
 		}
-		
+
 		deploymentResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
 		for resourceItem := range e.repo.Resources.IterBuffered() {
 			if condition == nil {
@@ -51,7 +51,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 				deploymentResources[resourceItem.Key] = resourceItem.Val
 			}
 		}
-		
+
 		return deploymentResources, nil
 	}
 }
@@ -73,10 +73,7 @@ func (e *Deployments) HasResource(deploymentId string, resourceId string) bool {
 	if !ok {
 		return false
 	}
-	
-	if mv == nil {
-		return false
-	}
+
 	mv.WaitRecompute()
 	allResources := mv.Get()
 	if deploymentResources, ok := allResources[resourceId]; ok {
@@ -90,7 +87,7 @@ func (e *Deployments) Resources(deploymentId string) map[string]*pb.Resource {
 	if !ok {
 		return map[string]*pb.Resource{}
 	}
-	
+
 	mv.WaitRecompute()
 	allResources := mv.Get()
 	return allResources
@@ -108,30 +105,19 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) err
 			return fmt.Errorf("failed to convert selector: %w", err)
 		}
 	}
-	
+
 	// Store the deployment in the repository
 	e.repo.Deployments.Set(deployment.Id, deployment)
-	
+
 	// Create materialized view with immediate computation of deployment resources
 	mv := materialized.New(
 		e.deploymentResourceRecomputeFunc(deployment.Id),
 		materialized.WithImmediateCompute[map[string]*pb.Resource](),
 	)
-	
+
 	e.resources.Set(deployment.Id, mv)
-	
-	// Wait for initial computation to complete to maintain synchronous behavior
-	return mv.WaitRecompute()
-}
 
-func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId string) error {
-	mv, ok := e.resources.Get(deploymentId)
-	if !ok {
-		return fmt.Errorf("deployment %s not found", deploymentId)
-	}
-
-	// RunRecompute will start a new computation or wait for an existing one
-	return mv.RunRecompute()
+	return nil
 }
 
 // ApplyResourceUpdate applies an incremental update for a single resource.
@@ -142,7 +128,7 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 	if !exists {
 		return fmt.Errorf("deployment %s not found", deploymentId)
 	}
-	
+
 	// Parse the deployment's resource selector
 	var condition unknown.MatchableCondition
 	if deployment.ResourceSelector != nil {
@@ -155,12 +141,12 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 			return fmt.Errorf("failed to convert selector for deployment %s: %w", deployment.Id, err)
 		}
 	}
-	
+
 	mv, ok := e.resources.Get(deploymentId)
 	if !ok {
 		return fmt.Errorf("deployment %s not found", deploymentId)
 	}
-	
+
 	_, err := mv.ApplyUpdate(func(currentResources map[string]*pb.Resource) (map[string]*pb.Resource, error) {
 		// Check if resource matches selector
 		matches := condition == nil // nil condition means match all
@@ -171,17 +157,17 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 			}
 			matches = ok
 		}
-		
+
 		// Update the map
 		if matches {
 			currentResources[resource.Id] = resource
 		} else {
 			delete(currentResources, resource.Id)
 		}
-		
+
 		return currentResources, nil
 	})
-	
+
 	return err
 }
 

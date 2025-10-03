@@ -43,7 +43,7 @@ func (p *Policies) AppliesToDeployment(policyId string, deploymentId string) boo
 	if !exists {
 		return false
 	}
-	
+
 	if policy.Selectors == nil {
 		return true
 	}

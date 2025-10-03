@@ -24,7 +24,7 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 		if !exists {
 			return nil, fmt.Errorf("environment %s not found", environmentId)
 		}
-		
+
 		var condition unknown.MatchableCondition
 		if environment.ResourceSelector != nil {
 			unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.AsMap())
@@ -36,7 +36,7 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 				return nil, fmt.Errorf("failed to convert selector for environment %s: %w", environment.Id, err)
 			}
 		}
-		
+
 		environmentResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
 		for resourceItem := range e.repo.Resources.IterBuffered() {
 			if condition == nil {
@@ -51,7 +51,7 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 				environmentResources[resourceItem.Key] = resourceItem.Val
 			}
 		}
-		
+
 		return environmentResources, nil
 	}
 }
@@ -73,7 +73,8 @@ func (e *Environments) HasResource(envId string, resourceId string) bool {
 	if !ok {
 		return false
 	}
-	
+
+	mv.WaitRecompute()
 	allResources := mv.Get()
 	if envResources, ok := allResources[resourceId]; ok {
 		return envResources != nil
@@ -86,7 +87,8 @@ func (e *Environments) Resources(id string) map[string]*pb.Resource {
 	if !ok {
 		return map[string]*pb.Resource{}
 	}
-	
+
+	mv.WaitRecompute()
 	allResources := mv.Get()
 	return allResources
 }
@@ -96,7 +98,7 @@ func (e *Environments) RecomputeResources(ctx context.Context, environmentId str
 	if !ok {
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
-	
+
 	// RunRecompute will start a new computation or wait for an existing one
 	return mv.RunRecompute()
 }
@@ -113,18 +115,18 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 			return fmt.Errorf("failed to convert selector: %w", err)
 		}
 	}
-	
+
 	// Store the environment in the repository
 	e.repo.Environments.Set(environment.Id, environment)
-	
+
 	// Create materialized view with immediate computation of environment resources
 	mv := materialized.New(
 		e.environmentResourceRecomputeFunc(environment.Id),
 		materialized.WithImmediateCompute[map[string]*pb.Resource](),
 	)
-	
+
 	e.resources.Set(environment.Id, mv)
-	
+
 	// Wait for initial computation to complete to maintain synchronous behavior
 	return mv.WaitRecompute()
 }
@@ -137,7 +139,7 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 	if !exists {
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
-	
+
 	// Parse the environment's resource selector
 	var condition unknown.MatchableCondition
 	if environment.ResourceSelector != nil {
@@ -150,13 +152,13 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 			return fmt.Errorf("failed to convert selector for environment %s: %w", environment.Id, err)
 		}
 	}
-	
+
 	// Apply the incremental update
 	mv, ok := e.resources.Get(environmentId)
 	if !ok {
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
-	
+
 	_, err := mv.ApplyUpdate(func(currentResources map[string]*pb.Resource) (map[string]*pb.Resource, error) {
 		// Check if resource matches selector
 		matches := condition == nil // nil condition means match all
@@ -167,17 +169,17 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 			}
 			matches = ok
 		}
-		
+
 		// Update the map
 		if matches {
 			currentResources[resource.Id] = resource
 		} else {
 			delete(currentResources, resource.Id)
 		}
-		
+
 		return currentResources, nil
 	})
-	
+
 	return err
 }
 
