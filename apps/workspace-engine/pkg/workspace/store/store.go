@@ -7,26 +7,31 @@ import (
 )
 
 func New() *Store {
+	repo := repository.New()
 	store := &Store{
-		repo: repository.New(),
+		repo: repo,
 	}
 
 	store.Deployments = &Deployments{
-		store:     store,
-		resources: cmap.New[map[string]*pb.Resource](),
+		repo:      repo,
+		cachedResources: cmap.New[map[string]*pb.Resource](),
 	}
 	store.Environments = &Environments{
-		store:     store,
-		resources: cmap.New[map[string]*pb.Resource](),
+		repo:      repo,
+		cachedResources: cmap.New[map[string]*pb.Resource](),
 	}
-	store.Resources = &Resources{store: store}
-	store.Policies = &Policies{store: store}
+	store.Resources = &Resources{
+		repo:  repo,
+		store: store,
+	}
+	store.Policies = &Policies{repo: repo}
 	store.ReleaseTargets = &ReleaseTargets{store: store}
 	store.DeploymentVersions = &DeploymentVersions{
+		repo:               repo,
 		store:              store,
 		deployableVersions: cmap.New[*pb.DeploymentVersion](),
 	}
-	store.Systems = &Systems{store: store}
+	store.Systems = &Systems{repo: repo}
 
 	return store
 }

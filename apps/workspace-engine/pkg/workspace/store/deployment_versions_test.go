@@ -419,7 +419,7 @@ func TestDeploymentVersions_SyncDeployableVersions(t *testing.T) {
 	}
 	
 	// Sync (with no policies, all should be deployable)
-	store.DeploymentVersions.SyncDeployableVersions(ctx)
+	store.DeploymentVersions.RecomputeDeployableVersions(ctx)
 	
 	if store.DeploymentVersions.deployableVersions.Count() != 5 {
 		t.Errorf("expected 5 deployable versions after sync, got %d", store.DeploymentVersions.deployableVersions.Count())
@@ -456,7 +456,7 @@ func TestDeploymentVersions_SyncDeployableVersions_WithPolicies(t *testing.T) {
 	// (because Selectors is nil returns true in AppliesToDeployment),
 	// but then the logic is inverted with `!AppliesToDeployment`
 	// This tests the current behavior
-	store.DeploymentVersions.SyncDeployableVersions(ctx)
+	store.DeploymentVersions.RecomputeDeployableVersions(ctx)
 	
 	// Based on the code logic at line 50: if !AppliesToDeployment, then deployable = false
 	// Since AppliesToDeployment returns true when Selectors is nil, !true = false
@@ -684,7 +684,7 @@ func BenchmarkDeploymentVersions_SyncDeployableVersions(b *testing.B) {
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.DeploymentVersions.SyncDeployableVersions(ctx)
+		store.DeploymentVersions.RecomputeDeployableVersions(ctx)
 	}
 }
 
@@ -713,7 +713,7 @@ func BenchmarkDeploymentVersions_SyncDeployableVersion(b *testing.B) {
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.DeploymentVersions.SyncDeployableVersion(version)
+			store.DeploymentVersions.RecomputeDeployableVersion(version)
 	}
 }
 
@@ -775,7 +775,7 @@ func BenchmarkDeploymentVersions_LargeScale_SyncWithPolicies(b *testing.B) {
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.DeploymentVersions.SyncDeployableVersions(ctx)
+		store.DeploymentVersions.RecomputeDeployableVersions(ctx)
 	}
 }
 
@@ -800,7 +800,7 @@ func BenchmarkDeploymentVersions_LargeScale_1MVersionsNoPolicies(b *testing.B) {
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.DeploymentVersions.SyncDeployableVersions(ctx)
+		store.DeploymentVersions.RecomputeDeployableVersions(ctx)
 	}
 }
 
@@ -833,7 +833,7 @@ func BenchmarkDeploymentVersions_LargeScale_SyncSingleVersion(b *testing.B) {
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = store.DeploymentVersions.SyncDeployableVersion(version)
+		_ = store.DeploymentVersions.RecomputeDeployableVersion(version)
 	}
 }
 

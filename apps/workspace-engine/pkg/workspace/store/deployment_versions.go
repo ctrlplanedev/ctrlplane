@@ -5,6 +5,7 @@ import (
 	"sync"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -14,33 +15,34 @@ import (
 var deploymentTracer = otel.Tracer("workspace/store/deployment_versions")
 
 type DeploymentVersions struct {
+	repo  *repository.Repository
 	store *Store
 
 	deployableVersions cmap.ConcurrentMap[string, *pb.DeploymentVersion]
 }
 
 func (d *DeploymentVersions) IterBuffered() <-chan cmap.Tuple[string, *pb.DeploymentVersion] {
-	return d.store.repo.DeploymentVersions.IterBuffered()
+	return d.repo.DeploymentVersions.IterBuffered()
 }
 
 func (d *DeploymentVersions) Has(id string) bool {
-	return d.store.repo.DeploymentVersions.Has(id)
+	return d.repo.DeploymentVersions.Has(id)
 }
 
 func (d *DeploymentVersions) Items() map[string]*pb.DeploymentVersion {
-	return d.store.repo.DeploymentVersions.Items()
+	return d.repo.DeploymentVersions.Items()
 }
 
 func (d *DeploymentVersions) Get(id string) (*pb.DeploymentVersion, bool) {
-	return d.store.repo.DeploymentVersions.Get(id)
+	return d.repo.DeploymentVersions.Get(id)
 }
 
 func (d *DeploymentVersions) Upsert(id string, version *pb.DeploymentVersion) {
-	d.store.repo.DeploymentVersions.Set(id, version)
+	d.repo.DeploymentVersions.Set(id, version)
 }
 
 func (d *DeploymentVersions) Remove(id string) {
-	d.store.repo.DeploymentVersions.Remove(id)
+	d.repo.DeploymentVersions.Remove(id)
 	d.deployableVersions.Remove(id)
 }
 
@@ -48,7 +50,7 @@ func (d *DeploymentVersions) IsDeployable(version *pb.DeploymentVersion) bool {
 	return d.deployableVersions.Has(version.Id)
 }
 
-func (d *DeploymentVersions) SyncDeployableVersion(version *pb.DeploymentVersion) bool {
+func (d *DeploymentVersions) RecomputeDeployableVersion(version *pb.DeploymentVersion) bool {
 	deployable := true
 	for policyTuple := range d.store.Policies.IterBuffered() {
 		policy := policyTuple.Val
@@ -79,11 +81,11 @@ func (d *DeploymentVersions) SyncDeployableVersion(version *pb.DeploymentVersion
 	return deployable
 }
 
-func (d *DeploymentVersions) SyncDeployableVersions(ctx context.Context) {
+func (d *DeploymentVersions) RecomputeDeployableVersions(ctx context.Context) {
 	_, span := deploymentTracer.Start(ctx, "SyncDeployableVersions",
 		trace.WithAttributes(
-			attribute.Int("deployment_versions.count", d.store.repo.DeploymentVersions.Count()),
-			attribute.Int("deployment_versions.policy_count", d.store.repo.Policies.Count()),
+			attribute.Int("deployment_versions.count", d.repo.DeploymentVersions.Count()),
+			attribute.Int("deployment_versions.policy_count", d.repo.Policies.Count()),
 		),
 	)
 	defer span.End()
@@ -93,12 +95,12 @@ func (d *DeploymentVersions) SyncDeployableVersions(ctx context.Context) {
 	d.deployableVersions = cmap.New[*pb.DeploymentVersion]()
 
 	var wg sync.WaitGroup
-	for tuple := range d.store.repo.DeploymentVersions.IterBuffered() {
+	for tuple := range d.repo.DeploymentVersions.IterBuffered() {
 		version := tuple.Val
 		wg.Add(1)
 		go func(v *pb.DeploymentVersion) {
 			defer wg.Done()
-			d.SyncDeployableVersion(v)
+			d.RecomputeDeployableVersion(v)
 		}(version)
 	}
 	wg.Wait()

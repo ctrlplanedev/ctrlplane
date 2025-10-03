@@ -7,33 +7,34 @@ import (
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 type Environments struct {
-	store *Store
+	repo *repository.Repository
 
-	resources cmap.ConcurrentMap[string, map[string]*pb.Resource]
+	cachedResources cmap.ConcurrentMap[string, map[string]*pb.Resource]
 }
 
 func (e *Environments) IterBuffered() <-chan cmap.Tuple[string, *pb.Environment] {
-	return e.store.repo.Environments.IterBuffered()
+	return e.repo.Environments.IterBuffered()
 }
 
 func (e *Environments) Get(id string) (*pb.Environment, bool) {
-	return e.store.repo.Environments.Get(id)
+	return e.repo.Environments.Get(id)
 }
 
 func (e *Environments) Has(id string) bool {
-	return e.store.repo.Environments.Has(id)
+	return e.repo.Environments.Has(id)
 }
 
-func (e *Environments) HasResources(envId string, resourceId string) bool {
-	resources, exists := e.resources.Get(envId)
+func (e *Environments) HasResource(envId string, resourceId string) bool {
+	resources, exists := e.cachedResources.Get(envId)
 	return exists && resources[resourceId] != nil
 }
 
 func (e *Environments) Resources(id string) map[string]*pb.Resource {
-	resources, exists := e.resources.Get(id)
+	resources, exists := e.cachedResources.Get(id)
 	if !exists {
 		return map[string]*pb.Resource{}
 	}
@@ -41,7 +42,7 @@ func (e *Environments) Resources(id string) map[string]*pb.Resource {
 }
 
 func (e *Environments) RecomputeResources(ctx context.Context, environmentId string) error {
-	env, exists := e.store.repo.Environments.Get(environmentId)
+	env, exists := e.repo.Environments.Get(environmentId)
 	if !exists {
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
@@ -62,8 +63,8 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 		}
 	}
 
-	environmentResources := make(map[string]*pb.Resource, e.store.repo.Resources.Count())
-	for item := range e.store.repo.Resources.IterBuffered() {
+	environmentResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
+	for item := range e.repo.Resources.IterBuffered() {
 		if condition == nil {
 			environmentResources[item.Key] = item.Val
 			continue
@@ -77,21 +78,13 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 		}
 	}
 
-	// Step 3: NOW lock and atomically update both
-	envShard := e.store.repo.Environments.GetShard(environment.Id)
-	envShard.Lock()
-	defer envShard.Unlock()
-	envShard.Items[environment.Id] = environment
-
-	resourceShard := e.resources.GetShard(environment.Id)
-	resourceShard.Lock()
-	defer resourceShard.Unlock()
-	resourceShard.Items[environment.Id] = environmentResources
+	e.repo.Environments.Set(environment.Id, environment)
+	e.cachedResources.Set(environment.Id, environmentResources)
 
 	return nil
 }
 
 func (e *Environments) Remove(id string) {
-	e.store.repo.Environments.Remove(id)
-	e.resources.Remove(id)
+	e.repo.Environments.Remove(id)
+	e.cachedResources.Remove(id)
 }

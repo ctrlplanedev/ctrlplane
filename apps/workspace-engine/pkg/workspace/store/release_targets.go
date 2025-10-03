@@ -27,7 +27,7 @@ func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget
 			}
 
 			for _, resource := range environments.Resources(environment.Id) {
-				if !deployments.HasResources(deployment.Id, resource.Id) {
+				if !deployments.HasResource(deployment.Id, resource.Id) {
 					continue
 				}
 

@@ -54,7 +54,7 @@ func (w *Workspace) GetDeploymentAndEnvironmentReleaseTargets(
 
 	releaseTargets := make([]*pb.ReleaseTarget, len(environmentResources))
 	for _, resource := range environmentResources {
-		isInDeployment := w.Deployments().HasResources(deployment.Id, resource.Id)
+		isInDeployment := w.Deployments().HasResource(deployment.Id, resource.Id)
 		if isInDeployment {
 			releaseTargets = append(releaseTargets, &pb.ReleaseTarget{
 				DeploymentId:  deployment.Id,

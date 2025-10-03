@@ -4,6 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/store/repository"
 )
 
 type Rule interface {
@@ -13,28 +14,28 @@ type Rule interface {
 }
 
 type Policies struct {
-	store *Store
+	repo *repository.Repository
 }
 
 func (p *Policies) IterBuffered() <-chan cmap.Tuple[string, *pb.Policy] {
-	return p.store.repo.Policies.IterBuffered()
+	return p.repo.Policies.IterBuffered()
 }
 
 func (p *Policies) Get(id string) (*pb.Policy, bool) {
-	return p.store.repo.Policies.Get(id)
+	return p.repo.Policies.Get(id)
 }
 
 func (p *Policies) Has(id string) bool {
-	return p.store.repo.Policies.Has(id)
+	return p.repo.Policies.Has(id)
 }
 
 func (p *Policies) Upsert(ctx context.Context, policy *pb.Policy) error {
-	p.store.repo.Policies.Set(policy.Id, policy)
+	p.repo.Policies.Set(policy.Id, policy)
 	return nil
 }
 
 func (p *Policies) Remove(id string) {
-	p.store.repo.Policies.Remove(id)
+	p.repo.Policies.Remove(id)
 }
 
 func (p *Policies) AppliesToDeployment(policyId string, deploymentId string) bool {

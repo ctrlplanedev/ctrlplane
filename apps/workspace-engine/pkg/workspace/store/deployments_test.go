@@ -123,7 +123,7 @@ func TestHasResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ws.Deployments.HasResources(tt.deploymentId, tt.resourceId)
+			got := ws.Deployments.HasResource(tt.deploymentId, tt.resourceId)
 			if got != tt.want {
 				t.Errorf("HasResources() = %v, want %v", got, tt.want)
 			}
@@ -614,7 +614,7 @@ func TestConcurrentReadWrite(t *testing.T) {
 		go func() {
 			for j := 0; j < 100; j++ {
 				_ = ws.Deployments.Resources(deployment.Id)
-				_ = ws.Deployments.HasResources(deployment.Id, "resource-0")
+				_ = ws.Deployments.HasResource(deployment.Id, "resource-0")
 			}
 			done <- true
 		}()
@@ -659,7 +659,7 @@ func BenchmarkHasResources(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = ws.Deployments.HasResources(deployment.Id, "resource-0")
+		_ = ws.Deployments.HasResource(deployment.Id, "resource-0")
 	}
 }
 
