@@ -3,6 +3,7 @@ package store
 import (
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -12,13 +13,16 @@ func New() *Store {
 		repo: repo,
 	}
 
-	store.Deployments = &Deployments{
-		repo:      repo,
-		cachedResources: cmap.New[map[string]*pb.Resource](),
+	// Initialize Deployments with materialized view
+	deployments := &Deployments{
+		repo: repo,
+		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
 	}
+
+	store.Deployments = deployments
 	store.Environments = &Environments{
 		repo:      repo,
-		cachedResources: cmap.New[map[string]*pb.Resource](),
+		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
 	}
 	store.Resources = &Resources{
 		repo:  repo,

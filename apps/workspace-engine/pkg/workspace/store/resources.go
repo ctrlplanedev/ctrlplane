@@ -21,33 +21,39 @@ func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Reso
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		r.recomputeAllEnvironments(ctx)
+		r.applyResourceToAllEnvironments(ctx, resource)
 	}()
 	go func() {
 		defer wg.Done()
-		r.recomputeAllDeployments(ctx)
+		r.applyResourceToAllDeployments(ctx, resource)
 	}()
 	wg.Wait()
 
 	return resource, nil
 }
 
-func (r *Resources) recomputeAllEnvironments(ctx context.Context) {
-	// Iterate through all environments and recompute their resource selectors
+func (r *Resources) applyResourceToAllEnvironments(ctx context.Context, resource *pb.Resource) {
+	// Iterate through environments and apply the incremental update for this single resource
+	// This is more efficient than recomputing all resources for each environment
 	for item := range r.repo.Environments.IterBuffered() {
-		env := item.Val
-		// Fire and forget - errors are logged but don't block
-		if err := r.store.Environments.RecomputeResources(ctx, env.Id); err != nil {
-			log.Error("error recomputing environment resource selectors", "error", err.Error())
+		environment := item.Val
+		// Use ApplyResourceUpdate instead of RecomputeResources for efficiency
+		// This only checks if the single resource matches, not all resources
+		if err := r.store.Environments.ApplyResourceUpdate(ctx, environment.Id, resource); err != nil {
+			log.Error("error applying resource update to environment", "error", err.Error())
 		}
 	}
 }
 
-func (r *Resources) recomputeAllDeployments(ctx context.Context) {
+func (r *Resources) applyResourceToAllDeployments(ctx context.Context, resource *pb.Resource) {
+	// Iterate through deployments and apply the incremental update for this single resource
+	// This is more efficient than recomputing all resources for each deployment
 	for item := range r.repo.Deployments.IterBuffered() {
-		env := item.Val
-		if err := r.store.Deployments.RecomputeResources(ctx, env.Id); err != nil {
-			log.Error("error recomputing deployment resource selectors", "error", err.Error())
+		deployment := item.Val
+		// Use ApplyResourceUpdate instead of RecomputeResources for efficiency
+		// This only checks if the single resource matches, not all resources
+		if err := r.store.Deployments.ApplyResourceUpdate(ctx, deployment.Id, resource); err != nil {
+			log.Error("error applying resource update to deployment", "error", err.Error())
 		}
 	}
 }

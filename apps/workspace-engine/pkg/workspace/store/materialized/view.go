@@ -1,175 +1,183 @@
 package materialized
 
 import (
-	"slices"
+	"errors"
 	"sync"
-
-	cmap "workspace-engine/pkg/cmap"
 )
 
-// RecomputeFunc recomputes values for the given keys and returns the results.
-// Any key omitted from the returned map is treated as "no update".
-type RecomputeFunc[V any] func(keys []string) (map[string]V, error)
+// RecomputeFunc recomputes the materialized value.
+type RecomputeFunc[V any] func() (V, error)
 
-// ListAllKeysFunc lists all keys that exist/should exist (used by TriggerAll).
-type ListAllKeysFunc func() []string
+// UpdateFunc applies an incremental update to the current value.
+// Receives the current value and returns the updated value.
+type UpdateFunc[V any] func(V) (V, error)
 
-// MaterializedView stores per-key values & versions using concurrent maps,
-// coalesces recomputes, and provides an optional wait-for-freshness API.
+// MaterializedView caches a single computed value.
+// Similar to exec.Cmd, it provides Start/Wait/Run semantics for recomputation.
+// Multiple recompute requests while one is running coalesce into a single re-run.
 type MaterializedView[V any] struct {
-	// Only used to coordinate Waiters and avoid missed notifications.
-	mu   sync.Mutex
-	cond *sync.Cond
-
-	// Concurrent, lock-free maps for actual data & coordination.
-	val     cmap.ConcurrentMap[string, V]
-	version cmap.ConcurrentMap[string, uint64]
-	inProg  cmap.ConcurrentMap[string, struct{}] // keys currently recomputing in some batch
-	pending cmap.ConcurrentMap[string, struct{}] // keys invalidated while inProg
+	mu      sync.RWMutex
+	val     V
+	inProg  bool
+	pending bool       // true if another recompute was requested while inProg
+	done    chan error // closed when computation completes
 
 	recompute RecomputeFunc[V]
-	allKeys   ListAllKeysFunc
 }
 
-func New[V any](rf RecomputeFunc[V], allKeys ListAllKeysFunc) *MaterializedView[V] {
-	mv := &MaterializedView[V]{
-		val:       cmap.New[V](),
-		version:   cmap.New[uint64](),
-		inProg:    cmap.New[struct{}](),
-		pending:   cmap.New[struct{}](),
-		recompute: rf,
-		allKeys:   allKeys,
+// Option is a functional option for configuring a MaterializedView.
+type Option[V any] func(*MaterializedView[V])
+
+// WithImmediateCompute triggers an immediate computation when creating the view.
+// The computation runs asynchronously, so the view is immediately usable.
+func WithImmediateCompute[V any]() Option[V] {
+	return func(mv *MaterializedView[V]) {
+		mv.StartRecompute()
 	}
-	mv.cond = sync.NewCond(&mv.mu)
+}
+
+// New creates a new materialized view with the given recompute function.
+// Optional configuration can be provided via Option functions.
+func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
+	mv := &MaterializedView[V]{
+		recompute: rf,
+	}
+	
+	// Apply options
+	for _, opt := range opts {
+		opt(mv)
+	}
+	
 	return mv
 }
 
-// Get returns the last published value (zero if absent) and its version.
-func (m *MaterializedView[V]) Get(k string) (V, uint64) {
-	v, _ := m.val.Get(k)
-	ver, _ := m.version.Get(k)
-	return v, ver
+// Get returns the current cached value.
+func (m *MaterializedView[V]) Get() V {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.val
 }
 
-// WaitForAtLeast blocks until version(k) >= target.
-// We use a small condvar so callers don’t spin or miss publications.
-func (m *MaterializedView[V]) WaitForAtLeast(k string, target uint64) {
+var ErrAlreadyStarted = errors.New("recompute already in progress")
+
+func IsAlreadyStarted(err error) bool {
+	return errors.Is(err, ErrAlreadyStarted)
+}
+
+// StartRecompute begins recomputation asynchronously.
+// Returns ErrAlreadyStarted if a computation is already in progress.
+// If already in progress, marks that a re-run is needed after completion.
+func (m *MaterializedView[V]) StartRecompute() error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	for {
-		cur, _ := m.version.Get(k)
-		if cur >= target {
-			return
-		}
-		m.cond.Wait()
+	
+	if m.inProg {
+		// Mark that we need to re-run after current completes
+		m.pending = true
+		m.mu.Unlock()
+		return ErrAlreadyStarted
 	}
-}
-
-// Trigger recomputes just these keys. If wait==true, it blocks until each key
-// publishes a strictly newer version than at call time.
-func (m *MaterializedView[V]) Trigger(keys []string, wait bool) error {
-	if len(keys) == 0 {
-		return nil
-	}
-	slices.Sort(keys)
-	keys = slices.Compact(keys)
-
-	type waitFor struct{ k string; target uint64 }
-	toWait := make([]waitFor, 0, len(keys))
-	runnable := make([]string, 0, len(keys))
-
-	// Decide targets and pick runnable keys.
-	for _, k := range keys {
-		cur, _ := m.version.Get(k)
-		if m.inProg.SetIfAbsent(k, struct{}{}) {
-			runnable = append(runnable, k)
-		} else {
-			m.pending.Set(k, struct{}{})
-		}
-		if wait {
-			toWait = append(toWait, waitFor{k: k, target: cur + 1})
-		}
-	}
-
-	if len(runnable) > 0 {
-		go m.runBatch(runnable)
-	}
-
-	if wait {
-		for _, w := range toWait {
-			m.WaitForAtLeast(w.k, w.target)
-		}
-	}
+	
+	m.inProg = true
+	m.done = make(chan error, 1)
+	m.mu.Unlock()
+	
+	go m.runCompute()
 	return nil
 }
 
-// TriggerAll recomputes ALL known keys. If wait==true, waits until each key
-// publishes a strictly newer version than at call time.
-func (m *MaterializedView[V]) TriggerAll(wait bool) error {
-	keys := m.allKeys()
-	if len(keys) == 0 {
-		return nil
+// WaitRecompute waits for the recomputation started by StartRecompute to complete.
+// Returns an error if no computation is in progress.
+func (m *MaterializedView[V]) WaitRecompute() error {
+	m.mu.RLock()
+	done := m.done
+	m.mu.RUnlock()
+	
+	if done == nil {
+		return errors.New("no computation in progress")
 	}
+	
+	return <-done
+}
 
-	type waitFor struct{ k string; target uint64 }
-	toWait := make([]waitFor, 0, len(keys))
-	if wait {
-		for _, k := range keys {
-			cur, _ := m.version.Get(k)
-			toWait = append(toWait, waitFor{k: k, target: cur + 1})
+// RunRecompute recomputes the value synchronously (equivalent to StartRecompute + WaitRecompute).
+// If a computation is already in progress, waits for it to complete.
+func (m *MaterializedView[V]) RunRecompute() error {
+	if err := m.StartRecompute(); err != nil {
+		// If already in progress, wait for it
+		if errors.Is(err, ErrAlreadyStarted) {
+			return m.WaitRecompute()
 		}
-	}
-	if err := m.Trigger(keys, false); err != nil {
 		return err
 	}
-	if wait {
-		for _, w := range toWait {
-			m.WaitForAtLeast(w.k, w.target)
-		}
-	}
-	return nil
+	return m.WaitRecompute()
 }
 
-func (m *MaterializedView[V]) TriggerAndWait(keys []string) error { return m.Trigger(keys, true) }
-func (m *MaterializedView[V]) TriggerAllAndWait() error           { return m.TriggerAll(true) }
-
-// runBatch executes recompute(keys) and publishes results.
-// We hold no locks while computing; publish uses a tiny critical section only to
-// Broadcast so Waiters don’t miss it.
-func (m *MaterializedView[V]) runBatch(keys []string) {
-	// Compute without locks
-	out, err := m.recompute(keys)
-
-	// Mark batch done + publish under a short critical section (for cond.Broadcast).
+// ApplyUpdate applies an incremental update to the cached value without full recomputation.
+// If a full recompute is in progress, marks pending to trigger a full recompute after completion.
+// This is useful for incremental updates that are cheaper than full recomputation.
+// Returns the updated value and any error from the update function.
+func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// Mark these keys as no longer in progress
-	for _, k := range keys {
-		m.inProg.Remove(k)
+	
+	// If a full recompute is in progress, mark pending and return current value
+	// The full recompute will capture this update when it completes
+	if m.inProg {
+		m.pending = true
+		val := m.val
+		m.mu.Unlock()
+		return val, nil
 	}
+	
+	// Apply the update function to the current value
+	newVal, err := updateFn(m.val)
+	if err != nil {
+		m.mu.Unlock()
+		var zero V
+		return zero, err
+	}
+	
+	// Update the cached value
+	m.val = newVal
+	m.mu.Unlock()
+	
+	return newVal, nil
+}
 
-	// Publish results and bump per-key versions
-	if err == nil && out != nil {
-		for k, v := range out {
-			m.val.Set(k, v)
-			cur, _ := m.version.Get(k)
-			m.version.Set(k, cur+1)
+// runCompute executes the recompute function and publishes the result.
+// If pending requests came in while running, keeps recomputing until no more pending work.
+func (m *MaterializedView[V]) runCompute() {
+	var lastErr error
+	
+	// Keep recomputing while there's pending work
+	for {
+		// Compute without locks
+		val, err := m.recompute()
+		lastErr = err
+		
+		m.mu.Lock()
+		
+		// Publish result on success
+		if err == nil {
+			m.val = val
 		}
-	}
-	// Wake any waiters (they read version via cmap safely).
-	m.cond.Broadcast()
-
-	// If keys were invalidated again while we were running, collapse to one follow-up batch.
-	var rerun []string
-	for _, k := range keys {
-		if _, ok := m.pending.Pop(k); ok { // Pop=> remove & tell if existed
-			if m.inProg.SetIfAbsent(k, struct{}{}) {
-				rerun = append(rerun, k)
-			}
+		
+		// Check if more work came in while we were computing
+		if m.pending {
+			m.pending = false
+			m.mu.Unlock()
+			// Loop again to recompute
+			continue
 		}
-	}
-	if len(rerun) > 0 {
-		go m.runBatch(rerun)
+		
+		// No more pending work - mark complete
+		m.inProg = false
+		done := m.done
+		m.done = nil
+		m.mu.Unlock()
+		
+		// Send result to all waiters
+		done <- lastErr
+		close(done)
+		return
 	}
 }
