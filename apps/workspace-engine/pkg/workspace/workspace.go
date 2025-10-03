@@ -67,4 +67,13 @@ func (w *Workspace) GetDeploymentAndEnvironmentReleaseTargets(
 	return releaseTargets, nil
 }
 
-var Workspaces = cmap.New[*Workspace]()
+var workspaces = cmap.New[*Workspace]()
+
+func GetWorkspace(id string) *Workspace {
+	workspace, _ := workspaces.Get(id)
+	if workspace == nil {
+		workspace = New()
+		workspaces.Set(id, workspace)
+	}
+	return workspace
+}

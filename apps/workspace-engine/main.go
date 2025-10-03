@@ -6,8 +6,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 	"workspace-engine/pkg/grpc/releasetarget"
+	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/pb/pbconnect"
 
 	"github.com/charmbracelet/log"
@@ -106,6 +109,8 @@ func initTracer() (func(), error) {
 }
 
 func main() {
+	ctx := context.Background()
+
 	pflag.String("host", "0.0.0.0", "Host to listen on")
 	pflag.Int("port", 8081, "Port to listen on")
 	pflag.Parse()
@@ -148,9 +153,29 @@ func main() {
 		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
 
-	log.Info("Connect server listening", "address", addr)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal("Failed to serve", "error", err)
-	}
+	go func() {
+		log.Info("Kafka consumer started")
+		if err := kafka.RunConsumer(ctx); err != nil {
+			log.Error("received error from kafka consumer", "error", err)
+		}
+	}()
+
+	go func() {
+		log.Info("Connect rpc server started", "address", addr)
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatal("Failed to serve", "error", err)
+		}
+	}()
+
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	log.Info("Shutting down workspace engine...")
+
+	server.Shutdown(ctx)
 }
