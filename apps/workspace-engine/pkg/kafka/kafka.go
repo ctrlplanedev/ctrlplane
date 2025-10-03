@@ -10,20 +10,25 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-const (
-	GroupID = "workspace-engine"
-	Topic   = "ctrlplane-events"
+var (
+	Topic   = getEnv("KAFKA_TOPIC", "workspace-events")
+	GroupID = getEnv("KAFKA_GROUP_ID", "workspace-engine")
+	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
 )
 
-func RunConsumer(ctx context.Context) error {
-	brokers := os.Getenv("KAFKA_BROKERS")
-	if brokers == "" {
-		brokers = "localhost:9092"
-	}
 
-	log.Info("Connecting to Kafka", "brokers", brokers)
+func getEnv(varName string, defaultValue string) string {
+	v := os.Getenv(varName)
+	if v == "" {
+		return defaultValue
+	}
+	return v
+}
+
+func RunConsumer(ctx context.Context) error {
+	log.Info("Connecting to Kafka", "brokers", Brokers)
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":  brokers,
+		"bootstrap.servers":  Brokers,
 		"group.id":           GroupID,
 		"auto.offset.reset":  "earliest",
 		"enable.auto.commit": false,
@@ -56,6 +61,7 @@ func RunConsumer(ctx context.Context) error {
 		msg, err := c.ReadMessage(time.Second)
 		if err != nil {
 			if err.(kafka.Error).IsTimeout() {
+				log.Debug("Timeout, continuing")
 				continue
 			}
 			log.Error("Consumer error", "error", err)
