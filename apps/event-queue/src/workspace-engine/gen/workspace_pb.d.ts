@@ -39,6 +39,11 @@ export declare type Policy = Message<"workspace.Policy"> & {
    * @generated from field: repeated workspace.PolicyTargetSelector selectors = 5;
    */
   selectors: PolicyTargetSelector[];
+
+  /**
+   * @generated from field: repeated workspace.PolicyRule rules = 6;
+   */
+  rules: PolicyRule[];
 };
 
 /**
@@ -77,6 +82,123 @@ export declare type PolicyTargetSelector = Message<"workspace.PolicyTargetSelect
  * Use `create(PolicyTargetSelectorSchema)` to create a new message.
  */
 export declare const PolicyTargetSelectorSchema: GenMessage<PolicyTargetSelector>;
+
+/**
+ * @generated from message workspace.PolicyRule
+ */
+export declare type PolicyRule = Message<"workspace.PolicyRule"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string policy_id = 2;
+   */
+  policyId: string;
+
+  /**
+   * @generated from field: string created_at = 3;
+   */
+  createdAt: string;
+
+  /**
+   * @generated from oneof workspace.PolicyRule.rule
+   */
+  rule: {
+    /**
+     * @generated from field: workspace.UserApprovalRule user_approval = 4;
+     */
+    value: UserApprovalRule;
+    case: "userApproval";
+  } | {
+    /**
+     * @generated from field: workspace.AnyApprovalRule any_approval = 5;
+     */
+    value: AnyApprovalRule;
+    case: "anyApproval";
+  } | {
+    /**
+     * @generated from field: workspace.DeploymentVersionSelectorRule deployment_version_selector = 6;
+     */
+    value: DeploymentVersionSelectorRule;
+    case: "deploymentVersionSelector";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message workspace.PolicyRule.
+ * Use `create(PolicyRuleSchema)` to create a new message.
+ */
+export declare const PolicyRuleSchema: GenMessage<PolicyRule>;
+
+/**
+ * @generated from message workspace.UserApprovalRule
+ */
+export declare type UserApprovalRule = Message<"workspace.UserApprovalRule"> & {
+  /**
+   * Require approval from one of the specified users
+   *
+   * @generated from field: repeated string user_ids = 1;
+   */
+  userIds: string[];
+};
+
+/**
+ * Describes the message workspace.UserApprovalRule.
+ * Use `create(UserApprovalRuleSchema)` to create a new message.
+ */
+export declare const UserApprovalRuleSchema: GenMessage<UserApprovalRule>;
+
+/**
+ * @generated from message workspace.RoleApprovalRule
+ */
+export declare type RoleApprovalRule = Message<"workspace.RoleApprovalRule"> & {
+  /**
+   * Required from one of the specified roles
+   *
+   * @generated from field: repeated string role_ids = 1;
+   */
+  roleIds: string[];
+};
+
+/**
+ * Describes the message workspace.RoleApprovalRule.
+ * Use `create(RoleApprovalRuleSchema)` to create a new message.
+ */
+export declare const RoleApprovalRuleSchema: GenMessage<RoleApprovalRule>;
+
+/**
+ * @generated from message workspace.AnyApprovalRule
+ */
+export declare type AnyApprovalRule = Message<"workspace.AnyApprovalRule"> & {
+  /**
+   * @generated from field: int32 min_approvals = 1;
+   */
+  minApprovals: number;
+};
+
+/**
+ * Describes the message workspace.AnyApprovalRule.
+ * Use `create(AnyApprovalRuleSchema)` to create a new message.
+ */
+export declare const AnyApprovalRuleSchema: GenMessage<AnyApprovalRule>;
+
+/**
+ * @generated from message workspace.DeploymentVersionSelectorRule
+ */
+export declare type DeploymentVersionSelectorRule = Message<"workspace.DeploymentVersionSelectorRule"> & {
+  /**
+   * @generated from field: optional google.protobuf.Struct version_selector = 1;
+   */
+  versionSelector?: JsonObject;
+};
+
+/**
+ * Describes the message workspace.DeploymentVersionSelectorRule.
+ * Use `create(DeploymentVersionSelectorRuleSchema)` to create a new message.
+ */
+export declare const DeploymentVersionSelectorRuleSchema: GenMessage<DeploymentVersionSelectorRule>;
 
 /**
  * @generated from message workspace.Resource
@@ -435,12 +557,17 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
   deploymentVariableId: string;
 
   /**
-   * @generated from field: workspace.VariableValue default_value = 4;
+   * @generated from field: int64 priority = 4;
+   */
+  priority: bigint;
+
+  /**
+   * @generated from field: workspace.VariableValue default_value = 5;
    */
   defaultValue?: VariableValue;
 
   /**
-   * @generated from field: optional google.protobuf.Struct resource_selector = 5;
+   * @generated from field: optional google.protobuf.Struct resource_selector = 6;
    */
   resourceSelector?: JsonObject;
 
@@ -449,19 +576,19 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
    */
   value: {
     /**
-     * @generated from field: workspace.VariableValue direct_value = 6;
+     * @generated from field: workspace.VariableValue direct_value = 7;
      */
     value: VariableValue;
     case: "directValue";
   } | {
     /**
-     * @generated from field: workspace.ReferenceVariableValue reference_value = 7;
+     * @generated from field: workspace.ReferenceVariableValue reference_value = 8;
      */
     value: ReferenceVariableValue;
     case: "referenceValue";
   } | {
     /**
-     * @generated from field: workspace.SensitiveVariableValue sensitive_value = 8;
+     * @generated from field: workspace.SensitiveVariableValue sensitive_value = 9;
      */
     value: SensitiveVariableValue;
     case: "sensitiveValue";

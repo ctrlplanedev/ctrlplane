@@ -68,7 +68,7 @@ func (d *DeploymentVersions) RecomputeDeployableVersion(version *pb.DeploymentVe
 			break
 		}
 
-		for _, rule := range policy.Rules() {
+		for _, rule := range policy.Rules {
 			if !rule.CanDeploy(version) {
 				deployable = false
 				break

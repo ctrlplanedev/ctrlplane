@@ -13,12 +13,6 @@ func NewPolicies(store *Store) *Policies {
 	}
 }
 
-type Rule interface {
-	ID() string
-	PolicyID() string
-	CanDeploy(version *pb.DeploymentVersion) bool
-}
-
 type Policies struct {
 	repo *repository.Repository
 }
@@ -44,15 +38,6 @@ func (p *Policies) Remove(id string) {
 	p.repo.Policies.Remove(id)
 }
 
-func (p *Policies) AppliesToDeployment(policyId string, deploymentId string) bool {
-	policy, exists := p.Get(policyId)
-	if !exists {
-		return false
-	}
-
-	if policy.Selectors == nil {
-		return true
-	}
-
-	return false
+func (p *Policies) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *pb.ReleaseTarget) []*pb.Policy {
+	return []*pb.Policy{}
 }

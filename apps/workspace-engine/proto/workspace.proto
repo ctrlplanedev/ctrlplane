@@ -13,6 +13,8 @@ message Policy {
   string created_at = 4;
 
   repeated PolicyTargetSelector selectors = 5;
+
+  repeated PolicyRule rules = 6;
 }
 
 message PolicyTargetSelector {
@@ -20,6 +22,88 @@ message PolicyTargetSelector {
   optional google.protobuf.Struct deployment_selector = 3;
   optional google.protobuf.Struct environment_selector = 4;
   optional google.protobuf.Struct resource_selector = 5;
+}
+
+message PolicyRule {
+  string id = 1;
+  string policy_id = 2;
+  string created_at = 3;
+
+  oneof rule {
+    DenyWindowRule deny_window = 10;
+    UserApprovalRule user_approval = 11;
+    RoleApprovalRule role_approval = 12;
+    AnyApprovalRule any_approval = 13;
+    ConcurrencyRule concurrency = 14;
+    EnvironmentVersionRolloutRule environment_version_rollout = 15;
+    MaxRetriesRule max_retries = 16;
+    DeploymentVersionSelectorRule deployment_version_selector = 17;
+  }
+}
+
+// Deny Window - prevents deployments during specified time windows
+// Example: block deployments on weekends, holidays, or specific hours
+message DenyWindowRule {
+  // RRule configuration for recurrence patterns (RRULE format)
+  // https://github.com/teambition/rrule-go
+  google.protobuf.Struct rrule = 1;
+  
+  // End datetime for the deny window (RFC3339 format)
+  optional string dtend = 2;
+  
+  // IANA timezone (e.g., "America/New_York", "UTC")
+  string time_zone = 3;
+}
+
+// User Approval - requires approval from a specific user
+message UserApprovalRule {
+  // User ID who must approve
+  string user_id = 1;
+}
+
+// Role Approval - requires approval from a user with a specific role
+message RoleApprovalRule {
+  // Role ID - any user with this role can approve
+  string role_id = 1;
+}
+
+// Any Approval - requires a minimum number of approvals from any authorized users
+message AnyApprovalRule {
+  // Minimum number of approvals required
+  int32 min_approvals = 1;
+}
+
+// Concurrency - limits the number of concurrent deployments
+message ConcurrencyRule {
+  // Maximum number of concurrent deployments allowed
+  int32 max_concurrent = 1;
+}
+
+// Environment Version Rollout - controls progressive rollout across environments
+// Example: deploy to dev -> staging -> production with validation between steps
+message EnvironmentVersionRolloutRule {
+  // Ordered list of environment IDs for progressive rollout
+  repeated string environment_order = 1;
+  
+  // Time to wait between environment deployments (in seconds)
+  int32 wait_seconds = 2;
+  
+  // Optional success threshold (0.0 to 1.0) that must be met before proceeding
+  // Example: 0.95 means 95% of deployments must succeed
+  optional double success_threshold = 3;
+}
+
+// Max Retries - limits the number of deployment retry attempts
+message MaxRetriesRule {
+  // Maximum number of retry attempts allowed
+  int32 max_retries = 1;
+}
+
+// Deployment Version Selector - filters which versions can be deployed
+// Example: only allow versions matching specific tags or version patterns
+message DeploymentVersionSelectorRule {
+  // Selector for filtering deployment versions
+  optional google.protobuf.Struct version_selector = 1;
 }
 
 message Resource {
