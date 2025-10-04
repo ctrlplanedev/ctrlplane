@@ -15,25 +15,19 @@ type Systems struct {
 	environments cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Environment]]
 }
 
-func (s *Systems) Upsert(ctx context.Context, system *pb.System) (*pb.System, error) {
+func (s *Systems) Upsert(ctx context.Context, system *pb.System) error {
 	s.repo.Systems.Set(system.Id, system)
 
 	if _, ok := s.deployments.Get(system.Id); !ok {
 		s.deployments.Set(system.Id,
-			materialized.New(
-				s.computeDeployments(system.Id),
-				materialized.WithImmediateCompute[map[string]*pb.Deployment](),
-			),
+			materialized.New(s.computeDeployments(system.Id)),
 		)
 		s.environments.Set(system.Id,
-			materialized.New(
-				s.computeEnvironments(system.Id),
-				materialized.WithImmediateCompute[map[string]*pb.Environment](),
-			),
+			materialized.New(s.computeEnvironments(system.Id)),
 		)
 	}
 
-	return system, nil
+	return nil
 }
 
 func (s *Systems) Get(id string) (*pb.System, bool) {
@@ -86,4 +80,20 @@ func (s *Systems) Environments(systemId string) map[string]*pb.Environment {
 	}
 	mv.WaitRecompute()
 	return mv.Get()
+}
+
+func (s *Systems) Remove(id string) {
+	deployments := s.Deployments(id)
+	for key := range deployments {
+		s.repo.Deployments.Remove(key)
+	}
+
+	environments := s.Environments(id)
+	for key := range environments {
+		s.repo.Environments.Remove(key)
+	}
+
+	s.repo.Systems.Remove(id)
+	s.deployments.Remove(id)
+	s.environments.Remove(id)
 }

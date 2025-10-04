@@ -25,9 +25,10 @@ func HandleDeploymentVersionCreated(
 	ws.DeploymentVersions().Upsert(deploymentVersion.Id, deploymentVersion)
 	rm := ws.ReleaseManager()
 
-	versionReleases := make([]*pb.ReleaseTargetDeploy, 0)
+	rts := rm.ReleaseTargets()
+	versionReleases := make([]*pb.ReleaseTargetDeploy, len(rts))
 
-	for _, rt := range rm.ReleaseTargets() {
+	for _, rt := range rts {
 		if rt.ResourceId != deploymentVersion.DeploymentId {
 			continue
 		}
@@ -44,17 +45,8 @@ func HandleDeploymentVersionCreated(
 			continue
 		}
 
-		versionReleases = append(versionReleases, &pb.ReleaseTargetDeploy{
-			ReleaseTarget:     rt,
-			DeploymentVersion: vr.Version,
-			Variables:         vr.Variables,
-			CreatedAt:         vr.Version.CreatedAt,
-		})
-
-		// check if this version is already deployed
+		versionReleases = append(versionReleases, vr)
 	}
-
-	log.Info("Changes", "changes", len(versionReleases))
 
 	return nil
 }

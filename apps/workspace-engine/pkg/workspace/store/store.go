@@ -29,7 +29,7 @@ func New() *Store {
 		store: store,
 	}
 	store.Policies = &Policies{repo: repo}
-	store.ReleaseTargets = &ReleaseTargets{store: store}
+	store.ReleaseTargets = NewReleaseTargets(store)
 	store.DeploymentVersions = &DeploymentVersions{
 		repo:               repo,
 		store:              store,
@@ -37,17 +37,20 @@ func New() *Store {
 	}
 	store.Systems = &Systems{repo: repo}
 
+	store.DeploymentVariables = &DeploymentVariables{repo: repo}
+
 	return store
 }
 
 type Store struct {
 	repo *repository.Repository
 
-	Policies           *Policies
-	Resources          *Resources
-	Deployments        *Deployments
-	Environments       *Environments
-	ReleaseTargets     *ReleaseTargets
-	DeploymentVersions *DeploymentVersions
-	Systems            *Systems
+	Policies            *Policies
+	Resources           *Resources
+	Deployments         *Deployments
+	DeploymentVersions  *DeploymentVersions
+	DeploymentVariables *DeploymentVariables
+	Environments        *Environments
+	ReleaseTargets      *ReleaseTargets
+	Systems             *Systems
 }

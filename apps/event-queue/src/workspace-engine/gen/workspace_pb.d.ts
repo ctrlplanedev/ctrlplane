@@ -303,12 +303,6 @@ export declare type VariableValue = Message<"workspace.VariableValue"> & {
    */
   value: {
     /**
-     * @generated from field: double number_value = 1;
-     */
-    value: number;
-    case: "numberValue";
-  } | {
-    /**
      * @generated from field: string string_value = 2;
      */
     value: string;
@@ -321,13 +315,25 @@ export declare type VariableValue = Message<"workspace.VariableValue"> & {
     case: "boolValue";
   } | {
     /**
-     * @generated from field: google.protobuf.Struct object_value = 4;
+     * @generated from field: double double_value = 4;
+     */
+    value: number;
+    case: "doubleValue";
+  } | {
+    /**
+     * @generated from field: int64 int64_value = 5;
+     */
+    value: bigint;
+    case: "int64Value";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct object_value = 10;
      */
     value: JsonObject;
     case: "objectValue";
   } | {
     /**
-     * @generated from field: google.protobuf.NullValue null_value = 5;
+     * @generated from field: google.protobuf.NullValue null_value = 11;
      */
     value: NullValue;
     case: "nullValue";
@@ -383,29 +389,29 @@ export declare type DeploymentVariable = Message<"workspace.DeploymentVariable">
   id: string;
 
   /**
-   * @generated from field: string variable_id = 2;
+   * @generated from field: string key = 2;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string variable_id = 3;
    */
   variableId: string;
 
   /**
-   * @generated from field: string description = 3;
+   * @generated from field: string description = 4;
    */
   description: string;
 
   /**
-   * @generated from field: string deployment_id = 4;
+   * @generated from field: string deployment_id = 5;
    */
   deploymentId: string;
 
   /**
-   * @generated from field: optional google.protobuf.Struct resource_selector = 5;
+   * @generated from field: workspace.VariableValue default_value = 6;
    */
-  resourceSelector?: JsonObject;
-
-  /**
-   * @generated from field: int32 priority = 6;
-   */
-  priority: number;
+  defaultValue?: VariableValue;
 };
 
 /**
@@ -434,23 +440,28 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
   defaultValue?: VariableValue;
 
   /**
+   * @generated from field: optional google.protobuf.Struct resource_selector = 5;
+   */
+  resourceSelector?: JsonObject;
+
+  /**
    * @generated from oneof workspace.DeploymentVariableValue.value
    */
   value: {
     /**
-     * @generated from field: workspace.VariableValue direct_value = 5;
+     * @generated from field: workspace.VariableValue direct_value = 6;
      */
     value: VariableValue;
     case: "directValue";
   } | {
     /**
-     * @generated from field: workspace.ReferenceVariableValue reference_value = 6;
+     * @generated from field: workspace.ReferenceVariableValue reference_value = 7;
      */
     value: ReferenceVariableValue;
     case: "referenceValue";
   } | {
     /**
-     * @generated from field: workspace.SensitiveVariableValue sensitive_value = 7;
+     * @generated from field: workspace.SensitiveVariableValue sensitive_value = 8;
      */
     value: SensitiveVariableValue;
     case: "sensitiveValue";

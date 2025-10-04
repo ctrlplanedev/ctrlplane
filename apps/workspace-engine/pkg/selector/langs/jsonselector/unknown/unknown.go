@@ -30,6 +30,16 @@ type UnknownCondition struct {
 	Conditions  []UnknownCondition `json:"conditions"`
 }
 
+func (c UnknownCondition) AsMap() map[string]any {
+	return map[string]any{
+		"type":       c.Property,
+		"operator":   c.Operator,
+		"value":      c.Value,
+		"key":        c.MetadataKey,
+		"conditions": c.Conditions,
+	}
+}
+
 func (c UnknownCondition) GetNormalizedProperty() string {
 	if alias, ok := propertyAliases[c.Property]; ok {
 		return alias

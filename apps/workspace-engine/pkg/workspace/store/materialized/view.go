@@ -41,6 +41,7 @@ func WithImmediateCompute[V any]() Option[V] {
 func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
 	mv := &MaterializedView[V]{
 		recompute: rf,
+		mu:        sync.RWMutex{},
 	}
 
 	// Apply options
@@ -94,6 +95,20 @@ func (m *MaterializedView[V]) WaitRecompute() error {
 
 	if done == nil {
 		return errors.New("no computation in progress")
+	}
+
+	return <-done
+}
+
+// WaitIfRunning waits for any in-progress computation to complete.
+// If no computation is running, returns immediately without error.
+func (m *MaterializedView[V]) WaitIfRunning() error {
+	m.mu.RLock()
+	done := m.done
+	m.mu.RUnlock()
+
+	if done == nil {
+		return nil
 	}
 
 	return <-done

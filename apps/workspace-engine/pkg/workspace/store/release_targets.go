@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/store/materialized"
 )
@@ -21,7 +22,8 @@ type ReleaseTargets struct {
 
 // CurrentState returns the current state of all release targets in the system.
 func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget {
-	r.targets.WaitRecompute()
+	r.targets.WaitIfRunning()
+	fmt.Println("ReleaseTargets.Items")
 	return r.targets.Get()
 }
 

@@ -21,21 +21,31 @@ var tracer = otel.Tracer("events/handler")
 type EventType string
 
 const (
-	ResourceCreated EventType = "resource.created"
-	ResourceUpdated EventType = "resource.updated"
-	ResourceDeleted EventType = "resource.deleted"
+	ResourceCreate EventType = "resource.create"
+	ResourceUpdate EventType = "resource.update"
+	ResourceDelete EventType = "resource.delete"
 
-	DeploymentVersionCreated EventType = "deployment-version.created"
-	DeploymentVersionDeleted EventType = "deployment-version.deleted"
+	DeploymentCreate EventType = "deployment.create"
+	DeploymentUpdate EventType = "deployment.update"
+	DeploymentDelete EventType = "deployment.delete"
+
+	DeploymentVersionCreate EventType = "deployment-version.create"
+	DeploymentVersionUpdate EventType = "deployment-version.update"
+	DeploymentVersionDelete EventType = "deployment-version.delete"
+
+	EnvironmentCreate EventType = "environment.create"
+	EnvironmentUpdate EventType = "environment.update"
+	EnvironmentDelete EventType = "environment.delete"
+
+	SystemCreate EventType = "system.create"
+	SystemUpdate EventType = "system.update"
+	SystemDelete EventType = "system.delete"
 )
 
 // BaseEvent represents the common structure of all events
 type BaseEvent struct {
 	EventType   EventType `json:"eventType"`
 	WorkspaceID string    `json:"workspaceId"`
-	EventID     string    `json:"eventId"`
-	Timestamp   float64   `json:"timestamp"`
-	Source      string    `json:"source"`
 }
 
 // RawEvent represents the raw event data received from Kafka messages
@@ -84,13 +94,10 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	// Add event metadata to span
 	span.SetAttributes(
 		attribute.String("event.type", string(rawEvent.EventType)),
-		attribute.String("event.id", rawEvent.EventID),
+		attribute.String("event.key", string(msg.Key)),
 		attribute.String("event.workspace_id", rawEvent.WorkspaceID),
-		attribute.String("event.source", rawEvent.Source),
-		attribute.Float64("event.timestamp", rawEvent.Timestamp),
+		attribute.Float64("event.timestamp", float64(msg.Timestamp.Unix())),
 	)
-
-	log.Info("Received event", "eventType", rawEvent.EventType, "eventId", rawEvent.EventID, "workspaceId", rawEvent.WorkspaceID)
 
 	// Find the appropriate handler for this event type
 	handler, ok := el.handlers[rawEvent.EventType]
@@ -115,16 +122,14 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		span.SetStatus(codes.Error, "handler failed")
 		log.Error("Handler failed to process event",
 			"eventType", rawEvent.EventType,
-			"eventId", rawEvent.EventID,
 			"error", err,
 			"duration", duration)
 		return fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")
-	log.Info("Successfully processed event",
+	log.Debug("Successfully processed event",
 		"eventType", rawEvent.EventType,
-		"eventId", rawEvent.EventID,
 		"duration", duration)
 
 	return nil

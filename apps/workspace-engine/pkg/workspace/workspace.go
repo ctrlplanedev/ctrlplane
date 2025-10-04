@@ -8,10 +8,11 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-func New() *Workspace {
+func New(id string) *Workspace {
 	s := store.New()
 	rm := releasemanager.New(s)
 	ws := &Workspace{
+		ID:             id,
 		store:          s,
 		releasemanager: rm,
 	}
@@ -49,6 +50,10 @@ func (w *Workspace) ReleaseTargets() *store.ReleaseTargets {
 	return w.store.ReleaseTargets
 }
 
+func (w *Workspace) Systems() *store.Systems {
+	return w.store.Systems
+}
+
 func (w *Workspace) GetDeploymentAndEnvironmentReleaseTargets(
 	ctx context.Context,
 	deployment *pb.Deployment,
@@ -76,7 +81,7 @@ var workspaces = cmap.New[*Workspace]()
 func GetWorkspace(id string) *Workspace {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
-		workspace = New()
+		workspace = New(id)
 		workspaces.Set(id, workspace)
 	}
 	return workspace

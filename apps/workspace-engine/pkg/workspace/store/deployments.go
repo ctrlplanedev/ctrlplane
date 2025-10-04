@@ -175,3 +175,14 @@ func (e *Deployments) Remove(id string) {
 	e.repo.Deployments.Remove(id)
 	e.resources.Remove(id)
 }
+
+func (e *Deployments) Variables(deploymentId string) map[string]*pb.DeploymentVariable {
+	vars := make(map[string]*pb.DeploymentVariable)
+	for variable := range e.repo.DeploymentVariables.IterBuffered() {
+		if variable.Val.DeploymentId != deploymentId {
+			continue
+		}
+		vars[variable.Val.Key] = variable.Val
+	}
+	return vars
+}

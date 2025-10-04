@@ -120,10 +120,7 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 	e.repo.Environments.Set(environment.Id, environment)
 
 	// Create materialized view with immediate computation of environment resources
-	mv := materialized.New(
-		e.environmentResourceRecomputeFunc(environment.Id),
-		materialized.WithImmediateCompute[map[string]*pb.Resource](),
-	)
+	mv := materialized.New(e.environmentResourceRecomputeFunc(environment.Id))
 
 	e.resources.Set(environment.Id, mv)
 

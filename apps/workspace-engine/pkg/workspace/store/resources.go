@@ -58,6 +58,10 @@ func (r *Resources) applyResourceToAllDeployments(ctx context.Context, resource 
 	}
 }
 
+func (r *Resources) Get(id string) (*pb.Resource, bool) {
+	return r.repo.Resources.Get(id)
+}
+
 func (r *Resources) Remove(id string) {
 	r.repo.Resources.Remove(id)
 }
