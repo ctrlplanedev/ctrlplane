@@ -12,11 +12,14 @@ import (
 )
 
 func NewDeployments(store *Store) *Deployments {
-	return &Deployments{
+	deployments := &Deployments{
 		repo:      store.repo,
 		store:     store,
 		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
+		versions:  cmap.New[*materialized.MaterializedView[map[string]*pb.DeploymentVersion]](),
 	}
+
+	return deployments
 }
 
 type Deployments struct {
@@ -24,6 +27,7 @@ type Deployments struct {
 	store *Store
 
 	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Resource]]
+	versions  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.DeploymentVersion]]
 }
 
 // deploymentResourceRecomputeFunc returns a function that computes resources for a specific deployment
@@ -62,6 +66,23 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 		}
 
 		return deploymentResources, nil
+	}
+}
+
+func (e *Deployments) deploymentVersionRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*pb.DeploymentVersion] {
+	return func() (map[string]*pb.DeploymentVersion, error) {
+		_, exists := e.repo.Deployments.Get(deploymentId)
+		if !exists {
+			return nil, fmt.Errorf("deployment %s not found", deploymentId)
+		}
+		deploymentVersions := make(map[string]*pb.DeploymentVersion, e.repo.DeploymentVersions.Count())
+		for versionItem := range e.repo.DeploymentVersions.IterBuffered() {
+			if versionItem.Val.DeploymentId != deploymentId {
+				continue
+			}
+			deploymentVersions[versionItem.Key] = versionItem.Val
+		}
+		return deploymentVersions, nil
 	}
 }
 
@@ -130,7 +151,12 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) err
 		e.deploymentResourceRecomputeFunc(deployment.Id),
 	)
 
+	versionsMv := materialized.New(
+		e.deploymentVersionRecomputeFunc(deployment.Id),
+	)
+
 	e.resources.Set(deployment.Id, mv)
+	e.versions.Set(deployment.Id, versionsMv)
 
 	e.store.ReleaseTargets.Recompute(ctx)
 
@@ -191,6 +217,7 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 func (e *Deployments) Remove(ctx context.Context, id string) {
 	e.repo.Deployments.Remove(id)
 	e.resources.Remove(id)
+	e.versions.Remove(id)
 
 	e.store.ReleaseTargets.ApplyUpdate(ctx, func(currentReleaseTargets map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error) {
 		for key, releaseTarget := range currentReleaseTargets {

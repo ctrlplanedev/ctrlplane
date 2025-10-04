@@ -102,4 +102,3 @@ func (p *PolicyEvaluationResult) GetPendingActions() []*RuleEvaluationResult {
 	}
 	return pending
 }
-

@@ -5,4 +5,3 @@ type Rule interface {
 	PolicyID() string
 	CanDeploy(version *DeploymentVersion) bool
 }
-

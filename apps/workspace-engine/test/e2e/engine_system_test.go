@@ -54,7 +54,7 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 	d1 := c.NewDeployment()
 	d1.Name = "deployment-1-s1"
 	d1.SystemId = s1.Id
-	
+
 	d2 := c.NewDeployment()
 	d2.Name = "deployment-2-s1"
 	d2.SystemId = s1.Id
@@ -309,8 +309,8 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 
 	// Verify release targets are created correctly
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
-	
-	// Expected: 
+
+	// Expected:
 	// - d1 (no filter) matches both r1 and r2 = 2 resources
 	// - d2 (priority=critical) matches only r2 = 1 resource
 	// Total deployments * matching resources = 3 deployment-resource pairs
@@ -340,4 +340,3 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 		}
 	}
 }
-

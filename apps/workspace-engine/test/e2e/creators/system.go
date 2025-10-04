@@ -24,4 +24,3 @@ func NewSystem() *pb.System {
 
 	return s
 }
-

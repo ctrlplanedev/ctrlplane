@@ -60,7 +60,7 @@ func (r *ReleaseTargets) computeTargets() (map[string]*pb.ReleaseTarget, error) 
 				releaseTargets[releaseTargetId] = &pb.ReleaseTarget{
 					EnvironmentId: environment.Id,
 					DeploymentId:  deployment.Id,
-					ResourceId:    resource.Id,	
+					ResourceId:    resource.Id,
 					Id:            releaseTargetId,
 				}
 			}

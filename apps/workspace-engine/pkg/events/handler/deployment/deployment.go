@@ -48,7 +48,7 @@ func HandleDeploymentDeleted(
 		return err
 	}
 
-	ws.Deployments().Remove(ctx,deployment.Id)
+	ws.Deployments().Remove(ctx, deployment.Id)
 
 	return nil
 }

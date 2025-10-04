@@ -107,19 +107,49 @@ export declare type PolicyRule = Message<"workspace.PolicyRule"> & {
    */
   rule: {
     /**
-     * @generated from field: workspace.UserApprovalRule user_approval = 4;
+     * @generated from field: workspace.DenyWindowRule deny_window = 10;
+     */
+    value: DenyWindowRule;
+    case: "denyWindow";
+  } | {
+    /**
+     * @generated from field: workspace.UserApprovalRule user_approval = 11;
      */
     value: UserApprovalRule;
     case: "userApproval";
   } | {
     /**
-     * @generated from field: workspace.AnyApprovalRule any_approval = 5;
+     * @generated from field: workspace.RoleApprovalRule role_approval = 12;
+     */
+    value: RoleApprovalRule;
+    case: "roleApproval";
+  } | {
+    /**
+     * @generated from field: workspace.AnyApprovalRule any_approval = 13;
      */
     value: AnyApprovalRule;
     case: "anyApproval";
   } | {
     /**
-     * @generated from field: workspace.DeploymentVersionSelectorRule deployment_version_selector = 6;
+     * @generated from field: workspace.ConcurrencyRule concurrency = 14;
+     */
+    value: ConcurrencyRule;
+    case: "concurrency";
+  } | {
+    /**
+     * @generated from field: workspace.EnvironmentVersionRolloutRule environment_version_rollout = 15;
+     */
+    value: EnvironmentVersionRolloutRule;
+    case: "environmentVersionRollout";
+  } | {
+    /**
+     * @generated from field: workspace.MaxRetriesRule max_retries = 16;
+     */
+    value: MaxRetriesRule;
+    case: "maxRetries";
+  } | {
+    /**
+     * @generated from field: workspace.DeploymentVersionSelectorRule deployment_version_selector = 17;
      */
     value: DeploymentVersionSelectorRule;
     case: "deploymentVersionSelector";
@@ -133,15 +163,53 @@ export declare type PolicyRule = Message<"workspace.PolicyRule"> & {
 export declare const PolicyRuleSchema: GenMessage<PolicyRule>;
 
 /**
+ * Deny Window - prevents deployments during specified time windows
+ * Example: block deployments on weekends, holidays, or specific hours
+ *
+ * @generated from message workspace.DenyWindowRule
+ */
+export declare type DenyWindowRule = Message<"workspace.DenyWindowRule"> & {
+  /**
+   * RRule configuration for recurrence patterns (RRULE format)
+   * https://github.com/teambition/rrule-go
+   *
+   * @generated from field: google.protobuf.Struct rrule = 1;
+   */
+  rrule?: JsonObject;
+
+  /**
+   * End datetime for the deny window (RFC3339 format)
+   *
+   * @generated from field: optional string dtend = 2;
+   */
+  dtend?: string;
+
+  /**
+   * IANA timezone (e.g., "America/New_York", "UTC")
+   *
+   * @generated from field: string time_zone = 3;
+   */
+  timeZone: string;
+};
+
+/**
+ * Describes the message workspace.DenyWindowRule.
+ * Use `create(DenyWindowRuleSchema)` to create a new message.
+ */
+export declare const DenyWindowRuleSchema: GenMessage<DenyWindowRule>;
+
+/**
+ * User Approval - requires approval from a specific user
+ *
  * @generated from message workspace.UserApprovalRule
  */
 export declare type UserApprovalRule = Message<"workspace.UserApprovalRule"> & {
   /**
-   * Require approval from one of the specified users
+   * User ID who must approve
    *
-   * @generated from field: repeated string user_ids = 1;
+   * @generated from field: string user_id = 1;
    */
-  userIds: string[];
+  userId: string;
 };
 
 /**
@@ -151,15 +219,17 @@ export declare type UserApprovalRule = Message<"workspace.UserApprovalRule"> & {
 export declare const UserApprovalRuleSchema: GenMessage<UserApprovalRule>;
 
 /**
+ * Role Approval - requires approval from a user with a specific role
+ *
  * @generated from message workspace.RoleApprovalRule
  */
 export declare type RoleApprovalRule = Message<"workspace.RoleApprovalRule"> & {
   /**
-   * Required from one of the specified roles
+   * Role ID - any user with this role can approve
    *
-   * @generated from field: repeated string role_ids = 1;
+   * @generated from field: string role_id = 1;
    */
-  roleIds: string[];
+  roleId: string;
 };
 
 /**
@@ -169,10 +239,14 @@ export declare type RoleApprovalRule = Message<"workspace.RoleApprovalRule"> & {
 export declare const RoleApprovalRuleSchema: GenMessage<RoleApprovalRule>;
 
 /**
+ * Any Approval - requires a minimum number of approvals from any authorized users
+ *
  * @generated from message workspace.AnyApprovalRule
  */
 export declare type AnyApprovalRule = Message<"workspace.AnyApprovalRule"> & {
   /**
+   * Minimum number of approvals required
+   *
    * @generated from field: int32 min_approvals = 1;
    */
   minApprovals: number;
@@ -185,10 +259,91 @@ export declare type AnyApprovalRule = Message<"workspace.AnyApprovalRule"> & {
 export declare const AnyApprovalRuleSchema: GenMessage<AnyApprovalRule>;
 
 /**
+ * Concurrency - limits the number of concurrent deployments
+ *
+ * @generated from message workspace.ConcurrencyRule
+ */
+export declare type ConcurrencyRule = Message<"workspace.ConcurrencyRule"> & {
+  /**
+   * Maximum number of concurrent deployments allowed
+   *
+   * @generated from field: int32 max_concurrent = 1;
+   */
+  maxConcurrent: number;
+};
+
+/**
+ * Describes the message workspace.ConcurrencyRule.
+ * Use `create(ConcurrencyRuleSchema)` to create a new message.
+ */
+export declare const ConcurrencyRuleSchema: GenMessage<ConcurrencyRule>;
+
+/**
+ * Environment Version Rollout - controls progressive rollout across environments
+ * Example: deploy to dev -> staging -> production with validation between steps
+ *
+ * @generated from message workspace.EnvironmentVersionRolloutRule
+ */
+export declare type EnvironmentVersionRolloutRule = Message<"workspace.EnvironmentVersionRolloutRule"> & {
+  /**
+   * Ordered list of environment IDs for progressive rollout
+   *
+   * @generated from field: repeated string environment_order = 1;
+   */
+  environmentOrder: string[];
+
+  /**
+   * Time to wait between environment deployments (in seconds)
+   *
+   * @generated from field: int32 wait_seconds = 2;
+   */
+  waitSeconds: number;
+
+  /**
+   * Optional success threshold (0.0 to 1.0) that must be met before proceeding
+   * Example: 0.95 means 95% of deployments must succeed
+   *
+   * @generated from field: optional double success_threshold = 3;
+   */
+  successThreshold?: number;
+};
+
+/**
+ * Describes the message workspace.EnvironmentVersionRolloutRule.
+ * Use `create(EnvironmentVersionRolloutRuleSchema)` to create a new message.
+ */
+export declare const EnvironmentVersionRolloutRuleSchema: GenMessage<EnvironmentVersionRolloutRule>;
+
+/**
+ * Max Retries - limits the number of deployment retry attempts
+ *
+ * @generated from message workspace.MaxRetriesRule
+ */
+export declare type MaxRetriesRule = Message<"workspace.MaxRetriesRule"> & {
+  /**
+   * Maximum number of retry attempts allowed
+   *
+   * @generated from field: int32 max_retries = 1;
+   */
+  maxRetries: number;
+};
+
+/**
+ * Describes the message workspace.MaxRetriesRule.
+ * Use `create(MaxRetriesRuleSchema)` to create a new message.
+ */
+export declare const MaxRetriesRuleSchema: GenMessage<MaxRetriesRule>;
+
+/**
+ * Deployment Version Selector - filters which versions can be deployed
+ * Example: only allow versions matching specific tags or version patterns
+ *
  * @generated from message workspace.DeploymentVersionSelectorRule
  */
 export declare type DeploymentVersionSelectorRule = Message<"workspace.DeploymentVersionSelectorRule"> & {
   /**
+   * Selector for filtering deployment versions
+   *
    * @generated from field: optional google.protobuf.Struct version_selector = 1;
    */
   versionSelector?: JsonObject;
@@ -381,6 +536,82 @@ export declare type Deployment = Message<"workspace.Deployment"> & {
 export declare const DeploymentSchema: GenMessage<Deployment>;
 
 /**
+ * @generated from message workspace.Job
+ */
+export declare type Job = Message<"workspace.Job"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string release_id = 2;
+   */
+  releaseId: string;
+
+  /**
+   * @generated from field: string job_agent_id = 3;
+   */
+  jobAgentId: string;
+
+  /**
+   * @generated from field: google.protobuf.Struct job_agent_config = 4;
+   */
+  jobAgentConfig?: JsonObject;
+
+  /**
+   * @generated from field: optional string external_id = 5;
+   */
+  externalId?: string;
+
+  /**
+   * @generated from field: workspace.JobStatus status = 6;
+   */
+  status: JobStatus;
+
+  /**
+   * @generated from field: string resource_id = 7;
+   */
+  resourceId: string;
+
+  /**
+   * @generated from field: string environment_id = 8;
+   */
+  environmentId: string;
+
+  /**
+   * @generated from field: string deployment_id = 9;
+   */
+  deploymentId: string;
+
+  /**
+   * @generated from field: string created_at = 10;
+   */
+  createdAt: string;
+
+  /**
+   * @generated from field: string updated_at = 11;
+   */
+  updatedAt: string;
+
+  /**
+   * @generated from field: optional string started_at = 12;
+   */
+  startedAt?: string;
+
+  /**
+   * @generated from field: optional string completed_at = 13;
+   */
+  completedAt?: string;
+};
+
+/**
+ * Describes the message workspace.Job.
+ * Use `create(JobSchema)` to create a new message.
+ */
+export declare const JobSchema: GenMessage<Job>;
+
+/**
  * @generated from message workspace.ReleaseTarget
  */
 export declare type ReleaseTarget = Message<"workspace.ReleaseTarget"> & {
@@ -469,25 +700,28 @@ export declare type VariableValue = Message<"workspace.VariableValue"> & {
 export declare const VariableValueSchema: GenMessage<VariableValue>;
 
 /**
- * @generated from message workspace.ReleaseTargetDeploy
+ * @generated from message workspace.Release
  */
-export declare type ReleaseTargetDeploy = Message<"workspace.ReleaseTargetDeploy"> & {
+export declare type Release = Message<"workspace.Release"> & {
   /**
-   * @generated from field: workspace.ReleaseTarget release_target = 1;
+   * @generated from field: workspace.DeploymentVersion version = 1;
    */
-  releaseTarget?: ReleaseTarget;
+  version?: DeploymentVersion;
 
   /**
-   * @generated from field: workspace.DeploymentVersion deployment_version = 2;
-   */
-  deploymentVersion?: DeploymentVersion;
-
-  /**
-   * Map of variable name to value, which can be number, string, or boolean.
-   *
-   * @generated from field: map<string, workspace.VariableValue> variables = 3;
+   * @generated from field: map<string, workspace.VariableValue> variables = 2;
    */
   variables: { [key: string]: VariableValue };
+
+  /**
+   * @generated from field: repeated string encrypted_variables = 3;
+   */
+  encryptedVariables: string[];
+
+  /**
+   * @generated from field: workspace.ReleaseTarget release_target = 5;
+   */
+  releaseTarget?: ReleaseTarget;
 
   /**
    * @generated from field: string created_at = 4;
@@ -496,10 +730,10 @@ export declare type ReleaseTargetDeploy = Message<"workspace.ReleaseTargetDeploy
 };
 
 /**
- * Describes the message workspace.ReleaseTargetDeploy.
- * Use `create(ReleaseTargetDeploySchema)` to create a new message.
+ * Describes the message workspace.Release.
+ * Use `create(ReleaseSchema)` to create a new message.
  */
-export declare const ReleaseTargetDeploySchema: GenMessage<ReleaseTargetDeploy>;
+export declare const ReleaseSchema: GenMessage<Release>;
 
 /**
  * @generated from message workspace.DeploymentVariable
@@ -850,6 +1084,66 @@ export declare type ListDeploymentsResponse = Message<"workspace.ListDeployments
  * Use `create(ListDeploymentsResponseSchema)` to create a new message.
  */
 export declare const ListDeploymentsResponseSchema: GenMessage<ListDeploymentsResponse>;
+
+/**
+ * @generated from enum workspace.JobStatus
+ */
+export enum JobStatus {
+  /**
+   * @generated from enum value: JOB_STATUS_CANCELLED = 0;
+   */
+  CANCELLED = 0,
+
+  /**
+   * @generated from enum value: JOB_STATUS_SKIPPED = 1;
+   */
+  SKIPPED = 1,
+
+  /**
+   * @generated from enum value: JOB_STATUS_IN_PROGRESS = 2;
+   */
+  IN_PROGRESS = 2,
+
+  /**
+   * @generated from enum value: JOB_STATUS_ACTION_REQUIRED = 3;
+   */
+  ACTION_REQUIRED = 3,
+
+  /**
+   * @generated from enum value: JOB_STATUS_PENDING = 4;
+   */
+  PENDING = 4,
+
+  /**
+   * @generated from enum value: JOB_STATUS_FAILURE = 5;
+   */
+  FAILURE = 5,
+
+  /**
+   * @generated from enum value: JOB_STATUS_INVALID_JOB_AGENT = 6;
+   */
+  INVALID_JOB_AGENT = 6,
+
+  /**
+   * @generated from enum value: JOB_STATUS_INVALID_INTEGRATION = 7;
+   */
+  INVALID_INTEGRATION = 7,
+
+  /**
+   * @generated from enum value: JOB_STATUS_EXTERNAL_RUN_NOT_FOUND = 8;
+   */
+  EXTERNAL_RUN_NOT_FOUND = 8,
+
+  /**
+   * @generated from enum value: JOB_STATUS_SUCCESSFUL = 9;
+   */
+  SUCCESSFUL = 9,
+}
+
+/**
+ * Describes the enum workspace.JobStatus.
+ */
+export declare const JobStatusSchema: GenEnum<JobStatus>;
 
 /**
  * @generated from enum workspace.DeploymentVersionStatus

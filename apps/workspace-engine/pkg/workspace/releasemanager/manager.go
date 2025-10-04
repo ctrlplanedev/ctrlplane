@@ -3,19 +3,18 @@ package releasemanager
 import (
 	"context"
 	"workspace-engine/pkg/pb"
-	"workspace-engine/pkg/workspace/releasemanager/policymanager"
 	"workspace-engine/pkg/workspace/releasemanager/variablemanager"
 	"workspace-engine/pkg/workspace/releasemanager/versionmanager"
 	"workspace-engine/pkg/workspace/store"
 
-	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Manager handles the business logic for release target changes and deployment decisions
 type Manager struct {
 	store *store.Store
 
-	policyManager   *policymanager.Manager
 	versionManager  *versionmanager.Manager
 	variableManager *variablemanager.Manager
 
@@ -27,10 +26,9 @@ type Manager struct {
 func New(store *store.Store) *Manager {
 	return &Manager{
 		store:           store,
-		currentTargets:  make(map[string]*pb.ReleaseTarget, 1000),
+		currentTargets:  make(map[string]*pb.ReleaseTarget, 5000),
 		versionManager:  versionmanager.New(store),
 		variableManager: variablemanager.New(store),
-		policyManager:   policymanager.New(store),
 	}
 }
 
@@ -67,13 +65,23 @@ func (s *Manager) ReleaseTargets() map[string]*pb.ReleaseTarget {
 // Sync computes current release targets and determines what changed
 // Returns what should be deployed based on changes
 func (m *Manager) Sync(ctx context.Context) *SyncResult {
+	ctx, span := tracer.Start(ctx, "Sync",
+		trace.WithAttributes(
+			attribute.Int("current_targets.count", len(m.currentTargets)),
+		))
+	defer span.End()
+
 	targets := m.store.ReleaseTargets.Items(ctx)
+
+	span.SetAttributes(
+		attribute.Int("new_targets.count", len(targets)),
+	)
 
 	result := &SyncResult{
 		Changes: Changes{
-			Added:   make([]*ReleaseTargetChange, 100),
-			Updated: make([]*ReleaseTargetChange, 100),
-			Removed: make([]*ReleaseTargetChange, 100),
+			Added:   make([]*ReleaseTargetChange, 0, 100),
+			Updated: make([]*ReleaseTargetChange, 0, 100),
+			Removed: make([]*ReleaseTargetChange, 0, 100),
 		},
 	}
 
@@ -108,10 +116,10 @@ func (m *Manager) Sync(ctx context.Context) *SyncResult {
 
 	m.currentTargets = targets
 
-	log.Info("Release target sync completed",
-		"added", len(result.Changes.Added),
-		"updated", len(result.Changes.Updated),
-		"removed", len(result.Changes.Removed),
+	span.SetAttributes(
+		attribute.Int("changes.added", len(result.Changes.Added)),
+		attribute.Int("changes.updated", len(result.Changes.Updated)),
+		attribute.Int("changes.removed", len(result.Changes.Removed)),
 	)
 
 	return result

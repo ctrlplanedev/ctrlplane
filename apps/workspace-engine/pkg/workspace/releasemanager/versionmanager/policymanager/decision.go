@@ -1,6 +1,9 @@
 package policymanager
 
-import "workspace-engine/pkg/workspace/releasemanager/policymanager/evaluator/results"
+import (
+	"time"
+	"workspace-engine/pkg/workspace/releasemanager/versionmanager/policymanager/results"
+)
 
 // DeployDecision represents the final decision about whether a deployment can proceed.
 // It provides detailed information about policy evaluation results and required actions.
@@ -10,6 +13,8 @@ type DeployDecision struct {
 
 	// PolicyResults contains detailed results from each policy evaluation
 	PolicyResults []*results.PolicyEvaluationResult
+
+	EvaluatedAt time.Time
 }
 
 func (d *DeployDecision) GetPendingActions() []*results.RuleEvaluationResult {

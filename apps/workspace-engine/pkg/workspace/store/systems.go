@@ -18,7 +18,7 @@ func NewSystems(store *Store) *Systems {
 }
 
 type Systems struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 
 	deployments  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Deployment]]

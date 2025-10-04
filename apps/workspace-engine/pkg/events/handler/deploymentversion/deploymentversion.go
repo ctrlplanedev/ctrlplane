@@ -23,30 +23,10 @@ func HandleDeploymentVersionCreated(
 	log.Info("Deployment version created", "deploymentId", deploymentVersion.DeploymentId, "tag", deploymentVersion.Tag)
 
 	ws.DeploymentVersions().Upsert(deploymentVersion.Id, deploymentVersion)
-	rm := ws.ReleaseManager()
-
-	rts := rm.ReleaseTargets()
-	versionReleases := make([]*pb.ReleaseTargetDeploy, len(rts))
-
-	for _, rt := range rts {
-		if rt.ResourceId != deploymentVersion.DeploymentId {
-			continue
-		}
-
-		isDeployable := ws.DeploymentVersions().IsDeployable(rt, deploymentVersion)
-		if !isDeployable {
-			log.Info("Newly created deployment version not deployable", "tag", deploymentVersion.Tag, "releaseTarget", rt.Id)
-			continue
-		}
-
-		vr, err := rm.Evaluate(ctx, rt)
-		if err != nil {
-			log.Error("Failed to evaluate release target", "error", err, "releaseTarget", rt.Id)
-			continue
-		}
-
-		versionReleases = append(versionReleases, vr)
-	}
+	changes := ws.ReleaseManager().Sync(ctx)
+	jobs := ws.ReleaseManager().EvaulateChange(ctx, changes)
+	
+	log.Info("Dispatching", "jobs", len(jobs.Items()))
 
 	return nil
 }

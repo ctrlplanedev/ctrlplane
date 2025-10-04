@@ -1,9 +1,7 @@
 package workspace
 
 import (
-	"context"
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -52,28 +50,6 @@ func (w *Workspace) ReleaseTargets() *store.ReleaseTargets {
 
 func (w *Workspace) Systems() *store.Systems {
 	return w.store.Systems
-}
-
-func (w *Workspace) GetDeploymentAndEnvironmentReleaseTargets(
-	ctx context.Context,
-	deployment *pb.Deployment,
-	environment *pb.Environment,
-) ([]*pb.ReleaseTarget, error) {
-	environmentResources := w.Environments().Resources(environment.Id)
-
-	releaseTargets := make([]*pb.ReleaseTarget, len(environmentResources))
-	for _, resource := range environmentResources {
-		isInDeployment := w.Deployments().HasResource(deployment.Id, resource.Id)
-		if isInDeployment {
-			releaseTargets = append(releaseTargets, &pb.ReleaseTarget{
-				DeploymentId:  deployment.Id,
-				EnvironmentId: environment.Id,
-				ResourceId:    resource.Id,
-			})
-		}
-	}
-
-	return releaseTargets, nil
 }
 
 var workspaces = cmap.New[*Workspace]()

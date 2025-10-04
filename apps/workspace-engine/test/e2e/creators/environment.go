@@ -26,4 +26,3 @@ func NewEnvironment() *pb.Environment {
 
 	return e
 }
-

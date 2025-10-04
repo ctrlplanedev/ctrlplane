@@ -27,14 +27,13 @@ type RuleEvaluationResult struct {
 }
 
 // WithDetail adds a detail to the result and returns the result for chaining.
-func (r *RuleEvaluationResult) WithDetail(key string, value interface{}) *RuleEvaluationResult {
+func (r *RuleEvaluationResult) WithDetail(key string, value any) *RuleEvaluationResult {
 	if r.Details == nil {
-		r.Details = make(map[string]interface{})
+		r.Details = make(map[string]any)
 	}
 	r.Details[key] = value
 	return r
 }
-
 
 // NewPendingResult creates a result indicating the rule requires action before proceeding.
 func NewPendingResult(ruleID, ruleType, actionType, reason string) *RuleEvaluationResult {
@@ -43,7 +42,7 @@ func NewPendingResult(ruleID, ruleType, actionType, reason string) *RuleEvaluati
 		RuleType:       ruleType,
 		Allowed:        false,
 		Reason:         reason,
-		Details:        make(map[string]interface{}),
+		Details:        make(map[string]any),
 		RequiresAction: true,
 		ActionType:     actionType,
 	}
@@ -56,7 +55,7 @@ func NewDeniedResult(ruleID, ruleType, reason string) *RuleEvaluationResult {
 		RuleType:       ruleType,
 		Allowed:        false,
 		Reason:         reason,
-		Details:        make(map[string]interface{}),
+		Details:        make(map[string]any),
 		RequiresAction: false,
 	}
 }

@@ -149,6 +149,42 @@ message Deployment {
   optional google.protobuf.Struct resource_selector = 8;
 }
 
+enum JobStatus {
+  JOB_STATUS_CANCELLED = 0;
+  JOB_STATUS_SKIPPED = 1;
+  JOB_STATUS_IN_PROGRESS = 2;
+  JOB_STATUS_ACTION_REQUIRED = 3;
+  JOB_STATUS_PENDING = 4;
+  JOB_STATUS_FAILURE = 5;
+  JOB_STATUS_INVALID_JOB_AGENT = 6;
+  JOB_STATUS_INVALID_INTEGRATION = 7;
+  JOB_STATUS_EXTERNAL_RUN_NOT_FOUND = 8;
+  JOB_STATUS_SUCCESSFUL = 9;
+}
+
+
+message Job {
+  string id = 1;
+
+  string release_id = 2;
+
+  string job_agent_id = 3;
+  google.protobuf.Struct job_agent_config = 4;
+
+  optional string external_id = 5;
+
+  JobStatus status = 6;
+  
+  string resource_id = 7;
+  string environment_id = 8;
+  string deployment_id = 9;
+
+  string created_at = 10;
+  string updated_at = 11;
+  optional string started_at = 12;
+  optional string completed_at = 13;
+}
+
 message ReleaseTarget {
   string id = 1;
   string resource_id = 2;
@@ -169,11 +205,12 @@ message VariableValue {
   }
 }
 
-message ReleaseTargetDeploy {
-  ReleaseTarget release_target = 1;
-  DeploymentVersion deployment_version = 2;
-  // Map of variable name to value, which can be number, string, or boolean.
-  map<string, VariableValue> variables = 3;
+message Release {
+  DeploymentVersion version = 1;
+  map<string, VariableValue> variables = 2;
+  repeated string encrypted_variables = 3;
+
+  ReleaseTarget release_target = 5;
 
   string created_at = 4;
 }
