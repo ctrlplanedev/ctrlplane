@@ -14,7 +14,7 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager")
 
-func (m *Manager) EvaulateChange(ctx context.Context, changes *SyncResult) cmap.ConcurrentMap[string, *pb.Job] {
+func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.ConcurrentMap[string, *pb.Job] {
 	jobs := cmap.New[*pb.Job]()
 	var wg sync.WaitGroup
 

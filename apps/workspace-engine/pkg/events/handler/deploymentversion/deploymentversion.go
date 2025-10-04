@@ -24,9 +24,9 @@ func HandleDeploymentVersionCreated(
 
 	ws.DeploymentVersions().Upsert(deploymentVersion.Id, deploymentVersion)
 	changes := ws.ReleaseManager().Sync(ctx)
-	jobs := ws.ReleaseManager().EvaulateChange(ctx, changes)
+	jobs := ws.ReleaseManager().EvaluateChange(ctx, changes)
 	
-	log.Info("Dispatching", "jobs", len(jobs.Items()))
+	log.Info("Dispatching jobs", "count", len(jobs.Items()))
 
 	return nil
 }
