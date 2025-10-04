@@ -9,6 +9,13 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+func NewResources(store *Store) *Resources {
+	return &Resources{
+		repo:  store.repo,
+		store: store,
+	}
+}
+
 type Resources struct {
 	repo  *repository.Repository
 	store *Store
@@ -28,6 +35,8 @@ func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Reso
 		r.applyResourceToAllDeployments(ctx, resource)
 	}()
 	wg.Wait()
+
+	r.store.ReleaseTargets.Recompute(ctx)
 
 	return resource, nil
 }
@@ -62,6 +71,14 @@ func (r *Resources) Get(id string) (*pb.Resource, bool) {
 	return r.repo.Resources.Get(id)
 }
 
-func (r *Resources) Remove(id string) {
+func (r *Resources) Remove(ctx context.Context, id string) {
 	r.repo.Resources.Remove(id)
+	r.store.ReleaseTargets.ApplyUpdate(ctx, func(currentReleaseTargets map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error) {
+		for key, releaseTarget := range currentReleaseTargets {
+			if releaseTarget.ResourceId == id {
+				delete(currentReleaseTargets, key)
+			}
+		}
+		return currentReleaseTargets, nil
+	})
 }

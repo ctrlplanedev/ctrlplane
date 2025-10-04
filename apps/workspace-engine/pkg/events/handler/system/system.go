@@ -44,7 +44,7 @@ func HandleSystemDeleted(
 		return err
 	}
 
-	ws.Systems().Remove(system.Id)
+	ws.Systems().Remove(ctx, system.Id)
 
 	return nil
 }

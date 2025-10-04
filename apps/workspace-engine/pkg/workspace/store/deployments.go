@@ -11,8 +11,17 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
+func NewDeployments(store *Store) *Deployments {
+	return &Deployments{
+		repo:      store.repo,
+		store:     store,
+		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
+	}
+}
+
 type Deployments struct {
-	repo *repository.Repository
+	repo  *repository.Repository
+	store *Store
 
 	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Resource]]
 }
@@ -106,16 +115,24 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) err
 		}
 	}
 
+	previous, _ := e.repo.Deployments.Get(deployment.Id)
+	previousSystemId := ""
+	if previous != nil {
+		previousSystemId = previous.SystemId
+	}
+
 	// Store the deployment in the repository
 	e.repo.Deployments.Set(deployment.Id, deployment)
+	e.store.Systems.ApplyDeploymentUpdate(ctx, previousSystemId, deployment)
 
 	// Create materialized view with immediate computation of deployment resources
 	mv := materialized.New(
 		e.deploymentResourceRecomputeFunc(deployment.Id),
-		materialized.WithImmediateCompute[map[string]*pb.Resource](),
 	)
 
 	e.resources.Set(deployment.Id, mv)
+
+	e.store.ReleaseTargets.Recompute(ctx)
 
 	return nil
 }
@@ -171,9 +188,18 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 	return err
 }
 
-func (e *Deployments) Remove(id string) {
+func (e *Deployments) Remove(ctx context.Context, id string) {
 	e.repo.Deployments.Remove(id)
 	e.resources.Remove(id)
+
+	e.store.ReleaseTargets.ApplyUpdate(ctx, func(currentReleaseTargets map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error) {
+		for key, releaseTarget := range currentReleaseTargets {
+			if releaseTarget.DeploymentId == id {
+				delete(currentReleaseTargets, key)
+			}
+		}
+		return currentReleaseTargets, nil
+	})
 }
 
 func (e *Deployments) Variables(deploymentId string) map[string]*pb.DeploymentVariable {

@@ -614,7 +614,7 @@ func TestWithImmediateCompute(t *testing.T) {
 	}
 
 	// Create with immediate compute
-	mv := New(rf, WithImmediateCompute[int]())
+	mv := New(rf)
 
 	// Wait for it to actually start
 	<-started

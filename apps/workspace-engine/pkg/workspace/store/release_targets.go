@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/store/materialized"
 )
@@ -20,11 +19,19 @@ type ReleaseTargets struct {
 	targets *materialized.MaterializedView[map[string]*pb.ReleaseTarget]
 }
 
+func (r *ReleaseTargets) ApplyUpdate(ctx context.Context, fn func(map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error)) error {
+	_, err := r.targets.ApplyUpdate(fn)
+	return err
+}
+
 // CurrentState returns the current state of all release targets in the system.
 func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget {
 	r.targets.WaitIfRunning()
-	fmt.Println("ReleaseTargets.Items")
 	return r.targets.Get()
+}
+
+func (r *ReleaseTargets) Recompute(ctx context.Context) {
+	r.targets.StartRecompute()
 }
 
 func (r *ReleaseTargets) computeTargets() (map[string]*pb.ReleaseTarget, error) {
@@ -43,15 +50,18 @@ func (r *ReleaseTargets) computeTargets() (map[string]*pb.ReleaseTarget, error) 
 				continue
 			}
 
+			key := environment.Id + ":" + deployment.Id
+
 			for _, resource := range environments.Resources(environment.Id) {
 				if !deployments.HasResource(deployment.Id, resource.Id) {
 					continue
 				}
-
-				releaseTargets[resource.Id] = &pb.ReleaseTarget{
+				releaseTargetId := key + ":" + resource.Id
+				releaseTargets[releaseTargetId] = &pb.ReleaseTarget{
 					EnvironmentId: environment.Id,
 					DeploymentId:  deployment.Id,
-					ResourceId:    resource.Id,
+					ResourceId:    resource.Id,	
+					Id:            releaseTargetId,
 				}
 			}
 		}

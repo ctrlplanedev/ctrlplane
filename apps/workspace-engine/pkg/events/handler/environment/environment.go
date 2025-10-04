@@ -44,7 +44,7 @@ func HandleEnvironmentDeleted(
 		return err
 	}
 
-	ws.Environments().Remove(environment.Id)
+	ws.Environments().Remove(ctx, environment.Id)
 
 	return nil
 }

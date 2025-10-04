@@ -8,8 +8,18 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
+func NewSystems(store *Store) *Systems {
+	return &Systems{
+		repo:         store.repo,
+		store:        store,
+		deployments:  cmap.New[*materialized.MaterializedView[map[string]*pb.Deployment]](),
+		environments: cmap.New[*materialized.MaterializedView[map[string]*pb.Environment]](),
+	}
+}
+
 type Systems struct {
 	repo *repository.Repository
+	store *Store
 
 	deployments  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Deployment]]
 	environments cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Environment]]
@@ -56,7 +66,7 @@ func (s *Systems) Deployments(systemId string) map[string]*pb.Deployment {
 	if !ok {
 		return map[string]*pb.Deployment{}
 	}
-	mv.WaitRecompute()
+	mv.WaitIfRunning()
 	return mv.Get()
 }
 
@@ -78,22 +88,66 @@ func (s *Systems) Environments(systemId string) map[string]*pb.Environment {
 	if !ok {
 		return map[string]*pb.Environment{}
 	}
-	mv.WaitRecompute()
+	mv.WaitIfRunning()
 	return mv.Get()
 }
 
-func (s *Systems) Remove(id string) {
+func (s *Systems) Remove(ctx context.Context, id string) {
 	deployments := s.Deployments(id)
 	for key := range deployments {
-		s.repo.Deployments.Remove(key)
+		s.store.Deployments.Remove(ctx, key)
 	}
 
 	environments := s.Environments(id)
 	for key := range environments {
-		s.repo.Environments.Remove(key)
+		s.store.Environments.Remove(ctx, key)
 	}
 
 	s.repo.Systems.Remove(id)
-	s.deployments.Remove(id)
-	s.environments.Remove(id)
+	s.repo.Deployments.Remove(id)
+	s.repo.Environments.Remove(id)
+}
+
+// ApplyDeploymentUpdate triggers a recompute of deployments for the affected systems
+// when a deployment is updated or moved between systems.
+func (s *Systems) ApplyDeploymentUpdate(
+	ctx context.Context,
+	previousSystemId string,
+	deployment *pb.Deployment,
+) error {
+	// Recompute deployments for the previous system, if it exists
+	if oldDeployments, exists := s.deployments.Get(previousSystemId); exists {
+		oldDeployments.StartRecompute()
+	}
+
+	deploymentHasMoved := previousSystemId != deployment.SystemId
+	if deploymentHasMoved {
+		if newDeployments, exists := s.deployments.Get(deployment.SystemId); exists {
+			newDeployments.StartRecompute()
+		}
+	}
+
+	return nil
+}
+
+// ApplyEnvironmentUpdate triggers a recompute of environments for the affected systems
+// when a deployment is updated or moved between systems.
+func (s *Systems) ApplyEnvironmentUpdate(
+	ctx context.Context,
+	previousSystemId string,
+	environment *pb.Environment,
+) error {
+	// Recompute deployments for the previous system, if it exists
+	if oldEnvironments, exists := s.environments.Get(previousSystemId); exists {
+		oldEnvironments.StartRecompute()
+	}
+
+	environmentHasMoved := previousSystemId != environment.SystemId
+	if environmentHasMoved {
+		if newEnvironments, exists := s.environments.Get(environment.SystemId); exists {
+			newEnvironments.StartRecompute()
+		}
+	}
+
+	return nil
 }

@@ -14,6 +14,14 @@ import (
 
 var deploymentTracer = otel.Tracer("workspace/store/deployment_versions")
 
+func NewDeploymentVersions(store *Store) *DeploymentVersions {
+	return &DeploymentVersions{
+		repo:  store.repo,
+		store: store,
+		deployableVersions: cmap.New[*pb.DeploymentVersion](),
+	}
+}
+
 type DeploymentVersions struct {
 	repo  *repository.Repository
 	store *Store

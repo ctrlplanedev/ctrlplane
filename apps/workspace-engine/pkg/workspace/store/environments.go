@@ -11,8 +11,17 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
+func NewEnvironments(store *Store) *Environments {
+	return &Environments{
+		repo:      store.repo,
+		store:     store,
+		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
+	}
+}
+
 type Environments struct {
 	repo *repository.Repository
+	store *Store
 
 	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Resource]]
 }
@@ -38,17 +47,16 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 		}
 
 		environmentResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
-		for resourceItem := range e.repo.Resources.IterBuffered() {
-			if condition == nil {
-				environmentResources[resourceItem.Key] = resourceItem.Val
-				continue
-			}
-			ok, err := condition.Matches(resourceItem.Val)
-			if err != nil {
-				return nil, fmt.Errorf("error matching resource %s for environment %s: %w", resourceItem.Key, environment.Id, err)
-			}
-			if ok {
-				environmentResources[resourceItem.Key] = resourceItem.Val
+		// For environments: only match resources if there's a selector (default to none)
+		if condition != nil {
+			for resourceItem := range e.repo.Resources.IterBuffered() {
+				ok, err := condition.Matches(resourceItem.Val)
+				if err != nil {
+					return nil, fmt.Errorf("error matching resource %s for environment %s: %w", resourceItem.Key, environment.Id, err)
+				}
+				if ok {
+					environmentResources[resourceItem.Key] = resourceItem.Val
+				}
 			}
 		}
 
@@ -116,16 +124,26 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 		}
 	}
 
+	previous, _ := e.repo.Environments.Get(environment.Id)
+	previousSystemId := ""
+	if previous != nil {
+		previousSystemId = previous.SystemId
+	}
+
 	// Store the environment in the repository
 	e.repo.Environments.Set(environment.Id, environment)
+	e.store.Systems.ApplyEnvironmentUpdate(ctx, previousSystemId, environment)
 
 	// Create materialized view with immediate computation of environment resources
-	mv := materialized.New(e.environmentResourceRecomputeFunc(environment.Id))
+	mv := materialized.New(
+		e.environmentResourceRecomputeFunc(environment.Id),
+	)
 
 	e.resources.Set(environment.Id, mv)
 
-	// Wait for initial computation to complete to maintain synchronous behavior
-	return mv.WaitRecompute()
+	e.store.ReleaseTargets.Recompute(ctx)
+
+	return nil
 }
 
 // ApplyResourceUpdate applies an incremental update for a single resource.
@@ -158,7 +176,8 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 
 	_, err := mv.ApplyUpdate(func(currentResources map[string]*pb.Resource) (map[string]*pb.Resource, error) {
 		// Check if resource matches selector
-		matches := condition == nil // nil condition means match all
+		// For environments: nil condition means match NO resources (default to none)
+		matches := false
 		if condition != nil {
 			ok, err := condition.Matches(resource)
 			if err != nil {
@@ -180,7 +199,16 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 	return err
 }
 
-func (e *Environments) Remove(id string) {
+func (e *Environments) Remove(ctx context.Context, id string) {
 	e.repo.Environments.Remove(id)
 	e.resources.Remove(id)
+
+	e.store.ReleaseTargets.ApplyUpdate(ctx, func(currentReleaseTargets map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error) {
+		for key, releaseTarget := range currentReleaseTargets {
+			if releaseTarget.EnvironmentId == id {
+				delete(currentReleaseTargets, key)
+			}
+		}
+		return currentReleaseTargets, nil
+	})
 }

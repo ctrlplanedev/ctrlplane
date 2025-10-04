@@ -9,7 +9,7 @@ import (
 
 // NewDeploymentVersion creates a test DeploymentVersion with sensible defaults
 // All fields can be overridden via functional options
-func NewDeployment(opts ...Option) *pb.Deployment {
+func NewDeployment() *pb.Deployment {
 	// Create with defaults
 	id := uuid.New().String()
 	idSubstring := id[:8]
@@ -23,11 +23,6 @@ func NewDeployment(opts ...Option) *pb.Deployment {
 		JobAgentId:       nil,
 		JobAgentConfig:   nil,
 		ResourceSelector: nil,
-	}
-
-	// Apply options to override defaults
-	for _, opt := range opts {
-		opt(dv)
 	}
 
 	return dv

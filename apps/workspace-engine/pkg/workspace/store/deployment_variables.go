@@ -6,6 +6,12 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
+func NewDeploymentVariables(store *Store) *DeploymentVariables {
+	return &DeploymentVariables{
+		repo: store.repo,
+	}
+}
+
 type DeploymentVariables struct {
 	repo *repository.Repository
 }

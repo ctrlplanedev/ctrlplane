@@ -13,7 +13,7 @@ var deploymentVersionCounter = 0
 
 // NewDeploymentVersion creates a test DeploymentVersion with sensible defaults
 // All fields can be overridden via functional options
-func NewDeploymentVersion(opts ...Option) *pb.DeploymentVersion {
+func NewDeploymentVersion() *pb.DeploymentVersion {
 	// Create with defaults
 	id := uuid.New().String()
 	idSubstring := id
@@ -31,11 +31,6 @@ func NewDeploymentVersion(opts ...Option) *pb.DeploymentVersion {
 		CreatedAt:      time.Now().Format(time.RFC3339),
 		Config:         MustNewStructFromMap(map[string]any{}),
 		JobAgentConfig: MustNewStructFromMap(map[string]any{}),
-	}
-
-	// Apply options to override defaults
-	for _, opt := range opts {
-		opt(dv)
 	}
 
 	return dv

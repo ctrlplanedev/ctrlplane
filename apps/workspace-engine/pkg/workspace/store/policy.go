@@ -7,6 +7,12 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
+func NewPolicies(store *Store) *Policies {
+	return &Policies{
+		repo: store.repo,
+	}
+}
+
 type Rule interface {
 	ID() string
 	PolicyID() string

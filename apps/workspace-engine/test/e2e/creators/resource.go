@@ -10,7 +10,7 @@ import (
 
 // NewResource creates a test Resource with sensible defaults
 // All fields can be overridden via functional options
-func NewResource(workspaceID string, opts ...Option) *pb.Resource {
+func NewResource(workspaceID string) *pb.Resource {
 	// Create with defaults
 	id := uuid.New().String()
 	idSubstring := id[:8]
@@ -29,11 +29,6 @@ func NewResource(workspaceID string, opts ...Option) *pb.Resource {
 		UpdatedAt:   nil,
 		DeletedAt:   nil,
 		Metadata:    make(map[string]string),
-	}
-
-	// Apply options to override defaults
-	for _, opt := range opts {
-		opt(r)
 	}
 
 	return r

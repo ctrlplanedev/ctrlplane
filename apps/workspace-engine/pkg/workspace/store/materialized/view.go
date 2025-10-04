@@ -28,14 +28,6 @@ type MaterializedView[V any] struct {
 // Option is a functional option for configuring a MaterializedView.
 type Option[V any] func(*MaterializedView[V])
 
-// WithImmediateCompute triggers an immediate computation when creating the view.
-// The computation runs asynchronously, so the view is immediately usable.
-func WithImmediateCompute[V any]() Option[V] {
-	return func(mv *MaterializedView[V]) {
-		mv.StartRecompute()
-	}
-}
-
 // New creates a new materialized view with the given recompute function.
 // Optional configuration can be provided via Option functions.
 func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
@@ -43,6 +35,8 @@ func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
 		recompute: rf,
 		mu:        sync.RWMutex{},
 	}
+
+	mv.StartRecompute()
 
 	// Apply options
 	for _, opt := range opts {

@@ -53,7 +53,7 @@ func HandleResourceDeleted(
 		return err
 	}
 
-	ws.Resources().Remove(resource.Id)
+	ws.Resources().Remove(ctx, resource.Id)
 
 	return nil
 }
