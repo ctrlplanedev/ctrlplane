@@ -564,6 +564,7 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	// This should match NO resources
 	e1 := c.NewEnvironment()
 	e1.SystemId = sys.Id
+	e1.ResourceSelector = nil
 	// Explicitly NOT setting ResourceSelector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
