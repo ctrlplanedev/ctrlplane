@@ -6,6 +6,8 @@ import (
 	"workspace-engine/pkg/events/handler/deploymentversion"
 	"workspace-engine/pkg/events/handler/environment"
 	"workspace-engine/pkg/events/handler/jobagents"
+	"workspace-engine/pkg/events/handler/jobs"
+	"workspace-engine/pkg/events/handler/policies"
 	"workspace-engine/pkg/events/handler/resources"
 	"workspace-engine/pkg/events/handler/system"
 )
@@ -34,6 +36,12 @@ var handlers = handler.HandlerRegistry{
 	handler.JobAgentCreate: jobagents.HandleJobAgentCreated,
 	handler.JobAgentUpdate: jobagents.HandleJobAgentUpdated,
 	handler.JobAgentDelete: jobagents.HandleJobAgentDeleted,
+
+	handler.JobUpdate: jobs.HandleJobUpdated,
+
+	handler.PolicyCreate: policies.HandlePolicyCreated,
+	handler.PolicyUpdate: policies.HandlePolicyUpdated,
+	handler.PolicyDelete: policies.HandlePolicyDeleted,
 }
 
 func NewEventHandler() *handler.EventListener {

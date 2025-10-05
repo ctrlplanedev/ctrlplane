@@ -18,6 +18,10 @@ type DeployDecision struct {
 }
 
 func (d *DeployDecision) GetPendingActions() []*results.RuleEvaluationResult {
+	if d.PolicyResults == nil {
+		return make([]*results.RuleEvaluationResult, 0)
+	}
+
 	pending := make([]*results.RuleEvaluationResult, 0)
 	for _, policyResult := range d.PolicyResults {
 		pending = append(pending, policyResult.GetPendingActions()...)
@@ -34,6 +38,10 @@ func (d *DeployDecision) IsPending() bool {
 }
 
 func (d *DeployDecision) IsBlocked() bool {
+	if d.PolicyResults == nil {
+		return false
+	}
+
 	for _, policyResult := range d.PolicyResults {
 		if policyResult.HasDenials() {
 			return true

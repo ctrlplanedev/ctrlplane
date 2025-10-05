@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
+	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -38,7 +39,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 
-		var condition unknown.MatchableCondition
+		var condition util.MatchableCondition
 		if deployment.ResourceSelector != nil {
 			unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.AsMap())
 			if err != nil {
@@ -173,7 +174,7 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 	}
 
 	// Parse the deployment's resource selector
-	var condition unknown.MatchableCondition
+	var condition util.MatchableCondition
 	if deployment.ResourceSelector != nil {
 		unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.AsMap())
 		if err != nil {

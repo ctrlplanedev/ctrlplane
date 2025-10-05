@@ -24,6 +24,10 @@ type Workspace struct {
 	releasemanager *releasemanager.Manager
 }
 
+func (w *Workspace) Policies() *store.Policies {
+	return w.store.Policies
+}
+
 func (w *Workspace) ReleaseManager() *releasemanager.Manager {
 	return w.releasemanager
 }

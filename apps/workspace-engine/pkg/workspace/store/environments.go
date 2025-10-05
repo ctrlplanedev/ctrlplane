@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
+	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -34,7 +35,7 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 			return nil, fmt.Errorf("environment %s not found", environmentId)
 		}
 
-		var condition unknown.MatchableCondition
+		var condition util.MatchableCondition
 		if environment.ResourceSelector != nil {
 			unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.AsMap())
 			if err != nil {
@@ -156,7 +157,7 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 	}
 
 	// Parse the environment's resource selector
-	var condition unknown.MatchableCondition
+	var condition util.MatchableCondition
 	if environment.ResourceSelector != nil {
 		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.AsMap())
 		if err != nil {

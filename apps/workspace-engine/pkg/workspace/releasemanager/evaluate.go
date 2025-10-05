@@ -80,7 +80,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 		))
 	defer span.End()
 
-	version, err := m.versionManager.SelectDeployableVersion(ctx, releaseTarget)
+	version, err := m.versionManager.LatestDeployableVersion(ctx, releaseTarget)
 	if err != nil {
 		span.RecordError(err)
 		return nil, nil, err

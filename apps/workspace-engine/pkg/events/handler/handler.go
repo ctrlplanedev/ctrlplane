@@ -44,6 +44,12 @@ const (
 	JobAgentCreate EventType = "job-agent.create"
 	JobAgentUpdate EventType = "job-agent.update"
 	JobAgentDelete EventType = "job-agent.delete"
+
+	JobUpdate EventType = "job.update"
+
+	PolicyCreate EventType = "policy.create"
+	PolicyUpdate EventType = "policy.update"
+	PolicyDelete EventType = "policy.delete"
 )
 
 // BaseEvent represents the common structure of all events
