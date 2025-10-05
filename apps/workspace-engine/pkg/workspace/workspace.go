@@ -52,6 +52,14 @@ func (w *Workspace) Systems() *store.Systems {
 	return w.store.Systems
 }
 
+func (w *Workspace) Jobs() *store.Jobs {
+	return w.store.Jobs
+}
+
+func (w *Workspace) JobAgents() *store.JobAgents {
+	return w.store.JobAgents
+}
+
 var workspaces = cmap.New[*Workspace]()
 
 func GetWorkspace(id string) *Workspace {

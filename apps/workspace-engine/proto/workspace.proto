@@ -162,6 +162,13 @@ enum JobStatus {
   JOB_STATUS_SUCCESSFUL = 9;
 }
 
+message JobAgent {
+  string id = 1;
+  string workspace_id = 2;
+  string name = 3;
+  string type = 4;
+  google.protobuf.Struct config = 5;
+}
 
 message Job {
   string id = 1;

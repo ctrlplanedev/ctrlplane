@@ -22,6 +22,7 @@ func (r *Release) ID() string {
 	for k := range r.Variables {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 	for _, k := range keys {
 		sb.WriteString(k)
@@ -29,6 +30,8 @@ func (r *Release) ID() string {
 		sb.WriteString(toString(r.Variables[k]))
 		sb.WriteString(";")
 	}
+
+	sb.WriteString(r.ReleaseTarget.Key())
 
 	// Hash the concatenated string
 	hash := sha256.Sum256([]byte(sb.String()))

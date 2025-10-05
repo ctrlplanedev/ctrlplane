@@ -40,6 +40,10 @@ const (
 	SystemCreate EventType = "system.create"
 	SystemUpdate EventType = "system.update"
 	SystemDelete EventType = "system.delete"
+
+	JobAgentCreate EventType = "job-agent.create"
+	JobAgentUpdate EventType = "job-agent.update"
+	JobAgentDelete EventType = "job-agent.delete"
 )
 
 // BaseEvent represents the common structure of all events
@@ -112,9 +116,27 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	// Execute the handler
 	startTime := time.Now()
 	ws := workspace.GetWorkspace(rawEvent.WorkspaceID)
+
+	// Handle to make changes
 	err := handler(ctx, ws, rawEvent)
+
+	// Always run a dispatch eval jobs
+	changes := ws.ReleaseManager().Reconcile(ctx)
+	jobs := ws.ReleaseManager().EvaluateChange(ctx, changes)
+
+	log.Info("Dispatching jobs",
+		"count", len(jobs.Items()),
+		"eventType", rawEvent.EventType,
+		"rt.added", len(changes.Changes.Added),
+		"rt.updated", len(changes.Changes.Updated),
+		"rt.removed", len(changes.Changes.Removed),
+	)
+
 	duration := time.Since(startTime)
 
+	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
+	span.SetAttributes(attribute.Int("release-target.updated", len(changes.Changes.Updated)))
+	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
 	span.SetAttributes(attribute.Int64("event.processing_duration_ms", duration.Milliseconds()))
 
 	if err != nil {

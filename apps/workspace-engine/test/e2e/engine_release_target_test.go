@@ -6,8 +6,8 @@ import (
 	"testing"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
-	c "workspace-engine/test/e2e/creators"
 	"workspace-engine/test/integration"
+	c "workspace-engine/test/integration/creators"
 )
 
 func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
@@ -648,5 +648,128 @@ func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
 
 	if _, ok := engine.Workspace().Environments().Get(e1.Id); ok {
 		t.Fatalf("environment should be removed when system is deleted")
+	}
+}
+
+func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
+	engine := integration.NewTestEngine(t)
+	workspaceID := engine.Workspace().ID
+	ctx := context.Background()
+
+	// Create a system
+	sys := c.NewSystem()
+	engine.PushEvent(ctx, handler.SystemCreate, sys)
+
+	// Create 2 deployments
+	d1 := c.NewDeployment()
+	d1.Name = "deployment-1"
+	d1.SystemId = sys.Id
+	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+
+	d2 := c.NewDeployment()
+	d2.Name = "deployment-2"
+	d2.SystemId = sys.Id
+	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
+
+	// Create 2 environments with selectors to match all resources
+	e1 := c.NewEnvironment()
+	e1.Name = "env-1"
+	e1.SystemId = sys.Id
+	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+		"type":     "name",
+		"operator": "starts-with",
+		"value":    "",
+	})
+	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+
+	e2 := c.NewEnvironment()
+	e2.Name = "env-2"
+	e2.SystemId = sys.Id
+	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+		"type":     "name",
+		"operator": "starts-with",
+		"value":    "",
+	})
+	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+
+	// Create a resource
+	r1 := c.NewResource(workspaceID)
+	r1.Name = "resource-1"
+	engine.PushEvent(ctx, handler.ResourceCreate, r1)
+
+	// Expected: 2 deployments × 2 environments × 1 resource = 4 release targets
+	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 4 {
+		t.Fatalf("expected 4 release targets (2×2×1), got %d", len(releaseTargets))
+	}
+
+	// Delete one deployment - should remove 2 release targets (d2 × 2 environments)
+	engine.PushEvent(ctx, handler.DeploymentDelete, d2)
+
+	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets after deleting deployment, got %d", len(releaseTargets))
+	}
+
+	// Verify remaining release targets are for d1
+	for _, rt := range releaseTargets {
+		if rt.DeploymentId != d1.Id {
+			t.Fatalf("expected all release targets to be for deployment %s, got %s", d1.Id, rt.DeploymentId)
+		}
+		if rt.ResourceId != r1.Id {
+			t.Fatalf("expected all release targets to be for resource %s, got %s", r1.Id, rt.ResourceId)
+		}
+	}
+
+	// Delete one environment - should remove 1 release target (d1 × e2)
+	engine.PushEvent(ctx, handler.EnvironmentDelete, e2)
+
+	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target after deleting environment, got %d", len(releaseTargets))
+	}
+
+	// Verify the remaining release target is for d1 + e1 + r1
+	var rt *pb.ReleaseTarget
+	for _, target := range releaseTargets {
+		rt = target
+		break
+	}
+	if rt.DeploymentId != d1.Id {
+		t.Fatalf("expected release target deployment %s, got %s", d1.Id, rt.DeploymentId)
+	}
+	if rt.EnvironmentId != e1.Id {
+		t.Fatalf("expected release target environment %s, got %s", e1.Id, rt.EnvironmentId)
+	}
+	if rt.ResourceId != r1.Id {
+		t.Fatalf("expected release target resource %s, got %s", r1.Id, rt.ResourceId)
+	}
+
+	// Delete the remaining deployment - should remove all release targets
+	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
+
+	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets after deleting all deployments, got %d", len(releaseTargets))
+	}
+
+	// Recreate deployment
+	d3 := c.NewDeployment()
+	d3.Name = "deployment-3"
+	d3.SystemId = sys.Id
+	engine.PushEvent(ctx, handler.DeploymentCreate, d3)
+
+	// Should have 1 release target now (d3 × e1 × r1)
+	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target after recreating deployment, got %d", len(releaseTargets))
+	}
+
+	// Delete the remaining environment - should remove all release targets
+	engine.PushEvent(ctx, handler.EnvironmentDelete, e1)
+
+	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets after deleting all environments, got %d", len(releaseTargets))
 	}
 }

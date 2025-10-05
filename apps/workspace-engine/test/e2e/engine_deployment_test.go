@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	c "workspace-engine/test/e2e/creators"
 	"workspace-engine/test/integration"
+	c "workspace-engine/test/integration/creators"
 )
 
 func TestEngine_DeploymentCreation(t *testing.T) {

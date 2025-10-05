@@ -20,6 +20,7 @@ func New() *Store {
 	store.DeploymentVariables = NewDeploymentVariables(store)
 	store.Releases = NewReleases(store)
 	store.Jobs = NewJobs(store)
+	store.JobAgents = NewJobAgents(store)
 
 	return store
 }
@@ -37,4 +38,5 @@ type Store struct {
 	Systems             *Systems
 	Releases            *Releases
 	Jobs                *Jobs
+	JobAgents           *JobAgents
 }

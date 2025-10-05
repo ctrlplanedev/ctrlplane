@@ -15,12 +15,18 @@ func NewEnvironment() *pb.Environment {
 	id := uuid.New().String()
 	idSubstring := id[:8]
 
+	allResources := MustNewStructFromMap(map[string]any{
+		"type":     "name",
+		"operator": "starts-with",
+		"value":    "",
+	})
+
 	e := &pb.Environment{
 		Id:               id,
 		Name:             fmt.Sprintf("env-%s", idSubstring),
 		Description:      fmt.Sprintf("Test environment %s", idSubstring),
 		SystemId:         uuid.New().String(),
-		ResourceSelector: nil,
+		ResourceSelector: allResources,
 		CreatedAt:        time.Now().Format(time.RFC3339),
 	}
 

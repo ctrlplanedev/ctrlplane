@@ -64,7 +64,7 @@ func (s *Manager) ReleaseTargets() map[string]*pb.ReleaseTarget {
 
 // Sync computes current release targets and determines what changed
 // Returns what should be deployed based on changes
-func (m *Manager) Sync(ctx context.Context) *SyncResult {
+func (m *Manager) Reconcile(ctx context.Context) *SyncResult {
 	ctx, span := tracer.Start(ctx, "Sync",
 		trace.WithAttributes(
 			attribute.Int("current_targets.count", len(m.currentTargets)),

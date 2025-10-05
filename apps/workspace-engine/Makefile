@@ -104,3 +104,7 @@ help:
 	@echo "  make clean            - Clean build artifacts"
 	@echo "  make install-tools    - Install development tools"
 	@echo "  make help             - Show this help message"
+
+e2e-test:
+	@echo "Running all E2E tests in tests/e2e..."
+	$(GO) test ./test/e2e/...

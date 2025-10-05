@@ -536,6 +536,42 @@ export declare type Deployment = Message<"workspace.Deployment"> & {
 export declare const DeploymentSchema: GenMessage<Deployment>;
 
 /**
+ * @generated from message workspace.JobAgent
+ */
+export declare type JobAgent = Message<"workspace.JobAgent"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string workspace_id = 2;
+   */
+  workspaceId: string;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string type = 4;
+   */
+  type: string;
+
+  /**
+   * @generated from field: google.protobuf.Struct config = 5;
+   */
+  config?: JsonObject;
+};
+
+/**
+ * Describes the message workspace.JobAgent.
+ * Use `create(JobAgentSchema)` to create a new message.
+ */
+export declare const JobAgentSchema: GenMessage<JobAgent>;
+
+/**
  * @generated from message workspace.Job
  */
 export declare type Job = Message<"workspace.Job"> & {

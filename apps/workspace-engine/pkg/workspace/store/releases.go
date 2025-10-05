@@ -39,4 +39,3 @@ func (r *Releases) Jobs(releaseId string) map[string]*pb.Job {
 	}
 	return jobs
 }
-

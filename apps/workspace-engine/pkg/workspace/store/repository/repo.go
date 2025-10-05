@@ -16,6 +16,7 @@ func New() *Repository {
 		Systems:             cmap.New[*pb.System](),
 		Releases:            cmap.New[*pb.Release](),
 		Jobs:                cmap.New[*pb.Job](),
+		JobAgents:           cmap.New[*pb.JobAgent](),
 	}
 }
 
@@ -29,4 +30,5 @@ type Repository struct {
 	Systems             cmap.ConcurrentMap[string, *pb.System]
 	Releases            cmap.ConcurrentMap[string, *pb.Release]
 	Jobs                cmap.ConcurrentMap[string, *pb.Job]
+	JobAgents           cmap.ConcurrentMap[string, *pb.JobAgent]
 }

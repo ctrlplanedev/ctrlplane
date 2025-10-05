@@ -5,8 +5,8 @@ import (
 	"testing"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
-	"workspace-engine/test/e2e/creators"
 	"workspace-engine/test/integration"
+	"workspace-engine/test/integration/creators"
 )
 
 func TestEngine_DeploymentVersionCreation(t *testing.T) {

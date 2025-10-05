@@ -23,10 +23,36 @@ func HandleDeploymentVersionCreated(
 	log.Info("Deployment version created", "deploymentId", deploymentVersion.DeploymentId, "tag", deploymentVersion.Tag)
 
 	ws.DeploymentVersions().Upsert(deploymentVersion.Id, deploymentVersion)
-	changes := ws.ReleaseManager().Sync(ctx)
-	jobs := ws.ReleaseManager().EvaluateChange(ctx, changes)
-	
-	log.Info("Dispatching jobs", "count", len(jobs.Items()))
+
+	return nil
+}
+
+func HandleDeploymentVersionUpdated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	deploymentVersion := &pb.DeploymentVersion{}
+	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
+		return err
+	}
+
+	ws.DeploymentVersions().Upsert(deploymentVersion.Id, deploymentVersion)
+
+	return nil
+}
+
+func HandleDeploymentVersionDeleted(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	deploymentVersion := &pb.DeploymentVersion{}
+	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
+		return err
+	}
+
+	ws.DeploymentVersions().Remove(deploymentVersion.Id)
 
 	return nil
 }
