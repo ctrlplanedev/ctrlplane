@@ -3,6 +3,7 @@ package compare
 import (
 	"fmt"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
+	"workspace-engine/pkg/selector/langs/util"
 )
 
 type ComparisonConditionOperator string
@@ -14,7 +15,7 @@ const (
 
 type ComparisonCondition struct {
 	Operator   ComparisonConditionOperator  `json:"operator"`
-	Conditions []unknown.MatchableCondition `json:"conditions"`
+	Conditions []util.MatchableCondition `json:"conditions"`
 }
 
 func (c ComparisonCondition) Matches(entity any) (bool, error) {
@@ -56,7 +57,7 @@ func ConvertFromUnknownCondition(condition unknown.UnknownCondition) (Comparison
 		return ComparisonCondition{}, fmt.Errorf("invalid condition type: %s", condition.Operator)
 	}
 
-	matchableConditions := make([]unknown.MatchableCondition, len(condition.Conditions))
+	matchableConditions := make([]util.MatchableCondition, len(condition.Conditions))
 	var err error
 	for i, c := range condition.Conditions {
 		matchableConditions[i], err = ConvertToSelector(c)

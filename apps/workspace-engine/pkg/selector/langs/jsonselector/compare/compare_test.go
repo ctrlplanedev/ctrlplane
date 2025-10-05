@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
+	"workspace-engine/pkg/selector/langs/util"
 )
 
 // mockMatchableCondition is a mock implementation of the MatchableCondition interface for testing.
@@ -19,13 +20,13 @@ func (m *mockMatchableCondition) Matches(_entity any) (bool, error) {
 func TestComparisonCondition_Matches_And(t *testing.T) {
 	tests := []struct {
 		name       string
-		conditions []unknown.MatchableCondition
+		conditions []util.MatchableCondition
 		wantMatch  bool
 		wantErr    bool
 	}{
 		{
 			name: "all true conditions",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{matches: true},
@@ -35,7 +36,7 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 		},
 		{
 			name: "one false condition",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{matches: true},
@@ -45,7 +46,7 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 		},
 		{
 			name: "all false conditions",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{matches: false},
@@ -55,13 +56,13 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 		},
 		{
 			name:       "empty conditions",
-			conditions: []unknown.MatchableCondition{},
+			conditions: []util.MatchableCondition{},
 			wantMatch:  true,
 			wantErr:    false,
 		},
 		{
 			name: "first condition has error",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{err: errors.New("test error")},
 				&mockMatchableCondition{matches: true},
 			},
@@ -70,7 +71,7 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 		},
 		{
 			name: "middle condition has error",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{err: errors.New("test error")},
 				&mockMatchableCondition{matches: true},
@@ -80,7 +81,7 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 		},
 		{
 			name: "error after false condition - should short circuit",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{err: errors.New("test error")},
 			},
@@ -89,7 +90,7 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 		},
 		{
 			name: "single true condition",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 			},
 			wantMatch: true,
@@ -97,7 +98,7 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 		},
 		{
 			name: "single false condition",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: false},
 			},
 			wantMatch: false,
@@ -129,13 +130,13 @@ func TestComparisonCondition_Matches_And(t *testing.T) {
 func TestComparisonCondition_Matches_Or(t *testing.T) {
 	tests := []struct {
 		name       string
-		conditions []unknown.MatchableCondition
+		conditions []util.MatchableCondition
 		wantMatch  bool
 		wantErr    bool
 	}{
 		{
 			name: "one true condition",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{matches: false},
@@ -145,7 +146,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name: "all true conditions",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{matches: true},
@@ -155,7 +156,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name: "all false conditions",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{matches: false},
@@ -165,13 +166,13 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name:       "empty conditions",
-			conditions: []unknown.MatchableCondition{},
+			conditions: []util.MatchableCondition{},
 			wantMatch:  false,
 			wantErr:    false,
 		},
 		{
 			name: "first condition has error",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{err: errors.New("test error")},
 				&mockMatchableCondition{matches: true},
 			},
@@ -180,7 +181,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name: "middle condition has error",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: false},
 				&mockMatchableCondition{err: errors.New("test error")},
 				&mockMatchableCondition{matches: false},
@@ -190,7 +191,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name: "error after true condition - should short circuit",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{err: errors.New("test error")},
 			},
@@ -199,7 +200,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name: "single true condition",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 			},
 			wantMatch: true,
@@ -207,7 +208,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name: "single false condition",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: false},
 			},
 			wantMatch: false,
@@ -215,7 +216,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 		},
 		{
 			name: "first true condition",
-			conditions: []unknown.MatchableCondition{
+			conditions: []util.MatchableCondition{
 				&mockMatchableCondition{matches: true},
 				&mockMatchableCondition{matches: false},
 			},
@@ -248,7 +249,7 @@ func TestComparisonCondition_Matches_Or(t *testing.T) {
 func TestComparisonCondition_Matches_InvalidOperator(t *testing.T) {
 	c := ComparisonCondition{
 		Operator: "invalid",
-		Conditions: []unknown.MatchableCondition{
+		Conditions: []util.MatchableCondition{
 			&mockMatchableCondition{matches: true},
 		},
 	}

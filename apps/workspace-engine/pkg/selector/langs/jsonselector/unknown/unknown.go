@@ -6,10 +6,6 @@ import (
 	"github.com/goccy/go-json"
 )
 
-type MatchableCondition interface {
-	Matches(entity any) (bool, error)
-}
-
 var propertyAliases = map[string]string{
 	"created-at": "CreatedAt",
 	"created_at": "CreatedAt",

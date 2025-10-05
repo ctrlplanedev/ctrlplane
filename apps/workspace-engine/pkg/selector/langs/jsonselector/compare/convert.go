@@ -6,9 +6,10 @@ import (
 	"workspace-engine/pkg/selector/langs/jsonselector/metadata"
 	cstring "workspace-engine/pkg/selector/langs/jsonselector/string"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
+	"workspace-engine/pkg/selector/langs/util"
 )
 
-func ConvertToSelector(unknownCondition unknown.UnknownCondition) (unknown.MatchableCondition, error) {
+func ConvertToSelector(unknownCondition unknown.UnknownCondition) (util.MatchableCondition, error) {
 	comparisonCondition, err := ConvertFromUnknownCondition(unknownCondition)
 	if err == nil {
 		return comparisonCondition, nil
