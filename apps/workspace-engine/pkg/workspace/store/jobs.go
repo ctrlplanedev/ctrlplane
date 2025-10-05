@@ -29,15 +29,11 @@ func (j *Jobs) MostRecentForReleaseTarget(ctx context.Context, releaseTarget *pb
 
 		release, ok := j.repo.Releases.Get(job.ReleaseId)
 		if !ok {
-			fmt.Println("release not found", job.ReleaseId)
 			continue
 		}
 		if release.ReleaseTarget.Key() != releaseTarget.Key() {
-			fmt.Println("release target not found", release.ReleaseTarget.Key())
 			continue
 		}
-
-		fmt.Println("version", release.Version.Tag)
 
 		jobCreatedAtTime, err := job.CreatedAtTime()
 		if err != nil {
@@ -111,7 +107,6 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *pb.ReleaseTarget) map[stri
 	for jobItem := range j.repo.Jobs.IterBuffered() {
 		release, ok := j.repo.Releases.Get(jobItem.Val.ReleaseId)
 		if !ok {
-			fmt.Println("release not found", jobItem.Val.ReleaseId)
 			continue
 		}
 		if release.ReleaseTarget.Key() != releaseTarget.Key() {

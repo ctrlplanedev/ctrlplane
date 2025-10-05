@@ -185,7 +185,7 @@ func TestConvertToSelector_DateCondition(t *testing.T) {
 		{
 			name: "before date condition",
 			condition: unknown.UnknownCondition{
-				Property: "createdAt",
+				Property: "created-at",
 				Operator: "before",
 				Value:    "2024-01-01T00:00:00Z",
 			},
@@ -194,7 +194,7 @@ func TestConvertToSelector_DateCondition(t *testing.T) {
 		{
 			name: "after date condition",
 			condition: unknown.UnknownCondition{
-				Property: "updatedAt",
+				Property: "updated-at",
 				Operator: "after",
 				Value:    "2024-01-01T00:00:00Z",
 			},
@@ -203,7 +203,7 @@ func TestConvertToSelector_DateCondition(t *testing.T) {
 		{
 			name: "before-or-on date condition",
 			condition: unknown.UnknownCondition{
-				Property: "createdAt",
+				Property: "created-at",
 				Operator: "before-or-on",
 				Value:    "2024-01-01T00:00:00Z",
 			},
@@ -212,7 +212,7 @@ func TestConvertToSelector_DateCondition(t *testing.T) {
 		{
 			name: "after-or-on date condition",
 			condition: unknown.UnknownCondition{
-				Property: "updatedAt",
+				Property: "updated-at",
 				Operator: "after-or-on",
 				Value:    "2024-01-01T00:00:00Z",
 			},
@@ -586,7 +586,7 @@ func TestConvertToSelector_AllConditionTypes(t *testing.T) {
 		{
 			name: "date condition",
 			condition: unknown.UnknownCondition{
-				Property: "createdAt",
+				Property: "created-at",
 				Operator: "before",
 				Value:    "2024-01-01T00:00:00Z",
 			},

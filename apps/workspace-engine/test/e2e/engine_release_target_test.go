@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
@@ -37,8 +36,6 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 	})
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
-	fmt.Println(len(engine.Workspace().Environments().Resources(e1.Id)))
-
 	// Verify no release targets exist yet (no resources)
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
@@ -49,8 +46,6 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 	r1 := c.NewResource(workspaceID)
 	r1.Name = "resource-1"
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	fmt.Println(len(engine.Workspace().Environments().Resources(e1.Id)))
 
 	// Verify release target was created
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)

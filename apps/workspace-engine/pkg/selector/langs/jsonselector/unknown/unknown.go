@@ -12,8 +12,14 @@ type MatchableCondition interface {
 
 var propertyAliases = map[string]string{
 	"created-at": "CreatedAt",
+	"created_at": "CreatedAt",
+	"createdAt": "CreatedAt",
 	"deleted-at": "DeletedAt",
+	"deleted_at": "DeletedAt",
+	"deletedAt": "DeletedAt",
 	"updated-at": "UpdatedAt",
+	"updatedAt": "UpdatedAt",
+	"updated_at": "UpdatedAt",
 	"metadata":   "Metadata",
 	"version":    "Version",
 	"kind":       "Kind",
