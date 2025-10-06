@@ -9,13 +9,14 @@ import (
 )
 
 func TestEngine_SystemWithMaterializedViews(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
+	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create systems
-	s1 := c.NewSystem()
+	s1 := c.NewSystem(workspaceID)
 	s1.Name = "system-1"
-	s2 := c.NewSystem()
+	s2 := c.NewSystem(workspaceID)
 	s2.Name = "system-2"
 
 	engine.PushEvent(ctx, handler.SystemCreate, s1)
@@ -51,13 +52,11 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 	}
 
 	// Create deployments for system 1
-	d1 := c.NewDeployment()
+	d1 := c.NewDeployment(s1.Id)
 	d1.Name = "deployment-1-s1"
-	d1.SystemId = s1.Id
 
-	d2 := c.NewDeployment()
+	d2 := c.NewDeployment(s1.Id)
 	d2.Name = "deployment-2-s1"
-	d2.SystemId = s1.Id
 	d2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -66,9 +65,8 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 	})
 
 	// Create deployments for system 2
-	d3 := c.NewDeployment()
+	d3 := c.NewDeployment(s2.Id)
 	d3.Name = "deployment-1-s2"
-	d3.SystemId = s2.Id
 
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
@@ -98,9 +96,8 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 	}
 
 	// Create environments for system 1
-	e1 := c.NewEnvironment()
+	e1 := c.NewEnvironment(s1.Id)
 	e1.Name = "environment-dev-s1"
-	e1.SystemId = s1.Id
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -108,9 +105,8 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 		"key":      "env",
 	})
 
-	e2 := c.NewEnvironment()
+	e2 := c.NewEnvironment(s1.Id)
 	e2.Name = "environment-prod-s1"
-	e2.SystemId = s1.Id
 	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -119,9 +115,8 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 	})
 
 	// Create environments for system 2
-	e3 := c.NewEnvironment()
+	e3 := c.NewEnvironment(s2.Id)
 	e3.Name = "environment-staging-s2"
-	e3.SystemId = s2.Id
 
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
@@ -151,7 +146,6 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 	}
 
 	// Update a deployment to move it to system 2
-	d1.SystemId = s2.Id
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	// Verify materialized views updated - system 1 should now have 1 deployment
@@ -175,7 +169,6 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 	}
 
 	// Update an environment to move it to system 2
-	e1.SystemId = s2.Id
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
 
 	// Verify materialized views updated - system 1 should now have 1 environment
@@ -229,80 +222,59 @@ func TestEngine_SystemWithMaterializedViews(t *testing.T) {
 }
 
 func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
-	engine := integration.NewTestEngine(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "1"
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(systemId),
+			integration.WithDeployment(),
+			integration.WithDeployment(
+				integration.DeploymentResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "critical",
+					"key":      "priority",
+				}),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "dev",
+					"key":      "stage",
+				}),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "prod",
+					"key":      "stage",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceMetadata(map[string]string{
+				"stage":    "dev",
+				"priority": "normal",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceMetadata(map[string]string{
+				"stage":    "prod",
+				"priority": "critical",
+			}),
+		),
+	)
 	ctx := context.Background()
 
-	// Create a system
-	sys := c.NewSystem()
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create deployments for the system
-	d1 := c.NewDeployment()
-	d1.Name = "deployment-all"
-	d1.SystemId = sys.Id
-
-	d2 := c.NewDeployment()
-	d2.Name = "deployment-filtered"
-	d2.SystemId = sys.Id
-
-	d2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "critical",
-		"key":      "priority",
-	})
-
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
-
-	// Create environments for the system
-	e1 := c.NewEnvironment()
-	e1.Name = "env-dev"
-	e1.SystemId = sys.Id
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "stage",
-	})
-
-	e2 := c.NewEnvironment()
-	e2.Name = "env-prod"
-	e2.SystemId = sys.Id
-	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "stage",
-	})
-
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
-
-	// Create resources
-	r1 := c.NewResource(workspaceID)
-	r1.Metadata = map[string]string{
-		"stage":    "dev",
-		"priority": "normal",
-	}
-	r2 := c.NewResource(workspaceID)
-	r2.Metadata = map[string]string{
-		"stage":    "prod",
-		"priority": "critical",
-	}
-
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
 	// Verify system has correct deployments and environments
-	sysDeployments := engine.Workspace().Systems().Deployments(sys.Id)
+	sysDeployments := engine.Workspace().Systems().Deployments(systemId)
 	if len(sysDeployments) != 2 {
 		t.Fatalf("system deployments count is %d, want 2", len(sysDeployments))
 	}
 
-	sysEnvironments := engine.Workspace().Systems().Environments(sys.Id)
+	sysEnvironments := engine.Workspace().Systems().Environments(systemId)
 	if len(sysEnvironments) != 2 {
 		t.Fatalf("system environments count is %d, want 2", len(sysEnvironments))
 	}

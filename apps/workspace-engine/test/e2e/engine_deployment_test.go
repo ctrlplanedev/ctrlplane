@@ -9,51 +9,56 @@ import (
 )
 
 func TestEngine_DeploymentCreation(t *testing.T) {
-	engine := integration.NewTestEngine(t)
-	workspaceID := engine.Workspace().ID
+	deploymentID1 := "1"
+	deploymentID2 := "2"
 
-	d1 := c.NewDeployment()
-	d1.Name = "deployment-has-filter"
-	d1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	})
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID1),
+				integration.DeploymentName("deployment-has-filter"),
+				integration.DeploymentResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "dev",
+					"key":      "env",
+				}),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID2),
+				integration.DeploymentName("deployment-has-no-filter"),
+			),
+		),
+	)
 
-	d2 := c.NewDeployment()
-	d2.Name = "deployment-has-no-filter"
+	engineD1, _ := engine.Workspace().Deployments().Get(deploymentID1)
+	engineD2, _ := engine.Workspace().Deployments().Get(deploymentID2)
+
+	if engineD1.Id != deploymentID1 {
+		t.Fatalf("deployments have the same id")
+	}
+
+	if engineD2.Id != deploymentID2 {
+		t.Fatalf("deployments have the same id")
+	}
 
 	ctx := context.Background()
-
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
-
-	engineD1, _ := engine.Workspace().Deployments().Get(d1.Id)
-	engineD2, _ := engine.Workspace().Deployments().Get(d2.Id)
-
-	if engineD1.Id != d1.Id {
-		t.Fatalf("deployments have the same id")
-	}
-
-	if engineD2.Id != d2.Id {
-		t.Fatalf("deployments have the same id")
-	}
-
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
 
 	if len(releaseTargets) != 0 {
 		t.Fatalf("release targets count is %d, want 0", len(releaseTargets))
 	}
 
-	r1 := c.NewResource(workspaceID)
-	r1.Metadata["env"] = "dev"
-
-	r2 := c.NewResource(workspaceID)
-	r2.Metadata["env"] = "qa"
-
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
+	engine = engine.With(
+		integration.WithResource(
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+		integration.WithResource(
+			integration.ResourceMetadata(map[string]string{"env": "qa"}),
+		),
+	)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
 
@@ -62,13 +67,12 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 		t.Fatalf("release targets count is %d, want 0", len(releaseTargets))
 	}
 
-	d1Resources := engine.Workspace().Deployments().Resources(d1.Id)
+	d1Resources := engine.Workspace().Deployments().Resources(deploymentID1)
+	d2Resources := engine.Workspace().Deployments().Resources(deploymentID2)
 
 	if len(d1Resources) != 1 {
 		t.Fatalf("resources count is %d, want 1", len(d1Resources))
 	}
-
-	d2Resources := engine.Workspace().Deployments().Resources(d2.Id)
 
 	if len(d2Resources) != 2 {
 		t.Fatalf("resources count is %d, want 2", len(d2Resources))
@@ -76,7 +80,7 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 }
 
 func BenchmarkEngine_DeploymentCreation(b *testing.B) {
-	engine := integration.NewTestEngine(nil)
+	engine := integration.NewTestWorkspace(nil)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
@@ -86,6 +90,6 @@ func BenchmarkEngine_DeploymentCreation(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		engine.PushEvent(ctx, handler.DeploymentCreate, c.NewDeployment())
+		engine.PushEvent(ctx, handler.DeploymentCreate, c.NewDeployment(workspaceID))
 	}
 }

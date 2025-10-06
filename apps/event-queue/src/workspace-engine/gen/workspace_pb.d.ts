@@ -974,17 +974,22 @@ export declare type System = Message<"workspace.System"> & {
   id: string;
 
   /**
-   * @generated from field: string name = 2;
+   * @generated from field: string workspace_id = 2;
+   */
+  workspaceId: string;
+
+  /**
+   * @generated from field: string name = 3;
    */
   name: string;
 
   /**
-   * @generated from field: string description = 3;
+   * @generated from field: string description = 4;
    */
   description: string;
 
   /**
-   * @generated from field: string created_at = 4;
+   * @generated from field: string created_at = 5;
    */
   createdAt: string;
 };

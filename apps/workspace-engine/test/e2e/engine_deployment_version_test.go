@@ -10,7 +10,7 @@ import (
 )
 
 func TestEngine_DeploymentVersionCreation(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	dv1 := creators.NewDeploymentVersion()
 	dv2 := creators.NewDeploymentVersion()
 	ctx := context.Background()
@@ -31,7 +31,7 @@ func TestEngine_DeploymentVersionCreation(t *testing.T) {
 }
 
 func BenchmarkEngine_DeploymentVersionCreation(b *testing.B) {
-	engine := integration.NewTestEngine(nil)
+	engine := integration.NewTestWorkspace(nil)
 
 	const numVersions = 1
 

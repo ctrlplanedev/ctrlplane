@@ -10,25 +10,23 @@ import (
 )
 
 func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	sys.Name = "test-system"
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create a deployment
-	d1 := c.NewDeployment()
+	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
-	d1.SystemId = sys.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment with a selector to match all resources
-	e1 := c.NewEnvironment()
+	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.SystemId = sys.Id
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -79,20 +77,18 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create system, deployment, environment, and resource
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
-	d1 := c.NewDeployment()
-	d1.SystemId = sys.Id
+	d1 := c.NewDeployment(sys.Id)
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
-	e1 := c.NewEnvironment()
-	e1.SystemId = sys.Id
+	e1 := c.NewEnvironment(sys.Id)
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -119,20 +115,18 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create system, deployment, environment, and resource
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
-	d1 := c.NewDeployment()
-	d1.SystemId = sys.Id
+	d1 := c.NewDeployment(sys.Id)
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
-	e1 := c.NewEnvironment()
-	e1.SystemId = sys.Id
+	e1 := c.NewEnvironment(sys.Id)
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -159,19 +153,18 @@ func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	sys.Name = "test-system"
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create a deployment with a selector
-	d1 := c.NewDeployment()
+	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-prod-only"
-	d1.SystemId = sys.Id
 	d1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -181,9 +174,8 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment with a selector
-	e1 := c.NewEnvironment()
+	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.SystemId = sys.Id
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -222,22 +214,20 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create a deployment without a selector
-	d1 := c.NewDeployment()
-	d1.SystemId = sys.Id
+	d1 := c.NewDeployment(sys.Id)
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment with selector to match all resources
-	e1 := c.NewEnvironment()
-	e1.SystemId = sys.Id
+	e1 := c.NewEnvironment(sys.Id)
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -297,28 +287,26 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create two systems
-	sys1 := c.NewSystem()
+	sys1 := c.NewSystem(workspaceID)
 	sys1.Name = "system-1"
-	sys2 := c.NewSystem()
+	sys2 := c.NewSystem(workspaceID)
 	sys2.Name = "system-2"
 
 	engine.PushEvent(ctx, handler.SystemCreate, sys1)
 	engine.PushEvent(ctx, handler.SystemCreate, sys2)
 
 	// Create deployment and environment for system 1
-	d1 := c.NewDeployment()
+	d1 := c.NewDeployment(sys1.Id)
 	d1.Name = "deployment-sys1"
-	d1.SystemId = sys1.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
-	e1 := c.NewEnvironment()
+	e1 := c.NewEnvironment(sys1.Id)
 	e1.Name = "env-sys1"
-	e1.SystemId = sys1.Id
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -338,7 +326,6 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 
 	// Move deployment to system 2 - should remove release target
 	// (environment is still in system 1, so no matching deployment+environment pair)
-	d1.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
@@ -347,7 +334,6 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	}
 
 	// Move environment to system 2 as well - should recreate release target
-	e1.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
@@ -357,29 +343,26 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create 2 deployments
-	d1 := c.NewDeployment()
+	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
-	d1.SystemId = sys.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
-	d2 := c.NewDeployment()
+	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-2"
-	d2.SystemId = sys.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
 
 	// Create 2 environments with selectors to match all resources
-	e1 := c.NewEnvironment()
+	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
-	e1.SystemId = sys.Id
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -387,9 +370,8 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 	})
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
-	e2 := c.NewEnvironment()
+	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
-	e2.SystemId = sys.Id
 	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -449,18 +431,17 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create deployment with selector for prod resources
-	d1 := c.NewDeployment()
+	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-prod"
-	d1.SystemId = sys.Id
 	d1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -470,9 +451,8 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create deployment with selector for critical priority
-	d2 := c.NewDeployment()
+	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-critical"
-	d2.SystemId = sys.Id
 	d2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -482,9 +462,8 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
 
 	// Create environment with selector for us-east region
-	e1 := c.NewEnvironment()
+	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-us-east"
-	e1.SystemId = sys.Id
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
@@ -542,23 +521,21 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create deployment without selector (matches all resources)
-	d1 := c.NewDeployment()
-	d1.SystemId = sys.Id
+	d1 := c.NewDeployment(sys.Id)
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create environment WITHOUT a resource selector
 	// This should match NO resources
-	e1 := c.NewEnvironment()
-	e1.SystemId = sys.Id
+	e1 := c.NewEnvironment(sys.Id)
 	e1.ResourceSelector = nil
 	// Explicitly NOT setting ResourceSelector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
@@ -593,21 +570,19 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create deployment and environment
-	d1 := c.NewDeployment()
-	d1.SystemId = sys.Id
+	d1 := c.NewDeployment(sys.Id)
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
-	e1 := c.NewEnvironment()
-	e1.SystemId = sys.Id
+	e1 := c.NewEnvironment(sys.Id)
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -648,29 +623,26 @@ func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
-	engine := integration.NewTestEngine(t)
+	engine := integration.NewTestWorkspace(t)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
 	// Create a system
-	sys := c.NewSystem()
+	sys := c.NewSystem(workspaceID)
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create 2 deployments
-	d1 := c.NewDeployment()
+	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
-	d1.SystemId = sys.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
-	d2 := c.NewDeployment()
+	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-2"
-	d2.SystemId = sys.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
 
 	// Create 2 environments with selectors to match all resources
-	e1 := c.NewEnvironment()
+	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-1"
-	e1.SystemId = sys.Id
 	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -678,9 +650,8 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	})
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
-	e2 := c.NewEnvironment()
+	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-2"
-	e2.SystemId = sys.Id
 	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
@@ -750,9 +721,8 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	}
 
 	// Recreate deployment
-	d3 := c.NewDeployment()
+	d3 := c.NewDeployment(sys.Id)
 	d3.Name = "deployment-3"
-	d3.SystemId = sys.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d3)
 
 	// Should have 1 release target now (d3 × e1 × r1)

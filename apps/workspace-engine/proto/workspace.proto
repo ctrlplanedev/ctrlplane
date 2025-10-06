@@ -279,9 +279,10 @@ message DeploymentVersion {
 
 message System {
   string id = 1;
-  string name = 2;
-  string description = 3;
-  string created_at = 4;
+  string workspace_id = 2;
+  string name = 3;
+  string description = 4;
+  string created_at = 5;
 }
 
 message ComputeReleaseTargetsRequest {
