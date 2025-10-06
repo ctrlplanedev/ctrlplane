@@ -521,32 +521,21 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	envId := "env-1"
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.WithDeployment(),
+			integration.WithEnvironment(integration.EnvironmentID(envId)),
+		),
+		integration.WithResource(),
+		integration.WithResource(
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+	)
+
 	ctx := context.Background()
 
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create deployment without selector (matches all resources)
-	d1 := c.NewDeployment(sys.Id)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-
-	// Create environment WITHOUT a resource selector
-	// This should match NO resources
-	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = nil
-	// Explicitly NOT setting ResourceSelector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-
-	// Create resources
-	r1 := c.NewResource(workspaceID)
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Metadata = map[string]string{"env": "prod"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
+	e1, _ := engine.Workspace().Environments().Get(envId)
 
 	// Verify NO release targets are created because environment has no selector
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)

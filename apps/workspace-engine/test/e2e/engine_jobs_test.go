@@ -524,39 +524,34 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 }
 
 func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
+	jobAgentId := "job-agent-1"
+	deploymentId := "deployment-1"
+	resourceId := "resource-1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+		),
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("env-prod"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId),
+		),
+	)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment
-	d1 := c.NewDeployment(sys.Id)
-	d1.Name = "deployment-1"
-	d1.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-
-	// Create an environment
-	e1 := c.NewEnvironment(sys.Id)
-	e1.Name = "env-prod"
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-
-	// Create a resource
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "resource-1"
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	// Create a deployment version to generate initial job
-	dv1 := c.NewDeploymentVersion()
-	dv1.DeploymentId = d1.Id
-	dv1.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
+	r1, _ := engine.Workspace().Resources().Get(resourceId)
 
 	// Verify 1 job was created
 	pendingJobs := engine.Workspace().Jobs().GetPending()
