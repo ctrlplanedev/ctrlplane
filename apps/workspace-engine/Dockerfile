@@ -1,17 +1,15 @@
-# Build stage
-FROM golang:1.25-alpine AS builder
+# Build stage - use Debian-based image for newer librdkafka
+FROM golang:1.25 AS builder
 
 WORKDIR /app
 
 # Install build dependencies including protobuf, gcc, and librdkafka
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     git \
-    protoc \
-    protobuf-dev \
-    gcc \
-    musl-dev \
+    protobuf-compiler \
     librdkafka-dev \
-    pkgconf
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install protobuf Go plugins
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
@@ -32,22 +30,21 @@ RUN mkdir -p pkg/pb && \
 COPY . .
 
 # Build the binary with CGO enabled (required for confluent-kafka-go)
-# Use dynamic linking to avoid glibc/musl incompatibility
-RUN CGO_ENABLED=1 GOOS=linux go build -tags dynamic -o engine .
+# The vendored librdkafka will be statically linked
+RUN CGO_ENABLED=1 GOOS=linux go build -o engine .
 
-# Final stage
-FROM alpine:latest
+# Final stage - use Debian slim for glibc compatibility
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Install runtime dependencies for librdkafka
-RUN apk add --no-cache librdkafka
+# No runtime dependencies needed - librdkafka is statically linked
 
 # Copy binary from builder
 COPY --from=builder /app/engine .
 
 # Create non-root user
-RUN addgroup -S engine && adduser -S engine -G engine
+RUN groupadd -r engine && useradd -r -g engine engine
 USER engine
 
 # Expose gRPC port
