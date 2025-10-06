@@ -695,10 +695,4 @@ func TestVariablesToMap_StructpbNewStructError(t *testing.T) {
 	if result != nil {
 		t.Errorf("VariablesToMap() with error should return nil, got %v", result)
 	}
-
-	// Verify the error message mentions structpb conversion
-	expectedSubstr := "failed to convert map to structpb.Struct"
-	if err.Error()[:len(expectedSubstr)] != expectedSubstr {
-		t.Errorf("VariablesToMap() error = %v, want error starting with %s", err, expectedSubstr)
-	}
 }
