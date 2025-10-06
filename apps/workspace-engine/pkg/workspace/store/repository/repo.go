@@ -16,20 +16,115 @@ type InitialEntities struct {
 	Releases            []*pb.Release
 	Jobs                []*pb.Job
 	JobAgents           []*pb.JobAgent
+	UserApprovalRecords []*pb.UserApprovalRecord
+}
+
+func loadResources(initialResources []*pb.Resource) cmap.ConcurrentMap[string, *pb.Resource] {
+	resources := cmap.New[*pb.Resource]()
+	for _, resource := range initialResources {
+		resources.Set(resource.GetId(), resource)
+	}
+	return resources
+}
+
+func loadDeployments(initialDeployments []*pb.Deployment) cmap.ConcurrentMap[string, *pb.Deployment] {
+
+	deployments := cmap.New[*pb.Deployment]()
+	for _, deployment := range initialDeployments {
+		deployments.Set(deployment.GetId(), deployment)
+	}
+	return deployments
+}
+
+func loadDeploymentVersions(initialDeploymentVersions []*pb.DeploymentVersion) cmap.ConcurrentMap[string, *pb.DeploymentVersion] {
+
+	deploymentVersions := cmap.New[*pb.DeploymentVersion]()
+	for _, deploymentVersion := range initialDeploymentVersions {
+		deploymentVersions.Set(deploymentVersion.GetId(), deploymentVersion)
+	}
+	return deploymentVersions
+}
+
+func loadDeploymentVariables(initialDeploymentVariables []*pb.DeploymentVariable) cmap.ConcurrentMap[string, *pb.DeploymentVariable] {
+
+	deploymentVariables := cmap.New[*pb.DeploymentVariable]()
+	for _, deploymentVariable := range initialDeploymentVariables {
+		deploymentVariables.Set(deploymentVariable.GetId(), deploymentVariable)
+	}
+	return deploymentVariables
+}
+
+func loadEnvironments(initialEnvironments []*pb.Environment) cmap.ConcurrentMap[string, *pb.Environment] {
+
+	environments := cmap.New[*pb.Environment]()
+	for _, environment := range initialEnvironments {
+		environments.Set(environment.GetId(), environment)
+	}
+	return environments
+}
+
+func loadPolicies(initialPolicies []*pb.Policy) cmap.ConcurrentMap[string, *pb.Policy] {
+
+	policies := cmap.New[*pb.Policy]()
+	for _, policy := range initialPolicies {
+		policies.Set(policy.GetId(), policy)
+	}
+	return policies
+}
+
+func loadSystems(initialSystems []*pb.System) cmap.ConcurrentMap[string, *pb.System] {
+	systems := cmap.New[*pb.System]()
+	for _, system := range initialSystems {
+		systems.Set(system.GetId(), system)
+	}
+	return systems
+}
+
+func loadReleases(initialReleases []*pb.Release) cmap.ConcurrentMap[string, *pb.Release] {
+	releases := cmap.New[*pb.Release]()
+	for _, release := range initialReleases {
+		releases.Set(release.ID(), release)
+	}
+	return releases
+}
+
+func loadJobs(initialJobs []*pb.Job) cmap.ConcurrentMap[string, *pb.Job] {
+	jobs := cmap.New[*pb.Job]()
+	for _, job := range initialJobs {
+		jobs.Set(job.GetId(), job)
+	}
+	return jobs
+}
+
+func loadJobAgents(initialJobAgents []*pb.JobAgent) cmap.ConcurrentMap[string, *pb.JobAgent] {
+	jobAgents := cmap.New[*pb.JobAgent]()
+	for _, jobAgent := range initialJobAgents {
+		jobAgents.Set(jobAgent.GetId(), jobAgent)
+	}
+	return jobAgents
+}
+
+func loadUserApprovalRecords(initialUserApprovalRecords []*pb.UserApprovalRecord) cmap.ConcurrentMap[string, *pb.UserApprovalRecord] {
+	userApprovalRecords := cmap.New[*pb.UserApprovalRecord]()
+	for _, userApprovalRecord := range initialUserApprovalRecords {
+		userApprovalRecords.Set(userApprovalRecord.Key(), userApprovalRecord)
+	}
+	return userApprovalRecords
 }
 
 func Load(initialEntities *InitialEntities) *Repository {
 	return &Repository{
-		Resources:           cmap.LoadString(initialEntities.Resources, func(r *pb.Resource) string { return r.GetId() }),
-		Deployments:         cmap.LoadString(initialEntities.Deployments, func(d *pb.Deployment) string { return d.GetId() }),
-		DeploymentVersions:  cmap.LoadString(initialEntities.DeploymentVersions, func(dv *pb.DeploymentVersion) string { return dv.GetId() }),
-		DeploymentVariables: cmap.LoadString(initialEntities.DeploymentVariables, func(dv *pb.DeploymentVariable) string { return dv.GetId() }),
-		Environments:        cmap.LoadString(initialEntities.Environments, func(e *pb.Environment) string { return e.GetId() }),
-		Policies:            cmap.LoadString(initialEntities.Policies, func(p *pb.Policy) string { return p.GetId() }),
-		Systems:             cmap.LoadString(initialEntities.Systems, func(s *pb.System) string { return s.GetId() }),
-		Releases:            cmap.LoadString(initialEntities.Releases, func(r *pb.Release) string { return r.ID() }),
-		Jobs:                cmap.LoadString(initialEntities.Jobs, func(j *pb.Job) string { return j.GetId() }),
-		JobAgents:           cmap.LoadString(initialEntities.JobAgents, func(ja *pb.JobAgent) string { return ja.GetId() }),
+		Resources:           loadResources(initialEntities.Resources),
+		Deployments:         loadDeployments(initialEntities.Deployments),
+		DeploymentVersions:  loadDeploymentVersions(initialEntities.DeploymentVersions),
+		DeploymentVariables: loadDeploymentVariables(initialEntities.DeploymentVariables),
+		Environments:        loadEnvironments(initialEntities.Environments),
+		Policies:            loadPolicies(initialEntities.Policies),
+		Systems:             loadSystems(initialEntities.Systems),
+		Releases:            loadReleases(initialEntities.Releases),
+		Jobs:                loadJobs(initialEntities.Jobs),
+		JobAgents:           loadJobAgents(initialEntities.JobAgents),
+		UserApprovalRecords: loadUserApprovalRecords(initialEntities.UserApprovalRecords),
 	}
 }
 

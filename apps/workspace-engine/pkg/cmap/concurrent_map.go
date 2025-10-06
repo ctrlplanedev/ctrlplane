@@ -123,31 +123,6 @@ func (m ConcurrentMap[K, V]) Set(key K, value V) {
 	shard.Unlock()
 }
 
-// Load creates a new ConcurrentMap and efficiently populates it with the provided data
-func Load[K comparable, V any](data []V, keyFunc func(V) K, sharding func(key K) uint32) ConcurrentMap[K, V] {
-	m := create[K, V](sharding)
-
-	// Convert slice to map and use existing MSet
-	dataMap := make(map[K]V, len(data))
-	for _, item := range data {
-		key := keyFunc(item)
-		dataMap[key] = item
-	}
-
-	m.MSet(dataMap)
-	return m
-}
-
-// LoadString creates a new ConcurrentMap with string keys and efficiently populates it
-func LoadString[V any](data []V, keyFunc func(V) string) ConcurrentMap[string, V] {
-	return Load(data, keyFunc, fnv32)
-}
-
-// LoadStringer creates a new ConcurrentMap with Stringer keys and efficiently populates it
-func LoadStringer[K Stringer, V any](data []V, keyFunc func(V) K) ConcurrentMap[K, V] {
-	return Load(data, keyFunc, strfnv32[K])
-}
-
 // Callback to return new element to be inserted into the map
 // It is called while lock is held, therefore it MUST NOT
 // try to access other keys in same map, as it can lead to deadlock since
