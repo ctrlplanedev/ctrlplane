@@ -3,8 +3,15 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies including protobuf
-RUN apk add --no-cache git protoc protobuf-dev
+# Install build dependencies including protobuf, gcc, and librdkafka
+RUN apk add --no-cache \
+    git \
+    protoc \
+    protobuf-dev \
+    gcc \
+    musl-dev \
+    librdkafka-dev \
+    pkgconf
 
 # Install protobuf Go plugins
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
@@ -24,13 +31,16 @@ RUN mkdir -p pkg/pb && \
 # Copy rest of source code
 COPY . .
 
-# Build the binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o engine .
+# Build the binary with CGO enabled (required for confluent-kafka-go)
+RUN CGO_ENABLED=1 GOOS=linux go build -o engine .
 
 # Final stage
 FROM alpine:latest
 
 WORKDIR /app
+
+# Install runtime dependencies for librdkafka
+RUN apk add --no-cache librdkafka
 
 # Copy binary from builder
 COPY --from=builder /app/engine .
