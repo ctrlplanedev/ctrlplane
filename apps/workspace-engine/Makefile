@@ -50,7 +50,7 @@ test:
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	$(GO) test -v -coverprofile=coverage.out ./...
+	$(GO) test -v -coverprofile=coverage.out -coverpkg=./... ./...
 	$(GO) tool cover -html=coverage.out -o coverage.html
 
 # Linting
