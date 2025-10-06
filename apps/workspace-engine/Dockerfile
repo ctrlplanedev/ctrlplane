@@ -32,7 +32,8 @@ RUN mkdir -p pkg/pb && \
 COPY . .
 
 # Build the binary with CGO enabled (required for confluent-kafka-go)
-RUN CGO_ENABLED=1 GOOS=linux go build -o engine .
+# Use dynamic linking to avoid glibc/musl incompatibility
+RUN CGO_ENABLED=1 GOOS=linux go build -tags dynamic -o engine .
 
 # Final stage
 FROM alpine:latest
