@@ -65,7 +65,7 @@ func (m *ConcurrentMap[K, V]) GobDecode(data []byte) error {
 	if err := json.Unmarshal(data, &flat); err != nil {
 		return err
 	}
-	
+
 	// Re-initialize shards if needed
 	if m.shards == nil || len(m.shards) != SHARD_COUNT {
 		// If sharding function is nil, we need to infer it from the key type
@@ -83,13 +83,12 @@ func (m *ConcurrentMap[K, V]) GobDecode(data []byte) error {
 		}
 		*m = create[K, V](m.sharding)
 	}
-	
+
 	for k, v := range flat {
 		m.Set(k, v)
 	}
 	return nil
 }
-
 
 // Creates a new concurrent map.
 func NewStringer[K Stringer, V any]() ConcurrentMap[K, V] {

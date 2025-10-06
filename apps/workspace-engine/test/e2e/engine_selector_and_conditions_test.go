@@ -103,9 +103,9 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 
 	// Expected behavior: Only d1 should match r1 (both contain "prod" AND "web")
 	// BUG: Currently d1 matches all resources because AND condition doesn't work
-	
+
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
-	
+
 	// Count release targets for each deployment
 	d1Count := 0
 	d2Count := 0
@@ -127,14 +127,14 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 		t.Errorf("d1 (prod-web) should match only 1 resource (prod-web), got %d", d1Count)
 	}
 
-	// Expected: d2 should match only r1 (1 release target) 
+	// Expected: d2 should match only r1 (1 release target)
 	// BUG: Currently matches all 3 resources
 	if d2Count != 1 {
 		t.Errorf("d2 (prod-api) should match only 1 resource (prod-web), got %d", d2Count)
 	}
 
 	// Expected: d3 should match only r1 (1 release target)
-	// BUG: Currently matches all 3 resources  
+	// BUG: Currently matches all 3 resources
 	if d3Count != 1 {
 		t.Errorf("d3 (dev-web) should match only 1 resource (prod-web), got %d", d3Count)
 	}
@@ -230,9 +230,9 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 
 	// Expected behavior: Only e1 should match r1 (both contain "prod" AND "us-east")
 	// BUG: Currently e1 matches all resources because AND condition doesn't work
-	
+
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
-	
+
 	// Count release targets for each environment
 	e1Count := 0
 	e2Count := 0
@@ -643,4 +643,3 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		t.Errorf("expected policy NOT to match d1+e2+r1, got %d policies", len(policies4))
 	}
 }
-

@@ -434,7 +434,7 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
 	// Create two deployments
-	d1 := c.NewDeployment(sys.Id	)
+	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
@@ -635,7 +635,7 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 		integration.WithSystem(
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
-				integration.DeploymentID(d1Id),	
+				integration.DeploymentID(d1Id),
 				integration.DeploymentJobAgent(jobAgentId),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionID(dv1Id),

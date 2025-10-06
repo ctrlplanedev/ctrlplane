@@ -32,7 +32,6 @@ func TestEngine_WorkspaceStoreAndRestore_BasicJobs(t *testing.T) {
 		integration.WithResource(integration.ResourceName("resource-1")),
 		integration.WithResource(integration.ResourceName("resource-2")),
 	)
-	
 
 	ws := engine.Workspace()
 
@@ -393,4 +392,3 @@ func TestEngine_WorkspaceStoreAndRestore_AllEntities(t *testing.T) {
 		}
 	}
 }
-

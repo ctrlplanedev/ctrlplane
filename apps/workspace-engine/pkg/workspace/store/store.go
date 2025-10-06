@@ -44,6 +44,7 @@ type Store struct {
 	Releases            *Releases
 	Jobs                *Jobs
 	JobAgents           *JobAgents
+	UserApprovalRecords *UserApprovalRecords
 }
 
 func (s *Store) GobEncode() ([]byte, error) {
@@ -59,17 +60,17 @@ func (s *Store) GobDecode(data []byte) error {
 	// Create reader from provided data
 	buf := bytes.NewReader(data)
 	dec := gob.NewDecoder(buf)
-	
+
 	// Initialize repository if needed
 	if s.repo == nil {
 		s.repo = repository.New()
 	}
-	
+
 	// Decode the repository
 	if err := dec.Decode(s.repo); err != nil {
 		return err
 	}
-	
+
 	// Re-initialize store accessors after decode
 	s.Deployments = NewDeployments(s)
 	s.Environments = NewEnvironments(s)
@@ -82,10 +83,10 @@ func (s *Store) GobDecode(data []byte) error {
 	s.Releases = NewReleases(s)
 	s.Jobs = NewJobs(s)
 	s.JobAgents = NewJobAgents(s)
-	
+
 	// Reinitialize materialized views for environments and deployments
 	s.Environments.ReinitializeMaterializedViews()
 	s.Deployments.ReinitializeMaterializedViews()
-	
+
 	return nil
 }

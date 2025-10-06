@@ -20,15 +20,15 @@ var Env, _ = cel.NewEnv(
 )
 
 func Compile(expression string) (*CelSelector, error) {
-    ast, iss := Env.Compile(expression)
-    if iss.Err() != nil {
-        return nil, iss.Err()
-    }
-    program, err := Env.Program(ast)
-    if err != nil {
-        return nil, err
-    }
-    return &CelSelector{Program: program}, nil
+	ast, iss := Env.Compile(expression)
+	if iss.Err() != nil {
+		return nil, iss.Err()
+	}
+	program, err := Env.Program(ast)
+	if err != nil {
+		return nil, err
+	}
+	return &CelSelector{Program: program}, nil
 }
 
 type CelSelector struct {
@@ -36,14 +36,14 @@ type CelSelector struct {
 }
 
 func (s *CelSelector) Matches(context *Context) (bool, error) {
-    val, _, err := s.Program.Eval(context)
+	val, _, err := s.Program.Eval(context)
 	if err != nil {
 		return false, err
 	}
-    result := val.ConvertToType(cel.BoolType)
+	result := val.ConvertToType(cel.BoolType)
 	boolVal, ok := result.Value().(bool)
 	if !ok {
 		return false, fmt.Errorf("result is not a boolean")
 	}
-    return boolVal, nil
+	return boolVal, nil
 }

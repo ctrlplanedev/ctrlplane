@@ -13,9 +13,8 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-
 type TestWorkspace struct {
-	t *testing.T
+	t         *testing.T
 	workspace *workspace.Workspace
 
 	eventListener *handler.EventListener

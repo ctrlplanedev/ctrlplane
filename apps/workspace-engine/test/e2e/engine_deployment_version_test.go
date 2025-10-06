@@ -123,7 +123,7 @@ func TestEngine_SequentialDeploymentVersionsCreateCorrectJobs(t *testing.T) {
 
 	// Create multiple deployment versions sequentially
 	versions := []string{"v1.0.0", "v1.1.0", "v1.2.0", "v2.0.0"}
-	
+
 	for i, versionTag := range versions {
 		// Create deployment version
 		dv := creators.NewDeploymentVersion()
@@ -227,7 +227,7 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 	if release.Version.Config == nil {
 		t.Fatal("expected version config to be set")
 	}
-	
+
 	config := release.Version.Config.AsMap()
 	if config["image"] != "myapp:v1.0.0" {
 		t.Errorf("expected image=myapp:v1.0.0, got %v", config["image"])

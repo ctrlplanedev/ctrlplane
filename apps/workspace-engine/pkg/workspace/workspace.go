@@ -81,17 +81,22 @@ func (w *Workspace) GobDecode(data []byte) error {
 	if w.store == nil {
 		w.store = &store.Store{}
 	}
-	
+
 	// Decode the store
 	if err := w.store.GobDecode(data); err != nil {
 		return err
 	}
-	
+
 	// Reinitialize release manager with the decoded store
 	w.releasemanager = releasemanager.New(w.store)
-	
+
 	return nil
 }
+
+func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
+	return w.store.UserApprovalRecords
+}
+
 
 var workspaces = cmap.New[*Workspace]()
 

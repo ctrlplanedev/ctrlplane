@@ -16,15 +16,15 @@ import (
 
 func NewPolicies(store *Store) *Policies {
 	return &Policies{
-		repo: store.repo,
-		store: store,
+		repo:           store.repo,
+		store:          store,
 		releaseTargets: cmap.New[*materialized.MaterializedView[map[string]*pb.ReleaseTarget]](),
 	}
 }
 
 type Policies struct {
-	repo *repository.Repository
-	store *Store
+	repo           *repository.Repository
+	store          *Store
 	releaseTargets cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.ReleaseTarget]]
 }
 
@@ -36,7 +36,7 @@ func parseSelector(selector *structpb.Struct) (util.MatchableCondition, error) {
 	if selector == nil {
 		return nil, nil
 	}
-	
+
 	unknownCondition, err := unknown.ParseFromMap(selector.AsMap())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse selector: %w", err)
@@ -52,7 +52,7 @@ func (p *Policies) recomputeReleaseTargets(policyId string) materialized.Recompu
 		}
 
 		releaseTargets := make(map[string]*pb.ReleaseTarget)
-		
+
 		for _, policyTarget := range policy.GetSelectors() {
 			deploymentCondition, _ := parseSelector(policyTarget.DeploymentSelector)
 			environmentCondition, _ := parseSelector(policyTarget.EnvironmentSelector)
@@ -122,20 +122,20 @@ func (p *Policies) recomputeReleaseTargets(policyId string) materialized.Recompu
 							continue
 						}
 
-					releaseTarget := &pb.ReleaseTarget{
-						DeploymentId: deployment.Id,
-						EnvironmentId: environment.Id,
-						ResourceId: resource.Id,
+						releaseTarget := &pb.ReleaseTarget{
+							DeploymentId:  deployment.Id,
+							EnvironmentId: environment.Id,
+							ResourceId:    resource.Id,
+						}
+						releaseTarget.Id = releaseTarget.Key()
+						releaseTargets[releaseTarget.Key()] = releaseTarget
 					}
-					releaseTarget.Id = releaseTarget.Key()
-					releaseTargets[releaseTarget.Key()] = releaseTarget
 				}
 			}
 		}
-	}
 
-	return releaseTargets, nil
-}
+		return releaseTargets, nil
+	}
 }
 
 func (p *Policies) IterBuffered() <-chan cmap.Tuple[string, *pb.Policy] {

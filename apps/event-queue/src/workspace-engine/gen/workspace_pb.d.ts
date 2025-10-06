@@ -112,52 +112,10 @@ export declare type PolicyRule = Message<"workspace.PolicyRule"> & {
    */
   rule: {
     /**
-     * @generated from field: workspace.DenyWindowRule deny_window = 10;
-     */
-    value: DenyWindowRule;
-    case: "denyWindow";
-  } | {
-    /**
-     * @generated from field: workspace.UserApprovalRule user_approval = 11;
-     */
-    value: UserApprovalRule;
-    case: "userApproval";
-  } | {
-    /**
-     * @generated from field: workspace.RoleApprovalRule role_approval = 12;
-     */
-    value: RoleApprovalRule;
-    case: "roleApproval";
-  } | {
-    /**
-     * @generated from field: workspace.AnyApprovalRule any_approval = 13;
+     * @generated from field: workspace.AnyApprovalRule any_approval = 4;
      */
     value: AnyApprovalRule;
     case: "anyApproval";
-  } | {
-    /**
-     * @generated from field: workspace.ConcurrencyRule concurrency = 14;
-     */
-    value: ConcurrencyRule;
-    case: "concurrency";
-  } | {
-    /**
-     * @generated from field: workspace.EnvironmentVersionRolloutRule environment_version_rollout = 15;
-     */
-    value: EnvironmentVersionRolloutRule;
-    case: "environmentVersionRollout";
-  } | {
-    /**
-     * @generated from field: workspace.MaxRetriesRule max_retries = 16;
-     */
-    value: MaxRetriesRule;
-    case: "maxRetries";
-  } | {
-    /**
-     * @generated from field: workspace.DeploymentVersionSelectorRule deployment_version_selector = 17;
-     */
-    value: DeploymentVersionSelectorRule;
-    case: "deploymentVersionSelector";
   } | { case: undefined; value?: undefined };
 };
 
@@ -166,6 +124,42 @@ export declare type PolicyRule = Message<"workspace.PolicyRule"> & {
  * Use `create(PolicyRuleSchema)` to create a new message.
  */
 export declare const PolicyRuleSchema: GenMessage<PolicyRule>;
+
+/**
+ * @generated from message workspace.UserApprovalRecord
+ */
+export declare type UserApprovalRecord = Message<"workspace.UserApprovalRecord"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * @generated from field: string version_id = 2;
+   */
+  versionId: string;
+
+  /**
+   * @generated from field: workspace.ApprovalStatus status = 3;
+   */
+  status: ApprovalStatus;
+
+  /**
+   * @generated from field: optional string reason = 4;
+   */
+  reason?: string;
+
+  /**
+   * @generated from field: string created_at = 5;
+   */
+  createdAt: string;
+};
+
+/**
+ * Describes the message workspace.UserApprovalRecord.
+ * Use `create(UserApprovalRecordSchema)` to create a new message.
+ */
+export declare const UserApprovalRecordSchema: GenMessage<UserApprovalRecord>;
 
 /**
  * Deny Window - prevents deployments during specified time windows
@@ -1130,6 +1124,31 @@ export declare type ListDeploymentsResponse = Message<"workspace.ListDeployments
  * Use `create(ListDeploymentsResponseSchema)` to create a new message.
  */
 export declare const ListDeploymentsResponseSchema: GenMessage<ListDeploymentsResponse>;
+
+/**
+ * @generated from enum workspace.ApprovalStatus
+ */
+export enum ApprovalStatus {
+  /**
+   * @generated from enum value: APPROVAL_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: APPROVAL_STATUS_APPROVED = 1;
+   */
+  APPROVED = 1,
+
+  /**
+   * @generated from enum value: APPROVAL_STATUS_REJECTED = 2;
+   */
+  REJECTED = 2,
+}
+
+/**
+ * Describes the enum workspace.ApprovalStatus.
+ */
+export declare const ApprovalStatusSchema: GenEnum<ApprovalStatus>;
 
 /**
  * @generated from enum workspace.JobStatus

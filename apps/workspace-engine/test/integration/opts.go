@@ -45,13 +45,13 @@ type event struct {
 }
 
 type eventsBuilder struct {
-	preEvents []event
+	preEvents  []event
 	postEvents []event
 }
 
 func newEventsBuilder() *eventsBuilder {
 	return &eventsBuilder{
-		preEvents: []event{},
+		preEvents:  []event{},
 		postEvents: []event{},
 	}
 }
@@ -338,6 +338,7 @@ func EnvironmentNoResourceSelector() EnvironmentOption {
 		e.ResourceSelector = nil
 	}
 }
+
 // ===== Resource Options =====
 
 func ResourceName(name string) ResourceOption {
