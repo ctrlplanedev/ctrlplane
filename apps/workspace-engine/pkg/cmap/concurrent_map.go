@@ -1,10 +1,15 @@
 package cmap
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sync"
 )
+
+var _ gob.GobEncoder = (*ConcurrentMap[string, any])(nil)
+var _ gob.GobDecoder = (*ConcurrentMap[string, any])(nil)
 
 var SHARD_COUNT = 32
 
@@ -40,6 +45,49 @@ func create[K comparable, V any](sharding func(key K) uint32) ConcurrentMap[K, V
 // Creates a new concurrent map.
 func New[V any]() ConcurrentMap[string, V] {
 	return create[string, V](fnv32)
+}
+
+// GobEncode implements gob.GobEncoder for ConcurrentMap.
+func (m ConcurrentMap[K, V]) GobEncode() ([]byte, error) {
+	// Flatten all items into a single map
+	flat := make(map[K]V)
+	for _, shard := range m.shards {
+		shard.RLock()
+		maps.Copy(flat, shard.Items)
+		shard.RUnlock()
+	}
+	return json.Marshal(flat)
+}
+
+// GobDecode implements gob.GobDecoder for ConcurrentMap.
+func (m *ConcurrentMap[K, V]) GobDecode(data []byte) error {
+	flat := make(map[K]V)
+	if err := json.Unmarshal(data, &flat); err != nil {
+		return err
+	}
+
+	// Re-initialize shards if needed
+	if m.shards == nil || len(m.shards) != SHARD_COUNT {
+		// If sharding function is nil, we need to infer it from the key type
+		if m.sharding == nil {
+			// Try to infer sharding function for string keys
+			var k K
+			if _, ok := any(k).(string); ok {
+				// K is string, use fnv32
+				m.sharding = any(fnv32).(func(K) uint32)
+			} else {
+				// For non-string keys, we can't infer a good default
+				// This shouldn't happen in practice for our use case
+				m.sharding = func(key K) uint32 { return 0 }
+			}
+		}
+		*m = create[K, V](m.sharding)
+	}
+
+	for k, v := range flat {
+		m.Set(k, v)
+	}
+	return nil
 }
 
 // Creates a new concurrent map.

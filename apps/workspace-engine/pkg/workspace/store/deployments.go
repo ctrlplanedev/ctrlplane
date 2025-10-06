@@ -91,6 +91,21 @@ func (e *Deployments) IterBuffered() <-chan cmap.Tuple[string, *pb.Deployment] {
 	return e.repo.Deployments.IterBuffered()
 }
 
+// ReinitializeMaterializedViews recreates all materialized views after deserialization
+func (e *Deployments) ReinitializeMaterializedViews() {
+	for item := range e.repo.Deployments.IterBuffered() {
+		deployment := item.Val
+		resourcesMv := materialized.New(
+			e.deploymentResourceRecomputeFunc(deployment.Id),
+		)
+		versionsMv := materialized.New(
+			e.deploymentVersionRecomputeFunc(deployment.Id),
+		)
+		e.resources.Set(deployment.Id, resourcesMv)
+		e.versions.Set(deployment.Id, versionsMv)
+	}
+}
+
 func (e *Deployments) Get(id string) (*pb.Deployment, bool) {
 	return e.repo.Deployments.Get(id)
 }
@@ -239,4 +254,8 @@ func (e *Deployments) Variables(deploymentId string) map[string]*pb.DeploymentVa
 		vars[variable.Val.Key] = variable.Val
 	}
 	return vars
+}
+
+func (e *Deployments) Items() map[string]*pb.Deployment {
+	return e.repo.Deployments.Items()
 }

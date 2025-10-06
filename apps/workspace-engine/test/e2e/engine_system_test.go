@@ -387,7 +387,6 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 	)
 	ctx := context.Background()
 
-
 	// Verify system has correct deployments and environments
 	sysDeployments := engine.Workspace().Systems().Deployments(systemId)
 	if len(sysDeployments) != 2 {

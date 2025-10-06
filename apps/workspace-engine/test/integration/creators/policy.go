@@ -35,4 +35,3 @@ func NewPolicyTargetSelector() *pb.PolicyTargetSelector {
 		Id: id,
 	}
 }
-

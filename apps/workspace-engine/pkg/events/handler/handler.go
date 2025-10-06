@@ -50,6 +50,10 @@ const (
 	PolicyCreate EventType = "policy.create"
 	PolicyUpdate EventType = "policy.update"
 	PolicyDelete EventType = "policy.delete"
+
+	UserApprovalRecordCreate EventType = "user-approval-record.create"
+	UserApprovalRecordUpdate EventType = "user-approval-record.update"
+	UserApprovalRecordDelete EventType = "user-approval-record.delete"
 )
 
 // BaseEvent represents the common structure of all events

@@ -31,15 +31,22 @@ message PolicyRule {
   string created_at = 3;
 
   oneof rule {
-    DenyWindowRule deny_window = 10;
-    UserApprovalRule user_approval = 11;
-    RoleApprovalRule role_approval = 12;
-    AnyApprovalRule any_approval = 13;
-    ConcurrencyRule concurrency = 14;
-    EnvironmentVersionRolloutRule environment_version_rollout = 15;
-    MaxRetriesRule max_retries = 16;
-    DeploymentVersionSelectorRule deployment_version_selector = 17;
+    AnyApprovalRule any_approval = 4;
   }
+}
+
+enum ApprovalStatus {
+  APPROVAL_STATUS_UNSPECIFIED = 0;
+  APPROVAL_STATUS_APPROVED = 1;
+  APPROVAL_STATUS_REJECTED = 2;
+}
+
+message UserApprovalRecord {
+  string user_id = 1;
+  string version_id = 2;
+  ApprovalStatus status = 3;
+  optional string reason = 4;
+  string created_at = 5;
 }
 
 // Deny Window - prevents deployments during specified time windows

@@ -35,5 +35,42 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Run all tests
-        run: go test ./...
+      - name: Run tests with coverage
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
+
+      - name: Generate coverage report
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Calculate coverage percentage
+        id: coverage
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Total coverage: $COVERAGE"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: |
+            apps/workspace-engine/coverage.out
+            apps/workspace-engine/coverage.html
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const coverage = '${{ steps.coverage.outputs.percentage }}';
+            const comment = `## 📊 Code Coverage Report
+
+            **workspace-engine** coverage: \`${coverage}\`
+
+            [View detailed coverage report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

@@ -18,6 +18,10 @@ type Jobs struct {
 	repo *repository.Repository
 }
 
+func (j *Jobs) Items() map[string]*pb.Job {
+	return j.repo.Jobs.Items()
+}
+
 // MostRecentForReleaseTarget returns the most recently created job for a given release target.
 // It searches all jobs and finds the one with the latest CreatedAt for the specified release target ID.
 func (j *Jobs) MostRecentForReleaseTarget(ctx context.Context, releaseTarget *pb.ReleaseTarget) (*pb.Job, error) {

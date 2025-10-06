@@ -166,24 +166,8 @@ func (m *Manager) evaluateRule(
 ) (*results.RuleEvaluationResult, error) {
 	// Direct switch on rule type - compiler optimizes this to a jump table
 	switch {
-	case rule.GetDenyWindow() != nil:
-		return m.evaluateDenyWindow(ctx, rule.Id, rule.GetDenyWindow(), time.Now())
-
-	case rule.GetUserApproval() != nil:
-		return m.evaluateUserApproval(ctx, rule.Id, rule.GetUserApproval(), version, releaseTarget)
-
-	case rule.GetRoleApproval() != nil:
-		return m.evaluateRoleApproval(ctx, rule.Id, rule.GetRoleApproval(), version, releaseTarget)
-
 	case rule.GetAnyApproval() != nil:
 		return m.evaluateAnyApproval(ctx, rule.Id, rule.GetAnyApproval(), version, releaseTarget)
-
-	case rule.GetConcurrency() != nil:
-		return m.evaluateConcurrency(ctx, rule.Id, rule.GetConcurrency(), releaseTarget)
-
-	case rule.GetMaxRetries() != nil:
-		return m.evaluateMaxRetries(ctx, rule.Id, rule.GetMaxRetries(), version, releaseTarget)
-
 	default:
 		return nil, fmt.Errorf("unknown rule type for rule %s", rule.Id)
 	}

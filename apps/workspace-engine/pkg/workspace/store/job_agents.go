@@ -26,3 +26,7 @@ func (j *JobAgents) Get(id string) (*pb.JobAgent, bool) {
 func (j *JobAgents) Remove(id string) {
 	j.repo.JobAgents.Remove(id)
 }
+
+func (j *JobAgents) Items() map[string]*pb.JobAgent {
+	return j.repo.JobAgents.Items()
+}

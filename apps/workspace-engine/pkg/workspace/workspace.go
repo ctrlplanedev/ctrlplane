@@ -1,9 +1,14 @@
 package workspace
 
 import (
+	"encoding/gob"
+	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
+
+var _ gob.GobEncoder = (*Workspace)(nil)
+var _ gob.GobDecoder = (*Workspace)(nil)
 
 type Workspace struct {
 	ID string
@@ -51,6 +56,37 @@ func (w *Workspace) Jobs() *store.Jobs {
 func (w *Workspace) JobAgents() *store.JobAgents {
 	return w.store.JobAgents
 }
+
+func (w *Workspace) Releases() *store.Releases {
+	return w.store.Releases
+}
+
+func (w *Workspace) GobEncode() ([]byte, error) {
+	return w.store.GobEncode()
+}
+
+func (w *Workspace) GobDecode(data []byte) error {
+	// Initialize store if needed
+	if w.store == nil {
+		w.store = &store.Store{}
+	}
+
+	// Decode the store
+	if err := w.store.GobDecode(data); err != nil {
+		return err
+	}
+
+	// Reinitialize release manager with the decoded store
+	w.releasemanager = releasemanager.New(w.store)
+
+	return nil
+}
+
+func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
+	return w.store.UserApprovalRecords
+}
+
+var workspaces = cmap.New[*Workspace]()
 
 type WorkspaceStore interface {
 	Get(id string) (*Workspace, error)

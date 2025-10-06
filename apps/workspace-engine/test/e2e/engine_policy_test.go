@@ -970,4 +970,3 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		t.Fatalf("expected policy NOT to match d1+e2+r1, got %d policies", len(policies4))
 	}
 }
-

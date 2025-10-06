@@ -25,6 +25,10 @@ func (r *Releases) Has(id string) bool {
 	return r.repo.Releases.Has(id)
 }
 
+func (r *Releases) Get(id string) (*pb.Release, bool) {
+	return r.repo.Releases.Get(id)
+}
+
 func (r *Releases) Remove(id string) {
 	r.repo.Releases.Remove(id)
 }
