@@ -6,6 +6,8 @@ import (
 	"time"
 	"workspace-engine/pkg/events"
 
+	"workspace-engine/pkg/workspace"
+
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -47,7 +49,8 @@ func RunConsumer(ctx context.Context) error {
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
-	handler := events.NewEventHandler()
+	workspaceStore := workspace.NewDBWorkspaceStore(ctx)
+	handler := events.NewEventHandler(workspaceStore)
 
 	for {
 		select {

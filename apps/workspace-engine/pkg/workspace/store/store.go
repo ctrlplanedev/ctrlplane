@@ -4,12 +4,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-func New() *Store {
-	repo := repository.New()
-	store := &Store{
-		repo: repo,
-	}
-
+func initSubStores(store *Store) {
 	store.Deployments = NewDeployments(store)
 	store.Environments = NewEnvironments(store)
 	store.Resources = NewResources(store)
@@ -21,7 +16,23 @@ func New() *Store {
 	store.Releases = NewReleases(store)
 	store.Jobs = NewJobs(store)
 	store.JobAgents = NewJobAgents(store)
+}
 
+func New() *Store {
+	repo := repository.New()
+	store := &Store{
+		repo: repo,
+	}
+
+	initSubStores(store)
+	return store
+}
+
+func NewWithRepository(repo *repository.Repository) *Store {
+	store := New()
+	store.repo = repo
+
+	initSubStores(store)
 	return store
 }
 

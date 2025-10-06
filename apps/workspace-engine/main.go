@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/grpc/releasetarget"
 	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/pb/pbconnect"
@@ -155,6 +156,9 @@ func main() {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	_ = db.GetPool(ctx)
+	defer db.Close()
 
 	go func() {
 		log.Info("Kafka consumer started")
