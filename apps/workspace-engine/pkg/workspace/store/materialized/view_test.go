@@ -18,25 +18,35 @@ func TestBasicGetAndTrigger(t *testing.T) {
 
 	mv := New(rf)
 
-	// Initially zero
-	val := mv.Get()
-	if val != 0 {
-		t.Errorf("expected zero value, got val=%d", val)
+	// Wait for initial computation to complete (New calls StartRecompute automatically)
+	err := mv.WaitRecompute()
+	if err != nil {
+		t.Fatalf("WaitRecompute failed: %v", err)
 	}
 
-	// Trigger
-	err := mv.RunRecompute()
+	// After initial computation from New(), value should be 100
+	val := mv.Get()
+	if val != 100 {
+		t.Errorf("expected val=100 after New(), got val=%d", val)
+	}
+
+	if atomic.LoadInt32(&callCount) != 1 {
+		t.Errorf("expected 1 recompute call from New(), got %d", callCount)
+	}
+
+	// Trigger another computation
+	err = mv.RunRecompute()
 	if err != nil {
 		t.Fatalf("RunRecompute failed: %v", err)
 	}
 
 	val = mv.Get()
-	if val != 100 {
-		t.Errorf("expected val=100, got val=%d", val)
+	if val != 200 {
+		t.Errorf("expected val=200 after second recompute, got val=%d", val)
 	}
 
-	if atomic.LoadInt32(&callCount) != 1 {
-		t.Errorf("expected 1 recompute call, got %d", callCount)
+	if atomic.LoadInt32(&callCount) != 2 {
+		t.Errorf("expected 2 recompute calls total, got %d", callCount)
 	}
 }
 
@@ -49,10 +59,10 @@ func TestMultipleTriggers(t *testing.T) {
 
 	mv := New(rf)
 
-	// First trigger
-	err := mv.RunRecompute()
+	// Wait for initial computation to complete (New calls StartRecompute automatically)
+	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("RunRecompute failed: %v", err)
+		t.Fatalf("WaitRecompute failed: %v", err)
 	}
 
 	val1 := mv.Get()
@@ -151,13 +161,8 @@ func TestStartWaitRun(t *testing.T) {
 
 	mv := New(rf)
 
-	// Test StartRecompute + WaitRecompute
-	err := mv.StartRecompute()
-	if err != nil {
-		t.Fatalf("StartRecompute failed: %v", err)
-	}
-
-	err = mv.WaitRecompute()
+	// Wait for initial computation to complete (New calls StartRecompute automatically)
+	err := mv.WaitRecompute()
 	if err != nil {
 		t.Fatalf("WaitRecompute failed: %v", err)
 	}
@@ -196,19 +201,16 @@ func TestStartAlreadyStarted(t *testing.T) {
 
 	mv := New(rf)
 
-	// Start first computation
-	err := mv.StartRecompute()
-	if err != nil {
-		t.Fatalf("first StartRecompute failed: %v", err)
-	}
-
-	// Wait for it to actually start
+	// Wait for initial computation to start (New calls StartRecompute automatically)
 	<-started
 
 	// Try to start again while first is running - should mark pending
-	err = mv.StartRecompute()
+	err := mv.StartRecompute()
 	if err == nil {
 		t.Error("expected ErrAlreadyStarted, got nil")
+	}
+	if !IsAlreadyStarted(err) {
+		t.Errorf("expected ErrAlreadyStarted, got %v", err)
 	}
 
 	// Release the blocked computation (will unblock both the first run and the pending rerun)
@@ -406,10 +408,10 @@ func TestApplyUpdate(t *testing.T) {
 
 	mv := New(rf)
 
-	// Initialize with a full recompute
-	err := mv.RunRecompute()
+	// Wait for initial computation to complete (New calls StartRecompute automatically)
+	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("RunRecompute failed: %v", err)
+		t.Fatalf("WaitRecompute failed: %v", err)
 	}
 
 	val := mv.Get()
@@ -528,10 +530,10 @@ func TestApplyUpdateMapType(t *testing.T) {
 
 	mv := New(rf)
 
-	// Initialize
-	err := mv.RunRecompute()
+	// Wait for initial computation to complete (New calls StartRecompute automatically)
+	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("RunRecompute failed: %v", err)
+		t.Fatalf("WaitRecompute failed: %v", err)
 	}
 
 	// Apply an incremental update - add a new entry
@@ -643,39 +645,45 @@ func TestWithImmediateCompute(t *testing.T) {
 	}
 }
 
-// TestWithoutImmediateCompute tests the default behavior (no immediate compute)
+// TestWithoutImmediateCompute tests the default behavior (WITH immediate compute)
 func TestWithoutImmediateCompute(t *testing.T) {
 	var callCount int32
 	rf := func() (int, error) {
 		return int(atomic.AddInt32(&callCount, 1)) * 100, nil
 	}
 
-	// Create without immediate compute (default)
+	// Create - now triggers immediate computation
 	mv := New(rf)
 
-	// Should not have called recompute yet
-	if atomic.LoadInt32(&callCount) != 0 {
-		t.Errorf("expected 0 recompute calls, got %d", callCount)
+	// Wait for initial computation to complete
+	err := mv.WaitRecompute()
+	if err != nil {
+		t.Fatalf("WaitRecompute failed: %v", err)
 	}
 
-	// Value should be zero
+	// Should have called recompute once (from New)
+	if atomic.LoadInt32(&callCount) != 1 {
+		t.Errorf("expected 1 recompute call from New(), got %d", callCount)
+	}
+
+	// Value should be 100
 	val := mv.Get()
-	if val != 0 {
-		t.Errorf("expected val=0, got val=%d", val)
+	if val != 100 {
+		t.Errorf("expected val=100, got val=%d", val)
 	}
 
-	// Now manually trigger
-	err := mv.RunRecompute()
+	// Manually trigger another recompute
+	err = mv.RunRecompute()
 	if err != nil {
 		t.Fatalf("RunRecompute failed: %v", err)
 	}
 
 	val = mv.Get()
-	if val != 100 {
-		t.Errorf("expected val=100, got val=%d", val)
+	if val != 200 {
+		t.Errorf("expected val=200, got val=%d", val)
 	}
 
-	if atomic.LoadInt32(&callCount) != 1 {
-		t.Errorf("expected 1 recompute call, got %d", callCount)
+	if atomic.LoadInt32(&callCount) != 2 {
+		t.Errorf("expected 2 recompute calls, got %d", callCount)
 	}
 }
