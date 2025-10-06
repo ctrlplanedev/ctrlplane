@@ -10,22 +10,26 @@ import (
 )
 
 func TestEngine_DeploymentVersionCreation(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	dv1 := creators.NewDeploymentVersion()
-	dv2 := creators.NewDeploymentVersion()
-	ctx := context.Background()
+	dv1Id := "dv1"
+	dv2Id := "dv2"
 
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv2)
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.WithDeploymentVersion(integration.DeploymentVersionID(dv1Id)),
+				integration.WithDeploymentVersion(integration.DeploymentVersionID(dv2Id)),
+			),
+		),
+	)
 
-	engineDv1, _ := engine.Workspace().DeploymentVersions().Get(dv1.Id)
-	engineDv2, _ := engine.Workspace().DeploymentVersions().Get(dv2.Id)
+	engineDv1, _ := engine.Workspace().DeploymentVersions().Get(dv1Id)
+	engineDv2, _ := engine.Workspace().DeploymentVersions().Get(dv2Id)
 
-	if engineDv1.Id != dv1.Id {
+	if engineDv1.Id != dv1Id {
 		t.Fatalf("deployment versions have the same id")
 	}
 
-	if engineDv2.Id != dv2.Id {
+	if engineDv2.Id != dv2Id {
 		t.Fatalf("deployment versions have the same id")
 	}
 }

@@ -625,67 +625,73 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 }
 
 func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	d1Id := "deployment-1"
+	dv1Id := "dv1"
+	e1Id := "env-dev"
+	e2Id := "env-prod"
+	r1Id := "resource-dev"
+	r2Id := "resource-prod"
+	jobAgentId := "job-agent-1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),	
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionID(dv1Id),
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName(e1Id),
+				integration.EnvironmentID(e1Id),
+				integration.EnvironmentResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "dev",
+					"key":      "env",
+				}),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName(e2Id),
+				integration.EnvironmentID(e2Id),
+				integration.EnvironmentResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "prod",
+					"key":      "env",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName(r1Id),
+			integration.ResourceID(r1Id),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+		integration.WithResource(
+			integration.ResourceName(r2Id),
+			integration.ResourceID(r2Id),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+	)
+
+	e1, _ := engine.Workspace().Environments().Get("env-dev")
+	e2, _ := engine.Workspace().Environments().Get("env-prod")
+	r1, _ := engine.Workspace().Resources().Get("resource-dev")
+	r2, _ := engine.Workspace().Resources().Get("resource-prod")
+
 	ctx := context.Background()
-
-	jobAgent := c.NewJobAgent()
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment
-	d1 := c.NewDeployment(sys.Id)
-	d1.Name = "deployment-1"
-	d1.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-
-	// Create two environments with different selectors
-	e1 := c.NewEnvironment(sys.Id)
-	e1.Name = "env-dev"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-
-	e2 := c.NewEnvironment(sys.Id)
-	e2.Name = "env-prod"
-	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
-
-	// Create resources with different metadata
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "resource-dev"
-	r1.Metadata = map[string]string{"env": "dev"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "resource-prod"
-	r2.Metadata = map[string]string{"env": "prod"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
 	// Verify release targets (2 targets: 1 for dev, 1 for prod)
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets, got %d", len(releaseTargets))
 	}
-
-	// Create a deployment version
-	dv1 := c.NewDeploymentVersion()
-	dv1.DeploymentId = d1.Id
-	dv1.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
 
 	// Verify jobs were created for both environments
 	pendingJobs := engine.Workspace().Jobs().GetPending()
@@ -716,48 +722,34 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 }
 
 func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	jobAgentId := "job-agent-1"
+
+	r1Id := "resource-1"
+	r2Id := "resource-2"
+	dv1Id := "dv1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionID(dv1Id),
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(integration.EnvironmentName("env-prod")),
+		),
+		integration.WithResource(integration.ResourceID(r1Id)),
+		integration.WithResource(integration.ResourceID(r2Id)),
+	)
+
+	r1, _ := engine.Workspace().Resources().Get("resource-1")
+	r2, _ := engine.Workspace().Resources().Get("resource-2")
 	ctx := context.Background()
-
-	jobAgent := c.NewJobAgent()
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment
-	d1 := c.NewDeployment(sys.Id)
-	d1.Name = "deployment-1"
-	d1.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-
-	// Create an environment
-	e1 := c.NewEnvironment(sys.Id)
-	e1.Name = "env-prod"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-
-	// Create two resources
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "resource-1"
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "resource-2"
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
-
-	// Create a deployment version to generate jobs
-	dv1 := c.NewDeploymentVersion()
-	dv1.DeploymentId = d1.Id
-	dv1.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
 
 	// Verify 2 jobs were created
 	pendingJobs := engine.Workspace().Jobs().GetPending()

@@ -16,7 +16,10 @@ type WorkspaceOption func(*TestWorkspace)
 type SystemOption func(*TestWorkspace, *pb.System, *eventsBuilder)
 
 // DeploymentOption configures a Deployment
-type DeploymentOption func(*TestWorkspace, *pb.Deployment)
+type DeploymentOption func(*TestWorkspace, *pb.Deployment, *eventsBuilder)
+
+// DeploymentVersionOption configures a DeploymentVersion
+type DeploymentVersionOption func(*TestWorkspace, *pb.DeploymentVersion)
 
 // EnvironmentOption configures an Environment
 type EnvironmentOption func(*TestWorkspace, *pb.Environment)
@@ -135,15 +138,18 @@ func WithDeployment(options ...DeploymentOption) SystemOption {
 		d := c.NewDeployment(s.Id)
 		d.SystemId = s.Id
 
+		dvEB := newEventsBuilder()
 		for _, option := range options {
-			option(ws, d)
+			option(ws, d, dvEB)
 		}
-
 
 		eb.postEvents = append(eb.postEvents, event{
 			Type: handler.DeploymentCreate,
 			Data: d,
 		})
+
+		// Add deployment version events after deployment
+		eb.postEvents = append(eb.postEvents, dvEB.postEvents...)
 	}
 }
 
@@ -166,33 +172,110 @@ func WithEnvironment(options ...EnvironmentOption) SystemOption {
 // ===== Deployment Options =====
 
 func DeploymentName(name string) DeploymentOption {
-	return func(_ *TestWorkspace, d *pb.Deployment) {
+	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
 		d.Name = name
 		d.Slug = name
 	}
 }
 
 func DeploymentDescription(description string) DeploymentOption {
-	return func(_ *TestWorkspace, d *pb.Deployment) {
+	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
 		d.Description = description
 	}
 }
 
 func DeploymentID(id string) DeploymentOption {
-	return func(_ *TestWorkspace, d *pb.Deployment) {
+	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
 		d.Id = id
 	}
 }
 
 func DeploymentJobAgent(jobAgentID string) DeploymentOption {
-	return func(_ *TestWorkspace, d *pb.Deployment) {
+	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
 		d.JobAgentId = &jobAgentID
 	}
 }
 
 func DeploymentResourceSelector(selector map[string]any) DeploymentOption {
-	return func(_ *TestWorkspace, d *pb.Deployment) {
+	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
 		d.ResourceSelector = c.MustNewStructFromMap(selector)
+	}
+}
+
+// WithDeploymentVersion creates a deployment version for a deployment.
+// Can be called multiple times to create multiple versions.
+//
+// Example:
+//
+//	integration.WithDeployment(
+//	    integration.DeploymentName("api"),
+//	    integration.WithDeploymentVersion(
+//	        integration.DeploymentVersionTag("v1.0.0"),
+//	        integration.DeploymentVersionConfig(map[string]any{
+//	            "image": "myapp:v1.0.0",
+//	        }),
+//	    ),
+//	    integration.WithDeploymentVersion(
+//	        integration.DeploymentVersionTag("v1.1.0"),
+//	    ),
+//	)
+func WithDeploymentVersion(options ...DeploymentVersionOption) DeploymentOption {
+	return func(ws *TestWorkspace, d *pb.Deployment, eb *eventsBuilder) {
+		dv := c.NewDeploymentVersion()
+		dv.DeploymentId = d.Id
+
+		for _, option := range options {
+			option(ws, dv)
+		}
+
+		eb.postEvents = append(eb.postEvents, event{
+			Type: handler.DeploymentVersionCreate,
+			Data: dv,
+		})
+	}
+}
+
+// ===== DeploymentVersion Options =====
+
+func DeploymentVersionName(name string) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVersion) {
+		dv.Name = name
+	}
+}
+
+func DeploymentVersionTag(tag string) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVersion) {
+		dv.Tag = tag
+	}
+}
+
+func DeploymentVersionID(id string) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVersion) {
+		dv.Id = id
+	}
+}
+
+func DeploymentVersionConfig(config map[string]any) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVersion) {
+		dv.Config = c.MustNewStructFromMap(config)
+	}
+}
+
+func DeploymentVersionJobAgentConfig(config map[string]any) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVersion) {
+		dv.JobAgentConfig = c.MustNewStructFromMap(config)
+	}
+}
+
+func DeploymentVersionStatus(status pb.DeploymentVersionStatus) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVersion) {
+		dv.Status = status
+	}
+}
+
+func DeploymentVersionMessage(message string) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVersion) {
+		dv.Message = &message
 	}
 }
 
