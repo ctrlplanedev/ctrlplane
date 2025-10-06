@@ -326,6 +326,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 
 	// Move deployment to system 2 - should remove release target
 	// (environment is still in system 1, so no matching deployment+environment pair)
+	d1.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
@@ -334,6 +335,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	}
 
 	// Move environment to system 2 as well - should recreate release target
+	e1.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
@@ -525,7 +527,10 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(),
-			integration.WithEnvironment(integration.EnvironmentID(envId)),
+			integration.WithEnvironment(
+				integration.EnvironmentID(envId),
+				integration.EnvironmentNoResourceSelector(),
+			),
 		),
 		integration.WithResource(),
 		integration.WithResource(

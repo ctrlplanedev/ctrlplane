@@ -326,6 +326,12 @@ func EnvironmentResourceSelector(selector map[string]any) EnvironmentOption {
 		e.ResourceSelector = c.MustNewStructFromMap(selector)
 	}
 }
+
+func EnvironmentNoResourceSelector() EnvironmentOption {
+	return func(_ *TestWorkspace, e *pb.Environment) {
+		e.ResourceSelector = nil
+	}
+}
 // ===== Resource Options =====
 
 func ResourceName(name string) ResourceOption {
