@@ -153,8 +153,9 @@ type Policy struct {
 	Name          string                  `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Description   string                  `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	CreatedAt     string                  `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	Selectors     []*PolicyTargetSelector `protobuf:"bytes,5,rep,name=selectors,proto3" json:"selectors,omitempty"`
-	Rules         []*PolicyRule           `protobuf:"bytes,6,rep,name=rules,proto3" json:"rules,omitempty"`
+	WorkspaceId   string                  `protobuf:"bytes,5,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
+	Selectors     []*PolicyTargetSelector `protobuf:"bytes,6,rep,name=selectors,proto3" json:"selectors,omitempty"`
+	Rules         []*PolicyRule           `protobuf:"bytes,7,rep,name=rules,proto3" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -213,6 +214,13 @@ func (x *Policy) GetDescription() string {
 func (x *Policy) GetCreatedAt() string {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *Policy) GetWorkspaceId() string {
+	if x != nil {
+		return x.WorkspaceId
 	}
 	return ""
 }
@@ -2567,15 +2575,16 @@ var File_workspace_proto protoreflect.FileDescriptor
 
 const file_workspace_proto_rawDesc = "" +
 	"\n" +
-	"\x0fworkspace.proto\x12\tworkspace\x1a\x1cgoogle/protobuf/struct.proto\"\xd9\x01\n" +
+	"\x0fworkspace.proto\x12\tworkspace\x1a\x1cgoogle/protobuf/struct.proto\"\xfc\x01\n" +
 	"\x06Policy\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\tR\tcreatedAt\x12=\n" +
-	"\tselectors\x18\x05 \x03(\v2\x1f.workspace.PolicyTargetSelectorR\tselectors\x12+\n" +
-	"\x05rules\x18\x06 \x03(\v2\x15.workspace.PolicyRuleR\x05rules\"\xd8\x02\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\x12!\n" +
+	"\fworkspace_id\x18\x05 \x01(\tR\vworkspaceId\x12=\n" +
+	"\tselectors\x18\x06 \x03(\v2\x1f.workspace.PolicyTargetSelectorR\tselectors\x12+\n" +
+	"\x05rules\x18\a \x03(\v2\x15.workspace.PolicyRuleR\x05rules\"\xd8\x02\n" +
 	"\x14PolicyTargetSelector\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12M\n" +
 	"\x13deployment_selector\x18\x03 \x01(\v2\x17.google.protobuf.StructH\x00R\x12deploymentSelector\x88\x01\x01\x12O\n" +

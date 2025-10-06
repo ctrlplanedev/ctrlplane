@@ -36,18 +36,19 @@ func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
 		mu:        sync.RWMutex{},
 	}
 
-	mv.StartRecompute()
-
 	// Apply options
 	for _, opt := range opts {
 		opt(mv)
 	}
+
+	mv.StartRecompute()
 
 	return mv
 }
 
 // Get returns the current cached value.
 func (m *MaterializedView[V]) Get() V {
+	m.WaitIfRunning()
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.val

@@ -559,32 +559,24 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	sysId := "sys-1"
+	d1Id := "d1-1"
+	e1Id := "e1-1"
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(sysId),
+			integration.SystemName("test-system"),
+			integration.WithDeployment(integration.DeploymentID(d1Id)),
+			integration.WithEnvironment(integration.EnvironmentID(e1Id)),
+		),
+		integration.WithResource(),
+		integration.WithResource(),
+	)
 	ctx := context.Background()
 
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create deployment and environment
-	d1 := c.NewDeployment(sys.Id)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-
-	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-
-	// Create resources
-	r1 := c.NewResource(workspaceID)
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
+	sys, _ := engine.Workspace().Systems().Get(sysId)
+	d1, _ := engine.Workspace().Deployments().Get(d1Id)
+	e1, _ := engine.Workspace().Environments().Get(e1Id)
 
 	// Verify release targets were created
 	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)

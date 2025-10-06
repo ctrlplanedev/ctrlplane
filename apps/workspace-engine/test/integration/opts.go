@@ -33,6 +33,11 @@ type JobAgentOption func(*TestWorkspace, *pb.JobAgent)
 // ReleaseOption configures a Release
 type ReleaseOption func(*TestWorkspace, *pb.Release)
 
+// PolicyOption configures a Policy
+type PolicyOption func(*TestWorkspace, *pb.Policy, *eventsBuilder)
+
+// PolicyTargetSelectorOption configures a PolicyTargetSelector
+type PolicyTargetSelectorOption func(*TestWorkspace, *pb.PolicyTargetSelector)
 
 type event struct {
 	Type handler.EventType
@@ -109,6 +114,23 @@ func WithJobAgent(options ...JobAgentOption) WorkspaceOption {
 			context.Background(),
 			handler.JobAgentCreate,
 			ja,
+		)
+	}
+}
+
+func WithPolicy(options ...PolicyOption) WorkspaceOption {
+	return func(ws *TestWorkspace) {
+		p := c.NewPolicy(ws.workspace.ID)
+
+		eb := newEventsBuilder()
+		for _, option := range options {
+			option(ws, p, eb)
+		}
+
+		ws.PushEvent(
+			context.Background(),
+			handler.PolicyCreate,
+			p,
 		)
 	}
 }
@@ -371,5 +393,63 @@ func JobAgentID(id string) JobAgentOption {
 func JobAgentType(agentType string) JobAgentOption {
 	return func(_ *TestWorkspace, ja *pb.JobAgent) {
 		ja.Type = agentType
+	}
+}
+
+// ===== Policy Options =====
+
+func PolicyName(name string) PolicyOption {
+	return func(_ *TestWorkspace, p *pb.Policy, _ *eventsBuilder) {
+		p.Name = name
+	}
+}
+
+func PolicyDescription(description string) PolicyOption {
+	return func(_ *TestWorkspace, p *pb.Policy, _ *eventsBuilder) {
+		p.Description = description
+	}
+}
+
+func PolicyID(id string) PolicyOption {
+	return func(_ *TestWorkspace, p *pb.Policy, _ *eventsBuilder) {
+		p.Id = id
+	}
+}
+
+func WithPolicyTargetSelector(options ...PolicyTargetSelectorOption) PolicyOption {
+	return func(ws *TestWorkspace, p *pb.Policy, _ *eventsBuilder) {
+		selector := c.NewPolicyTargetSelector()
+
+		for _, option := range options {
+			option(ws, selector)
+		}
+
+		p.Selectors = append(p.Selectors, selector)
+	}
+}
+
+// ===== PolicyTargetSelector Options =====
+
+func PolicyTargetSelectorID(id string) PolicyTargetSelectorOption {
+	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
+		s.Id = id
+	}
+}
+
+func PolicyTargetDeploymentSelector(selector map[string]any) PolicyTargetSelectorOption {
+	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
+		s.DeploymentSelector = c.MustNewStructFromMap(selector)
+	}
+}
+
+func PolicyTargetEnvironmentSelector(selector map[string]any) PolicyTargetSelectorOption {
+	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
+		s.EnvironmentSelector = c.MustNewStructFromMap(selector)
+	}
+}
+
+func PolicyTargetResourceSelector(selector map[string]any) PolicyTargetSelectorOption {
+	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
+		s.ResourceSelector = c.MustNewStructFromMap(selector)
 	}
 }

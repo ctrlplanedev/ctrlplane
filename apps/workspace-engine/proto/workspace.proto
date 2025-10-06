@@ -11,10 +11,11 @@ message Policy {
   string name = 2;
   string description = 3;
   string created_at = 4;
+  string workspace_id = 5;
 
-  repeated PolicyTargetSelector selectors = 5;
+  repeated PolicyTargetSelector selectors = 6;
 
-  repeated PolicyRule rules = 6;
+  repeated PolicyRule rules = 7;
 }
 
 message PolicyTargetSelector {

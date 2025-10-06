@@ -36,12 +36,17 @@ export declare type Policy = Message<"workspace.Policy"> & {
   createdAt: string;
 
   /**
-   * @generated from field: repeated workspace.PolicyTargetSelector selectors = 5;
+   * @generated from field: string workspace_id = 5;
+   */
+  workspaceId: string;
+
+  /**
+   * @generated from field: repeated workspace.PolicyTargetSelector selectors = 6;
    */
   selectors: PolicyTargetSelector[];
 
   /**
-   * @generated from field: repeated workspace.PolicyRule rules = 6;
+   * @generated from field: repeated workspace.PolicyRule rules = 7;
    */
   rules: PolicyRule[];
 };
