@@ -1,8 +1,13 @@
 package store
 
 import (
+	"bytes"
+	"encoding/gob"
 	"workspace-engine/pkg/workspace/store/repository"
 )
+
+var _ gob.GobEncoder = (*Store)(nil)
+var _ gob.GobDecoder = (*Store)(nil)
 
 func New() *Store {
 	repo := repository.New()
@@ -39,4 +44,48 @@ type Store struct {
 	Releases            *Releases
 	Jobs                *Jobs
 	JobAgents           *JobAgents
+}
+
+func (s *Store) GobEncode() ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(s.repo); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (s *Store) GobDecode(data []byte) error {
+	// Create reader from provided data
+	buf := bytes.NewReader(data)
+	dec := gob.NewDecoder(buf)
+	
+	// Initialize repository if needed
+	if s.repo == nil {
+		s.repo = repository.New()
+	}
+	
+	// Decode the repository
+	if err := dec.Decode(s.repo); err != nil {
+		return err
+	}
+	
+	// Re-initialize store accessors after decode
+	s.Deployments = NewDeployments(s)
+	s.Environments = NewEnvironments(s)
+	s.Resources = NewResources(s)
+	s.Policies = NewPolicies(s)
+	s.ReleaseTargets = NewReleaseTargets(s)
+	s.DeploymentVersions = NewDeploymentVersions(s)
+	s.Systems = NewSystems(s)
+	s.DeploymentVariables = NewDeploymentVariables(s)
+	s.Releases = NewReleases(s)
+	s.Jobs = NewJobs(s)
+	s.JobAgents = NewJobAgents(s)
+	
+	// Reinitialize materialized views for environments and deployments
+	s.Environments.ReinitializeMaterializedViews()
+	s.Deployments.ReinitializeMaterializedViews()
+	
+	return nil
 }

@@ -82,3 +82,11 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 		return currentReleaseTargets, nil
 	})
 }
+
+func (r *Resources) Items() map[string]*pb.Resource {
+	return r.repo.Resources.Items()
+}
+
+func (r *Resources) Has(id string) bool {
+	return r.repo.Resources.Has(id)
+}

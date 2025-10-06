@@ -28,6 +28,10 @@ type Policies struct {
 	releaseTargets cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.ReleaseTarget]]
 }
 
+func (p *Policies) Items() map[string]*pb.Policy {
+	return p.repo.Policies.Items()
+}
+
 func parseSelector(selector *structpb.Struct) (util.MatchableCondition, error) {
 	if selector == nil {
 		return nil, nil

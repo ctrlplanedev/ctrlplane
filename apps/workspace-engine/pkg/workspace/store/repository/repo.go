@@ -5,6 +5,7 @@ import (
 	"workspace-engine/pkg/pb"
 )
 
+
 func New() *Repository {
 	return &Repository{
 		Resources:           cmap.New[*pb.Resource](),
@@ -32,3 +33,5 @@ type Repository struct {
 	Jobs                cmap.ConcurrentMap[string, *pb.Job]
 	JobAgents           cmap.ConcurrentMap[string, *pb.JobAgent]
 }
+
+

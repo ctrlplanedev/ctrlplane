@@ -27,6 +27,21 @@ type Environments struct {
 	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Resource]]
 }
 
+func (e *Environments) Items() map[string]*pb.Environment {
+	return e.repo.Environments.Items()
+}
+
+// ReinitializeMaterializedViews recreates all materialized views after deserialization
+func (e *Environments) ReinitializeMaterializedViews() {
+	for item := range e.repo.Environments.IterBuffered() {
+		environment := item.Val
+		mv := materialized.New(
+			e.environmentResourceRecomputeFunc(environment.Id),
+		)
+		e.resources.Set(environment.Id, mv)
+	}
+}
+
 // environmentResourceRecomputeFunc returns a function that computes resources for a specific environment
 func (e *Environments) environmentResourceRecomputeFunc(environmentId string) materialized.RecomputeFunc[map[string]*pb.Resource] {
 	return func() (map[string]*pb.Resource, error) {

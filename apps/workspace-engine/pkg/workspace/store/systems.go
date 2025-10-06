@@ -151,3 +151,7 @@ func (s *Systems) ApplyEnvironmentUpdate(
 
 	return nil
 }
+
+func (s *Systems) Items() map[string]*pb.System {
+	return s.repo.Systems.Items()
+}

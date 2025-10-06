@@ -224,6 +224,12 @@ func DeploymentResourceSelector(selector map[string]any) DeploymentOption {
 	}
 }
 
+func DeploymentJobAgentConfig(config map[string]any) DeploymentOption {
+	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
+		d.JobAgentConfig = c.MustNewStructFromMap(config)
+	}
+}
+
 // WithDeploymentVersion creates a deployment version for a deployment.
 // Can be called multiple times to create multiple versions.
 //
