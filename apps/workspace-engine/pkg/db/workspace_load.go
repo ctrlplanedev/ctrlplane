@@ -8,6 +8,66 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+func loadResources(ctx context.Context, ws *workspace.Workspace) error {
+	dbResources, err := GetResources(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get resources: %w", err)
+	}
+	for _, resource := range dbResources {
+		ws.Resources().Upsert(ctx, resource)
+	}
+	log.Info("Loaded resources", "count", len(dbResources))
+	return nil
+}
+
+func loadDeployments(ctx context.Context, ws *workspace.Workspace) error {
+	dbDeployments, err := GetDeployments(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get deployments: %w", err)
+	}
+	for _, deployment := range dbDeployments {
+		ws.Deployments().Upsert(ctx, deployment)
+	}
+	log.Info("Loaded deployments", "count", len(dbDeployments))
+	return nil
+}
+
+func loadDeploymentVersions(ctx context.Context, ws *workspace.Workspace) error {
+	dbDeploymentVersions, err := GetDeploymentVersions(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get deployment versions: %w", err)
+	}
+	for _, deploymentVersion := range dbDeploymentVersions {
+		ws.DeploymentVersions().Upsert(deploymentVersion.DeploymentId, deploymentVersion)
+	}
+	log.Info("Loaded deployment versions", "count", len(dbDeploymentVersions))
+	return nil
+}
+
+func loadDeploymentVariables(ctx context.Context, ws *workspace.Workspace) error {
+	dbDeploymentVariables, err := GetDeploymentVariables(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get deployment variables: %w", err)
+	}
+	for _, deploymentVariable := range dbDeploymentVariables {
+		ws.Deployments().Variables(deploymentVariable.DeploymentId)[deploymentVariable.Key] = deploymentVariable
+	}
+	log.Info("Loaded deployment variables", "count", len(dbDeploymentVariables))
+	return nil
+}
+
+func loadEnvironments(ctx context.Context, ws *workspace.Workspace) error {
+	dbEnvironments, err := GetEnvironments(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get environments: %w", err)
+	}
+	for _, environment := range dbEnvironments {
+		ws.Environments().Upsert(ctx, environment)
+	}
+	log.Info("Loaded environments", "count", len(dbEnvironments))
+	return nil
+}
+
 func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
 	log.Info("Loading workspace", "workspaceID", workspaceID)
 	db, err := GetDB(ctx)
@@ -18,50 +78,25 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 
 	ws := workspace.New(workspaceID)
 
-	dbResources, err := GetResources(ctx, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get resources: %w", err)
+	if err := loadResources(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load resources: %w", err)
 	}
-	for _, resource := range dbResources {
-		ws.Resources().Upsert(ctx, resource)
-	}
-	log.Info("Loaded resources", "count", len(dbResources))
 
-	dbDeployments, err := GetDeployments(ctx, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get deployments: %w", err)
+	if err := loadDeployments(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load deployments: %w", err)
 	}
-	for _, deployment := range dbDeployments {
-		ws.Deployments().Upsert(ctx, deployment)
-	}
-	log.Info("Loaded deployments", "count", len(dbDeployments))
 
-	dbDeploymentVersions, err := GetDeploymentVersions(ctx, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get deployment versions: %w", err)
+	if err := loadDeploymentVersions(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load deployment versions: %w", err)
 	}
-	for _, deploymentVersion := range dbDeploymentVersions {
-		ws.DeploymentVersions().Upsert(deploymentVersion.DeploymentId, deploymentVersion)
-	}
-	log.Info("Loaded deployment versions", "count", len(dbDeploymentVersions))
 
-	dbDeploymentVariables, err := GetDeploymentVariables(ctx, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get deployment variables: %w", err)
+	if err := loadDeploymentVariables(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load deployment variables: %w", err)
 	}
-	for _, deploymentVariable := range dbDeploymentVariables {
-		ws.Deployments().Variables(deploymentVariable.DeploymentId)[deploymentVariable.Key] = deploymentVariable
-	}
-	log.Info("Loaded deployment variables", "count", len(dbDeploymentVariables))
 
-	dbEnvironments, err := GetEnvironments(ctx, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get environments: %w", err)
+	if err := loadEnvironments(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load environments: %w", err)
 	}
-	for _, environment := range dbEnvironments {
-		ws.Environments().Upsert(ctx, environment)
-	}
-	log.Info("Loaded environments", "count", len(dbEnvironments))
 
 	return ws, nil
 }
