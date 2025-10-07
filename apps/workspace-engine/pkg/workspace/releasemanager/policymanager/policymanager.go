@@ -167,10 +167,10 @@ func (m *Manager) EvaluateVersion(
 
 // evaluateRule evaluates a single policy rule using direct dispatch.
 func (m *Manager) getVersionRuleEvaluator(
-	ctx context.Context,
+	_ context.Context,
 	rule *pb.PolicyRule,
-	version *pb.DeploymentVersion,
-	releaseTarget *pb.ReleaseTarget,
+	_ *pb.DeploymentVersion,
+	_ *pb.ReleaseTarget,
 ) (results.VersionRuleEvaluator, error) {
 	// Direct switch on rule type - compiler optimizes this to a jump table
 	switch {

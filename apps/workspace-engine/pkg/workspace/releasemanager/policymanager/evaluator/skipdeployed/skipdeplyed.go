@@ -3,6 +3,7 @@ package skipdeployed
 import (
 	"context"
 	"fmt"
+	"time"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
 	"workspace-engine/pkg/workspace/store"
@@ -22,49 +23,66 @@ func NewSkipDeployedEvaluator(store *store.Store) *SkipDeployedEvaluator {
 	}
 }
 
-// Evaluate checks if the release is already deployed.
+// Evaluate checks if the release has already been attempted.
 // Returns:
-//   - Denied: If the most recent successful job is for this exact release
-//   - Allowed: If not yet deployed or previous deployment failed
+//   - Denied: If the most recent job is for this exact release (regardless of status)
+//   - Allowed: If not yet attempted or previous job was for a different release
 func (e *SkipDeployedEvaluator) Evaluate(
 	ctx context.Context,
 	releaseTarget *pb.ReleaseTarget,
 	release *pb.Release,
 ) (*results.RuleEvaluationResult, error) {
-	// Get most recent job for this release target
-	mostRecentJob, err := e.store.Jobs.MostRecentForReleaseTarget(ctx, releaseTarget)
-	if err != nil {
-		// No jobs found - not deployed yet
+	// Get all jobs for this release target
+	jobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+
+	// Find the most recent job (any status)
+	var mostRecentJob *pb.Job
+	var mostRecentTime *time.Time
+
+	for _, job := range jobs {
+		// Try to get completion time first
+		completedAt, err := job.CompletedAtTime()
+		var jobTime *time.Time
+		
+		if err == nil && completedAt != nil {
+			jobTime = completedAt
+		} else {
+			// If not completed, use created time
+			createdAt, err := job.CreatedAtTime()
+			if err != nil {
+				continue
+			}
+			jobTime = &createdAt
+		}
+
+		// Track the most recent job
+		if mostRecentTime == nil || jobTime.After(*mostRecentTime) {
+			mostRecentTime = jobTime
+			mostRecentJob = job
+		}
+	}
+
+	// No jobs found - not attempted yet
+	if mostRecentJob == nil {
 		return results.
 			NewAllowedResult("No previous deployment found").
 			WithDetail("release_id", release.ID()), nil
 	}
 
-	// Check if the most recent job completed successfully
-	if mostRecentJob.Status != pb.JobStatus_JOB_STATUS_SUCCESSFUL {
-		// Last deployment wasn't successful - allow re-deploy
-		return results.
-			NewAllowedResult(
-				fmt.Sprintf("Previous deployment was not successful (status: %s)", mostRecentJob.Status),
-			).
-			WithDetail("release_id", release.ID()).
-			WithDetail("previous_job_id", mostRecentJob.Id).
-			WithDetail("previous_job_status", mostRecentJob.Status.String()), nil
-	}
-
-	// Check if the successful job is for the same release
+	// Check if the most recent job is for the same release
 	if mostRecentJob.ReleaseId == release.ID() {
-		// Already deployed this exact release - deny
+		// Already attempted this exact release - deny
 		return results.
 			NewDeniedResult(
-				fmt.Sprintf("Release already deployed successfully (job: %s)", mostRecentJob.Id),
+				fmt.Sprintf("Release already attempted (job: %s, status: %s)", mostRecentJob.Id, mostRecentJob.Status.String()),
 			).
 			WithDetail("release_id", release.ID()).
 			WithDetail("existing_job_id", mostRecentJob.Id).
+			WithDetail("job_status", mostRecentJob.Status.String()).
 			WithDetail("version", release.Version.Tag), nil
 	}
 
-	// Most recent successful job is for a different release - allow this one
+	// Most recent job is for a different release - allow this one
 	return results.
 		NewAllowedResult(
 			fmt.Sprintf("Different release deployed (previous: %s, new: %s)", mostRecentJob.ReleaseId, release.ID()),

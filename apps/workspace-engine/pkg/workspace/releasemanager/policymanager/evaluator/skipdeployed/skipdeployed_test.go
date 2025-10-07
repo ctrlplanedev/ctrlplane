@@ -61,13 +61,15 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 		},
 	}
 	
-	// Create failed job
+	// Create failed job with completion time
+	completedAt := time.Now().Format(time.RFC3339)
 	st.Releases.Upsert(ctx, previousRelease)
 	st.Jobs.Upsert(ctx, &pb.Job{
-		Id:        "job-1",
-		ReleaseId: previousRelease.ID(),
-		Status:    pb.JobStatus_JOB_STATUS_FAILURE,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Id:          "job-1",
+		ReleaseId:   previousRelease.ID(),
+		Status:      pb.JobStatus_JOB_STATUS_FAILURE,
+		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		CompletedAt: &completedAt,
 	})
 	
 	evaluator := NewSkipDeployedEvaluator(st)
@@ -75,17 +77,21 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	// Act: Try to deploy same release again
 	result, err := evaluator.Evaluate(ctx, releaseTarget, previousRelease)
 	
-	// Assert: Should allow retry of failed deployment
+	// Assert: Should DENY retry of same release, even if it failed
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	
-	if !result.Allowed {
-		t.Errorf("expected allowed to retry failed deployment, got denied: %s", result.Reason)
+	if result.Allowed {
+		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Reason)
 	}
 	
-	if result.Details["previous_job_status"] != pb.JobStatus_JOB_STATUS_FAILURE.String() {
-		t.Errorf("expected previous_job_status to be FAILURE, got %v", result.Details["previous_job_status"])
+	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_FAILURE.String() {
+		t.Errorf("expected job_status to be FAILURE, got %v", result.Details["job_status"])
+	}
+	
+	if result.Details["existing_job_id"] != "job-1" {
+		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
 	}
 }
 
@@ -108,13 +114,15 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 		},
 	}
 	
-	// Create successful job
+	// Create successful job with completion time
+	completedAt := time.Now().Format(time.RFC3339)
 	st.Releases.Upsert(ctx, deployedRelease)
 	st.Jobs.Upsert(ctx, &pb.Job{
-		Id:        "job-1",
-		ReleaseId: deployedRelease.ID(),
-		Status:    pb.JobStatus_JOB_STATUS_SUCCESSFUL,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Id:          "job-1",
+		ReleaseId:   deployedRelease.ID(),
+		Status:      pb.JobStatus_JOB_STATUS_SUCCESSFUL,
+		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		CompletedAt: &completedAt,
 	})
 	
 	evaluator := NewSkipDeployedEvaluator(st)
@@ -138,6 +146,10 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 	if result.Details["version"] != "v1.0.0" {
 		t.Errorf("expected version=v1.0.0, got %v", result.Details["version"])
 	}
+	
+	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_SUCCESSFUL.String() {
+		t.Errorf("expected job_status=SUCCESSFUL, got %v", result.Details["job_status"])
+	}
 }
 
 func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
@@ -160,12 +172,14 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 		},
 	}
 	
+	completedAt := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
 	st.Releases.Upsert(ctx, v1Release)
 	st.Jobs.Upsert(ctx, &pb.Job{
-		Id:        "job-v1",
-		ReleaseId: v1Release.ID(),
-		Status:    pb.JobStatus_JOB_STATUS_SUCCESSFUL,
-		CreatedAt: time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		Id:          "job-v1",
+		ReleaseId:   v1Release.ID(),
+		Status:      pb.JobStatus_JOB_STATUS_SUCCESSFUL,
+		CreatedAt:   time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+		CompletedAt: &completedAt,
 	})
 	
 	// v2.0.0 to deploy
@@ -198,7 +212,7 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 }
 
 func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
-	// Setup: Previous job is in progress (not successful yet)
+	// Setup: Previous job is in progress
 	st := store.New()
 	ctx := context.Background()
 	
@@ -230,17 +244,25 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	// Act: Check same release
 	result, err := evaluator.Evaluate(ctx, releaseTarget, release)
 	
-	// Assert: Should allow (not successful yet)
+	// Assert: Should DENY - same release already has a job, even if in progress
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	
-	if !result.Allowed {
-		t.Errorf("expected allowed when job in progress (not successful), got denied: %s", result.Reason)
+	if result.Allowed {
+		t.Errorf("expected denied when same release job in progress, got allowed: %s", result.Reason)
+	}
+	
+	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_IN_PROGRESS.String() {
+		t.Errorf("expected job_status to be IN_PROGRESS, got %v", result.Details["job_status"])
+	}
+	
+	if result.Details["existing_job_id"] != "job-1" {
+		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
 	}
 }
 
-func TestSkipDeployedEvaluator_CancelledJobAllowsRedeploy(t *testing.T) {
+func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 	// Setup: Previous job was cancelled
 	st := store.New()
 	ctx := context.Background()
@@ -259,13 +281,15 @@ func TestSkipDeployedEvaluator_CancelledJobAllowsRedeploy(t *testing.T) {
 		},
 	}
 	
-	// Create cancelled job
+	// Create cancelled job with completion time
+	completedAt := time.Now().Format(time.RFC3339)
 	st.Releases.Upsert(ctx, release)
 	st.Jobs.Upsert(ctx, &pb.Job{
-		Id:        "job-1",
-		ReleaseId: release.ID(),
-		Status:    pb.JobStatus_JOB_STATUS_CANCELLED,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Id:          "job-1",
+		ReleaseId:   release.ID(),
+		Status:      pb.JobStatus_JOB_STATUS_CANCELLED,
+		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		CompletedAt: &completedAt,
 	})
 	
 	evaluator := NewSkipDeployedEvaluator(st)
@@ -273,13 +297,21 @@ func TestSkipDeployedEvaluator_CancelledJobAllowsRedeploy(t *testing.T) {
 	// Act: Try to deploy same release again
 	result, err := evaluator.Evaluate(ctx, releaseTarget, release)
 	
-	// Assert: Should allow retry of cancelled deployment
+	// Assert: Should DENY retry of same release, even if cancelled
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	
-	if !result.Allowed {
-		t.Errorf("expected allowed to retry cancelled deployment, got denied: %s", result.Reason)
+	if result.Allowed {
+		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Reason)
+	}
+	
+	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_CANCELLED.String() {
+		t.Errorf("expected job_status to be CANCELLED, got %v", result.Details["job_status"])
+	}
+	
+	if result.Details["existing_job_id"] != "job-1" {
+		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
 	}
 }
 
@@ -306,12 +338,14 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 		},
 	}
 	
+	completedAt := time.Now().Format(time.RFC3339)
 	st.Releases.Upsert(ctx, release1)
 	st.Jobs.Upsert(ctx, &pb.Job{
-		Id:        "job-1",
-		ReleaseId: release1.ID(),
-		Status:    pb.JobStatus_JOB_STATUS_SUCCESSFUL,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Id:          "job-1",
+		ReleaseId:   release1.ID(),
+		Status:      pb.JobStatus_JOB_STATUS_SUCCESSFUL,
+		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		CompletedAt: &completedAt,
 	})
 	
 	// Deploy same version with different variables: {replicas: 5}

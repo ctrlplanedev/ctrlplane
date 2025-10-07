@@ -157,41 +157,6 @@ func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Rel
 	return nil
 }
 
-// isAlreadyDeployed checks if the desired release is already deployed (READ-ONLY).
-// Returns true if the most recent successful job is for this exact release.
-func (m *Manager) isAlreadyDeployed(ctx context.Context, desiredRelease *pb.Release) bool {
-	// Get most recent job for this release target
-	mostRecentJob, err := m.store.Jobs.MostRecentForReleaseTarget(ctx, desiredRelease.ReleaseTarget)
-	if err != nil {
-		// No jobs found or error - not deployed
-		return false
-	}
-
-	// Check if the most recent job completed successfully
-	if mostRecentJob.Status != pb.JobStatus_JOB_STATUS_SUCCESSFUL {
-		// Most recent job is not successful - not deployed
-		return false
-	}
-
-	// Check if it's for the same release (version + variables + target)
-	return mostRecentJob.ReleaseId == desiredRelease.ID()
-}
-
-// hasJobInProgress checks if there's already a job in progress for this release (READ-ONLY).
-// Returns true if a pending or in-progress job exists for this exact release.
-func (m *Manager) hasJobInProgress(desiredRelease *pb.Release) bool {
-	processingJobs := m.store.Jobs.GetJobsInProcessingStateForReleaseTarget(desiredRelease.ReleaseTarget)
-	
-	for _, job := range processingJobs {
-		if job.ReleaseId == desiredRelease.ID() {
-			// Found a job already in progress for this exact release
-			return true
-		}
-	}
-	
-	return false
-}
-
 // cancelOutdatedJobs cancels jobs for outdated releases (WRITES TO STORE).
 // Only cancels jobs for different releases - leaves jobs for the same release alone.
 func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Release) {
