@@ -47,26 +47,6 @@ func partitionOfKey(key string, numPartitions int) int32 {
 	return int32(murmur2([]byte(key)) % uint32(numPartitions))
 }
 
-func assignedPartitions(c *kafka.Consumer) (map[int32]struct{}, error) {
-	asgn, err := c.Assignment()
-	if err != nil {
-		return nil, err
-	}
-	m := make(map[int32]struct{}, len(asgn))
-	for _, tp := range asgn {
-		m[tp.Partition] = struct{}{}
-	}
-	return m, nil
-}
-
-func topicPartitionCount(c *kafka.Consumer) (int, error) {
-	md, err := c.GetMetadata(&Topic, false, 5000)
-	if err != nil {
-		return 0, err
-	}
-	return len(md.Topics[Topic].Partitions), nil
-}
-
 func loadFullWorkspaces(ctx context.Context, workspaceIDs []string) error {
 	var wg sync.WaitGroup
 	var loadErrs []error
@@ -75,6 +55,11 @@ func loadFullWorkspaces(ctx context.Context, workspaceIDs []string) error {
 		wg.Add(1)
 		go func(workspaceID string) {
 			defer wg.Done()
+
+			if workspace.Exists(workspaceID) {
+				return
+			}
+
 			fullWorkspace, err := db.LoadWorkspace(ctx, workspaceID)
 			if err != nil {
 				loadErrs = append(loadErrs, err)
@@ -91,25 +76,16 @@ func loadFullWorkspaces(ctx context.Context, workspaceIDs []string) error {
 	return nil
 }
 
-func initWorkspaces(ctx context.Context, c *kafka.Consumer) error {
+func initWorkspaces(ctx context.Context, c *kafka.Consumer, assignedPartitions map[int32]struct{}, topicPartitionCount int) error {
 	workspaceIDs, err := db.GetWorkspaceIDs(ctx)
-	if err != nil {
-		return err
-	}
-
-	ap, err := assignedPartitions(c)
-	if err != nil {
-		return err
-	}
-	n, err := topicPartitionCount(c)
 	if err != nil {
 		return err
 	}
 
 	assignedWorkspaceIDs := make([]string, 0)
 	for _, workspaceID := range workspaceIDs {
-		partition := partitionOfKey(workspaceID, n)
-		if _, ok := ap[partition]; ok {
+		partition := partitionOfKey(workspaceID, topicPartitionCount)
+		if _, ok := assignedPartitions[partition]; ok {
 			assignedWorkspaceIDs = append(assignedWorkspaceIDs, workspaceID)
 		}
 	}
