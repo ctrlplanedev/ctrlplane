@@ -21,39 +21,39 @@ var tracer = otel.Tracer("events/handler")
 type EventType string
 
 const (
-	ResourceCreate EventType = "resource.create"
-	ResourceUpdate EventType = "resource.update"
-	ResourceDelete EventType = "resource.delete"
+	ResourceCreate EventType = "resource.created"
+	ResourceUpdate EventType = "resource.updated"
+	ResourceDelete EventType = "resource.deleted"
 
-	DeploymentCreate EventType = "deployment.create"
-	DeploymentUpdate EventType = "deployment.update"
-	DeploymentDelete EventType = "deployment.delete"
+	DeploymentCreate EventType = "deployment.created"
+	DeploymentUpdate EventType = "deployment.updated"
+	DeploymentDelete EventType = "deployment.deleted"
 
-	DeploymentVersionCreate EventType = "deployment-version.create"
-	DeploymentVersionUpdate EventType = "deployment-version.update"
-	DeploymentVersionDelete EventType = "deployment-version.delete"
+	DeploymentVersionCreate EventType = "deployment-version.created"
+	DeploymentVersionUpdate EventType = "deployment-version.updated"
+	DeploymentVersionDelete EventType = "deployment-version.deleted"
 
-	EnvironmentCreate EventType = "environment.create"
-	EnvironmentUpdate EventType = "environment.update"
-	EnvironmentDelete EventType = "environment.delete"
+	EnvironmentCreate EventType = "environment.created"
+	EnvironmentUpdate EventType = "environment.updated"
+	EnvironmentDelete EventType = "environment.deleted"
 
-	SystemCreate EventType = "system.create"
-	SystemUpdate EventType = "system.update"
-	SystemDelete EventType = "system.delete"
+	SystemCreate EventType = "system.created"
+	SystemUpdate EventType = "system.updated"
+	SystemDelete EventType = "system.deleted"
 
-	JobAgentCreate EventType = "job-agent.create"
-	JobAgentUpdate EventType = "job-agent.update"
-	JobAgentDelete EventType = "job-agent.delete"
+	JobAgentCreate EventType = "job-agent.created"
+	JobAgentUpdate EventType = "job-agent.updated"
+	JobAgentDelete EventType = "job-agent.deleted"
 
-	JobUpdate EventType = "job.update"
+	JobUpdate EventType = "job.updated"
 
-	PolicyCreate EventType = "policy.create"
-	PolicyUpdate EventType = "policy.update"
-	PolicyDelete EventType = "policy.delete"
+	PolicyCreate EventType = "policy.created"
+	PolicyUpdate EventType = "policy.updated"
+	PolicyDelete EventType = "policy.deleted"
 
-	UserApprovalRecordCreate EventType = "user-approval-record.create"
-	UserApprovalRecordUpdate EventType = "user-approval-record.update"
-	UserApprovalRecordDelete EventType = "user-approval-record.delete"
+	UserApprovalRecordCreate EventType = "user-approval-record.created"
+	UserApprovalRecordUpdate EventType = "user-approval-record.updated"
+	UserApprovalRecordDelete EventType = "user-approval-record.deleted"
 )
 
 // BaseEvent represents the common structure of all events
