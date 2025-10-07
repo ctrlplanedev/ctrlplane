@@ -94,8 +94,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		))
 	defer span.End()
 
-	log.Debug("Processing message", "topic", *msg.TopicPartition.Topic, "partition", msg.TopicPartition.Partition, "offset", msg.TopicPartition.Offset)
-
 	// Parse the raw event from the Kafka message
 	var rawEvent RawEvent
 	if err := json.Unmarshal(msg.Value, &rawEvent); err != nil {
@@ -132,15 +130,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	// Always run a dispatch eval jobs
 	changes := ws.ReleaseManager().Reconcile(ctx)
-	jobs := ws.ReleaseManager().EvaluateChange(ctx, changes)
-
-	log.Info("Dispatching jobs",
-		"count", len(jobs.Items()),
-		"eventType", rawEvent.EventType,
-		"rt.added", len(changes.Changes.Added),
-		"rt.updated", len(changes.Changes.Updated),
-		"rt.removed", len(changes.Changes.Removed),
-	)
+	_ = ws.ReleaseManager().EvaluateChange(ctx, changes)
 
 	duration := time.Since(startTime)
 

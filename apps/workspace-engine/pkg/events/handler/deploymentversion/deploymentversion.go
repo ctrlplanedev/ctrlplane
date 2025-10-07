@@ -6,8 +6,6 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
-
-	"github.com/charmbracelet/log"
 )
 
 func HandleDeploymentVersionCreated(
@@ -19,8 +17,6 @@ func HandleDeploymentVersionCreated(
 	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
 		return err
 	}
-
-	log.Info("Deployment version created", "deploymentId", deploymentVersion.DeploymentId, "tag", deploymentVersion.Tag)
 
 	ws.DeploymentVersions().Upsert(deploymentVersion.Id, deploymentVersion)
 
