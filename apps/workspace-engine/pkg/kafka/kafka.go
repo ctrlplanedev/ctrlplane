@@ -53,7 +53,7 @@ func populateWorkspaceCache(ctx context.Context, c *kafka.Consumer) error {
 	if err != nil {
 		return err
 	}
-	if err := initWorkspaces(ctx, c, assignedPartitions, topicPartitionCount); err != nil {
+	if err := initWorkspaces(ctx, assignedPartitions, topicPartitionCount); err != nil {
 		return err
 	}
 	return nil

@@ -8,8 +8,6 @@ import (
 	"sync"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
-
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 func murmur2(data []byte) uint32 {
@@ -76,7 +74,7 @@ func loadFullWorkspaces(ctx context.Context, workspaceIDs []string) error {
 	return nil
 }
 
-func initWorkspaces(ctx context.Context, c *kafka.Consumer, assignedPartitions map[int32]struct{}, topicPartitionCount int) error {
+func initWorkspaces(ctx context.Context, assignedPartitions map[int32]struct{}, topicPartitionCount int) error {
 	workspaceIDs, err := db.GetWorkspaceIDs(ctx)
 	if err != nil {
 		return err
