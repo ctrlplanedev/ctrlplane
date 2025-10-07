@@ -47,6 +47,11 @@ func RunConsumer(ctx context.Context) error {
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
+	if err := initWorkspaces(ctx, c); err != nil {
+		log.Error("Failed to initialize workspaces", "error", err)
+		return err
+	}
+
 	handler := events.NewEventHandler()
 
 	for {

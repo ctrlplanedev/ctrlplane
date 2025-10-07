@@ -104,6 +104,10 @@ func Exists(id string) bool {
 	return ok
 }
 
+func Set(id string, workspace *Workspace) {
+	workspaces.Set(id, workspace)
+}
+
 func GetWorkspace(id string) *Workspace {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
