@@ -88,7 +88,7 @@ func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
 	for _, policy := range dbPolicies {
 		ws.Policies().Upsert(ctx, policy)
 	}
-	log.Info("Loaded policies", "count", len(dbPolicies), "policies", dbPolicies)
+	log.Info("Loaded policies", "count", len(dbPolicies))
 	return nil
 }
 
