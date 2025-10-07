@@ -13,7 +13,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 	d1Id := "d1-id"
 	e1Id := "e1-id"
 	r1Id := "r1-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemName("test-system"),
@@ -82,7 +82,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 
 func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 	e1Id := "e1-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(),
@@ -118,7 +118,7 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 
 func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
 	r1Id := "r1-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(),
@@ -202,7 +202,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	d1Id := "d1-id"
 	r1Id := "r1-id"
 	r2Id := "r2-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
@@ -277,7 +277,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	sys2Id := "sys2-id"
 	d1Id := "d1-id"
 	e1Id := "e1-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemID(sys1Id),
@@ -342,7 +342,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 	e2Id := "e2-id"
 	r1Id := "r1-id"
 	r2Id := "r2-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
@@ -434,7 +434,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 
 func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 	r3Id := "r3-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
@@ -608,7 +608,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	e1Id := "e1-id"
 	e2Id := "e2-id"
 	r1Id := "r1-id"
-	
+
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemID(sysId),
