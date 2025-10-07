@@ -3,6 +3,7 @@ package releasemanager
 import (
 	"context"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/releasemanager/policymanager"
 	"workspace-engine/pkg/workspace/releasemanager/variablemanager"
 	"workspace-engine/pkg/workspace/releasemanager/versionmanager"
 	"workspace-engine/pkg/workspace/store"
@@ -17,6 +18,7 @@ type Manager struct {
 
 	versionManager  *versionmanager.Manager
 	variableManager *variablemanager.Manager
+	policyManager   *policymanager.Manager
 
 	// Current state of release targets (what currently exists)
 	currentTargets map[string]*pb.ReleaseTarget
@@ -27,6 +29,7 @@ func New(store *store.Store) *Manager {
 	return &Manager{
 		store:           store,
 		currentTargets:  make(map[string]*pb.ReleaseTarget, 5000),
+		policyManager:   policymanager.New(store),
 		versionManager:  versionmanager.New(store),
 		variableManager: variablemanager.New(store),
 	}

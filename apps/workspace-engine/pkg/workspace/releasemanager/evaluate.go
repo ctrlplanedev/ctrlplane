@@ -1,5 +1,31 @@
 package releasemanager
 
+// Design Pattern: Two-Phase Deployment Decision
+//
+// This file implements a clear separation between DECISION and ACTION:
+//
+// ┌─────────────────────────────────────────────────────────────┐
+// │ Phase 1: DECISION (Evaluate)                                │
+// │ - Answers: "What needs to be deployed?"                     │
+// │ - READ-ONLY: examines all state without writing             │
+// │ - Returns: release to deploy OR nil if nothing needed       │
+// │                                                              │
+// │ Why nil?                                                     │
+// │   • No versions available                                   │
+// │   • All versions blocked by policies                        │
+// │   • Already deployed (most recent job is for this release)  │
+// └─────────────────────────────────────────────────────────────┘
+//                            ↓
+// ┌─────────────────────────────────────────────────────────────┐
+// │ Phase 2: ACTION (executeDeployment)                         │
+// │ - Answers: "Make it happen"                                 │
+// │ - WRITES: persists release, creates jobs, dispatches        │
+// │ - Precondition: Evaluate() determined deployment needed     │
+// │ - No additional "should we deploy" checks here              │
+// └─────────────────────────────────────────────────────────────┘
+//
+// Contract: If Evaluate() returns a release, deploy it. Trust the decision phase.
+
 import (
 	"context"
 	"fmt"
@@ -19,40 +45,36 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager")
 
+// EvaluateChange processes detected changes to release targets (WRITES TO STORE).
+// Handles added, updated, and removed release targets concurrently.
+// Returns a map of cancelled jobs (for removed targets).
 func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.ConcurrentMap[string, *pb.Job] {
-	jobs := cmap.New[*pb.Job]()
+	cancelledJobs := cmap.New[*pb.Job]()
 	var wg sync.WaitGroup
 
+	// Process added release targets
 	for _, change := range changes.Changes.Added {
 		wg.Add(1)
 		go func(target *pb.ReleaseTarget) {
 			defer wg.Done()
-			_, job, err := m.Evaluate(ctx, target)
-			if err != nil {
-				log.Warn("error evaluating added change", "error", err.Error())
-				return
-			}
-			if job != nil {
-				jobs.Set(job.Id, job)
+			if err := m.ProcessReleaseTarget(ctx, target); err != nil {
+				log.Warn("error processing added release target", "error", err.Error())
 			}
 		}(change.NewTarget)
 	}
 
+	// Process updated release targets
 	for _, change := range changes.Changes.Updated {
 		wg.Add(1)
 		go func(target *pb.ReleaseTarget) {
 			defer wg.Done()
-			_, job, err := m.Evaluate(ctx, target)
-			if err != nil {
-				log.Warn("error evaluating updated change", "error", err.Error())
-				return
-			}
-			if job != nil {
-				jobs.Set(job.Id, job)
+			if err := m.ProcessReleaseTarget(ctx, target); err != nil {
+				log.Warn("error processing updated release target", "error", err.Error())
 			}
 		}(change.NewTarget)
 	}
 
+	// Cancel jobs for removed release targets
 	for _, change := range changes.Changes.Removed {
 		wg.Add(1)
 		go func(target *pb.ReleaseTarget) {
@@ -61,17 +83,148 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 				if job != nil {
 					job.Status = pb.JobStatus_JOB_STATUS_CANCELLED
 					job.UpdatedAt = time.Now().Format(time.RFC3339)
-					jobs.Set(job.Id, job)
+					cancelledJobs.Set(job.Id, job)
 				}
 			}
 		}(change.OldTarget)
 	}
+	
 	wg.Wait()
-
-	return jobs
+	return cancelledJobs
 }
 
-func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (*pb.Release, *pb.Job, error) {
+// ProcessReleaseTarget orchestrates the full deployment lifecycle (WRITES TO STORE).
+// 
+// Two-Phase Design:
+// Phase 1: DECISION - Evaluate() answers "What needs deploying?" (read-only)
+// Phase 2: ACTION  - ProcessReleaseTarget() executes the deployment (writes)
+//
+// If Evaluate() returns nil → Nothing to deploy (already deployed, no versions, or blocked)
+// If Evaluate() returns release → Deploy it (Evaluate() already checked everything)
+func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *pb.ReleaseTarget) error {
+	ctx, span := tracer.Start(ctx, "ProcessReleaseTarget",
+		trace.WithAttributes(
+			attribute.String("deployment.id", releaseTarget.DeploymentId),
+			attribute.String("environment.id", releaseTarget.EnvironmentId),
+			attribute.String("resource.id", releaseTarget.ResourceId),
+		))
+	defer span.End()
+
+	// Phase 1: DECISION - What needs deploying? (READ-ONLY)
+	releaseToDeploy, err := m.evaluate(ctx, releaseTarget)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Nothing to deploy - Evaluate() already checked all conditions
+	if releaseToDeploy == nil {
+		span.SetAttributes(attribute.Bool("deployment.needed", false))
+		return nil
+	}
+	
+	// Phase 2: ACTION - Deploy it (WRITES)
+	return m.executeDeployment(ctx, releaseToDeploy, span)
+}
+
+// executeDeployment performs all write operations to deploy a release (WRITES TO STORE).
+// Precondition: Evaluate() has already determined this release NEEDS to be deployed.
+// No additional "should we deploy" checks here - trust the decision phase.
+func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Release, span trace.Span) error {
+	// Step 1: Persist the release (WRITE)
+	m.store.Releases.Upsert(ctx, releaseToDeploy)
+
+	// Step 2: Cancel outdated jobs for this release target (WRITES)
+	// Cancel any pending/in-progress jobs for different releases (outdated versions)
+	m.cancelOutdatedJobs(ctx, releaseToDeploy)
+
+	// Step 3: Create and persist new job (WRITE)
+	newJob, err := m.NewJob(ctx, releaseToDeploy)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	m.store.Jobs.Upsert(ctx, newJob)
+	span.SetAttributes(
+		attribute.Bool("job.created", true),
+		attribute.String("job.id", newJob.Id),
+	)
+
+	// Step 4: Dispatch job to integration (ASYNC)
+	go m.IntegrationDispatch(ctx, newJob)
+
+	return nil
+}
+
+// isAlreadyDeployed checks if the desired release is already deployed (READ-ONLY).
+// Returns true if the most recent successful job is for this exact release.
+func (m *Manager) isAlreadyDeployed(ctx context.Context, desiredRelease *pb.Release) bool {
+	// Get most recent job for this release target
+	mostRecentJob, err := m.store.Jobs.MostRecentForReleaseTarget(ctx, desiredRelease.ReleaseTarget)
+	if err != nil {
+		// No jobs found or error - not deployed
+		return false
+	}
+
+	// Check if the most recent job completed successfully
+	if mostRecentJob.Status != pb.JobStatus_JOB_STATUS_SUCCESSFUL {
+		// Most recent job is not successful - not deployed
+		return false
+	}
+
+	// Check if it's for the same release (version + variables + target)
+	return mostRecentJob.ReleaseId == desiredRelease.ID()
+}
+
+// hasJobInProgress checks if there's already a job in progress for this release (READ-ONLY).
+// Returns true if a pending or in-progress job exists for this exact release.
+func (m *Manager) hasJobInProgress(desiredRelease *pb.Release) bool {
+	processingJobs := m.store.Jobs.GetJobsInProcessingStateForReleaseTarget(desiredRelease.ReleaseTarget)
+	
+	for _, job := range processingJobs {
+		if job.ReleaseId == desiredRelease.ID() {
+			// Found a job already in progress for this exact release
+			return true
+		}
+	}
+	
+	return false
+}
+
+// cancelOutdatedJobs cancels jobs for outdated releases (WRITES TO STORE).
+// Only cancels jobs for different releases - leaves jobs for the same release alone.
+func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Release) {
+	jobs := m.store.Jobs.GetJobsForReleaseTarget(desiredRelease.ReleaseTarget)
+	
+	for _, job := range jobs {
+		if job.Status == pb.JobStatus_JOB_STATUS_PENDING {
+			job.Status = pb.JobStatus_JOB_STATUS_CANCELLED
+			job.UpdatedAt = time.Now().Format(time.RFC3339)
+			m.store.Jobs.Upsert(ctx, job)
+		}
+	}
+}
+
+// Evaluate answers: "What needs to be deployed?" (READ-ONLY, NO WRITES)
+//
+// Decision Logic - Returns nil if ANY of these are true:
+//  1. No versions available for this deployment
+//  2. All versions are blocked by policies
+//  3. Latest passing version is already deployed (most recent successful job)
+//  4. Job already in progress for this release (pending/in-progress job exists)
+//
+// Returns:
+//  - *pb.Release: This release NEEDS to be deployed (definitely needs a new job)
+//  - nil: No deployment needed (see decision logic above)
+//  - error: Evaluation failed
+//
+// Design Pattern: Two-Phase Deployment
+//  Phase 1 (this function): DECISION - read all state, determine if deployment needed
+//  Phase 2 (executeDeployment): ACTION - write operations to make it happen
+//
+// Trust the contract: If this returns a release, caller should deploy it without additional checks.
+func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (*pb.Release, error) {
 	ctx, span := tracer.Start(ctx, "Evaluate",
 		trace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),
@@ -80,64 +233,119 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 		))
 	defer span.End()
 
-	version, err := m.versionManager.LatestDeployableVersion(ctx, releaseTarget)
-	if err != nil {
-		span.RecordError(err)
-		return nil, nil, err
+	// Step 1: Get candidate versions (sorted newest to oldest)
+	candidateVersions := m.versionManager.GetCandidateVersions(ctx, releaseTarget)
+	if len(candidateVersions) == 0 {
+		span.SetAttributes(
+			attribute.Int("candidates.count", 0),
+			attribute.String("skip_reason", "no_versions_available"),
+		)
+		return nil, nil
 	}
 
-	variables, err := m.variableManager.Evaluate(ctx, releaseTarget)
-	if err != nil {
-		span.RecordError(err)
-		return nil, nil, err
+	span.SetAttributes(attribute.Int("candidates.count", len(candidateVersions)))
+
+	// Step 2: Find first version that passes ALL policies
+	deployableVersion := m.selectDeployableVersion(ctx, candidateVersions, releaseTarget, span)
+	if deployableVersion == nil {
+		span.SetAttributes(attribute.String("skip_reason", "all_versions_blocked_by_policies"))
+		return nil, nil
 	}
 
-	span.SetAttributes(
-		attribute.Int("variables.count", len(variables)),
-		attribute.String("version.id", version.Id),
-		attribute.String("version.tag", version.Tag),
-	)
+	// Step 3: Resolve variables for this deployment
+	resolvedVariables, err := m.variableManager.Evaluate(ctx, releaseTarget)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
 
-	// Clone variables to avoid parent changes affecting this release
-	clonedVariables := make(map[string]*pb.VariableValue, len(variables))
-	for k, v := range variables {
-		// Deep copy VariableValue (shallow copy is sufficient if VariableValue is immutable)
-		if v != nil {
-			// Assuming VariableValue is a proto.Message, use proto.Clone if available
-			clonedVariables[k] = v.ProtoReflect().Interface().(*pb.VariableValue)
-		} else {
-			clonedVariables[k] = nil
+	span.SetAttributes(attribute.Int("variables.count", len(resolvedVariables)))
+
+	// Step 4: Construct the desired release
+	desiredRelease := buildRelease(releaseTarget, deployableVersion, resolvedVariables)
+
+	// Step 5: Check if this release is already deployed
+	// If the most recent successful job is for this exact release, no deployment needed
+	if m.isAlreadyDeployed(ctx, desiredRelease) {
+		span.SetAttributes(
+			attribute.String("skip_reason", "already_deployed"),
+			attribute.String("deployed.version", deployableVersion.Tag),
+		)
+		return nil, nil
+	}
+
+	// Step 6: Check if job already in progress for this release
+	// If there's a pending/in-progress job for this exact release, no new job needed
+	if m.hasJobInProgress(desiredRelease) {
+		span.SetAttributes(
+			attribute.String("skip_reason", "job_already_in_progress"),
+			attribute.String("version", deployableVersion.Tag),
+		)
+		return nil, nil
+	}
+
+	// This release needs to be deployed!
+	span.SetAttributes(attribute.Bool("needs_deployment", true))
+	return desiredRelease, nil
+}
+
+// selectDeployableVersion finds the first version that passes all policies (READ-ONLY).
+// Returns nil if all versions are blocked by policies.
+func (m *Manager) selectDeployableVersion(
+	ctx context.Context,
+	candidateVersions []*pb.DeploymentVersion,
+	releaseTarget *pb.ReleaseTarget,
+	span trace.Span,
+) *pb.DeploymentVersion {
+	versionsEvaluated := 0
+	
+	for _, version := range candidateVersions {
+		versionsEvaluated++
+		
+		policyDecision, err := m.policyManager.Evaluate(ctx, version, releaseTarget)
+		if err != nil {
+			span.RecordError(err)
+			continue // Skip this version on error
+		}
+
+		if policyDecision.CanDeploy() {
+			span.SetAttributes(
+				attribute.String("selected.version.id", version.Id),
+				attribute.String("selected.version.tag", version.Tag),
+				attribute.Int("versions.evaluated", versionsEvaluated),
+			)
+			return version
 		}
 	}
 
-	release := &pb.Release{
+	// All versions blocked by policies
+	span.SetAttributes(
+		attribute.Bool("all_versions_blocked", true),
+		attribute.Int("versions.evaluated", versionsEvaluated),
+	)
+	return nil
+}
+
+func buildRelease(
+	releaseTarget *pb.ReleaseTarget,
+	version *pb.DeploymentVersion,
+	variables map[string]*pb.VariableValue,
+) *pb.Release {
+	// Clone variables to avoid mutations affecting this release
+	clonedVariables := make(map[string]*pb.VariableValue, len(variables))
+	for key, value := range variables {
+		if value != nil {
+			clonedVariables[key] = value.ProtoReflect().Interface().(*pb.VariableValue)
+		}
+	}
+
+	return &pb.Release{
 		ReleaseTarget:      releaseTarget,
 		Version:            version,
 		Variables:          clonedVariables,
-		EncryptedVariables: []string{},
+		EncryptedVariables: []string{}, // TODO: Handle encrypted variables
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
-
-	m.store.Releases.Upsert(ctx, release)
-
-	// Only deploy release if the most recent job is not for this given release
-
-	// Check for the most recent job for this release target
-	latestJob, _ := m.store.Jobs.MostRecentForReleaseTarget(ctx, releaseTarget)
-	if latestJob != nil && latestJob.ReleaseId == release.ID() {
-		return nil, nil, fmt.Errorf("most recent job is already for this release")
-	}
-
-	// If it can be released, dispatch the release
-	job, err := m.NewJob(ctx, release)
-	if err != nil {
-		span.RecordError(err)
-		return nil, nil, err
-	}
-
-	go m.IntegrationDispatch(ctx, job)
-
-	return release, job, nil
 }
 
 func mustNewStructFromMap(m map[string]any) *structpb.Struct {
@@ -160,52 +368,47 @@ func DeepMerge(dst, src map[string]any) {
 	}
 }
 
+// NewJob creates a job for a given release (PURE FUNCTION, NO WRITES).
+// The job is configured with merged settings from JobAgent + Deployment.
 func (m *Manager) NewJob(ctx context.Context, release *pb.Release) (*pb.Job, error) {
-	// Create a new job for the given release and add it to the repository
-
-	// Prepare job fields from the release
 	releaseTarget := release.GetReleaseTarget()
 
-	deployment, ok := m.store.Deployments.Get(releaseTarget.GetDeploymentId())
-	if !ok {
-		return nil, fmt.Errorf("deployment not found")
+	// Lookup deployment
+	deployment, exists := m.store.Deployments.Get(releaseTarget.GetDeploymentId())
+	if !exists {
+		return nil, fmt.Errorf("deployment %s not found", releaseTarget.GetDeploymentId())
 	}
 
+	// Validate job agent exists
 	jobAgentId := deployment.GetJobAgentId()
 	if jobAgentId == "" {
-		return nil, fmt.Errorf("deployment has no job agent")
+		return nil, fmt.Errorf("deployment %s has no job agent configured", deployment.Id)
 	}
 
-	jobAgent, ok := m.store.JobAgents.Get(jobAgentId)
-	if !ok {
-		return nil, fmt.Errorf("job agent not found")
+	jobAgent, exists := m.store.JobAgents.Get(jobAgentId)
+	if !exists {
+		return nil, fmt.Errorf("job agent %s not found", jobAgentId)
 	}
 
-	jobAgentConfig := jobAgent.GetConfig().AsMap()
-	jobAgentDeploymentConfig := deployment.GetJobAgentConfig().AsMap()
+	// Merge job agent config: deployment config overrides agent defaults
+	mergedConfig := make(map[string]any)
+	DeepMerge(mergedConfig, jobAgent.GetConfig().AsMap())
+	DeepMerge(mergedConfig, deployment.GetJobAgentConfig().AsMap())
 
-	config := make(map[string]any)
-	DeepMerge(config, jobAgentDeploymentConfig)
-	DeepMerge(config, jobAgentConfig)
-
-	job := &pb.Job{
+	return &pb.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      release.ID(),
 		JobAgentId:     jobAgentId,
-		JobAgentConfig: mustNewStructFromMap(config),
+		JobAgentConfig: mustNewStructFromMap(mergedConfig),
 		Status:         pb.JobStatus_JOB_STATUS_PENDING,
 		ResourceId:     releaseTarget.GetResourceId(),
 		EnvironmentId:  releaseTarget.GetEnvironmentId(),
 		DeploymentId:   releaseTarget.GetDeploymentId(),
 		CreatedAt:      time.Now().Format(time.RFC3339),
 		UpdatedAt:      time.Now().Format(time.RFC3339),
-	}
-
-	m.store.Jobs.Upsert(ctx, job)
-
-	return job, nil
+	}, nil
 }
 
-func (m *Manager) IntegrationDispatch(ctx context.Context, job *pb.Job) {
-
+func (m *Manager) IntegrationDispatch(ctx context.Context, job *pb.Job) error {
+	return nil
 }

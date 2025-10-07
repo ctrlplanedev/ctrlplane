@@ -120,3 +120,15 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *pb.ReleaseTarget) map[stri
 	}
 	return jobs
 }
+
+func (j *Jobs) GetJobsInProcessingStateForReleaseTarget(releaseTarget *pb.ReleaseTarget) map[string]*pb.Job {
+	jobs := make(map[string]*pb.Job, j.repo.Jobs.Count())
+	for _, job := range j.GetJobsForReleaseTarget(releaseTarget) {
+		if !job.IsInProcessingState() {
+			continue
+		}
+		jobs[job.Id] = job
+	}
+	return jobs
+}
+

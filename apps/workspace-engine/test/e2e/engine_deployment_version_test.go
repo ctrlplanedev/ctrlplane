@@ -662,3 +662,235 @@ func BenchmarkEngine_DeploymentVersionCreation(b *testing.B) {
 		}
 	}
 }
+
+// TestEngine_LatestWins verifies that when a newer version is released,
+// older pending jobs for the same release target are automatically cancelled
+func TestEngine_LatestWins(t *testing.T) {
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(integration.JobAgentID(jobAgentId)),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("api-service"),
+				integration.DeploymentJobAgent(jobAgentId),
+			),
+			integration.WithEnvironment(integration.EnvironmentName("production")),
+		),
+		integration.WithResource(integration.ResourceName("server-1")),
+	)
+
+	ctx := context.Background()
+
+	// Verify we have 1 release target
+	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
+	}
+
+	// Create v1.0.0
+	dv1 := creators.NewDeploymentVersion()
+	dv1.DeploymentId = deploymentId
+	dv1.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
+
+	// Verify job was created for v1.0.0
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job after v1.0.0, got %d", len(pendingJobs))
+	}
+
+	var v1Job *pb.Job
+	for _, job := range pendingJobs {
+		v1Job = job
+		break
+	}
+
+	// Verify job is for v1.0.0
+	v1Release, ok := engine.Workspace().Releases().Get(v1Job.ReleaseId)
+	if !ok {
+		t.Fatal("release not found for v1 job")
+	}
+	if v1Release.Version.Tag != "v1.0.0" {
+		t.Fatalf("expected job for v1.0.0, got %s", v1Release.Version.Tag)
+	}
+
+	// Create v2.0.0 (newer version)
+	dv2 := creators.NewDeploymentVersion()
+	dv2.DeploymentId = deploymentId
+	dv2.Tag = "v2.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv2)
+
+	// Verify:
+	// 1. v1 job should be cancelled
+	// 2. v2 job should be pending
+	allJobs := engine.Workspace().Jobs().Items()
+	if len(allJobs) != 2 {
+		t.Fatalf("expected 2 total jobs, got %d", len(allJobs))
+	}
+
+	pendingJobs = engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job after v2.0.0 (v1 should be cancelled), got %d", len(pendingJobs))
+	}
+
+	// Verify the pending job is for v2.0.0
+	var v2Job *pb.Job
+	for _, job := range pendingJobs {
+		v2Job = job
+		break
+	}
+
+	v2Release, ok := engine.Workspace().Releases().Get(v2Job.ReleaseId)
+	if !ok {
+		t.Fatal("release not found for v2 job")
+	}
+	if v2Release.Version.Tag != "v2.0.0" {
+		t.Fatalf("expected pending job for v2.0.0, got %s", v2Release.Version.Tag)
+	}
+
+	// Verify v1 job was cancelled
+	v1JobUpdated, ok := engine.Workspace().Jobs().Get(v1Job.Id)
+	if !ok {
+		t.Fatal("v1 job not found")
+	}
+	if v1JobUpdated.Status != pb.JobStatus_JOB_STATUS_CANCELLED {
+		t.Fatalf("expected v1 job to be cancelled, got status %v", v1JobUpdated.Status)
+	}
+
+	// Create v3.0.0 (even newer version)
+	dv3 := creators.NewDeploymentVersion()
+	dv3.DeploymentId = deploymentId
+	dv3.Tag = "v3.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv3)
+
+	// Verify:
+	// 1. Both v1 and v2 jobs should be cancelled
+	// 2. Only v3 job should be pending
+	allJobs = engine.Workspace().Jobs().Items()
+	if len(allJobs) != 3 {
+		t.Fatalf("expected 3 total jobs, got %d", len(allJobs))
+	}
+
+	pendingJobs = engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job after v3.0.0 (v1 and v2 should be cancelled), got %d", len(pendingJobs))
+	}
+
+	// Verify the pending job is for v3.0.0
+	var v3Job *pb.Job
+	for _, job := range pendingJobs {
+		v3Job = job
+		break
+	}
+
+	v3Release, ok := engine.Workspace().Releases().Get(v3Job.ReleaseId)
+	if !ok {
+		t.Fatal("release not found for v3 job")
+	}
+	if v3Release.Version.Tag != "v3.0.0" {
+		t.Fatalf("expected pending job for v3.0.0, got %s", v3Release.Version.Tag)
+	}
+
+	// Verify v2 job was also cancelled
+	v2JobUpdated, ok := engine.Workspace().Jobs().Get(v2Job.Id)
+	if !ok {
+		t.Fatal("v2 job not found")
+	}
+	if v2JobUpdated.Status != pb.JobStatus_JOB_STATUS_CANCELLED {
+		t.Fatalf("expected v2 job to be cancelled, got status %v", v2JobUpdated.Status)
+	}
+}
+
+// TestEngine_LatestWins_MultipleReleaseTargets verifies that latest wins
+// only affects jobs for the same release target, not other release targets
+func TestEngine_LatestWins_MultipleReleaseTargets(t *testing.T) {
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(integration.JobAgentID(jobAgentId)),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("api-service"),
+				integration.DeploymentJobAgent(jobAgentId),
+			),
+			integration.WithEnvironment(integration.EnvironmentName("production")),
+		),
+		integration.WithResource(integration.ResourceName("server-1")),
+		integration.WithResource(integration.ResourceName("server-2")),
+	)
+
+	ctx := context.Background()
+
+	// Verify we have 2 release targets (1 deployment * 1 environment * 2 resources)
+	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets, got %d", len(releaseTargets))
+	}
+
+	// Create v1.0.0 - should create 2 jobs (one per release target)
+	dv1 := creators.NewDeploymentVersion()
+	dv1.DeploymentId = deploymentId
+	dv1.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 2 {
+		t.Fatalf("expected 2 pending jobs after v1.0.0, got %d", len(pendingJobs))
+	}
+
+	// Create v2.0.0 - should cancel both v1.0.0 jobs and create 2 new v2.0.0 jobs
+	dv2 := creators.NewDeploymentVersion()
+	dv2.DeploymentId = deploymentId
+	dv2.Tag = "v2.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv2)
+
+	// Verify we now have 4 total jobs (2 cancelled + 2 pending)
+	allJobs := engine.Workspace().Jobs().Items()
+	if len(allJobs) != 4 {
+		t.Fatalf("expected 4 total jobs, got %d", len(allJobs))
+	}
+
+	// Verify only 2 are pending (both should be v2.0.0)
+	pendingJobs = engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 2 {
+		t.Fatalf("expected 2 pending jobs after v2.0.0, got %d", len(pendingJobs))
+	}
+
+	// Verify all pending jobs are for v2.0.0
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found for job %s", job.Id)
+		}
+		if release.Version.Tag != "v2.0.0" {
+			t.Fatalf("expected all pending jobs to be v2.0.0, got %s", release.Version.Tag)
+		}
+	}
+
+	// Count cancelled jobs - should be 2 (both v1.0.0 jobs)
+	cancelledCount := 0
+	for _, job := range allJobs {
+		if job.Status == pb.JobStatus_JOB_STATUS_CANCELLED {
+			cancelledCount++
+			// Verify cancelled jobs are v1.0.0
+			release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+			if !ok {
+				t.Fatalf("release not found for cancelled job %s", job.Id)
+			}
+			if release.Version.Tag != "v1.0.0" {
+				t.Fatalf("expected cancelled jobs to be v1.0.0, got %s", release.Version.Tag)
+			}
+		}
+	}
+
+	if cancelledCount != 2 {
+		t.Fatalf("expected 2 cancelled jobs, got %d", cancelledCount)
+	}
+}

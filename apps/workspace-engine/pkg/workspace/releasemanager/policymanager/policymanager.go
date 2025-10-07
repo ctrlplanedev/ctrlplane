@@ -7,8 +7,8 @@ import (
 
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
-	"workspace-engine/pkg/workspace/releasemanager/versionmanager/policymanager/results"
-	"workspace-engine/pkg/workspace/releasemanager/versionmanager/policymanager/rules/approval"
+	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/policymanager/rules/approval"
 	"workspace-engine/pkg/workspace/store"
 	"workspace-engine/pkg/workspace/store/materialized"
 

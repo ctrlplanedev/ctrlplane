@@ -2,7 +2,7 @@ package policymanager
 
 import (
 	"time"
-	"workspace-engine/pkg/workspace/releasemanager/versionmanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
 )
 
 // DeployDecision represents the final decision about whether a deployment can proceed.

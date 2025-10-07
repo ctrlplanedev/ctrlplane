@@ -34,3 +34,7 @@ func (j *Job) CompletedAtTime() (*time.Time, error) {
 	}
 	return &t, nil
 }
+
+func (j *Job) IsInProcessingState() bool {
+	return j.Status == JobStatus_JOB_STATUS_PENDING || j.Status == JobStatus_JOB_STATUS_IN_PROGRESS
+}
