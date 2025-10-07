@@ -68,6 +68,18 @@ func loadEnvironments(ctx context.Context, ws *workspace.Workspace) error {
 	return nil
 }
 
+func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
+	dbPolicies, err := getPolicies(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get policies: %w", err)
+	}
+	for _, policy := range dbPolicies {
+		ws.Policies().Upsert(ctx, policy)
+	}
+	log.Info("Loaded policies", "count", len(dbPolicies), "policies", dbPolicies)
+	return nil
+}
+
 func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
 	log.Info("Loading workspace", "workspaceID", workspaceID)
 	db, err := GetDB(ctx)
@@ -96,6 +108,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 
 	if err := loadEnvironments(ctx, ws); err != nil {
 		return nil, fmt.Errorf("failed to load environments: %w", err)
+	}
+
+	if err := loadPolicies(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load policies: %w", err)
 	}
 
 	return ws, nil
