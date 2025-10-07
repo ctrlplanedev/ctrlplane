@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"workspace-engine/pkg/pb"
 )
@@ -35,10 +36,19 @@ func GetEnvironments(ctx context.Context, workspaceID string) ([]*pb.Environment
 	environments := make([]*pb.Environment, 0)
 	for rows.Next() {
 		var environment pb.Environment
-		err := rows.Scan(&environment.Id, &environment.Name, &environment.SystemId, &environment.CreatedAt, &environment.Description, &environment.ResourceSelector)
+		var createdAt time.Time
+		err := rows.Scan(
+			&environment.Id,
+			&environment.Name,
+			&environment.SystemId,
+			&createdAt,
+			&environment.Description,
+			&environment.ResourceSelector,
+		)
 		if err != nil {
 			return nil, err
 		}
+		environment.CreatedAt = createdAt.Format(time.RFC3339)
 		environments = append(environments, &environment)
 	}
 	if err := rows.Err(); err != nil {

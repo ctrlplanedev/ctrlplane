@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"time"
 
 	"workspace-engine/pkg/pb"
 
+	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -52,67 +54,110 @@ func GetResources(ctx context.Context, workspaceID string) ([]*pb.Resource, erro
 
 	resources := make([]*pb.Resource, 0)
 	for rows.Next() {
-		var resource pb.Resource
-		var configJSON []byte
-		var metadataJSON []byte
-		var providerID sql.NullString
-		var lockedAt, updatedAt, deletedAt sql.NullString
-
-		err := rows.Scan(
-			&resource.Id,
-			&resource.Version,
-			&resource.Name,
-			&resource.Kind,
-			&resource.Identifier,
-			&providerID,
-			&resource.WorkspaceId,
-			&configJSON,
-			&resource.CreatedAt,
-			&lockedAt,
-			&updatedAt,
-			&deletedAt,
-			&metadataJSON,
-		)
+		resource, err := scanResourceRow(rows)
 		if err != nil {
 			return nil, err
 		}
-
-		// Handle nullable fields
-		if providerID.Valid {
-			resource.ProviderId = &providerID.String
-		}
-		if lockedAt.Valid {
-			resource.LockedAt = &lockedAt.String
-		}
-		if updatedAt.Valid {
-			resource.UpdatedAt = &updatedAt.String
-		}
-		if deletedAt.Valid {
-			resource.DeletedAt = &deletedAt.String
-		}
-
-		// Parse config JSON
-		if len(configJSON) > 0 {
-			var configMap map[string]interface{}
-			if err := json.Unmarshal(configJSON, &configMap); err == nil {
-				if configStruct, err := structpb.NewStruct(configMap); err == nil {
-					resource.Config = configStruct
-				}
-			}
-		}
-
-		// Parse metadata JSON
-		if len(metadataJSON) > 0 {
-			var metadataMap map[string]string
-			if err := json.Unmarshal(metadataJSON, &metadataMap); err == nil {
-				resource.Metadata = metadataMap
-			}
-		}
-
-		resources = append(resources, &resource)
+		resources = append(resources, resource)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
 	return resources, nil
+}
+
+func scanResourceRow(row pgx.Row) (*pb.Resource, error) {
+	var resource pb.Resource
+	var configJSON []byte
+	var metadataJSON []byte
+	var providerID sql.NullString
+	var createdAt time.Time
+	var lockedAt, updatedAt, deletedAt *time.Time
+
+	err := row.Scan(
+		&resource.Id,
+		&resource.Version,
+		&resource.Name,
+		&resource.Kind,
+		&resource.Identifier,
+		&providerID,
+		&resource.WorkspaceId,
+		&configJSON,
+		&createdAt,
+		&lockedAt,
+		&updatedAt,
+		&deletedAt,
+		&metadataJSON,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	setResourceTimestamps(&resource, createdAt, lockedAt, updatedAt, deletedAt)
+
+	if providerID.Valid {
+		resource.ProviderId = &providerID.String
+	}
+
+	if err := setResourceConfig(&resource, configJSON); err != nil {
+		return nil, err
+	}
+
+	if err := setResourceMetadata(&resource, metadataJSON); err != nil {
+		return nil, err
+	}
+
+	return &resource, nil
+}
+
+func setResourceTimestamps(resource *pb.Resource, createdAt time.Time, lockedAt, updatedAt, deletedAt *time.Time) {
+	resource.CreatedAt = createdAt.Format(time.RFC3339)
+
+	if lockedAt != nil {
+		lockedAtStr := lockedAt.Format(time.RFC3339)
+		resource.LockedAt = &lockedAtStr
+	}
+	if updatedAt != nil {
+		updatedAtStr := updatedAt.Format(time.RFC3339)
+		resource.UpdatedAt = &updatedAtStr
+	}
+	if deletedAt != nil {
+		deletedAtStr := deletedAt.Format(time.RFC3339)
+		resource.DeletedAt = &deletedAtStr
+	}
+}
+
+func setResourceConfig(resource *pb.Resource, configJSON []byte) error {
+	if len(configJSON) == 0 {
+		return nil
+	}
+
+	var configMap map[string]interface{}
+	if err := json.Unmarshal(configJSON, &configMap); err != nil {
+		return err
+	}
+
+	configStruct, err := structpb.NewStruct(configMap)
+	if err != nil {
+		return err
+	}
+
+	resource.Config = configStruct
+	return nil
+}
+
+func setResourceMetadata(resource *pb.Resource, metadataJSON []byte) error {
+	if len(metadataJSON) == 0 {
+		return nil
+	}
+
+	var metadataMap map[string]string
+	if err := json.Unmarshal(metadataJSON, &metadataMap); err != nil {
+		return err
+	}
+
+	resource.Metadata = metadataMap
+	return nil
 }

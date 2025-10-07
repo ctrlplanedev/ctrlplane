@@ -13,7 +13,7 @@ const DEPLOYMENT_VARIABLE_SELECT_QUERY = `
 		dv.id,
 		dv.key,
 		dv.description,
-		dv.deployment_id,
+		dv.deployment_id
 	FROM deployment_variable dv
 	INNER JOIN deployment d ON d.id = dv.deployment_id
 	INNER JOIN system s ON s.id = d.system_id

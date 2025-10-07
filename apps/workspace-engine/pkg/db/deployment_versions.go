@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"workspace-engine/pkg/pb"
 
@@ -57,6 +58,7 @@ func scanDeploymentVersion(rows pgx.Rows) (*pb.DeploymentVersion, error) {
 	var configJSON, jobAgentConfigJSON []byte
 	var statusStr string
 	var message *string
+	var createdAt time.Time
 
 	err := rows.Scan(
 		&deploymentVersion.Id,
@@ -67,7 +69,7 @@ func scanDeploymentVersion(rows pgx.Rows) (*pb.DeploymentVersion, error) {
 		&deploymentVersion.DeploymentId,
 		&statusStr,
 		&message,
-		&deploymentVersion.CreatedAt,
+		&createdAt,
 	)
 	if err != nil {
 		return nil, err
@@ -75,6 +77,7 @@ func scanDeploymentVersion(rows pgx.Rows) (*pb.DeploymentVersion, error) {
 
 	// Set status from string to enum
 	deploymentVersion.Status = convertStatusToEnum(statusStr)
+	deploymentVersion.CreatedAt = createdAt.Format(time.RFC3339)
 
 	// Handle nullable message field
 	if message != nil {
