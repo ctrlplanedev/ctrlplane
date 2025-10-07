@@ -86,4 +86,3 @@ func (j *Jobs) GetJobsInProcessingStateForReleaseTarget(releaseTarget *pb.Releas
 	}
 	return jobs
 }
-

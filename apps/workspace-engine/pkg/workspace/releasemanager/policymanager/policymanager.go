@@ -20,7 +20,7 @@ var tracer = otel.Tracer("workspace/releasemanager/policymanager")
 
 // Manager handles policy evaluation for release decisions.
 type Manager struct {
-	store *store.Store
+	store                 *store.Store
 	releaseRuleEvaluators []results.ReleaseRuleEvaluator
 }
 

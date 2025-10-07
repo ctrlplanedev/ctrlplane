@@ -12,13 +12,13 @@ var _ results.VersionRuleEvaluator = &AnyApprovalEvaluator{}
 
 type AnyApprovalEvaluator struct {
 	store *store.Store
-	rule *pb.AnyApprovalRule
+	rule  *pb.AnyApprovalRule
 }
 
 func NewAnyApprovalEvaluator(store *store.Store, rule *pb.AnyApprovalRule) *AnyApprovalEvaluator {
 	return &AnyApprovalEvaluator{
 		store: store,
-		rule: rule,
+		rule:  rule,
 	}
 }
 

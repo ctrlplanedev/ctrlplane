@@ -43,7 +43,7 @@ func (e *SkipDeployedEvaluator) Evaluate(
 		// Try to get completion time first
 		completedAt, err := job.CompletedAtTime()
 		var jobTime *time.Time
-		
+
 		if err == nil && completedAt != nil {
 			jobTime = completedAt
 		} else {

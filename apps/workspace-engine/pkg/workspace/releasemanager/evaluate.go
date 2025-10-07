@@ -88,13 +88,13 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 			}
 		}(change.OldTarget)
 	}
-	
+
 	wg.Wait()
 	return cancelledJobs
 }
 
 // ProcessReleaseTarget orchestrates the full deployment lifecycle (WRITES TO STORE).
-// 
+//
 // Two-Phase Design:
 // Phase 1: DECISION - Evaluate() answers "What needs deploying?" (read-only)
 // Phase 2: ACTION  - ProcessReleaseTarget() executes the deployment (writes)
@@ -122,7 +122,7 @@ func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *pb.Re
 		span.SetAttributes(attribute.Bool("deployment.needed", false))
 		return nil
 	}
-	
+
 	// Phase 2: ACTION - Deploy it (WRITES)
 	return m.executeDeployment(ctx, releaseToDeploy, span)
 }
@@ -161,7 +161,7 @@ func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Rel
 // Only cancels jobs for different releases - leaves jobs for the same release alone.
 func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Release) {
 	jobs := m.store.Jobs.GetJobsForReleaseTarget(desiredRelease.ReleaseTarget)
-	
+
 	for _, job := range jobs {
 		if job.Status == pb.JobStatus_JOB_STATUS_PENDING {
 			job.Status = pb.JobStatus_JOB_STATUS_CANCELLED
@@ -180,13 +180,14 @@ func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Rel
 //  4. Job already in progress for this release (pending/in-progress job exists)
 //
 // Returns:
-//  - *pb.Release: This release NEEDS to be deployed (definitely needs a new job)
-//  - nil: No deployment needed (see decision logic above)
-//  - error: Evaluation failed
+//   - *pb.Release: This release NEEDS to be deployed (definitely needs a new job)
+//   - nil: No deployment needed (see decision logic above)
+//   - error: Evaluation failed
 //
 // Design Pattern: Two-Phase Deployment
-//  Phase 1 (this function): DECISION - read all state, determine if deployment needed
-//  Phase 2 (executeDeployment): ACTION - write operations to make it happen
+//
+//	Phase 1 (this function): DECISION - read all state, determine if deployment needed
+//	Phase 2 (executeDeployment): ACTION - write operations to make it happen
 //
 // Trust the contract: If this returns a release, caller should deploy it without additional checks.
 func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (*pb.Release, error) {
@@ -244,10 +245,10 @@ func (m *Manager) selectDeployableVersion(
 	span trace.Span,
 ) *pb.DeploymentVersion {
 	versionsEvaluated := 0
-	
+
 	for _, version := range candidateVersions {
 		versionsEvaluated++
-		
+
 		policyDecision, err := m.policyManager.EvaluateVersion(ctx, version, releaseTarget)
 		if err != nil {
 			span.RecordError(err)
