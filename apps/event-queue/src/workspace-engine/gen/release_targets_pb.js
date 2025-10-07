@@ -2,60 +2,74 @@
 // @generated from file release_targets.proto (package workspace, syntax proto3)
 /* eslint-disable */
 
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import {
+  fileDesc,
+  messageDesc,
+  serviceDesc,
+} from "@bufbuild/protobuf/codegenv2";
 import { file_google_protobuf_struct } from "@bufbuild/protobuf/wkt";
 
 /**
  * Describes the file release_targets.proto.
  */
-export const file_release_targets = /*@__PURE__*/
-  fileDesc("ChVyZWxlYXNlX3RhcmdldHMucHJvdG8SCXdvcmtzcGFjZSKwAwoIUmVzb3VyY2USCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIPCgd2ZXJzaW9uGAMgASgJEgwKBGtpbmQYBCABKAkSEgoKaWRlbnRpZmllchgFIAEoCRISCgpjcmVhdGVkX2F0GAYgASgJEhQKDHdvcmtzcGFjZV9pZBgHIAEoCRIYCgtwcm92aWRlcl9pZBgIIAEoCUgAiAEBEicKBmNvbmZpZxgJIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSFgoJbG9ja2VkX2F0GAogASgJSAGIAQESFwoKdXBkYXRlZF9hdBgLIAEoCUgCiAEBEhcKCmRlbGV0ZWRfYXQYDCABKAlIA4gBARIzCghtZXRhZGF0YRgNIAMoCzIhLndvcmtzcGFjZS5SZXNvdXJjZS5NZXRhZGF0YUVudHJ5Gi8KDU1ldGFkYXRhRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4AUIOCgxfcHJvdmlkZXJfaWRCDAoKX2xvY2tlZF9hdEINCgtfdXBkYXRlZF9hdEINCgtfZGVsZXRlZF9hdCKXAQoLRW52aXJvbm1lbnQSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIRCglzeXN0ZW1faWQYBCABKAkSMgoRcmVzb3VyY2Vfc2VsZWN0b3IYBSABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EhIKCmNyZWF0ZWRfYXQYBiABKAkipAIKCkRlcGxveW1lbnQSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIMCgRzbHVnGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEhEKCXN5c3RlbV9pZBgFIAEoCRIZCgxqb2JfYWdlbnRfaWQYBiABKAlIAIgBARI2ChBqb2JfYWdlbnRfY29uZmlnGAcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdEgBiAEBEjcKEXJlc291cmNlX3NlbGVjdG9yGAggASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdEgCiAEBQg8KDV9qb2JfYWdlbnRfaWRCEwoRX2pvYl9hZ2VudF9jb25maWdCFAoSX3Jlc291cmNlX3NlbGVjdG9yIssBCg1SZWxlYXNlVGFyZ2V0EgoKAmlkGAEgASgJEhMKC3Jlc291cmNlX2lkGAIgASgJEhYKDmVudmlyb25tZW50X2lkGAMgASgJEhUKDWRlcGxveW1lbnRfaWQYBCABKAkSEgoKY3JlYXRlZF9hdBgFIAEoCRIrCgtlbnZpcm9ubWVudBgGIAEoCzIWLndvcmtzcGFjZS5FbnZpcm9ubWVudBIpCgpkZXBsb3ltZW50GAcgASgLMhUud29ya3NwYWNlLkRlcGxveW1lbnQioAEKHENvbXB1dGVSZWxlYXNlVGFyZ2V0c1JlcXVlc3QSLAoMZW52aXJvbm1lbnRzGAEgAygLMhYud29ya3NwYWNlLkVudmlyb25tZW50EioKC2RlcGxveW1lbnRzGAIgAygLMhUud29ya3NwYWNlLkRlcGxveW1lbnQSJgoJcmVzb3VyY2VzGAMgAygLMhMud29ya3NwYWNlLlJlc291cmNlIlIKHUNvbXB1dGVSZWxlYXNlVGFyZ2V0c1Jlc3BvbnNlEjEKD3JlbGVhc2VfdGFyZ2V0cxgBIAMoCzIYLndvcmtzcGFjZS5SZWxlYXNlVGFyZ2V0MnQKFFJlbGVhc2VUYXJnZXRTZXJ2aWNlElwKB0NvbXB1dGUSJy53b3Jrc3BhY2UuQ29tcHV0ZVJlbGVhc2VUYXJnZXRzUmVxdWVzdBooLndvcmtzcGFjZS5Db21wdXRlUmVsZWFzZVRhcmdldHNSZXNwb25zZUIZWhd3b3Jrc3BhY2UtZW5naW5lL3BrZy9wYmIGcHJvdG8z", [file_google_protobuf_struct]);
+export const file_release_targets =
+  /*@__PURE__*/
+  fileDesc(
+    "ChVyZWxlYXNlX3RhcmdldHMucHJvdG8SCXdvcmtzcGFjZSKwAwoIUmVzb3VyY2USCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIPCgd2ZXJzaW9uGAMgASgJEgwKBGtpbmQYBCABKAkSEgoKaWRlbnRpZmllchgFIAEoCRISCgpjcmVhdGVkX2F0GAYgASgJEhQKDHdvcmtzcGFjZV9pZBgHIAEoCRIYCgtwcm92aWRlcl9pZBgIIAEoCUgAiAEBEicKBmNvbmZpZxgJIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSFgoJbG9ja2VkX2F0GAogASgJSAGIAQESFwoKdXBkYXRlZF9hdBgLIAEoCUgCiAEBEhcKCmRlbGV0ZWRfYXQYDCABKAlIA4gBARIzCghtZXRhZGF0YRgNIAMoCzIhLndvcmtzcGFjZS5SZXNvdXJjZS5NZXRhZGF0YUVudHJ5Gi8KDU1ldGFkYXRhRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4AUIOCgxfcHJvdmlkZXJfaWRCDAoKX2xvY2tlZF9hdEINCgtfdXBkYXRlZF9hdEINCgtfZGVsZXRlZF9hdCKXAQoLRW52aXJvbm1lbnQSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIRCglzeXN0ZW1faWQYBCABKAkSMgoRcmVzb3VyY2Vfc2VsZWN0b3IYBSABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EhIKCmNyZWF0ZWRfYXQYBiABKAkipAIKCkRlcGxveW1lbnQSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIMCgRzbHVnGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEhEKCXN5c3RlbV9pZBgFIAEoCRIZCgxqb2JfYWdlbnRfaWQYBiABKAlIAIgBARI2ChBqb2JfYWdlbnRfY29uZmlnGAcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdEgBiAEBEjcKEXJlc291cmNlX3NlbGVjdG9yGAggASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdEgCiAEBQg8KDV9qb2JfYWdlbnRfaWRCEwoRX2pvYl9hZ2VudF9jb25maWdCFAoSX3Jlc291cmNlX3NlbGVjdG9yIssBCg1SZWxlYXNlVGFyZ2V0EgoKAmlkGAEgASgJEhMKC3Jlc291cmNlX2lkGAIgASgJEhYKDmVudmlyb25tZW50X2lkGAMgASgJEhUKDWRlcGxveW1lbnRfaWQYBCABKAkSEgoKY3JlYXRlZF9hdBgFIAEoCRIrCgtlbnZpcm9ubWVudBgGIAEoCzIWLndvcmtzcGFjZS5FbnZpcm9ubWVudBIpCgpkZXBsb3ltZW50GAcgASgLMhUud29ya3NwYWNlLkRlcGxveW1lbnQioAEKHENvbXB1dGVSZWxlYXNlVGFyZ2V0c1JlcXVlc3QSLAoMZW52aXJvbm1lbnRzGAEgAygLMhYud29ya3NwYWNlLkVudmlyb25tZW50EioKC2RlcGxveW1lbnRzGAIgAygLMhUud29ya3NwYWNlLkRlcGxveW1lbnQSJgoJcmVzb3VyY2VzGAMgAygLMhMud29ya3NwYWNlLlJlc291cmNlIlIKHUNvbXB1dGVSZWxlYXNlVGFyZ2V0c1Jlc3BvbnNlEjEKD3JlbGVhc2VfdGFyZ2V0cxgBIAMoCzIYLndvcmtzcGFjZS5SZWxlYXNlVGFyZ2V0MnQKFFJlbGVhc2VUYXJnZXRTZXJ2aWNlElwKB0NvbXB1dGUSJy53b3Jrc3BhY2UuQ29tcHV0ZVJlbGVhc2VUYXJnZXRzUmVxdWVzdBooLndvcmtzcGFjZS5Db21wdXRlUmVsZWFzZVRhcmdldHNSZXNwb25zZUIZWhd3b3Jrc3BhY2UtZW5naW5lL3BrZy9wYmIGcHJvdG8z",
+    [file_google_protobuf_struct],
+  );
 
 /**
  * Describes the message workspace.Resource.
  * Use `create(ResourceSchema)` to create a new message.
  */
-export const ResourceSchema = /*@__PURE__*/
+export const ResourceSchema =
+  /*@__PURE__*/
   messageDesc(file_release_targets, 0);
 
 /**
  * Describes the message workspace.Environment.
  * Use `create(EnvironmentSchema)` to create a new message.
  */
-export const EnvironmentSchema = /*@__PURE__*/
+export const EnvironmentSchema =
+  /*@__PURE__*/
   messageDesc(file_release_targets, 1);
 
 /**
  * Describes the message workspace.Deployment.
  * Use `create(DeploymentSchema)` to create a new message.
  */
-export const DeploymentSchema = /*@__PURE__*/
+export const DeploymentSchema =
+  /*@__PURE__*/
   messageDesc(file_release_targets, 2);
 
 /**
  * Describes the message workspace.ReleaseTarget.
  * Use `create(ReleaseTargetSchema)` to create a new message.
  */
-export const ReleaseTargetSchema = /*@__PURE__*/
+export const ReleaseTargetSchema =
+  /*@__PURE__*/
   messageDesc(file_release_targets, 3);
 
 /**
  * Describes the message workspace.ComputeReleaseTargetsRequest.
  * Use `create(ComputeReleaseTargetsRequestSchema)` to create a new message.
  */
-export const ComputeReleaseTargetsRequestSchema = /*@__PURE__*/
+export const ComputeReleaseTargetsRequestSchema =
+  /*@__PURE__*/
   messageDesc(file_release_targets, 4);
 
 /**
  * Describes the message workspace.ComputeReleaseTargetsResponse.
  * Use `create(ComputeReleaseTargetsResponseSchema)` to create a new message.
  */
-export const ComputeReleaseTargetsResponseSchema = /*@__PURE__*/
+export const ComputeReleaseTargetsResponseSchema =
+  /*@__PURE__*/
   messageDesc(file_release_targets, 5);
 
 /**
  * @generated from service workspace.ReleaseTargetService
  */
-export const ReleaseTargetService = /*@__PURE__*/
+export const ReleaseTargetService =
+  /*@__PURE__*/
   serviceDesc(file_release_targets, 0);
-

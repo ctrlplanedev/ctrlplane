@@ -2,8 +2,12 @@
 // @generated from file release_targets.proto (package workspace, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { JsonObject, Message } from "@bufbuild/protobuf";
+import type {
+  GenFile,
+  GenMessage,
+  GenService,
+} from "@bufbuild/protobuf/codegenv2";
 
 /**
  * Describes the file release_targets.proto.
@@ -239,22 +243,23 @@ export declare const ReleaseTargetSchema: GenMessage<ReleaseTarget>;
 /**
  * @generated from message workspace.ComputeReleaseTargetsRequest
  */
-export declare type ComputeReleaseTargetsRequest = Message<"workspace.ComputeReleaseTargetsRequest"> & {
-  /**
-   * @generated from field: repeated workspace.Environment environments = 1;
-   */
-  environments: Environment[];
+export declare type ComputeReleaseTargetsRequest =
+  Message<"workspace.ComputeReleaseTargetsRequest"> & {
+    /**
+     * @generated from field: repeated workspace.Environment environments = 1;
+     */
+    environments: Environment[];
 
-  /**
-   * @generated from field: repeated workspace.Deployment deployments = 2;
-   */
-  deployments: Deployment[];
+    /**
+     * @generated from field: repeated workspace.Deployment deployments = 2;
+     */
+    deployments: Deployment[];
 
-  /**
-   * @generated from field: repeated workspace.Resource resources = 3;
-   */
-  resources: Resource[];
-};
+    /**
+     * @generated from field: repeated workspace.Resource resources = 3;
+     */
+    resources: Resource[];
+  };
 
 /**
  * Describes the message workspace.ComputeReleaseTargetsRequest.
@@ -265,12 +270,13 @@ export declare const ComputeReleaseTargetsRequestSchema: GenMessage<ComputeRelea
 /**
  * @generated from message workspace.ComputeReleaseTargetsResponse
  */
-export declare type ComputeReleaseTargetsResponse = Message<"workspace.ComputeReleaseTargetsResponse"> & {
-  /**
-   * @generated from field: repeated workspace.ReleaseTarget release_targets = 1;
-   */
-  releaseTargets: ReleaseTarget[];
-};
+export declare type ComputeReleaseTargetsResponse =
+  Message<"workspace.ComputeReleaseTargetsResponse"> & {
+    /**
+     * @generated from field: repeated workspace.ReleaseTarget release_targets = 1;
+     */
+    releaseTargets: ReleaseTarget[];
+  };
 
 /**
  * Describes the message workspace.ComputeReleaseTargetsResponse.
@@ -289,6 +295,5 @@ export declare const ReleaseTargetService: GenService<{
     methodKind: "unary";
     input: typeof ComputeReleaseTargetsRequestSchema;
     output: typeof ComputeReleaseTargetsResponseSchema;
-  },
+  };
 }>;
-
