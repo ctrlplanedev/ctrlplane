@@ -26,6 +26,7 @@ func New() *Store {
 	store.Releases = NewReleases(store)
 	store.Jobs = NewJobs(store)
 	store.JobAgents = NewJobAgents(store)
+	store.UserApprovalRecords = NewUserApprovalRecords(store)
 
 	return store
 }
@@ -83,6 +84,7 @@ func (s *Store) GobDecode(data []byte) error {
 	s.Releases = NewReleases(s)
 	s.Jobs = NewJobs(s)
 	s.JobAgents = NewJobAgents(s)
+	s.UserApprovalRecords = NewUserApprovalRecords(s)
 
 	// Reinitialize materialized views for environments and deployments
 	s.Environments.ReinitializeMaterializedViews()

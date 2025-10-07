@@ -97,7 +97,6 @@ func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
 	return w.store.UserApprovalRecords
 }
 
-
 var workspaces = cmap.New[*Workspace]()
 
 func GetWorkspace(id string) *Workspace {

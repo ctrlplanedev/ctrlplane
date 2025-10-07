@@ -30,7 +30,6 @@ func (m *Manager) GetDecisions(ctx context.Context, releaseTarget *pb.ReleaseTar
 	v, exists := m.store.DeploymentVersions.Get(version.Id)
 	if !exists {
 		return &policymanager.DeployDecision{
-			Summary:       fmt.Sprintf("Version %s not found", version.Id),
 			PolicyResults: nil,
 			EvaluatedAt:   time.Now(),
 		}
@@ -40,17 +39,9 @@ func (m *Manager) GetDecisions(ctx context.Context, releaseTarget *pb.ReleaseTar
 	decision, err := m.policyManager.Evaluate(ctx, v, releaseTarget)
 	if err != nil {
 		return &policymanager.DeployDecision{
-			Summary:       fmt.Sprintf("Error evaluating deployment policy: %v", err),
 			PolicyResults: nil,
 			EvaluatedAt:   time.Now(),
 		}
-	}
-
-	// Summarize if the version can or cannot be deployed
-	if decision.CanDeploy() {
-		decision.Summary = fmt.Sprintf("Version `%s` can be deployed to target %s", v.Tag, releaseTarget.Id)
-	} else {
-		decision.Summary = fmt.Sprintf("Version `%s` cannot be deployed to target %s", v.Tag, releaseTarget.Id)
 	}
 
 	return decision

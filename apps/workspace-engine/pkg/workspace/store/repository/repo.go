@@ -32,5 +32,6 @@ type Repository struct {
 	Releases            cmap.ConcurrentMap[string, *pb.Release]
 	Jobs                cmap.ConcurrentMap[string, *pb.Job]
 	JobAgents           cmap.ConcurrentMap[string, *pb.JobAgent]
+
 	UserApprovalRecords cmap.ConcurrentMap[string, *pb.UserApprovalRecord]
 }

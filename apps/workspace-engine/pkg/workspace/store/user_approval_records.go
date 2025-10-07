@@ -27,3 +27,13 @@ func (u *UserApprovalRecords) Get(versionId, userId string) (*pb.UserApprovalRec
 func (u *UserApprovalRecords) Remove(key string) {
 	u.repo.UserApprovalRecords.Remove(key)
 }
+
+func (u *UserApprovalRecords) GetApprovers(versionId string) []string {
+	approvers := make([]string, 0)
+	for record := range u.repo.UserApprovalRecords.IterBuffered() {
+		if record.Val.VersionId == versionId && record.Val.Status == pb.ApprovalStatus_APPROVAL_STATUS_APPROVED {
+			approvers = append(approvers, record.Val.UserId)
+		}
+	}
+	return approvers
+}

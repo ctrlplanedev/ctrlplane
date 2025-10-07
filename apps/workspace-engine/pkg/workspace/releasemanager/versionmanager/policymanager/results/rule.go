@@ -2,12 +2,6 @@ package results
 
 // EvaluationResult represents the outcome of evaluating a policy rule.
 type RuleEvaluationResult struct {
-	// RuleID identifies which rule was evaluated
-	RuleID string
-
-	// RuleType describes the type of rule (e.g., "deny_window", "user_approval")
-	RuleType string
-
 	// Allowed indicates whether the rule permits the deployment
 	Allowed bool
 
@@ -36,10 +30,8 @@ func (r *RuleEvaluationResult) WithDetail(key string, value any) *RuleEvaluation
 }
 
 // NewPendingResult creates a result indicating the rule requires action before proceeding.
-func NewPendingResult(ruleID, ruleType, actionType, reason string) *RuleEvaluationResult {
+func NewPendingResult(ruleType, actionType, reason string) *RuleEvaluationResult {
 	return &RuleEvaluationResult{
-		RuleID:         ruleID,
-		RuleType:       ruleType,
 		Allowed:        false,
 		Reason:         reason,
 		Details:        make(map[string]any),
@@ -49,10 +41,8 @@ func NewPendingResult(ruleID, ruleType, actionType, reason string) *RuleEvaluati
 }
 
 // NewDeniedResult creates a result indicating the rule denies the deployment.
-func NewDeniedResult(ruleID, ruleType, reason string) *RuleEvaluationResult {
+func NewDeniedResult(reason string) *RuleEvaluationResult {
 	return &RuleEvaluationResult{
-		RuleID:         ruleID,
-		RuleType:       ruleType,
 		Allowed:        false,
 		Reason:         reason,
 		Details:        make(map[string]any),
@@ -61,10 +51,8 @@ func NewDeniedResult(ruleID, ruleType, reason string) *RuleEvaluationResult {
 }
 
 // NewAllowedResult creates a result indicating the rule allows the deployment.
-func NewAllowedResult(ruleID, ruleType, reason string) *RuleEvaluationResult {
+func NewAllowedResult(reason string) *RuleEvaluationResult {
 	return &RuleEvaluationResult{
-		RuleID:         ruleID,
-		RuleType:       ruleType,
 		Allowed:        true,
 		Reason:         reason,
 		Details:        make(map[string]any),

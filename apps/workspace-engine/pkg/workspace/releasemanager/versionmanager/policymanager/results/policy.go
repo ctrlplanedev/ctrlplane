@@ -54,9 +54,9 @@ func (p *PolicyEvaluationResult) GenerateSummary() {
 	for _, result := range p.RuleResults {
 		if !result.Allowed {
 			if result.RequiresAction {
-				pendingRules = append(pendingRules, fmt.Sprintf("%s (%s)", result.RuleType, result.Reason))
+				pendingRules = append(pendingRules, result.Reason)
 			} else {
-				deniedRules = append(deniedRules, fmt.Sprintf("%s (%s)", result.RuleType, result.Reason))
+				deniedRules = append(deniedRules, result.Reason)
 			}
 		}
 	}

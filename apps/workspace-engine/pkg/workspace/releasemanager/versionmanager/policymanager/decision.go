@@ -8,13 +8,8 @@ import (
 // DeployDecision represents the final decision about whether a deployment can proceed.
 // It provides detailed information about policy evaluation results and required actions.
 type DeployDecision struct {
-	// Summary provides a human-readable explanation of the decision
-	Summary string
-
-	// PolicyResults contains detailed results from each policy evaluation
 	PolicyResults []*results.PolicyEvaluationResult
-
-	EvaluatedAt time.Time
+	EvaluatedAt   time.Time
 }
 
 func (d *DeployDecision) GetPendingActions() []*results.RuleEvaluationResult {

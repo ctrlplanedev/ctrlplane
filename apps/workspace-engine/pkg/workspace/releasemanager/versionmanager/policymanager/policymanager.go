@@ -3,12 +3,12 @@ package policymanager
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/releasemanager/versionmanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/versionmanager/policymanager/rules/approval"
 	"workspace-engine/pkg/workspace/store"
 	"workspace-engine/pkg/workspace/store/materialized"
 
@@ -24,6 +24,8 @@ type Manager struct {
 	store *store.Store
 
 	deployableVersions cmap.ConcurrentMap[string, *materialized.MaterializedView[[]*DeployDecision]]
+
+	anyApprovalEvaluator *approval.AnyApprovalEvaluator
 }
 
 // New creates a new policy manager.
@@ -31,22 +33,9 @@ func New(store *store.Store) *Manager {
 	return &Manager{
 		store:              store,
 		deployableVersions: cmap.New[*materialized.MaterializedView[[]*DeployDecision]](),
+
+		anyApprovalEvaluator: approval.NewAnyApprovalEvaluator(store),
 	}
-}
-
-// Store interfaces for rule evaluation
-type ApprovalStore interface {
-	HasUserApproved(ctx context.Context, userID, versionID, environmentID string) (bool, error)
-	HasRoleApproved(ctx context.Context, roleID, versionID, environmentID string) (bool, error)
-	GetApprovalCount(ctx context.Context, versionID, environmentID string) (int, error)
-}
-
-type DeploymentStore interface {
-	GetActiveDeploymentCount(ctx context.Context, deploymentID, environmentID string) (int, error)
-}
-
-type RetryStore interface {
-	GetRetryCount(ctx context.Context, versionID, environmentID, resourceID string) (int, error)
 }
 
 // Evaluate evaluates all applicable policies for a deployment and returns a comprehensive decision.
@@ -78,16 +67,13 @@ func (m *Manager) Evaluate(
 
 	// Fast path: no policies = allowed
 	if len(applicablePolicies) == 0 {
-		summary := "No policies apply to this deployment"
 		span.SetAttributes(
 			attribute.Bool("decision.can_deploy", true),
 			attribute.Bool("decision.is_blocked", false),
 			attribute.Bool("decision.is_pending", false),
-			attribute.String("decision.summary", summary),
 		)
 		return &DeployDecision{
-			Summary:       summary,
-			PolicyResults: nil, // nil slice is faster than empty slice
+			PolicyResults: make([]*results.PolicyEvaluationResult, 0),
 			EvaluatedAt:   startTime,
 		}, nil
 	}
@@ -127,7 +113,6 @@ func (m *Manager) Evaluate(
 		// Performance: If blocked (not pending), can stop evaluating remaining policies
 		// Comment this out if you need to collect ALL policy violations for reporting
 		if policyResult.HasDenials() {
-			decision.Summary = m.generateSummary(decision)
 			span.SetAttributes(
 				attribute.Int("rules.evaluated", totalRules),
 				attribute.Bool("decision.can_deploy", decision.CanDeploy()),
@@ -139,9 +124,6 @@ func (m *Manager) Evaluate(
 			return decision, nil
 		}
 	}
-
-	// Generate summary
-	decision.Summary = m.generateSummary(decision)
 
 	span.SetAttributes(
 		attribute.Int("rules.evaluated", totalRules),
@@ -156,8 +138,6 @@ func (m *Manager) Evaluate(
 }
 
 // evaluateRule evaluates a single policy rule using direct dispatch.
-// Performance: Direct function call - no interface dispatch, no map lookups.
-// Each case jumps directly to the evaluation function (~2-3 CPU cycles).
 func (m *Manager) evaluateRule(
 	ctx context.Context,
 	rule *pb.PolicyRule,
@@ -167,62 +147,8 @@ func (m *Manager) evaluateRule(
 	// Direct switch on rule type - compiler optimizes this to a jump table
 	switch {
 	case rule.GetAnyApproval() != nil:
-		return m.evaluateAnyApproval(ctx, rule.Id, rule.GetAnyApproval(), version, releaseTarget)
+		return m.anyApprovalEvaluator.Evaluate(ctx, rule.GetAnyApproval(), version, releaseTarget)
 	default:
 		return nil, fmt.Errorf("unknown rule type for rule %s", rule.Id)
 	}
-}
-
-// ============================================================================
-// Rule Evaluation Functions
-// Each rule type has its own file: rule_*.go
-// ============================================================================
-
-// generateSummary creates a human-readable summary of the deployment decision.
-func (m *Manager) generateSummary(decision *DeployDecision) string {
-	if decision.CanDeploy() {
-		return "All policies passed - deployment allowed"
-	}
-
-	if decision.IsBlocked() {
-		// Collect all denial reasons
-		var denialReasons []string
-		for _, policyResult := range decision.PolicyResults {
-			for _, ruleResult := range policyResult.RuleResults {
-				if !ruleResult.Allowed && !ruleResult.RequiresAction {
-					denialReasons = append(denialReasons, fmt.Sprintf(
-						"%s: %s",
-						ruleResult.RuleType,
-						ruleResult.Reason,
-					))
-				}
-			}
-		}
-		return fmt.Sprintf("Deployment blocked - %s", strings.Join(denialReasons, "; "))
-	}
-
-	if decision.IsPending() {
-		// Collect all pending actions
-		approvalCount := 0
-		waitCount := 0
-		for _, action := range decision.GetPendingActions() {
-			if action.ActionType == "approval" {
-				approvalCount++
-			} else if action.ActionType == "wait" {
-				waitCount++
-			}
-		}
-
-		var parts []string
-		if approvalCount > 0 {
-			parts = append(parts, fmt.Sprintf("%d approval(s) required", approvalCount))
-		}
-		if waitCount > 0 {
-			parts = append(parts, fmt.Sprintf("%d wait condition(s)", waitCount))
-		}
-
-		return fmt.Sprintf("Deployment pending - %s", strings.Join(parts, ", "))
-	}
-
-	return "Unknown deployment status"
 }
