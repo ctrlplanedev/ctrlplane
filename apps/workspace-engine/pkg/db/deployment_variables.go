@@ -56,6 +56,7 @@ func scanDeploymentVariable(rows pgx.Rows) (*pb.DeploymentVariable, error) {
 		&deploymentVariable.Key,
 		&deploymentVariable.Description,
 		&deploymentVariable.DeploymentId,
+		new(interface{}), // scan but discard
 	)
 	if err != nil {
 		return nil, err
