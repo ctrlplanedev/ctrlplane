@@ -30,8 +30,11 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *pb.Re
 		}
 	}
 
-	// Sort by CreatedAt (descending: newest first)
+	// Sort by CreatedAt (descending: newest first), then by Id (descending) if CreatedAt is the same
 	sort.Slice(filtered, func(i, j int) bool {
+		if filtered[i].CreatedAt == filtered[j].CreatedAt {
+			return filtered[i].Id > filtered[j].Id
+		}
 		return filtered[i].CreatedAt > filtered[j].CreatedAt
 	})
 
