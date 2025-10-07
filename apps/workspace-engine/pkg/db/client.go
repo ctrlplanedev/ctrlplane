@@ -2,14 +2,15 @@ package db
 
 import (
 	"context"
-	"log"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -20,7 +21,8 @@ var (
 // GetPool returns the singleton database connection pool
 func GetPool(ctx context.Context) *pgxpool.Pool {
 	once.Do(func() {
-		config, err := pgxpool.ParseConfig(os.Getenv("POSTGRES_URL"))
+		postgresURL := viper.GetString("POSTGRES_URL")
+		config, err := pgxpool.ParseConfig(postgresURL)
 		if err != nil {
 			log.Fatal("Failed to parse database config:", err)
 		}
