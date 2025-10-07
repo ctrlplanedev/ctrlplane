@@ -3,11 +3,11 @@ package kafka
 import (
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
-	"sync"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
+
+	"golang.org/x/sync/errgroup"
 )
 
 func murmur2(data []byte) uint32 {
@@ -46,30 +46,26 @@ func partitionOfKey(key string, numPartitions int) int32 {
 }
 
 func loadFullWorkspaces(ctx context.Context, workspaceIDs []string) error {
-	var wg sync.WaitGroup
-	var loadErrs []error
+	g, ctx := errgroup.WithContext(ctx)
 
 	for _, workspaceID := range workspaceIDs {
-		wg.Add(1)
-		go func(workspaceID string) {
-			defer wg.Done()
-
-			if workspace.Exists(workspaceID) {
-				return
+		wsID := workspaceID // capture loop variable
+		g.Go(func() error {
+			if workspace.Exists(wsID) {
+				return nil
 			}
 
-			fullWorkspace, err := db.LoadWorkspace(ctx, workspaceID)
+			fullWorkspace, err := db.LoadWorkspace(ctx, wsID)
 			if err != nil {
-				loadErrs = append(loadErrs, err)
-				return
+				return fmt.Errorf("failed to load workspace %s: %w", wsID, err)
 			}
-			workspace.Set(workspaceID, fullWorkspace)
-		}(workspaceID)
+			workspace.Set(wsID, fullWorkspace)
+			return nil
+		})
 	}
-	wg.Wait()
 
-	if len(loadErrs) > 0 {
-		return fmt.Errorf("failed to load full workspaces: %w", errors.Join(loadErrs...))
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("failed to load full workspaces: %w", err)
 	}
 	return nil
 }

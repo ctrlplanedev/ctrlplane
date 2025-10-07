@@ -141,6 +141,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
 			return fmt.Errorf("failed to load workspace: %w", err)
 		}
+		workspace.Set(rawEvent.WorkspaceID, ws)
 	}
 
 	// Handle to make changes

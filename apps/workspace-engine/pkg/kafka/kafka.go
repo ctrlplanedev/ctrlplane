@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 	"workspace-engine/pkg/events"
@@ -41,7 +42,11 @@ func getTopicPartitionCount(c *kafka.Consumer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return len(md.Topics[Topic].Partitions), nil
+	topicMeta, ok := md.Topics[Topic]
+	if !ok {
+		return 0, fmt.Errorf("topic %s not found", Topic)
+	}
+	return len(topicMeta.Partitions), nil
 }
 
 func populateWorkspaceCache(ctx context.Context, c *kafka.Consumer) error {
