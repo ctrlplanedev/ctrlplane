@@ -40,13 +40,13 @@ func RunConsumer(ctx context.Context) error {
 	defer c.Close()
 
 	err = c.SubscribeTopics([]string{Topic}, nil)
+
 	if err != nil {
 		log.Error("Failed to subscribe", "error", err)
 		return err
 	}
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
-
 	handler := events.NewEventHandler()
 
 	for {

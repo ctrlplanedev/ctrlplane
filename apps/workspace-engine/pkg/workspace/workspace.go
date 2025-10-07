@@ -99,6 +99,15 @@ func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
 
 var workspaces = cmap.New[*Workspace]()
 
+func Exists(id string) bool {
+	_, ok := workspaces.Get(id)
+	return ok
+}
+
+func Set(id string, workspace *Workspace) {
+	workspaces.Set(id, workspace)
+}
+
 func GetWorkspace(id string) *Workspace {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {

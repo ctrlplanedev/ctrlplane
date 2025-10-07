@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
@@ -123,9 +124,24 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	// Execute the handler
 	startTime := time.Now()
-	ws := workspace.GetWorkspace(rawEvent.WorkspaceID)
+	var ws *workspace.Workspace
 
-	// Handle to make changes
+	wsExists := workspace.Exists(rawEvent.WorkspaceID)
+	if wsExists {
+		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
+	}
+	if !wsExists {
+		fullWs, err := db.LoadWorkspace(ctx, rawEvent.WorkspaceID)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to load workspace")
+			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
+			return fmt.Errorf("failed to load workspace: %w", err)
+		}
+		workspace.Set(rawEvent.WorkspaceID, fullWs)
+		ws = fullWs
+	}
+
 	err := handler(ctx, ws, rawEvent)
 
 	// Always run a dispatch eval jobs
