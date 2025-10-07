@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
@@ -76,13 +77,12 @@ type HandlerRegistry map[EventType]Handler
 
 // EventListener listens for events on the queue and routes them to appropriate handlers
 type EventListener struct {
-	handlers       HandlerRegistry
-	workspaceStore workspace.WorkspaceStore
+	handlers HandlerRegistry
 }
 
 // NewEventListener creates a new event listener with the provided handlers
-func NewEventListener(handlers HandlerRegistry, workspaceStore workspace.WorkspaceStore) *EventListener {
-	return &EventListener{handlers: handlers, workspaceStore: workspaceStore}
+func NewEventListener(handlers HandlerRegistry) *EventListener {
+	return &EventListener{handlers: handlers}
 }
 
 // ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler
@@ -126,16 +126,25 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	// Execute the handler
 	startTime := time.Now()
-	ws, err := el.workspaceStore.Get(rawEvent.WorkspaceID)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to get workspace")
-		log.Error("Failed to get workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
-		return fmt.Errorf("failed to get workspace: %w", err)
+	var ws *workspace.Workspace
+	wsExists := workspace.Exists(rawEvent.WorkspaceID)
+	if wsExists {
+		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
+	}
+
+	if !wsExists {
+		var err error
+		ws, err = db.LoadWorkspace(ctx, rawEvent.WorkspaceID)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to load workspace")
+			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
+			return fmt.Errorf("failed to load workspace: %w", err)
+		}
 	}
 
 	// Handle to make changes
-	err = handler(ctx, ws, rawEvent)
+	err := handler(ctx, ws, rawEvent)
 
 	// Always run a dispatch eval jobs
 	changes := ws.ReleaseManager().Reconcile(ctx)

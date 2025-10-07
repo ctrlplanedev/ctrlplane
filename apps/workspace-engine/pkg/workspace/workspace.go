@@ -10,6 +10,17 @@ import (
 var _ gob.GobEncoder = (*Workspace)(nil)
 var _ gob.GobDecoder = (*Workspace)(nil)
 
+func New(id string) *Workspace {
+	s := store.New()
+	rm := releasemanager.New(s)
+	ws := &Workspace{
+		ID:             id,
+		store:          s,
+		releasemanager: rm,
+	}
+	return ws
+}
+
 type Workspace struct {
 	ID string
 
@@ -88,7 +99,16 @@ func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
 
 var workspaces = cmap.New[*Workspace]()
 
-type WorkspaceStore interface {
-	Get(id string) (*Workspace, error)
-	Set(id string) error
+func Exists(id string) bool {
+	_, ok := workspaces.Get(id)
+	return ok
+}
+
+func GetWorkspace(id string) *Workspace {
+	workspace, _ := workspaces.Get(id)
+	if workspace == nil {
+		workspace = New(id)
+		workspaces.Set(id, workspace)
+	}
+	return workspace
 }

@@ -11,7 +11,6 @@ import (
 	"workspace-engine/pkg/events/handler/resources"
 	"workspace-engine/pkg/events/handler/system"
 	"workspace-engine/pkg/events/handler/userapprovalrecords"
-	"workspace-engine/pkg/workspace"
 )
 
 var handlers = handler.HandlerRegistry{
@@ -50,6 +49,6 @@ var handlers = handler.HandlerRegistry{
 	handler.UserApprovalRecordDelete: userapprovalrecords.HandleUserApprovalRecordDeleted,
 }
 
-func NewEventHandler(workspaceStore workspace.WorkspaceStore) *handler.EventListener {
-	return handler.NewEventListener(handlers, workspaceStore)
+func NewEventHandler() *handler.EventListener {
+	return handler.NewEventListener(handlers)
 }
