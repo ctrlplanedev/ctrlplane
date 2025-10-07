@@ -92,6 +92,18 @@ func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
 	return nil
 }
 
+func loadJobAgents(ctx context.Context, ws *workspace.Workspace) error {
+	dbJobAgents, err := getJobAgents(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get job agents: %w", err)
+	}
+	for _, jobAgent := range dbJobAgents {
+		ws.JobAgents().Upsert(jobAgent)
+	}
+	log.Info("Loaded job agents", "count", len(dbJobAgents))
+	return nil
+}
+
 func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
 	log.Info("Loading workspace", "workspaceID", workspaceID)
 	db, err := GetDB(ctx)
@@ -128,6 +140,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 
 	if err := loadPolicies(ctx, ws); err != nil {
 		return nil, fmt.Errorf("failed to load policies: %w", err)
+	}
+
+	if err := loadJobAgents(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load job agents: %w", err)
 	}
 
 	return ws, nil
