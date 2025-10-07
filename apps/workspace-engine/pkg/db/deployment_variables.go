@@ -14,7 +14,7 @@ const DEPLOYMENT_VARIABLE_SELECT_QUERY = `
 		dv.key,
 		dv.description,
 		dv.deployment_id,
-		dv.default_value_id,
+		dv.default_value_id
 	FROM deployment_variable dv
 	INNER JOIN deployment d ON d.id = dv.deployment_id
 	INNER JOIN system s ON s.id = d.system_id
@@ -22,7 +22,10 @@ const DEPLOYMENT_VARIABLE_SELECT_QUERY = `
 `
 
 func GetDeploymentVariables(ctx context.Context, workspaceID string) ([]*pb.DeploymentVariable, error) {
-	db := GetDB(ctx)
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
 	defer db.Release()
 
 	rows, err := db.Query(ctx, DEPLOYMENT_VARIABLE_SELECT_QUERY, workspaceID)
@@ -39,19 +42,20 @@ func GetDeploymentVariables(ctx context.Context, workspaceID string) ([]*pb.Depl
 		}
 		deploymentVariables = append(deploymentVariables, deploymentVariable)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return deploymentVariables, nil
 }
 
 func scanDeploymentVariable(rows pgx.Rows) (*pb.DeploymentVariable, error) {
 	var deploymentVariable pb.DeploymentVariable
-	var defaultValueID *string
 
 	err := rows.Scan(
 		&deploymentVariable.Id,
 		&deploymentVariable.Key,
 		&deploymentVariable.Description,
 		&deploymentVariable.DeploymentId,
-		&defaultValueID,
 	)
 	if err != nil {
 		return nil, err

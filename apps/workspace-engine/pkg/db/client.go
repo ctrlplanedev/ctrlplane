@@ -33,7 +33,6 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 
 		config.MinConns = 1
 		config.HealthCheckPeriod = 30 * time.Second
-		config.ConnConfig.TLSConfig = nil
 		config.ConnConfig.Tracer = otelpgx.NewTracer()
 
 		if appName := os.Getenv("POSTGRES_APPLICATION_NAME"); appName != "" {
@@ -49,16 +48,16 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 }
 
 // GetDB returns a connection from the pool (similar to your TS db export)
-func GetDB(ctx context.Context) *pgxpool.Conn {
+func GetDB(ctx context.Context) (*pgxpool.Conn, error) {
 	if pool == nil {
 		GetPool(ctx)
 	}
 
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
-		log.Fatal("Failed to acquire database connection:", err)
+		return nil, err
 	}
-	return conn
+	return conn, nil
 }
 
 // Close closes the connection pool (useful for cleanup)

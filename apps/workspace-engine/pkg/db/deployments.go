@@ -22,7 +22,10 @@ const DEPLOYMENT_SELECT_QUERY = `
 `
 
 func GetDeployments(ctx context.Context, workspaceID string) ([]*pb.Deployment, error) {
-	db := GetDB(ctx)
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
 	defer db.Release()
 
 	rows, err := db.Query(ctx, DEPLOYMENT_SELECT_QUERY, workspaceID)
@@ -48,6 +51,9 @@ func GetDeployments(ctx context.Context, workspaceID string) ([]*pb.Deployment, 
 			return nil, err
 		}
 		deployments = append(deployments, &deployment)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return deployments, nil
 }

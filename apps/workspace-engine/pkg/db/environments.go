@@ -20,7 +20,10 @@ const ENVIRONMENT_SELECT_QUERY = `
 `
 
 func GetEnvironments(ctx context.Context, workspaceID string) ([]*pb.Environment, error) {
-	db := GetDB(ctx)
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
 	defer db.Release()
 
 	rows, err := db.Query(ctx, ENVIRONMENT_SELECT_QUERY, workspaceID)
@@ -37,6 +40,9 @@ func GetEnvironments(ctx context.Context, workspaceID string) ([]*pb.Environment
 			return nil, err
 		}
 		environments = append(environments, &environment)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return environments, nil
 }

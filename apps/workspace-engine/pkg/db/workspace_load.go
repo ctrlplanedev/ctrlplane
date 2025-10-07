@@ -9,7 +9,10 @@ import (
 )
 
 func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
-	db := GetDB(ctx)
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
 	defer db.Release()
 
 	wg := sync.WaitGroup{}

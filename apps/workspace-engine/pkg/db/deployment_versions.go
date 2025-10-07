@@ -26,7 +26,10 @@ const DEPLOYMENT_VERSION_SELECT_QUERY = `
 `
 
 func GetDeploymentVersions(ctx context.Context, workspaceID string) ([]*pb.DeploymentVersion, error) {
-	db := GetDB(ctx)
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
 	defer db.Release()
 
 	rows, err := db.Query(ctx, DEPLOYMENT_VERSION_SELECT_QUERY, workspaceID)
@@ -42,6 +45,9 @@ func GetDeploymentVersions(ctx context.Context, workspaceID string) ([]*pb.Deplo
 			return nil, err
 		}
 		deploymentVersions = append(deploymentVersions, deploymentVersion)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return deploymentVersions, nil
 }

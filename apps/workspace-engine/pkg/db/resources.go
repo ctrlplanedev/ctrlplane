@@ -38,7 +38,10 @@ const RESOURCE_SELECT_QUERY = `
 `
 
 func GetResources(ctx context.Context, workspaceID string) ([]*pb.Resource, error) {
-	db := GetDB(ctx)
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
 	defer db.Release()
 
 	rows, err := db.Query(ctx, RESOURCE_SELECT_QUERY, workspaceID)
@@ -107,6 +110,9 @@ func GetResources(ctx context.Context, workspaceID string) ([]*pb.Resource, erro
 		}
 
 		resources = append(resources, &resource)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return resources, nil
 }
