@@ -80,8 +80,12 @@ func RunConsumer(ctx context.Context) error {
 	defer c.Close()
 
 	err = c.SubscribeTopics([]string{Topic}, func(c *kafka.Consumer, e kafka.Event) error {
-		switch e.(type) {
+		switch ev := e.(type) {
 		case *kafka.AssignedPartitions:
+			if err := c.Assign(ev.Partitions); err != nil {
+				log.Error("Failed to assign partitions", "error", err)
+				return err
+			}
 			if err := populateWorkspaceCache(ctx, c); err != nil {
 				log.Error("Failed to populate workspace cache", "error", err)
 				return err
