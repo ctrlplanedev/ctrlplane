@@ -9,7 +9,12 @@ import (
 var _ gob.GobEncoder = (*Store)(nil)
 var _ gob.GobDecoder = (*Store)(nil)
 
-func initSubStores(store *Store) {
+func New() *Store {
+	repo := repository.New()
+	store := &Store{
+		repo: repo,
+	}
+
 	store.Deployments = NewDeployments(store)
 	store.Environments = NewEnvironments(store)
 	store.Resources = NewResources(store)
@@ -21,23 +26,7 @@ func initSubStores(store *Store) {
 	store.Releases = NewReleases(store)
 	store.Jobs = NewJobs(store)
 	store.JobAgents = NewJobAgents(store)
-}
 
-func New() *Store {
-	repo := repository.New()
-	store := &Store{
-		repo: repo,
-	}
-
-	initSubStores(store)
-	return store
-}
-
-func NewWithRepository(repo *repository.Repository) *Store {
-	store := New()
-	store.repo = repo
-
-	initSubStores(store)
 	return store
 }
 
