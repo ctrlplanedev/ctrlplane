@@ -116,6 +116,12 @@ func RunConsumer(ctx context.Context) error {
 	log.Info("Started Kafka consumer for ctrlplane-events")
 	handler := events.NewEventHandler()
 
+	log.Info("Populating workspace cache")
+	if err := populateWorkspaceCache(ctx, c); err != nil {
+		log.Error("Failed to populate workspace cache", "error", err)
+		return err
+	}
+
 	for {
 		select {
 		case <-ctx.Done():

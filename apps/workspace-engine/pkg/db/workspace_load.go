@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"workspace-engine/pkg/workspace"
 
+	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"
 )
 
 func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
+	log.Info("Loading workspace", "workspaceID", workspaceID)
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -28,6 +30,7 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 		for _, resource := range dbResources {
 			ws.Resources().Upsert(ctx, resource)
 		}
+		log.Info("Loaded resources", "count", len(dbResources))
 		return nil
 	})
 
@@ -39,6 +42,7 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 		for _, deployment := range dbDeployments {
 			ws.Deployments().Upsert(ctx, deployment)
 		}
+		log.Info("Loaded deployments", "count", len(dbDeployments))
 		return nil
 	})
 
@@ -51,6 +55,7 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 		for _, deploymentVersion := range dbDeploymentVersions {
 			ws.DeploymentVersions().Upsert(deploymentVersion.DeploymentId, deploymentVersion)
 		}
+		log.Info("Loaded deployment versions", "count", len(dbDeploymentVersions))
 		return nil
 	})
 
@@ -63,6 +68,7 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 		for _, deploymentVariable := range dbDeploymentVariables {
 			ws.Deployments().Variables(deploymentVariable.DeploymentId)[deploymentVariable.Key] = deploymentVariable
 		}
+		log.Info("Loaded deployment variables", "count", len(dbDeploymentVariables))
 		return nil
 	})
 
@@ -74,6 +80,7 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 		for _, environment := range dbEnvironments {
 			ws.Environments().Upsert(ctx, environment)
 		}
+		log.Info("Loaded environments", "count", len(dbEnvironments))
 		return nil
 	})
 

@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
 
+	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -83,6 +84,8 @@ func initWorkspaces(ctx context.Context, assignedPartitions map[int32]struct{}, 
 			assignedWorkspaceIDs = append(assignedWorkspaceIDs, workspaceID)
 		}
 	}
+
+	log.Info("Assigned workspace IDs", "count", len(assignedWorkspaceIDs), "assignedWorkspaceIDs", assignedWorkspaceIDs)
 
 	return loadFullWorkspaces(ctx, assignedWorkspaceIDs)
 }
