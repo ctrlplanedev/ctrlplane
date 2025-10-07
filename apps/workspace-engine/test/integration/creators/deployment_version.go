@@ -28,7 +28,7 @@ func NewDeploymentVersion() *pb.DeploymentVersion {
 		Tag:            fmt.Sprintf("v1.0.%d", deploymentVersionCounter),
 		DeploymentId:   uuid.New().String(),
 		Status:         pb.DeploymentVersionStatus_DEPLOYMENT_VERSION_STATUS_READY,
-		CreatedAt:      time.Now().Format(time.RFC3339),
+		CreatedAt:      time.Now().Format(time.RFC3339Nano),
 		Config:         MustNewStructFromMap(map[string]any{}),
 		JobAgentConfig: MustNewStructFromMap(map[string]any{}),
 	}

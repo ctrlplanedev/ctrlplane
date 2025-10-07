@@ -158,7 +158,6 @@ func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Rel
 }
 
 // cancelOutdatedJobs cancels jobs for outdated releases (WRITES TO STORE).
-// Only cancels jobs for different releases - leaves jobs for the same release alone.
 func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Release) {
 	jobs := m.store.Jobs.GetJobsForReleaseTarget(desiredRelease.ReleaseTarget)
 

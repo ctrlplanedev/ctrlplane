@@ -30,6 +30,7 @@ func HandlePolicyUpdated(
 	if err := json.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
+
 	ws.Policies().Upsert(ctx, policy)
 
 	return nil

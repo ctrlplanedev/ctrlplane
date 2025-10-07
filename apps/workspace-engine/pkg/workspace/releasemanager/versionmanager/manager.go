@@ -1,11 +1,10 @@
 package versionmanager
 
 import (
+	"context"
 	"sort"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/store"
-
-	"context"
 )
 
 type Manager struct {
