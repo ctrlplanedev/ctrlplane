@@ -14,7 +14,6 @@ const DEPLOYMENT_VARIABLE_SELECT_QUERY = `
 		dv.key,
 		dv.description,
 		dv.deployment_id,
-		dv.default_value_id
 	FROM deployment_variable dv
 	INNER JOIN deployment d ON d.id = dv.deployment_id
 	INNER JOIN system s ON s.id = d.system_id
@@ -56,7 +55,6 @@ func scanDeploymentVariable(rows pgx.Rows) (*pb.DeploymentVariable, error) {
 		&deploymentVariable.Key,
 		&deploymentVariable.Description,
 		&deploymentVariable.DeploymentId,
-		new(interface{}), // scan but discard
 	)
 	if err != nil {
 		return nil, err

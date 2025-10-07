@@ -46,6 +46,12 @@ func getTopicPartitionCount(c *kafka.Consumer) (int, error) {
 	if !ok {
 		return 0, fmt.Errorf("topic %s not found", Topic)
 	}
+	if topicMeta.Error.Code() != kafka.ErrNoError {
+		return 0, fmt.Errorf("metadata error for topic %s: %w", Topic, topicMeta.Error)
+	}
+	if len(topicMeta.Partitions) == 0 {
+		return 0, fmt.Errorf("topic %s has no partitions", Topic)
+	}
 	return len(topicMeta.Partitions), nil
 }
 
@@ -90,6 +96,11 @@ func RunConsumer(ctx context.Context) error {
 				log.Error("Failed to populate workspace cache", "error", err)
 				return err
 			}
+		case *kafka.RevokedPartitions:
+			if err := c.Unassign(); err != nil {
+				log.Error("Failed to unassign partitions", "error", err)
+				return err
+			}
 		default:
 			return nil
 		}
@@ -103,12 +114,6 @@ func RunConsumer(ctx context.Context) error {
 	}
 
 	log.Info("Started Kafka consumer for ctrlplane-events")
-
-	if err := populateWorkspaceCache(ctx, c); err != nil {
-		log.Error("Failed to populate workspace cache", "error", err)
-		return err
-	}
-
 	handler := events.NewEventHandler()
 
 	for {
