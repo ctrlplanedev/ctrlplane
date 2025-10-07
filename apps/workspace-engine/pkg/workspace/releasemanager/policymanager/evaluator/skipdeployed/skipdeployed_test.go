@@ -1,0 +1,349 @@
+package skipdeployed
+
+import (
+	"context"
+	"testing"
+	"time"
+	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/workspace/store"
+)
+
+func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
+	// Setup: No previous jobs
+	st := store.New()
+	evaluator := NewSkipDeployedEvaluator(st)
+	
+	release := &pb.Release{
+		ReleaseTarget: &pb.ReleaseTarget{
+			DeploymentId:  "deployment-1",
+			EnvironmentId: "env-1",
+			ResourceId:    "resource-1",
+		},
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+	
+	// Act
+	result, err := evaluator.Evaluate(context.Background(), release.ReleaseTarget, release)
+	
+	// Assert
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	
+	if !result.Allowed {
+		t.Errorf("expected allowed when no previous deployment, got denied: %s", result.Reason)
+	}
+	
+	if result.Reason != "No previous deployment found" {
+		t.Errorf("expected 'No previous deployment found', got '%s'", result.Reason)
+	}
+}
+
+func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
+	// Setup: Previous deployment failed
+	st := store.New()
+	ctx := context.Background()
+	
+	releaseTarget := &pb.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+	
+	previousRelease := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+	
+	// Create failed job
+	st.Releases.Upsert(ctx, previousRelease)
+	st.Jobs.Upsert(ctx, &pb.Job{
+		Id:        "job-1",
+		ReleaseId: previousRelease.ID(),
+		Status:    pb.JobStatus_JOB_STATUS_FAILURE,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	})
+	
+	evaluator := NewSkipDeployedEvaluator(st)
+	
+	// Act: Try to deploy same release again
+	result, err := evaluator.Evaluate(ctx, releaseTarget, previousRelease)
+	
+	// Assert: Should allow retry of failed deployment
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	
+	if !result.Allowed {
+		t.Errorf("expected allowed to retry failed deployment, got denied: %s", result.Reason)
+	}
+	
+	if result.Details["previous_job_status"] != pb.JobStatus_JOB_STATUS_FAILURE.String() {
+		t.Errorf("expected previous_job_status to be FAILURE, got %v", result.Details["previous_job_status"])
+	}
+}
+
+func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
+	// Setup: Previous successful deployment of same release
+	st := store.New()
+	ctx := context.Background()
+	
+	releaseTarget := &pb.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+	
+	deployedRelease := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+	
+	// Create successful job
+	st.Releases.Upsert(ctx, deployedRelease)
+	st.Jobs.Upsert(ctx, &pb.Job{
+		Id:        "job-1",
+		ReleaseId: deployedRelease.ID(),
+		Status:    pb.JobStatus_JOB_STATUS_SUCCESSFUL,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	})
+	
+	evaluator := NewSkipDeployedEvaluator(st)
+	
+	// Act: Try to deploy same release again
+	result, err := evaluator.Evaluate(ctx, releaseTarget, deployedRelease)
+	
+	// Assert: Should deny re-deployment
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	
+	if result.Allowed {
+		t.Errorf("expected denied when already deployed, got allowed: %s", result.Reason)
+	}
+	
+	if result.Details["existing_job_id"] != "job-1" {
+		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
+	}
+	
+	if result.Details["version"] != "v1.0.0" {
+		t.Errorf("expected version=v1.0.0, got %v", result.Details["version"])
+	}
+}
+
+func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
+	// Setup: v1.0.0 deployed successfully, now deploying v2.0.0
+	st := store.New()
+	ctx := context.Background()
+	
+	releaseTarget := &pb.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+	
+	// v1.0.0 deployed
+	v1Release := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+	
+	st.Releases.Upsert(ctx, v1Release)
+	st.Jobs.Upsert(ctx, &pb.Job{
+		Id:        "job-v1",
+		ReleaseId: v1Release.ID(),
+		Status:    pb.JobStatus_JOB_STATUS_SUCCESSFUL,
+		CreatedAt: time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+	})
+	
+	// v2.0.0 to deploy
+	v2Release := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-2",
+			Tag: "v2.0.0",
+		},
+	}
+	st.Releases.Upsert(ctx, v2Release)
+	
+	evaluator := NewSkipDeployedEvaluator(st)
+	
+	// Act: Try to deploy v2.0.0
+	result, err := evaluator.Evaluate(ctx, releaseTarget, v2Release)
+	
+	// Assert: Should allow deploying new version
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	
+	if !result.Allowed {
+		t.Errorf("expected allowed for new version, got denied: %s", result.Reason)
+	}
+	
+	if result.Details["previous_release_id"] != v1Release.ID() {
+		t.Errorf("expected previous_release_id=%s, got %v", v1Release.ID(), result.Details["previous_release_id"])
+	}
+}
+
+func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
+	// Setup: Previous job is in progress (not successful yet)
+	st := store.New()
+	ctx := context.Background()
+	
+	releaseTarget := &pb.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+	
+	release := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+	
+	// Create in-progress job
+	st.Releases.Upsert(ctx, release)
+	st.Jobs.Upsert(ctx, &pb.Job{
+		Id:        "job-1",
+		ReleaseId: release.ID(),
+		Status:    pb.JobStatus_JOB_STATUS_IN_PROGRESS,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	})
+	
+	evaluator := NewSkipDeployedEvaluator(st)
+	
+	// Act: Check same release
+	result, err := evaluator.Evaluate(ctx, releaseTarget, release)
+	
+	// Assert: Should allow (not successful yet)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	
+	if !result.Allowed {
+		t.Errorf("expected allowed when job in progress (not successful), got denied: %s", result.Reason)
+	}
+}
+
+func TestSkipDeployedEvaluator_CancelledJobAllowsRedeploy(t *testing.T) {
+	// Setup: Previous job was cancelled
+	st := store.New()
+	ctx := context.Background()
+	
+	releaseTarget := &pb.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+	
+	release := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+	
+	// Create cancelled job
+	st.Releases.Upsert(ctx, release)
+	st.Jobs.Upsert(ctx, &pb.Job{
+		Id:        "job-1",
+		ReleaseId: release.ID(),
+		Status:    pb.JobStatus_JOB_STATUS_CANCELLED,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	})
+	
+	evaluator := NewSkipDeployedEvaluator(st)
+	
+	// Act: Try to deploy same release again
+	result, err := evaluator.Evaluate(ctx, releaseTarget, release)
+	
+	// Assert: Should allow retry of cancelled deployment
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	
+	if !result.Allowed {
+		t.Errorf("expected allowed to retry cancelled deployment, got denied: %s", result.Reason)
+	}
+}
+
+func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
+	// Setup: Same version, different variables = different release
+	st := store.New()
+	ctx := context.Background()
+	
+	releaseTarget := &pb.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+	
+	// Deploy with variables: {replicas: 3}
+	release1 := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+		Variables: map[string]*pb.VariableValue{
+			"replicas": {Value: &pb.VariableValue_Int64Value{Int64Value: 3}},
+		},
+	}
+	
+	st.Releases.Upsert(ctx, release1)
+	st.Jobs.Upsert(ctx, &pb.Job{
+		Id:        "job-1",
+		ReleaseId: release1.ID(),
+		Status:    pb.JobStatus_JOB_STATUS_SUCCESSFUL,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	})
+	
+	// Deploy same version with different variables: {replicas: 5}
+	release2 := &pb.Release{
+		ReleaseTarget: releaseTarget,
+		Version: &pb.DeploymentVersion{
+			Id:  "version-1",  // Same version!
+			Tag: "v1.0.0",
+		},
+		Variables: map[string]*pb.VariableValue{
+			"replicas": {Value: &pb.VariableValue_Int64Value{Int64Value: 5}},  // Different!
+		},
+	}
+	st.Releases.Upsert(ctx, release2)
+	
+	evaluator := NewSkipDeployedEvaluator(st)
+	
+	// Act: Try to deploy with different variables
+	result, err := evaluator.Evaluate(ctx, releaseTarget, release2)
+	
+	// Assert: Should allow (different release ID due to different variables)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	
+	if !result.Allowed {
+		t.Errorf("expected allowed for different variables, got denied: %s", result.Reason)
+	}
+	
+	// Verify release IDs are different
+	if release1.ID() == release2.ID() {
+		t.Error("expected different release IDs for different variables")
+	}
+}
+

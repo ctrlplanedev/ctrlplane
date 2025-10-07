@@ -236,19 +236,12 @@ func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 	// Step 1: Get candidate versions (sorted newest to oldest)
 	candidateVersions := m.versionManager.GetCandidateVersions(ctx, releaseTarget)
 	if len(candidateVersions) == 0 {
-		span.SetAttributes(
-			attribute.Int("candidates.count", 0),
-			attribute.String("skip_reason", "no_versions_available"),
-		)
 		return nil, nil
 	}
-
-	span.SetAttributes(attribute.Int("candidates.count", len(candidateVersions)))
 
 	// Step 2: Find first version that passes ALL policies
 	deployableVersion := m.selectDeployableVersion(ctx, candidateVersions, releaseTarget, span)
 	if deployableVersion == nil {
-		span.SetAttributes(attribute.String("skip_reason", "all_versions_blocked_by_policies"))
 		return nil, nil
 	}
 
@@ -259,28 +252,16 @@ func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 		return nil, err
 	}
 
-	span.SetAttributes(attribute.Int("variables.count", len(resolvedVariables)))
-
 	// Step 4: Construct the desired release
 	desiredRelease := buildRelease(releaseTarget, deployableVersion, resolvedVariables)
 
-	// Step 5: Check if this release is already deployed
-	// If the most recent successful job is for this exact release, no deployment needed
-	if m.isAlreadyDeployed(ctx, desiredRelease) {
-		span.SetAttributes(
-			attribute.String("skip_reason", "already_deployed"),
-			attribute.String("deployed.version", deployableVersion.Tag),
-		)
-		return nil, nil
+	policyDecision, err := m.policyManager.EvaluateRelease(ctx, desiredRelease)
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
 	}
 
-	// Step 6: Check if job already in progress for this release
-	// If there's a pending/in-progress job for this exact release, no new job needed
-	if m.hasJobInProgress(desiredRelease) {
-		span.SetAttributes(
-			attribute.String("skip_reason", "job_already_in_progress"),
-			attribute.String("version", deployableVersion.Tag),
-		)
+	if !policyDecision.CanDeploy() {
 		return nil, nil
 	}
 
@@ -302,7 +283,7 @@ func (m *Manager) selectDeployableVersion(
 	for _, version := range candidateVersions {
 		versionsEvaluated++
 		
-		policyDecision, err := m.policyManager.Evaluate(ctx, version, releaseTarget)
+		policyDecision, err := m.policyManager.EvaluateVersion(ctx, version, releaseTarget)
 		if err != nil {
 			span.RecordError(err)
 			continue // Skip this version on error

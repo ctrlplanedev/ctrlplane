@@ -8,37 +8,40 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
+var _ results.VersionRuleEvaluator = &AnyApprovalEvaluator{}
+
 type AnyApprovalEvaluator struct {
 	store *store.Store
+	rule *pb.AnyApprovalRule
 }
 
-func NewAnyApprovalEvaluator(store *store.Store) *AnyApprovalEvaluator {
+func NewAnyApprovalEvaluator(store *store.Store, rule *pb.AnyApprovalRule) *AnyApprovalEvaluator {
 	return &AnyApprovalEvaluator{
 		store: store,
+		rule: rule,
 	}
 }
 
 func (m *AnyApprovalEvaluator) Evaluate(
 	ctx context.Context,
-	rule *pb.AnyApprovalRule,
-	version *pb.DeploymentVersion,
 	releaseTarget *pb.ReleaseTarget,
+	version *pb.DeploymentVersion,
 ) (*results.RuleEvaluationResult, error) {
 	if version.Id == "" {
 		return results.
 			NewDeniedResult("Version ID is required").
 			WithDetail("version_id", version.Id).
-			WithDetail("min_approvals", rule.GetMinApprovals()), nil
+			WithDetail("min_approvals", m.rule.GetMinApprovals()), nil
 	}
 
-	if rule.GetMinApprovals() <= 0 {
+	if m.rule.GetMinApprovals() <= 0 {
 		return results.
 			NewAllowedResult("No approvals required").
-			WithDetail("min_approvals", rule.GetMinApprovals()), nil
+			WithDetail("min_approvals", m.rule.GetMinApprovals()), nil
 	}
 
 	approvers := m.store.UserApprovalRecords.GetApprovers(version.Id)
-	minApprovals := int(rule.GetMinApprovals())
+	minApprovals := int(m.rule.GetMinApprovals())
 	if len(approvers) >= minApprovals {
 		return results.
 			NewAllowedResult(

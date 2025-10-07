@@ -1,5 +1,33 @@
 package results
 
+import (
+	"context"
+	"workspace-engine/pkg/pb"
+)
+
+type VersionRuleEvaluator interface {
+	Evaluate(
+		ctx context.Context,
+		releaseTarget *pb.ReleaseTarget,
+		version *pb.DeploymentVersion,
+	) (*RuleEvaluationResult, error)
+}
+
+type ReleaseRuleEvaluator interface {
+	Evaluate(
+		ctx context.Context,
+		releaseTarget *pb.ReleaseTarget,
+		release *pb.Release,
+	) (*RuleEvaluationResult, error)
+}
+
+type ReleaseTargetRuleEvaluator interface {
+	Evaluate(
+		ctx context.Context,
+		releaseTarget *pb.ReleaseTarget,
+	) (*RuleEvaluationResult, error)
+}
+
 // EvaluationResult represents the outcome of evaluating a policy rule.
 type RuleEvaluationResult struct {
 	// Allowed indicates whether the rule permits the deployment
