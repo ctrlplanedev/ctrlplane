@@ -20,7 +20,7 @@ const DEPLOYMENT_VARIABLE_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func GetDeploymentVariables(ctx context.Context, workspaceID string) ([]*pb.DeploymentVariable, error) {
+func getDeploymentVariables(ctx context.Context, workspaceID string) ([]*pb.DeploymentVariable, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err

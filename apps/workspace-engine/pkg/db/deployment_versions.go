@@ -26,7 +26,7 @@ const DEPLOYMENT_VERSION_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func GetDeploymentVersions(ctx context.Context, workspaceID string) ([]*pb.DeploymentVersion, error) {
+func getDeploymentVersions(ctx context.Context, workspaceID string) ([]*pb.DeploymentVersion, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err

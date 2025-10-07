@@ -39,7 +39,7 @@ const RESOURCE_SELECT_QUERY = `
 	GROUP BY r.id, r.version, r.name, r.kind, r.identifier, r.provider_id, r.workspace_id, r.config, r.created_at, r.locked_at, r.updated_at, r.deleted_at
 `
 
-func GetResources(ctx context.Context, workspaceID string) ([]*pb.Resource, error) {
+func getResources(ctx context.Context, workspaceID string) ([]*pb.Resource, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err

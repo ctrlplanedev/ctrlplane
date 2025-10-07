@@ -21,7 +21,7 @@ const DEPLOYMENT_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func GetDeployments(ctx context.Context, workspaceID string) ([]*pb.Deployment, error) {
+func getDeployments(ctx context.Context, workspaceID string) ([]*pb.Deployment, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err

@@ -20,7 +20,7 @@ const ENVIRONMENT_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func GetEnvironments(ctx context.Context, workspaceID string) ([]*pb.Environment, error) {
+func getEnvironments(ctx context.Context, workspaceID string) ([]*pb.Environment, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err

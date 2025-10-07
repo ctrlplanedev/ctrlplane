@@ -9,7 +9,7 @@ import (
 )
 
 func loadResources(ctx context.Context, ws *workspace.Workspace) error {
-	dbResources, err := GetResources(ctx, ws.ID)
+	dbResources, err := getResources(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get resources: %w", err)
 	}
@@ -21,7 +21,7 @@ func loadResources(ctx context.Context, ws *workspace.Workspace) error {
 }
 
 func loadDeployments(ctx context.Context, ws *workspace.Workspace) error {
-	dbDeployments, err := GetDeployments(ctx, ws.ID)
+	dbDeployments, err := getDeployments(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get deployments: %w", err)
 	}
@@ -33,7 +33,7 @@ func loadDeployments(ctx context.Context, ws *workspace.Workspace) error {
 }
 
 func loadDeploymentVersions(ctx context.Context, ws *workspace.Workspace) error {
-	dbDeploymentVersions, err := GetDeploymentVersions(ctx, ws.ID)
+	dbDeploymentVersions, err := getDeploymentVersions(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get deployment versions: %w", err)
 	}
@@ -45,7 +45,7 @@ func loadDeploymentVersions(ctx context.Context, ws *workspace.Workspace) error 
 }
 
 func loadDeploymentVariables(ctx context.Context, ws *workspace.Workspace) error {
-	dbDeploymentVariables, err := GetDeploymentVariables(ctx, ws.ID)
+	dbDeploymentVariables, err := getDeploymentVariables(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get deployment variables: %w", err)
 	}
@@ -57,7 +57,7 @@ func loadDeploymentVariables(ctx context.Context, ws *workspace.Workspace) error
 }
 
 func loadEnvironments(ctx context.Context, ws *workspace.Workspace) error {
-	dbEnvironments, err := GetEnvironments(ctx, ws.ID)
+	dbEnvironments, err := getEnvironments(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get environments: %w", err)
 	}
