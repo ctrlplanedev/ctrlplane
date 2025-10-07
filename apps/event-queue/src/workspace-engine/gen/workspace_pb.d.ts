@@ -669,11 +669,6 @@ export declare type ReleaseTarget = Message<"workspace.ReleaseTarget"> & {
    * @generated from field: string deployment_id = 4;
    */
   deploymentId: string;
-
-  /**
-   * @generated from field: string created_at = 5;
-   */
-  createdAt: string;
 };
 
 /**

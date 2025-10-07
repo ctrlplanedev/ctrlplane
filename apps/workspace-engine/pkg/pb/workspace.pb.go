@@ -1478,7 +1478,6 @@ type ReleaseTarget struct {
 	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
 	EnvironmentId string                 `protobuf:"bytes,3,opt,name=environment_id,json=environmentId,proto3" json:"environment_id,omitempty"`
 	DeploymentId  string                 `protobuf:"bytes,4,opt,name=deployment_id,json=deploymentId,proto3" json:"deployment_id,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1537,13 +1536,6 @@ func (x *ReleaseTarget) GetEnvironmentId() string {
 func (x *ReleaseTarget) GetDeploymentId() string {
 	if x != nil {
 		return x.DeploymentId
-	}
-	return ""
-}
-
-func (x *ReleaseTarget) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
 	}
 	return ""
 }
@@ -2720,15 +2712,13 @@ const file_workspace_proto_rawDesc = "" +
 	"\fcompleted_at\x18\r \x01(\tH\x02R\vcompletedAt\x88\x01\x01B\x0e\n" +
 	"\f_external_idB\r\n" +
 	"\v_started_atB\x0f\n" +
-	"\r_completed_at\"\xab\x01\n" +
+	"\r_completed_at\"\x8c\x01\n" +
 	"\rReleaseTarget\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vresource_id\x18\x02 \x01(\tR\n" +
 	"resourceId\x12%\n" +
 	"\x0eenvironment_id\x18\x03 \x01(\tR\renvironmentId\x12#\n" +
-	"\rdeployment_id\x18\x04 \x01(\tR\fdeploymentId\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\x05 \x01(\tR\tcreatedAt\"\xa1\x02\n" +
+	"\rdeployment_id\x18\x04 \x01(\tR\fdeploymentId\"\xa1\x02\n" +
 	"\rVariableValue\x12#\n" +
 	"\fstring_value\x18\x02 \x01(\tH\x00R\vstringValue\x12\x1f\n" +
 	"\n" +

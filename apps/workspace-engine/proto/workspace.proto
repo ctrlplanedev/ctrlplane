@@ -205,7 +205,6 @@ message ReleaseTarget {
   string resource_id = 2;
   string environment_id = 3;
   string deployment_id = 4;
-  string created_at = 5;
 }
 
 message VariableValue {

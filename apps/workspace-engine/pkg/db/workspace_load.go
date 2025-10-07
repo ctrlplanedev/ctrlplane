@@ -92,6 +92,18 @@ func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
 	return nil
 }
 
+func loadReleases(ctx context.Context, ws *workspace.Workspace) error {
+	dbReleases, err := getReleases(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get releases: %w", err)
+	}
+	for _, release := range dbReleases {
+		ws.Releases().Upsert(ctx, release)
+	}
+	log.Info("Loaded releases", "count", len(dbReleases))
+	return nil
+}
+
 func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
 	log.Info("Loading workspace", "workspaceID", workspaceID)
 	db, err := GetDB(ctx)
@@ -128,6 +140,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 
 	if err := loadPolicies(ctx, ws); err != nil {
 		return nil, fmt.Errorf("failed to load policies: %w", err)
+	}
+
+	if err := loadReleases(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load releases: %w", err)
 	}
 
 	return ws, nil
