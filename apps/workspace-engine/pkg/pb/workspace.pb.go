@@ -7,13 +7,12 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -2203,7 +2202,6 @@ type System struct {
 	WorkspaceId   string                 `protobuf:"bytes,2,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2262,13 +2260,6 @@ func (x *System) GetName() string {
 func (x *System) GetDescription() string {
 	if x != nil {
 		return x.Description
-	}
-	return ""
-}
-
-func (x *System) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
 	}
 	return ""
 }
@@ -2799,14 +2790,12 @@ const file_workspace_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\t \x01(\tR\tcreatedAtB\n" +
 	"\n" +
-	"\b_message\"\x90\x01\n" +
+	"\b_message\"q\n" +
 	"\x06System\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\x05 \x01(\tR\tcreatedAt\"\xc6\x01\n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xc6\x01\n" +
 	"\x1cComputeReleaseTargetsRequest\x12:\n" +
 	"\fenvironments\x18\x01 \x03(\v2\x16.workspace.EnvironmentR\fenvironments\x127\n" +
 	"\vdeployments\x18\x02 \x03(\v2\x15.workspace.DeploymentR\vdeployments\x121\n" +

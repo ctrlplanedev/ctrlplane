@@ -290,7 +290,6 @@ message System {
   string workspace_id = 2;
   string name = 3;
   string description = 4;
-  string created_at = 5;
 }
 
 message ComputeReleaseTargetsRequest {

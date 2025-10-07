@@ -2,7 +2,6 @@ package creators
 
 import (
 	"fmt"
-	"time"
 	"workspace-engine/pkg/pb"
 
 	"github.com/google/uuid"
@@ -20,7 +19,6 @@ func NewSystem(workspaceID string) *pb.System {
 		WorkspaceId: workspaceID,
 		Name:        fmt.Sprintf("system-%s", idSubstring),
 		Description: fmt.Sprintf("Test system %s", idSubstring),
-		CreatedAt:   time.Now().Format(time.RFC3339),
 	}
 
 	return s

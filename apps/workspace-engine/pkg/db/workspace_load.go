@@ -8,6 +8,18 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+func loadSystems(ctx context.Context, ws *workspace.Workspace) error {
+	dbSystems, err := getSystems(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get systems: %w", err)
+	}
+	for _, system := range dbSystems {
+		ws.Systems().Upsert(ctx, system)
+	}
+	log.Info("Loaded systems", "count", len(dbSystems))
+	return nil
+}
+
 func loadResources(ctx context.Context, ws *workspace.Workspace) error {
 	dbResources, err := getResources(ctx, ws.ID)
 	if err != nil {
@@ -89,6 +101,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 	defer db.Release()
 
 	ws := workspace.New(workspaceID)
+
+	if err := loadSystems(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load systems: %w", err)
+	}
 
 	if err := loadResources(ctx, ws); err != nil {
 		return nil, fmt.Errorf("failed to load resources: %w", err)
