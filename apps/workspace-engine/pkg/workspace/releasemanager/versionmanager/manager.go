@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/versionmanager")
@@ -28,6 +29,9 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *pb.Re
 	defer span.End()
 
 	versions := m.store.DeploymentVersions.Items()
+	span.SetAttributes(
+		attribute.Int("versions.count", len(versions)),
+	)
 
 	// Filter versions for the given deployment
 	filtered := make([]*pb.DeploymentVersion, 0, len(versions))
