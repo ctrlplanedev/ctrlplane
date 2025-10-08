@@ -66,17 +66,6 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 		}(change.NewTarget)
 	}
 
-	// Process updated release targets
-	for _, change := range changes.Changes.Updated {
-		wg.Add(1)
-		go func(target *pb.ReleaseTarget) {
-			defer wg.Done()
-			if err := m.ProcessReleaseTarget(ctx, target); err != nil {
-				log.Warn("error processing updated release target", "error", err.Error())
-			}
-		}(change.NewTarget)
-	}
-
 	// Cancel jobs for removed release targets
 	for _, change := range changes.Changes.Removed {
 		wg.Add(1)

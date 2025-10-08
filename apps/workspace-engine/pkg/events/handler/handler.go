@@ -151,7 +151,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	duration := time.Since(startTime)
 
 	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
-	span.SetAttributes(attribute.Int("release-target.updated", len(changes.Changes.Updated)))
 	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
 	span.SetAttributes(attribute.Int64("event.processing_duration_ms", duration.Milliseconds()))
 
