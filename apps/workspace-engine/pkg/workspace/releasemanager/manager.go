@@ -41,7 +41,6 @@ type ChangeType string
 const (
 	ChangeTypeAdded   ChangeType = "added"
 	ChangeTypeRemoved ChangeType = "removed"
-	ChangeTypeUpdated ChangeType = "updated"
 )
 
 // ReleaseTargetChange represents a detected change to a release target
@@ -52,7 +51,6 @@ type ReleaseTargetChange struct {
 
 type Changes struct {
 	Added   []*ReleaseTargetChange
-	Updated []*ReleaseTargetChange
 	Removed []*ReleaseTargetChange
 }
 
@@ -83,29 +81,19 @@ func (m *Manager) Reconcile(ctx context.Context) *SyncResult {
 	result := &SyncResult{
 		Changes: Changes{
 			Added:   make([]*ReleaseTargetChange, 0, 100),
-			Updated: make([]*ReleaseTargetChange, 0, 100),
 			Removed: make([]*ReleaseTargetChange, 0, 100),
 		},
 	}
 
-	// Detect added and updated targets
+	// Detect added targets
 	for key, target := range targets {
-		oldTarget, existed := m.currentTargets[key]
+		_, existed := m.currentTargets[key]
 
 		if !existed {
 			// New target added
 			change := &ReleaseTargetChange{NewTarget: target, OldTarget: nil}
 			result.Changes.Added = append(result.Changes.Added, change)
 			continue
-		}
-
-		// Target was updated - check if meaningful changes occurred
-		if HasReleaseTargetChanged(ctx, m.store, oldTarget, target) {
-			change := &ReleaseTargetChange{
-				NewTarget: target,
-				OldTarget: oldTarget,
-			}
-			result.Changes.Updated = append(result.Changes.Updated, change)
 		}
 	}
 
@@ -121,13 +109,8 @@ func (m *Manager) Reconcile(ctx context.Context) *SyncResult {
 
 	span.SetAttributes(
 		attribute.Int("changes.added", len(result.Changes.Added)),
-		attribute.Int("changes.updated", len(result.Changes.Updated)),
 		attribute.Int("changes.removed", len(result.Changes.Removed)),
 	)
 
 	return result
-}
-
-func HasReleaseTargetChanged(ctx context.Context, store *store.Store, old, new *pb.ReleaseTarget) bool {
-	return true
 }
