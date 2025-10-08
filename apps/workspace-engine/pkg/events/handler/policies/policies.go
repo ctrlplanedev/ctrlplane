@@ -18,7 +18,9 @@ func HandlePolicyCreated(
 	if err := protojson.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
+
 	ws.Policies().Upsert(ctx, policy)
+
 	return nil
 }
 
