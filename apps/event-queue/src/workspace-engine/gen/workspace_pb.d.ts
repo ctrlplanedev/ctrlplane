@@ -2,8 +2,13 @@
 // @generated from file workspace.proto (package workspace, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { JsonObject, Message } from "@bufbuild/protobuf";
+import type {
+  GenEnum,
+  GenFile,
+  GenMessage,
+  GenService,
+} from "@bufbuild/protobuf/codegenv2";
 import type { NullValue } from "@bufbuild/protobuf/wkt";
 
 /**
@@ -60,27 +65,28 @@ export declare const PolicySchema: GenMessage<Policy>;
 /**
  * @generated from message workspace.PolicyTargetSelector
  */
-export declare type PolicyTargetSelector = Message<"workspace.PolicyTargetSelector"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
+export declare type PolicyTargetSelector =
+  Message<"workspace.PolicyTargetSelector"> & {
+    /**
+     * @generated from field: string id = 1;
+     */
+    id: string;
 
-  /**
-   * @generated from field: optional google.protobuf.Struct deployment_selector = 3;
-   */
-  deploymentSelector?: JsonObject;
+    /**
+     * @generated from field: optional google.protobuf.Struct deployment_selector = 3;
+     */
+    deploymentSelector?: JsonObject;
 
-  /**
-   * @generated from field: optional google.protobuf.Struct environment_selector = 4;
-   */
-  environmentSelector?: JsonObject;
+    /**
+     * @generated from field: optional google.protobuf.Struct environment_selector = 4;
+     */
+    environmentSelector?: JsonObject;
 
-  /**
-   * @generated from field: optional google.protobuf.Struct resource_selector = 5;
-   */
-  resourceSelector?: JsonObject;
-};
+    /**
+     * @generated from field: optional google.protobuf.Struct resource_selector = 5;
+     */
+    resourceSelector?: JsonObject;
+  };
 
 /**
  * Describes the message workspace.PolicyTargetSelector.
@@ -110,13 +116,15 @@ export declare type PolicyRule = Message<"workspace.PolicyRule"> & {
   /**
    * @generated from oneof workspace.PolicyRule.rule
    */
-  rule: {
-    /**
-     * @generated from field: workspace.AnyApprovalRule any_approval = 4;
-     */
-    value: AnyApprovalRule;
-    case: "anyApproval";
-  } | { case: undefined; value?: undefined };
+  rule:
+    | {
+        /**
+         * @generated from field: workspace.AnyApprovalRule any_approval = 4;
+         */
+        value: AnyApprovalRule;
+        case: "anyApproval";
+      }
+    | { case: undefined; value?: undefined };
 };
 
 /**
@@ -128,32 +136,33 @@ export declare const PolicyRuleSchema: GenMessage<PolicyRule>;
 /**
  * @generated from message workspace.UserApprovalRecord
  */
-export declare type UserApprovalRecord = Message<"workspace.UserApprovalRecord"> & {
-  /**
-   * @generated from field: string user_id = 1;
-   */
-  userId: string;
+export declare type UserApprovalRecord =
+  Message<"workspace.UserApprovalRecord"> & {
+    /**
+     * @generated from field: string user_id = 1;
+     */
+    userId: string;
 
-  /**
-   * @generated from field: string version_id = 2;
-   */
-  versionId: string;
+    /**
+     * @generated from field: string version_id = 2;
+     */
+    versionId: string;
 
-  /**
-   * @generated from field: workspace.ApprovalStatus status = 3;
-   */
-  status: ApprovalStatus;
+    /**
+     * @generated from field: workspace.ApprovalStatus status = 3;
+     */
+    status: ApprovalStatus;
 
-  /**
-   * @generated from field: optional string reason = 4;
-   */
-  reason?: string;
+    /**
+     * @generated from field: optional string reason = 4;
+     */
+    reason?: string;
 
-  /**
-   * @generated from field: string created_at = 5;
-   */
-  createdAt: string;
-};
+    /**
+     * @generated from field: string created_at = 5;
+     */
+    createdAt: string;
+  };
 
 /**
  * Describes the message workspace.UserApprovalRecord.
@@ -283,29 +292,30 @@ export declare const ConcurrencyRuleSchema: GenMessage<ConcurrencyRule>;
  *
  * @generated from message workspace.EnvironmentVersionRolloutRule
  */
-export declare type EnvironmentVersionRolloutRule = Message<"workspace.EnvironmentVersionRolloutRule"> & {
-  /**
-   * Ordered list of environment IDs for progressive rollout
-   *
-   * @generated from field: repeated string environment_order = 1;
-   */
-  environmentOrder: string[];
+export declare type EnvironmentVersionRolloutRule =
+  Message<"workspace.EnvironmentVersionRolloutRule"> & {
+    /**
+     * Ordered list of environment IDs for progressive rollout
+     *
+     * @generated from field: repeated string environment_order = 1;
+     */
+    environmentOrder: string[];
 
-  /**
-   * Time to wait between environment deployments (in seconds)
-   *
-   * @generated from field: int32 wait_seconds = 2;
-   */
-  waitSeconds: number;
+    /**
+     * Time to wait between environment deployments (in seconds)
+     *
+     * @generated from field: int32 wait_seconds = 2;
+     */
+    waitSeconds: number;
 
-  /**
-   * Optional success threshold (0.0 to 1.0) that must be met before proceeding
-   * Example: 0.95 means 95% of deployments must succeed
-   *
-   * @generated from field: optional double success_threshold = 3;
-   */
-  successThreshold?: number;
-};
+    /**
+     * Optional success threshold (0.0 to 1.0) that must be met before proceeding
+     * Example: 0.95 means 95% of deployments must succeed
+     *
+     * @generated from field: optional double success_threshold = 3;
+     */
+    successThreshold?: number;
+  };
 
 /**
  * Describes the message workspace.EnvironmentVersionRolloutRule.
@@ -339,14 +349,15 @@ export declare const MaxRetriesRuleSchema: GenMessage<MaxRetriesRule>;
  *
  * @generated from message workspace.DeploymentVersionSelectorRule
  */
-export declare type DeploymentVersionSelectorRule = Message<"workspace.DeploymentVersionSelectorRule"> & {
-  /**
-   * Selector for filtering deployment versions
-   *
-   * @generated from field: optional google.protobuf.Struct version_selector = 1;
-   */
-  versionSelector?: JsonObject;
-};
+export declare type DeploymentVersionSelectorRule =
+  Message<"workspace.DeploymentVersionSelectorRule"> & {
+    /**
+     * Selector for filtering deployment versions
+     *
+     * @generated from field: optional google.protobuf.Struct version_selector = 1;
+     */
+    versionSelector?: JsonObject;
+  };
 
 /**
  * Describes the message workspace.DeploymentVersionSelectorRule.
@@ -684,43 +695,50 @@ export declare type VariableValue = Message<"workspace.VariableValue"> & {
   /**
    * @generated from oneof workspace.VariableValue.value
    */
-  value: {
-    /**
-     * @generated from field: string string_value = 2;
-     */
-    value: string;
-    case: "stringValue";
-  } | {
-    /**
-     * @generated from field: bool bool_value = 3;
-     */
-    value: boolean;
-    case: "boolValue";
-  } | {
-    /**
-     * @generated from field: double double_value = 4;
-     */
-    value: number;
-    case: "doubleValue";
-  } | {
-    /**
-     * @generated from field: int64 int64_value = 5;
-     */
-    value: bigint;
-    case: "int64Value";
-  } | {
-    /**
-     * @generated from field: google.protobuf.Struct object_value = 10;
-     */
-    value: JsonObject;
-    case: "objectValue";
-  } | {
-    /**
-     * @generated from field: google.protobuf.NullValue null_value = 11;
-     */
-    value: NullValue;
-    case: "nullValue";
-  } | { case: undefined; value?: undefined };
+  value:
+    | {
+        /**
+         * @generated from field: string string_value = 2;
+         */
+        value: string;
+        case: "stringValue";
+      }
+    | {
+        /**
+         * @generated from field: bool bool_value = 3;
+         */
+        value: boolean;
+        case: "boolValue";
+      }
+    | {
+        /**
+         * @generated from field: double double_value = 4;
+         */
+        value: number;
+        case: "doubleValue";
+      }
+    | {
+        /**
+         * @generated from field: int64 int64_value = 5;
+         */
+        value: bigint;
+        case: "int64Value";
+      }
+    | {
+        /**
+         * @generated from field: google.protobuf.Struct object_value = 10;
+         */
+        value: JsonObject;
+        case: "objectValue";
+      }
+    | {
+        /**
+         * @generated from field: google.protobuf.NullValue null_value = 11;
+         */
+        value: NullValue;
+        case: "nullValue";
+      }
+    | { case: undefined; value?: undefined };
 };
 
 /**
@@ -768,37 +786,38 @@ export declare const ReleaseSchema: GenMessage<Release>;
 /**
  * @generated from message workspace.DeploymentVariable
  */
-export declare type DeploymentVariable = Message<"workspace.DeploymentVariable"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
+export declare type DeploymentVariable =
+  Message<"workspace.DeploymentVariable"> & {
+    /**
+     * @generated from field: string id = 1;
+     */
+    id: string;
 
-  /**
-   * @generated from field: string key = 2;
-   */
-  key: string;
+    /**
+     * @generated from field: string key = 2;
+     */
+    key: string;
 
-  /**
-   * @generated from field: string variable_id = 3;
-   */
-  variableId: string;
+    /**
+     * @generated from field: string variable_id = 3;
+     */
+    variableId: string;
 
-  /**
-   * @generated from field: optional string description = 4;
-   */
-  description?: string;
+    /**
+     * @generated from field: optional string description = 4;
+     */
+    description?: string;
 
-  /**
-   * @generated from field: string deployment_id = 5;
-   */
-  deploymentId: string;
+    /**
+     * @generated from field: string deployment_id = 5;
+     */
+    deploymentId: string;
 
-  /**
-   * @generated from field: workspace.VariableValue default_value = 6;
-   */
-  defaultValue?: VariableValue;
-};
+    /**
+     * @generated from field: workspace.VariableValue default_value = 6;
+     */
+    defaultValue?: VariableValue;
+  };
 
 /**
  * Describes the message workspace.DeploymentVariable.
@@ -809,55 +828,60 @@ export declare const DeploymentVariableSchema: GenMessage<DeploymentVariable>;
 /**
  * @generated from message workspace.DeploymentVariableValue
  */
-export declare type DeploymentVariableValue = Message<"workspace.DeploymentVariableValue"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: string deployment_variable_id = 3;
-   */
-  deploymentVariableId: string;
-
-  /**
-   * @generated from field: int64 priority = 4;
-   */
-  priority: bigint;
-
-  /**
-   * @generated from field: workspace.VariableValue default_value = 5;
-   */
-  defaultValue?: VariableValue;
-
-  /**
-   * @generated from field: optional google.protobuf.Struct resource_selector = 6;
-   */
-  resourceSelector?: JsonObject;
-
-  /**
-   * @generated from oneof workspace.DeploymentVariableValue.value
-   */
-  value: {
+export declare type DeploymentVariableValue =
+  Message<"workspace.DeploymentVariableValue"> & {
     /**
-     * @generated from field: workspace.VariableValue direct_value = 7;
+     * @generated from field: string id = 1;
      */
-    value: VariableValue;
-    case: "directValue";
-  } | {
+    id: string;
+
     /**
-     * @generated from field: workspace.ReferenceVariableValue reference_value = 8;
+     * @generated from field: string deployment_variable_id = 3;
      */
-    value: ReferenceVariableValue;
-    case: "referenceValue";
-  } | {
+    deploymentVariableId: string;
+
     /**
-     * @generated from field: workspace.SensitiveVariableValue sensitive_value = 9;
+     * @generated from field: int64 priority = 4;
      */
-    value: SensitiveVariableValue;
-    case: "sensitiveValue";
-  } | { case: undefined; value?: undefined };
-};
+    priority: bigint;
+
+    /**
+     * @generated from field: workspace.VariableValue default_value = 5;
+     */
+    defaultValue?: VariableValue;
+
+    /**
+     * @generated from field: optional google.protobuf.Struct resource_selector = 6;
+     */
+    resourceSelector?: JsonObject;
+
+    /**
+     * @generated from oneof workspace.DeploymentVariableValue.value
+     */
+    value:
+      | {
+          /**
+           * @generated from field: workspace.VariableValue direct_value = 7;
+           */
+          value: VariableValue;
+          case: "directValue";
+        }
+      | {
+          /**
+           * @generated from field: workspace.ReferenceVariableValue reference_value = 8;
+           */
+          value: ReferenceVariableValue;
+          case: "referenceValue";
+        }
+      | {
+          /**
+           * @generated from field: workspace.SensitiveVariableValue sensitive_value = 9;
+           */
+          value: SensitiveVariableValue;
+          case: "sensitiveValue";
+        }
+      | { case: undefined; value?: undefined };
+  };
 
 /**
  * Describes the message workspace.DeploymentVariableValue.
@@ -868,12 +892,13 @@ export declare const DeploymentVariableValueSchema: GenMessage<DeploymentVariabl
 /**
  * @generated from message workspace.SensitiveVariableValue
  */
-export declare type SensitiveVariableValue = Message<"workspace.SensitiveVariableValue"> & {
-  /**
-   * @generated from field: string value_hash = 1;
-   */
-  valueHash: string;
-};
+export declare type SensitiveVariableValue =
+  Message<"workspace.SensitiveVariableValue"> & {
+    /**
+     * @generated from field: string value_hash = 1;
+     */
+    valueHash: string;
+  };
 
 /**
  * Describes the message workspace.SensitiveVariableValue.
@@ -884,17 +909,18 @@ export declare const SensitiveVariableValueSchema: GenMessage<SensitiveVariableV
 /**
  * @generated from message workspace.ReferenceVariableValue
  */
-export declare type ReferenceVariableValue = Message<"workspace.ReferenceVariableValue"> & {
-  /**
-   * @generated from field: optional google.protobuf.Struct reference = 1;
-   */
-  reference?: JsonObject;
+export declare type ReferenceVariableValue =
+  Message<"workspace.ReferenceVariableValue"> & {
+    /**
+     * @generated from field: optional google.protobuf.Struct reference = 1;
+     */
+    reference?: JsonObject;
 
-  /**
-   * @generated from field: repeated string path = 2;
-   */
-  path: string[];
-};
+    /**
+     * @generated from field: repeated string path = 2;
+     */
+    path: string[];
+  };
 
 /**
  * Describes the message workspace.ReferenceVariableValue.
@@ -905,52 +931,53 @@ export declare const ReferenceVariableValueSchema: GenMessage<ReferenceVariableV
 /**
  * @generated from message workspace.DeploymentVersion
  */
-export declare type DeploymentVersion = Message<"workspace.DeploymentVersion"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
+export declare type DeploymentVersion =
+  Message<"workspace.DeploymentVersion"> & {
+    /**
+     * @generated from field: string id = 1;
+     */
+    id: string;
 
-  /**
-   * @generated from field: string name = 2;
-   */
-  name: string;
+    /**
+     * @generated from field: string name = 2;
+     */
+    name: string;
 
-  /**
-   * @generated from field: string tag = 3;
-   */
-  tag: string;
+    /**
+     * @generated from field: string tag = 3;
+     */
+    tag: string;
 
-  /**
-   * @generated from field: google.protobuf.Struct config = 4;
-   */
-  config?: JsonObject;
+    /**
+     * @generated from field: google.protobuf.Struct config = 4;
+     */
+    config?: JsonObject;
 
-  /**
-   * @generated from field: google.protobuf.Struct job_agent_config = 5;
-   */
-  jobAgentConfig?: JsonObject;
+    /**
+     * @generated from field: google.protobuf.Struct job_agent_config = 5;
+     */
+    jobAgentConfig?: JsonObject;
 
-  /**
-   * @generated from field: string deployment_id = 6;
-   */
-  deploymentId: string;
+    /**
+     * @generated from field: string deployment_id = 6;
+     */
+    deploymentId: string;
 
-  /**
-   * @generated from field: workspace.DeploymentVersionStatus status = 7;
-   */
-  status: DeploymentVersionStatus;
+    /**
+     * @generated from field: workspace.DeploymentVersionStatus status = 7;
+     */
+    status: DeploymentVersionStatus;
 
-  /**
-   * @generated from field: optional string message = 8;
-   */
-  message?: string;
+    /**
+     * @generated from field: optional string message = 8;
+     */
+    message?: string;
 
-  /**
-   * @generated from field: string created_at = 9;
-   */
-  createdAt: string;
-};
+    /**
+     * @generated from field: string created_at = 9;
+     */
+    createdAt: string;
+  };
 
 /**
  * Describes the message workspace.DeploymentVersion.
@@ -992,22 +1019,23 @@ export declare const SystemSchema: GenMessage<System>;
 /**
  * @generated from message workspace.ComputeReleaseTargetsRequest
  */
-export declare type ComputeReleaseTargetsRequest = Message<"workspace.ComputeReleaseTargetsRequest"> & {
-  /**
-   * @generated from field: repeated workspace.Environment environments = 1;
-   */
-  environments: Environment[];
+export declare type ComputeReleaseTargetsRequest =
+  Message<"workspace.ComputeReleaseTargetsRequest"> & {
+    /**
+     * @generated from field: repeated workspace.Environment environments = 1;
+     */
+    environments: Environment[];
 
-  /**
-   * @generated from field: repeated workspace.Deployment deployments = 2;
-   */
-  deployments: Deployment[];
+    /**
+     * @generated from field: repeated workspace.Deployment deployments = 2;
+     */
+    deployments: Deployment[];
 
-  /**
-   * @generated from field: repeated workspace.Resource resources = 3;
-   */
-  resources: Resource[];
-};
+    /**
+     * @generated from field: repeated workspace.Resource resources = 3;
+     */
+    resources: Resource[];
+  };
 
 /**
  * Describes the message workspace.ComputeReleaseTargetsRequest.
@@ -1018,12 +1046,13 @@ export declare const ComputeReleaseTargetsRequestSchema: GenMessage<ComputeRelea
 /**
  * @generated from message workspace.ComputeReleaseTargetsResponse
  */
-export declare type ComputeReleaseTargetsResponse = Message<"workspace.ComputeReleaseTargetsResponse"> & {
-  /**
-   * @generated from field: repeated workspace.ReleaseTarget release_targets = 1;
-   */
-  releaseTargets: ReleaseTarget[];
-};
+export declare type ComputeReleaseTargetsResponse =
+  Message<"workspace.ComputeReleaseTargetsResponse"> & {
+    /**
+     * @generated from field: repeated workspace.ReleaseTarget release_targets = 1;
+     */
+    releaseTargets: ReleaseTarget[];
+  };
 
 /**
  * Describes the message workspace.ComputeReleaseTargetsResponse.
@@ -1034,27 +1063,28 @@ export declare const ComputeReleaseTargetsResponseSchema: GenMessage<ComputeRele
 /**
  * @generated from message workspace.ListReleaseTargetsRequest
  */
-export declare type ListReleaseTargetsRequest = Message<"workspace.ListReleaseTargetsRequest"> & {
-  /**
-   * @generated from field: string workspace_id = 1;
-   */
-  workspaceId: string;
+export declare type ListReleaseTargetsRequest =
+  Message<"workspace.ListReleaseTargetsRequest"> & {
+    /**
+     * @generated from field: string workspace_id = 1;
+     */
+    workspaceId: string;
 
-  /**
-   * @generated from field: optional google.protobuf.Struct resource_selector = 2;
-   */
-  resourceSelector?: JsonObject;
+    /**
+     * @generated from field: optional google.protobuf.Struct resource_selector = 2;
+     */
+    resourceSelector?: JsonObject;
 
-  /**
-   * @generated from field: optional google.protobuf.Struct deployment_selector = 3;
-   */
-  deploymentSelector?: JsonObject;
+    /**
+     * @generated from field: optional google.protobuf.Struct deployment_selector = 3;
+     */
+    deploymentSelector?: JsonObject;
 
-  /**
-   * @generated from field: optional google.protobuf.Struct environment_selector = 4;
-   */
-  environmentSelector?: JsonObject;
-};
+    /**
+     * @generated from field: optional google.protobuf.Struct environment_selector = 4;
+     */
+    environmentSelector?: JsonObject;
+  };
 
 /**
  * Describes the message workspace.ListReleaseTargetsRequest.
@@ -1065,12 +1095,13 @@ export declare const ListReleaseTargetsRequestSchema: GenMessage<ListReleaseTarg
 /**
  * @generated from message workspace.ListReleaseTargetsResponse
  */
-export declare type ListReleaseTargetsResponse = Message<"workspace.ListReleaseTargetsResponse"> & {
-  /**
-   * @generated from field: repeated workspace.ReleaseTarget release_targets = 1;
-   */
-  releaseTargets: ReleaseTarget[];
-};
+export declare type ListReleaseTargetsResponse =
+  Message<"workspace.ListReleaseTargetsResponse"> & {
+    /**
+     * @generated from field: repeated workspace.ReleaseTarget release_targets = 1;
+     */
+    releaseTargets: ReleaseTarget[];
+  };
 
 /**
  * Describes the message workspace.ListReleaseTargetsResponse.
@@ -1081,17 +1112,18 @@ export declare const ListReleaseTargetsResponseSchema: GenMessage<ListReleaseTar
 /**
  * @generated from message workspace.ListDeploymentsRequest
  */
-export declare type ListDeploymentsRequest = Message<"workspace.ListDeploymentsRequest"> & {
-  /**
-   * @generated from field: string workspace_id = 1;
-   */
-  workspaceId: string;
+export declare type ListDeploymentsRequest =
+  Message<"workspace.ListDeploymentsRequest"> & {
+    /**
+     * @generated from field: string workspace_id = 1;
+     */
+    workspaceId: string;
 
-  /**
-   * @generated from field: optional google.protobuf.Struct deployment_selector = 2;
-   */
-  deploymentSelector?: JsonObject;
-};
+    /**
+     * @generated from field: optional google.protobuf.Struct deployment_selector = 2;
+     */
+    deploymentSelector?: JsonObject;
+  };
 
 /**
  * Describes the message workspace.ListDeploymentsRequest.
@@ -1102,12 +1134,13 @@ export declare const ListDeploymentsRequestSchema: GenMessage<ListDeploymentsReq
 /**
  * @generated from message workspace.ListDeploymentsResponse
  */
-export declare type ListDeploymentsResponse = Message<"workspace.ListDeploymentsResponse"> & {
-  /**
-   * @generated from field: repeated workspace.Deployment deployments = 1;
-   */
-  deployments: Deployment[];
-};
+export declare type ListDeploymentsResponse =
+  Message<"workspace.ListDeploymentsResponse"> & {
+    /**
+     * @generated from field: repeated workspace.Deployment deployments = 1;
+     */
+    deployments: Deployment[];
+  };
 
 /**
  * Describes the message workspace.ListDeploymentsResponse.
@@ -1246,7 +1279,7 @@ export declare const ReleaseTargetService: GenService<{
     methodKind: "unary";
     input: typeof ComputeReleaseTargetsRequestSchema;
     output: typeof ComputeReleaseTargetsResponseSchema;
-  },
+  };
   /**
    * @generated from rpc workspace.ReleaseTargetService.All
    */
@@ -1254,7 +1287,7 @@ export declare const ReleaseTargetService: GenService<{
     methodKind: "unary";
     input: typeof ListReleaseTargetsRequestSchema;
     output: typeof ListReleaseTargetsResponseSchema;
-  },
+  };
 }>;
 
 /**
@@ -1268,6 +1301,5 @@ export declare const DeploymentService: GenService<{
     methodKind: "unary";
     input: typeof ListDeploymentsRequestSchema;
     output: typeof ListDeploymentsResponseSchema;
-  },
+  };
 }>;
-
