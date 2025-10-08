@@ -137,7 +137,7 @@ message Resource {
 message Environment {
   string id = 1;
   string name = 2;
-  string description = 3;
+  optional string description = 3;
   string system_id = 4;
 
   google.protobuf.Struct resource_selector = 5;
@@ -153,7 +153,7 @@ message Deployment {
   string system_id = 5;
 
   optional string job_agent_id = 6;
-  optional google.protobuf.Struct job_agent_config = 7;
+  google.protobuf.Struct job_agent_config = 7;
   optional google.protobuf.Struct resource_selector = 8;
 }
 

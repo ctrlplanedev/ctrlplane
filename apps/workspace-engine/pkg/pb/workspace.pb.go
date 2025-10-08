@@ -1076,7 +1076,7 @@ type Environment struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description      string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Description      *string                `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	SystemId         string                 `protobuf:"bytes,4,opt,name=system_id,json=systemId,proto3" json:"system_id,omitempty"`
 	ResourceSelector *structpb.Struct       `protobuf:"bytes,5,opt,name=resource_selector,json=resourceSelector,proto3" json:"resource_selector,omitempty"`
 	CreatedAt        string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
@@ -1129,8 +1129,8 @@ func (x *Environment) GetName() string {
 }
 
 func (x *Environment) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -1164,7 +1164,7 @@ type Deployment struct {
 	Description      string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	SystemId         string                 `protobuf:"bytes,5,opt,name=system_id,json=systemId,proto3" json:"system_id,omitempty"`
 	JobAgentId       *string                `protobuf:"bytes,6,opt,name=job_agent_id,json=jobAgentId,proto3,oneof" json:"job_agent_id,omitempty"`
-	JobAgentConfig   *structpb.Struct       `protobuf:"bytes,7,opt,name=job_agent_config,json=jobAgentConfig,proto3,oneof" json:"job_agent_config,omitempty"`
+	JobAgentConfig   *structpb.Struct       `protobuf:"bytes,7,opt,name=job_agent_config,json=jobAgentConfig,proto3" json:"job_agent_config,omitempty"`
 	ResourceSelector *structpb.Struct       `protobuf:"bytes,8,opt,name=resource_selector,json=resourceSelector,proto3,oneof" json:"resource_selector,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -2659,15 +2659,16 @@ const file_workspace_proto_rawDesc = "" +
 	"\n" +
 	"_locked_atB\r\n" +
 	"\v_updated_atB\r\n" +
-	"\v_deleted_at\"\xd5\x01\n" +
+	"\v_deleted_at\"\xea\x01\n" +
 	"\vEnvironment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1b\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +
+	"\vdescription\x18\x03 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1b\n" +
 	"\tsystem_id\x18\x04 \x01(\tR\bsystemId\x12D\n" +
 	"\x11resource_selector\x18\x05 \x01(\v2\x17.google.protobuf.StructR\x10resourceSelector\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\"\xf9\x02\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAtB\x0e\n" +
+	"\f_description\"\xdf\x02\n" +
 	"\n" +
 	"Deployment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
@@ -2676,11 +2677,10 @@ const file_workspace_proto_rawDesc = "" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x1b\n" +
 	"\tsystem_id\x18\x05 \x01(\tR\bsystemId\x12%\n" +
 	"\fjob_agent_id\x18\x06 \x01(\tH\x00R\n" +
-	"jobAgentId\x88\x01\x01\x12F\n" +
-	"\x10job_agent_config\x18\a \x01(\v2\x17.google.protobuf.StructH\x01R\x0ejobAgentConfig\x88\x01\x01\x12I\n" +
-	"\x11resource_selector\x18\b \x01(\v2\x17.google.protobuf.StructH\x02R\x10resourceSelector\x88\x01\x01B\x0f\n" +
-	"\r_job_agent_idB\x13\n" +
-	"\x11_job_agent_configB\x14\n" +
+	"jobAgentId\x88\x01\x01\x12A\n" +
+	"\x10job_agent_config\x18\a \x01(\v2\x17.google.protobuf.StructR\x0ejobAgentConfig\x12I\n" +
+	"\x11resource_selector\x18\b \x01(\v2\x17.google.protobuf.StructH\x01R\x10resourceSelector\x88\x01\x01B\x0f\n" +
+	"\r_job_agent_idB\x14\n" +
 	"\x12_resource_selector\"\x96\x01\n" +
 	"\bJobAgent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
@@ -2961,6 +2961,7 @@ func file_workspace_proto_init() {
 	file_workspace_proto_msgTypes[9].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[11].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[12].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[13].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[14].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[16].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[18].OneofWrappers = []any{
