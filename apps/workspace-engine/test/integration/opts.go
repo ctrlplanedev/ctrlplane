@@ -218,9 +218,9 @@ func DeploymentJobAgent(jobAgentID string) DeploymentOption {
 	}
 }
 
-func DeploymentResourceSelector(selector map[string]any) DeploymentOption {
+func DeploymentJsonResourceSelector(selector map[string]any) DeploymentOption {
 	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
-		d.ResourceSelector = c.MustNewStructFromMap(selector)
+		d.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
 	}
 }
 
@@ -327,9 +327,9 @@ func EnvironmentID(id string) EnvironmentOption {
 	}
 }
 
-func EnvironmentResourceSelector(selector map[string]any) EnvironmentOption {
+func EnvironmentJsonResourceSelector(selector map[string]any) EnvironmentOption {
 	return func(_ *TestWorkspace, e *pb.Environment) {
-		e.ResourceSelector = c.MustNewStructFromMap(selector)
+		e.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
 	}
 }
 
@@ -449,20 +449,20 @@ func PolicyTargetSelectorID(id string) PolicyTargetSelectorOption {
 	}
 }
 
-func PolicyTargetDeploymentSelector(selector map[string]any) PolicyTargetSelectorOption {
+func PolicyTargetJsonDeploymentSelector(selector map[string]any) PolicyTargetSelectorOption {
 	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
-		s.DeploymentSelector = c.MustNewStructFromMap(selector)
+		s.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
 	}
 }
 
-func PolicyTargetEnvironmentSelector(selector map[string]any) PolicyTargetSelectorOption {
+func PolicyTargetJsonEnvironmentSelector(selector map[string]any) PolicyTargetSelectorOption {
 	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
-		s.EnvironmentSelector = c.MustNewStructFromMap(selector)
+		s.EnvironmentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
 	}
 }
 
-func PolicyTargetResourceSelector(selector map[string]any) PolicyTargetSelectorOption {
+func PolicyTargetJsonResourceSelector(selector map[string]any) PolicyTargetSelectorOption {
 	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
-		s.ResourceSelector = c.MustNewStructFromMap(selector)
+		s.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
 	}
 }

@@ -28,7 +28,7 @@ func NewEnvironment(systemID string) *pb.Environment {
 		Name:             fmt.Sprintf("env-%s", idSubstring),
 		Description:      &description,
 		SystemId:         systemID,
-		ResourceSelector: allResources,
+		ResourceSelector: pb.NewJsonSelector(allResources),
 		CreatedAt:        time.Now().Format(time.RFC3339),
 	}
 

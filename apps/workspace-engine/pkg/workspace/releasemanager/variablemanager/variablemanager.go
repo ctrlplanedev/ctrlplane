@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/variablemanager")
@@ -139,14 +138,16 @@ func (m *Manager) resolveVariableValue(ctx context.Context, resource *pb.Resourc
 }
 
 // matchesResourceSelector checks if a resource matches a given selector
-func (m *Manager) matchesResourceSelector(ctx context.Context, resource *pb.Resource, selector *structpb.Struct) (bool, error) {
+func (m *Manager) matchesResourceSelector(ctx context.Context, resource *pb.Resource, selector *pb.Selector) (bool, error) {
 	ctx, span := tracer.Start(ctx, "matchesResourceSelector", trace.WithAttributes(
 		attribute.String("resource.id", resource.Id),
 		attribute.String("selector", selector.String()),
 	))
 	defer span.End()
 
-	unknownCondition, err := unknown.ParseFromMap(selector.AsMap())
+	jsonSeelctor := selector.GetJson()
+
+	unknownCondition, err := unknown.ParseFromMap(jsonSeelctor.AsMap())
 	if err != nil {
 		return false, fmt.Errorf("failed to parse resource selector: %w", err)
 	}

@@ -370,7 +370,7 @@ func TestEngine_DeploymentVersionWithFilteredReleaseTargets(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"key":      "tier",
@@ -443,7 +443,7 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 			integration.WithEnvironment(
 				integration.EnvironmentID(envDevId),
 				integration.EnvironmentName("development"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"key":      "env",
@@ -453,7 +453,7 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 			integration.WithEnvironment(
 				integration.EnvironmentID(envProdId),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"key":      "env",

@@ -2,7 +2,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendEvent } from "../client.js";
+import { sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getWorkspaceIdForDeployment = async (deploymentId: string) =>
@@ -55,7 +55,7 @@ export const dispatchDeploymentVariableCreated = async (
   const workspaceId = await getWorkspaceIdForDeployment(
     deploymentVariable.deploymentId,
   );
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVariableCreated,
     eventId: deploymentVariable.id,
@@ -71,7 +71,7 @@ export const dispatchDeploymentVariableUpdated = async (
   source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceIdForDeployment(current.deploymentId);
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVariableUpdated,
     eventId: current.id,
@@ -88,7 +88,7 @@ export const dispatchDeploymentVariableDeleted = async (
   const workspaceId = await getWorkspaceIdForDeployment(
     deploymentVariable.deploymentId,
   );
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVariableDeleted,
     eventId: deploymentVariable.id,
@@ -105,7 +105,7 @@ export const dispatchDeploymentVariableValueCreated = async (
   const workspaceId = await getWorkspaceIdForVariable(
     deploymentVariableValue.variableId,
   );
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVariableValueCreated,
     eventId: deploymentVariableValue.id,
@@ -121,7 +121,7 @@ export const dispatchDeploymentVariableValueUpdated = async (
   source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceIdForVariable(current.variableId);
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVariableValueUpdated,
     eventId: current.id,
@@ -138,7 +138,7 @@ export const dispatchDeploymentVariableValueDeleted = async (
   const workspaceId = await getWorkspaceIdForVariable(
     deploymentVariableValue.variableId,
   );
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVariableValueDeleted,
     eventId: deploymentVariableValue.id,

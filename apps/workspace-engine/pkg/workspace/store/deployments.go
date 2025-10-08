@@ -50,7 +50,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 
 		var condition util.MatchableCondition
 		if deployment.ResourceSelector != nil {
-			unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.AsMap())
+			unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.GetJson().AsMap())
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse selector for deployment %s: %w", deployment.Id, err)
 			}
@@ -151,7 +151,7 @@ func (e *Deployments) Resources(deploymentId string) map[string]*pb.Resource {
 func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) error {
 	// Validate selector before storing
 	if deployment.ResourceSelector != nil {
-		unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.AsMap())
+		unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.GetJson().AsMap())
 		if err != nil {
 			return fmt.Errorf("failed to parse selector: %w", err)
 		}

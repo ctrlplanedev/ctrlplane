@@ -1,9 +1,9 @@
 import type { FullPolicy } from "../events.js";
-import { sendEvent } from "../client.js";
+import { sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 export const dispatchPolicyCreated = async (policy: FullPolicy) =>
-  sendEvent({
+  sendNodeEvent({
     workspaceId: policy.workspaceId,
     eventType: Event.PolicyCreated,
     eventId: policy.id,
@@ -16,7 +16,7 @@ export const dispatchPolicyUpdated = async (
   previous: FullPolicy,
   current: FullPolicy,
 ) =>
-  sendEvent({
+  sendNodeEvent({
     workspaceId: current.workspaceId,
     eventType: Event.PolicyUpdated,
     eventId: current.id,
@@ -26,7 +26,7 @@ export const dispatchPolicyUpdated = async (
   });
 
 export const dispatchPolicyDeleted = async (policy: FullPolicy) =>
-  sendEvent({
+  sendNodeEvent({
     workspaceId: policy.workspaceId,
     eventType: Event.PolicyDeleted,
     eventId: policy.id,

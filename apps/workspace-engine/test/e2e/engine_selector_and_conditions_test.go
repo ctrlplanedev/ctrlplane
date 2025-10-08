@@ -23,7 +23,7 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod-web"),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -42,7 +42,7 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-prod-api"),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -61,7 +61,7 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d3ID),
 				integration.DeploymentName("deployment-dev-web"),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -78,7 +78,7 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 				}),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -157,7 +157,7 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-prod-us-east"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -176,7 +176,7 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-prod-us-west"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -195,7 +195,7 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e3ID),
 				integration.EnvironmentName("env-dev-us-east"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -293,7 +293,7 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -306,7 +306,7 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-web-only"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -395,7 +395,7 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-prod-us-east"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -404,7 +404,7 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-prod-us-west"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -413,7 +413,7 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e3ID),
 				integration.EnvironmentName("env-dev-us-east"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -426,7 +426,7 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-east-only"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetEnvironmentSelector(map[string]any{
+				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -524,7 +524,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-us-east"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -533,7 +533,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-us-west"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -546,7 +546,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -561,14 +561,14 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 						},
 					},
 				}),
-				integration.PolicyTargetEnvironmentSelector(map[string]any{
+				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
 					"value":    "east",
 				}),
 			),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -583,7 +583,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 						},
 					},
 				}),
-				integration.PolicyTargetEnvironmentSelector(map[string]any{
+				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
 					"value":    "west",

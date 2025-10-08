@@ -127,6 +127,33 @@ export type EventPayload = {
   // [Event.SystemDeleted]: schema.System;
 };
 
+export type GoEventPayload = {
+  [Event.ResourceCreated]: FullResource;
+  [Event.ResourceUpdated]: FullResource;
+  [Event.ResourceDeleted]: FullResource;
+  [Event.ResourceVariableCreated]: schema.ResourceVariable;
+  [Event.ResourceVariableUpdated]: schema.ResourceVariable;
+  [Event.ResourceVariableDeleted]: schema.ResourceVariable;
+  [Event.DeploymentCreated]: schema.Deployment;
+  [Event.DeploymentUpdated]: schema.Deployment;
+  [Event.DeploymentDeleted]: schema.Deployment;
+  [Event.DeploymentVariableCreated]: schema.DeploymentVariable;
+  [Event.DeploymentVariableUpdated]: schema.DeploymentVariable;
+  [Event.DeploymentVariableDeleted]: schema.DeploymentVariable;
+  [Event.DeploymentVariableValueCreated]: schema.DeploymentVariableValue;
+  [Event.DeploymentVariableValueUpdated]: schema.DeploymentVariableValue;
+  [Event.DeploymentVariableValueDeleted]: schema.DeploymentVariableValue;
+  [Event.DeploymentVersionCreated]: schema.DeploymentVersion;
+  [Event.DeploymentVersionUpdated]: schema.DeploymentVersion;
+  [Event.DeploymentVersionDeleted]: schema.DeploymentVersion;
+  [Event.EnvironmentCreated]: schema.Environment;
+  [Event.EnvironmentUpdated]: schema.Environment;
+  [Event.EnvironmentDeleted]: schema.Environment;
+  [Event.PolicyCreated]: FullPolicy;
+  [Event.PolicyUpdated]: FullPolicy;
+  [Event.PolicyDeleted]: FullPolicy;
+};
+
 export type Message<T extends keyof EventPayload> = {
   workspaceId: string;
   eventType: T;
@@ -135,3 +162,25 @@ export type Message<T extends keyof EventPayload> = {
   source: "api" | "scheduler" | "user-action";
   payload: EventPayload[T];
 };
+
+// Helper function to wrap a selector in the protobuf format
+function wrapSelector<T extends Record<string, any> | null | undefined>(
+  selector: T,
+): T extends null | undefined ? null : { json_selector: T } {
+  if (selector == null) return null as any;
+  return { json_selector: selector } as any;
+}
+
+// Helper to transform an object's selector fields to protobuf format
+export function wrapSelectorsInObject<T extends Record<string, any>>(
+  obj: T,
+  selectorFields: (keyof T)[],
+): T {
+  const result = { ...obj };
+  for (const field of selectorFields) {
+    if (field in result) {
+      (result as any)[field] = wrapSelector(result[field]);
+    }
+  }
+  return result;
+}

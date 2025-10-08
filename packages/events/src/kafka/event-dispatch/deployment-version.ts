@@ -4,7 +4,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendEvent } from "../client.js";
+import { sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getWorkspaceId = async (tx: Tx, deploymentVersionId: string) =>
@@ -28,7 +28,7 @@ export const dispatchDeploymentVersionCreated = async (
   const tx = db ?? dbClient;
   const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVersionCreated,
     eventId: deploymentVersion.id,
@@ -47,7 +47,7 @@ export const dispatchDeploymentVersionUpdated = async (
   const tx = db ?? dbClient;
   const workspaceId = await getWorkspaceId(tx, current.id);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVersionUpdated,
     eventId: current.id,
@@ -65,7 +65,7 @@ export const dispatchDeploymentVersionDeleted = async (
   const tx = db ?? dbClient;
   const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.DeploymentVersionDeleted,
     eventId: deploymentVersion.id,

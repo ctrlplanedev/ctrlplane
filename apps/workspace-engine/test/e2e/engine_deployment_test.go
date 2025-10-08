@@ -20,7 +20,7 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID1),
 				integration.DeploymentName("deployment-has-filter"),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "dev",

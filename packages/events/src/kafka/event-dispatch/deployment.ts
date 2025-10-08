@@ -4,7 +4,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendEvent } from "../client.js";
+import { sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
@@ -22,7 +22,7 @@ export const dispatchDeploymentCreated = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, deployment.systemId);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId: system.workspaceId,
     eventType: Event.DeploymentCreated,
     eventId: deployment.id,
@@ -41,7 +41,7 @@ export const dispatchDeploymentUpdated = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, current.systemId);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId: system.workspaceId,
     eventType: Event.DeploymentUpdated,
     eventId: current.id,
@@ -59,7 +59,7 @@ export const dispatchDeploymentDeleted = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, deployment.systemId);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId: system.workspaceId,
     eventType: Event.DeploymentDeleted,
     eventId: deployment.id,

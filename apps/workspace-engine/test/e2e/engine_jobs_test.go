@@ -194,23 +194,23 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
-	d1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	d1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	})
+	}))
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment with a resource selector
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create resources with different metadata
@@ -332,11 +332,11 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -389,11 +389,11 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -447,11 +447,11 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create two resources
@@ -646,7 +646,7 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentName(e1Id),
 				integration.EnvironmentID(e1Id),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "dev",
@@ -656,7 +656,7 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentName(e2Id),
 				integration.EnvironmentID(e2Id),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "prod",
@@ -828,22 +828,22 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	// Create two environments
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "dev",
 		"key":      "env",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
-	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e2.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 
 	// Create resources

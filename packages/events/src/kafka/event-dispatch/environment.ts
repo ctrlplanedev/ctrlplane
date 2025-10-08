@@ -4,8 +4,8 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendEvent } from "../client.js";
-import { Event } from "../events.js";
+import { sendNodeEvent } from "../client.js";
+import { Event, wrapSelectorsInObject } from "../events.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
   tx
@@ -22,13 +22,13 @@ export const dispatchEnvironmentCreated = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, environment.systemId);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId: system.workspaceId,
     eventType: Event.EnvironmentCreated,
     eventId: environment.id,
     timestamp: Date.now(),
     source: source ?? "api",
-    payload: environment,
+    payload: wrapSelectorsInObject(environment, ["resourceSelector"]),
   });
 };
 
@@ -41,13 +41,16 @@ export const dispatchEnvironmentUpdated = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, current.systemId);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId: system.workspaceId,
     eventType: Event.EnvironmentUpdated,
     eventId: current.id,
     timestamp: Date.now(),
     source: source ?? "api",
-    payload: { previous, current },
+    payload: {
+      previous: wrapSelectorsInObject(previous, ["resourceSelector"]),
+      current: wrapSelectorsInObject(current, ["resourceSelector"]),
+    },
   });
 };
 
@@ -59,12 +62,12 @@ export const dispatchEnvironmentDeleted = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, environment.systemId);
 
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId: system.workspaceId,
     eventType: Event.EnvironmentDeleted,
     eventId: environment.id,
     timestamp: Date.now(),
     source: source ?? "api",
-    payload: environment,
+    payload: wrapSelectorsInObject(environment, ["resourceSelector"]),
   });
 };

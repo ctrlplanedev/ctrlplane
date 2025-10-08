@@ -2,7 +2,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendEvent } from "../client.js";
+import { sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getFullResource = async (resource: schema.Resource) => {
@@ -21,7 +21,7 @@ export const dispatchResourceCreated = (
   source?: "api" | "scheduler" | "user-action",
 ) =>
   getFullResource(resource).then((fullResource) =>
-    sendEvent({
+    sendNodeEvent({
       workspaceId: resource.workspaceId,
       eventType: Event.ResourceCreated,
       eventId: resource.id,
@@ -41,7 +41,7 @@ export const dispatchResourceUpdated = async (
     getFullResource(current),
   ]);
 
-  sendEvent({
+  sendNodeEvent({
     workspaceId: current.workspaceId,
     eventType: Event.ResourceUpdated,
     eventId: current.id,
@@ -56,7 +56,7 @@ export const dispatchResourceDeleted = (
   source?: "api" | "scheduler" | "user-action",
 ) =>
   getFullResource(resource).then((fullResource) =>
-    sendEvent({
+    sendNodeEvent({
       workspaceId: resource.workspaceId,
       eventType: Event.ResourceDeleted,
       eventId: resource.id,
@@ -81,7 +81,7 @@ export const dispatchResourceVariableCreated = async (
   const workspaceId = await getWorkspaceIdForResource(
     resourceVariable.resourceId,
   );
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.ResourceVariableCreated,
     eventId: resourceVariable.id,
@@ -97,7 +97,7 @@ export const dispatchResourceVariableUpdated = async (
   source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceIdForResource(current.resourceId);
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.ResourceVariableUpdated,
     eventId: current.id,
@@ -114,7 +114,7 @@ export const dispatchResourceVariableDeleted = async (
   const workspaceId = await getWorkspaceIdForResource(
     resourceVariable.resourceId,
   );
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.ResourceVariableDeleted,
     eventId: resourceVariable.id,

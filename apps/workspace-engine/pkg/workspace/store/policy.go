@@ -54,9 +54,13 @@ func (p *Policies) recomputeReleaseTargets(policyId string) materialized.Recompu
 		releaseTargets := make(map[string]*pb.ReleaseTarget)
 
 		for _, policyTarget := range policy.GetSelectors() {
-			deploymentCondition, _ := parseSelector(policyTarget.DeploymentSelector)
-			environmentCondition, _ := parseSelector(policyTarget.EnvironmentSelector)
-			resourceCondition, _ := parseSelector(policyTarget.ResourceSelector)
+			jsonDeploymentSelector := policyTarget.DeploymentSelector.GetJson()
+			jsonEnvironmentSelector := policyTarget.EnvironmentSelector.GetJson()
+			jsonResourceSelector := policyTarget.ResourceSelector.GetJson()
+
+			deploymentCondition, _ := parseSelector(jsonDeploymentSelector)
+			environmentCondition, _ := parseSelector(jsonEnvironmentSelector)
+			resourceCondition, _ := parseSelector(jsonResourceSelector)
 
 			// Build sets of matching deployments and environments
 			matchingDeployments := make(map[string]*pb.Deployment)

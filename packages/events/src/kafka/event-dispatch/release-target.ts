@@ -4,7 +4,7 @@ import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendEvent } from "../client.js";
+import { sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getFullReleaseTarget = async (releaseTargetId: string) => {
@@ -54,7 +54,7 @@ export const dispatchEvaluateReleaseTarget = async (
   source?: "api" | "scheduler" | "user-action",
 ) =>
   getFullReleaseTarget(releaseTarget.id).then((releaseTarget) =>
-    sendEvent({
+    sendNodeEvent({
       workspaceId: releaseTarget.resource.workspaceId,
       eventType: Event.EvaluateReleaseTarget,
       eventId: releaseTarget.id,

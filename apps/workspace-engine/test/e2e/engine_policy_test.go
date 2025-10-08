@@ -18,7 +18,7 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -84,7 +84,7 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-only"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
 					"value":    "prod",
@@ -145,20 +145,20 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	// Create two environments with different names
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-us-east"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-us-west"
-	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e2.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 
 	// Create a resource
@@ -175,11 +175,11 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-us-east-only"
 	selector := c.NewPolicyTargetSelector()
-	selector.EnvironmentSelector = c.MustNewStructFromMap(map[string]any{
+	selector.EnvironmentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "east",
-	})
+	}))
 	policy.Selectors = []*pb.PolicyTargetSelector{selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
@@ -226,11 +226,11 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create two resources with different metadata
@@ -254,12 +254,13 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-critical-only"
 	selector := c.NewPolicyTargetSelector()
-	selector.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	selector.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
-		"key":      "priority",
-		"value":    "critical",
-	})
+			"key":      "priority",
+			"value":    "critical",
+		}),
+	)
 	policy.Selectors = []*pb.PolicyTargetSelector{selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
@@ -312,20 +313,20 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	// Create two environments
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-us-east"
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-us-west"
-	e2.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e2.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 
 	// Create two resources
@@ -347,22 +348,22 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-prod-east-critical"
 	selector := c.NewPolicyTargetSelector()
-	selector.DeploymentSelector = c.MustNewStructFromMap(map[string]any{
+	selector.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	})
-	selector.EnvironmentSelector = c.MustNewStructFromMap(map[string]any{
+	}))
+	selector.EnvironmentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "east",
-	})
-	selector.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	}))
+	selector.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"key":      "priority",
 		"value":    "critical",
-	})
+	}))
 	policy.Selectors = []*pb.PolicyTargetSelector{selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
@@ -438,7 +439,7 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -451,14 +452,14 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-or-staging"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
 					"value":    "prod",
 				}),
 			),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{	
 					"type":     "name",
 					"operator": "contains",
 					"value":    "staging",
@@ -521,11 +522,11 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -563,13 +564,12 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 	if len(policiesDev) != 1 {
 		t.Fatalf("expected policy to match dev release target initially, got %d policies", len(policiesDev))
 	}
-
 	// Update policy to only match prod deployments
-	selector.DeploymentSelector = c.MustNewStructFromMap(map[string]any{
+	selector.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	})
+	}))
 	policy.Selectors = []*pb.PolicyTargetSelector{selector}
 	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
@@ -600,11 +600,11 @@ func TestEngine_PolicyDelete(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -661,11 +661,11 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -676,11 +676,11 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 	policy1 := c.NewPolicy(workspaceID)
 	policy1.Name = "policy-prod"
 	selector1 := c.NewPolicyTargetSelector()
-	selector1.DeploymentSelector = c.MustNewStructFromMap(map[string]any{
+	selector1.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	})
+	}))
 	policy1.Selectors = []*pb.PolicyTargetSelector{selector1}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy1)
 
@@ -688,11 +688,11 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 	policy2 := c.NewPolicy(workspaceID)
 	policy2.Name = "policy-high-priority"
 	selector2 := c.NewPolicyTargetSelector()
-	selector2.DeploymentSelector = c.MustNewStructFromMap(map[string]any{
+	selector2.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "high",
-	})
+	}))
 	policy2.Selectors = []*pb.PolicyTargetSelector{selector2}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy2)
 
@@ -749,11 +749,11 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -764,11 +764,11 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-prod-only"
 	selector := c.NewPolicyTargetSelector()
-	selector.DeploymentSelector = c.MustNewStructFromMap(map[string]any{
+	selector.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	})
+	}))
 	policy.Selectors = []*pb.PolicyTargetSelector{selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
@@ -801,11 +801,11 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -871,7 +871,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -886,7 +886,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 						},
 					},
 				}),
-				integration.PolicyTargetEnvironmentSelector(map[string]any{
+				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
 					"value":    "east",
@@ -896,7 +896,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetDeploymentSelector(map[string]any{
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
 						map[string]any{
@@ -911,7 +911,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 						},
 					},
 				}),
-				integration.PolicyTargetEnvironmentSelector(map[string]any{
+				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
 					"value":    "west",

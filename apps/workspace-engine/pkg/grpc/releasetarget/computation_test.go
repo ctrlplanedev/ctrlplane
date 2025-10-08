@@ -50,12 +50,12 @@ func createTestEnvironments(count int, withSelector bool) []*pb.Environment {
 		}
 		if withSelector {
 			// Selector that matches resources with metadata.env matching the env index
-			env.ResourceSelector = mustNewStructFromMap(map[string]interface{}{
+			env.ResourceSelector = pb.NewJsonSelector(mustNewStructFromMap(map[string]interface{}{
 				"type":     "metadata",
 				"operator": "equals",
 				"value":    fmt.Sprintf("env-%d", i),
 				"key":      "env",
-			})
+			}))
 		}
 		environments[i] = env
 	}
@@ -73,12 +73,12 @@ func createTestDeployments(count int, withSelector bool) []*pb.Deployment {
 		}
 		if withSelector {
 			// Selector that matches resources with metadata.deploy matching the dep index
-			dep.ResourceSelector = mustNewStructFromMap(map[string]interface{}{
+			dep.ResourceSelector = pb.NewJsonSelector(mustNewStructFromMap(map[string]interface{}{
 				"type":     "metadata",
 				"operator": "equals",
 				"value":    fmt.Sprintf("dep-%d", i),
 				"key":      "deploy",
-			})
+			}))
 		}
 		deployments[i] = dep
 	}
@@ -489,12 +489,12 @@ func TestGenerate_MixedSelectors(t *testing.T) {
 			Id:       "dep-0",
 			Name:     "Deployment 0",
 			SystemId: "system-1",
-			ResourceSelector: mustNewStructFromMap(map[string]interface{}{
+			ResourceSelector: pb.NewJsonSelector(mustNewStructFromMap(map[string]interface{}{
 				"type":     "metadata",
 				"operator": "equals",
 				"value":    "dep-0",
 				"key":      "deploy",
-			}),
+			})),
 		},
 		{
 			Id:       "dep-1",
@@ -806,10 +806,10 @@ func BenchmarkFullComputation_MixedSelectors(b *testing.B) {
 
 	// Mix of deployments with and without selectors
 	deployments := []*pb.Deployment{
-		{Id: "dep-0", Name: "Deployment 0", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-0", "key": "deploy"})},
-		{Id: "dep-1", Name: "Deployment 1", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-1", "key": "deploy"})},
+		{Id: "dep-0", Name: "Deployment 0", SystemId: "system-1", ResourceSelector: pb.NewJsonSelector(mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-0", "key": "deploy"}))},
+		{Id: "dep-1", Name: "Deployment 1", SystemId: "system-1", ResourceSelector: pb.NewJsonSelector(mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-1", "key": "deploy"}))},
 		{Id: "dep-2", Name: "Deployment 2", SystemId: "system-1"}, // No selector
-		{Id: "dep-3", Name: "Deployment 3", SystemId: "system-1", ResourceSelector: mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-3", "key": "deploy"})},
+		{Id: "dep-3", Name: "Deployment 3", SystemId: "system-1", ResourceSelector: pb.NewJsonSelector(mustNewStructFromMap(map[string]interface{}{"type": "metadata", "operator": "equals", "value": "dep-3", "key": "deploy"}))},
 		{Id: "dep-4", Name: "Deployment 4", SystemId: "system-1"}, // No selector
 	}
 

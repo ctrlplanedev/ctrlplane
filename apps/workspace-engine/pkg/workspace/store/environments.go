@@ -52,7 +52,7 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 
 		var condition util.MatchableCondition
 		if environment.ResourceSelector != nil {
-			unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.AsMap())
+			unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.GetJson().AsMap())
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse selector for environment %s: %w", environment.Id, err)
 			}
@@ -130,7 +130,7 @@ func (e *Environments) RecomputeResources(ctx context.Context, environmentId str
 func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) error {
 	// Validate selector before storing
 	if environment.ResourceSelector != nil {
-		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.AsMap())
+		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.GetJson().AsMap())
 		if err != nil {
 			return fmt.Errorf("failed to parse selector: %w", err)
 		}
@@ -172,7 +172,7 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 	}
 
 	if environment.ResourceSelector != nil {
-		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.AsMap())
+		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.GetJson().AsMap())
 		if err != nil {
 			return fmt.Errorf("failed to parse selector for environment %s: %w", environment.Id, err)
 		}

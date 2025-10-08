@@ -24,7 +24,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -88,7 +88,7 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 			integration.WithDeployment(),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -123,7 +123,7 @@ func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
 		integration.WithSystem(
 			integration.WithDeployment(),
 			integration.WithEnvironment(
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -159,7 +159,7 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-prod-only"),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "prod",
@@ -168,7 +168,7 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "prod",
@@ -209,7 +209,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 				integration.DeploymentID(d1Id),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -237,12 +237,12 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	}
 
 	// Update deployment to add a selector for prod only
-	d1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	d1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	})
+	}))
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	// Now only prod resource should match - 1 release target
@@ -289,7 +289,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-sys1"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -356,7 +356,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-dev"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -365,7 +365,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2Id),
 				integration.EnvironmentName("env-prod"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -439,7 +439,7 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 		integration.WithSystem(
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-prod"),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "prod",
@@ -448,7 +448,7 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 			),
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-critical"),
-				integration.DeploymentResourceSelector(map[string]any{
+				integration.DeploymentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "critical",
@@ -457,7 +457,7 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("env-us-east"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
 					"operator": "equals",
 					"value":    "us-east-1",
@@ -542,11 +542,11 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	}
 
 	// Now add a selector to the environment to match all resources
-	e1.ResourceSelector = c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	})
+	}))
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
 
 	// Now release targets should be created
@@ -623,7 +623,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentName("env-1"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",
@@ -632,7 +632,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2Id),
 				integration.EnvironmentName("env-2"),
-				integration.EnvironmentResourceSelector(map[string]any{
+				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
 					"operator": "starts-with",
 					"value":    "",

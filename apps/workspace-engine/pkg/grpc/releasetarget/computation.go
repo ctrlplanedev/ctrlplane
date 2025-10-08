@@ -255,7 +255,7 @@ func getResourcesForEnvironment(ctx context.Context, env *pb.Environment, allRes
 		return []*pb.Resource{}, nil
 	}
 
-	resources, err := filterResourcesBySelector(ctx, env.ResourceSelector.AsMap(), allResources)
+	resources, err := filterResourcesBySelector(ctx, env.ResourceSelector.GetJson().AsMap(), allResources)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func getResourcesForDeployment(ctx context.Context, dep *pb.Deployment, allResou
 		return allResources, nil
 	}
 
-	resources, err := filterResourcesBySelector(ctx, dep.ResourceSelector.AsMap(), allResources)
+	resources, err := filterResourcesBySelector(ctx, dep.ResourceSelector.GetJson().AsMap(), allResources)
 	if err != nil {
 		return nil, err
 	}

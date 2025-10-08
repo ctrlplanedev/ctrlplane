@@ -2,7 +2,7 @@ import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendEvent } from "../client.js";
+import { sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getWorkspaceId = async (job: schema.Job) => {
@@ -59,7 +59,7 @@ export const dispatchJobUpdated = async (
   source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceId(current);
-  await sendEvent({
+  await sendNodeEvent({
     workspaceId,
     eventType: Event.JobUpdated,
     eventId: current.id,
