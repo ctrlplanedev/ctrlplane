@@ -2,10 +2,11 @@ package jobagents
 
 import (
 	"context"
-	"encoding/json"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleJobAgentCreated(
@@ -14,7 +15,7 @@ func HandleJobAgentCreated(
 	event handler.RawEvent,
 ) error {
 	jobAgent := &pb.JobAgent{}
-	if err := json.Unmarshal(event.Data, jobAgent); err != nil {
+	if err := protojson.Unmarshal(event.Data, jobAgent); err != nil {
 		return err
 	}
 
@@ -29,7 +30,7 @@ func HandleJobAgentUpdated(
 	event handler.RawEvent,
 ) error {
 	jobAgent := &pb.JobAgent{}
-	if err := json.Unmarshal(event.Data, jobAgent); err != nil {
+	if err := protojson.Unmarshal(event.Data, jobAgent); err != nil {
 		return err
 	}
 
@@ -44,7 +45,7 @@ func HandleJobAgentDeleted(
 	event handler.RawEvent,
 ) error {
 	jobAgent := &pb.JobAgent{}
-	if err := json.Unmarshal(event.Data, jobAgent); err != nil {
+	if err := protojson.Unmarshal(event.Data, jobAgent); err != nil {
 		return err
 	}
 

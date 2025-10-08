@@ -2,10 +2,11 @@ package policies
 
 import (
 	"context"
-	"encoding/json"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandlePolicyCreated(
@@ -14,7 +15,7 @@ func HandlePolicyCreated(
 	event handler.RawEvent,
 ) error {
 	policy := &pb.Policy{}
-	if err := json.Unmarshal(event.Data, policy); err != nil {
+	if err := protojson.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
 	ws.Policies().Upsert(ctx, policy)
@@ -27,7 +28,7 @@ func HandlePolicyUpdated(
 	event handler.RawEvent,
 ) error {
 	policy := &pb.Policy{}
-	if err := json.Unmarshal(event.Data, policy); err != nil {
+	if err := protojson.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
 
@@ -42,7 +43,7 @@ func HandlePolicyDeleted(
 	event handler.RawEvent,
 ) error {
 	policy := &pb.Policy{}
-	if err := json.Unmarshal(event.Data, policy); err != nil {
+	if err := protojson.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
 

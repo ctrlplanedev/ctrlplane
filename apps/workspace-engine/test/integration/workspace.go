@@ -11,6 +11,8 @@ import (
 	"workspace-engine/pkg/workspace"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type TestWorkspace struct {
@@ -60,7 +62,16 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 	tw.t.Helper()
 
 	// Marshal the data payload
-	dataBytes, err := json.Marshal(data)
+	var dataBytes []byte
+	var err error
+	
+	// Check if data is a protobuf message
+	if protoMsg, ok := data.(proto.Message); ok {
+		dataBytes, err = protojson.Marshal(protoMsg)
+	} else {
+		dataBytes, err = json.Marshal(data)
+	}
+	
 	if err != nil {
 		tw.t.Fatalf("failed to marshal event data: %v", err)
 		return tw

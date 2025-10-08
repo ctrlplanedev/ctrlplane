@@ -2,10 +2,11 @@ package deployment
 
 import (
 	"context"
-	"encoding/json"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleDeploymentCreated(
@@ -14,7 +15,7 @@ func HandleDeploymentCreated(
 	event handler.RawEvent,
 ) error {
 	deployment := &pb.Deployment{}
-	if err := json.Unmarshal(event.Data, deployment); err != nil {
+	if err := protojson.Unmarshal(event.Data, deployment); err != nil {
 		return err
 	}
 
@@ -30,7 +31,7 @@ func HandleDeploymentUpdated(
 	event handler.RawEvent,
 ) error {
 	deployment := &pb.Deployment{}
-	if err := json.Unmarshal(event.Data, deployment); err != nil {
+	if err := protojson.Unmarshal(event.Data, deployment); err != nil {
 		return err
 	}
 
@@ -46,7 +47,7 @@ func HandleDeploymentDeleted(
 	event handler.RawEvent,
 ) error {
 	deployment := &pb.Deployment{}
-	if err := json.Unmarshal(event.Data, deployment); err != nil {
+	if err := protojson.Unmarshal(event.Data, deployment); err != nil {
 		return err
 	}
 

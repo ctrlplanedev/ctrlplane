@@ -2,10 +2,11 @@ package system
 
 import (
 	"context"
-	"encoding/json"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleSystemCreated(
@@ -14,7 +15,7 @@ func HandleSystemCreated(
 	event handler.RawEvent,
 ) error {
 	system := &pb.System{}
-	if err := json.Unmarshal(event.Data, system); err != nil {
+	if err := protojson.Unmarshal(event.Data, system); err != nil {
 		return err
 	}
 
@@ -30,7 +31,7 @@ func HandleSystemUpdated(
 	event handler.RawEvent,
 ) error {
 	system := &pb.System{}
-	if err := json.Unmarshal(event.Data, system); err != nil {
+	if err := protojson.Unmarshal(event.Data, system); err != nil {
 		return err
 	}
 
@@ -46,7 +47,7 @@ func HandleSystemDeleted(
 	event handler.RawEvent,
 ) error {
 	system := &pb.System{}
-	if err := json.Unmarshal(event.Data, system); err != nil {
+	if err := protojson.Unmarshal(event.Data, system); err != nil {
 		return err
 	}
 

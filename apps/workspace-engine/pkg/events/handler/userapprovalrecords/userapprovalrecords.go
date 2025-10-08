@@ -2,10 +2,11 @@ package userapprovalrecords
 
 import (
 	"context"
-	"encoding/json"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleUserApprovalRecordCreated(
@@ -14,7 +15,7 @@ func HandleUserApprovalRecordCreated(
 	event handler.RawEvent,
 ) error {
 	userApprovalRecord := &pb.UserApprovalRecord{}
-	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
+	if err := protojson.Unmarshal(event.Data, userApprovalRecord); err != nil {
 		return err
 	}
 
@@ -33,7 +34,7 @@ func HandleUserApprovalRecordUpdated(
 	event handler.RawEvent,
 ) error {
 	userApprovalRecord := &pb.UserApprovalRecord{}
-	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
+	if err := protojson.Unmarshal(event.Data, userApprovalRecord); err != nil {
 		return err
 	}
 
@@ -52,7 +53,7 @@ func HandleUserApprovalRecordDeleted(
 	event handler.RawEvent,
 ) error {
 	userApprovalRecord := &pb.UserApprovalRecord{}
-	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
+	if err := protojson.Unmarshal(event.Data, userApprovalRecord); err != nil {
 		return err
 	}
 

@@ -2,10 +2,11 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleJobUpdated(
@@ -13,13 +14,8 @@ func HandleJobUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(event.Data, &raw); err != nil {
-		return err
-	}
-
 	job := &pb.Job{}
-	if err := json.Unmarshal(event.Data, job); err != nil {
+	if err := protojson.Unmarshal(event.Data, job); err != nil {
 		return err
 	}
 

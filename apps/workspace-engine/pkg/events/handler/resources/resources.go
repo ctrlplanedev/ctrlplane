@@ -2,11 +2,12 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleResourceCreated(
@@ -15,7 +16,7 @@ func HandleResourceCreated(
 	event handler.RawEvent,
 ) error {
 	resource := &pb.Resource{}
-	if err := json.Unmarshal(event.Data, resource); err != nil {
+	if err := protojson.Unmarshal(event.Data, resource); err != nil {
 		return err
 	}
 
@@ -35,7 +36,7 @@ func HandleResourceUpdated(
 	event handler.RawEvent,
 ) error {
 	resource := &pb.Resource{}
-	if err := json.Unmarshal(event.Data, resource); err != nil {
+	if err := protojson.Unmarshal(event.Data, resource); err != nil {
 		return err
 	}
 
@@ -51,7 +52,7 @@ func HandleResourceDeleted(
 	event handler.RawEvent,
 ) error {
 	resource := &pb.Resource{}
-	if err := json.Unmarshal(event.Data, resource); err != nil {
+	if err := protojson.Unmarshal(event.Data, resource); err != nil {
 		return err
 	}
 
