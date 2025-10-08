@@ -5,7 +5,11 @@ import (
 	"sort"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("workspace/releasemanager/versionmanager")
 
 type Manager struct {
 	store *store.Store
@@ -20,6 +24,9 @@ func New(store *store.Store) *Manager {
 // GetCandidateVersions returns all versions for a deployment, sorted newest to oldest.
 // The caller is responsible for filtering based on policies or other criteria.
 func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *pb.ReleaseTarget) []*pb.DeploymentVersion {
+	_, span := tracer.Start(ctx, "GetCandidateVersions")
+	defer span.End()
+
 	versions := m.store.DeploymentVersions.Items()
 
 	// Filter versions for the given deployment

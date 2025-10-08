@@ -49,6 +49,9 @@ var tracer = otel.Tracer("workspace/releasemanager")
 // Handles added, updated, and removed release targets concurrently.
 // Returns a map of cancelled jobs (for removed targets).
 func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.ConcurrentMap[string, *pb.Job] {
+	ctx, span := tracer.Start(ctx, "EvaluateChange")
+	defer span.End()
+
 	cancelledJobs := cmap.New[*pb.Job]()
 	var wg sync.WaitGroup
 
@@ -102,12 +105,7 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 // If Evaluate() returns nil → Nothing to deploy (already deployed, no versions, or blocked)
 // If Evaluate() returns release → Deploy it (Evaluate() already checked everything)
 func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *pb.ReleaseTarget) error {
-	ctx, span := tracer.Start(ctx, "ProcessReleaseTarget",
-		trace.WithAttributes(
-			attribute.String("deployment.id", releaseTarget.DeploymentId),
-			attribute.String("environment.id", releaseTarget.EnvironmentId),
-			attribute.String("resource.id", releaseTarget.ResourceId),
-		))
+	ctx, span := tracer.Start(ctx, "ProcessReleaseTarget")
 	defer span.End()
 
 	// Phase 1: DECISION - What needs deploying? (READ-ONLY)
@@ -124,13 +122,16 @@ func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *pb.Re
 	}
 
 	// Phase 2: ACTION - Deploy it (WRITES)
-	return m.executeDeployment(ctx, releaseToDeploy, span)
+	return m.executeDeployment(ctx, releaseToDeploy)
 }
 
 // executeDeployment performs all write operations to deploy a release (WRITES TO STORE).
 // Precondition: Evaluate() has already determined this release NEEDS to be deployed.
 // No additional "should we deploy" checks here - trust the decision phase.
-func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Release, span trace.Span) error {
+func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Release) error {
+	ctx, span := tracer.Start(ctx, "executeDeployment")
+	defer span.End()
+
 	// Step 1: Persist the release (WRITE)
 	m.store.Releases.Upsert(ctx, releaseToDeploy)
 
@@ -205,7 +206,7 @@ func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 	}
 
 	// Step 2: Find first version that passes ALL policies
-	deployableVersion := m.selectDeployableVersion(ctx, candidateVersions, releaseTarget, span)
+	deployableVersion := m.selectDeployableVersion(ctx, candidateVersions, releaseTarget)
 	if deployableVersion == nil {
 		return nil, nil
 	}
@@ -241,8 +242,10 @@ func (m *Manager) selectDeployableVersion(
 	ctx context.Context,
 	candidateVersions []*pb.DeploymentVersion,
 	releaseTarget *pb.ReleaseTarget,
-	span trace.Span,
 ) *pb.DeploymentVersion {
+	ctx, span := tracer.Start(ctx, "selectDeployableVersion")
+	defer span.End()
+
 	versionsEvaluated := 0
 
 	for _, version := range candidateVersions {
