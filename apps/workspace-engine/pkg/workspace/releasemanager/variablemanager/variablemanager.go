@@ -9,8 +9,13 @@ import (
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 	"workspace-engine/pkg/workspace/store"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+var tracer = otel.Tracer("workspace/releasemanager/variablemanager")
 
 type Manager struct {
 	store *store.Store
@@ -25,7 +30,12 @@ type DeploymentVariableWithValues struct {
 	Values             map[string]*pb.DeploymentVariableValue
 }
 
-func (m *Manager) DeploymentVariables(deploymentId string) map[string]*DeploymentVariableWithValues {
+func (m *Manager) DeploymentVariables(ctx context.Context, deploymentId string) map[string]*DeploymentVariableWithValues {
+	ctx, span := tracer.Start(ctx, "DeploymentVariables", trace.WithAttributes(
+		attribute.String("deployment.id", deploymentId),
+	))
+	defer span.End()
+
 	deploymentVariables := make(map[string]*DeploymentVariableWithValues)
 
 	for key, variable := range m.store.Deployments.Variables(deploymentId) {
@@ -40,6 +50,13 @@ func (m *Manager) DeploymentVariables(deploymentId string) map[string]*Deploymen
 }
 
 func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (map[string]*pb.VariableValue, error) {
+	ctx, span := tracer.Start(ctx, "Evaluate", trace.WithAttributes(
+		attribute.String("deployment.id", releaseTarget.DeploymentId),
+		attribute.String("environment.id", releaseTarget.EnvironmentId),
+		attribute.String("resource.id", releaseTarget.ResourceId),
+	))
+	defer span.End()
+
 	evaluatedVariables := make(map[string]*pb.VariableValue)
 
 	// Get the resource for selector matching
@@ -48,7 +65,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 		return nil, fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
 	}
 
-	deploymentVariables := m.DeploymentVariables(releaseTarget.DeploymentId)
+	deploymentVariables := m.DeploymentVariables(ctx, releaseTarget.DeploymentId)
 
 	for _, deploymentVar := range deploymentVariables {
 		variableKey := deploymentVar.DeploymentVariable.Key
@@ -75,6 +92,13 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 // ordered by priority (highest to lowest) and returning the first value that matches
 // the resource selector
 func (m *Manager) resolveVariableValue(ctx context.Context, resource *pb.Resource, deploymentVar *DeploymentVariableWithValues) (*pb.VariableValue, error) {
+	ctx, span := tracer.Start(ctx, "resolveVariableValue", trace.WithAttributes(
+		attribute.String("deployment.variable.key", deploymentVar.DeploymentVariable.Key),
+		attribute.String("deployment.variable.id", deploymentVar.DeploymentVariable.Id),
+		attribute.String("resource.id", resource.Id),
+	))
+	defer span.End()
+
 	// Convert map to slice for sorting
 	valuesList := make([]*pb.DeploymentVariableValue, 0, len(deploymentVar.Values))
 	for _, value := range deploymentVar.Values {
@@ -101,7 +125,7 @@ func (m *Manager) resolveVariableValue(ctx context.Context, resource *pb.Resourc
 		}
 
 		// Extract and return the value
-		resolvedValue, err := m.extractValueFromVariableValue(variableValue)
+		resolvedValue, err := m.extractValueFromVariableValue(ctx, variableValue)
 		if err != nil {
 			return nil, err
 		}
@@ -116,6 +140,12 @@ func (m *Manager) resolveVariableValue(ctx context.Context, resource *pb.Resourc
 
 // matchesResourceSelector checks if a resource matches a given selector
 func (m *Manager) matchesResourceSelector(ctx context.Context, resource *pb.Resource, selector *structpb.Struct) (bool, error) {
+	ctx, span := tracer.Start(ctx, "matchesResourceSelector", trace.WithAttributes(
+		attribute.String("resource.id", resource.Id),
+		attribute.String("selector", selector.String()),
+	))
+	defer span.End()
+
 	unknownCondition, err := unknown.ParseFromMap(selector.AsMap())
 	if err != nil {
 		return false, fmt.Errorf("failed to parse resource selector: %w", err)
@@ -136,7 +166,13 @@ func (m *Manager) matchesResourceSelector(ctx context.Context, resource *pb.Reso
 
 // extractValueFromVariableValue extracts the actual value from a DeploymentVariableValue
 // based on its type (direct, reference, or sensitive)
-func (m *Manager) extractValueFromVariableValue(variableValue *pb.DeploymentVariableValue) (*pb.VariableValue, error) {
+func (m *Manager) extractValueFromVariableValue(ctx context.Context, variableValue *pb.DeploymentVariableValue) (*pb.VariableValue, error) {
+	ctx, span := tracer.Start(ctx, "extractValueFromVariableValue", trace.WithAttributes(
+		attribute.String("deployment.variable.id", variableValue.DeploymentVariableId),
+		attribute.String("deployment.variable.value.id", variableValue.Id),
+	))
+	defer span.End()
+
 	switch valueType := variableValue.Value.(type) {
 	case *pb.DeploymentVariableValue_DirectValue:
 		return valueType.DirectValue, nil

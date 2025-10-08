@@ -208,7 +208,7 @@ func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 	}
 
 	// Step 4: Construct the desired release
-	desiredRelease := buildRelease(releaseTarget, deployableVersion, resolvedVariables)
+	desiredRelease := buildRelease(ctx, releaseTarget, deployableVersion, resolvedVariables)
 
 	policyDecision, err := m.policyManager.EvaluateRelease(ctx, desiredRelease)
 	if err != nil {
@@ -265,10 +265,22 @@ func (m *Manager) selectDeployableVersion(
 }
 
 func buildRelease(
+	ctx context.Context,
 	releaseTarget *pb.ReleaseTarget,
 	version *pb.DeploymentVersion,
 	variables map[string]*pb.VariableValue,
 ) *pb.Release {
+	_, span := tracer.Start(ctx, "buildRelease",
+		trace.WithAttributes(
+			attribute.String("deployment.id", releaseTarget.DeploymentId),
+			attribute.String("environment.id", releaseTarget.EnvironmentId),
+			attribute.String("resource.id", releaseTarget.ResourceId),
+			attribute.String("version.id", version.Id),
+			attribute.String("version.tag", version.Tag),
+			attribute.String("variables.count", fmt.Sprintf("%d", len(variables))),
+		))
+	defer span.End()
+
 	// Clone variables to avoid mutations affecting this release
 	clonedVariables := make(map[string]*pb.VariableValue, len(variables))
 	for key, value := range variables {
@@ -309,6 +321,16 @@ func DeepMerge(dst, src map[string]any) {
 // NewJob creates a job for a given release (PURE FUNCTION, NO WRITES).
 // The job is configured with merged settings from JobAgent + Deployment.
 func (m *Manager) NewJob(ctx context.Context, release *pb.Release) (*pb.Job, error) {
+	_, span := tracer.Start(ctx, "NewJob",
+		trace.WithAttributes(
+			attribute.String("deployment.id", release.ReleaseTarget.DeploymentId),
+			attribute.String("environment.id", release.ReleaseTarget.EnvironmentId),
+			attribute.String("resource.id", release.ReleaseTarget.ResourceId),
+			attribute.String("version.id", release.Version.Id),
+			attribute.String("version.tag", release.Version.Tag),
+		))
+	defer span.End()
+
 	releaseTarget := release.GetReleaseTarget()
 
 	// Lookup deployment

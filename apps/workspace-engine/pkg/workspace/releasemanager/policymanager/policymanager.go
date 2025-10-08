@@ -38,6 +38,16 @@ func (m *Manager) EvaluateRelease(
 	ctx context.Context,
 	release *pb.Release,
 ) (*DeployDecision, error) {
+	ctx, span := tracer.Start(ctx, "EvaluateRelease",
+		trace.WithAttributes(
+			attribute.String("deployment.id", release.ReleaseTarget.DeploymentId),
+			attribute.String("environment.id", release.ReleaseTarget.EnvironmentId),
+			attribute.String("resource.id", release.ReleaseTarget.ResourceId),
+			attribute.String("version.id", release.Version.Id),
+			attribute.String("version.tag", release.Version.Tag),
+		))
+	defer span.End()
+
 	startTime := time.Now()
 	decision := &DeployDecision{
 		PolicyResults: make([]*results.PolicyEvaluationResult, 0, len(m.releaseRuleEvaluators)),
