@@ -215,14 +215,7 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 	e.resources.Remove(id)
 	e.versions.Remove(id)
 
-	e.store.ReleaseTargets.ApplyUpdate(ctx, func(currentReleaseTargets map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error) {
-		for key, releaseTarget := range currentReleaseTargets {
-			if releaseTarget.DeploymentId == id {
-				delete(currentReleaseTargets, key)
-			}
-		}
-		return currentReleaseTargets, nil
-	})
+	e.store.ReleaseTargets.Recompute(ctx)
 }
 
 func (e *Deployments) Variables(deploymentId string) map[string]*pb.DeploymentVariable {

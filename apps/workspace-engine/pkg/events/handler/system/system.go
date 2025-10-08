@@ -18,7 +18,10 @@ func HandleSystemCreated(
 		return err
 	}
 
-	return ws.Systems().Upsert(ctx, system)
+	ws.Systems().Upsert(ctx, system)
+	ws.ReleaseManager().TaintAllReleaseTargets()
+
+	return nil
 }
 
 func HandleSystemUpdated(
@@ -31,7 +34,10 @@ func HandleSystemUpdated(
 		return err
 	}
 
-	return ws.Systems().Upsert(ctx, system)
+	ws.Systems().Upsert(ctx, system)
+	ws.ReleaseManager().TaintAllReleaseTargets()
+
+	return nil
 }
 
 func HandleSystemDeleted(
@@ -45,6 +51,7 @@ func HandleSystemDeleted(
 	}
 
 	ws.Systems().Remove(ctx, system.Id)
+	ws.ReleaseManager().TaintAllReleaseTargets()
 
 	return nil
 }

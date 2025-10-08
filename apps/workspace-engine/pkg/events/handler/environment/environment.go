@@ -18,7 +18,10 @@ func HandleEnvironmentCreated(
 		return err
 	}
 
-	return ws.Environments().Upsert(ctx, environment)
+	ws.Environments().Upsert(ctx, environment)
+	ws.ReleaseManager().TaintEnvironmentsReleaseTargets(environment.Id)
+
+	return nil
 }
 
 func HandleEnvironmentUpdated(
@@ -31,7 +34,10 @@ func HandleEnvironmentUpdated(
 		return err
 	}
 
-	return ws.Environments().Upsert(ctx, environment)
+	ws.Environments().Upsert(ctx, environment)
+	ws.ReleaseManager().TaintEnvironmentsReleaseTargets(environment.Id)
+
+	return nil
 }
 
 func HandleEnvironmentDeleted(
@@ -45,6 +51,7 @@ func HandleEnvironmentDeleted(
 	}
 
 	ws.Environments().Remove(ctx, environment.Id)
+	ws.ReleaseManager().TaintEnvironmentsReleaseTargets(environment.Id)
 
 	return nil
 }

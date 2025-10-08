@@ -19,6 +19,10 @@ func HandleUserApprovalRecordCreated(
 	}
 
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
+	v, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
+	if ok {
+		ws.ReleaseManager().TaintDeploymentsReleaseTargets(v.DeploymentId)
+	}
 
 	return nil
 }
@@ -34,6 +38,10 @@ func HandleUserApprovalRecordUpdated(
 	}
 
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
+	v, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
+	if ok {
+		ws.ReleaseManager().TaintDeploymentsReleaseTargets(v.DeploymentId)
+	}
 
 	return nil
 }
@@ -49,6 +57,10 @@ func HandleUserApprovalRecordDeleted(
 	}
 
 	ws.UserApprovalRecords().Remove(userApprovalRecord.Key())
+	v, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
+	if ok {
+		ws.ReleaseManager().TaintDeploymentsReleaseTargets(v.DeploymentId)
+	}
 
 	return nil
 }

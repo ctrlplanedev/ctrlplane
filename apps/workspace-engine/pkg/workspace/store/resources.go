@@ -73,14 +73,7 @@ func (r *Resources) Get(id string) (*pb.Resource, bool) {
 
 func (r *Resources) Remove(ctx context.Context, id string) {
 	r.repo.Resources.Remove(id)
-	r.store.ReleaseTargets.ApplyUpdate(ctx, func(currentReleaseTargets map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error) {
-		for key, releaseTarget := range currentReleaseTargets {
-			if releaseTarget.ResourceId == id {
-				delete(currentReleaseTargets, key)
-			}
-		}
-		return currentReleaseTargets, nil
-	})
+	r.store.ReleaseTargets.Recompute(ctx)
 }
 
 func (r *Resources) Items() map[string]*pb.Resource {

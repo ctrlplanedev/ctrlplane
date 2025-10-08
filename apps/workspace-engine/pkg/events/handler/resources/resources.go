@@ -24,6 +24,7 @@ func HandleResourceCreated(
 	}
 
 	ws.Resources().Upsert(ctx, resource)
+	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
 }
@@ -39,6 +40,7 @@ func HandleResourceUpdated(
 	}
 
 	ws.Resources().Upsert(ctx, resource)
+	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
 }
@@ -54,6 +56,7 @@ func HandleResourceDeleted(
 	}
 
 	ws.Resources().Remove(ctx, resource.Id)
+	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
 }

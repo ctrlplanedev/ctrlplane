@@ -19,6 +19,7 @@ func HandleDeploymentCreated(
 	}
 
 	ws.Deployments().Upsert(ctx, deployment)
+	ws.ReleaseManager().TaintDeploymentsReleaseTargets(deployment.Id)
 
 	return nil
 }
@@ -34,6 +35,7 @@ func HandleDeploymentUpdated(
 	}
 
 	ws.Deployments().Upsert(ctx, deployment)
+	ws.ReleaseManager().TaintDeploymentsReleaseTargets(deployment.Id)
 
 	return nil
 }
@@ -49,6 +51,7 @@ func HandleDeploymentDeleted(
 	}
 
 	ws.Deployments().Remove(ctx, deployment.Id)
+	ws.ReleaseManager().TaintDeploymentsReleaseTargets(deployment.Id)
 
 	return nil
 }

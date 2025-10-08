@@ -24,11 +24,6 @@ type ReleaseTargets struct {
 	targets *materialized.MaterializedView[map[string]*pb.ReleaseTarget]
 }
 
-func (r *ReleaseTargets) ApplyUpdate(ctx context.Context, fn func(map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error)) error {
-	r.targets.StartRecompute(ctx)
-	return nil
-}
-
 // CurrentState returns the current state of all release targets in the system.
 func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget {
 	r.targets.WaitIfRunning()

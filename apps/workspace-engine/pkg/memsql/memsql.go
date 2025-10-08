@@ -70,14 +70,14 @@ func (m *MemSQL[T]) parseRows(rows *sql.Rows) ([]T, error) {
 	var results []T
 	var t T
 	typ := reflect.TypeOf(t)
-	
+
 	// If T is a pointer type, get the underlying struct type
 	isPointer := false
 	if typ.Kind() == reflect.Ptr {
 		isPointer = true
 		typ = typ.Elem()
 	}
-	
+
 	if typ.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("item must be a struct or pointer to struct, got %s", typ.Kind())
 	}
@@ -86,7 +86,7 @@ func (m *MemSQL[T]) parseRows(rows *sql.Rows) ([]T, error) {
 	fieldMap := make(map[string]int)
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		
+
 		// Check for json tag first (e.g., `json:"user_id,omitempty"`)
 		jsonTag := field.Tag.Get("json")
 		if jsonTag != "" && jsonTag != "-" {
@@ -105,18 +105,18 @@ func (m *MemSQL[T]) parseRows(rows *sql.Rows) ([]T, error) {
 		// Create pointers to scan into
 		values := make([]any, len(columns))
 		valuePtrs := make([]any, len(columns))
-		
+
 		// Create a new instance of the underlying struct type
 		itemPtr := reflect.New(typ)
 		item := itemPtr.Elem()
-		
+
 		for i, col := range columns {
 			colLower := strings.ToLower(col)
 			if fieldIdx, ok := fieldMap[colLower]; ok {
 				// Get a pointer to the struct field
 				field := item.Field(fieldIdx)
 				fieldType := typ.Field(fieldIdx)
-				
+
 				// Check if this is a timestamp field (string that maps to INTEGER in DB)
 				if field.Kind() == reflect.String && isTimestampField(fieldType) {
 					// Scan as sql.NullInt64 to handle NULL values
@@ -149,7 +149,7 @@ func (m *MemSQL[T]) parseRows(rows *sql.Rows) ([]T, error) {
 			if fieldIdx, ok := fieldMap[colLower]; ok {
 				field := item.Field(fieldIdx)
 				fieldType := typ.Field(fieldIdx)
-				
+
 				// Handle timestamp fields
 				if field.Kind() == reflect.String && isTimestampField(fieldType) {
 					if nullTimestamp, ok := values[i].(*sql.NullInt64); ok && nullTimestamp.Valid && nullTimestamp.Int64 > 0 {
@@ -215,7 +215,7 @@ func (m *MemSQL[T]) Delete(whereClause string, args ...any) (int64, error) {
 	}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s", m.tableName, whereClause)
-	
+
 	result, err := m.db.Exec(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("delete failed: %w", err)
@@ -262,7 +262,7 @@ func (m *MemSQL[T]) DeleteOne(whereClause string, args ...any) error {
 func (m *MemSQL[T]) Insert(item T) error {
 	val := reflect.ValueOf(item)
 	typ := reflect.TypeOf(item)
-	
+
 	// If item is a pointer, dereference it
 	if val.Kind() == reflect.Pointer {
 		if val.IsNil() {
@@ -271,7 +271,7 @@ func (m *MemSQL[T]) Insert(item T) error {
 		val = val.Elem()
 		typ = typ.Elem()
 	}
-	
+
 	if typ.Kind() != reflect.Struct {
 		return fmt.Errorf("item must be a struct or pointer to struct, got %s", typ.Kind())
 	}
@@ -297,7 +297,7 @@ func (m *MemSQL[T]) Insert(item T) error {
 
 		columns = append(columns, columnName)
 		placeholders = append(placeholders, "?")
-		
+
 		// Convert timestamp strings to Unix timestamps
 		if fieldValue.Kind() == reflect.String && isTimestampField(field) {
 			timeStr := fieldValue.String()
@@ -358,7 +358,7 @@ func (m *MemSQL[T]) Insert(item T) error {
 				updateClauses = append(updateClauses, fmt.Sprintf("%s = excluded.%s", col, col))
 			}
 		}
-		
+
 		if len(updateClauses) > 0 {
 			query += fmt.Sprintf(
 				" ON CONFLICT(%s) DO UPDATE SET %s",
@@ -395,16 +395,16 @@ func (m *MemSQL[T]) InsertMany(items []T) error {
 
 	// Get column names from the first item
 	typ := reflect.TypeOf(items[0])
-	
+
 	// If item is a pointer, dereference it
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
-	
+
 	if typ.Kind() != reflect.Struct {
 		return fmt.Errorf("items must be structs or pointers to structs, got %s", typ.Kind())
 	}
-	
+
 	var columns []string
 	var fieldIndices []int
 
@@ -460,7 +460,7 @@ func (m *MemSQL[T]) InsertMany(items []T) error {
 				updateClauses = append(updateClauses, fmt.Sprintf("%s = excluded.%s", col, col))
 			}
 		}
-		
+
 		if len(updateClauses) > 0 {
 			query += fmt.Sprintf(
 				" ON CONFLICT(%s) DO UPDATE SET %s",
@@ -483,7 +483,7 @@ func (m *MemSQL[T]) InsertMany(items []T) error {
 	// Insert each item
 	for _, item := range items {
 		val := reflect.ValueOf(item)
-		
+
 		// If item is a pointer, dereference it
 		if val.Kind() == reflect.Ptr {
 			if val.IsNil() {
@@ -491,12 +491,12 @@ func (m *MemSQL[T]) InsertMany(items []T) error {
 			}
 			val = val.Elem()
 		}
-		
+
 		values := make([]any, len(fieldIndices))
 		for i, fieldIdx := range fieldIndices {
 			fieldValue := val.Field(fieldIdx)
 			field := typ.Field(fieldIdx)
-			
+
 			// Convert timestamp strings to Unix timestamps
 			if fieldValue.Kind() == reflect.String && isTimestampField(field) {
 				timeStr := fieldValue.String()
@@ -564,10 +564,10 @@ func isTimestampField(field reflect.StructField) bool {
 	if field.Type.Kind() != reflect.String {
 		return false
 	}
-	
+
 	columnName := strings.ToLower(getColumnName(field))
 	fieldName := strings.ToLower(field.Name)
-	
+
 	// Check for common timestamp field patterns
 	timestampPatterns := []string{
 		"created_at", "createdat",
@@ -576,13 +576,13 @@ func isTimestampField(field reflect.StructField) bool {
 		"timestamp", "time",
 		"date", "datetime",
 	}
-	
+
 	for _, pattern := range timestampPatterns {
 		if strings.Contains(columnName, pattern) || strings.Contains(fieldName, pattern) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -592,7 +592,7 @@ func parseTimestamp(timeStr string) (int64, error) {
 	if timeStr == "" {
 		return 0, fmt.Errorf("empty timestamp")
 	}
-	
+
 	// Try common timestamp formats
 	formats := []string{
 		time.RFC3339,
@@ -602,13 +602,13 @@ func parseTimestamp(timeStr string) (int64, error) {
 		"2006-01-02 15:04:05",
 		"2006-01-02",
 	}
-	
+
 	for _, format := range formats {
 		if t, err := time.Parse(format, timeStr); err == nil {
 			return t.Unix(), nil
 		}
 	}
-	
+
 	return 0, fmt.Errorf("unable to parse timestamp: %s", timeStr)
 }
 

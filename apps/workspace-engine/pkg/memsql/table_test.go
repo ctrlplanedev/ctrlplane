@@ -238,4 +238,3 @@ func TestJoinStatements(t *testing.T) {
 		})
 	}
 }
-

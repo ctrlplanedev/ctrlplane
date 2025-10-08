@@ -1152,7 +1152,7 @@ func TestMemSQL_CRUD_Integration(t *testing.T) {
 
 	// Delete
 	memSQL.Delete("Age < ?", 30)
-	
+
 	remainingUsers, _ := memSQL.Query("SELECT * FROM users ORDER BY ID")
 	if len(remainingUsers) != 2 {
 		t.Errorf("Expected 2 users after delete, got %d", len(remainingUsers))
@@ -1518,8 +1518,8 @@ func TestMemSQL_StructPB_Update(t *testing.T) {
 
 	// Update with new config (delete and re-insert)
 	config2, _ := structpb.NewStruct(map[string]interface{}{
-		"version": "2.0.0",
-		"enabled": false,
+		"version":  "2.0.0",
+		"enabled":  false,
 		"newField": "value",
 	})
 
@@ -2155,7 +2155,7 @@ func TestMemSQL_PointerType_InsertNilPointer(t *testing.T) {
 	// Try to insert nil pointer
 	var user *User = nil
 	err := memSQL.Insert(user)
-	
+
 	if err == nil {
 		t.Fatal("Expected error for nil pointer, got nil")
 	}
@@ -2194,4 +2194,3 @@ func TestMemSQL_PointerType_InsertManyWithNil(t *testing.T) {
 		t.Errorf("Wrong users inserted")
 	}
 }
-

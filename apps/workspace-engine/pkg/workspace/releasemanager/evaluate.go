@@ -55,19 +55,22 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 	cancelledJobs := cmap.New[*pb.Job]()
 	var wg sync.WaitGroup
 
+	// Combine Added and Tainted release targets for processing
+	allToProcess := append(changes.Changes.Added, changes.Changes.Tainted...)
+
 	// Process added release targets
-	for _, change := range changes.Changes.Added {
+	for _, rt := range allToProcess {
 		wg.Add(1)
 		go func(target *pb.ReleaseTarget) {
 			defer wg.Done()
 			if err := m.ProcessReleaseTarget(ctx, target); err != nil {
 				log.Warn("error processing added release target", "error", err.Error())
 			}
-		}(change.NewTarget)
+		}(rt)
 	}
 
 	// Cancel jobs for removed release targets
-	for _, change := range changes.Changes.Removed {
+	for _, rt := range changes.Changes.Removed {
 		wg.Add(1)
 		go func(target *pb.ReleaseTarget) {
 			defer wg.Done()
@@ -78,7 +81,7 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 					cancelledJobs.Set(job.Id, job)
 				}
 			}
-		}(change.OldTarget)
+		}(rt)
 	}
 
 	wg.Wait()
@@ -94,6 +97,14 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 // If Evaluate() returns nil → Nothing to deploy (already deployed, no versions, or blocked)
 // If Evaluate() returns release → Deploy it (Evaluate() already checked everything)
 func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *pb.ReleaseTarget) error {
+	targetKey := releaseTarget.Id
+	lockInterface, _ := m.releaseTargetLocks.LoadOrStore(targetKey, &sync.Mutex{})
+	lock := lockInterface.(*sync.Mutex)
+
+	// Serialize processing for this specific release target
+	lock.Lock()
+	defer lock.Unlock()
+
 	ctx, span := tracer.Start(ctx, "ProcessReleaseTarget")
 	defer span.End()
 
