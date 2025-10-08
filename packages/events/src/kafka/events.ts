@@ -132,8 +132,13 @@ export type EventPayload = {
 // Remove the typescript-specific $typeName field from the protobuf objects
 // go complains about the $typeName field being unknown
 type Without$typeName<T> = Omit<T, "$typeName">;
+
+type PbSelector = { json?: Record<string, any> };
+type WithSelector<T, K extends keyof T> = Without$typeName<Omit<T, K>> &
+  Partial<Record<K, PbSelector>>;
+
 export type PbResource = Without$typeName<pb.Resource>;
-export type PbDeployment = Without$typeName<pb.Deployment>;
+export type PbDeployment = WithSelector<pb.Deployment, "resourceSelector">;
 export type PbDeploymentVariable = Without$typeName<pb.DeploymentVariable>;
 export type PbDeploymentVariableValue =
   Without$typeName<pb.DeploymentVariableValue>;
@@ -184,11 +189,11 @@ export type GoMessage<T extends keyof GoEventPayload> = {
 };
 
 // Helper function to wrap a selector in the protobuf format
-function wrapSelector<T extends Record<string, any> | null | undefined>(
+export function wrapSelector<T extends Record<string, any> | null | undefined>(
   selector: T,
-): T extends null | undefined ? null : { json_selector: T } {
-  if (selector == null) return null as any;
-  return { json_selector: selector } as any;
+): PbSelector | undefined {
+  if (selector == null) return undefined;
+  return { json: selector };
 }
 
 // Helper to transform an object's selector fields to protobuf format

@@ -4,8 +4,9 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendNodeEvent } from "../client.js";
-import { Event } from "../events.js";
+import type { PbDeployment } from "../events.js";
+import { sendGoEvent, sendNodeEvent } from "../client.js";
+import { Event, wrapSelector } from "../events.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
   tx
@@ -14,57 +15,81 @@ const getSystem = async (tx: Tx, systemId: string) =>
     .where(eq(schema.system.id, systemId))
     .then(takeFirst);
 
+const convertDeploymentToNodeEvent = (
+  deployment: schema.Deployment,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.DeploymentCreated,
+  eventId: deployment.id,
+  timestamp: Date.now(),
+  source: "api" as const,
+  payload: deployment,
+});
+
+const getPbDeployment = (deployment: schema.Deployment): PbDeployment => ({
+  id: deployment.id,
+  name: deployment.name,
+  slug: deployment.slug,
+  description: deployment.description,
+  systemId: deployment.systemId,
+  jobAgentId: deployment.jobAgentId ?? undefined,
+  jobAgentConfig: deployment.jobAgentConfig,
+  resourceSelector: wrapSelector(deployment.resourceSelector),
+});
+
+const convertDeploymentToGoEvent = (
+  deployment: schema.Deployment,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.DeploymentCreated as const,
+  data: getPbDeployment(deployment),
+  timestamp: Date.now(),
+});
+
 export const dispatchDeploymentCreated = async (
   deployment: schema.Deployment,
-  source?: "api" | "scheduler" | "user-action",
   db?: Tx,
 ) => {
   const tx = db ?? dbClient;
   const system = await getSystem(tx, deployment.systemId);
 
-  await sendNodeEvent({
-    workspaceId: system.workspaceId,
-    eventType: Event.DeploymentCreated,
-    eventId: deployment.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: deployment,
-  });
+  await Promise.all([
+    sendNodeEvent(convertDeploymentToNodeEvent(deployment, system.workspaceId)),
+    sendGoEvent(convertDeploymentToGoEvent(deployment, system.workspaceId)),
+  ]);
 };
 
 export const dispatchDeploymentUpdated = async (
   previous: schema.Deployment,
   current: schema.Deployment,
-  source?: "api" | "scheduler" | "user-action",
   db?: Tx,
 ) => {
   const tx = db ?? dbClient;
   const system = await getSystem(tx, current.systemId);
 
-  await sendNodeEvent({
-    workspaceId: system.workspaceId,
-    eventType: Event.DeploymentUpdated,
-    eventId: current.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: { previous, current },
-  });
+  await Promise.all([
+    sendNodeEvent({
+      workspaceId: system.workspaceId,
+      eventType: Event.DeploymentUpdated,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: "api" as const,
+      payload: { previous, current },
+    }),
+    sendGoEvent(convertDeploymentToGoEvent(current, system.workspaceId)),
+  ]);
 };
 
 export const dispatchDeploymentDeleted = async (
   deployment: schema.Deployment,
-  source?: "api" | "scheduler" | "user-action",
   db?: Tx,
 ) => {
   const tx = db ?? dbClient;
   const system = await getSystem(tx, deployment.systemId);
-
-  await sendNodeEvent({
-    workspaceId: system.workspaceId,
-    eventType: Event.DeploymentDeleted,
-    eventId: deployment.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: deployment,
-  });
+  await Promise.all([
+    sendNodeEvent(convertDeploymentToNodeEvent(deployment, system.workspaceId)),
+    sendGoEvent(convertDeploymentToGoEvent(deployment, system.workspaceId)),
+  ]);
 };
