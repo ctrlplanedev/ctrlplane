@@ -31,6 +31,15 @@ type Deployments struct {
 	versions  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.DeploymentVersion]]
 }
 
+func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId string) error {
+	mv, ok := e.resources.Get(deploymentId)
+	if !ok {
+		return fmt.Errorf("deployment %s not found", deploymentId)
+	}
+
+	return mv.RunRecompute(ctx)
+}
+
 // deploymentResourceRecomputeFunc returns a function that computes resources for a specific deployment
 func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*pb.Resource] {
 	return func(ctx context.Context) (map[string]*pb.Resource, error) {
@@ -175,37 +184,6 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) err
 	e.versions.Set(deployment.Id, versionsMv)
 
 	e.store.ReleaseTargets.Recompute(ctx)
-
-	return nil
-}
-
-// ApplyResourceUpdate applies an incremental update for a single resource.
-// This is more efficient than RecomputeResources when only one resource changed.
-// It checks if the resource matches the deployment's selector and updates the cached map accordingly.
-func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId string, resource *pb.Resource) error {
-	deployment, exists := e.repo.Deployments.Get(deploymentId)
-	if !exists {
-		return fmt.Errorf("deployment %s not found", deploymentId)
-	}
-
-	// Parse the deployment's resource selector
-	if deployment.ResourceSelector != nil {
-		unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.AsMap())
-		if err != nil {
-			return fmt.Errorf("failed to parse selector for deployment %s: %w", deployment.Id, err)
-		}
-		_, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
-		if err != nil {
-			return fmt.Errorf("failed to convert selector for deployment %s: %w", deployment.Id, err)
-		}
-	}
-
-	mv, ok := e.resources.Get(deploymentId)
-	if !ok {
-		return fmt.Errorf("deployment %s not found", deploymentId)
-	}
-
-	mv.StartRecompute(ctx)
 
 	return nil
 }

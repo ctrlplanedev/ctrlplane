@@ -541,6 +541,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 				),
 			),
 			integration.WithEnvironment(
+				integration.EnvironmentID("env-prod"),
 				integration.EnvironmentName("env-prod"),
 			),
 		),

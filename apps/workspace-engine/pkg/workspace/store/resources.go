@@ -5,8 +5,6 @@ import (
 	"sync"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"github.com/charmbracelet/log"
 )
 
 func NewResources(store *Store) *Resources {
@@ -28,11 +26,17 @@ func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Reso
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		r.applyResourceToAllEnvironments(ctx, resource)
+		for item := range r.store.Environments.IterBuffered() {
+			environment := item.Val
+			r.store.Environments.RecomputeResources(ctx, environment.Id)
+		}
 	}()
 	go func() {
 		defer wg.Done()
-		r.applyResourceToAllDeployments(ctx, resource)
+		for item := range r.store.Deployments.IterBuffered() {
+			deployment := item.Val
+			r.store.Deployments.RecomputeResources(ctx, deployment.Id)
+		}
 	}()
 	wg.Wait()
 
@@ -41,38 +45,31 @@ func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Reso
 	return resource, nil
 }
 
-func (r *Resources) applyResourceToAllEnvironments(ctx context.Context, resource *pb.Resource) {
-	// Iterate through environments and apply the incremental update for this single resource
-	// This is more efficient than recomputing all resources for each environment
-	for item := range r.repo.Environments.IterBuffered() {
-		environment := item.Val
-		// Use ApplyResourceUpdate instead of RecomputeResources for efficiency
-		// This only checks if the single resource matches, not all resources
-		if err := r.store.Environments.ApplyResourceUpdate(ctx, environment.Id, resource); err != nil {
-			log.Error("error applying resource update to environment", "error", err.Error())
-		}
-	}
-}
-
-func (r *Resources) applyResourceToAllDeployments(ctx context.Context, resource *pb.Resource) {
-	// Iterate through deployments and apply the incremental update for this single resource
-	// This is more efficient than recomputing all resources for each deployment
-	for item := range r.repo.Deployments.IterBuffered() {
-		deployment := item.Val
-		// Use ApplyResourceUpdate instead of RecomputeResources for efficiency
-		// This only checks if the single resource matches, not all resources
-		if err := r.store.Deployments.ApplyResourceUpdate(ctx, deployment.Id, resource); err != nil {
-			log.Error("error applying resource update to deployment", "error", err.Error())
-		}
-	}
-}
-
 func (r *Resources) Get(id string) (*pb.Resource, bool) {
 	return r.repo.Resources.Get(id)
 }
 
 func (r *Resources) Remove(ctx context.Context, id string) {
 	r.repo.Resources.Remove(id)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for item := range r.store.Environments.IterBuffered() {
+			environment := item.Val
+			r.store.Environments.RecomputeResources(ctx, environment.Id)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for item := range r.store.Deployments.IterBuffered() {
+			deployment := item.Val
+			r.store.Deployments.RecomputeResources(ctx, deployment.Id)
+		}
+	}()
+	wg.Wait()
+
 	r.store.ReleaseTargets.Recompute(ctx)
 }
 
