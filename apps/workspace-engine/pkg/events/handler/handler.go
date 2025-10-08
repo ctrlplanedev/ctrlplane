@@ -66,7 +66,7 @@ type BaseEvent struct {
 // RawEvent represents the raw event data received from Kafka messages
 type RawEvent struct {
 	BaseEvent
-	Data json.RawMessage `json:"data,omitempty"`
+	Data json.RawMessage `json:"payload,omitempty"`
 }
 
 // Handler defines the interface for processing events
