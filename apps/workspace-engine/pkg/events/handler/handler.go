@@ -92,6 +92,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 			attribute.String("kafka.topic", *msg.TopicPartition.Topic),
 			attribute.Int("kafka.partition", int(msg.TopicPartition.Partition)),
 			attribute.Int64("kafka.offset", int64(msg.TopicPartition.Offset)),
+			attribute.String("event.data", string(msg.Value)),
 		))
 	defer span.End()
 
@@ -110,7 +111,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		attribute.String("event.key", string(msg.Key)),
 		attribute.String("event.workspace_id", rawEvent.WorkspaceID),
 		attribute.Float64("event.timestamp", float64(msg.Timestamp.Unix())),
-		attribute.String("event.data", string(rawEvent.Data)),
 	)
 
 	// Find the appropriate handler for this event type
