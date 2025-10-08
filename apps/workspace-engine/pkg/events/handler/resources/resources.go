@@ -34,23 +34,26 @@ func HandleResourceUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	newResource := &pb.Resource{}
-	if err := json.Unmarshal(event.Data, newResource); err != nil {
-		// @depricated
-		var payload struct {
-			New *pb.Resource `json:"new"`
-		}
-		if err := json.Unmarshal(event.Data, &payload); err != nil {
-			return err
-		}
-		if payload.New == nil {
-			return errors.New("missing 'new' resource in update event")
-		}
-		newResource = payload.New
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(event.Data, &raw); err != nil {
+		return err
 	}
 
-	ws.Resources().Upsert(ctx, newResource)
-	ws.ReleaseManager().TaintResourcesReleaseTargets(newResource.Id)
+	resource := &pb.Resource{}
+	if currentData, exists := raw["current"]; exists {
+		// Parse as nested structure with "current" field
+		if err := json.Unmarshal(currentData, resource); err != nil {
+			return err
+		}
+	} else {
+		// Parse directly as userApprovalRecord
+		if err := json.Unmarshal(event.Data, resource); err != nil {
+			return err
+		}
+	}
+
+	ws.Resources().Upsert(ctx, resource)
+	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
 }

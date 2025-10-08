@@ -3,7 +3,6 @@ package jobagents
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
@@ -29,18 +28,21 @@ func HandleJobAgentUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(event.Data, &raw); err != nil {
+		return err
+	}
+
 	jobAgent := &pb.JobAgent{}
-	if err := json.Unmarshal(event.Data, jobAgent); err != nil {
-		var payload struct {
-			New *pb.JobAgent `json:"new"`
-		}
-		if err := json.Unmarshal(event.Data, &payload); err != nil {
+	if currentData, exists := raw["current"]; exists {
+		// Parse as nested structure with "current" field
+		if err := json.Unmarshal(currentData, jobAgent); err != nil {
 			return err
 		}
-		if payload.New == nil {
-			return errors.New("missing 'new' job agent in update event")
+	} else {
+		if err := json.Unmarshal(event.Data, jobAgent); err != nil {
+			return err
 		}
-		jobAgent = payload.New
 	}
 
 	ws.JobAgents().Upsert(jobAgent)

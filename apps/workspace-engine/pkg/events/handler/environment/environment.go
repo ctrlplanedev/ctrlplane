@@ -3,7 +3,6 @@ package environment
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
@@ -30,18 +29,21 @@ func HandleEnvironmentUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(event.Data, &raw); err != nil {
+		return err
+	}
+
 	environment := &pb.Environment{}
-	if err := json.Unmarshal(event.Data, environment); err != nil {
-		var payload struct {
-			New *pb.Environment `json:"new"`
-		}
-		if err := json.Unmarshal(event.Data, &payload); err != nil {
+	if currentData, exists := raw["current"]; exists {
+		// Parse as nested structure with "current" field
+		if err := json.Unmarshal(currentData, environment); err != nil {
 			return err
 		}
-		if payload.New == nil {
-			return errors.New("missing 'new' environment in update event")
+	} else {
+		if err := json.Unmarshal(event.Data, environment); err != nil {
+			return err
 		}
-		environment = payload.New
 	}
 
 	ws.Environments().Upsert(ctx, environment)

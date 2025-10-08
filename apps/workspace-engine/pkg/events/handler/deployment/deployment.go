@@ -3,7 +3,6 @@ package deployment
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
@@ -30,18 +29,21 @@ func HandleDeploymentUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(event.Data, &raw); err != nil {
+		return err
+	}
+
 	deployment := &pb.Deployment{}
-	if err := json.Unmarshal(event.Data, deployment); err != nil {
-		var payload struct {
-			New *pb.Deployment `json:"new"`
-		}
-		if err := json.Unmarshal(event.Data, &payload); err != nil {
+	if currentData, exists := raw["current"]; exists {
+		// Parse as nested structure with "current" field
+		if err := json.Unmarshal(currentData, deployment); err != nil {
 			return err
 		}
-		if payload.New == nil {
-			return errors.New("missing 'new' deployment in update event")
+	} else {
+		if err := json.Unmarshal(event.Data, deployment); err != nil {
+			return err
 		}
-		deployment = payload.New
 	}
 
 	ws.Deployments().Upsert(ctx, deployment)

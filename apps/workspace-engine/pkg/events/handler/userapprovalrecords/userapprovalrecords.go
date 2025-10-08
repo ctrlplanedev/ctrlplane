@@ -3,7 +3,6 @@ package userapprovalrecords
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
@@ -33,18 +32,23 @@ func HandleUserApprovalRecordUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	// First check if the data has a "current" field
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(event.Data, &raw); err != nil {
+		return err
+	}
+
 	userApprovalRecord := &pb.UserApprovalRecord{}
-	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
-		var payload struct {
-			New *pb.UserApprovalRecord `json:"new"`
-		}
-		if err := json.Unmarshal(event.Data, &payload); err != nil {
+	if currentData, exists := raw["current"]; exists {
+		// Parse as nested structure with "current" field
+		if err := json.Unmarshal(currentData, userApprovalRecord); err != nil {
 			return err
 		}
-		if payload.New == nil {
-			return errors.New("missing 'new' user approval record in update event")
+	} else {
+		// Parse directly as userApprovalRecord
+		if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
+			return err
 		}
-		userApprovalRecord = payload.New
 	}
 
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)

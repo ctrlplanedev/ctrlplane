@@ -3,7 +3,6 @@ package policies
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
@@ -27,18 +26,21 @@ func HandlePolicyUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(event.Data, &raw); err != nil {
+		return err
+	}
+
 	policy := &pb.Policy{}
-	if err := json.Unmarshal(event.Data, policy); err != nil {
-		var payload struct {
-			New *pb.Policy `json:"new"`
-		}
-		if err := json.Unmarshal(event.Data, &payload); err != nil {
+	if currentData, exists := raw["current"]; exists {
+		// Parse as nested structure with "current" field
+		if err := json.Unmarshal(currentData, policy); err != nil {
 			return err
 		}
-		if payload.New == nil {
-			return errors.New("missing 'new' policy in update event")
+	} else {
+		if err := json.Unmarshal(event.Data, policy); err != nil {
+			return err
 		}
-		policy = payload.New
 	}
 
 	ws.Policies().Upsert(ctx, policy)
