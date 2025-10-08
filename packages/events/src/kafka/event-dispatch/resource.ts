@@ -44,7 +44,7 @@ const convertFullResourceToNodeEvent = (fullResource: FullResource) => ({
 const convertFullResourceToGoEvent = (fullResource: FullResource) => ({
   workspaceId: fullResource.workspaceId,
   eventType: Event.ResourceCreated as const,
-  payload: getPbResource(fullResource),
+  data: getPbResource(fullResource),
   timestamp: Date.now(),
 });
 

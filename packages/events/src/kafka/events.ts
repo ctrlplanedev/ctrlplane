@@ -179,7 +179,8 @@ export type Message<T extends keyof EventPayload> = {
 export type GoMessage<T extends keyof GoEventPayload> = {
   workspaceId: string;
   eventType: T;
-  payload: GoEventPayload[T];
+  data: GoEventPayload[T];
+  timestamp: number;
 };
 
 // Helper function to wrap a selector in the protobuf format
