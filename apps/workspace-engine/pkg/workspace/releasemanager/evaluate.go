@@ -160,6 +160,9 @@ func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Rel
 
 // cancelOutdatedJobs cancels jobs for outdated releases (WRITES TO STORE).
 func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Release) {
+	ctx, span := tracer.Start(ctx, "cancelOutdatedJobs")
+	defer span.End()
+
 	jobs := m.store.Jobs.GetJobsForReleaseTarget(desiredRelease.ReleaseTarget)
 
 	for _, job := range jobs {

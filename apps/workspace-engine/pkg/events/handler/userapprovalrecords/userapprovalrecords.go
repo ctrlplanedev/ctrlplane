@@ -3,6 +3,7 @@ package userapprovalrecords
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace"
@@ -34,7 +35,16 @@ func HandleUserApprovalRecordUpdated(
 ) error {
 	userApprovalRecord := &pb.UserApprovalRecord{}
 	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
-		return err
+		var payload struct {
+			New *pb.UserApprovalRecord `json:"new"`
+		}
+		if err := json.Unmarshal(event.Data, &payload); err != nil {
+			return err
+		}
+		if payload.New == nil {
+			return errors.New("missing 'new' user approval record in update event")
+		}
+		userApprovalRecord = payload.New
 	}
 
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)

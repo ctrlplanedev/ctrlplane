@@ -34,13 +34,23 @@ func HandleResourceUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	resource := &pb.Resource{}
-	if err := json.Unmarshal(event.Data, resource); err != nil {
-		return err
+	newResource := &pb.Resource{}
+	if err := json.Unmarshal(event.Data, newResource); err != nil {
+		// @depricated
+		var payload struct {
+			New *pb.Resource `json:"new"`
+		}
+		if err := json.Unmarshal(event.Data, &payload); err != nil {
+			return err
+		}
+		if payload.New == nil {
+			return errors.New("missing 'new' resource in update event")
+		}
+		newResource = payload.New
 	}
 
-	ws.Resources().Upsert(ctx, resource)
-	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
+	ws.Resources().Upsert(ctx, newResource)
+	ws.ReleaseManager().TaintResourcesReleaseTargets(newResource.Id)
 
 	return nil
 }
@@ -56,7 +66,6 @@ func HandleResourceDeleted(
 	}
 
 	ws.Resources().Remove(ctx, resource.Id)
-	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
 }
