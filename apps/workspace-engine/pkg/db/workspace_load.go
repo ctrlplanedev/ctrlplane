@@ -6,9 +6,16 @@ import (
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
+var tracer = otel.Tracer("db")
+
 func loadSystems(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadSystems")
+	defer span.End()
+
 	dbSystems, err := getSystems(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get systems: %w", err)
@@ -16,11 +23,14 @@ func loadSystems(ctx context.Context, ws *workspace.Workspace) error {
 	for _, system := range dbSystems {
 		ws.Systems().Upsert(ctx, system)
 	}
-	log.Info("Loaded systems", "count", len(dbSystems))
+	span.SetAttributes(attribute.Int("count", len(dbSystems)))
 	return nil
 }
 
 func loadResources(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadResources")
+	defer span.End()
+
 	dbResources, err := getResources(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get resources: %w", err)
@@ -28,11 +38,14 @@ func loadResources(ctx context.Context, ws *workspace.Workspace) error {
 	for _, resource := range dbResources {
 		ws.Resources().Upsert(ctx, resource)
 	}
-	log.Info("Loaded resources", "count", len(dbResources))
+	span.SetAttributes(attribute.Int("count", len(dbResources)))
 	return nil
 }
 
 func loadDeployments(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadDeployments")
+	defer span.End()
+
 	dbDeployments, err := getDeployments(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get deployments: %w", err)
@@ -40,11 +53,14 @@ func loadDeployments(ctx context.Context, ws *workspace.Workspace) error {
 	for _, deployment := range dbDeployments {
 		ws.Deployments().Upsert(ctx, deployment)
 	}
-	log.Info("Loaded deployments", "count", len(dbDeployments))
+	span.SetAttributes(attribute.Int("count", len(dbDeployments)))
 	return nil
 }
 
 func loadDeploymentVersions(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadDeploymentVersions")
+	defer span.End()
+
 	dbDeploymentVersions, err := getDeploymentVersions(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get deployment versions: %w", err)
@@ -52,11 +68,14 @@ func loadDeploymentVersions(ctx context.Context, ws *workspace.Workspace) error 
 	for _, deploymentVersion := range dbDeploymentVersions {
 		ws.DeploymentVersions().Upsert(deploymentVersion.DeploymentId, deploymentVersion)
 	}
-	log.Info("Loaded deployment versions", "count", len(dbDeploymentVersions))
+	span.SetAttributes(attribute.Int("count", len(dbDeploymentVersions)))
 	return nil
 }
 
 func loadDeploymentVariables(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadDeploymentVariables")
+	defer span.End()
+
 	dbDeploymentVariables, err := getDeploymentVariables(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get deployment variables: %w", err)
@@ -64,11 +83,14 @@ func loadDeploymentVariables(ctx context.Context, ws *workspace.Workspace) error
 	for _, deploymentVariable := range dbDeploymentVariables {
 		ws.Deployments().Variables(deploymentVariable.DeploymentId)[deploymentVariable.Key] = deploymentVariable
 	}
-	log.Info("Loaded deployment variables", "count", len(dbDeploymentVariables))
+	span.SetAttributes(attribute.Int("count", len(dbDeploymentVariables)))
 	return nil
 }
 
 func loadEnvironments(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadEnvironments")
+	defer span.End()
+
 	dbEnvironments, err := getEnvironments(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get environments: %w", err)
@@ -76,11 +98,14 @@ func loadEnvironments(ctx context.Context, ws *workspace.Workspace) error {
 	for _, environment := range dbEnvironments {
 		ws.Environments().Upsert(ctx, environment)
 	}
-	log.Info("Loaded environments", "count", len(dbEnvironments))
+	span.SetAttributes(attribute.Int("count", len(dbEnvironments)))
 	return nil
 }
 
 func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadPolicies")
+	defer span.End()
+
 	dbPolicies, err := getPolicies(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get policies: %w", err)
@@ -88,11 +113,15 @@ func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
 	for _, policy := range dbPolicies {
 		ws.Policies().Upsert(ctx, policy)
 	}
+	span.SetAttributes(attribute.Int("count", len(dbPolicies)))
 	log.Info("Loaded policies", "count", len(dbPolicies))
 	return nil
 }
 
 func loadJobAgents(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadJobAgents")
+	defer span.End()
+
 	dbJobAgents, err := getJobAgents(ctx, ws.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get job agents: %w", err)
@@ -100,11 +129,15 @@ func loadJobAgents(ctx context.Context, ws *workspace.Workspace) error {
 	for _, jobAgent := range dbJobAgents {
 		ws.JobAgents().Upsert(jobAgent)
 	}
+	span.SetAttributes(attribute.Int("count", len(dbJobAgents)))
 	log.Info("Loaded job agents", "count", len(dbJobAgents))
 	return nil
 }
 
 func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
+	ctx, span := tracer.Start(ctx, "LoadWorkspace")
+	defer span.End()
+
 	log.Info("Loading workspace", "workspaceID", workspaceID)
 	db, err := GetDB(ctx)
 	if err != nil {
