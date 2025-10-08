@@ -14,11 +14,13 @@ func NewSystem(workspaceID string) *pb.System {
 	id := uuid.New().String()
 	idSubstring := id[:8]
 
+	description := fmt.Sprintf("Test system %s", idSubstring)
+
 	s := &pb.System{
 		Id:          id,
 		WorkspaceId: workspaceID,
 		Name:        fmt.Sprintf("system-%s", idSubstring),
-		Description: fmt.Sprintf("Test system %s", idSubstring),
+		Description: &description,
 	}
 
 	return s

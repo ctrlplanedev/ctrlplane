@@ -145,7 +145,7 @@ func SystemName(name string) SystemOption {
 
 func SystemDescription(description string) SystemOption {
 	return func(_ *TestWorkspace, s *pb.System, _ *eventsBuilder) {
-		s.Description = description
+		s.Description = &description
 	}
 }
 
@@ -202,7 +202,7 @@ func DeploymentName(name string) DeploymentOption {
 
 func DeploymentDescription(description string) DeploymentOption {
 	return func(_ *TestWorkspace, d *pb.Deployment, _ *eventsBuilder) {
-		d.Description = description
+		d.Description = &description
 	}
 }
 
@@ -317,7 +317,7 @@ func EnvironmentName(name string) EnvironmentOption {
 
 func EnvironmentDescription(description string) EnvironmentOption {
 	return func(_ *TestWorkspace, e *pb.Environment) {
-		e.Description = description
+		e.Description = &description
 	}
 }
 
@@ -419,7 +419,7 @@ func PolicyName(name string) PolicyOption {
 
 func PolicyDescription(description string) PolicyOption {
 	return func(_ *TestWorkspace, p *pb.Policy, _ *eventsBuilder) {
-		p.Description = description
+		p.Description = &description
 	}
 }
 

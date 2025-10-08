@@ -21,10 +21,12 @@ func NewEnvironment(systemID string) *pb.Environment {
 		"value":    "",
 	})
 
+	description := fmt.Sprintf("Test environment %s", idSubstring)
+
 	e := &pb.Environment{
 		Id:               id,
 		Name:             fmt.Sprintf("env-%s", idSubstring),
-		Description:      fmt.Sprintf("Test environment %s", idSubstring),
+		Description:      &description,
 		SystemId:         systemID,
 		ResourceSelector: allResources,
 		CreatedAt:        time.Now().Format(time.RFC3339),

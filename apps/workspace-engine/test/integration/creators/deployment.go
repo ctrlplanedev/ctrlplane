@@ -14,11 +14,13 @@ func NewDeployment(systemID string) *pb.Deployment {
 	id := uuid.New().String()
 	idSubstring := id[:8]
 
+	description := fmt.Sprintf("Test deployment %s", idSubstring)
+
 	dv := &pb.Deployment{
 		Id:               id,
 		Name:             fmt.Sprintf("d-%s", idSubstring),
 		Slug:             fmt.Sprintf("d-%s", idSubstring),
-		Description:      fmt.Sprintf("d-%s", idSubstring),
+		Description:      &description,
 		SystemId:         systemID,
 		JobAgentId:       nil,
 		JobAgentConfig:   nil,
