@@ -10,18 +10,25 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 )
 
 var (
-	pool *pgxpool.Pool
-	once sync.Once
+	pool        *pgxpool.Pool
+	once        sync.Once
+	postgresURL = getEnv("POSTGRES_URL", "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane")
 )
+
+func getEnv(varName string, defaultValue string) string {
+	v := os.Getenv(varName)
+	if v == "" {
+		return defaultValue
+	}
+	return v
+}
 
 // GetPool returns the singleton database connection pool
 func GetPool(ctx context.Context) *pgxpool.Pool {
 	once.Do(func() {
-		postgresURL := viper.GetString("POSTGRES_URL")
 		config, err := pgxpool.ParseConfig(postgresURL)
 		if err != nil {
 			log.Fatal("Failed to parse database config:", err)
