@@ -200,7 +200,7 @@ type Policy struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Id            string                  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                  `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                  `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                 `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	CreatedAt     string                  `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	WorkspaceId   string                  `protobuf:"bytes,5,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
 	Selectors     []*PolicyTargetSelector `protobuf:"bytes,6,rep,name=selectors,proto3" json:"selectors,omitempty"`
@@ -254,8 +254,8 @@ func (x *Policy) GetName() string {
 }
 
 func (x *Policy) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -1161,7 +1161,7 @@ type Deployment struct {
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Slug             string                 `protobuf:"bytes,3,opt,name=slug,proto3" json:"slug,omitempty"`
-	Description      string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Description      *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	SystemId         string                 `protobuf:"bytes,5,opt,name=system_id,json=systemId,proto3" json:"system_id,omitempty"`
 	JobAgentId       *string                `protobuf:"bytes,6,opt,name=job_agent_id,json=jobAgentId,proto3,oneof" json:"job_agent_id,omitempty"`
 	JobAgentConfig   *structpb.Struct       `protobuf:"bytes,7,opt,name=job_agent_config,json=jobAgentConfig,proto3" json:"job_agent_config,omitempty"`
@@ -1222,8 +1222,8 @@ func (x *Deployment) GetSlug() string {
 }
 
 func (x *Deployment) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -1767,7 +1767,7 @@ type DeploymentVariable struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 	VariableId    string                 `protobuf:"bytes,3,opt,name=variable_id,json=variableId,proto3" json:"variable_id,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	DeploymentId  string                 `protobuf:"bytes,5,opt,name=deployment_id,json=deploymentId,proto3" json:"deployment_id,omitempty"`
 	DefaultValue  *VariableValue         `protobuf:"bytes,6,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1826,8 +1826,8 @@ func (x *DeploymentVariable) GetVariableId() string {
 }
 
 func (x *DeploymentVariable) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -2193,7 +2193,7 @@ type System struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	WorkspaceId   string                 `protobuf:"bytes,2,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2250,8 +2250,8 @@ func (x *System) GetName() string {
 }
 
 func (x *System) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -2572,16 +2572,17 @@ var File_workspace_proto protoreflect.FileDescriptor
 
 const file_workspace_proto_rawDesc = "" +
 	"\n" +
-	"\x0fworkspace.proto\x12\tworkspace\x1a\x1cgoogle/protobuf/struct.proto\"\xfc\x01\n" +
+	"\x0fworkspace.proto\x12\tworkspace\x1a\x1cgoogle/protobuf/struct.proto\"\x91\x02\n" +
 	"\x06Policy\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1d\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +
+	"\vdescription\x18\x03 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x04 \x01(\tR\tcreatedAt\x12!\n" +
 	"\fworkspace_id\x18\x05 \x01(\tR\vworkspaceId\x12=\n" +
 	"\tselectors\x18\x06 \x03(\v2\x1f.workspace.PolicyTargetSelectorR\tselectors\x12+\n" +
-	"\x05rules\x18\a \x03(\v2\x15.workspace.PolicyRuleR\x05rules\"\xd8\x02\n" +
+	"\x05rules\x18\a \x03(\v2\x15.workspace.PolicyRuleR\x05rulesB\x0e\n" +
+	"\f_description\"\xd8\x02\n" +
 	"\x14PolicyTargetSelector\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12M\n" +
 	"\x13deployment_selector\x18\x03 \x01(\v2\x17.google.protobuf.StructH\x00R\x12deploymentSelector\x88\x01\x01\x12O\n" +
@@ -2668,18 +2669,19 @@ const file_workspace_proto_rawDesc = "" +
 	"\x11resource_selector\x18\x05 \x01(\v2\x17.google.protobuf.StructR\x10resourceSelector\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAtB\x0e\n" +
-	"\f_description\"\xdf\x02\n" +
+	"\f_description\"\xf4\x02\n" +
 	"\n" +
 	"Deployment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04slug\x18\x03 \x01(\tR\x04slug\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x1b\n" +
+	"\x04slug\x18\x03 \x01(\tR\x04slug\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1b\n" +
 	"\tsystem_id\x18\x05 \x01(\tR\bsystemId\x12%\n" +
-	"\fjob_agent_id\x18\x06 \x01(\tH\x00R\n" +
+	"\fjob_agent_id\x18\x06 \x01(\tH\x01R\n" +
 	"jobAgentId\x88\x01\x01\x12A\n" +
 	"\x10job_agent_config\x18\a \x01(\v2\x17.google.protobuf.StructR\x0ejobAgentConfig\x12I\n" +
-	"\x11resource_selector\x18\b \x01(\v2\x17.google.protobuf.StructH\x01R\x10resourceSelector\x88\x01\x01B\x0f\n" +
+	"\x11resource_selector\x18\b \x01(\v2\x17.google.protobuf.StructH\x02R\x10resourceSelector\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\x0f\n" +
 	"\r_job_agent_idB\x14\n" +
 	"\x12_resource_selector\"\x96\x01\n" +
 	"\bJobAgent\x12\x0e\n" +
@@ -2740,15 +2742,16 @@ const file_workspace_proto_rawDesc = "" +
 	"created_at\x18\x04 \x01(\tR\tcreatedAt\x1aV\n" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.workspace.VariableValueR\x05value:\x028\x01\"\xdd\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x18.workspace.VariableValueR\x05value:\x028\x01\"\xf2\x01\n" +
 	"\x12DeploymentVariable\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x1f\n" +
 	"\vvariable_id\x18\x03 \x01(\tR\n" +
-	"variableId\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12#\n" +
+	"variableId\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01\x12#\n" +
 	"\rdeployment_id\x18\x05 \x01(\tR\fdeploymentId\x12=\n" +
-	"\rdefault_value\x18\x06 \x01(\v2\x18.workspace.VariableValueR\fdefaultValue\"\xff\x03\n" +
+	"\rdefault_value\x18\x06 \x01(\v2\x18.workspace.VariableValueR\fdefaultValueB\x0e\n" +
+	"\f_description\"\xff\x03\n" +
 	"\x17DeploymentVariableValue\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x124\n" +
 	"\x16deployment_variable_id\x18\x03 \x01(\tR\x14deploymentVariableId\x12\x1a\n" +
@@ -2780,12 +2783,13 @@ const file_workspace_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\t \x01(\tR\tcreatedAtB\n" +
 	"\n" +
-	"\b_message\"q\n" +
+	"\b_message\"\x86\x01\n" +
 	"\x06System\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xc6\x01\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01B\x0e\n" +
+	"\f_description\"\xc6\x01\n" +
 	"\x1cComputeReleaseTargetsRequest\x12:\n" +
 	"\fenvironments\x18\x01 \x03(\v2\x16.workspace.EnvironmentR\fenvironments\x127\n" +
 	"\vdeployments\x18\x02 \x03(\v2\x15.workspace.DeploymentR\vdeployments\x121\n" +
@@ -2952,6 +2956,7 @@ func file_workspace_proto_init() {
 	if File_workspace_proto != nil {
 		return
 	}
+	file_workspace_proto_msgTypes[0].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[1].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[2].OneofWrappers = []any{
 		(*PolicyRule_AnyApproval)(nil),
@@ -2972,6 +2977,7 @@ func file_workspace_proto_init() {
 		(*VariableValue_ObjectValue)(nil),
 		(*VariableValue_NullValue)(nil),
 	}
+	file_workspace_proto_msgTypes[20].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[21].OneofWrappers = []any{
 		(*DeploymentVariableValue_DirectValue)(nil),
 		(*DeploymentVariableValue_ReferenceValue)(nil),
@@ -2979,6 +2985,7 @@ func file_workspace_proto_init() {
 	}
 	file_workspace_proto_msgTypes[23].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[24].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[25].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[28].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[30].OneofWrappers = []any{}
 	type x struct{}

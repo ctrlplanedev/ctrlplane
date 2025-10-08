@@ -9,7 +9,8 @@ option go_package = "workspace-engine/pkg/pb";
 message Policy {
   string id = 1;
   string name = 2;
-  string description = 3;
+  optional string description = 3;
+
   string created_at = 4;
   string workspace_id = 5;
 
@@ -149,7 +150,7 @@ message Deployment {
   string id = 1;
   string name = 2;
   string slug = 3;
-  string description = 4;
+  optional string description = 4;
   string system_id = 5;
 
   optional string job_agent_id = 6;
@@ -241,7 +242,7 @@ message DeploymentVariable {
   string id = 1;
   string key = 2;
   string variable_id = 3;
-  string description = 4;
+  optional string description = 4;
   string deployment_id = 5;
 
   VariableValue default_value = 6;
@@ -288,7 +289,7 @@ message System {
   string id = 1;
   string workspace_id = 2;
   string name = 3;
-  string description = 4;
+  optional string description = 4;
 }
 
 message ComputeReleaseTargetsRequest {
