@@ -171,14 +171,12 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
 
-	// Parse the environment's resource selector
-	var condition util.MatchableCondition
 	if environment.ResourceSelector != nil {
 		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.AsMap())
 		if err != nil {
 			return fmt.Errorf("failed to parse selector for environment %s: %w", environment.Id, err)
 		}
-		condition, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
+		_, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
 		if err != nil {
 			return fmt.Errorf("failed to convert selector for environment %s: %w", environment.Id, err)
 		}
@@ -190,41 +188,14 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
 
-	_, err := mv.ApplyUpdate(func(currentResources map[string]*pb.Resource) (map[string]*pb.Resource, error) {
-		// Check if resource matches selector
-		// For environments: nil condition means match NO resources (default to none)
-		matches := false
-		if condition != nil {
-			ok, err := condition.Matches(resource)
-			if err != nil {
-				return nil, fmt.Errorf("error matching resource %s for environment %s: %w", resource.Id, environment.Id, err)
-			}
-			matches = ok
-		}
+	mv.StartRecompute()
 
-		// Update the map
-		if matches {
-			currentResources[resource.Id] = resource
-		} else {
-			delete(currentResources, resource.Id)
-		}
-
-		return currentResources, nil
-	})
-
-	return err
+	return nil
 }
 
 func (e *Environments) Remove(ctx context.Context, id string) {
 	e.repo.Environments.Remove(id)
 	e.resources.Remove(id)
 
-	e.store.ReleaseTargets.ApplyUpdate(ctx, func(currentReleaseTargets map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error) {
-		for key, releaseTarget := range currentReleaseTargets {
-			if releaseTarget.EnvironmentId == id {
-				delete(currentReleaseTargets, key)
-			}
-		}
-		return currentReleaseTargets, nil
-	})
+	e.store.ReleaseTargets.Recompute(ctx)
 }

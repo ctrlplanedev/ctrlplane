@@ -20,8 +20,8 @@ type ReleaseTargets struct {
 }
 
 func (r *ReleaseTargets) ApplyUpdate(ctx context.Context, fn func(map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error)) error {
-	_, err := r.targets.ApplyUpdate(fn)
-	return err
+	r.targets.StartRecompute()
+	return nil
 }
 
 // CurrentState returns the current state of all release targets in the system.

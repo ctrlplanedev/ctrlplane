@@ -126,32 +126,32 @@ func (m *MaterializedView[V]) RunRecompute() error {
 // If a full recompute is in progress, marks pending to trigger a full recompute after completion.
 // This is useful for incremental updates that are cheaper than full recomputation.
 // Returns the updated value and any error from the update function.
-func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
-	m.mu.Lock()
+// func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
+// 	m.mu.Lock()
 
-	// If a full recompute is in progress, mark pending and return current value
-	// The full recompute will capture this update when it completes
-	if m.inProg {
-		m.pending = true
-		val := m.val
-		m.mu.Unlock()
-		return val, nil
-	}
+// 	// If a full recompute is in progress, mark pending and return current value
+// 	// The full recompute will capture this update when it completes
+// 	if m.inProg {
+// 		m.pending = true
+// 		val := m.val
+// 		m.mu.Unlock()
+// 		return val, nil
+// 	}
 
-	// Apply the update function to the current value
-	newVal, err := updateFn(m.val)
-	if err != nil {
-		m.mu.Unlock()
-		var zero V
-		return zero, err
-	}
+// 	// Apply the update function to the current value
+// 	newVal, err := updateFn(m.val)
+// 	if err != nil {
+// 		m.mu.Unlock()
+// 		var zero V
+// 		return zero, err
+// 	}
 
-	// Update the cached value
-	m.val = newVal
-	m.mu.Unlock()
+// 	// Update the cached value
+// 	m.val = newVal
+// 	m.mu.Unlock()
 
-	return newVal, nil
-}
+// 	return newVal, nil
+// }
 
 // runCompute executes the recompute function and publishes the result.
 // If pending requests came in while running, keeps recomputing until no more pending work.

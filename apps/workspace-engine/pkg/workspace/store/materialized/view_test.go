@@ -400,207 +400,207 @@ func BenchmarkConcurrentReads(b *testing.B) {
 }
 
 // TestApplyUpdate tests the incremental update functionality
-func TestApplyUpdate(t *testing.T) {
-	var callCount int32
-	rf := func() (int, error) {
-		return int(atomic.AddInt32(&callCount, 1)) * 100, nil
-	}
+// func TestApplyUpdate(t *testing.T) {
+// 	var callCount int32
+// 	rf := func() (int, error) {
+// 		return int(atomic.AddInt32(&callCount, 1)) * 100, nil
+// 	}
 
-	mv := New(rf)
+// 	mv := New(rf)
 
-	// Wait for initial computation to complete (New calls StartRecompute automatically)
-	err := mv.WaitRecompute()
-	if err != nil {
-		t.Fatalf("WaitRecompute failed: %v", err)
-	}
+// 	// Wait for initial computation to complete (New calls StartRecompute automatically)
+// 	err := mv.WaitRecompute()
+// 	if err != nil {
+// 		t.Fatalf("WaitRecompute failed: %v", err)
+// 	}
 
-	val := mv.Get()
-	if val != 100 {
-		t.Errorf("expected val=100, got val=%d", val)
-	}
+// 	val := mv.Get()
+// 	if val != 100 {
+// 		t.Errorf("expected val=100, got val=%d", val)
+// 	}
 
-	// Apply an incremental update
-	updatedVal, err := mv.ApplyUpdate(func(current int) (int, error) {
-		return current + 50, nil
-	})
-	if err != nil {
-		t.Fatalf("ApplyUpdate failed: %v", err)
-	}
+// 	// Apply an incremental update
+// 	updatedVal, err := mv.ApplyUpdate(func(current int) (int, error) {
+// 		return current + 50, nil
+// 	})
+// 	if err != nil {
+// 		t.Fatalf("ApplyUpdate failed: %v", err)
+// 	}
 
-	if updatedVal != 150 {
-		t.Errorf("expected updated val=150, got val=%d", updatedVal)
-	}
+// 	if updatedVal != 150 {
+// 		t.Errorf("expected updated val=150, got val=%d", updatedVal)
+// 	}
 
-	val = mv.Get()
-	if val != 150 {
-		t.Errorf("expected cached val=150, got val=%d", val)
-	}
+// 	val = mv.Get()
+// 	if val != 150 {
+// 		t.Errorf("expected cached val=150, got val=%d", val)
+// 	}
 
-	// Verify that the recompute function wasn't called again
-	if atomic.LoadInt32(&callCount) != 1 {
-		t.Errorf("expected 1 recompute call (only initial), got %d", callCount)
-	}
-}
+// 	// Verify that the recompute function wasn't called again
+// 	if atomic.LoadInt32(&callCount) != 1 {
+// 		t.Errorf("expected 1 recompute call (only initial), got %d", callCount)
+// 	}
+// }
 
 // TestApplyUpdateError tests error handling in ApplyUpdate
-func TestApplyUpdateError(t *testing.T) {
-	rf := func() (int, error) {
-		return 100, nil
-	}
+// func TestApplyUpdateError(t *testing.T) {
+// 	rf := func() (int, error) {
+// 		return 100, nil
+// 	}
 
-	mv := New(rf)
-	mv.RunRecompute()
+// 	mv := New(rf)
+// 	mv.RunRecompute()
 
-	// Apply an update that errors
-	_, err := mv.ApplyUpdate(func(current int) (int, error) {
-		return 0, errors.New("update failed")
-	})
-	if err == nil {
-		t.Error("expected error, got nil")
-	}
+// 	// Apply an update that errors
+// 	_, err := mv.ApplyUpdate(func(current int) (int, error) {
+// 		return 0, errors.New("update failed")
+// 	})
+// 	if err == nil {
+// 		t.Error("expected error, got nil")
+// 	}
 
-	// Value should remain unchanged
-	val := mv.Get()
-	if val != 100 {
-		t.Errorf("expected val=100 (unchanged), got val=%d", val)
-	}
-}
+// 	// Value should remain unchanged
+// 	val := mv.Get()
+// 	if val != 100 {
+// 		t.Errorf("expected val=100 (unchanged), got val=%d", val)
+// 	}
+// }
 
 // TestApplyUpdateWhileRecomputing tests ApplyUpdate behavior during recompute
-func TestApplyUpdateWhileRecomputing(t *testing.T) {
-	started := make(chan struct{})
-	block := make(chan struct{})
-	var callCount int32
+// func TestApplyUpdateWhileRecomputing(t *testing.T) {
+// 	started := make(chan struct{})
+// 	block := make(chan struct{})
+// 	var callCount int32
 
-	rf := func() (int, error) {
-		n := atomic.AddInt32(&callCount, 1)
-		if n == 1 {
-			close(started)
-			<-block
-		}
-		return int(n) * 100, nil
-	}
+// 	rf := func() (int, error) {
+// 		n := atomic.AddInt32(&callCount, 1)
+// 		if n == 1 {
+// 			close(started)
+// 			<-block
+// 		}
+// 		return int(n) * 100, nil
+// 	}
 
-	mv := New(rf)
+// 	mv := New(rf)
 
-	// Start a recompute in background
-	go mv.StartRecompute()
-	<-started
+// 	// Start a recompute in background
+// 	go mv.StartRecompute()
+// 	<-started
 
-	// Try to apply an update while recompute is in progress
-	// It should mark pending and trigger a full recompute after current one finishes
-	updatedVal, err := mv.ApplyUpdate(func(current int) (int, error) {
-		return current + 50, nil
-	})
-	if err != nil {
-		t.Fatalf("ApplyUpdate failed: %v", err)
-	}
+// 	// Try to apply an update while recompute is in progress
+// 	// It should mark pending and trigger a full recompute after current one finishes
+// 	updatedVal, err := mv.ApplyUpdate(func(current int) (int, error) {
+// 		return current + 50, nil
+// 	})
+// 	if err != nil {
+// 		t.Fatalf("ApplyUpdate failed: %v", err)
+// 	}
 
-	// Should return current value (which is still zero since recompute hasn't finished)
-	if updatedVal != 0 {
-		t.Errorf("expected val=0 (current value), got val=%d", updatedVal)
-	}
+// 	// Should return current value (which is still zero since recompute hasn't finished)
+// 	if updatedVal != 0 {
+// 		t.Errorf("expected val=0 (current value), got val=%d", updatedVal)
+// 	}
 
-	// Release the recompute
-	close(block)
+// 	// Release the recompute
+// 	close(block)
 
-	// Wait for all computations to complete
-	time.Sleep(100 * time.Millisecond)
+// 	// Wait for all computations to complete
+// 	time.Sleep(100 * time.Millisecond)
 
-	// Should have run twice: original + rerun from pending
-	count := atomic.LoadInt32(&callCount)
-	if count != 2 {
-		t.Errorf("expected 2 calls (original + rerun from pending), got %d", count)
-	}
+// 	// Should have run twice: original + rerun from pending
+// 	count := atomic.LoadInt32(&callCount)
+// 	if count != 2 {
+// 		t.Errorf("expected 2 calls (original + rerun from pending), got %d", count)
+// 	}
 
-	// Final value should be from the second recompute
-	val := mv.Get()
-	if val != 200 {
-		t.Errorf("expected val=200 (from second recompute), got val=%d", val)
-	}
-}
+// 	// Final value should be from the second recompute
+// 	val := mv.Get()
+// 	if val != 200 {
+// 		t.Errorf("expected val=200 (from second recompute), got val=%d", val)
+// 	}
+// }
 
 // TestApplyUpdateMapType tests ApplyUpdate with map types (like the deployment resources use case)
-func TestApplyUpdateMapType(t *testing.T) {
-	var callCount int32
-	rf := func() (map[string]int, error) {
-		atomic.AddInt32(&callCount, 1)
-		return map[string]int{"a": 1, "b": 2}, nil
-	}
+// func TestApplyUpdateMapType(t *testing.T) {
+// 	var callCount int32
+// 	rf := func() (map[string]int, error) {
+// 		atomic.AddInt32(&callCount, 1)
+// 		return map[string]int{"a": 1, "b": 2}, nil
+// 	}
 
-	mv := New(rf)
+// 	mv := New(rf)
 
-	// Wait for initial computation to complete (New calls StartRecompute automatically)
-	err := mv.WaitRecompute()
-	if err != nil {
-		t.Fatalf("WaitRecompute failed: %v", err)
-	}
+// 	// Wait for initial computation to complete (New calls StartRecompute automatically)
+// 	err := mv.WaitRecompute()
+// 	if err != nil {
+// 		t.Fatalf("WaitRecompute failed: %v", err)
+// 	}
 
-	// Apply an incremental update - add a new entry
-	updatedVal, err := mv.ApplyUpdate(func(current map[string]int) (map[string]int, error) {
-		current["c"] = 3
-		return current, nil
-	})
-	if err != nil {
-		t.Fatalf("ApplyUpdate failed: %v", err)
-	}
+// 	// Apply an incremental update - add a new entry
+// 	updatedVal, err := mv.ApplyUpdate(func(current map[string]int) (map[string]int, error) {
+// 		current["c"] = 3
+// 		return current, nil
+// 	})
+// 	if err != nil {
+// 		t.Fatalf("ApplyUpdate failed: %v", err)
+// 	}
 
-	if len(updatedVal) != 3 {
-		t.Errorf("expected 3 entries, got %d", len(updatedVal))
-	}
+// 	if len(updatedVal) != 3 {
+// 		t.Errorf("expected 3 entries, got %d", len(updatedVal))
+// 	}
 
-	// Apply another update - remove an entry
-	updatedVal, err = mv.ApplyUpdate(func(current map[string]int) (map[string]int, error) {
-		delete(current, "a")
-		return current, nil
-	})
-	if err != nil {
-		t.Fatalf("second ApplyUpdate failed: %v", err)
-	}
+// 	// Apply another update - remove an entry
+// 	updatedVal, err = mv.ApplyUpdate(func(current map[string]int) (map[string]int, error) {
+// 		delete(current, "a")
+// 		return current, nil
+// 	})
+// 	if err != nil {
+// 		t.Fatalf("second ApplyUpdate failed: %v", err)
+// 	}
 
-	if len(updatedVal) != 2 {
-		t.Errorf("expected 2 entries after delete, got %d", len(updatedVal))
-	}
+// 	if len(updatedVal) != 2 {
+// 		t.Errorf("expected 2 entries after delete, got %d", len(updatedVal))
+// 	}
 
-	if _, ok := updatedVal["a"]; ok {
-		t.Error("expected 'a' to be deleted")
-	}
+// 	if _, ok := updatedVal["a"]; ok {
+// 		t.Error("expected 'a' to be deleted")
+// 	}
 
-	// Verify that the recompute function was only called once (during initialization)
-	if atomic.LoadInt32(&callCount) != 1 {
-		t.Errorf("expected 1 recompute call, got %d", callCount)
-	}
-}
+// 	// Verify that the recompute function was only called once (during initialization)
+// 	if atomic.LoadInt32(&callCount) != 1 {
+// 		t.Errorf("expected 1 recompute call, got %d", callCount)
+// 	}
+// }
 
 // TestConcurrentApplyUpdate tests concurrent ApplyUpdate calls
-func TestConcurrentApplyUpdate(t *testing.T) {
-	rf := func() (int, error) {
-		return 0, nil
-	}
+// func TestConcurrentApplyUpdate(t *testing.T) {
+// 	rf := func() (int, error) {
+// 		return 0, nil
+// 	}
 
-	mv := New(rf)
-	mv.RunRecompute()
+// 	mv := New(rf)
+// 	mv.RunRecompute()
 
-	// Apply many concurrent updates
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			mv.ApplyUpdate(func(current int) (int, error) {
-				return current + 1, nil
-			})
-		}()
-	}
+// 	// Apply many concurrent updates
+// 	var wg sync.WaitGroup
+// 	for i := 0; i < 100; i++ {
+// 		wg.Add(1)
+// 		go func() {
+// 			defer wg.Done()
+// 			mv.ApplyUpdate(func(current int) (int, error) {
+// 				return current + 1, nil
+// 			})
+// 		}()
+// 	}
 
-	wg.Wait()
+// 	wg.Wait()
 
-	// Final value should be 100 (all updates applied)
-	val := mv.Get()
-	if val != 100 {
-		t.Errorf("expected val=100, got val=%d", val)
-	}
-}
+// 	// Final value should be 100 (all updates applied)
+// 	val := mv.Get()
+// 	if val != 100 {
+// 		t.Errorf("expected val=100, got val=%d", val)
+// 	}
+// }
 
 // TestWithImmediateCompute tests the WithImmediateCompute option
 func TestWithImmediateCompute(t *testing.T) {

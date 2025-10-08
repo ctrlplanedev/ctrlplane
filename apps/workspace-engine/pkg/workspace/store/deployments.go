@@ -189,13 +189,12 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 	}
 
 	// Parse the deployment's resource selector
-	var condition util.MatchableCondition
 	if deployment.ResourceSelector != nil {
 		unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.AsMap())
 		if err != nil {
 			return fmt.Errorf("failed to parse selector for deployment %s: %w", deployment.Id, err)
 		}
-		condition, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
+		_, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
 		if err != nil {
 			return fmt.Errorf("failed to convert selector for deployment %s: %w", deployment.Id, err)
 		}
@@ -206,28 +205,9 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 		return fmt.Errorf("deployment %s not found", deploymentId)
 	}
 
-	_, err := mv.ApplyUpdate(func(currentResources map[string]*pb.Resource) (map[string]*pb.Resource, error) {
-		// Check if resource matches selector
-		matches := condition == nil // nil condition means match all
-		if condition != nil {
-			ok, err := condition.Matches(resource)
-			if err != nil {
-				return nil, fmt.Errorf("error matching resource %s for deployment %s: %w", resource.Id, deployment.Id, err)
-			}
-			matches = ok
-		}
+	mv.StartRecompute()
 
-		// Update the map
-		if matches {
-			currentResources[resource.Id] = resource
-		} else {
-			delete(currentResources, resource.Id)
-		}
-
-		return currentResources, nil
-	})
-
-	return err
+	return nil
 }
 
 func (e *Deployments) Remove(ctx context.Context, id string) {
