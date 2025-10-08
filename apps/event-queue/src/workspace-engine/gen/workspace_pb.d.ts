@@ -1005,9 +1005,9 @@ export declare type System = Message<"workspace.System"> & {
   name: string;
 
   /**
-   * @generated from field: string description = 4;
+   * @generated from field: optional string description = 4;
    */
-  description: string;
+  description?: string;
 };
 
 /**

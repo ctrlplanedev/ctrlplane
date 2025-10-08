@@ -288,7 +288,7 @@ message System {
   string id = 1;
   string workspace_id = 2;
   string name = 3;
-  string description = 4;
+  optional string description = 4;
 }
 
 message ComputeReleaseTargetsRequest {

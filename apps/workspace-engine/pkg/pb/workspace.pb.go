@@ -2193,7 +2193,7 @@ type System struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	WorkspaceId   string                 `protobuf:"bytes,2,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2250,8 +2250,8 @@ func (x *System) GetName() string {
 }
 
 func (x *System) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -2780,12 +2780,13 @@ const file_workspace_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\t \x01(\tR\tcreatedAtB\n" +
 	"\n" +
-	"\b_message\"q\n" +
+	"\b_message\"\x86\x01\n" +
 	"\x06System\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xc6\x01\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01B\x0e\n" +
+	"\f_description\"\xc6\x01\n" +
 	"\x1cComputeReleaseTargetsRequest\x12:\n" +
 	"\fenvironments\x18\x01 \x03(\v2\x16.workspace.EnvironmentR\fenvironments\x127\n" +
 	"\vdeployments\x18\x02 \x03(\v2\x15.workspace.DeploymentR\vdeployments\x121\n" +
@@ -2978,6 +2979,7 @@ func file_workspace_proto_init() {
 	}
 	file_workspace_proto_msgTypes[23].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[24].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[25].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[28].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[30].OneofWrappers = []any{}
 	type x struct{}
