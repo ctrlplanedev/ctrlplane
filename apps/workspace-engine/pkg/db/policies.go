@@ -89,11 +89,12 @@ func scanPolicyRow(rows pgx.Rows) (*pb.Policy, error) {
 	policy := &pb.Policy{}
 	var createdAt time.Time
 	var anyApprovalRuleRaw *dbAnyApprovalRule
+	var description *string
 
 	err := rows.Scan(
 		&policy.Id,
 		&policy.Name,
-		&policy.Description,
+		&description,
 		&policy.WorkspaceId,
 		&createdAt,
 		&policy.Selectors,
@@ -102,6 +103,7 @@ func scanPolicyRow(rows pgx.Rows) (*pb.Policy, error) {
 	if err != nil {
 		return nil, err
 	}
+	policy.Description = description
 	policy.CreatedAt = createdAt.Format(time.RFC3339)
 
 	if anyApprovalRuleRaw != nil {
