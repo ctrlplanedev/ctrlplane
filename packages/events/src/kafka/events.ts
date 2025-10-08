@@ -129,29 +129,42 @@ export type EventPayload = {
   // [Event.SystemDeleted]: schema.System;
 };
 
+// Remove the typescript-specific $typeName field from the protobuf objects
+// go complains about the $typeName field being unknown
+type Without$typeName<T> = Omit<T, "$typeName">;
+export type PbResource = Without$typeName<pb.Resource>;
+export type PbDeployment = Without$typeName<pb.Deployment>;
+export type PbDeploymentVariable = Without$typeName<pb.DeploymentVariable>;
+export type PbDeploymentVariableValue =
+  Without$typeName<pb.DeploymentVariableValue>;
+export type PbDeploymentVersion = Without$typeName<pb.DeploymentVersion>;
+export type PbEnvironment = Without$typeName<pb.Environment>;
+export type PbPolicy = Without$typeName<pb.Policy>;
+export type PbJob = Without$typeName<pb.Job>;
+
 export type GoEventPayload = {
-  [Event.ResourceCreated]: pb.Resource;
-  [Event.ResourceUpdated]: pb.Resource;
-  [Event.ResourceDeleted]: pb.Resource;
-  [Event.DeploymentCreated]: pb.Deployment;
-  [Event.DeploymentUpdated]: pb.Deployment;
-  [Event.DeploymentDeleted]: pb.Deployment;
-  [Event.DeploymentVariableCreated]: pb.DeploymentVariable;
-  [Event.DeploymentVariableUpdated]: pb.DeploymentVariable;
+  [Event.ResourceCreated]: PbResource;
+  [Event.ResourceUpdated]: PbResource;
+  [Event.ResourceDeleted]: PbResource;
+  [Event.DeploymentCreated]: PbDeployment;
+  [Event.DeploymentUpdated]: PbDeployment;
+  [Event.DeploymentDeleted]: PbDeployment;
+  [Event.DeploymentVariableCreated]: PbDeploymentVariable;
+  [Event.DeploymentVariableUpdated]: PbDeploymentVariable;
   [Event.DeploymentVariableDeleted]: pb.DeploymentVariable;
-  [Event.DeploymentVariableValueCreated]: pb.DeploymentVariableValue;
+  [Event.DeploymentVariableValueCreated]: PbDeploymentVariableValue;
   [Event.DeploymentVariableValueUpdated]: pb.DeploymentVariableValue;
-  [Event.DeploymentVariableValueDeleted]: pb.DeploymentVariableValue;
-  [Event.DeploymentVersionCreated]: pb.DeploymentVersion;
-  [Event.DeploymentVersionUpdated]: pb.DeploymentVersion;
-  [Event.DeploymentVersionDeleted]: schema.DeploymentVersion;
-  [Event.EnvironmentCreated]: pb.Environment;
-  [Event.EnvironmentUpdated]: pb.Environment;
-  [Event.EnvironmentDeleted]: pb.Environment;
-  [Event.PolicyCreated]: pb.Policy;
-  [Event.PolicyUpdated]: pb.Policy;
-  [Event.PolicyDeleted]: pb.Policy;
-  [Event.JobUpdated]: pb.Job;
+  [Event.DeploymentVariableValueDeleted]: PbDeploymentVariableValue;
+  [Event.DeploymentVersionCreated]: PbDeploymentVersion;
+  [Event.DeploymentVersionUpdated]: PbDeploymentVersion;
+  [Event.DeploymentVersionDeleted]: PbDeploymentVersion;
+  [Event.EnvironmentCreated]: PbEnvironment;
+  [Event.EnvironmentUpdated]: PbEnvironment;
+  [Event.EnvironmentDeleted]: PbEnvironment;
+  [Event.PolicyCreated]: PbPolicy;
+  [Event.PolicyUpdated]: PbPolicy;
+  [Event.PolicyDeleted]: PbPolicy;
+  [Event.JobUpdated]: PbJob;
 };
 
 export type Message<T extends keyof EventPayload> = {
@@ -166,6 +179,27 @@ export type Message<T extends keyof EventPayload> = {
 export type GoMessage<T extends keyof GoEventPayload> = {
   workspaceId: string;
   eventType: T;
-  source: "api" | "scheduler" | "user-action";
-  data: GoEventPayload[T];
+  payload: GoEventPayload[T];
 };
+
+// Helper function to wrap a selector in the protobuf format
+function wrapSelector<T extends Record<string, any> | null | undefined>(
+  selector: T,
+): T extends null | undefined ? null : { json_selector: T } {
+  if (selector == null) return null as any;
+  return { json_selector: selector } as any;
+}
+
+// Helper to transform an object's selector fields to protobuf format
+export function wrapSelectorsInObject<T extends Record<string, any>>(
+  obj: T,
+  selectorFields: (keyof T)[],
+): T {
+  const result = { ...obj };
+  for (const field of selectorFields) {
+    if (field in result) {
+      (result as any)[field] = wrapSelector(result[field]);
+    }
+  }
+  return result;
+}
