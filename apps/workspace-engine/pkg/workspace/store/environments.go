@@ -44,7 +44,7 @@ func (e *Environments) ReinitializeMaterializedViews() {
 
 // environmentResourceRecomputeFunc returns a function that computes resources for a specific environment
 func (e *Environments) environmentResourceRecomputeFunc(environmentId string) materialized.RecomputeFunc[map[string]*pb.Resource] {
-	return func() (map[string]*pb.Resource, error) {
+	return func(ctx context.Context) (map[string]*pb.Resource, error) {
 		environment, exists := e.repo.Environments.Get(environmentId)
 		if !exists {
 			return nil, fmt.Errorf("environment %s not found", environmentId)
@@ -124,7 +124,7 @@ func (e *Environments) RecomputeResources(ctx context.Context, environmentId str
 	}
 
 	// RunRecompute will start a new computation or wait for an existing one
-	return mv.RunRecompute()
+	return mv.RunRecompute(ctx)
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) error {
@@ -188,7 +188,7 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
 
-	mv.StartRecompute()
+	mv.StartRecompute(ctx)
 
 	return nil
 }

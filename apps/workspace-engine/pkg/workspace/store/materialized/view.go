@@ -1,12 +1,13 @@
 package materialized
 
 import (
+	"context"
 	"errors"
 	"sync"
 )
 
 // RecomputeFunc recomputes the materialized value.
-type RecomputeFunc[V any] func() (V, error)
+type RecomputeFunc[V any] func(ctx context.Context) (V, error)
 
 // UpdateFunc applies an incremental update to the current value.
 // Receives the current value and returns the updated value.
@@ -41,7 +42,7 @@ func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
 		opt(mv)
 	}
 
-	mv.StartRecompute()
+	mv.StartRecompute(context.Background())
 
 	return mv
 }
@@ -63,7 +64,7 @@ func IsAlreadyStarted(err error) bool {
 // StartRecompute begins recomputation asynchronously.
 // Returns ErrAlreadyStarted if a computation is already in progress.
 // If already in progress, marks that a re-run is needed after completion.
-func (m *MaterializedView[V]) StartRecompute() error {
+func (m *MaterializedView[V]) StartRecompute(ctx context.Context) error {
 	m.mu.Lock()
 
 	if m.inProg {
@@ -77,7 +78,7 @@ func (m *MaterializedView[V]) StartRecompute() error {
 	m.done = make(chan error, 1)
 	m.mu.Unlock()
 
-	go m.runCompute()
+	go m.runCompute(ctx)
 	return nil
 }
 
@@ -111,8 +112,8 @@ func (m *MaterializedView[V]) WaitIfRunning() error {
 
 // RunRecompute recomputes the value synchronously (equivalent to StartRecompute + WaitRecompute).
 // If a computation is already in progress, waits for it to complete.
-func (m *MaterializedView[V]) RunRecompute() error {
-	if err := m.StartRecompute(); err != nil {
+func (m *MaterializedView[V]) RunRecompute(ctx context.Context) error {
+	if err := m.StartRecompute(ctx); err != nil {
 		// If already in progress, wait for it
 		if errors.Is(err, ErrAlreadyStarted) {
 			return m.WaitRecompute()
@@ -155,13 +156,13 @@ func (m *MaterializedView[V]) RunRecompute() error {
 
 // runCompute executes the recompute function and publishes the result.
 // If pending requests came in while running, keeps recomputing until no more pending work.
-func (m *MaterializedView[V]) runCompute() {
+func (m *MaterializedView[V]) runCompute(ctx context.Context) {
 	var lastErr error
 
 	// Keep recomputing while there's pending work
 	for {
 		// Compute without locks
-		val, err := m.recompute()
+		val, err := m.recompute(ctx)
 		lastErr = err
 
 		m.mu.Lock()

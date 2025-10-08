@@ -33,7 +33,7 @@ type Deployments struct {
 
 // deploymentResourceRecomputeFunc returns a function that computes resources for a specific deployment
 func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*pb.Resource] {
-	return func() (map[string]*pb.Resource, error) {
+	return func(ctx context.Context) (map[string]*pb.Resource, error) {
 		deployment, exists := e.repo.Deployments.Get(deploymentId)
 		if !exists {
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
@@ -71,7 +71,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 }
 
 func (e *Deployments) deploymentVersionRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*pb.DeploymentVersion] {
-	return func() (map[string]*pb.DeploymentVersion, error) {
+	return func(ctx context.Context) (map[string]*pb.DeploymentVersion, error) {
 		_, exists := e.repo.Deployments.Get(deploymentId)
 		if !exists {
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
@@ -205,7 +205,7 @@ func (e *Deployments) ApplyResourceUpdate(ctx context.Context, deploymentId stri
 		return fmt.Errorf("deployment %s not found", deploymentId)
 	}
 
-	mv.StartRecompute()
+	mv.StartRecompute(ctx)
 
 	return nil
 }

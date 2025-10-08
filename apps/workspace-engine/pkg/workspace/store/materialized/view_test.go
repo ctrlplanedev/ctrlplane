@@ -1,6 +1,7 @@
 package materialized
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -11,7 +12,7 @@ import (
 // TestBasicGetAndTrigger tests basic get and trigger operations
 func TestBasicGetAndTrigger(t *testing.T) {
 	var callCount int32
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		return int(n) * 100, nil
 	}
@@ -35,7 +36,7 @@ func TestBasicGetAndTrigger(t *testing.T) {
 	}
 
 	// Trigger another computation
-	err = mv.RunRecompute()
+	err = mv.RunRecompute(context.Background())
 	if err != nil {
 		t.Fatalf("RunRecompute failed: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestBasicGetAndTrigger(t *testing.T) {
 // TestMultipleTriggers tests that values update on each trigger
 func TestMultipleTriggers(t *testing.T) {
 	var callCount int32
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		return int(atomic.AddInt32(&callCount, 1)) * 100, nil
 	}
 
@@ -71,7 +72,7 @@ func TestMultipleTriggers(t *testing.T) {
 	}
 
 	// Second trigger - should update value
-	err = mv.RunRecompute()
+	err = mv.RunRecompute(context.Background())
 	if err != nil {
 		t.Fatalf("second Trigger failed: %v", err)
 	}
@@ -85,7 +86,7 @@ func TestMultipleTriggers(t *testing.T) {
 // TestConcurrentReadWrite tests concurrent reads during writes
 func TestConcurrentReadWrite(t *testing.T) {
 	var callCount int32
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		return int(atomic.AddInt32(&callCount, 1)), nil
 	}
 
@@ -94,7 +95,7 @@ func TestConcurrentReadWrite(t *testing.T) {
 	// Start writes
 	go func() {
 		for i := 0; i < 10; i++ {
-			mv.RunRecompute()
+			mv.RunRecompute(context.Background())
 		}
 	}()
 
@@ -118,7 +119,7 @@ func TestConcurrentReadWrite(t *testing.T) {
 func TestRecomputeError(t *testing.T) {
 	var shouldError int32 = 1
 
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		if atomic.LoadInt32(&shouldError) == 1 {
 			return 0, errors.New("computation failed")
 		}
@@ -128,7 +129,7 @@ func TestRecomputeError(t *testing.T) {
 	mv := New(rf)
 
 	// First trigger will error
-	err := mv.RunRecompute()
+	err := mv.RunRecompute(context.Background())
 	if err == nil {
 		t.Error("expected error, got nil")
 	}
@@ -141,7 +142,7 @@ func TestRecomputeError(t *testing.T) {
 
 	// Now allow success
 	atomic.StoreInt32(&shouldError, 0)
-	err = mv.RunRecompute()
+	err = mv.RunRecompute(context.Background())
 	if err != nil {
 		t.Fatalf("Trigger failed: %v", err)
 	}
@@ -155,7 +156,7 @@ func TestRecomputeError(t *testing.T) {
 // TestStartWaitRun tests the StartRecompute/WaitRecompute/RunRecompute API
 func TestStartWaitRun(t *testing.T) {
 	var callCount int32
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		return int(atomic.AddInt32(&callCount, 1)) * 100, nil
 	}
 
@@ -173,7 +174,7 @@ func TestStartWaitRun(t *testing.T) {
 	}
 
 	// Test RunRecompute (should be equivalent to StartRecompute + WaitRecompute)
-	err = mv.RunRecompute()
+	err = mv.RunRecompute(context.Background())
 	if err != nil {
 		t.Fatalf("RunRecompute failed: %v", err)
 	}
@@ -191,7 +192,7 @@ func TestStartAlreadyStarted(t *testing.T) {
 	block := make(chan struct{})
 	var callCount int32
 
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		// Only close started on first call
 		once.Do(func() { close(started) })
@@ -205,7 +206,7 @@ func TestStartAlreadyStarted(t *testing.T) {
 	<-started
 
 	// Try to start again while first is running - should mark pending
-	err := mv.StartRecompute()
+	err := mv.StartRecompute(context.Background())
 	if err == nil {
 		t.Error("expected ErrAlreadyStarted, got nil")
 	}
@@ -242,7 +243,7 @@ func TestRunWhileInProgress(t *testing.T) {
 	block := make(chan struct{})
 	var callCount int32
 
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		// Only signal started on first call
 		once.Do(func() { close(started) })
@@ -253,14 +254,14 @@ func TestRunWhileInProgress(t *testing.T) {
 	mv := New(rf)
 
 	// Start first computation
-	mv.StartRecompute()
+	mv.StartRecompute(context.Background())
 	<-started
 
 	// Call RunRecompute while first is in progress - should mark pending and wait for all to complete
 	var runErr error
 	done := make(chan struct{})
 	go func() {
-		runErr = mv.RunRecompute()
+		runErr = mv.RunRecompute(context.Background())
 		close(done)
 	}()
 
@@ -294,7 +295,7 @@ func TestCoalescingRerun(t *testing.T) {
 	var mu sync.Mutex
 	callTimes := []time.Time{}
 
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		mu.Lock()
 		callTimes = append(callTimes, time.Now())
 		mu.Unlock()
@@ -305,12 +306,12 @@ func TestCoalescingRerun(t *testing.T) {
 	mv := New(rf)
 
 	// Start first computation
-	mv.StartRecompute()
+	mv.StartRecompute(context.Background())
 
 	// While it's running, trigger multiple times
 	time.Sleep(20 * time.Millisecond) // ensure first has started
 	for i := 0; i < 5; i++ {
-		mv.StartRecompute() // These should all set pending=true
+		mv.StartRecompute(context.Background()) // These should all set pending=true
 		time.Sleep(10 * time.Millisecond)
 	}
 
@@ -332,7 +333,7 @@ func TestCoalescingRerun(t *testing.T) {
 // TestRaceConditions uses race detector to find race conditions
 func TestRaceConditions(t *testing.T) {
 	var callNum int32
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		return int(atomic.AddInt32(&callNum, 1)), nil
 	}
 
@@ -345,7 +346,7 @@ func TestRaceConditions(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			mv.RunRecompute()
+			mv.RunRecompute(context.Background())
 		}()
 
 		// Get
@@ -359,7 +360,7 @@ func TestRaceConditions(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := mv.StartRecompute(); err == nil {
+			if err := mv.StartRecompute(context.Background()); err == nil {
 				mv.WaitRecompute()
 			}
 		}()
@@ -370,7 +371,7 @@ func TestRaceConditions(t *testing.T) {
 
 // BenchmarkTrigger benchmarks triggering
 func BenchmarkTrigger(b *testing.B) {
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		return 42, nil
 	}
 
@@ -378,18 +379,18 @@ func BenchmarkTrigger(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		mv.RunRecompute()
+		mv.RunRecompute(context.Background())
 	}
 }
 
 // BenchmarkConcurrentReads benchmarks concurrent reads
 func BenchmarkConcurrentReads(b *testing.B) {
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		return 42, nil
 	}
 
 	mv := New(rf)
-	mv.RunRecompute()
+	mv.RunRecompute(context.Background())
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -608,7 +609,7 @@ func TestWithImmediateCompute(t *testing.T) {
 	block := make(chan struct{})
 	var callCount int32
 
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		n := atomic.AddInt32(&callCount, 1)
 		close(started)
 		<-block
@@ -648,7 +649,7 @@ func TestWithImmediateCompute(t *testing.T) {
 // TestWithoutImmediateCompute tests the default behavior (WITH immediate compute)
 func TestWithoutImmediateCompute(t *testing.T) {
 	var callCount int32
-	rf := func() (int, error) {
+	rf := func(ctx context.Context) (int, error) {
 		return int(atomic.AddInt32(&callCount, 1)) * 100, nil
 	}
 
@@ -673,7 +674,7 @@ func TestWithoutImmediateCompute(t *testing.T) {
 	}
 
 	// Manually trigger another recompute
-	err = mv.RunRecompute()
+	err = mv.RunRecompute(context.Background())
 	if err != nil {
 		t.Fatalf("RunRecompute failed: %v", err)
 	}

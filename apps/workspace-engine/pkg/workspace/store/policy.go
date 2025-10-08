@@ -45,7 +45,7 @@ func parseSelector(selector *structpb.Struct) (util.MatchableCondition, error) {
 }
 
 func (p *Policies) recomputeReleaseTargets(policyId string) materialized.RecomputeFunc[map[string]*pb.ReleaseTarget] {
-	return func() (map[string]*pb.ReleaseTarget, error) {
+	return func(ctx context.Context) (map[string]*pb.ReleaseTarget, error) {
 		policy, ok := p.Get(policyId)
 		if !ok {
 			return nil, fmt.Errorf("policy %s not found", policyId)

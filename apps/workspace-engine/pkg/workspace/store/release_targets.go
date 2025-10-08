@@ -20,7 +20,7 @@ type ReleaseTargets struct {
 }
 
 func (r *ReleaseTargets) ApplyUpdate(ctx context.Context, fn func(map[string]*pb.ReleaseTarget) (map[string]*pb.ReleaseTarget, error)) error {
-	r.targets.StartRecompute()
+	r.targets.StartRecompute(ctx)
 	return nil
 }
 
@@ -31,10 +31,10 @@ func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget
 }
 
 func (r *ReleaseTargets) Recompute(ctx context.Context) {
-	r.targets.StartRecompute()
+	r.targets.StartRecompute(ctx)
 }
 
-func (r *ReleaseTargets) computeTargets() (map[string]*pb.ReleaseTarget, error) {
+func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*pb.ReleaseTarget, error) {
 	releaseTargets := make(map[string]*pb.ReleaseTarget, 1000)
 
 	environments := r.store.Environments

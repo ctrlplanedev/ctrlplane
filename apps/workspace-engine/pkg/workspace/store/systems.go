@@ -49,7 +49,7 @@ func (s *Systems) Has(id string) bool {
 }
 
 func (s *Systems) computeDeployments(systemId string) materialized.RecomputeFunc[map[string]*pb.Deployment] {
-	return func() (map[string]*pb.Deployment, error) {
+	return func(ctx context.Context) (map[string]*pb.Deployment, error) {
 		deployments := make(map[string]*pb.Deployment, s.repo.Deployments.Count())
 		for deploymentItem := range s.repo.Deployments.IterBuffered() {
 			if deploymentItem.Val.SystemId != systemId {
@@ -71,7 +71,7 @@ func (s *Systems) Deployments(systemId string) map[string]*pb.Deployment {
 }
 
 func (s *Systems) computeEnvironments(systemId string) materialized.RecomputeFunc[map[string]*pb.Environment] {
-	return func() (map[string]*pb.Environment, error) {
+	return func(ctx context.Context) (map[string]*pb.Environment, error) {
 		environments := make(map[string]*pb.Environment, s.repo.Environments.Count())
 		for environmentItem := range s.repo.Environments.IterBuffered() {
 			if environmentItem.Val.SystemId != systemId {
@@ -117,13 +117,13 @@ func (s *Systems) ApplyDeploymentUpdate(
 ) error {
 	// Recompute deployments for the previous system, if it exists
 	if oldDeployments, exists := s.deployments.Get(previousSystemId); exists {
-		oldDeployments.StartRecompute()
+		oldDeployments.StartRecompute(ctx)
 	}
 
 	deploymentHasMoved := previousSystemId != deployment.SystemId
 	if deploymentHasMoved {
 		if newDeployments, exists := s.deployments.Get(deployment.SystemId); exists {
-			newDeployments.StartRecompute()
+			newDeployments.StartRecompute(ctx)
 		}
 	}
 
@@ -139,13 +139,13 @@ func (s *Systems) ApplyEnvironmentUpdate(
 ) error {
 	// Recompute deployments for the previous system, if it exists
 	if oldEnvironments, exists := s.environments.Get(previousSystemId); exists {
-		oldEnvironments.StartRecompute()
+		oldEnvironments.StartRecompute(ctx)
 	}
 
 	environmentHasMoved := previousSystemId != environment.SystemId
 	if environmentHasMoved {
 		if newEnvironments, exists := s.environments.Get(environment.SystemId); exists {
-			newEnvironments.StartRecompute()
+			newEnvironments.StartRecompute(ctx)
 		}
 	}
 
