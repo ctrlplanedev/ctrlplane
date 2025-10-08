@@ -143,7 +143,7 @@ export type PbDeploymentVariable = Without$typeName<pb.DeploymentVariable>;
 export type PbDeploymentVariableValue =
   Without$typeName<pb.DeploymentVariableValue>;
 export type PbDeploymentVersion = Without$typeName<pb.DeploymentVersion>;
-export type PbEnvironment = Without$typeName<pb.Environment>;
+export type PbEnvironment = WithSelector<pb.Environment, "resourceSelector">;
 export type PbPolicy = Without$typeName<pb.Policy>;
 export type PbJob = Without$typeName<pb.Job>;
 
@@ -194,18 +194,4 @@ export function wrapSelector<T extends Record<string, any> | null | undefined>(
 ): PbSelector | undefined {
   if (selector == null) return undefined;
   return { json: selector };
-}
-
-// Helper to transform an object's selector fields to protobuf format
-export function wrapSelectorsInObject<T extends Record<string, any>>(
-  obj: T,
-  selectorFields: (keyof T)[],
-): T {
-  const result = { ...obj };
-  for (const field of selectorFields) {
-    if (field in result) {
-      (result as any)[field] = wrapSelector(result[field]);
-    }
-  }
-  return result;
 }

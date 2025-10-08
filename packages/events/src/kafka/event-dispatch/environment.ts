@@ -4,8 +4,9 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendNodeEvent } from "../client.js";
-import { Event, wrapSelectorsInObject } from "../events.js";
+import type { PbEnvironment } from "../events.js";
+import { sendGoEvent, sendNodeEvent } from "../client.js";
+import { Event, wrapSelector } from "../events.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
   tx
@@ -13,6 +14,37 @@ const getSystem = async (tx: Tx, systemId: string) =>
     .from(schema.system)
     .where(eq(schema.system.id, systemId))
     .then(takeFirst);
+
+const convertEnvironmentToNodeEvent = (
+  environment: schema.Environment,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.EnvironmentCreated,
+  eventId: environment.id,
+  timestamp: Date.now(),
+  source: "api" as const,
+  payload: environment,
+});
+
+const getPbEnvironment = (environment: schema.Environment): PbEnvironment => ({
+  id: environment.id,
+  name: environment.name,
+  description: environment.description ?? undefined,
+  systemId: environment.systemId,
+  resourceSelector: wrapSelector(environment.resourceSelector),
+  createdAt: environment.createdAt.toISOString(),
+});
+
+const convertEnvironmentToGoEvent = (
+  environment: schema.Environment,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.EnvironmentCreated as const,
+  data: getPbEnvironment(environment),
+  timestamp: Date.now(),
+});
 
 export const dispatchEnvironmentCreated = async (
   environment: schema.Environment,
@@ -22,14 +54,12 @@ export const dispatchEnvironmentCreated = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, environment.systemId);
 
-  await sendNodeEvent({
-    workspaceId: system.workspaceId,
-    eventType: Event.EnvironmentCreated,
-    eventId: environment.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: wrapSelectorsInObject(environment, ["resourceSelector"]),
-  });
+  await Promise.all([
+    sendNodeEvent(
+      convertEnvironmentToNodeEvent(environment, system.workspaceId),
+    ),
+    sendGoEvent(convertEnvironmentToGoEvent(environment, system.workspaceId)),
+  ]);
 };
 
 export const dispatchEnvironmentUpdated = async (
@@ -41,17 +71,17 @@ export const dispatchEnvironmentUpdated = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, current.systemId);
 
-  await sendNodeEvent({
-    workspaceId: system.workspaceId,
-    eventType: Event.EnvironmentUpdated,
-    eventId: current.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: {
-      previous: wrapSelectorsInObject(previous, ["resourceSelector"]),
-      current: wrapSelectorsInObject(current, ["resourceSelector"]),
-    },
-  });
+  await Promise.all([
+    sendNodeEvent({
+      workspaceId: system.workspaceId,
+      eventType: Event.EnvironmentUpdated,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: source ?? "api",
+      payload: { previous, current },
+    }),
+    sendGoEvent(convertEnvironmentToGoEvent(current, system.workspaceId)),
+  ]);
 };
 
 export const dispatchEnvironmentDeleted = async (
@@ -62,12 +92,10 @@ export const dispatchEnvironmentDeleted = async (
   const tx = db ?? dbClient;
   const system = await getSystem(tx, environment.systemId);
 
-  await sendNodeEvent({
-    workspaceId: system.workspaceId,
-    eventType: Event.EnvironmentDeleted,
-    eventId: environment.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: wrapSelectorsInObject(environment, ["resourceSelector"]),
-  });
+  await Promise.all([
+    sendNodeEvent(
+      convertEnvironmentToNodeEvent(environment, system.workspaceId),
+    ),
+    sendGoEvent(convertEnvironmentToGoEvent(environment, system.workspaceId)),
+  ]);
 };
