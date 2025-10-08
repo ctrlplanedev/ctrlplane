@@ -1,5 +1,7 @@
 import type * as schema from "@ctrlplane/db/schema";
 
+import type * as pb from "../workspace-engine/gen/workspace_pb.js";
+
 export enum Event {
   ResourceCreated = "resource.created",
   ResourceUpdated = "resource.updated",
@@ -128,30 +130,28 @@ export type EventPayload = {
 };
 
 export type GoEventPayload = {
-  [Event.ResourceCreated]: FullResource;
-  [Event.ResourceUpdated]: FullResource;
-  [Event.ResourceDeleted]: FullResource;
-  [Event.ResourceVariableCreated]: schema.ResourceVariable;
-  [Event.ResourceVariableUpdated]: schema.ResourceVariable;
-  [Event.ResourceVariableDeleted]: schema.ResourceVariable;
-  [Event.DeploymentCreated]: schema.Deployment;
-  [Event.DeploymentUpdated]: schema.Deployment;
-  [Event.DeploymentDeleted]: schema.Deployment;
-  [Event.DeploymentVariableCreated]: schema.DeploymentVariable;
-  [Event.DeploymentVariableUpdated]: schema.DeploymentVariable;
-  [Event.DeploymentVariableDeleted]: schema.DeploymentVariable;
-  [Event.DeploymentVariableValueCreated]: schema.DeploymentVariableValue;
-  [Event.DeploymentVariableValueUpdated]: schema.DeploymentVariableValue;
-  [Event.DeploymentVariableValueDeleted]: schema.DeploymentVariableValue;
-  [Event.DeploymentVersionCreated]: schema.DeploymentVersion;
-  [Event.DeploymentVersionUpdated]: schema.DeploymentVersion;
+  [Event.ResourceCreated]: pb.Resource;
+  [Event.ResourceUpdated]: pb.Resource;
+  [Event.ResourceDeleted]: pb.Resource;
+  [Event.DeploymentCreated]: pb.Deployment;
+  [Event.DeploymentUpdated]: pb.Deployment;
+  [Event.DeploymentDeleted]: pb.Deployment;
+  [Event.DeploymentVariableCreated]: pb.DeploymentVariable;
+  [Event.DeploymentVariableUpdated]: pb.DeploymentVariable;
+  [Event.DeploymentVariableDeleted]: pb.DeploymentVariable;
+  [Event.DeploymentVariableValueCreated]: pb.DeploymentVariableValue;
+  [Event.DeploymentVariableValueUpdated]: pb.DeploymentVariableValue;
+  [Event.DeploymentVariableValueDeleted]: pb.DeploymentVariableValue;
+  [Event.DeploymentVersionCreated]: pb.DeploymentVersion;
+  [Event.DeploymentVersionUpdated]: pb.DeploymentVersion;
   [Event.DeploymentVersionDeleted]: schema.DeploymentVersion;
-  [Event.EnvironmentCreated]: schema.Environment;
-  [Event.EnvironmentUpdated]: schema.Environment;
-  [Event.EnvironmentDeleted]: schema.Environment;
-  [Event.PolicyCreated]: FullPolicy;
-  [Event.PolicyUpdated]: FullPolicy;
-  [Event.PolicyDeleted]: FullPolicy;
+  [Event.EnvironmentCreated]: pb.Environment;
+  [Event.EnvironmentUpdated]: pb.Environment;
+  [Event.EnvironmentDeleted]: pb.Environment;
+  [Event.PolicyCreated]: pb.Policy;
+  [Event.PolicyUpdated]: pb.Policy;
+  [Event.PolicyDeleted]: pb.Policy;
+  [Event.JobUpdated]: pb.Job;
 };
 
 export type Message<T extends keyof EventPayload> = {
