@@ -187,11 +187,11 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 	ja.Name = "Config Test Agent"
 	ja.WorkspaceId = engine.Workspace().ID
 	ja.Config = c.MustNewStructFromMap(map[string]any{
-		"namespace":      "default",
-		"timeout":        300,
-		"retries":        3,
-		"cleanupPolicy":  "always",
-		"imageRegistry":  "docker.io",
+		"namespace":     "default",
+		"timeout":       300,
+		"retries":       3,
+		"cleanupPolicy": "always",
+		"imageRegistry": "docker.io",
 		"resources": map[string]any{
 			"cpu":    "1000m",
 			"memory": "2Gi",
@@ -259,8 +259,8 @@ func TestEngine_JobAgentConfigUpdate(t *testing.T) {
 
 	// Update config
 	ja.Config = c.MustNewStructFromMap(map[string]any{
-		"timeout": 600,
-		"retries": 5,
+		"timeout":  600,
+		"retries":  5,
 		"newField": "newValue",
 	})
 
@@ -563,4 +563,3 @@ func TestEngine_JobAgentNameUniqueness(t *testing.T) {
 		t.Fatal("agents should have different IDs")
 	}
 }
-

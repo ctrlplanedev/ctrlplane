@@ -57,16 +57,11 @@ const (
 	UserApprovalRecordDelete EventType = "user-approval-record.deleted"
 )
 
-// BaseEvent represents the common structure of all events
-type BaseEvent struct {
-	EventType   EventType `json:"eventType"`
-	WorkspaceID string    `json:"workspaceId"`
-}
-
 // RawEvent represents the raw event data received from Kafka messages
 type RawEvent struct {
-	BaseEvent
-	Data json.RawMessage `json:"payload,omitempty"`
+	EventType   EventType       `json:"eventType"`
+	WorkspaceID string          `json:"workspaceId"`
+	Data        json.RawMessage `json:"data,omitempty"`
 }
 
 // Handler defines the interface for processing events

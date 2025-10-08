@@ -33,7 +33,7 @@ func HandlePolicyUpdated(
 	}
 
 	ws.Policies().Upsert(ctx, policy)
-	
+
 	return nil
 }
 

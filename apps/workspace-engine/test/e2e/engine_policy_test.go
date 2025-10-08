@@ -257,9 +257,9 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 	selector.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
-			"key":      "priority",
-			"value":    "critical",
-		}),
+		"key":      "priority",
+		"value":    "critical",
+	}),
 	)
 	policy.Selectors = []*pb.PolicyTargetSelector{selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
@@ -459,7 +459,7 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 				}),
 			),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{	
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
 					"value":    "staging",

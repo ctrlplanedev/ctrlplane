@@ -257,11 +257,11 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 	// Verify deployment has job agent config
 	d, _ := engine.Workspace().Deployments().Get(deploymentID)
 	config := d.GetJobAgentConfig().AsMap()
-	
+
 	if config["namespace"] != "custom-namespace" {
 		t.Fatalf("deployment job agent config namespace mismatch: got %v, want custom-namespace", config["namespace"])
 	}
-	
+
 	if timeout, ok := config["timeout"].(float64); !ok || timeout != 300 {
 		t.Fatalf("deployment job agent config timeout mismatch: got %v, want 300", config["timeout"])
 	}
@@ -278,12 +278,12 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 		break
 	}
 	jobConfig := job.GetJobAgentConfig().AsMap()
-	
+
 	// Verify merged config includes deployment-specific settings
 	if jobConfig["namespace"] != "custom-namespace" {
 		t.Fatalf("job config namespace mismatch: got %v, want custom-namespace", jobConfig["namespace"])
 	}
-	
+
 	if timeout, ok := jobConfig["timeout"].(float64); !ok || timeout != 300 {
 		t.Fatalf("job config timeout mismatch: got %v, want 300", jobConfig["timeout"])
 	}
@@ -389,7 +389,7 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 	// Verify each job has the correct job agent
 	k8sJobFound := false
 	dockerJobFound := false
-	
+
 	for _, job := range pendingJobs {
 		if job.DeploymentId == deploymentK8s {
 			k8sJobFound = true

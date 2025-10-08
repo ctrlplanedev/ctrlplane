@@ -20,11 +20,11 @@ func HandleJobUpdated(
 	}
 
 	ws.Jobs().Upsert(ctx, job)
-	
+
 	rt := &pb.ReleaseTarget{
 		EnvironmentId: job.EnvironmentId,
-		DeploymentId: job.DeploymentId,
-		ResourceId: job.ResourceId,
+		DeploymentId:  job.DeploymentId,
+		ResourceId:    job.ResourceId,
 	}
 	ws.ReleaseManager().TaintReleaseTargets(rt)
 

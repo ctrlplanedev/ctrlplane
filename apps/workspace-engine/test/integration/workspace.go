@@ -64,14 +64,14 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 	// Marshal the data payload
 	var dataBytes []byte
 	var err error
-	
+
 	// Check if data is a protobuf message
 	if protoMsg, ok := data.(proto.Message); ok {
 		dataBytes, err = protojson.Marshal(protoMsg)
 	} else {
 		dataBytes, err = json.Marshal(data)
 	}
-	
+
 	if err != nil {
 		tw.t.Fatalf("failed to marshal event data: %v", err)
 		return tw
@@ -79,10 +79,8 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 
 	// Create raw event
 	rawEvent := handler.RawEvent{
-		BaseEvent: handler.BaseEvent{
-			EventType:   eventType,
-			WorkspaceID: tw.workspace.ID,
-		},
+		EventType:   eventType,
+		WorkspaceID: tw.workspace.ID,
 		Data: dataBytes,
 	}
 

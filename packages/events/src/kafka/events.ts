@@ -163,24 +163,9 @@ export type Message<T extends keyof EventPayload> = {
   payload: EventPayload[T];
 };
 
-// Helper function to wrap a selector in the protobuf format
-function wrapSelector<T extends Record<string, any> | null | undefined>(
-  selector: T,
-): T extends null | undefined ? null : { json_selector: T } {
-  if (selector == null) return null as any;
-  return { json_selector: selector } as any;
-}
-
-// Helper to transform an object's selector fields to protobuf format
-export function wrapSelectorsInObject<T extends Record<string, any>>(
-  obj: T,
-  selectorFields: (keyof T)[],
-): T {
-  const result = { ...obj };
-  for (const field of selectorFields) {
-    if (field in result) {
-      (result as any)[field] = wrapSelector(result[field]);
-    }
-  }
-  return result;
-}
+export type GoMessage<T extends keyof GoEventPayload> = {
+  workspaceId: string;
+  eventType: T;
+  source: "api" | "scheduler" | "user-action";
+  data: GoEventPayload[T];
+};

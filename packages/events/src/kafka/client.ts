@@ -3,7 +3,12 @@ import { Kafka } from "kafkajs";
 
 import { logger } from "@ctrlplane/logger";
 
-import type { EventPayload, GoEventPayload, Message } from "./events.js";
+import type {
+  EventPayload,
+  GoEventPayload,
+  GoMessage,
+  Message,
+} from "./events.js";
 import { env } from "../config.js";
 
 const log = logger.child({ component: "kafka-client" });
@@ -26,7 +31,7 @@ const getProducer = async () => {
 };
 
 export const sendGoEvent = async <T extends keyof GoEventPayload>(
-  message: Message<T> | Message<T>[],
+  message: GoMessage<T> | GoMessage<T>[],
 ) => {
   const messages = Array.isArray(message) ? message : [message];
   const topic = "workspace-events";
@@ -36,7 +41,6 @@ export const sendGoEvent = async <T extends keyof GoEventPayload>(
     messages: messages.map((message) => ({
       key: message.workspaceId,
       value: JSON.stringify(message),
-      timestamp: message.timestamp.toString(),
     })),
   });
 };
