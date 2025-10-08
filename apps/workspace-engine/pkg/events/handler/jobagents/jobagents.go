@@ -28,21 +28,9 @@ func HandleJobAgentUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(event.Data, &raw); err != nil {
-		return err
-	}
-
 	jobAgent := &pb.JobAgent{}
-	if currentData, exists := raw["current"]; exists {
-		// Parse as nested structure with "current" field
-		if err := json.Unmarshal(currentData, jobAgent); err != nil {
-			return err
-		}
-	} else {
-		if err := json.Unmarshal(event.Data, jobAgent); err != nil {
-			return err
-		}
+	if err := json.Unmarshal(event.Data, jobAgent); err != nil {
+		return err
 	}
 
 	ws.JobAgents().Upsert(jobAgent)

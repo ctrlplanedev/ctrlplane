@@ -81,27 +81,12 @@ func HandleDeploymentVersionUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(event.Data, &raw); err != nil {
+	rawDeploymentVersion, err := NewRawDeploymentVersion(event.Data)
+	if err != nil {
 		return err
 	}
 
-	deploymentVersion := &pb.DeploymentVersion{}
-	if currentData, exists := raw["current"]; exists {
-		// Parse as nested structure with "current" field
-		rawDeploymentVersion, err := NewRawDeploymentVersion(currentData)
-		if err != nil {
-			return err
-		}
-		deploymentVersion = rawDeploymentVersion.ToDeploymentVersion()
-
-	} else {
-		rawDeploymentVersion, err := NewRawDeploymentVersion(event.Data)
-		if err != nil {
-			return err
-		}
-		deploymentVersion = rawDeploymentVersion.ToDeploymentVersion()
-	}
+	deploymentVersion := rawDeploymentVersion.ToDeploymentVersion()
 
 	ws.DeploymentVersions().Upsert(deploymentVersion.Id, deploymentVersion)
 	ws.ReleaseManager().TaintDeploymentsReleaseTargets(deploymentVersion.DeploymentId)

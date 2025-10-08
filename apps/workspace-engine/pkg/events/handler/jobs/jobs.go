@@ -19,15 +19,8 @@ func HandleJobUpdated(
 	}
 
 	job := &pb.Job{}
-	if currentData, exists := raw["current"]; exists {
-		// Parse as nested structure with "current" field
-		if err := json.Unmarshal(currentData, job); err != nil {
-			return err
-		}
-	} else {
-		if err := json.Unmarshal(event.Data, job); err != nil {
-			return err
-		}
+	if err := json.Unmarshal(event.Data, job); err != nil {
+		return err
 	}
 
 	ws.Jobs().Upsert(ctx, job)

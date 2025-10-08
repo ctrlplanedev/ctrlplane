@@ -29,21 +29,9 @@ func HandleEnvironmentUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(event.Data, &raw); err != nil {
-		return err
-	}
-
 	environment := &pb.Environment{}
-	if currentData, exists := raw["current"]; exists {
-		// Parse as nested structure with "current" field
-		if err := json.Unmarshal(currentData, environment); err != nil {
-			return err
-		}
-	} else {
-		if err := json.Unmarshal(event.Data, environment); err != nil {
-			return err
-		}
+	if err := json.Unmarshal(event.Data, environment); err != nil {
+		return err
 	}
 
 	ws.Environments().Upsert(ctx, environment)

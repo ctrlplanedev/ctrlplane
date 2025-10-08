@@ -26,21 +26,9 @@ func HandlePolicyUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(event.Data, &raw); err != nil {
-		return err
-	}
-
 	policy := &pb.Policy{}
-	if currentData, exists := raw["current"]; exists {
-		// Parse as nested structure with "current" field
-		if err := json.Unmarshal(currentData, policy); err != nil {
-			return err
-		}
-	} else {
-		if err := json.Unmarshal(event.Data, policy); err != nil {
-			return err
-		}
+	if err := json.Unmarshal(event.Data, policy); err != nil {
+		return err
 	}
 
 	ws.Policies().Upsert(ctx, policy)

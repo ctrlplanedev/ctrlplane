@@ -34,22 +34,9 @@ func HandleResourceUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(event.Data, &raw); err != nil {
-		return err
-	}
-
 	resource := &pb.Resource{}
-	if currentData, exists := raw["current"]; exists {
-		// Parse as nested structure with "current" field
-		if err := json.Unmarshal(currentData, resource); err != nil {
-			return err
-		}
-	} else {
-		// Parse directly as userApprovalRecord
-		if err := json.Unmarshal(event.Data, resource); err != nil {
-			return err
-		}
+	if err := json.Unmarshal(event.Data, resource); err != nil {
+		return err
 	}
 
 	ws.Resources().Upsert(ctx, resource)

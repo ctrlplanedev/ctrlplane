@@ -32,23 +32,9 @@ func HandleUserApprovalRecordUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	// First check if the data has a "current" field
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(event.Data, &raw); err != nil {
-		return err
-	}
-
 	userApprovalRecord := &pb.UserApprovalRecord{}
-	if currentData, exists := raw["current"]; exists {
-		// Parse as nested structure with "current" field
-		if err := json.Unmarshal(currentData, userApprovalRecord); err != nil {
-			return err
-		}
-	} else {
-		// Parse directly as userApprovalRecord
-		if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
-			return err
-		}
+	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
+		return err
 	}
 
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
