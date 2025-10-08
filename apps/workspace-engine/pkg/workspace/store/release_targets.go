@@ -4,7 +4,12 @@ import (
 	"context"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/workspace/store/materialized"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var tracer = otel.Tracer("workspace/store/release_targets")
 
 func NewReleaseTargets(store *Store) *ReleaseTargets {
 	rt := &ReleaseTargets{}
@@ -35,6 +40,9 @@ func (r *ReleaseTargets) Recompute(ctx context.Context) {
 }
 
 func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*pb.ReleaseTarget, error) {
+	_, span := tracer.Start(ctx, "computeTargets")
+	defer span.End()
+
 	releaseTargets := make(map[string]*pb.ReleaseTarget, 1000)
 
 	environments := r.store.Environments
@@ -66,6 +74,8 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*pb.Rel
 			}
 		}
 	}
+
+	span.SetAttributes(attribute.Int("count", len(releaseTargets)))
 
 	return releaseTargets, nil
 }
