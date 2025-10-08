@@ -35,7 +35,7 @@ const RESOURCE_SELECT_QUERY = `
 		) as metadata
 	FROM resource r
 	LEFT JOIN resource_metadata rm ON rm.resource_id = r.id
-	WHERE r.workspace_id = $1
+	WHERE r.workspace_id = $1 AND r.deleted_at IS NULL
 	GROUP BY r.id, r.version, r.name, r.kind, r.identifier, r.provider_id, r.workspace_id, r.config, r.created_at, r.locked_at, r.updated_at, r.deleted_at
 `
 
