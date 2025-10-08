@@ -4,7 +4,9 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendNodeEvent } from "../client.js";
+import type { PbDeploymentVersion } from "../events.js";
+import { DeploymentVersionStatus } from "../../workspace-engine/gen/workspace_pb.js";
+import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getWorkspaceId = async (tx: Tx, deploymentVersionId: string) =>
@@ -20,57 +22,94 @@ const getWorkspaceId = async (tx: Tx, deploymentVersionId: string) =>
     .then(takeFirst)
     .then((row) => row.system.workspaceId);
 
+const convertVersionToNodeEvent = (
+  deploymentVersion: schema.DeploymentVersion,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.DeploymentVersionCreated,
+  eventId: deploymentVersion.id,
+  timestamp: Date.now(),
+  source: "api" as const,
+  payload: deploymentVersion,
+});
+
+const convertStatusToPbStatus = (
+  status: schema.DeploymentVersion["status"],
+): DeploymentVersionStatus => {
+  if (status === "building") return DeploymentVersionStatus.BUILDING;
+  if (status === "ready") return DeploymentVersionStatus.READY;
+  if (status === "failed") return DeploymentVersionStatus.FAILED;
+  return DeploymentVersionStatus.REJECTED;
+};
+
+const getPbDeploymentVersion = (
+  deploymentVersion: schema.DeploymentVersion,
+): PbDeploymentVersion => ({
+  id: deploymentVersion.id,
+  name: deploymentVersion.name,
+  tag: deploymentVersion.tag,
+  config: deploymentVersion.config,
+  jobAgentConfig: deploymentVersion.jobAgentConfig,
+  deploymentId: deploymentVersion.deploymentId,
+  status: convertStatusToPbStatus(deploymentVersion.status),
+  message: deploymentVersion.message ?? undefined,
+  createdAt: deploymentVersion.createdAt.toISOString(),
+});
+
+const convertVersionToGoEvent = (
+  deploymentVersion: schema.DeploymentVersion,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.DeploymentVersionCreated as const,
+  data: getPbDeploymentVersion(deploymentVersion),
+  timestamp: Date.now(),
+});
+
 export const dispatchDeploymentVersionCreated = async (
   deploymentVersion: schema.DeploymentVersion,
-  source?: "api" | "scheduler" | "user-action",
   db?: Tx,
 ) => {
   const tx = db ?? dbClient;
   const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
 
-  await sendNodeEvent({
-    workspaceId,
-    eventType: Event.DeploymentVersionCreated,
-    eventId: deploymentVersion.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: deploymentVersion,
-  });
+  await Promise.all([
+    sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
+    sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
+  ]);
 };
 
 export const dispatchDeploymentVersionUpdated = async (
   previous: schema.DeploymentVersion,
   current: schema.DeploymentVersion,
-  source?: "api" | "scheduler" | "user-action",
   db?: Tx,
 ) => {
   const tx = db ?? dbClient;
   const workspaceId = await getWorkspaceId(tx, current.id);
 
-  await sendNodeEvent({
-    workspaceId,
-    eventType: Event.DeploymentVersionUpdated,
-    eventId: current.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: { previous, current },
-  });
+  await Promise.all([
+    sendNodeEvent({
+      workspaceId,
+      eventType: Event.DeploymentVersionUpdated,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: "api" as const,
+      payload: { previous, current },
+    }),
+    sendGoEvent(convertVersionToGoEvent(current, workspaceId)),
+  ]);
 };
 
 export const dispatchDeploymentVersionDeleted = async (
   deploymentVersion: schema.DeploymentVersion,
-  source?: "api" | "scheduler" | "user-action",
   db?: Tx,
 ) => {
   const tx = db ?? dbClient;
   const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
 
-  await sendNodeEvent({
-    workspaceId,
-    eventType: Event.DeploymentVersionDeleted,
-    eventId: deploymentVersion.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: deploymentVersion,
-  });
+  await Promise.all([
+    sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
+    sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
+  ]);
 };
