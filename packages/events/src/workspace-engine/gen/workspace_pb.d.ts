@@ -261,11 +261,6 @@ export declare type Resource = Message<"workspace.Resource"> & {
    * @generated from field: map<string, string> metadata = 13;
    */
   metadata: { [key: string]: string };
-
-  /**
-   * @generated from field: map<string, workspace.Value> variables = 14;
-   */
-  variables: { [key: string]: Value };
 };
 
 /**
@@ -273,6 +268,37 @@ export declare type Resource = Message<"workspace.Resource"> & {
  * Use `create(ResourceSchema)` to create a new message.
  */
 export declare const ResourceSchema: GenMessage<Resource>;
+
+/**
+ * @generated from message workspace.ResourceVariable
+ */
+export declare type ResourceVariable = Message<"workspace.ResourceVariable"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string resource_id = 2;
+   */
+  resourceId: string;
+
+  /**
+   * @generated from field: string key = 3;
+   */
+  key: string;
+
+  /**
+   * @generated from field: workspace.Value value = 4;
+   */
+  value?: Value;
+};
+
+/**
+ * Describes the message workspace.ResourceVariable.
+ * Use `create(ResourceVariableSchema)` to create a new message.
+ */
+export declare const ResourceVariableSchema: GenMessage<ResourceVariable>;
 
 /**
  * @generated from message workspace.Environment

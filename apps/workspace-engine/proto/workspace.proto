@@ -74,8 +74,13 @@ message Resource {
   optional string deleted_at = 12; // nullable, ISO8601 string or RFC3339 timestamp
 
   map<string, string> metadata = 13;
+}
 
-  map<string, Value> variables = 14;
+message ResourceVariable {
+  string id = 1;
+  string resource_id = 2;
+  string key = 3;
+  Value value = 4;
 }
 
 message Environment {
