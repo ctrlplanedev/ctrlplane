@@ -47,6 +47,7 @@ export class VariableReleaseManager implements ReleaseManager {
 
   @Trace()
   private async findLatestRelease() {
+    const span = getCurrentSpan();
     const allReleases =
       await this.workspace.repository.variableReleaseRepository.getAll();
     const releasesForTarget = allReleases.filter(
@@ -57,7 +58,10 @@ export class VariableReleaseManager implements ReleaseManager {
     )[0];
     if (latestRelease == null) return null;
 
+    span?.setAttribute("latestRelease.id", latestRelease.id);
+
     const releaseValues = await this.getReleaseValues(latestRelease.id);
+    span?.setAttribute("releaseValues", JSON.stringify(releaseValues));
     return { ...latestRelease, values: releaseValues };
   }
 
