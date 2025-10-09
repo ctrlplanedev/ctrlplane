@@ -131,21 +131,37 @@ export type EventPayload = {
 
 // Remove the typescript-specific $typeName field from the protobuf objects
 // go complains about the $typeName field being unknown
-type Without$typeName<T> = Omit<T, "$typeName">;
+type WithoutTypeName<T> = Omit<T, "$typeName">;
 
 type PbSelector = { json?: Record<string, any> };
-type WithSelector<T, K extends keyof T> = Without$typeName<Omit<T, K>> &
+type WithPbSelector<T, K extends keyof T> = WithoutTypeName<Omit<T, K>> &
   Partial<Record<K, PbSelector>>;
 
-export type PbResource = Without$typeName<pb.Resource>;
-export type PbDeployment = WithSelector<pb.Deployment, "resourceSelector">;
-export type PbDeploymentVariable = Without$typeName<pb.DeploymentVariable>;
+export type PbResource = WithoutTypeName<pb.Resource>;
+
+export type PbDeployment = WithPbSelector<pb.Deployment, "resourceSelector">;
+export type PbDeploymentVariable = WithoutTypeName<pb.DeploymentVariable>;
 export type PbDeploymentVariableValue =
-  Without$typeName<pb.DeploymentVariableValue>;
-export type PbDeploymentVersion = Without$typeName<pb.DeploymentVersion>;
-export type PbEnvironment = WithSelector<pb.Environment, "resourceSelector">;
-export type PbPolicy = Without$typeName<pb.Policy>;
-export type PbJob = Without$typeName<pb.Job>;
+  WithoutTypeName<pb.DeploymentVariableValue>;
+export type PbDeploymentVersion = WithoutTypeName<pb.DeploymentVersion>;
+
+export type PbEnvironment = WithPbSelector<pb.Environment, "resourceSelector">;
+
+export type PbPolicyRule = Omit<WithoutTypeName<pb.PolicyRule>, "rule"> & {
+  anyApproval?: WithoutTypeName<pb.AnyApprovalRule>;
+};
+export type PbPolicyTarget = WithPbSelector<
+  pb.PolicyTargetSelector,
+  "deploymentSelector" | "environmentSelector" | "resourceSelector"
+>;
+export type PbPolicy = Omit<
+  WithoutTypeName<pb.Policy>,
+  "selectors" | "rules"
+> & {
+  selectors: PbPolicyTarget[];
+  rules: PbPolicyRule[];
+};
+export type PbJob = WithoutTypeName<pb.Job>;
 
 export type GoEventPayload = {
   [Event.ResourceCreated]: PbResource;
