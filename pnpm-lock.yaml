@@ -950,7 +950,7 @@ importers:
         version: 1.11.1
       '@ctrlplane/node-sdk':
         specifier: workspace:*
-        version: link:../../packages/workspace-engine
+        version: link:../../packages/node-sdk
     devDependencies:
       '@ctrlplane/eslint-config':
         specifier: workspace:*
@@ -975,7 +975,7 @@ importers:
         version: link:../../packages/logger
       '@ctrlplane/node-sdk':
         specifier: workspace:*
-        version: link:../../packages/workspace-engine
+        version: link:../../packages/node-sdk
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../../packages/validators
@@ -1859,40 +1859,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.5.3
-      typescript:
-        specifier: 'catalog:'
-        version: 5.8.2
-
-  packages/workspace-engine:
-    dependencies:
-      openapi-fetch:
-        specifier: ^0.13.8
-        version: 0.13.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@openapitools/openapi-generator-cli':
-        specifier: ^2.13.5
-        version: 2.21.0
-      '@types/node':
-        specifier: catalog:node22
-        version: 22.13.10
-      eslint:
-        specifier: 'catalog:'
-        version: 9.11.1(jiti@2.3.3)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.5.3
-      tsup:
-        specifier: ^8.2.4
-        version: 8.5.0(jiti@2.3.3)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.2)(yaml@2.6.0)
       typescript:
         specifier: 'catalog:'
         version: 5.8.2

@@ -9,11 +9,13 @@ require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/confluentinc/confluent-kafka-go/v2 v2.11.1
 	github.com/exaring/otelpgx v0.9.3
+	github.com/gin-gonic/gin v1.11.0
 	github.com/goccy/go-json v0.10.5
 	github.com/google/cel-go v0.26.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/oapi-codegen/runtime v1.1.2
 	github.com/spf13/pflag v1.0.7
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1
@@ -39,7 +41,6 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
 	github.com/getkin/kin-openapi v0.132.0 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
-	github.com/gin-gonic/gin v1.11.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
@@ -61,7 +62,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.5.0 // indirect
-	github.com/oapi-codegen/runtime v1.1.2 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
