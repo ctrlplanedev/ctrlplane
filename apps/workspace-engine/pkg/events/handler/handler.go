@@ -52,6 +52,10 @@ const (
 	PolicyUpdate EventType = "policy.updated"
 	PolicyDelete EventType = "policy.deleted"
 
+	RelationshipRuleCreate EventType = "relationship-rule.created"
+	RelationshipRuleUpdate EventType = "relationship-rule.updated"
+	RelationshipRuleDelete EventType = "relationship-rule.deleted"
+
 	UserApprovalRecordCreate EventType = "user-approval-record.created"
 	UserApprovalRecordUpdate EventType = "user-approval-record.updated"
 	UserApprovalRecordDelete EventType = "user-approval-record.deleted"

@@ -97,6 +97,10 @@ func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
 	return w.store.UserApprovalRecords
 }
 
+func (w *Workspace) RelationshipRules() *store.RelationshipRules {
+	return w.store.Relationships
+}
+
 var workspaces = cmap.New[*Workspace]()
 
 func Exists(id string) bool {

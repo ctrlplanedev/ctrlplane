@@ -39,6 +39,12 @@ type PolicyOption func(*TestWorkspace, *pb.Policy, *eventsBuilder)
 // PolicyTargetSelectorOption configures a PolicyTargetSelector
 type PolicyTargetSelectorOption func(*TestWorkspace, *pb.PolicyTargetSelector)
 
+// RelationshipRuleOption configures a RelationshipRule
+type RelationshipRuleOption func(*TestWorkspace, *pb.RelationshipRule)
+
+// PropertyMatcherOption configures a PropertyMatcher
+type PropertyMatcherOption func(*TestWorkspace, *pb.PropertyMatcher)
+
 type event struct {
 	Type handler.EventType
 	Data any
@@ -131,6 +137,22 @@ func WithPolicy(options ...PolicyOption) WorkspaceOption {
 			context.Background(),
 			handler.PolicyCreate,
 			p,
+		)
+	}
+}
+
+func WithRelationshipRule(options ...RelationshipRuleOption) WorkspaceOption {
+	return func(ws *TestWorkspace) {
+		rr := c.NewRelationshipRule(ws.workspace.ID)
+
+		for _, option := range options {
+			option(ws, rr)
+		}
+
+		ws.PushEvent(
+			context.Background(),
+			handler.RelationshipRuleCreate,
+			rr,
 		)
 	}
 }
@@ -464,5 +486,99 @@ func PolicyTargetJsonEnvironmentSelector(selector map[string]any) PolicyTargetSe
 func PolicyTargetJsonResourceSelector(selector map[string]any) PolicyTargetSelectorOption {
 	return func(_ *TestWorkspace, s *pb.PolicyTargetSelector) {
 		s.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
+	}
+}
+
+// ===== RelationshipRule Options =====
+
+func RelationshipRuleName(name string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.Name = name
+	}
+}
+
+func RelationshipRuleDescription(description string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.Description = &description
+	}
+}
+
+func RelationshipRuleID(id string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.Id = id
+	}
+}
+
+func RelationshipRuleReference(reference string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.Reference = reference
+	}
+}
+
+func RelationshipRuleFromType(fromType string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.FromType = fromType
+	}
+}
+
+func RelationshipRuleToType(toType string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.ToType = toType
+	}
+}
+
+func RelationshipRuleFromJsonSelector(selector map[string]any) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.FromSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
+	}
+}
+
+func RelationshipRuleToJsonSelector(selector map[string]any) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.ToSelector = pb.NewJsonSelector(c.MustNewStructFromMap(selector))
+	}
+}
+
+func RelationshipRuleType(relType string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.RelationshipType = relType
+	}
+}
+
+func RelationshipRuleMetadata(metadata map[string]string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *pb.RelationshipRule) {
+		rr.Metadata = metadata
+	}
+}
+
+func WithPropertyMatcher(options ...PropertyMatcherOption) RelationshipRuleOption {
+	return func(ws *TestWorkspace, rr *pb.RelationshipRule) {
+		pm := &pb.PropertyMatcher{}
+
+		for _, option := range options {
+			option(ws, pm)
+		}
+
+		rr.PropertyMatchers = append(rr.PropertyMatchers, pm)
+	}
+}
+
+// ===== PropertyMatcher Options =====
+
+func PropertyMatcherFromProperty(fromProperty []string) PropertyMatcherOption {
+	return func(_ *TestWorkspace, pm *pb.PropertyMatcher) {
+		pm.FromProperty = fromProperty
+	}
+}
+
+func PropertyMatcherToProperty(toProperty []string) PropertyMatcherOption {
+	return func(_ *TestWorkspace, pm *pb.PropertyMatcher) {
+		pm.ToProperty = toProperty
+	}
+}
+
+func PropertyMatcherOperator(operator string) PropertyMatcherOption {
+	return func(_ *TestWorkspace, pm *pb.PropertyMatcher) {
+		pm.Operator = &operator
 	}
 }
