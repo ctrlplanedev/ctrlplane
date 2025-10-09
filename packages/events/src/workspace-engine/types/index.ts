@@ -5,3 +5,4 @@ export * from "./deployment-variable.js";
 export * from "./environment.js";
 export * from "./policy.js";
 export * from "./job.js";
+export * from "./variables.js";

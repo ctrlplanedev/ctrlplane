@@ -18,7 +18,39 @@ const getFullResource = async (resource: schema.Resource) => {
   return { ...resource, metadata };
 };
 
-const getPbResource = (resource: FullResource): PB.Resource => ({
+const getPbVariables = async (
+  resourceId: string,
+): Promise<Record<string, PB.Value>> => {
+  const variablesRaw = await db
+    .select()
+    .from(schema.resourceVariable)
+    .where(eq(schema.resourceVariable.resourceId, resourceId));
+
+  const literalVariableKeyValPairs: [string, PB.LiteralValue][] = variablesRaw
+    .filter((v) => v.valueType === "direct" && !v.sensitive)
+    .map((v) => [v.key, v.value]);
+  const referenceVariableKeyValPairs: [string, PB.ReferenceValue][] =
+    variablesRaw
+      .filter((v) => v.valueType === "reference")
+      .map((v) => [
+        v.key,
+        { reference: v.reference ?? "", path: v.path ?? [] },
+      ]);
+  const sensitiveVariableKeyValPairs: [string, PB.SensitiveValue][] =
+    variablesRaw
+      .filter((v) => v.valueType === "direct" && v.sensitive)
+      .map((v) => [v.key, { valueHash: String(v.value) }]);
+
+  const variablesKeyValPairs: [string, PB.Value][] = [
+    ...literalVariableKeyValPairs,
+    ...referenceVariableKeyValPairs,
+    ...sensitiveVariableKeyValPairs,
+  ];
+
+  return Object.fromEntries(variablesKeyValPairs);
+};
+
+const getPbResource = async (resource: FullResource): Promise<PB.Resource> => ({
   id: resource.id,
   name: resource.name,
   version: resource.version,
@@ -31,7 +63,7 @@ const getPbResource = (resource: FullResource): PB.Resource => ({
   updatedAt: resource.updatedAt?.toISOString() ?? undefined,
   deletedAt: resource.deletedAt?.toISOString() ?? undefined,
   metadata: resource.metadata,
-  variables: {},
+  variables: await getPbVariables(resource.id),
 });
 
 const convertFullResourceToNodeEvent = (fullResource: FullResource) => ({
@@ -43,23 +75,19 @@ const convertFullResourceToNodeEvent = (fullResource: FullResource) => ({
   payload: fullResource,
 });
 
-const convertFullResourceToGoEvent = (fullResource: FullResource) => ({
+const convertFullResourceToGoEvent = async (fullResource: FullResource) => ({
   workspaceId: fullResource.workspaceId,
   eventType: Event.ResourceCreated as const,
-  data: getPbResource(fullResource),
+  data: await getPbResource(fullResource),
   timestamp: Date.now(),
 });
 
-export const dispatchResourceCreated = (
-  resource: schema.Resource,
-  _?: "api" | "scheduler" | "user-action",
-) =>
-  getFullResource(resource).then((fullResource) =>
-    Promise.all([
-      sendNodeEvent(convertFullResourceToNodeEvent(fullResource)),
-      sendGoEvent(convertFullResourceToGoEvent(fullResource)),
-    ]),
-  );
+export const dispatchResourceCreated = async (resource: schema.Resource) => {
+  const fullResource = await getFullResource(resource);
+  const nodeEvent = convertFullResourceToNodeEvent(fullResource);
+  const goEvent = await convertFullResourceToGoEvent(fullResource);
+  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+};
 
 export const dispatchResourceUpdated = async (
   previous: schema.Resource,
@@ -71,29 +99,26 @@ export const dispatchResourceUpdated = async (
     getFullResource(current),
   ]);
 
-  await Promise.all([
-    sendNodeEvent({
-      workspaceId: current.workspaceId,
-      eventType: Event.ResourceUpdated,
-      eventId: current.id,
-      timestamp: Date.now(),
-      source: source ?? "api",
-      payload: { previous: previousFullResource, current: currentFullResource },
-    }),
-    sendGoEvent(convertFullResourceToGoEvent(currentFullResource)),
-  ]);
+  const nodeEvent = {
+    workspaceId: current.workspaceId,
+    eventType: Event.ResourceUpdated,
+    eventId: current.id,
+    timestamp: Date.now(),
+    source: source ?? "api",
+    payload: { previous: previousFullResource, current: currentFullResource },
+  };
+
+  const goEvent = await convertFullResourceToGoEvent(currentFullResource);
+
+  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 
-export const dispatchResourceDeleted = (
-  resource: schema.Resource,
-  _?: "api" | "scheduler" | "user-action",
-) =>
-  getFullResource(resource).then((fullResource) =>
-    Promise.all([
-      sendNodeEvent(convertFullResourceToNodeEvent(fullResource)),
-      sendGoEvent(convertFullResourceToGoEvent(fullResource)),
-    ]),
-  );
+export const dispatchResourceDeleted = async (resource: schema.Resource) => {
+  const fullResource = await getFullResource(resource);
+  const nodeEvent = convertFullResourceToNodeEvent(fullResource);
+  const goEvent = await convertFullResourceToGoEvent(fullResource);
+  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+};
 
 export const getWorkspaceIdForResource = async (resourceId: string) =>
   db
