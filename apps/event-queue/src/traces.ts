@@ -4,6 +4,14 @@ import { makeWithSpan } from "@ctrlplane/logger";
 
 export const eventsTracer = trace.getTracer("ctrlplane.events");
 
+/**
+ * Get the current active span from the OpenTelemetry context
+ * This can be called from within any function that's running inside a traced context
+ */
+export function getCurrentSpan() {
+  return trace.getActiveSpan();
+}
+
 export const { createSpanWrapper, wrapFnWithSpan } = makeWithSpan(eventsTracer);
 
 export function Trace(name?: string): MethodDecorator {

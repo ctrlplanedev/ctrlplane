@@ -10,7 +10,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../../workspace/workspace.js";
-import { Trace } from "../../traces.js";
+import { getCurrentSpan, Trace } from "../../traces.js";
 import { getVariableManager } from "./variables/variable-manager.js";
 
 const log = logger.child({ component: "variable-release-manager" });
@@ -107,6 +107,7 @@ export class VariableReleaseManager implements ReleaseManager {
 
   @Trace()
   async upsertRelease(variables: MaybeVariable[]) {
+    const span = getCurrentSpan();
     const latestRelease = await this.findLatestRelease();
 
     const oldVars = _(latestRelease?.values ?? [])
@@ -125,9 +126,17 @@ export class VariableReleaseManager implements ReleaseManager {
 
     const isSame = _.isEqual(oldVars, newVars);
     if (latestRelease != null && isSame) {
+      span?.addEvent(
+        "Skipped variable release because it was the same as the latest release",
+      );
       return { created: false, release: latestRelease };
     }
 
+    span?.addEvent(
+      "Creating new variable release because variables were changed",
+    );
+    span?.setAttribute("oldVars", JSON.stringify(oldVars));
+    span?.setAttribute("newVars", JSON.stringify(newVars));
     const release = await this.insertRelease(this.releaseTarget.id);
     const vars = _.compact(variables);
     if (vars.length === 0) {

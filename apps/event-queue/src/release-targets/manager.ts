@@ -6,7 +6,7 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 
 import type { Workspace } from "../workspace/workspace.js";
-import { createSpanWrapper, Trace } from "../traces.js";
+import { createSpanWrapper, getCurrentSpan, Trace } from "../traces.js";
 import { VariableReleaseManager } from "./evaluate/variable-release-manager.js";
 import { VersionManager } from "./evaluate/version-manager.js";
 
@@ -78,33 +78,6 @@ const computeReleaseTargets = createSpanWrapper(
   },
 );
 
-const getAllForWorkspace = createSpanWrapper(
-  "getAllForWorkspace",
-  (_, ws: Workspace) => {
-    return Promise.all([
-      ws.repository.environmentRepository.getAll(),
-      ws.repository.deploymentRepository.getAll(),
-      ws.repository.resourceRepository.getAll(),
-    ]);
-  },
-);
-
-// const testComputeViaGrpc = createSpanWrapper(
-//   "testComputeViaGrpc",
-//   async (_span, ws: Workspace) => {
-//     const [environments, deployments, resources] = await getAllForWorkspace(ws);
-
-//     const c = await client(ws.id);
-//     const r = await c.releaseTarget.compute({
-//       environments: environments.map(toEnvironment),
-//       deployments: deployments.map(toDeployment),
-//       resources: resources.map(toResource),
-//     });
-
-//     return r.releaseTargets;
-//   },
-// );
-
 const computeReleaseTargetsForEnvironmentAndDeployment = createSpanWrapper(
   "computeReleaseTargetsForEnvironmentAndDeployment",
   async (
@@ -153,31 +126,6 @@ const getExistingReleaseTargets = createSpanWrapper(
 const getDiffFromPreviousAndNew = createSpanWrapper(
   "getDiffFromPreviousAndNew",
   (span, prevTargets: FullReleaseTarget[], newTargets: FullReleaseTarget[]) => {
-    // const removedReleaseTargets = prevTargets.filter(
-    //   (existingReleaseTarget) =>
-    //     !newTargets.some(
-    //       (computedReleaseTarget) =>
-    //         computedReleaseTarget.resourceId ===
-    //           existingReleaseTarget.resourceId &&
-    //         computedReleaseTarget.environmentId ===
-    //           existingReleaseTarget.environmentId &&
-    //         computedReleaseTarget.deploymentId ===
-    //           existingReleaseTarget.deploymentId,
-    //     ),
-    // );
-
-    // const addedReleaseTargets = newTargets.filter(
-    //   (computedReleaseTarget) =>
-    //     !prevTargets.some(
-    //       (existingReleaseTarget) =>
-    //         existingReleaseTarget.resourceId ===
-    //           computedReleaseTarget.resourceId &&
-    //         existingReleaseTarget.environmentId ===
-    //           computedReleaseTarget.environmentId &&
-    //         existingReleaseTarget.deploymentId ===
-    //           computedReleaseTarget.deploymentId,
-    //     ),
-    // );
     const makeKey = (rt: {
       resourceId: string;
       environmentId: string;
@@ -303,11 +251,6 @@ export class ReleaseTargetManager {
       this.determineReleaseTargets(),
     ]);
 
-    // testComputeViaGrpc(this.workspace).catch((error) => {
-    //   log.error("Error computing release targets via gRPC", { error });
-    //   return [];
-    // });
-
     const { removedReleaseTargets, addedReleaseTargets } =
       await getDiffFromPreviousAndNew(
         existingReleaseTargets,
@@ -425,7 +368,11 @@ export class ReleaseTargetManager {
       currentRelease.currentVersionRelease.id === newRelease.versionReleaseId;
     const areVariablesUnchanged =
       currentRelease.currentVariableRelease.id === newRelease.variableReleaseId;
-    return !isVersionUnchanged || !areVariablesUnchanged;
+    return {
+      hasAnythingChanged: !isVersionUnchanged || !areVariablesUnchanged,
+      isVersionUnchanged,
+      areVariablesUnchanged,
+    };
   }
 
   @Trace()
@@ -447,6 +394,8 @@ export class ReleaseTargetManager {
     opts?: { skipDuplicateCheck?: boolean },
   ) {
     try {
+      const span = getCurrentSpan();
+
       const [versionRelease, variableRelease] = await Promise.all([
         this.handleVersionRelease(releaseTarget),
         this.handleVariableRelease(releaseTarget),
@@ -460,16 +409,32 @@ export class ReleaseTargetManager {
           versionRelease.id,
           variableRelease.id,
         );
+        span?.addEvent(
+          "Created new release job because current release was null",
+        );
         return this.createReleaseJob(release);
       }
 
-      const hasAnythingChanged = this.getHasAnythingChanged(currentRelease, {
-        versionReleaseId: versionRelease.id,
-        variableReleaseId: variableRelease.id,
-      });
+      const { hasAnythingChanged, isVersionUnchanged, areVariablesUnchanged } =
+        this.getHasAnythingChanged(currentRelease, {
+          versionReleaseId: versionRelease.id,
+          variableReleaseId: variableRelease.id,
+        });
+
+      if (!isVersionUnchanged)
+        span?.addEvent("Created new release job because version was unchanged");
+      if (!areVariablesUnchanged)
+        span?.addEvent(
+          "Created new release job because variables were unchanged",
+        );
+
       if (!hasAnythingChanged) {
-        if (opts?.skipDuplicateCheck)
+        if (opts?.skipDuplicateCheck) {
+          span?.addEvent(
+            "Created new release job because skipDuplicateCheck was true",
+          );
           return this.createReleaseJob(currentRelease, true);
+        }
         return;
       }
 
