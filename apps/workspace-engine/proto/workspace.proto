@@ -151,7 +151,7 @@ message ReleaseTarget {
   string deployment_id = 4;
 }
 
-message Value {
+message LiteralValue {
   oneof data {
     string string = 1;
     bool   bool = 2;
@@ -163,9 +163,26 @@ message Value {
   }
 }
 
+message SensitiveValue {
+  string value_hash = 1;
+}
+
+message ReferenceValue {
+  string reference = 1;
+  repeated string path = 2;
+}
+
+message Value {
+  oneof data {
+    LiteralValue literal = 7;
+    ReferenceValue reference = 8;
+    SensitiveValue sensitive = 9;
+  }
+}
+
 message Release {
   DeploymentVersion version = 1;
-  map<string, Value> variables = 2;
+  map<string, LiteralValue> variables = 2;
   repeated string encrypted_variables = 3;
 
   ReleaseTarget release_target = 5;
@@ -188,7 +205,7 @@ message DeploymentVariable {
   optional string description = 4;
   string deployment_id = 5;
 
-  Value default_value = 6;
+  LiteralValue default_value = 6;
 }
 
 message DeploymentVariableValue {
@@ -196,24 +213,9 @@ message DeploymentVariableValue {
   string deployment_variable_id = 3;
   int64 priority = 4;
 
-  Value default_value = 5;
-
   optional Selector resource_selector = 6;
 
-  oneof value {
-    Value          direct = 7;
-    ReferenceValue reference = 8;
-    SensitiveValue sensitive = 9;
-  }
-}
-
-message SensitiveValue {
-  string value_hash = 1;
-}
-
-message ReferenceValue {
-  optional google.protobuf.Struct reference = 1;
-  repeated string path = 2;
+  Value value = 7;
 }
 
 message DeploymentVersion {
@@ -296,27 +298,6 @@ message RelationshipRule {
 
   // Additional metadata for the relationship rule
   map<string, string> metadata = 10;
-}
-
-// RelationshipInstance represents a computed relationship between two specific entities.
-// This is generated from a RelationshipRule by evaluating the selectors.
-message RelationshipInstance {
-  string id = 1; // Unique ID for this instance
-  string rule_id = 2; // Reference to the RelationshipRule that created this instance
-  
-  // Source entity
-  string from_type = 3;
-  string from_id = 4;
-  
-  // Target entity
-  string to_type = 5;
-  string to_id = 6;
-  
-  // The semantic type of the relationship (inherited from the rule)
-  string relationship_type = 7;
-  
-  // Additional metadata (inherited from rule + any computed metadata)
-  map<string, string> metadata = 8;
 }
 
 message ComputeReleaseTargetsResponse {

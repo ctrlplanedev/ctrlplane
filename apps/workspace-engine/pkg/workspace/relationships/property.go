@@ -3,6 +3,7 @@ package relationships
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"workspace-engine/pkg/pb"
 
@@ -12,7 +13,7 @@ import (
 // GetPropertyValue extracts a property value from an entity using a property path
 // The property path is a slice of strings representing nested property access
 // Examples: ["id"], ["metadata", "region"], ["config", "networking", "vpc_id"]
-func GetPropertyValue(entity any, propertyPath []string) (*pb.Value, error) {
+func GetPropertyValue(entity any, propertyPath []string) (*pb.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
@@ -32,11 +33,10 @@ func GetPropertyValue(entity any, propertyPath []string) (*pb.Value, error) {
 }
 
 // getResourceProperty gets a property from a Resource entity
-func getResourceProperty(resource *pb.Resource, propertyPath []string) (*pb.Value, error) {
+func getResourceProperty(resource *pb.Resource, propertyPath []string) (*pb.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
-
 	firstKey := strings.ToLower(propertyPath[0])
 	switch firstKey {
 	case "id":
@@ -93,7 +93,7 @@ func getResourceProperty(resource *pb.Resource, propertyPath []string) (*pb.Valu
 }
 
 // getDeploymentProperty gets a property from a Deployment entity
-func getDeploymentProperty(deployment *pb.Deployment, propertyPath []string) (*pb.Value, error) {
+func getDeploymentProperty(deployment *pb.Deployment, propertyPath []string) (*pb.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
@@ -133,7 +133,7 @@ func getDeploymentProperty(deployment *pb.Deployment, propertyPath []string) (*p
 }
 
 // getEnvironmentProperty gets a property from an Environment entity
-func getEnvironmentProperty(environment *pb.Environment, propertyPath []string) (*pb.Value, error) {
+func getEnvironmentProperty(environment *pb.Environment, propertyPath []string) (*pb.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
@@ -209,32 +209,34 @@ func extractStructPBValue(value *structpb.Value) any {
 	}
 }
 
-// extractVariableValue extracts the actual value from a VariableValue
-func extractVariableValue(vv *pb.Value) any {
+func extractValueAsString(vv *pb.LiteralValue) string {
 	if vv == nil {
-		return nil
+		return ""
 	}
-
 	switch v := vv.Data.(type) {
-	case *pb.Value_String_:
+	case *pb.LiteralValue_String_:
 		return v.String_
-	case *pb.Value_Bool:
-		return v.Bool
-	case *pb.Value_Double:
-		return v.Double
-	case *pb.Value_Int64:
-		return v.Int64
-	case *pb.Value_Object:
-		return v.Object
-	case *pb.Value_Null:
-		return nil
+	case *pb.LiteralValue_Bool:
+		return fmt.Sprintf("%t", v.Bool)
+	case *pb.LiteralValue_Double:
+		return fmt.Sprintf("%f", v.Double)
+	case *pb.LiteralValue_Int64:
+		return strconv.Itoa(int(v.Int64))
+	case *pb.LiteralValue_Object:
+		json, err := v.Object.MarshalJSON()
+		if err != nil {
+			return fmt.Sprintf("error marshalling object: %v", err)
+		}
+		return string(json)
+	case *pb.LiteralValue_Null:
+		return "null"
 	default:
-		return nil
+		return "unknown"
 	}
 }
 
 // getPropertyReflection uses reflection to get a property value (fallback method)
-func getPropertyReflection(entity any, propertyPath []string) (*pb.Value, error) {
+func getPropertyReflection(entity any, propertyPath []string) (*pb.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return pb.ConvertValue(entity)
 	}

@@ -40,6 +40,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -282,7 +283,7 @@ func buildRelease(
 	ctx context.Context,
 	releaseTarget *pb.ReleaseTarget,
 	version *pb.DeploymentVersion,
-	variables map[string]*pb.Value,
+	variables map[string]*pb.LiteralValue,
 ) *pb.Release {
 	_, span := tracer.Start(ctx, "buildRelease",
 		trace.WithAttributes(
@@ -296,12 +297,17 @@ func buildRelease(
 	defer span.End()
 
 	// Clone variables to avoid mutations affecting this release
-	clonedVariables := make(map[string]*pb.Value, len(variables))
-	for key, value := range variables {
-		if value != nil {
-			clonedVariables[key] = value.ProtoReflect().Interface().(*pb.Value)
+	clonedVariables := make(map[string]*pb.LiteralValue, len(variables))
+	for k, v := range variables {
+		// Deep copy is not strictly necessary for protobuf messages unless you plan to mutate them,
+		// but to be safe, clone the LiteralValue.
+		if v != nil {
+			clonedVariables[k] = proto.Clone(v).(*pb.LiteralValue)
+		} else {
+			clonedVariables[k] = nil
 		}
 	}
+
 
 	return &pb.Release{
 		ReleaseTarget:      releaseTarget,

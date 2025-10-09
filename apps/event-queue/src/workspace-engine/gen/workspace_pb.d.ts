@@ -510,11 +510,11 @@ export declare type ReleaseTarget = Message<"workspace.ReleaseTarget"> & {
 export declare const ReleaseTargetSchema: GenMessage<ReleaseTarget>;
 
 /**
- * @generated from message workspace.Value
+ * @generated from message workspace.LiteralValue
  */
-export declare type Value = Message<"workspace.Value"> & {
+export declare type LiteralValue = Message<"workspace.LiteralValue"> & {
   /**
-   * @generated from oneof workspace.Value.data
+   * @generated from oneof workspace.LiteralValue.data
    */
   data: {
     /**
@@ -556,6 +556,77 @@ export declare type Value = Message<"workspace.Value"> & {
 };
 
 /**
+ * Describes the message workspace.LiteralValue.
+ * Use `create(LiteralValueSchema)` to create a new message.
+ */
+export declare const LiteralValueSchema: GenMessage<LiteralValue>;
+
+/**
+ * @generated from message workspace.SensitiveValue
+ */
+export declare type SensitiveValue = Message<"workspace.SensitiveValue"> & {
+  /**
+   * @generated from field: string value_hash = 1;
+   */
+  valueHash: string;
+};
+
+/**
+ * Describes the message workspace.SensitiveValue.
+ * Use `create(SensitiveValueSchema)` to create a new message.
+ */
+export declare const SensitiveValueSchema: GenMessage<SensitiveValue>;
+
+/**
+ * @generated from message workspace.ReferenceValue
+ */
+export declare type ReferenceValue = Message<"workspace.ReferenceValue"> & {
+  /**
+   * @generated from field: string reference = 1;
+   */
+  reference: string;
+
+  /**
+   * @generated from field: repeated string path = 2;
+   */
+  path: string[];
+};
+
+/**
+ * Describes the message workspace.ReferenceValue.
+ * Use `create(ReferenceValueSchema)` to create a new message.
+ */
+export declare const ReferenceValueSchema: GenMessage<ReferenceValue>;
+
+/**
+ * @generated from message workspace.Value
+ */
+export declare type Value = Message<"workspace.Value"> & {
+  /**
+   * @generated from oneof workspace.Value.data
+   */
+  data: {
+    /**
+     * @generated from field: workspace.LiteralValue literal = 7;
+     */
+    value: LiteralValue;
+    case: "literal";
+  } | {
+    /**
+     * @generated from field: workspace.ReferenceValue reference = 8;
+     */
+    value: ReferenceValue;
+    case: "reference";
+  } | {
+    /**
+     * @generated from field: workspace.SensitiveValue sensitive = 9;
+     */
+    value: SensitiveValue;
+    case: "sensitive";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
  * Describes the message workspace.Value.
  * Use `create(ValueSchema)` to create a new message.
  */
@@ -571,9 +642,9 @@ export declare type Release = Message<"workspace.Release"> & {
   version?: DeploymentVersion;
 
   /**
-   * @generated from field: map<string, workspace.Value> variables = 2;
+   * @generated from field: map<string, workspace.LiteralValue> variables = 2;
    */
-  variables: { [key: string]: Value };
+  variables: { [key: string]: LiteralValue };
 
   /**
    * @generated from field: repeated string encrypted_variables = 3;
@@ -627,9 +698,9 @@ export declare type DeploymentVariable = Message<"workspace.DeploymentVariable">
   deploymentId: string;
 
   /**
-   * @generated from field: workspace.Value default_value = 6;
+   * @generated from field: workspace.LiteralValue default_value = 6;
    */
-  defaultValue?: Value;
+  defaultValue?: LiteralValue;
 };
 
 /**
@@ -658,37 +729,14 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
   priority: bigint;
 
   /**
-   * @generated from field: workspace.Value default_value = 5;
-   */
-  defaultValue?: Value;
-
-  /**
    * @generated from field: optional workspace.Selector resource_selector = 6;
    */
   resourceSelector?: Selector;
 
   /**
-   * @generated from oneof workspace.DeploymentVariableValue.value
+   * @generated from field: workspace.Value value = 7;
    */
-  value: {
-    /**
-     * @generated from field: workspace.Value direct = 7;
-     */
-    value: Value;
-    case: "direct";
-  } | {
-    /**
-     * @generated from field: workspace.ReferenceValue reference = 8;
-     */
-    value: ReferenceValue;
-    case: "reference";
-  } | {
-    /**
-     * @generated from field: workspace.SensitiveValue sensitive = 9;
-     */
-    value: SensitiveValue;
-    case: "sensitive";
-  } | { case: undefined; value?: undefined };
+  value?: Value;
 };
 
 /**
@@ -696,43 +744,6 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
  * Use `create(DeploymentVariableValueSchema)` to create a new message.
  */
 export declare const DeploymentVariableValueSchema: GenMessage<DeploymentVariableValue>;
-
-/**
- * @generated from message workspace.SensitiveValue
- */
-export declare type SensitiveValue = Message<"workspace.SensitiveValue"> & {
-  /**
-   * @generated from field: string value_hash = 1;
-   */
-  valueHash: string;
-};
-
-/**
- * Describes the message workspace.SensitiveValue.
- * Use `create(SensitiveValueSchema)` to create a new message.
- */
-export declare const SensitiveValueSchema: GenMessage<SensitiveValue>;
-
-/**
- * @generated from message workspace.ReferenceValue
- */
-export declare type ReferenceValue = Message<"workspace.ReferenceValue"> & {
-  /**
-   * @generated from field: optional google.protobuf.Struct reference = 1;
-   */
-  reference?: JsonObject;
-
-  /**
-   * @generated from field: repeated string path = 2;
-   */
-  path: string[];
-};
-
-/**
- * Describes the message workspace.ReferenceValue.
- * Use `create(ReferenceValueSchema)` to create a new message.
- */
-export declare const ReferenceValueSchema: GenMessage<ReferenceValue>;
 
 /**
  * @generated from message workspace.DeploymentVersion
@@ -994,72 +1005,6 @@ export declare type RelationshipRule = Message<"workspace.RelationshipRule"> & {
  * Use `create(RelationshipRuleSchema)` to create a new message.
  */
 export declare const RelationshipRuleSchema: GenMessage<RelationshipRule>;
-
-/**
- * RelationshipInstance represents a computed relationship between two specific entities.
- * This is generated from a RelationshipRule by evaluating the selectors.
- *
- * @generated from message workspace.RelationshipInstance
- */
-export declare type RelationshipInstance = Message<"workspace.RelationshipInstance"> & {
-  /**
-   * Unique ID for this instance
-   *
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * Reference to the RelationshipRule that created this instance
-   *
-   * @generated from field: string rule_id = 2;
-   */
-  ruleId: string;
-
-  /**
-   * Source entity
-   *
-   * @generated from field: string from_type = 3;
-   */
-  fromType: string;
-
-  /**
-   * @generated from field: string from_id = 4;
-   */
-  fromId: string;
-
-  /**
-   * Target entity
-   *
-   * @generated from field: string to_type = 5;
-   */
-  toType: string;
-
-  /**
-   * @generated from field: string to_id = 6;
-   */
-  toId: string;
-
-  /**
-   * The semantic type of the relationship (inherited from the rule)
-   *
-   * @generated from field: string relationship_type = 7;
-   */
-  relationshipType: string;
-
-  /**
-   * Additional metadata (inherited from rule + any computed metadata)
-   *
-   * @generated from field: map<string, string> metadata = 8;
-   */
-  metadata: { [key: string]: string };
-};
-
-/**
- * Describes the message workspace.RelationshipInstance.
- * Use `create(RelationshipInstanceSchema)` to create a new message.
- */
-export declare const RelationshipInstanceSchema: GenMessage<RelationshipInstance>;
 
 /**
  * @generated from message workspace.ComputeReleaseTargetsResponse

@@ -24,7 +24,7 @@ func (d *DeploymentVariables) Get(id string) (*pb.DeploymentVariable, bool) {
 	return d.repo.DeploymentVariables.Get(id)
 }
 
-func (d *DeploymentVariables) Values(variableId string) map[string]*pb.DeploymentVariableValue {
+func (d *DeploymentVariables) Values(varableId string) map[string]*pb.DeploymentVariableValue {
 	values := make(map[string]*pb.DeploymentVariableValue)
 	return values
 }

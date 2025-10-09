@@ -52,14 +52,17 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 		t.Fatalf("release targets count is %d, want 0", len(releaseTargets))
 	}
 
-	engine = engine.With(
-		integration.WithResource(
-			integration.ResourceMetadata(map[string]string{"env": "dev"}),
-		),
-		integration.WithResource(
-			integration.ResourceMetadata(map[string]string{"env": "qa"}),
-		),
-	)
+	r1 := c.NewResource(engine.Workspace().ID)
+	r1.Id = "r1"
+	r1.Name = "r1"
+	r1.Metadata = map[string]string{"env": "dev"}
+	engine.PushEvent(ctx, handler.ResourceCreate, r1)
+
+	r2 := c.NewResource(engine.Workspace().ID)
+	r2.Id = "r2"
+	r2.Name = "r2"
+	r2.Metadata = map[string]string{"env": "qa"}
+	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
 

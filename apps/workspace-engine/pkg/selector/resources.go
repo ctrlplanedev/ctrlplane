@@ -14,9 +14,38 @@ var tracer = otel.Tracer("selector")
 
 type Selector any
 
-func FilterResources(ctx context.Context, unknownCondition unknown.UnknownCondition, resources []*pb.Resource) ([]*pb.Resource, error) {
+func FilterMatchingResources(ctx context.Context, sel *pb.Selector, resource *pb.Resource) (bool, error) {
+	unknownCondition, err := unknown.ParseFromMap(sel.GetJson().AsMap())
+	if err != nil {
+		return false, err
+	}
+
+	condition, err := jsonselector.ConvertToSelector(ctx, unknownCondition)
+	if err != nil {
+		return false, err
+	}
+
+	return condition.Matches(resource)
+}
+
+func FilterResources(ctx context.Context, sel *pb.Selector, resources []*pb.Resource) (map[string]*pb.Resource, error) {
 	ctx, span := tracer.Start(ctx, "FilterResources")
 	defer span.End()
+
+	// If no selector is provided, return all resources
+	if sel == nil || sel.GetJson() == nil {
+		allResources := make(map[string]*pb.Resource, len(resources))
+		for _, resource := range resources {
+			allResources[resource.Id] = resource
+		}
+		span.SetAttributes(attribute.Int("resources.output", len(allResources)))
+		return allResources, nil
+	}
+
+	unknownCondition, err := unknown.ParseFromMap(sel.GetJson().AsMap())
+	if err != nil {
+		return nil, err
+	}
 
 	span.SetAttributes(attribute.String("selector.type", unknownCondition.Property))
 	span.SetAttributes(attribute.String("selector.operator", unknownCondition.Operator))
@@ -27,23 +56,24 @@ func FilterResources(ctx context.Context, unknownCondition unknown.UnknownCondit
 
 	selector, err := jsonselector.ConvertToSelector(ctx, unknownCondition)
 	if err != nil {
-		return []*pb.Resource{}, err
+		return nil, err
 	}
 
 	// Pre-allocate with reasonable capacity (assume ~50% match rate to minimize reallocations)
 	// This avoids multiple slice reallocations during append
 	estimatedCapacity := max(len(resources)/2, 128)
-	matchedResources := make([]*pb.Resource, 0, estimatedCapacity)
+	matchedResources := make(map[string]*pb.Resource, estimatedCapacity)
 
 	for _, resource := range resources {
 		matched, err := selector.Matches(resource)
 		if err != nil {
-			return []*pb.Resource{}, err
+			return nil, err
 		}
 		if matched {
-			matchedResources = append(matchedResources, resource)
+			matchedResources[resource.Id] = resource
 		}
 	}
 
+	span.SetAttributes(attribute.Int("resources.output", len(matchedResources)))
 	return matchedResources, nil
 }

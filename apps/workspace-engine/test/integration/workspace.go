@@ -46,13 +46,6 @@ func NewTestWorkspace(
 	return tw
 }
 
-func (tw *TestWorkspace) With(options ...WorkspaceOption) *TestWorkspace {
-	for _, option := range options {
-		option(tw)
-	}
-	return tw
-}
-
 func (tw *TestWorkspace) Workspace() *workspace.Workspace {
 	return tw.workspace
 }

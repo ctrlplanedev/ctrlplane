@@ -6,39 +6,39 @@ import (
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
-func ConvertValue(val any) (*Value, error) {
+func ConvertValue(val any) (*LiteralValue, error) {
 	switch val := val.(type) {
-	case *Value:
+	case *LiteralValue:
 		return val, nil
 	case Value:
-		return &val, nil
+		return val.GetLiteral(), nil
 	case string:
-		return &Value{
-			Data: &Value_String_{String_: val},
+		return &LiteralValue{
+			Data: &LiteralValue_String_{String_: val},
 		}, nil
 	case float64:
-		return &Value{
-			Data: &Value_Double{Double: val},
+		return &LiteralValue{
+			Data: &LiteralValue_Double{Double: val},
 		}, nil
 	case int:
-		return &Value{
-			Data: &Value_Int64{Int64: int64(val)},
+		return &LiteralValue{
+			Data: &LiteralValue_Int64{Int64: int64(val)},
 		}, nil
 	case int64:
-		return &Value{
-			Data: &Value_Int64{Int64: val},
+		return &LiteralValue{
+			Data: &LiteralValue_Int64{Int64: val},
 		}, nil
 	case bool:
-		return &Value{
-			Data: &Value_Bool{Bool: val},
+		return &LiteralValue{
+			Data: &LiteralValue_Bool{Bool: val},
 		}, nil
 	case map[string]any:
 		structVal, err := structpb.NewStruct(val)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert map to structpb.Struct: %w", err)
 		}
-		return &Value{
-			Data: &Value_Object{Object: structVal},
+		return &LiteralValue{
+			Data: &LiteralValue_Object{Object: structVal},
 		}, nil
 
 	default:
@@ -61,8 +61,8 @@ func ConvertValue(val any) (*Value, error) {
 //   - map[string]any: converted to Value_Object (protobuf Struct)
 //
 // Returns an error if an unsupported type is encountered or if structpb.NewStruct fails.
-func VariablesToMap(variables map[string]any) (map[string]*Value, error) {
-	variablesMap := make(map[string]*Value, len(variables))
+func MapToLiteralValues(variables map[string]any) (map[string]*LiteralValue, error) {
+	variablesMap := make(map[string]*LiteralValue, len(variables))
 	for k, v := range variables {
 		value, err := ConvertValue(v)
 		if err != nil {

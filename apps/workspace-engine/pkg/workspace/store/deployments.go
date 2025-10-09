@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
-	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -48,31 +48,15 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 
-		var condition util.MatchableCondition
-		if deployment.ResourceSelector != nil {
-			unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.GetJson().AsMap())
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse selector for deployment %s: %w", deployment.Id, err)
-			}
-			condition, err = jsonselector.ConvertToSelector(context.Background(), unknownCondition)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert selector for deployment %s: %w", deployment.Id, err)
-			}
-		}
-
-		deploymentResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
+		items := make([]*pb.Resource, 0, e.repo.Resources.Count())
 		for resourceItem := range e.repo.Resources.IterBuffered() {
-			if condition == nil {
-				deploymentResources[resourceItem.Key] = resourceItem.Val
-				continue
-			}
-			ok, err := condition.Matches(resourceItem.Val)
-			if err != nil {
-				return nil, fmt.Errorf("error matching resource %s for deployment %s: %w", resourceItem.Key, deployment.Id, err)
-			}
-			if ok {
-				deploymentResources[resourceItem.Key] = resourceItem.Val
-			}
+			resource := resourceItem.Val
+			items = append(items, resource)
+		}
+	
+		deploymentResources, err := selector.FilterResources(ctx, deployment.ResourceSelector, items)
+		if err != nil {
+			return nil, fmt.Errorf("failed to filter resources for deployment %s: %w", deploymentId, err)
 		}
 
 		return deploymentResources, nil

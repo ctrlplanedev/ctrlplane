@@ -2,6 +2,7 @@ package selector
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 	"workspace-engine/pkg/pb"
@@ -10,13 +11,64 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// Helper function to convert UnknownCondition to *pb.Selector
+func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *pb.Selector {
+	t.Helper()
+	
+	// Convert condition to map
+	jsonBytes, err := json.Marshal(condition)
+	if err != nil {
+		t.Fatalf("Failed to marshal condition: %v", err)
+	}
+	
+	var conditionMap map[string]interface{}
+	if err := json.Unmarshal(jsonBytes, &conditionMap); err != nil {
+		t.Fatalf("Failed to unmarshal condition: %v", err)
+	}
+	
+	// Convert map to structpb
+	jsonStruct, err := structpb.NewStruct(conditionMap)
+	if err != nil {
+		t.Fatalf("Failed to create struct: %v", err)
+	}
+	
+	return &pb.Selector{
+		Value: &pb.Selector_Json{
+			Json: jsonStruct,
+		},
+	}
+}
+
+// Helper function to validate filtered results
+func validateFilteredResources(t *testing.T, result map[string]*pb.Resource, expectedCount int, expectedIDs map[string]bool) {
+	t.Helper()
+	
+	if len(result) != expectedCount {
+		t.Errorf("FilterResources() returned %d resources, want %d", len(result), expectedCount)
+		return
+	}
+	
+	for expectedID := range expectedIDs {
+		if _, found := result[expectedID]; !found {
+			t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
+		}
+	}
+	
+	// Check for unexpected IDs
+	for id := range result {
+		if !expectedIDs[id] {
+			t.Errorf("FilterResources() unexpected resource ID %s in results", id)
+		}
+	}
+}
+
 func TestFilterResources_StringConditions(t *testing.T) {
 	tests := []struct {
 		name          string
 		condition     unknown.UnknownCondition
 		resources     []*pb.Resource
 		expectedCount int
-		expectedIDs   []string
+		expectedIDs   map[string]bool
 		wantErr       bool
 	}{
 		{
@@ -39,7 +91,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 1,
-			expectedIDs:   []string{"1"},
+			expectedIDs:   map[string]bool{"1": true},
 			wantErr:       false,
 		},
 		{
@@ -64,7 +116,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 2,
-			expectedIDs:   []string{"1", "2"},
+			expectedIDs:   map[string]bool{"1": true, "2": true},
 			wantErr:       false,
 		},
 		{
@@ -89,7 +141,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 2,
-			expectedIDs:   []string{"1", "2"},
+			expectedIDs:   map[string]bool{"1": true, "2": true},
 			wantErr:       false,
 		},
 		{
@@ -114,7 +166,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 2,
-			expectedIDs:   []string{"1", "2"},
+			expectedIDs:   map[string]bool{"1": true, "2": true},
 			wantErr:       false,
 		},
 	}
@@ -122,35 +174,15 @@ func TestFilterResources_StringConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			result, err := FilterResources(ctx, tt.condition, tt.resources)
+			selector := conditionToSelector(t, tt.condition)
+			result, err := FilterResources(ctx, selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if len(result) != tt.expectedCount {
-				t.Errorf("FilterResources() returned %d resources, want %d", len(result), tt.expectedCount)
-				return
-			}
-
-			resultIDs := make([]string, len(result))
-			for i, r := range result {
-				resultIDs[i] = r.Id
-			}
-
-			for _, expectedID := range tt.expectedIDs {
-				found := false
-				for _, resultID := range resultIDs {
-					if resultID == expectedID {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
-				}
-			}
+			validateFilteredResources(t, result, tt.expectedCount, tt.expectedIDs)
 		})
 	}
 }
@@ -161,7 +193,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 		condition     unknown.UnknownCondition
 		resources     []*pb.Resource
 		expectedCount int
-		expectedIDs   []string
+		expectedIDs   map[string]bool
 		wantErr       bool
 	}{
 		{
@@ -196,7 +228,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 2,
-			expectedIDs:   []string{"1", "3"},
+			expectedIDs:   map[string]bool{"1": true, "3": true},
 			wantErr:       false,
 		},
 		{
@@ -222,7 +254,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 1,
-			expectedIDs:   []string{"1"},
+			expectedIDs:   map[string]bool{"1": true},
 			wantErr:       false,
 		},
 		{
@@ -254,7 +286,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 2,
-			expectedIDs:   []string{"1", "2"},
+			expectedIDs:   map[string]bool{"1": true, "2": true},
 			wantErr:       false,
 		},
 		{
@@ -274,7 +306,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				},
 			},
 			expectedCount: 0,
-			expectedIDs:   []string{},
+			expectedIDs:   map[string]bool{},
 			wantErr:       false,
 		},
 	}
@@ -282,36 +314,16 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			result, err := FilterResources(ctx, tt.condition, tt.resources)
+			selector := conditionToSelector(t, tt.condition)
+			result, err := FilterResources(ctx, selector, tt.resources)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+		if (err != nil) != tt.wantErr {
+			t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
+			return
+		}
 
-			if len(result) != tt.expectedCount {
-				t.Errorf("FilterResources() returned %d resources, want %d", len(result), tt.expectedCount)
-				return
-			}
-
-			resultIDs := make([]string, len(result))
-			for i, r := range result {
-				resultIDs[i] = r.Id
-			}
-
-			for _, expectedID := range tt.expectedIDs {
-				found := false
-				for _, resultID := range resultIDs {
-					if resultID == expectedID {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
-				}
-			}
-		})
+		validateFilteredResources(t, result, tt.expectedCount, tt.expectedIDs)
+	})
 	}
 }
 
@@ -433,7 +445,8 @@ func TestFilterResources_DateConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			result, err := FilterResources(ctx, tt.condition, tt.resources)
+			selector := conditionToSelector(t, tt.condition)
+			result, err := FilterResources(ctx, selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -445,9 +458,9 @@ func TestFilterResources_DateConditions(t *testing.T) {
 				return
 			}
 
-			resultIDs := make([]string, len(result))
-			for i, r := range result {
-				resultIDs[i] = r.Id
+			resultIDs := make([]string, 0, len(result))
+			for _, r := range result {
+				resultIDs = append(resultIDs, r.Id)
 			}
 
 			for _, expectedID := range tt.expectedIDs {
@@ -776,7 +789,8 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			result, err := FilterResources(ctx, tt.condition, tt.resources)
+			selector := conditionToSelector(t, tt.condition)
+			result, err := FilterResources(ctx, selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -788,9 +802,9 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 				return
 			}
 
-			resultIDs := make([]string, len(result))
-			for i, r := range result {
-				resultIDs[i] = r.Id
+			resultIDs := make([]string, 0, len(result))
+			for _, r := range result {
+				resultIDs = append(resultIDs, r.Id)
 			}
 
 			for _, expectedID := range tt.expectedIDs {
@@ -881,7 +895,8 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			result, err := FilterResources(ctx, tt.condition, tt.resources)
+			selector := conditionToSelector(t, tt.condition)
+			result, err := FilterResources(ctx, selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -892,9 +907,9 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 				t.Errorf("FilterResources() returned %d resources, want %d", len(result), tt.expectedCount)
 			}
 
-			resultIDs := make([]string, len(result))
-			for i, r := range result {
-				resultIDs[i] = r.Id
+			resultIDs := make([]string, 0, len(result))
+			for _, r := range result {
+				resultIDs = append(resultIDs, r.Id)
 			}
 
 			for _, expectedID := range tt.expectedIDs {
@@ -1011,7 +1026,8 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			result, err := FilterResources(ctx, tt.condition, tt.resources)
+			selector := conditionToSelector(t, tt.condition)
+			result, err := FilterResources(ctx, selector, tt.resources)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
@@ -1103,7 +1119,8 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		result, err := FilterResources(ctx, condition, resources)
+		selector := conditionToSelector(t, condition)
+		result, err := FilterResources(ctx, selector, resources)
 
 		if err != nil {
 			t.Fatalf("FilterResources() unexpected error: %v", err)
@@ -1113,8 +1130,10 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 			t.Errorf("FilterResources() returned %d resources, want 1", len(result))
 		}
 
-		if len(result) > 0 && result[0].Id != "1" {
-			t.Errorf("FilterResources() returned resource ID %s, want 1", result[0].Id)
+		for _, r := range result {
+			if r.Id != "1" {
+				t.Errorf("FilterResources() returned resource ID %s, want 1", r.Id)
+			}
 		}
 	})
 
@@ -1204,7 +1223,8 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		result, err := FilterResources(ctx, condition, resources)
+		selector := conditionToSelector(t, condition)
+		result, err := FilterResources(ctx, selector, resources)
 
 		if err != nil {
 			t.Fatalf("FilterResources() unexpected error: %v", err)

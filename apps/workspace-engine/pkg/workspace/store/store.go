@@ -28,6 +28,7 @@ func New() *Store {
 	store.JobAgents = NewJobAgents(store)
 	store.UserApprovalRecords = NewUserApprovalRecords(store)
 	store.Relationships = NewRelationshipRules(store)
+	store.Variables = NewVariables(store)
 
 	return store
 }
@@ -48,6 +49,7 @@ type Store struct {
 	JobAgents           *JobAgents
 	UserApprovalRecords *UserApprovalRecords
 	Relationships       *RelationshipRules
+	Variables           *Variables
 }
 
 func (s *Store) GobEncode() ([]byte, error) {
@@ -88,6 +90,7 @@ func (s *Store) GobDecode(data []byte) error {
 	s.JobAgents = NewJobAgents(s)
 	s.UserApprovalRecords = NewUserApprovalRecords(s)
 	s.Relationships = NewRelationshipRules(s)
+	s.Variables = NewVariables(s)
 
 	// Reinitialize materialized views for environments and deployments
 	s.Environments.ReinitializeMaterializedViews()

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
-	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -50,30 +50,15 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 			return nil, fmt.Errorf("environment %s not found", environmentId)
 		}
 
-		var condition util.MatchableCondition
-		if environment.ResourceSelector != nil {
-			unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.GetJson().AsMap())
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse selector for environment %s: %w", environment.Id, err)
-			}
-			condition, err = jsonselector.ConvertToSelector(context.Background(), unknownCondition)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert selector for environment %s: %w", environment.Id, err)
-			}
+		repoResources := make([]*pb.Resource, 0, e.repo.Resources.Count())
+		for resourceItem := range e.repo.Resources.IterBuffered() {
+			resource := resourceItem.Val
+			repoResources = append(repoResources, resource)
 		}
 
-		environmentResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
-		// For environments: only match resources if there's a selector (default to none)
-		if condition != nil {
-			for resourceItem := range e.repo.Resources.IterBuffered() {
-				ok, err := condition.Matches(resourceItem.Val)
-				if err != nil {
-					return nil, fmt.Errorf("error matching resource %s for environment %s: %w", resourceItem.Key, environment.Id, err)
-				}
-				if ok {
-					environmentResources[resourceItem.Key] = resourceItem.Val
-				}
-			}
+		environmentResources, err := selector.FilterResources(ctx, environment.ResourceSelector, repoResources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to filter resources for environment %s: %w", environmentId, err)
 		}
 
 		return environmentResources, nil

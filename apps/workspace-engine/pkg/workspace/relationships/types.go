@@ -18,7 +18,7 @@ const (
 
 // ComputedRelationship represents a relationship instance and the entity it connects to
 type ComputedRelationship[E any] struct {
-	Relationship  *pb.RelationshipInstance
+	Relationship  *pb.RelationshipRule
 	Direction     Direction // "from" or "to" - indicates if the entity is the source or target
 	RelatedEntity *RelatedEntity[E]
 }

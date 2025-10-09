@@ -80,3 +80,5 @@ func (r *Resources) Items() map[string]*pb.Resource {
 func (r *Resources) Has(id string) bool {
 	return r.repo.Resources.Has(id)
 }
+
+

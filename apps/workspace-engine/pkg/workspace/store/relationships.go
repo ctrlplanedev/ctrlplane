@@ -35,3 +35,7 @@ func (r *RelationshipRules) Has(id string) bool {
 func (r *RelationshipRules) Remove(id string) {
 	r.repo.RelationshipRules.Remove(id)
 }
+
+func (r *RelationshipRules) GetRelations(ctx context.Context, entity any) map[string][]any {
+	return nil
+}

@@ -6,10 +6,10 @@ import (
 	"sync"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ResourceIDSet is a set of resource IDs for fast O(1) lookup
@@ -290,18 +290,30 @@ func filterResourcesBySelector(
 		))
 	defer span.End()
 
-	unknownCondition, err := unknown.ParseFromMap(selectorMap)
+	// Convert selectorMap to *pb.Selector
+	jsonStruct, err := structpb.NewStruct(selectorMap)
 	if err != nil {
 		span.RecordError(err)
-		return nil, fmt.Errorf("failed to parse selector: %w", err)
+		return nil, fmt.Errorf("failed to create selector struct: %w", err)
 	}
 
-	filtered, err := selector.FilterResources(ctx, unknownCondition, resources)
+	pbSelector := &pb.Selector{
+		Value: &pb.Selector_Json{
+			Json: jsonStruct,
+		},
+	}
+
+	filtered, err := selector.FilterResources(ctx, pbSelector, resources)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
 
+	filteredResources := make([]*pb.Resource, 0, len(filtered))
+	for _, resource := range filtered {
+		filteredResources = append(filteredResources, resource)
+	}
+
 	span.SetAttributes(attribute.Int("resources.output", len(filtered)))
-	return filtered, nil
+	return filteredResources, nil
 }
