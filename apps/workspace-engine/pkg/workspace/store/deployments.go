@@ -48,6 +48,14 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 
+		if deployment.ResourceSelector == nil {
+			allResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
+			for resourceItem := range e.repo.Resources.IterBuffered() {
+				allResources[resourceItem.Key] = resourceItem.Val
+			}
+			return allResources, nil
+		}
+
 		items := make([]*pb.Resource, 0, e.repo.Resources.Count())
 		for resourceItem := range e.repo.Resources.IterBuffered() {
 			resource := resourceItem.Val

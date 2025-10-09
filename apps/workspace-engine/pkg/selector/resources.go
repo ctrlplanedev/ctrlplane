@@ -32,14 +32,9 @@ func FilterResources(ctx context.Context, sel *pb.Selector, resources []*pb.Reso
 	ctx, span := tracer.Start(ctx, "FilterResources")
 	defer span.End()
 
-	// If no selector is provided, return all resources
+	// If no selector is provided, return no resources
 	if sel == nil || sel.GetJson() == nil {
-		allResources := make(map[string]*pb.Resource, len(resources))
-		for _, resource := range resources {
-			allResources[resource.Id] = resource
-		}
-		span.SetAttributes(attribute.Int("resources.output", len(allResources)))
-		return allResources, nil
+		return map[string]*pb.Resource{}, nil
 	}
 
 	unknownCondition, err := unknown.ParseFromMap(sel.GetJson().AsMap())
