@@ -711,10 +711,9 @@ func (x *Resource) GetMetadata() map[string]string {
 
 type ResourceVariable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
-	Key           string                 `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
-	Value         *Value                 `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,1,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Value         *Value                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -747,13 +746,6 @@ func (x *ResourceVariable) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ResourceVariable.ProtoReflect.Descriptor instead.
 func (*ResourceVariable) Descriptor() ([]byte, []int) {
 	return file_workspace_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *ResourceVariable) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
 }
 
 func (x *ResourceVariable) GetResourceId() string {
@@ -2652,13 +2644,12 @@ const file_workspace_proto_rawDesc = "" +
 	"\n" +
 	"_locked_atB\r\n" +
 	"\v_updated_atB\r\n" +
-	"\v_deleted_at\"}\n" +
-	"\x10ResourceVariable\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
-	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"\v_deleted_at\"m\n" +
+	"\x10ResourceVariable\x12\x1f\n" +
+	"\vresource_id\x18\x01 \x01(\tR\n" +
 	"resourceId\x12\x10\n" +
-	"\x03key\x18\x03 \x01(\tR\x03key\x12&\n" +
-	"\x05value\x18\x04 \x01(\v2\x10.workspace.ValueR\x05value\"\xe6\x01\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12&\n" +
+	"\x05value\x18\x03 \x01(\v2\x10.workspace.ValueR\x05value\"\xe6\x01\n" +
 	"\vEnvironment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +

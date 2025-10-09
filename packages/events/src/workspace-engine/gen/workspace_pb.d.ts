@@ -274,22 +274,17 @@ export declare const ResourceSchema: GenMessage<Resource>;
  */
 export declare type ResourceVariable = Message<"workspace.ResourceVariable"> & {
   /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: string resource_id = 2;
+   * @generated from field: string resource_id = 1;
    */
   resourceId: string;
 
   /**
-   * @generated from field: string key = 3;
+   * @generated from field: string key = 2;
    */
   key: string;
 
   /**
-   * @generated from field: workspace.Value value = 4;
+   * @generated from field: workspace.Value value = 3;
    */
   value?: Value;
 };

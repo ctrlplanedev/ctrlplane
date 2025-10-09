@@ -77,10 +77,9 @@ message Resource {
 }
 
 message ResourceVariable {
-  string id = 1;
-  string resource_id = 2;
-  string key = 3;
-  Value value = 4;
+  string resource_id = 1;
+  string key = 2;
+  Value value = 3;
 }
 
 message Environment {
