@@ -21,7 +21,7 @@ func mustNewStructFromMap(m map[string]any) *structpb.Struct {
 // Helper function to create test resources
 func createTestResources(count int, metadata map[string]map[string]string) []*pb.Resource {
 	resources := make([]*pb.Resource, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		id := fmt.Sprintf("resource-%d", i)
 		meta := map[string]string{}
 		if metadata != nil && metadata[id] != nil {
