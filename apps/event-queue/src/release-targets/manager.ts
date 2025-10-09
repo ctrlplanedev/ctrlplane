@@ -395,6 +395,16 @@ export class ReleaseTargetManager {
   ) {
     try {
       const span = getCurrentSpan();
+      span?.setAttribute("releaseTarget.id", releaseTarget.id);
+      span?.setAttribute("releaseTarget.resourceId", releaseTarget.resourceId);
+      span?.setAttribute(
+        "releaseTarget.environmentId",
+        releaseTarget.environmentId,
+      );
+      span?.setAttribute(
+        "releaseTarget.deploymentId",
+        releaseTarget.deploymentId,
+      );
 
       const [versionRelease, variableRelease] = await Promise.all([
         this.handleVersionRelease(releaseTarget),
@@ -422,10 +432,10 @@ export class ReleaseTargetManager {
         });
 
       if (!isVersionUnchanged)
-        span?.addEvent("Created new release job because version was unchanged");
+        span?.addEvent("Created new release job because version was changed");
       if (!areVariablesUnchanged)
         span?.addEvent(
-          "Created new release job because variables were unchanged",
+          "Created new release job because variables were changed",
         );
 
       if (!hasAnythingChanged) {
