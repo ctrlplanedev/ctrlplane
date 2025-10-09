@@ -182,8 +182,9 @@ func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
 
 	targets := make([]*pb.ReleaseTarget, 0, len(c.req.Environments)*len(c.req.Deployments))
 	var wg sync.WaitGroup
+	var targetsMu sync.Mutex
 
-	// Process each environment in parallel with index-based writes (no locks!)
+	// Process each environment in parallel
 	for _, work := range c.req.Environments {
 		wg.Add(1)
 		go func(env *pb.Environment) {
@@ -199,12 +200,14 @@ func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
 				if dep.ResourceSelector == nil {
 					for resourceID := range envResources {
 						resource := resourceByID[resourceID]
+						targetsMu.Lock()
 						targets = append(targets, &pb.ReleaseTarget{
 							Id:            resource.Id + idSuffix,
 							ResourceId:    resource.Id,
 							EnvironmentId: env.Id,
 							DeploymentId:  dep.Id,
 						})
+						targetsMu.Unlock()
 					}
 					continue
 				}
@@ -222,12 +225,14 @@ func (c *Computation) Generate() ([]*pb.ReleaseTarget, error) {
 						continue
 					}
 					resource := resourceByID[resourceID]
+					targetsMu.Lock()
 					targets = append(targets, &pb.ReleaseTarget{
 						Id:            resource.Id + idSuffix,
 						ResourceId:    resource.Id,
 						EnvironmentId: env.Id,
 						DeploymentId:  dep.Id,
 					})
+					targetsMu.Unlock()
 				}
 			}
 		}(work)

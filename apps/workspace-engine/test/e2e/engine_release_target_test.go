@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/pb"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"google.golang.org/protobuf/proto"
 )
 
 func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
@@ -317,8 +319,9 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 
 	// Move deployment to system 2 - should remove release target
 	// (environment is still in system 1, so no matching deployment+environment pair)
-	d1.SystemId = sys2.Id
-	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
+	d1Updated := proto.Clone(d1).(*pb.Deployment)
+	d1Updated.SystemId = sys2.Id
+	engine.PushEvent(ctx, handler.DeploymentUpdate, d1Updated)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
@@ -326,8 +329,9 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	}
 
 	// Move environment to system 2 as well - should recreate release target
-	e1.SystemId = sys2.Id
-	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
+	e1Updated := proto.Clone(e1).(*pb.Environment)
+	e1Updated.SystemId = sys2.Id
+	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1Updated)
 
 	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
