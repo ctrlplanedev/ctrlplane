@@ -70,7 +70,7 @@ func TestEngine_RelationshipRuleCreation(t *testing.T) {
 		t.Fatalf("property matcher to property is %v, want [metadata region]", matcher.ToProperty)
 	}
 
-	if matcher.Operator == nil || *matcher.Operator != "equals" {
+	if matcher.Operator != "equals" {
 		t.Fatalf("property matcher operator is %v, want equals", matcher.Operator)
 	}
 }

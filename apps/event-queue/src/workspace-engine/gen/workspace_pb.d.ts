@@ -934,9 +934,9 @@ export declare type PropertyMatcher = Message<"workspace.PropertyMatcher"> & {
    * Comparison operator: "equals", "not_equals", "contains", "starts_with", "ends_with", "regex"
    * Default is "equals" if not specified
    *
-   * @generated from field: optional string operator = 3;
+   * @generated from field: string operator = 3;
    */
-  operator?: string;
+  operator: string;
 };
 
 /**

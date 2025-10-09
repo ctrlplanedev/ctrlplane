@@ -2132,7 +2132,7 @@ type PropertyMatcher struct {
 	ToProperty []string `protobuf:"bytes,2,rep,name=to_property,json=toProperty,proto3" json:"to_property,omitempty"`
 	// Comparison operator: "equals", "not_equals", "contains", "starts_with", "ends_with", "regex"
 	// Default is "equals" if not specified
-	Operator      *string `protobuf:"bytes,3,opt,name=operator,proto3,oneof" json:"operator,omitempty"`
+	Operator      string `protobuf:"bytes,3,opt,name=operator,proto3" json:"operator,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2182,8 +2182,8 @@ func (x *PropertyMatcher) GetToProperty() []string {
 }
 
 func (x *PropertyMatcher) GetOperator() string {
-	if x != nil && x.Operator != nil {
-		return *x.Operator
+	if x != nil {
+		return x.Operator
 	}
 	return ""
 }
@@ -2780,13 +2780,12 @@ const file_workspace_proto_rawDesc = "" +
 	"\tresources\x18\x03 \x03(\v2\x13.workspace.ResourceR\tresources\"B\n" +
 	"\bSelector\x12-\n" +
 	"\x04json\x18\x01 \x01(\v2\x17.google.protobuf.StructH\x00R\x04jsonB\a\n" +
-	"\x05value\"\x85\x01\n" +
+	"\x05value\"s\n" +
 	"\x0fPropertyMatcher\x12#\n" +
 	"\rfrom_property\x18\x01 \x03(\tR\ffromProperty\x12\x1f\n" +
 	"\vto_property\x18\x02 \x03(\tR\n" +
-	"toProperty\x12\x1f\n" +
-	"\boperator\x18\x03 \x01(\tH\x00R\boperator\x88\x01\x01B\v\n" +
-	"\t_operator\"\xab\x04\n" +
+	"toProperty\x12\x1a\n" +
+	"\boperator\x18\x03 \x01(\tR\boperator\"\xab\x04\n" +
 	"\x10RelationshipRule\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +
@@ -2999,7 +2998,6 @@ func file_workspace_proto_init() {
 	file_workspace_proto_msgTypes[22].OneofWrappers = []any{
 		(*Selector_Json)(nil),
 	}
-	file_workspace_proto_msgTypes[23].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[24].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[26].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[28].OneofWrappers = []any{}

@@ -271,7 +271,7 @@ message PropertyMatcher {
   
   // Comparison operator: "equals", "not_equals", "contains", "starts_with", "ends_with", "regex"
   // Default is "equals" if not specified
-  optional string operator = 3;
+  string operator = 3;
 }
 
 // RelationshipRule defines a rule for creating relationships between entities.

@@ -598,7 +598,7 @@ func PropertyMatcherToProperty(toProperty []string) PropertyMatcherOption {
 
 func PropertyMatcherOperator(operator string) PropertyMatcherOption {
 	return func(_ *TestWorkspace, pm *pb.PropertyMatcher) {
-		pm.Operator = &operator
+		pm.Operator = operator
 	}
 }
 

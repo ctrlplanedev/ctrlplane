@@ -5,26 +5,20 @@ import (
 	"workspace-engine/pkg/pb"
 )
 
+func NewPropertyMatcher(pm *pb.PropertyMatcher) *PropertyMatcher {
+	if pm.Operator == "" {
+		pm.Operator = "equals"
+	}
+	return &PropertyMatcher{
+		PropertyMatcher: pm,
+	}
+}
+
 // PropertyMatcher evaluates property matching between two entities
 type PropertyMatcher struct {
-	FromProperty []string
-	ToProperty   []string
-	Operator     string
+	*pb.PropertyMatcher
 }
 
-// NewPropertyMatcherFromProto creates a PropertyMatcher from a protobuf PropertyMatcher
-func NewPropertyMatcherFromProto(pm *pb.PropertyMatcher) *PropertyMatcher {
-	operator := "equals"
-	if pm.Operator != nil {
-		operator = *pm.Operator
-	}
-
-	return &PropertyMatcher{
-		FromProperty: pm.FromProperty,
-		ToProperty:   pm.ToProperty,
-		Operator:     operator,
-	}
-}
 
 func (m *PropertyMatcher) Evaluate(from any, to any) bool {
 	fromValue, err := GetPropertyValue(from, m.FromProperty)
@@ -43,9 +37,9 @@ func (m *PropertyMatcher) Evaluate(from any, to any) bool {
 
 	switch op {
 	case "equals":
-		return fromValue == toValue
+		return fromValueStr == toValueStr
 	case "not_equals", "notequals":
-		return fromValue != toValue
+		return fromValueStr != toValueStr
 	case "contains", "contain":
 		return strings.Contains(fromValueStr, toValueStr)
 	case "starts_with", "startswith":
