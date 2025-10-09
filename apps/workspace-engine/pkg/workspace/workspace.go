@@ -105,6 +105,14 @@ func (w *Workspace) ResourceVariables() *store.ResourceVariables {
 	return w.store.ResourceVariables
 }
 
+func (w *Workspace) Variables() *store.Variables {
+	return w.store.Variables
+}
+
+func (w *Workspace) DeploymentVariables() *store.DeploymentVariables {
+	return w.store.DeploymentVariables
+}
+
 var workspaces = cmap.New[*Workspace]()
 
 func Exists(id string) bool {

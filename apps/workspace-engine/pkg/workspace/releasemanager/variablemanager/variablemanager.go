@@ -61,7 +61,8 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 			continue
 		}
 
-		values := m.store.DeploymentVariables.Values(deploymentVar.DeploymentId)
+		values := m.store.DeploymentVariables.Values(deploymentVar.Id)
+		found := false
 
 		for _, value := range values {
 			ok, err := selector.FilterMatchingResources(ctx, value.ResourceSelector, resource)
@@ -78,6 +79,13 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 				return nil, fmt.Errorf("failed to resolve variable %q: %w", key, err)
 			}
 			resolvedVariables[key] = result
+			found = true
+			break
+		}
+
+		// If no values found, use the default value
+		if !found && deploymentVar.DefaultValue != nil {
+			resolvedVariables[key] = deploymentVar.DefaultValue
 		}
 	}
 

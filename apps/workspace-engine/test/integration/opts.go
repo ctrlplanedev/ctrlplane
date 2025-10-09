@@ -48,6 +48,12 @@ type PropertyMatcherOption func(*TestWorkspace, *pb.PropertyMatcher)
 // ResourceVariableOption configures a ResourceVariable
 type ResourceVariableOption func(*TestWorkspace, *pb.ResourceVariable)
 
+// DeploymentVariableOption configures a DeploymentVariable
+type DeploymentVariableOption func(*TestWorkspace, *pb.DeploymentVariable)
+
+// DeploymentVariableValueOption configures a DeploymentVariableValue
+type DeploymentVariableValueOption func(*TestWorkspace, *pb.DeploymentVariableValue)
+
 type event struct {
 	Type handler.EventType
 	Data any
@@ -172,6 +178,22 @@ func WithResourceVariable(resourceID string, key string, options ...ResourceVari
 			context.Background(),
 			handler.ResourceVariableCreate,
 			rv,
+		)
+	}
+}
+
+func WithDeploymentVariable(deploymentID string, key string, options ...DeploymentVariableOption) WorkspaceOption {
+	return func(ws *TestWorkspace) {
+		dv := c.NewDeploymentVariable(deploymentID, key)
+
+		for _, option := range options {
+			option(ws, dv)
+		}
+
+		ws.PushEvent(
+			context.Background(),
+			handler.DeploymentVariableCreate,
+			dv,
 		)
 	}
 }
@@ -643,5 +665,49 @@ func ResourceVariableReferenceValue(reference string, path []string) ResourceVar
 func ResourceVariableSensitiveValue(valueHash string) ResourceVariableOption {
 	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
 		rv.Value = c.NewValueFromSensitive(valueHash)
+	}
+}
+
+// ===== DeploymentVariable Options =====
+
+func DeploymentVariableDefaultValue(value *pb.LiteralValue) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVariable) {
+		dv.DefaultValue = value
+	}
+}
+
+func DeploymentVariableLiteralValue(value any) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVariable) {
+		dv.DefaultValue = c.NewLiteralValue(value)
+	}
+}
+
+func DeploymentVariableStringValue(value string) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVariable) {
+		dv.DefaultValue = &pb.LiteralValue{
+			Data: &pb.LiteralValue_String_{String_: value},
+		}
+	}
+}
+
+func DeploymentVariableIntValue(value int64) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVariable) {
+		dv.DefaultValue = &pb.LiteralValue{
+			Data: &pb.LiteralValue_Int64{Int64: value},
+		}
+	}
+}
+
+func DeploymentVariableBoolValue(value bool) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVariable) {
+		dv.DefaultValue = &pb.LiteralValue{
+			Data: &pb.LiteralValue_Bool{Bool: value},
+		}
+	}
+}
+
+func DeploymentVariableDescription(description string) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *pb.DeploymentVariable) {
+		dv.Description = &description
 	}
 }

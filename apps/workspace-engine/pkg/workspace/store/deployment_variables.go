@@ -28,3 +28,11 @@ func (d *DeploymentVariables) Values(varableId string) map[string]*pb.Deployment
 	values := make(map[string]*pb.DeploymentVariableValue)
 	return values
 }
+
+func (d *DeploymentVariables) Upsert(id string, deploymentVariable *pb.DeploymentVariable) {
+	d.repo.DeploymentVariables.Set(id, deploymentVariable)
+}
+
+func (d *DeploymentVariables) Remove(id string) {
+	d.repo.DeploymentVariables.Remove(id)
+}

@@ -36,7 +36,7 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *relationships.Enti
 		}
 
 		refEntity := refEntities[0]
-		value, err := relationships.GetPropertyValue(refEntity, referenceVariable.Path)
+		value, err := relationships.GetPropertyValue(refEntity.Item(), referenceVariable.Path)
 		if err != nil {
 			return nil, err
 		}
