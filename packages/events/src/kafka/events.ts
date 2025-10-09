@@ -1,6 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 
-import type * as pb from "../workspace-engine/gen/workspace_pb.js";
+import type * as PB from "../workspace-engine/types/index.js";
 
 export enum Event {
   ResourceCreated = "resource.created",
@@ -129,63 +129,29 @@ export type EventPayload = {
   // [Event.SystemDeleted]: schema.System;
 };
 
-// Remove the typescript-specific $typeName field from the protobuf objects
-// go complains about the $typeName field being unknown
-type WithoutTypeName<T> = Omit<T, "$typeName">;
-
-type PbSelector = { json?: Record<string, any> };
-type WithPbSelector<T, K extends keyof T> = WithoutTypeName<Omit<T, K>> &
-  Partial<Record<K, PbSelector>>;
-
-export type PbResource = WithoutTypeName<pb.Resource>;
-
-export type PbDeployment = WithPbSelector<pb.Deployment, "resourceSelector">;
-export type PbDeploymentVariable = WithoutTypeName<pb.DeploymentVariable>;
-export type PbDeploymentVariableValue =
-  WithoutTypeName<pb.DeploymentVariableValue>;
-export type PbDeploymentVersion = WithoutTypeName<pb.DeploymentVersion>;
-
-export type PbEnvironment = WithPbSelector<pb.Environment, "resourceSelector">;
-
-export type PbPolicyRule = Omit<WithoutTypeName<pb.PolicyRule>, "rule"> & {
-  anyApproval?: WithoutTypeName<pb.AnyApprovalRule>;
-};
-export type PbPolicyTarget = WithPbSelector<
-  pb.PolicyTargetSelector,
-  "deploymentSelector" | "environmentSelector" | "resourceSelector"
->;
-export type PbPolicy = Omit<
-  WithoutTypeName<pb.Policy>,
-  "selectors" | "rules"
-> & {
-  selectors: PbPolicyTarget[];
-  rules: PbPolicyRule[];
-};
-export type PbJob = WithoutTypeName<pb.Job>;
-
 export type GoEventPayload = {
-  [Event.ResourceCreated]: PbResource;
-  [Event.ResourceUpdated]: PbResource;
-  [Event.ResourceDeleted]: PbResource;
-  [Event.DeploymentCreated]: PbDeployment;
-  [Event.DeploymentUpdated]: PbDeployment;
-  [Event.DeploymentDeleted]: PbDeployment;
-  [Event.DeploymentVariableCreated]: PbDeploymentVariable;
-  [Event.DeploymentVariableUpdated]: PbDeploymentVariable;
-  [Event.DeploymentVariableDeleted]: pb.DeploymentVariable;
-  [Event.DeploymentVariableValueCreated]: PbDeploymentVariableValue;
-  [Event.DeploymentVariableValueUpdated]: pb.DeploymentVariableValue;
-  [Event.DeploymentVariableValueDeleted]: PbDeploymentVariableValue;
-  [Event.DeploymentVersionCreated]: PbDeploymentVersion;
-  [Event.DeploymentVersionUpdated]: PbDeploymentVersion;
-  [Event.DeploymentVersionDeleted]: PbDeploymentVersion;
-  [Event.EnvironmentCreated]: PbEnvironment;
-  [Event.EnvironmentUpdated]: PbEnvironment;
-  [Event.EnvironmentDeleted]: PbEnvironment;
-  [Event.PolicyCreated]: PbPolicy;
-  [Event.PolicyUpdated]: PbPolicy;
-  [Event.PolicyDeleted]: PbPolicy;
-  [Event.JobUpdated]: PbJob;
+  [Event.ResourceCreated]: PB.Resource;
+  [Event.ResourceUpdated]: PB.Resource;
+  [Event.ResourceDeleted]: PB.Resource;
+  [Event.DeploymentCreated]: PB.Deployment;
+  [Event.DeploymentUpdated]: PB.Deployment;
+  [Event.DeploymentDeleted]: PB.Deployment;
+  [Event.DeploymentVariableCreated]: PB.DeploymentVariable;
+  [Event.DeploymentVariableUpdated]: PB.DeploymentVariable;
+  [Event.DeploymentVariableDeleted]: PB.DeploymentVariable;
+  [Event.DeploymentVariableValueCreated]: PB.DeploymentVariableValue;
+  [Event.DeploymentVariableValueUpdated]: PB.DeploymentVariableValue;
+  [Event.DeploymentVariableValueDeleted]: PB.DeploymentVariableValue;
+  [Event.DeploymentVersionCreated]: PB.DeploymentVersion;
+  [Event.DeploymentVersionUpdated]: PB.DeploymentVersion;
+  [Event.DeploymentVersionDeleted]: PB.DeploymentVersion;
+  [Event.EnvironmentCreated]: PB.Environment;
+  [Event.EnvironmentUpdated]: PB.Environment;
+  [Event.EnvironmentDeleted]: PB.Environment;
+  [Event.PolicyCreated]: PB.Policy;
+  [Event.PolicyUpdated]: PB.Policy;
+  [Event.PolicyDeleted]: PB.Policy;
+  [Event.JobUpdated]: PB.Job;
 };
 
 export type Message<T extends keyof EventPayload> = {
@@ -203,11 +169,3 @@ export type GoMessage<T extends keyof GoEventPayload> = {
   data: GoEventPayload[T];
   timestamp: number;
 };
-
-// Helper function to wrap a selector in the protobuf format
-export function wrapSelector<T extends Record<string, any> | null | undefined>(
-  selector: T,
-): PbSelector | undefined {
-  if (selector == null) return undefined;
-  return { json: selector };
-}

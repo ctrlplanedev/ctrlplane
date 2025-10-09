@@ -4,7 +4,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { PbDeploymentVersion } from "../events.js";
+import type * as PB from "../../workspace-engine/types/index.js";
 import { DeploymentVersionStatus } from "../../workspace-engine/gen/workspace_pb.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -45,7 +45,7 @@ const convertStatusToPbStatus = (
 
 const getPbDeploymentVersion = (
   deploymentVersion: schema.DeploymentVersion,
-): PbDeploymentVersion => ({
+): PB.DeploymentVersion => ({
   id: deploymentVersion.id,
   name: deploymentVersion.name,
   tag: deploymentVersion.tag,

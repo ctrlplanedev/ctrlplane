@@ -2,7 +2,8 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { FullResource, PbResource } from "../events.js";
+import type * as PB from "../../workspace-engine/types/index.js";
+import type { FullResource } from "../events.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
@@ -17,7 +18,7 @@ const getFullResource = async (resource: schema.Resource) => {
   return { ...resource, metadata };
 };
 
-const getPbResource = (resource: FullResource): PbResource => ({
+const getPbResource = (resource: FullResource): PB.Resource => ({
   id: resource.id,
   name: resource.name,
   version: resource.version,
@@ -30,6 +31,7 @@ const getPbResource = (resource: FullResource): PbResource => ({
   updatedAt: resource.updatedAt?.toISOString() ?? undefined,
   deletedAt: resource.deletedAt?.toISOString() ?? undefined,
   metadata: resource.metadata,
+  variables: {},
 });
 
 const convertFullResourceToNodeEvent = (fullResource: FullResource) => ({

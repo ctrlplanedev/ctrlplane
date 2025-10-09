@@ -4,9 +4,9 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { PbDeployment } from "../events.js";
+import * as PB from "../../workspace-engine/types/index.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
-import { Event, wrapSelector } from "../events.js";
+import { Event } from "../events.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
   tx
@@ -27,7 +27,7 @@ const convertDeploymentToNodeEvent = (
   payload: deployment,
 });
 
-const getPbDeployment = (deployment: schema.Deployment): PbDeployment => ({
+const getPbDeployment = (deployment: schema.Deployment): PB.Deployment => ({
   id: deployment.id,
   name: deployment.name,
   slug: deployment.slug,
@@ -35,7 +35,7 @@ const getPbDeployment = (deployment: schema.Deployment): PbDeployment => ({
   systemId: deployment.systemId,
   jobAgentId: deployment.jobAgentId ?? undefined,
   jobAgentConfig: deployment.jobAgentConfig,
-  resourceSelector: wrapSelector(deployment.resourceSelector),
+  resourceSelector: PB.wrapSelector(deployment.resourceSelector),
 });
 
 const convertDeploymentToGoEvent = (

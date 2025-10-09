@@ -1,14 +1,10 @@
 import type * as schema from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
-import type {
-  FullPolicy,
-  PbPolicy,
-  PbPolicyRule,
-  PbPolicyTarget,
-} from "../events.js";
+import type { FullPolicy } from "../events.js";
+import * as PB from "../../workspace-engine/types/index.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
-import { Event, wrapSelector } from "../events.js";
+import { Event } from "../events.js";
 
 const convertFullPolicyToNodeEvent = (policy: FullPolicy) => ({
   workspaceId: policy.workspaceId,
@@ -19,23 +15,23 @@ const convertFullPolicyToNodeEvent = (policy: FullPolicy) => ({
   payload: policy,
 });
 
-const getPbPolicyTarget = (target: schema.PolicyTarget): PbPolicyTarget => ({
+const getPbPolicyTarget = (target: schema.PolicyTarget): PB.PolicyTarget => ({
   id: target.id,
-  deploymentSelector: wrapSelector(target.deploymentSelector),
-  environmentSelector: wrapSelector(target.environmentSelector),
-  resourceSelector: wrapSelector(target.resourceSelector),
+  deploymentSelector: PB.wrapSelector(target.deploymentSelector),
+  environmentSelector: PB.wrapSelector(target.environmentSelector),
+  resourceSelector: PB.wrapSelector(target.resourceSelector),
 });
 
 const getAnyApprovalRule = (
   rule: schema.PolicyRuleAnyApproval,
-): PbPolicyRule => ({
+): PB.PolicyRule => ({
   id: rule.id,
   policyId: rule.policyId,
   createdAt: rule.createdAt.toISOString(),
   anyApproval: { minApprovals: rule.requiredApprovalsCount },
 });
 
-const getPbPolicy = (policy: FullPolicy): PbPolicy => {
+const getPbPolicy = (policy: FullPolicy): PB.Policy => {
   const selectors = policy.targets.map((target) => getPbPolicyTarget(target));
   const anyApproval = policy.versionAnyApprovals
     ? getAnyApprovalRule(policy.versionAnyApprovals)

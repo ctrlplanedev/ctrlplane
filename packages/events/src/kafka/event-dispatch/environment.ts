@@ -4,9 +4,9 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { PbEnvironment } from "../events.js";
+import * as PB from "../../workspace-engine/types/index.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
-import { Event, wrapSelector } from "../events.js";
+import { Event } from "../events.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
   tx
@@ -27,12 +27,12 @@ const convertEnvironmentToNodeEvent = (
   payload: environment,
 });
 
-const getPbEnvironment = (environment: schema.Environment): PbEnvironment => ({
+const getPbEnvironment = (environment: schema.Environment): PB.Environment => ({
   id: environment.id,
   name: environment.name,
   description: environment.description ?? undefined,
   systemId: environment.systemId,
-  resourceSelector: wrapSelector(environment.resourceSelector),
+  resourceSelector: PB.wrapSelector(environment.resourceSelector),
   createdAt: environment.createdAt.toISOString(),
 });
 
