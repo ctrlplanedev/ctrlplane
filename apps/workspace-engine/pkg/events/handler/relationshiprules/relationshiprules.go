@@ -53,4 +53,3 @@ func HandleRelationshipRuleDeleted(
 	ws.RelationshipRules().Remove(relationshipRule.Id)
 	return nil
 }
-

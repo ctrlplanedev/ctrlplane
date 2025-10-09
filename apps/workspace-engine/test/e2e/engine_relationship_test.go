@@ -124,4 +124,3 @@ func TestEngine_MultipleRelationshipRules(t *testing.T) {
 		t.Fatalf("relationship rule 2 type is %s, want runs-on", rule2.RelationshipType)
 	}
 }
-

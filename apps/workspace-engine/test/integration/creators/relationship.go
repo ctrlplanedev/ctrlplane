@@ -24,4 +24,3 @@ func NewPropertyMatcher(fromProperty []string, toProperty []string) *pb.Property
 		ToProperty:   toProperty,
 	}
 }
-
