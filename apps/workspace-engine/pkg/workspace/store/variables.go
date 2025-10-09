@@ -17,7 +17,7 @@ func NewVariables(store *Store) *Variables {
 	return &Variables{repo: store.repo, store: store}
 }
 
-func (v *Variables) ResolveValue(ctx context.Context, entity any, value *pb.Value) (*pb.LiteralValue, error) {
+func (v *Variables) ResolveValue(ctx context.Context, entity *relationships.Entity, value *pb.Value) (*pb.LiteralValue, error) {
 	switch value.Data.(type) {
 	case *pb.Value_Literal:
 		literal := value.GetLiteral()
@@ -25,7 +25,11 @@ func (v *Variables) ResolveValue(ctx context.Context, entity any, value *pb.Valu
 	case *pb.Value_Reference:
 		referenceVariable := value.GetReference()
 
-		references := v.store.Relationships.GetRelations(ctx, entity)
+		references, _ := v.store.Relationships.GetRelatedEntities(ctx, entity)
+		if references == nil {
+			return nil, fmt.Errorf("references not found: %v", referenceVariable.Reference)
+		}
+
 		refEntities := references[referenceVariable.Reference]
 		if len(refEntities) == 0 {
 			return nil, fmt.Errorf("reference not found: %v", referenceVariable.Reference)

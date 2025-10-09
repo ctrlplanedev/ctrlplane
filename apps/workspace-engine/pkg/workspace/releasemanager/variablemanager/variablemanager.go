@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/pb"
 	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
@@ -45,7 +46,8 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 
 	for key, rv := range resourceVariables {
 		value := rv.Value
-		result, err := m.store.Variables.ResolveValue(ctx, resource, value)
+		entity := relationships.NewResourceEntity(resource)
+		result, err := m.store.Variables.ResolveValue(ctx, entity, value)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve variable %q: %w", key, err)
 		}
@@ -70,7 +72,8 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 				continue
 			}
 
-			result, err := m.store.Variables.ResolveValue(ctx, resource, value.Value)
+			entity := relationships.NewResourceEntity(resource)
+			result, err := m.store.Variables.ResolveValue(ctx, entity, value.Value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve variable %q: %w", key, err)
 			}

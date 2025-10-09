@@ -22,3 +22,17 @@ type ComputedRelationship[E any] struct {
 	Direction     Direction // "from" or "to" - indicates if the entity is the source or target
 	RelatedEntity *RelatedEntity[E]
 }
+
+// Relationship represents a single relationship between two entities
+type Relationship struct {
+	From *Entity // The source entity (can be *pb.Resource, *pb.Deployment, *pb.Environment, etc.)
+	To   *Entity // The target entity (can be *pb.Resource, *pb.Deployment, *pb.Environment, etc.)
+}
+
+// RelationshipsResult represents the result of GetRelationships
+type RelationshipsResult struct {
+	RuleID           string
+	RuleName         string
+	RelationshipType string
+	Relationships    []Relationship
+}
