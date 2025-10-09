@@ -74,7 +74,7 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 	rawEvent := handler.RawEvent{
 		EventType:   eventType,
 		WorkspaceID: tw.workspace.ID,
-		Data: dataBytes,
+		Data:        dataBytes,
 	}
 
 	// Marshal the full event

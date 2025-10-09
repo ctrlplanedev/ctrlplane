@@ -18,7 +18,6 @@ type RelationshipRules struct {
 	store *Store
 }
 
-
 func (r *RelationshipRules) Upsert(ctx context.Context, relationship *pb.RelationshipRule) error {
 	r.repo.RelationshipRules.Set(relationship.Id, relationship)
 	return nil

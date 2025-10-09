@@ -14,24 +14,24 @@ import (
 // Helper function to convert UnknownCondition to *pb.Selector
 func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *pb.Selector {
 	t.Helper()
-	
+
 	// Convert condition to map
 	jsonBytes, err := json.Marshal(condition)
 	if err != nil {
 		t.Fatalf("Failed to marshal condition: %v", err)
 	}
-	
+
 	var conditionMap map[string]interface{}
 	if err := json.Unmarshal(jsonBytes, &conditionMap); err != nil {
 		t.Fatalf("Failed to unmarshal condition: %v", err)
 	}
-	
+
 	// Convert map to structpb
 	jsonStruct, err := structpb.NewStruct(conditionMap)
 	if err != nil {
 		t.Fatalf("Failed to create struct: %v", err)
 	}
-	
+
 	return &pb.Selector{
 		Value: &pb.Selector_Json{
 			Json: jsonStruct,
@@ -42,18 +42,18 @@ func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *pb.S
 // Helper function to validate filtered results
 func validateFilteredResources(t *testing.T, result map[string]*pb.Resource, expectedCount int, expectedIDs map[string]bool) {
 	t.Helper()
-	
+
 	if len(result) != expectedCount {
 		t.Errorf("FilterResources() returned %d resources, want %d", len(result), expectedCount)
 		return
 	}
-	
+
 	for expectedID := range expectedIDs {
 		if _, found := result[expectedID]; !found {
 			t.Errorf("FilterResources() expected resource ID %s not found in results", expectedID)
 		}
 	}
-	
+
 	// Check for unexpected IDs
 	for id := range result {
 		if !expectedIDs[id] {
@@ -317,13 +317,13 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 			selector := conditionToSelector(t, tt.condition)
 			result, err := FilterResources(ctx, selector, tt.resources)
 
-		if (err != nil) != tt.wantErr {
-			t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
-			return
-		}
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FilterResources() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 
-		validateFilteredResources(t, result, tt.expectedCount, tt.expectedIDs)
-	})
+			validateFilteredResources(t, result, tt.expectedCount, tt.expectedIDs)
+		})
 	}
 }
 

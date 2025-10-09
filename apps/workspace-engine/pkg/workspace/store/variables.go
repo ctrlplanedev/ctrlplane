@@ -8,9 +8,8 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-
 type Variables struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 }
 
@@ -37,7 +36,7 @@ func (v *Variables) ResolveValue(ctx context.Context, entity any, value *pb.Valu
 		if err != nil {
 			return nil, err
 		}
-		
+
 		return value, nil
 	case *pb.Value_Sensitive:
 		sensitive := value.GetSensitive()

@@ -61,7 +61,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 			resource := resourceItem.Val
 			items = append(items, resource)
 		}
-	
+
 		deploymentResources, err := selector.FilterResources(ctx, deployment.ResourceSelector, items)
 		if err != nil {
 			return nil, fmt.Errorf("failed to filter resources for deployment %s: %w", deploymentId, err)

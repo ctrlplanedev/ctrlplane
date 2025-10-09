@@ -42,7 +42,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 		return nil, fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
 	}
 	resourceVariables := resource.Variables
-	
+
 	for key, value := range resourceVariables {
 		result, err := m.store.Variables.ResolveValue(ctx, resource, value)
 		if err != nil {
@@ -57,7 +57,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 			// already resolved by resource variables
 			continue
 		}
-		
+
 		values := m.store.DeploymentVariables.Values(deploymentVar.DeploymentId)
 
 		for _, value := range values {
@@ -79,4 +79,3 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 
 	return resolvedVariables, nil
 }
-

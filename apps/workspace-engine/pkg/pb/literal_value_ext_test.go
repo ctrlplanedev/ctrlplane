@@ -589,7 +589,7 @@ func TestVariablesToMap_ZeroValues(t *testing.T) {
 	}
 
 	// Verify zero float
-		if floatVal, ok := result["zero_float"].Data.(*LiteralValue_Double); !ok || floatVal.Double != 0.0 {
+	if floatVal, ok := result["zero_float"].Data.(*LiteralValue_Double); !ok || floatVal.Double != 0.0 {
 		t.Errorf("VariablesToMap() zero_float incorrect")
 	}
 
@@ -685,7 +685,7 @@ func TestVariablesToMap_StructpbNewStructError(t *testing.T) {
 		},
 	}
 
-		result, err := MapToLiteralValues(input)
+	result, err := MapToLiteralValues(input)
 
 	if err == nil {
 		t.Errorf("VariablesToMap() expected error for structpb.NewStruct failure but got none")

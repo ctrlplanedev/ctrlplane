@@ -308,7 +308,6 @@ func buildRelease(
 		}
 	}
 
-
 	return &pb.Release{
 		ReleaseTarget:      releaseTarget,
 		Version:            version,
