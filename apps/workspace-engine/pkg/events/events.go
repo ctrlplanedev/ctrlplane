@@ -3,6 +3,7 @@ package events
 import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/events/handler/deployment"
+	"workspace-engine/pkg/events/handler/deploymentvariables"
 	"workspace-engine/pkg/events/handler/deploymentversion"
 	"workspace-engine/pkg/events/handler/environment"
 	"workspace-engine/pkg/events/handler/jobagents"
@@ -26,6 +27,10 @@ var handlers = handler.HandlerRegistry{
 	handler.DeploymentCreate: deployment.HandleDeploymentCreated,
 	handler.DeploymentUpdate: deployment.HandleDeploymentUpdated,
 	handler.DeploymentDelete: deployment.HandleDeploymentDeleted,
+
+	handler.DeploymentVariableCreate: deploymentvariables.HandleDeploymentVariableCreated,
+	handler.DeploymentVariableUpdate: deploymentvariables.HandleDeploymentVariableUpdated,
+	handler.DeploymentVariableDelete: deploymentvariables.HandleDeploymentVariableDeleted,
 
 	handler.SystemCreate: system.HandleSystemCreated,
 	handler.SystemUpdate: system.HandleSystemUpdated,

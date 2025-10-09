@@ -42,11 +42,6 @@ func FilterResources(ctx context.Context, sel *pb.Selector, resources []*pb.Reso
 		return nil, err
 	}
 
-	span.SetAttributes(attribute.String("selector.type", unknownCondition.Property))
-	span.SetAttributes(attribute.String("selector.operator", unknownCondition.Operator))
-	span.SetAttributes(attribute.String("selector.value", unknownCondition.Value))
-	span.SetAttributes(attribute.String("selector.metadata_key", unknownCondition.MetadataKey))
-	span.SetAttributes(attribute.Int("selector.conditions", len(unknownCondition.Conditions)))
 	span.SetAttributes(attribute.Int("resources.input", len(resources)))
 
 	selector, err := jsonselector.ConvertToSelector(ctx, unknownCondition)

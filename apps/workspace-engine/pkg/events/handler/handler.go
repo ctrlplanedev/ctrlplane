@@ -34,6 +34,10 @@ const (
 	DeploymentVersionUpdate EventType = "deployment-version.updated"
 	DeploymentVersionDelete EventType = "deployment-version.deleted"
 
+	DeploymentVariableCreate EventType = "deployment-variable.created"
+	DeploymentVariableUpdate EventType = "deployment-variable.updated"
+	DeploymentVariableDelete EventType = "deployment-variable.deleted"
+
 	EnvironmentCreate EventType = "environment.created"
 	EnvironmentUpdate EventType = "environment.updated"
 	EnvironmentDelete EventType = "environment.deleted"
