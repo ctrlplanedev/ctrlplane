@@ -152,6 +152,8 @@ export class VariableReleaseManager implements ReleaseManager {
         "upsert variable release had variables to insert, but no snapshots were found",
       );
 
+    span?.setAttribute("valueSnapshots", JSON.stringify(valueSnapshots));
+
     await Promise.all(
       valueSnapshots.map((v) =>
         this.workspace.repository.variableReleaseValueRepository.create({
