@@ -50,69 +50,10 @@ message UserApprovalRecord {
   string created_at = 5;
 }
 
-// Deny Window - prevents deployments during specified time windows
-// Example: block deployments on weekends, holidays, or specific hours
-message DenyWindowRule {
-  // RRule configuration for recurrence patterns (RRULE format)
-  // https://github.com/teambition/rrule-go
-  google.protobuf.Struct rrule = 1;
-  
-  // End datetime for the deny window (RFC3339 format)
-  optional string dtend = 2;
-  
-  // IANA timezone (e.g., "America/New_York", "UTC")
-  string time_zone = 3;
-}
-
-// User Approval - requires approval from a specific user
-message UserApprovalRule {
-  // User ID who must approve
-  string user_id = 1;
-}
-
-// Role Approval - requires approval from a user with a specific role
-message RoleApprovalRule {
-  // Role ID - any user with this role can approve
-  string role_id = 1;
-}
-
 // Any Approval - requires a minimum number of approvals from any authorized users
 message AnyApprovalRule {
   // Minimum number of approvals required
   int32 min_approvals = 1;
-}
-
-// Concurrency - limits the number of concurrent deployments
-message ConcurrencyRule {
-  // Maximum number of concurrent deployments allowed
-  int32 max_concurrent = 1;
-}
-
-// Environment Version Rollout - controls progressive rollout across environments
-// Example: deploy to dev -> staging -> production with validation between steps
-message EnvironmentVersionRolloutRule {
-  // Ordered list of environment IDs for progressive rollout
-  repeated string environment_order = 1;
-  
-  // Time to wait between environment deployments (in seconds)
-  int32 wait_seconds = 2;
-  
-  // Optional success threshold (0.0 to 1.0) that must be met before proceeding
-  // Example: 0.95 means 95% of deployments must succeed
-  optional double success_threshold = 3;
-}
-
-// Max Retries - limits the number of deployment retry attempts
-message MaxRetriesRule {
-  // Maximum number of retry attempts allowed
-  int32 max_retries = 1;
-}
-
-// Deployment Version Selector - filters which versions can be deployed
-// Example: only allow versions matching specific tags or version patterns
-message DeploymentVersionSelectorRule {
-  // Selector for filtering deployment versions
-  optional google.protobuf.Struct version_selector = 1;
 }
 
 message Resource {
@@ -133,6 +74,8 @@ message Resource {
   optional string deleted_at = 12; // nullable, ISO8601 string or RFC3339 timestamp
 
   map<string, string> metadata = 13;
+
+  map<string, Value> variables = 14;
 }
 
 message Environment {
@@ -208,21 +151,21 @@ message ReleaseTarget {
   string deployment_id = 4;
 }
 
-message VariableValue {
-  oneof value {
-    string string_value = 2;
-    bool   bool_value = 3;
-    double double_value = 4;
-    int64  int64_value = 5;
+message Value {
+  oneof data {
+    string string = 1;
+    bool   bool = 2;
+    double double = 3;
+    int64  int64 = 4;
 
-    google.protobuf.Struct object_value = 10;
-    google.protobuf.NullValue null_value = 11;
+    google.protobuf.Struct object = 5;
+    google.protobuf.NullValue null = 6;
   }
 }
 
 message Release {
   DeploymentVersion version = 1;
-  map<string, VariableValue> variables = 2;
+  map<string, Value> variables = 2;
   repeated string encrypted_variables = 3;
 
   ReleaseTarget release_target = 5;
@@ -245,7 +188,7 @@ message DeploymentVariable {
   optional string description = 4;
   string deployment_id = 5;
 
-  VariableValue default_value = 6;
+  Value default_value = 6;
 }
 
 message DeploymentVariableValue {
@@ -253,22 +196,22 @@ message DeploymentVariableValue {
   string deployment_variable_id = 3;
   int64 priority = 4;
 
-  VariableValue default_value = 5;
+  Value default_value = 5;
 
   optional Selector resource_selector = 6;
 
   oneof value {
-    VariableValue          direct_value = 7;
-    ReferenceVariableValue reference_value = 8;
-    SensitiveVariableValue sensitive_value = 9;
+    Value          direct = 7;
+    ReferenceValue reference = 8;
+    SensitiveValue sensitive = 9;
   }
 }
 
-message SensitiveVariableValue {
+message SensitiveValue {
   string value_hash = 1;
 }
 
-message ReferenceVariableValue {
+message ReferenceValue {
   optional google.protobuf.Struct reference = 1;
   repeated string path = 2;
 }
@@ -306,28 +249,74 @@ message Selector {
   }
 }
 
-// A model for expressing relationships between entities based on condition matching.
-message RelationshipCondition {
-  // A reference name for this relationship condition (optional, for identification)
-  optional string reference_name = 1;
+// PropertyMatcher defines how properties between two entities should match
+// to create a relationship. This enables join-like conditions.
+// Example: VPCs and K8s clusters should match when they're in the same region
+message PropertyMatcher {
+  // Path to the property on the "from" entity using dot notation
+  // Examples: "id", "metadata.region", "config.networking.vpc_id"
+  // Will be split on "." for nested property access
+  repeated string from_property = 1;
+  
+  // Path to the property on the "to" entity using dot notation
+  // Examples: "id", "metadata.region", "metadata.vpc_id"
+  // Will be split on "." for nested property access
+  repeated string to_property = 2;
+  
+  // Comparison operator: "equals", "not_equals", "contains", "starts_with", "ends_with", "regex"
+  // Default is "equals" if not specified
+  optional string operator = 3;
+}
 
-  // The type of the source entity (e.g., "deployment", "resource", etc.)
-  string from_type = 2;
+// RelationshipRule defines a rule for creating relationships between entities.
+// A single rule can match multiple entities and create multiple relationship instances.
+// For example: "All VPCs should be related to all Kubernetes clusters in the same region"
+message RelationshipRule {
+  string id = 1;
+  string name = 2;
 
-  // The type of the target entity (e.g., "deployment", "resource", etc.)
-  string to_type = 3;
+  optional string description = 3;
+  string reference = 4;
 
-  // The type of relationship (e.g., "depends_on", "uses", "owned_by", etc.)
-  string relationship_type = 4;
+  // The type and selector for the source entities (e.g., "resource" with selector for VPCs)
+  string from_type = 5;
+  Selector from_selector = 6;
 
-  // Condition for matching source entities (e.g., selector or filter as a struct)
-  Selector from_selector = 5;
+  // The type and selector for the target entities (e.g., "resource" with selector for K8s clusters)
+  string to_type = 7;
+  Selector to_selector = 8;
 
-  // Condition for matching target entities (e.g., selector or filter as a struct)
-  Selector to_selector = 6;
+  // Optional property matchers for cross-entity conditions
+  // Example: Match VPCs to K8s clusters when metadata.region is the same
+  // If empty, creates a relationship between ALL entities matching the selectors (Cartesian product)
+  repeated PropertyMatcher property_matchers = 11;
 
-  // Optional additional metadata about the relationship
-  map<string, string> metadata = 7;
+  // The semantic type of the relationship (e.g., "contains", "depends_on", "runs_on")
+  string relationship_type = 9;
+
+  // Additional metadata for the relationship rule
+  map<string, string> metadata = 10;
+}
+
+// RelationshipInstance represents a computed relationship between two specific entities.
+// This is generated from a RelationshipRule by evaluating the selectors.
+message RelationshipInstance {
+  string id = 1; // Unique ID for this instance
+  string rule_id = 2; // Reference to the RelationshipRule that created this instance
+  
+  // Source entity
+  string from_type = 3;
+  string from_id = 4;
+  
+  // Target entity
+  string to_type = 5;
+  string to_id = 6;
+  
+  // The semantic type of the relationship (inherited from the rule)
+  string relationship_type = 7;
+  
+  // Additional metadata (inherited from rule + any computed metadata)
+  map<string, string> metadata = 8;
 }
 
 message ComputeReleaseTargetsResponse {

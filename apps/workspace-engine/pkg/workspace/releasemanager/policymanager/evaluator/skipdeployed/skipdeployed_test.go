@@ -333,8 +333,8 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
-		Variables: map[string]*pb.VariableValue{
-			"replicas": {Value: &pb.VariableValue_Int64Value{Int64Value: 3}},
+		Variables: map[string]*pb.Value{
+			"replicas": {Data: &pb.Value_Int64{Int64: 3}},
 		},
 	}
 
@@ -355,8 +355,8 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 			Id:  "version-1", // Same version!
 			Tag: "v1.0.0",
 		},
-		Variables: map[string]*pb.VariableValue{
-			"replicas": {Value: &pb.VariableValue_Int64Value{Int64Value: 5}}, // Different!
+		Variables: map[string]*pb.Value{
+			"replicas": {Data: &pb.Value_Int64{Int64: 5}}, // Different!
 		},
 	}
 	st.Releases.Upsert(ctx, release2)

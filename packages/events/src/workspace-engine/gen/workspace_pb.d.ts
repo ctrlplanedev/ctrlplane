@@ -162,82 +162,6 @@ export declare type UserApprovalRecord = Message<"workspace.UserApprovalRecord">
 export declare const UserApprovalRecordSchema: GenMessage<UserApprovalRecord>;
 
 /**
- * Deny Window - prevents deployments during specified time windows
- * Example: block deployments on weekends, holidays, or specific hours
- *
- * @generated from message workspace.DenyWindowRule
- */
-export declare type DenyWindowRule = Message<"workspace.DenyWindowRule"> & {
-  /**
-   * RRule configuration for recurrence patterns (RRULE format)
-   * https://github.com/teambition/rrule-go
-   *
-   * @generated from field: google.protobuf.Struct rrule = 1;
-   */
-  rrule?: JsonObject;
-
-  /**
-   * End datetime for the deny window (RFC3339 format)
-   *
-   * @generated from field: optional string dtend = 2;
-   */
-  dtend?: string;
-
-  /**
-   * IANA timezone (e.g., "America/New_York", "UTC")
-   *
-   * @generated from field: string time_zone = 3;
-   */
-  timeZone: string;
-};
-
-/**
- * Describes the message workspace.DenyWindowRule.
- * Use `create(DenyWindowRuleSchema)` to create a new message.
- */
-export declare const DenyWindowRuleSchema: GenMessage<DenyWindowRule>;
-
-/**
- * User Approval - requires approval from a specific user
- *
- * @generated from message workspace.UserApprovalRule
- */
-export declare type UserApprovalRule = Message<"workspace.UserApprovalRule"> & {
-  /**
-   * User ID who must approve
-   *
-   * @generated from field: string user_id = 1;
-   */
-  userId: string;
-};
-
-/**
- * Describes the message workspace.UserApprovalRule.
- * Use `create(UserApprovalRuleSchema)` to create a new message.
- */
-export declare const UserApprovalRuleSchema: GenMessage<UserApprovalRule>;
-
-/**
- * Role Approval - requires approval from a user with a specific role
- *
- * @generated from message workspace.RoleApprovalRule
- */
-export declare type RoleApprovalRule = Message<"workspace.RoleApprovalRule"> & {
-  /**
-   * Role ID - any user with this role can approve
-   *
-   * @generated from field: string role_id = 1;
-   */
-  roleId: string;
-};
-
-/**
- * Describes the message workspace.RoleApprovalRule.
- * Use `create(RoleApprovalRuleSchema)` to create a new message.
- */
-export declare const RoleApprovalRuleSchema: GenMessage<RoleApprovalRule>;
-
-/**
  * Any Approval - requires a minimum number of approvals from any authorized users
  *
  * @generated from message workspace.AnyApprovalRule
@@ -256,103 +180,6 @@ export declare type AnyApprovalRule = Message<"workspace.AnyApprovalRule"> & {
  * Use `create(AnyApprovalRuleSchema)` to create a new message.
  */
 export declare const AnyApprovalRuleSchema: GenMessage<AnyApprovalRule>;
-
-/**
- * Concurrency - limits the number of concurrent deployments
- *
- * @generated from message workspace.ConcurrencyRule
- */
-export declare type ConcurrencyRule = Message<"workspace.ConcurrencyRule"> & {
-  /**
-   * Maximum number of concurrent deployments allowed
-   *
-   * @generated from field: int32 max_concurrent = 1;
-   */
-  maxConcurrent: number;
-};
-
-/**
- * Describes the message workspace.ConcurrencyRule.
- * Use `create(ConcurrencyRuleSchema)` to create a new message.
- */
-export declare const ConcurrencyRuleSchema: GenMessage<ConcurrencyRule>;
-
-/**
- * Environment Version Rollout - controls progressive rollout across environments
- * Example: deploy to dev -> staging -> production with validation between steps
- *
- * @generated from message workspace.EnvironmentVersionRolloutRule
- */
-export declare type EnvironmentVersionRolloutRule = Message<"workspace.EnvironmentVersionRolloutRule"> & {
-  /**
-   * Ordered list of environment IDs for progressive rollout
-   *
-   * @generated from field: repeated string environment_order = 1;
-   */
-  environmentOrder: string[];
-
-  /**
-   * Time to wait between environment deployments (in seconds)
-   *
-   * @generated from field: int32 wait_seconds = 2;
-   */
-  waitSeconds: number;
-
-  /**
-   * Optional success threshold (0.0 to 1.0) that must be met before proceeding
-   * Example: 0.95 means 95% of deployments must succeed
-   *
-   * @generated from field: optional double success_threshold = 3;
-   */
-  successThreshold?: number;
-};
-
-/**
- * Describes the message workspace.EnvironmentVersionRolloutRule.
- * Use `create(EnvironmentVersionRolloutRuleSchema)` to create a new message.
- */
-export declare const EnvironmentVersionRolloutRuleSchema: GenMessage<EnvironmentVersionRolloutRule>;
-
-/**
- * Max Retries - limits the number of deployment retry attempts
- *
- * @generated from message workspace.MaxRetriesRule
- */
-export declare type MaxRetriesRule = Message<"workspace.MaxRetriesRule"> & {
-  /**
-   * Maximum number of retry attempts allowed
-   *
-   * @generated from field: int32 max_retries = 1;
-   */
-  maxRetries: number;
-};
-
-/**
- * Describes the message workspace.MaxRetriesRule.
- * Use `create(MaxRetriesRuleSchema)` to create a new message.
- */
-export declare const MaxRetriesRuleSchema: GenMessage<MaxRetriesRule>;
-
-/**
- * Deployment Version Selector - filters which versions can be deployed
- * Example: only allow versions matching specific tags or version patterns
- *
- * @generated from message workspace.DeploymentVersionSelectorRule
- */
-export declare type DeploymentVersionSelectorRule = Message<"workspace.DeploymentVersionSelectorRule"> & {
-  /**
-   * Selector for filtering deployment versions
-   *
-   * @generated from field: optional google.protobuf.Struct version_selector = 1;
-   */
-  versionSelector?: JsonObject;
-};
-
-/**
- * Describes the message workspace.DeploymentVersionSelectorRule.
- * Use `create(DeploymentVersionSelectorRuleSchema)` to create a new message.
- */
-export declare const DeploymentVersionSelectorRuleSchema: GenMessage<DeploymentVersionSelectorRule>;
 
 /**
  * @generated from message workspace.Resource
@@ -434,6 +261,11 @@ export declare type Resource = Message<"workspace.Resource"> & {
    * @generated from field: map<string, string> metadata = 13;
    */
   metadata: { [key: string]: string };
+
+  /**
+   * @generated from field: map<string, workspace.Value> variables = 14;
+   */
+  variables: { [key: string]: Value };
 };
 
 /**
@@ -678,56 +510,56 @@ export declare type ReleaseTarget = Message<"workspace.ReleaseTarget"> & {
 export declare const ReleaseTargetSchema: GenMessage<ReleaseTarget>;
 
 /**
- * @generated from message workspace.VariableValue
+ * @generated from message workspace.Value
  */
-export declare type VariableValue = Message<"workspace.VariableValue"> & {
+export declare type Value = Message<"workspace.Value"> & {
   /**
-   * @generated from oneof workspace.VariableValue.value
+   * @generated from oneof workspace.Value.data
    */
-  value: {
+  data: {
     /**
-     * @generated from field: string string_value = 2;
+     * @generated from field: string string = 1;
      */
     value: string;
-    case: "stringValue";
+    case: "string";
   } | {
     /**
-     * @generated from field: bool bool_value = 3;
+     * @generated from field: bool bool = 2;
      */
     value: boolean;
-    case: "boolValue";
+    case: "bool";
   } | {
     /**
-     * @generated from field: double double_value = 4;
+     * @generated from field: double double = 3;
      */
     value: number;
-    case: "doubleValue";
+    case: "double";
   } | {
     /**
-     * @generated from field: int64 int64_value = 5;
+     * @generated from field: int64 int64 = 4;
      */
     value: bigint;
-    case: "int64Value";
+    case: "int64";
   } | {
     /**
-     * @generated from field: google.protobuf.Struct object_value = 10;
+     * @generated from field: google.protobuf.Struct object = 5;
      */
     value: JsonObject;
-    case: "objectValue";
+    case: "object";
   } | {
     /**
-     * @generated from field: google.protobuf.NullValue null_value = 11;
+     * @generated from field: google.protobuf.NullValue null = 6;
      */
     value: NullValue;
-    case: "nullValue";
+    case: "null";
   } | { case: undefined; value?: undefined };
 };
 
 /**
- * Describes the message workspace.VariableValue.
- * Use `create(VariableValueSchema)` to create a new message.
+ * Describes the message workspace.Value.
+ * Use `create(ValueSchema)` to create a new message.
  */
-export declare const VariableValueSchema: GenMessage<VariableValue>;
+export declare const ValueSchema: GenMessage<Value>;
 
 /**
  * @generated from message workspace.Release
@@ -739,9 +571,9 @@ export declare type Release = Message<"workspace.Release"> & {
   version?: DeploymentVersion;
 
   /**
-   * @generated from field: map<string, workspace.VariableValue> variables = 2;
+   * @generated from field: map<string, workspace.Value> variables = 2;
    */
-  variables: { [key: string]: VariableValue };
+  variables: { [key: string]: Value };
 
   /**
    * @generated from field: repeated string encrypted_variables = 3;
@@ -795,9 +627,9 @@ export declare type DeploymentVariable = Message<"workspace.DeploymentVariable">
   deploymentId: string;
 
   /**
-   * @generated from field: workspace.VariableValue default_value = 6;
+   * @generated from field: workspace.Value default_value = 6;
    */
-  defaultValue?: VariableValue;
+  defaultValue?: Value;
 };
 
 /**
@@ -826,9 +658,9 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
   priority: bigint;
 
   /**
-   * @generated from field: workspace.VariableValue default_value = 5;
+   * @generated from field: workspace.Value default_value = 5;
    */
-  defaultValue?: VariableValue;
+  defaultValue?: Value;
 
   /**
    * @generated from field: optional workspace.Selector resource_selector = 6;
@@ -840,22 +672,22 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
    */
   value: {
     /**
-     * @generated from field: workspace.VariableValue direct_value = 7;
+     * @generated from field: workspace.Value direct = 7;
      */
-    value: VariableValue;
-    case: "directValue";
+    value: Value;
+    case: "direct";
   } | {
     /**
-     * @generated from field: workspace.ReferenceVariableValue reference_value = 8;
+     * @generated from field: workspace.ReferenceValue reference = 8;
      */
-    value: ReferenceVariableValue;
-    case: "referenceValue";
+    value: ReferenceValue;
+    case: "reference";
   } | {
     /**
-     * @generated from field: workspace.SensitiveVariableValue sensitive_value = 9;
+     * @generated from field: workspace.SensitiveValue sensitive = 9;
      */
-    value: SensitiveVariableValue;
-    case: "sensitiveValue";
+    value: SensitiveValue;
+    case: "sensitive";
   } | { case: undefined; value?: undefined };
 };
 
@@ -866,9 +698,9 @@ export declare type DeploymentVariableValue = Message<"workspace.DeploymentVaria
 export declare const DeploymentVariableValueSchema: GenMessage<DeploymentVariableValue>;
 
 /**
- * @generated from message workspace.SensitiveVariableValue
+ * @generated from message workspace.SensitiveValue
  */
-export declare type SensitiveVariableValue = Message<"workspace.SensitiveVariableValue"> & {
+export declare type SensitiveValue = Message<"workspace.SensitiveValue"> & {
   /**
    * @generated from field: string value_hash = 1;
    */
@@ -876,15 +708,15 @@ export declare type SensitiveVariableValue = Message<"workspace.SensitiveVariabl
 };
 
 /**
- * Describes the message workspace.SensitiveVariableValue.
- * Use `create(SensitiveVariableValueSchema)` to create a new message.
+ * Describes the message workspace.SensitiveValue.
+ * Use `create(SensitiveValueSchema)` to create a new message.
  */
-export declare const SensitiveVariableValueSchema: GenMessage<SensitiveVariableValue>;
+export declare const SensitiveValueSchema: GenMessage<SensitiveValue>;
 
 /**
- * @generated from message workspace.ReferenceVariableValue
+ * @generated from message workspace.ReferenceValue
  */
-export declare type ReferenceVariableValue = Message<"workspace.ReferenceVariableValue"> & {
+export declare type ReferenceValue = Message<"workspace.ReferenceValue"> & {
   /**
    * @generated from field: optional google.protobuf.Struct reference = 1;
    */
@@ -897,10 +729,10 @@ export declare type ReferenceVariableValue = Message<"workspace.ReferenceVariabl
 };
 
 /**
- * Describes the message workspace.ReferenceVariableValue.
- * Use `create(ReferenceVariableValueSchema)` to create a new message.
+ * Describes the message workspace.ReferenceValue.
+ * Use `create(ReferenceValueSchema)` to create a new message.
  */
-export declare const ReferenceVariableValueSchema: GenMessage<ReferenceVariableValue>;
+export declare const ReferenceValueSchema: GenMessage<ReferenceValue>;
 
 /**
  * @generated from message workspace.DeploymentVersion
@@ -1041,66 +873,193 @@ export declare type Selector = Message<"workspace.Selector"> & {
 export declare const SelectorSchema: GenMessage<Selector>;
 
 /**
- * A model for expressing relationships between entities based on condition matching.
+ * PropertyMatcher defines how properties between two entities should match
+ * to create a relationship. This enables join-like conditions.
+ * Example: VPCs and K8s clusters should match when they're in the same region
  *
- * @generated from message workspace.RelationshipCondition
+ * @generated from message workspace.PropertyMatcher
  */
-export declare type RelationshipCondition = Message<"workspace.RelationshipCondition"> & {
+export declare type PropertyMatcher = Message<"workspace.PropertyMatcher"> & {
   /**
-   * A reference name for this relationship condition (optional, for identification)
+   * Path to the property on the "from" entity using dot notation
+   * Examples: "id", "metadata.region", "config.networking.vpc_id"
+   * Will be split on "." for nested property access
    *
-   * @generated from field: optional string reference_name = 1;
+   * @generated from field: repeated string from_property = 1;
    */
-  referenceName?: string;
+  fromProperty: string[];
 
   /**
-   * The type of the source entity (e.g., "deployment", "resource", etc.)
+   * Path to the property on the "to" entity using dot notation
+   * Examples: "id", "metadata.region", "metadata.vpc_id"
+   * Will be split on "." for nested property access
    *
-   * @generated from field: string from_type = 2;
+   * @generated from field: repeated string to_property = 2;
+   */
+  toProperty: string[];
+
+  /**
+   * Comparison operator: "equals", "not_equals", "contains", "starts_with", "ends_with", "regex"
+   * Default is "equals" if not specified
+   *
+   * @generated from field: optional string operator = 3;
+   */
+  operator?: string;
+};
+
+/**
+ * Describes the message workspace.PropertyMatcher.
+ * Use `create(PropertyMatcherSchema)` to create a new message.
+ */
+export declare const PropertyMatcherSchema: GenMessage<PropertyMatcher>;
+
+/**
+ * RelationshipRule defines a rule for creating relationships between entities.
+ * A single rule can match multiple entities and create multiple relationship instances.
+ * For example: "All VPCs should be related to all Kubernetes clusters in the same region"
+ *
+ * @generated from message workspace.RelationshipRule
+ */
+export declare type RelationshipRule = Message<"workspace.RelationshipRule"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: optional string description = 3;
+   */
+  description?: string;
+
+  /**
+   * @generated from field: string reference = 4;
+   */
+  reference: string;
+
+  /**
+   * The type and selector for the source entities (e.g., "resource" with selector for VPCs)
+   *
+   * @generated from field: string from_type = 5;
    */
   fromType: string;
 
   /**
-   * The type of the target entity (e.g., "deployment", "resource", etc.)
-   *
-   * @generated from field: string to_type = 3;
-   */
-  toType: string;
-
-  /**
-   * The type of relationship (e.g., "depends_on", "uses", "owned_by", etc.)
-   *
-   * @generated from field: string relationship_type = 4;
-   */
-  relationshipType: string;
-
-  /**
-   * Condition for matching source entities (e.g., selector or filter as a struct)
-   *
-   * @generated from field: workspace.Selector from_selector = 5;
+   * @generated from field: workspace.Selector from_selector = 6;
    */
   fromSelector?: Selector;
 
   /**
-   * Condition for matching target entities (e.g., selector or filter as a struct)
+   * The type and selector for the target entities (e.g., "resource" with selector for K8s clusters)
    *
-   * @generated from field: workspace.Selector to_selector = 6;
+   * @generated from field: string to_type = 7;
+   */
+  toType: string;
+
+  /**
+   * @generated from field: workspace.Selector to_selector = 8;
    */
   toSelector?: Selector;
 
   /**
-   * Optional additional metadata about the relationship
+   * Optional property matchers for cross-entity conditions
+   * Example: Match VPCs to K8s clusters when metadata.region is the same
+   * If empty, creates a relationship between ALL entities matching the selectors (Cartesian product)
    *
-   * @generated from field: map<string, string> metadata = 7;
+   * @generated from field: repeated workspace.PropertyMatcher property_matchers = 11;
+   */
+  propertyMatchers: PropertyMatcher[];
+
+  /**
+   * The semantic type of the relationship (e.g., "contains", "depends_on", "runs_on")
+   *
+   * @generated from field: string relationship_type = 9;
+   */
+  relationshipType: string;
+
+  /**
+   * Additional metadata for the relationship rule
+   *
+   * @generated from field: map<string, string> metadata = 10;
    */
   metadata: { [key: string]: string };
 };
 
 /**
- * Describes the message workspace.RelationshipCondition.
- * Use `create(RelationshipConditionSchema)` to create a new message.
+ * Describes the message workspace.RelationshipRule.
+ * Use `create(RelationshipRuleSchema)` to create a new message.
  */
-export declare const RelationshipConditionSchema: GenMessage<RelationshipCondition>;
+export declare const RelationshipRuleSchema: GenMessage<RelationshipRule>;
+
+/**
+ * RelationshipInstance represents a computed relationship between two specific entities.
+ * This is generated from a RelationshipRule by evaluating the selectors.
+ *
+ * @generated from message workspace.RelationshipInstance
+ */
+export declare type RelationshipInstance = Message<"workspace.RelationshipInstance"> & {
+  /**
+   * Unique ID for this instance
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * Reference to the RelationshipRule that created this instance
+   *
+   * @generated from field: string rule_id = 2;
+   */
+  ruleId: string;
+
+  /**
+   * Source entity
+   *
+   * @generated from field: string from_type = 3;
+   */
+  fromType: string;
+
+  /**
+   * @generated from field: string from_id = 4;
+   */
+  fromId: string;
+
+  /**
+   * Target entity
+   *
+   * @generated from field: string to_type = 5;
+   */
+  toType: string;
+
+  /**
+   * @generated from field: string to_id = 6;
+   */
+  toId: string;
+
+  /**
+   * The semantic type of the relationship (inherited from the rule)
+   *
+   * @generated from field: string relationship_type = 7;
+   */
+  relationshipType: string;
+
+  /**
+   * Additional metadata (inherited from rule + any computed metadata)
+   *
+   * @generated from field: map<string, string> metadata = 8;
+   */
+  metadata: { [key: string]: string };
+};
+
+/**
+ * Describes the message workspace.RelationshipInstance.
+ * Use `create(RelationshipInstanceSchema)` to create a new message.
+ */
+export declare const RelationshipInstanceSchema: GenMessage<RelationshipInstance>;
 
 /**
  * @generated from message workspace.ComputeReleaseTargetsResponse

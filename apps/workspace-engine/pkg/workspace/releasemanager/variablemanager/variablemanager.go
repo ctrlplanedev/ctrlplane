@@ -48,7 +48,7 @@ func (m *Manager) DeploymentVariables(ctx context.Context, deploymentId string) 
 	return deploymentVariables
 }
 
-func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (map[string]*pb.VariableValue, error) {
+func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (map[string]*pb.Value, error) {
 	ctx, span := tracer.Start(ctx, "Evaluate", trace.WithAttributes(
 		attribute.String("deployment.id", releaseTarget.DeploymentId),
 		attribute.String("environment.id", releaseTarget.EnvironmentId),
@@ -56,7 +56,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 	))
 	defer span.End()
 
-	evaluatedVariables := make(map[string]*pb.VariableValue)
+	evaluatedVariables := make(map[string]*pb.Value)
 
 	// Get the resource for selector matching
 	resource, exists := m.store.Resources.Get(releaseTarget.ResourceId)
@@ -90,7 +90,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 // resolveVariableValue resolves a deployment variable by iterating through its values
 // ordered by priority (highest to lowest) and returning the first value that matches
 // the resource selector
-func (m *Manager) resolveVariableValue(ctx context.Context, resource *pb.Resource, deploymentVar *DeploymentVariableWithValues) (*pb.VariableValue, error) {
+func (m *Manager) resolveVariableValue(ctx context.Context, resource *pb.Resource, deploymentVar *DeploymentVariableWithValues) (*pb.Value, error) {
 	ctx, span := tracer.Start(ctx, "resolveVariableValue", trace.WithAttributes(
 		attribute.String("deployment.variable.key", deploymentVar.DeploymentVariable.Key),
 		attribute.String("deployment.variable.id", deploymentVar.DeploymentVariable.Id),
@@ -167,7 +167,7 @@ func (m *Manager) matchesResourceSelector(ctx context.Context, resource *pb.Reso
 
 // extractValueFromVariableValue extracts the actual value from a DeploymentVariableValue
 // based on its type (direct, reference, or sensitive)
-func (m *Manager) extractValueFromVariableValue(ctx context.Context, variableValue *pb.DeploymentVariableValue) (*pb.VariableValue, error) {
+func (m *Manager) extractValueFromVariableValue(ctx context.Context, variableValue *pb.DeploymentVariableValue) (*pb.Value, error) {
 	ctx, span := tracer.Start(ctx, "extractValueFromVariableValue", trace.WithAttributes(
 		attribute.String("deployment.variable.id", variableValue.DeploymentVariableId),
 		attribute.String("deployment.variable.value.id", variableValue.Id),
@@ -175,13 +175,13 @@ func (m *Manager) extractValueFromVariableValue(ctx context.Context, variableVal
 	defer span.End()
 
 	switch valueType := variableValue.Value.(type) {
-	case *pb.DeploymentVariableValue_DirectValue:
-		return valueType.DirectValue, nil
+	case *pb.DeploymentVariableValue_Direct:
+		return valueType.Direct, nil
 
-	case *pb.DeploymentVariableValue_ReferenceValue:
+	case *pb.DeploymentVariableValue_Reference:
 		return nil, fmt.Errorf("resource reference variable currently not supported")
 
-	case *pb.DeploymentVariableValue_SensitiveValue:
+	case *pb.DeploymentVariableValue_Sensitive:
 		return nil, fmt.Errorf("sensitive variable currently not supported")
 
 	default:

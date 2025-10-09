@@ -522,164 +522,6 @@ func (x *UserApprovalRecord) GetCreatedAt() string {
 	return ""
 }
 
-// Deny Window - prevents deployments during specified time windows
-// Example: block deployments on weekends, holidays, or specific hours
-type DenyWindowRule struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// RRule configuration for recurrence patterns (RRULE format)
-	// https://github.com/teambition/rrule-go
-	Rrule *structpb.Struct `protobuf:"bytes,1,opt,name=rrule,proto3" json:"rrule,omitempty"`
-	// End datetime for the deny window (RFC3339 format)
-	Dtend *string `protobuf:"bytes,2,opt,name=dtend,proto3,oneof" json:"dtend,omitempty"`
-	// IANA timezone (e.g., "America/New_York", "UTC")
-	TimeZone      string `protobuf:"bytes,3,opt,name=time_zone,json=timeZone,proto3" json:"time_zone,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DenyWindowRule) Reset() {
-	*x = DenyWindowRule{}
-	mi := &file_workspace_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DenyWindowRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DenyWindowRule) ProtoMessage() {}
-
-func (x *DenyWindowRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DenyWindowRule.ProtoReflect.Descriptor instead.
-func (*DenyWindowRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *DenyWindowRule) GetRrule() *structpb.Struct {
-	if x != nil {
-		return x.Rrule
-	}
-	return nil
-}
-
-func (x *DenyWindowRule) GetDtend() string {
-	if x != nil && x.Dtend != nil {
-		return *x.Dtend
-	}
-	return ""
-}
-
-func (x *DenyWindowRule) GetTimeZone() string {
-	if x != nil {
-		return x.TimeZone
-	}
-	return ""
-}
-
-// User Approval - requires approval from a specific user
-type UserApprovalRule struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// User ID who must approve
-	UserId        string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UserApprovalRule) Reset() {
-	*x = UserApprovalRule{}
-	mi := &file_workspace_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UserApprovalRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UserApprovalRule) ProtoMessage() {}
-
-func (x *UserApprovalRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UserApprovalRule.ProtoReflect.Descriptor instead.
-func (*UserApprovalRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *UserApprovalRule) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-// Role Approval - requires approval from a user with a specific role
-type RoleApprovalRule struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Role ID - any user with this role can approve
-	RoleId        string `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RoleApprovalRule) Reset() {
-	*x = RoleApprovalRule{}
-	mi := &file_workspace_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RoleApprovalRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RoleApprovalRule) ProtoMessage() {}
-
-func (x *RoleApprovalRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RoleApprovalRule.ProtoReflect.Descriptor instead.
-func (*RoleApprovalRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *RoleApprovalRule) GetRoleId() string {
-	if x != nil {
-		return x.RoleId
-	}
-	return ""
-}
-
 // Any Approval - requires a minimum number of approvals from any authorized users
 type AnyApprovalRule struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -691,7 +533,7 @@ type AnyApprovalRule struct {
 
 func (x *AnyApprovalRule) Reset() {
 	*x = AnyApprovalRule{}
-	mi := &file_workspace_proto_msgTypes[7]
+	mi := &file_workspace_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -703,7 +545,7 @@ func (x *AnyApprovalRule) String() string {
 func (*AnyApprovalRule) ProtoMessage() {}
 
 func (x *AnyApprovalRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[7]
+	mi := &file_workspace_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -716,7 +558,7 @@ func (x *AnyApprovalRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnyApprovalRule.ProtoReflect.Descriptor instead.
 func (*AnyApprovalRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{7}
+	return file_workspace_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AnyApprovalRule) GetMinApprovals() int32 {
@@ -724,211 +566,6 @@ func (x *AnyApprovalRule) GetMinApprovals() int32 {
 		return x.MinApprovals
 	}
 	return 0
-}
-
-// Concurrency - limits the number of concurrent deployments
-type ConcurrencyRule struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Maximum number of concurrent deployments allowed
-	MaxConcurrent int32 `protobuf:"varint,1,opt,name=max_concurrent,json=maxConcurrent,proto3" json:"max_concurrent,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ConcurrencyRule) Reset() {
-	*x = ConcurrencyRule{}
-	mi := &file_workspace_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ConcurrencyRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ConcurrencyRule) ProtoMessage() {}
-
-func (x *ConcurrencyRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ConcurrencyRule.ProtoReflect.Descriptor instead.
-func (*ConcurrencyRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *ConcurrencyRule) GetMaxConcurrent() int32 {
-	if x != nil {
-		return x.MaxConcurrent
-	}
-	return 0
-}
-
-// Environment Version Rollout - controls progressive rollout across environments
-// Example: deploy to dev -> staging -> production with validation between steps
-type EnvironmentVersionRolloutRule struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Ordered list of environment IDs for progressive rollout
-	EnvironmentOrder []string `protobuf:"bytes,1,rep,name=environment_order,json=environmentOrder,proto3" json:"environment_order,omitempty"`
-	// Time to wait between environment deployments (in seconds)
-	WaitSeconds int32 `protobuf:"varint,2,opt,name=wait_seconds,json=waitSeconds,proto3" json:"wait_seconds,omitempty"`
-	// Optional success threshold (0.0 to 1.0) that must be met before proceeding
-	// Example: 0.95 means 95% of deployments must succeed
-	SuccessThreshold *float64 `protobuf:"fixed64,3,opt,name=success_threshold,json=successThreshold,proto3,oneof" json:"success_threshold,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *EnvironmentVersionRolloutRule) Reset() {
-	*x = EnvironmentVersionRolloutRule{}
-	mi := &file_workspace_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EnvironmentVersionRolloutRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EnvironmentVersionRolloutRule) ProtoMessage() {}
-
-func (x *EnvironmentVersionRolloutRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EnvironmentVersionRolloutRule.ProtoReflect.Descriptor instead.
-func (*EnvironmentVersionRolloutRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *EnvironmentVersionRolloutRule) GetEnvironmentOrder() []string {
-	if x != nil {
-		return x.EnvironmentOrder
-	}
-	return nil
-}
-
-func (x *EnvironmentVersionRolloutRule) GetWaitSeconds() int32 {
-	if x != nil {
-		return x.WaitSeconds
-	}
-	return 0
-}
-
-func (x *EnvironmentVersionRolloutRule) GetSuccessThreshold() float64 {
-	if x != nil && x.SuccessThreshold != nil {
-		return *x.SuccessThreshold
-	}
-	return 0
-}
-
-// Max Retries - limits the number of deployment retry attempts
-type MaxRetriesRule struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Maximum number of retry attempts allowed
-	MaxRetries    int32 `protobuf:"varint,1,opt,name=max_retries,json=maxRetries,proto3" json:"max_retries,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MaxRetriesRule) Reset() {
-	*x = MaxRetriesRule{}
-	mi := &file_workspace_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MaxRetriesRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MaxRetriesRule) ProtoMessage() {}
-
-func (x *MaxRetriesRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MaxRetriesRule.ProtoReflect.Descriptor instead.
-func (*MaxRetriesRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *MaxRetriesRule) GetMaxRetries() int32 {
-	if x != nil {
-		return x.MaxRetries
-	}
-	return 0
-}
-
-// Deployment Version Selector - filters which versions can be deployed
-// Example: only allow versions matching specific tags or version patterns
-type DeploymentVersionSelectorRule struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Selector for filtering deployment versions
-	VersionSelector *structpb.Struct `protobuf:"bytes,1,opt,name=version_selector,json=versionSelector,proto3,oneof" json:"version_selector,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *DeploymentVersionSelectorRule) Reset() {
-	*x = DeploymentVersionSelectorRule{}
-	mi := &file_workspace_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeploymentVersionSelectorRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeploymentVersionSelectorRule) ProtoMessage() {}
-
-func (x *DeploymentVersionSelectorRule) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeploymentVersionSelectorRule.ProtoReflect.Descriptor instead.
-func (*DeploymentVersionSelectorRule) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *DeploymentVersionSelectorRule) GetVersionSelector() *structpb.Struct {
-	if x != nil {
-		return x.VersionSelector
-	}
-	return nil
 }
 
 type Resource struct {
@@ -947,13 +584,14 @@ type Resource struct {
 	UpdatedAt     *string           `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3,oneof" json:"updated_at,omitempty"` // nullable, ISO8601 string or RFC3339 timestamp
 	DeletedAt     *string           `protobuf:"bytes,12,opt,name=deleted_at,json=deletedAt,proto3,oneof" json:"deleted_at,omitempty"` // nullable, ISO8601 string or RFC3339 timestamp
 	Metadata      map[string]string `protobuf:"bytes,13,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Variables     map[string]*Value `protobuf:"bytes,14,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Resource) Reset() {
 	*x = Resource{}
-	mi := &file_workspace_proto_msgTypes[12]
+	mi := &file_workspace_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -965,7 +603,7 @@ func (x *Resource) String() string {
 func (*Resource) ProtoMessage() {}
 
 func (x *Resource) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[12]
+	mi := &file_workspace_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -978,7 +616,7 @@ func (x *Resource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resource.ProtoReflect.Descriptor instead.
 func (*Resource) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{12}
+	return file_workspace_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Resource) GetId() string {
@@ -1072,6 +710,13 @@ func (x *Resource) GetMetadata() map[string]string {
 	return nil
 }
 
+func (x *Resource) GetVariables() map[string]*Value {
+	if x != nil {
+		return x.Variables
+	}
+	return nil
+}
+
 type Environment struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1086,7 +731,7 @@ type Environment struct {
 
 func (x *Environment) Reset() {
 	*x = Environment{}
-	mi := &file_workspace_proto_msgTypes[13]
+	mi := &file_workspace_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1098,7 +743,7 @@ func (x *Environment) String() string {
 func (*Environment) ProtoMessage() {}
 
 func (x *Environment) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[13]
+	mi := &file_workspace_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1111,7 +756,7 @@ func (x *Environment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Environment.ProtoReflect.Descriptor instead.
 func (*Environment) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{13}
+	return file_workspace_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Environment) GetId() string {
@@ -1172,7 +817,7 @@ type Deployment struct {
 
 func (x *Deployment) Reset() {
 	*x = Deployment{}
-	mi := &file_workspace_proto_msgTypes[14]
+	mi := &file_workspace_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1184,7 +829,7 @@ func (x *Deployment) String() string {
 func (*Deployment) ProtoMessage() {}
 
 func (x *Deployment) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[14]
+	mi := &file_workspace_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1197,7 +842,7 @@ func (x *Deployment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Deployment.ProtoReflect.Descriptor instead.
 func (*Deployment) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{14}
+	return file_workspace_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Deployment) GetId() string {
@@ -1269,7 +914,7 @@ type JobAgent struct {
 
 func (x *JobAgent) Reset() {
 	*x = JobAgent{}
-	mi := &file_workspace_proto_msgTypes[15]
+	mi := &file_workspace_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1281,7 +926,7 @@ func (x *JobAgent) String() string {
 func (*JobAgent) ProtoMessage() {}
 
 func (x *JobAgent) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[15]
+	mi := &file_workspace_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1294,7 +939,7 @@ func (x *JobAgent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobAgent.ProtoReflect.Descriptor instead.
 func (*JobAgent) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{15}
+	return file_workspace_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *JobAgent) GetId() string {
@@ -1353,7 +998,7 @@ type Job struct {
 
 func (x *Job) Reset() {
 	*x = Job{}
-	mi := &file_workspace_proto_msgTypes[16]
+	mi := &file_workspace_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1365,7 +1010,7 @@ func (x *Job) String() string {
 func (*Job) ProtoMessage() {}
 
 func (x *Job) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[16]
+	mi := &file_workspace_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1378,7 +1023,7 @@ func (x *Job) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Job.ProtoReflect.Descriptor instead.
 func (*Job) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{16}
+	return file_workspace_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Job) GetId() string {
@@ -1484,7 +1129,7 @@ type ReleaseTarget struct {
 
 func (x *ReleaseTarget) Reset() {
 	*x = ReleaseTarget{}
-	mi := &file_workspace_proto_msgTypes[17]
+	mi := &file_workspace_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1496,7 +1141,7 @@ func (x *ReleaseTarget) String() string {
 func (*ReleaseTarget) ProtoMessage() {}
 
 func (x *ReleaseTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[17]
+	mi := &file_workspace_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1154,7 @@ func (x *ReleaseTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseTarget.ProtoReflect.Descriptor instead.
 func (*ReleaseTarget) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{17}
+	return file_workspace_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ReleaseTarget) GetId() string {
@@ -1540,36 +1185,36 @@ func (x *ReleaseTarget) GetDeploymentId() string {
 	return ""
 }
 
-type VariableValue struct {
+type Value struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Value:
+	// Types that are valid to be assigned to Data:
 	//
-	//	*VariableValue_StringValue
-	//	*VariableValue_BoolValue
-	//	*VariableValue_DoubleValue
-	//	*VariableValue_Int64Value
-	//	*VariableValue_ObjectValue
-	//	*VariableValue_NullValue
-	Value         isVariableValue_Value `protobuf_oneof:"value"`
+	//	*Value_String_
+	//	*Value_Bool
+	//	*Value_Double
+	//	*Value_Int64
+	//	*Value_Object
+	//	*Value_Null
+	Data          isValue_Data `protobuf_oneof:"data"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *VariableValue) Reset() {
-	*x = VariableValue{}
-	mi := &file_workspace_proto_msgTypes[18]
+func (x *Value) Reset() {
+	*x = Value{}
+	mi := &file_workspace_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *VariableValue) String() string {
+func (x *Value) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*VariableValue) ProtoMessage() {}
+func (*Value) ProtoMessage() {}
 
-func (x *VariableValue) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[18]
+func (x *Value) ProtoReflect() protoreflect.Message {
+	mi := &file_workspace_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1580,126 +1225,126 @@ func (x *VariableValue) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use VariableValue.ProtoReflect.Descriptor instead.
-func (*VariableValue) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{18}
+// Deprecated: Use Value.ProtoReflect.Descriptor instead.
+func (*Value) Descriptor() ([]byte, []int) {
+	return file_workspace_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *VariableValue) GetValue() isVariableValue_Value {
+func (x *Value) GetData() isValue_Data {
 	if x != nil {
-		return x.Value
+		return x.Data
 	}
 	return nil
 }
 
-func (x *VariableValue) GetStringValue() string {
+func (x *Value) GetString_() string {
 	if x != nil {
-		if x, ok := x.Value.(*VariableValue_StringValue); ok {
-			return x.StringValue
+		if x, ok := x.Data.(*Value_String_); ok {
+			return x.String_
 		}
 	}
 	return ""
 }
 
-func (x *VariableValue) GetBoolValue() bool {
+func (x *Value) GetBool() bool {
 	if x != nil {
-		if x, ok := x.Value.(*VariableValue_BoolValue); ok {
-			return x.BoolValue
+		if x, ok := x.Data.(*Value_Bool); ok {
+			return x.Bool
 		}
 	}
 	return false
 }
 
-func (x *VariableValue) GetDoubleValue() float64 {
+func (x *Value) GetDouble() float64 {
 	if x != nil {
-		if x, ok := x.Value.(*VariableValue_DoubleValue); ok {
-			return x.DoubleValue
+		if x, ok := x.Data.(*Value_Double); ok {
+			return x.Double
 		}
 	}
 	return 0
 }
 
-func (x *VariableValue) GetInt64Value() int64 {
+func (x *Value) GetInt64() int64 {
 	if x != nil {
-		if x, ok := x.Value.(*VariableValue_Int64Value); ok {
-			return x.Int64Value
+		if x, ok := x.Data.(*Value_Int64); ok {
+			return x.Int64
 		}
 	}
 	return 0
 }
 
-func (x *VariableValue) GetObjectValue() *structpb.Struct {
+func (x *Value) GetObject() *structpb.Struct {
 	if x != nil {
-		if x, ok := x.Value.(*VariableValue_ObjectValue); ok {
-			return x.ObjectValue
+		if x, ok := x.Data.(*Value_Object); ok {
+			return x.Object
 		}
 	}
 	return nil
 }
 
-func (x *VariableValue) GetNullValue() structpb.NullValue {
+func (x *Value) GetNull() structpb.NullValue {
 	if x != nil {
-		if x, ok := x.Value.(*VariableValue_NullValue); ok {
-			return x.NullValue
+		if x, ok := x.Data.(*Value_Null); ok {
+			return x.Null
 		}
 	}
 	return structpb.NullValue(0)
 }
 
-type isVariableValue_Value interface {
-	isVariableValue_Value()
+type isValue_Data interface {
+	isValue_Data()
 }
 
-type VariableValue_StringValue struct {
-	StringValue string `protobuf:"bytes,2,opt,name=string_value,json=stringValue,proto3,oneof"`
+type Value_String_ struct {
+	String_ string `protobuf:"bytes,1,opt,name=string,proto3,oneof"`
 }
 
-type VariableValue_BoolValue struct {
-	BoolValue bool `protobuf:"varint,3,opt,name=bool_value,json=boolValue,proto3,oneof"`
+type Value_Bool struct {
+	Bool bool `protobuf:"varint,2,opt,name=bool,proto3,oneof"`
 }
 
-type VariableValue_DoubleValue struct {
-	DoubleValue float64 `protobuf:"fixed64,4,opt,name=double_value,json=doubleValue,proto3,oneof"`
+type Value_Double struct {
+	Double float64 `protobuf:"fixed64,3,opt,name=double,proto3,oneof"`
 }
 
-type VariableValue_Int64Value struct {
-	Int64Value int64 `protobuf:"varint,5,opt,name=int64_value,json=int64Value,proto3,oneof"`
+type Value_Int64 struct {
+	Int64 int64 `protobuf:"varint,4,opt,name=int64,proto3,oneof"`
 }
 
-type VariableValue_ObjectValue struct {
-	ObjectValue *structpb.Struct `protobuf:"bytes,10,opt,name=object_value,json=objectValue,proto3,oneof"`
+type Value_Object struct {
+	Object *structpb.Struct `protobuf:"bytes,5,opt,name=object,proto3,oneof"`
 }
 
-type VariableValue_NullValue struct {
-	NullValue structpb.NullValue `protobuf:"varint,11,opt,name=null_value,json=nullValue,proto3,enum=google.protobuf.NullValue,oneof"`
+type Value_Null struct {
+	Null structpb.NullValue `protobuf:"varint,6,opt,name=null,proto3,enum=google.protobuf.NullValue,oneof"`
 }
 
-func (*VariableValue_StringValue) isVariableValue_Value() {}
+func (*Value_String_) isValue_Data() {}
 
-func (*VariableValue_BoolValue) isVariableValue_Value() {}
+func (*Value_Bool) isValue_Data() {}
 
-func (*VariableValue_DoubleValue) isVariableValue_Value() {}
+func (*Value_Double) isValue_Data() {}
 
-func (*VariableValue_Int64Value) isVariableValue_Value() {}
+func (*Value_Int64) isValue_Data() {}
 
-func (*VariableValue_ObjectValue) isVariableValue_Value() {}
+func (*Value_Object) isValue_Data() {}
 
-func (*VariableValue_NullValue) isVariableValue_Value() {}
+func (*Value_Null) isValue_Data() {}
 
 type Release struct {
-	state              protoimpl.MessageState    `protogen:"open.v1"`
-	Version            *DeploymentVersion        `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-	Variables          map[string]*VariableValue `protobuf:"bytes,2,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	EncryptedVariables []string                  `protobuf:"bytes,3,rep,name=encrypted_variables,json=encryptedVariables,proto3" json:"encrypted_variables,omitempty"`
-	ReleaseTarget      *ReleaseTarget            `protobuf:"bytes,5,opt,name=release_target,json=releaseTarget,proto3" json:"release_target,omitempty"`
-	CreatedAt          string                    `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Version            *DeploymentVersion     `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	Variables          map[string]*Value      `protobuf:"bytes,2,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	EncryptedVariables []string               `protobuf:"bytes,3,rep,name=encrypted_variables,json=encryptedVariables,proto3" json:"encrypted_variables,omitempty"`
+	ReleaseTarget      *ReleaseTarget         `protobuf:"bytes,5,opt,name=release_target,json=releaseTarget,proto3" json:"release_target,omitempty"`
+	CreatedAt          string                 `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Release) Reset() {
 	*x = Release{}
-	mi := &file_workspace_proto_msgTypes[19]
+	mi := &file_workspace_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1711,7 +1356,7 @@ func (x *Release) String() string {
 func (*Release) ProtoMessage() {}
 
 func (x *Release) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[19]
+	mi := &file_workspace_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1724,7 +1369,7 @@ func (x *Release) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Release.ProtoReflect.Descriptor instead.
 func (*Release) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{19}
+	return file_workspace_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Release) GetVersion() *DeploymentVersion {
@@ -1734,7 +1379,7 @@ func (x *Release) GetVersion() *DeploymentVersion {
 	return nil
 }
 
-func (x *Release) GetVariables() map[string]*VariableValue {
+func (x *Release) GetVariables() map[string]*Value {
 	if x != nil {
 		return x.Variables
 	}
@@ -1769,14 +1414,14 @@ type DeploymentVariable struct {
 	VariableId    string                 `protobuf:"bytes,3,opt,name=variable_id,json=variableId,proto3" json:"variable_id,omitempty"`
 	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	DeploymentId  string                 `protobuf:"bytes,5,opt,name=deployment_id,json=deploymentId,proto3" json:"deployment_id,omitempty"`
-	DefaultValue  *VariableValue         `protobuf:"bytes,6,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	DefaultValue  *Value                 `protobuf:"bytes,6,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeploymentVariable) Reset() {
 	*x = DeploymentVariable{}
-	mi := &file_workspace_proto_msgTypes[20]
+	mi := &file_workspace_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1788,7 +1433,7 @@ func (x *DeploymentVariable) String() string {
 func (*DeploymentVariable) ProtoMessage() {}
 
 func (x *DeploymentVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[20]
+	mi := &file_workspace_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1801,7 +1446,7 @@ func (x *DeploymentVariable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeploymentVariable.ProtoReflect.Descriptor instead.
 func (*DeploymentVariable) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{20}
+	return file_workspace_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DeploymentVariable) GetId() string {
@@ -1839,7 +1484,7 @@ func (x *DeploymentVariable) GetDeploymentId() string {
 	return ""
 }
 
-func (x *DeploymentVariable) GetDefaultValue() *VariableValue {
+func (x *DeploymentVariable) GetDefaultValue() *Value {
 	if x != nil {
 		return x.DefaultValue
 	}
@@ -1851,13 +1496,13 @@ type DeploymentVariableValue struct {
 	Id                   string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	DeploymentVariableId string                 `protobuf:"bytes,3,opt,name=deployment_variable_id,json=deploymentVariableId,proto3" json:"deployment_variable_id,omitempty"`
 	Priority             int64                  `protobuf:"varint,4,opt,name=priority,proto3" json:"priority,omitempty"`
-	DefaultValue         *VariableValue         `protobuf:"bytes,5,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	DefaultValue         *Value                 `protobuf:"bytes,5,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	ResourceSelector     *Selector              `protobuf:"bytes,6,opt,name=resource_selector,json=resourceSelector,proto3,oneof" json:"resource_selector,omitempty"`
 	// Types that are valid to be assigned to Value:
 	//
-	//	*DeploymentVariableValue_DirectValue
-	//	*DeploymentVariableValue_ReferenceValue
-	//	*DeploymentVariableValue_SensitiveValue
+	//	*DeploymentVariableValue_Direct
+	//	*DeploymentVariableValue_Reference
+	//	*DeploymentVariableValue_Sensitive
 	Value         isDeploymentVariableValue_Value `protobuf_oneof:"value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1865,7 +1510,7 @@ type DeploymentVariableValue struct {
 
 func (x *DeploymentVariableValue) Reset() {
 	*x = DeploymentVariableValue{}
-	mi := &file_workspace_proto_msgTypes[21]
+	mi := &file_workspace_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1877,7 +1522,7 @@ func (x *DeploymentVariableValue) String() string {
 func (*DeploymentVariableValue) ProtoMessage() {}
 
 func (x *DeploymentVariableValue) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[21]
+	mi := &file_workspace_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1890,7 +1535,7 @@ func (x *DeploymentVariableValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeploymentVariableValue.ProtoReflect.Descriptor instead.
 func (*DeploymentVariableValue) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{21}
+	return file_workspace_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DeploymentVariableValue) GetId() string {
@@ -1914,7 +1559,7 @@ func (x *DeploymentVariableValue) GetPriority() int64 {
 	return 0
 }
 
-func (x *DeploymentVariableValue) GetDefaultValue() *VariableValue {
+func (x *DeploymentVariableValue) GetDefaultValue() *Value {
 	if x != nil {
 		return x.DefaultValue
 	}
@@ -1935,28 +1580,28 @@ func (x *DeploymentVariableValue) GetValue() isDeploymentVariableValue_Value {
 	return nil
 }
 
-func (x *DeploymentVariableValue) GetDirectValue() *VariableValue {
+func (x *DeploymentVariableValue) GetDirect() *Value {
 	if x != nil {
-		if x, ok := x.Value.(*DeploymentVariableValue_DirectValue); ok {
-			return x.DirectValue
+		if x, ok := x.Value.(*DeploymentVariableValue_Direct); ok {
+			return x.Direct
 		}
 	}
 	return nil
 }
 
-func (x *DeploymentVariableValue) GetReferenceValue() *ReferenceVariableValue {
+func (x *DeploymentVariableValue) GetReference() *ReferenceValue {
 	if x != nil {
-		if x, ok := x.Value.(*DeploymentVariableValue_ReferenceValue); ok {
-			return x.ReferenceValue
+		if x, ok := x.Value.(*DeploymentVariableValue_Reference); ok {
+			return x.Reference
 		}
 	}
 	return nil
 }
 
-func (x *DeploymentVariableValue) GetSensitiveValue() *SensitiveVariableValue {
+func (x *DeploymentVariableValue) GetSensitive() *SensitiveValue {
 	if x != nil {
-		if x, ok := x.Value.(*DeploymentVariableValue_SensitiveValue); ok {
-			return x.SensitiveValue
+		if x, ok := x.Value.(*DeploymentVariableValue_Sensitive); ok {
+			return x.Sensitive
 		}
 	}
 	return nil
@@ -1966,46 +1611,46 @@ type isDeploymentVariableValue_Value interface {
 	isDeploymentVariableValue_Value()
 }
 
-type DeploymentVariableValue_DirectValue struct {
-	DirectValue *VariableValue `protobuf:"bytes,7,opt,name=direct_value,json=directValue,proto3,oneof"`
+type DeploymentVariableValue_Direct struct {
+	Direct *Value `protobuf:"bytes,7,opt,name=direct,proto3,oneof"`
 }
 
-type DeploymentVariableValue_ReferenceValue struct {
-	ReferenceValue *ReferenceVariableValue `protobuf:"bytes,8,opt,name=reference_value,json=referenceValue,proto3,oneof"`
+type DeploymentVariableValue_Reference struct {
+	Reference *ReferenceValue `protobuf:"bytes,8,opt,name=reference,proto3,oneof"`
 }
 
-type DeploymentVariableValue_SensitiveValue struct {
-	SensitiveValue *SensitiveVariableValue `protobuf:"bytes,9,opt,name=sensitive_value,json=sensitiveValue,proto3,oneof"`
+type DeploymentVariableValue_Sensitive struct {
+	Sensitive *SensitiveValue `protobuf:"bytes,9,opt,name=sensitive,proto3,oneof"`
 }
 
-func (*DeploymentVariableValue_DirectValue) isDeploymentVariableValue_Value() {}
+func (*DeploymentVariableValue_Direct) isDeploymentVariableValue_Value() {}
 
-func (*DeploymentVariableValue_ReferenceValue) isDeploymentVariableValue_Value() {}
+func (*DeploymentVariableValue_Reference) isDeploymentVariableValue_Value() {}
 
-func (*DeploymentVariableValue_SensitiveValue) isDeploymentVariableValue_Value() {}
+func (*DeploymentVariableValue_Sensitive) isDeploymentVariableValue_Value() {}
 
-type SensitiveVariableValue struct {
+type SensitiveValue struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ValueHash     string                 `protobuf:"bytes,1,opt,name=value_hash,json=valueHash,proto3" json:"value_hash,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SensitiveVariableValue) Reset() {
-	*x = SensitiveVariableValue{}
-	mi := &file_workspace_proto_msgTypes[22]
+func (x *SensitiveValue) Reset() {
+	*x = SensitiveValue{}
+	mi := &file_workspace_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SensitiveVariableValue) String() string {
+func (x *SensitiveValue) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SensitiveVariableValue) ProtoMessage() {}
+func (*SensitiveValue) ProtoMessage() {}
 
-func (x *SensitiveVariableValue) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[22]
+func (x *SensitiveValue) ProtoReflect() protoreflect.Message {
+	mi := &file_workspace_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2016,19 +1661,19 @@ func (x *SensitiveVariableValue) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SensitiveVariableValue.ProtoReflect.Descriptor instead.
-func (*SensitiveVariableValue) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{22}
+// Deprecated: Use SensitiveValue.ProtoReflect.Descriptor instead.
+func (*SensitiveValue) Descriptor() ([]byte, []int) {
+	return file_workspace_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *SensitiveVariableValue) GetValueHash() string {
+func (x *SensitiveValue) GetValueHash() string {
 	if x != nil {
 		return x.ValueHash
 	}
 	return ""
 }
 
-type ReferenceVariableValue struct {
+type ReferenceValue struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Reference     *structpb.Struct       `protobuf:"bytes,1,opt,name=reference,proto3,oneof" json:"reference,omitempty"`
 	Path          []string               `protobuf:"bytes,2,rep,name=path,proto3" json:"path,omitempty"`
@@ -2036,21 +1681,21 @@ type ReferenceVariableValue struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReferenceVariableValue) Reset() {
-	*x = ReferenceVariableValue{}
-	mi := &file_workspace_proto_msgTypes[23]
+func (x *ReferenceValue) Reset() {
+	*x = ReferenceValue{}
+	mi := &file_workspace_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReferenceVariableValue) String() string {
+func (x *ReferenceValue) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReferenceVariableValue) ProtoMessage() {}
+func (*ReferenceValue) ProtoMessage() {}
 
-func (x *ReferenceVariableValue) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[23]
+func (x *ReferenceValue) ProtoReflect() protoreflect.Message {
+	mi := &file_workspace_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2061,19 +1706,19 @@ func (x *ReferenceVariableValue) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReferenceVariableValue.ProtoReflect.Descriptor instead.
-func (*ReferenceVariableValue) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{23}
+// Deprecated: Use ReferenceValue.ProtoReflect.Descriptor instead.
+func (*ReferenceValue) Descriptor() ([]byte, []int) {
+	return file_workspace_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *ReferenceVariableValue) GetReference() *structpb.Struct {
+func (x *ReferenceValue) GetReference() *structpb.Struct {
 	if x != nil {
 		return x.Reference
 	}
 	return nil
 }
 
-func (x *ReferenceVariableValue) GetPath() []string {
+func (x *ReferenceValue) GetPath() []string {
 	if x != nil {
 		return x.Path
 	}
@@ -2097,7 +1742,7 @@ type DeploymentVersion struct {
 
 func (x *DeploymentVersion) Reset() {
 	*x = DeploymentVersion{}
-	mi := &file_workspace_proto_msgTypes[24]
+	mi := &file_workspace_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2109,7 +1754,7 @@ func (x *DeploymentVersion) String() string {
 func (*DeploymentVersion) ProtoMessage() {}
 
 func (x *DeploymentVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[24]
+	mi := &file_workspace_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2122,7 +1767,7 @@ func (x *DeploymentVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeploymentVersion.ProtoReflect.Descriptor instead.
 func (*DeploymentVersion) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{24}
+	return file_workspace_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DeploymentVersion) GetId() string {
@@ -2200,7 +1845,7 @@ type System struct {
 
 func (x *System) Reset() {
 	*x = System{}
-	mi := &file_workspace_proto_msgTypes[25]
+	mi := &file_workspace_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2212,7 +1857,7 @@ func (x *System) String() string {
 func (*System) ProtoMessage() {}
 
 func (x *System) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[25]
+	mi := &file_workspace_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2225,7 +1870,7 @@ func (x *System) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use System.ProtoReflect.Descriptor instead.
 func (*System) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{25}
+	return file_workspace_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *System) GetId() string {
@@ -2267,7 +1912,7 @@ type ComputeReleaseTargetsRequest struct {
 
 func (x *ComputeReleaseTargetsRequest) Reset() {
 	*x = ComputeReleaseTargetsRequest{}
-	mi := &file_workspace_proto_msgTypes[26]
+	mi := &file_workspace_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2279,7 +1924,7 @@ func (x *ComputeReleaseTargetsRequest) String() string {
 func (*ComputeReleaseTargetsRequest) ProtoMessage() {}
 
 func (x *ComputeReleaseTargetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[26]
+	mi := &file_workspace_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2292,7 +1937,7 @@ func (x *ComputeReleaseTargetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeReleaseTargetsRequest.ProtoReflect.Descriptor instead.
 func (*ComputeReleaseTargetsRequest) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{26}
+	return file_workspace_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ComputeReleaseTargetsRequest) GetEnvironments() []*Environment {
@@ -2330,7 +1975,7 @@ type Selector struct {
 
 func (x *Selector) Reset() {
 	*x = Selector{}
-	mi := &file_workspace_proto_msgTypes[27]
+	mi := &file_workspace_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2342,7 +1987,7 @@ func (x *Selector) String() string {
 func (*Selector) ProtoMessage() {}
 
 func (x *Selector) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[27]
+	mi := &file_workspace_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2355,7 +2000,7 @@ func (x *Selector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Selector.ProtoReflect.Descriptor instead.
 func (*Selector) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{27}
+	return file_workspace_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *Selector) GetValue() isSelector_Value {
@@ -2384,42 +2029,41 @@ type Selector_Json struct {
 
 func (*Selector_Json) isSelector_Value() {}
 
-// A model for expressing relationships between entities based on condition matching.
-type RelationshipCondition struct {
+// PropertyMatcher defines how properties between two entities should match
+// to create a relationship. This enables join-like conditions.
+// Example: VPCs and K8s clusters should match when they're in the same region
+type PropertyMatcher struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// A reference name for this relationship condition (optional, for identification)
-	ReferenceName *string `protobuf:"bytes,1,opt,name=reference_name,json=referenceName,proto3,oneof" json:"reference_name,omitempty"`
-	// The type of the source entity (e.g., "deployment", "resource", etc.)
-	FromType string `protobuf:"bytes,2,opt,name=from_type,json=fromType,proto3" json:"from_type,omitempty"`
-	// The type of the target entity (e.g., "deployment", "resource", etc.)
-	ToType string `protobuf:"bytes,3,opt,name=to_type,json=toType,proto3" json:"to_type,omitempty"`
-	// The type of relationship (e.g., "depends_on", "uses", "owned_by", etc.)
-	RelationshipType string `protobuf:"bytes,4,opt,name=relationship_type,json=relationshipType,proto3" json:"relationship_type,omitempty"`
-	// Condition for matching source entities (e.g., selector or filter as a struct)
-	FromSelector *Selector `protobuf:"bytes,5,opt,name=from_selector,json=fromSelector,proto3" json:"from_selector,omitempty"`
-	// Condition for matching target entities (e.g., selector or filter as a struct)
-	ToSelector *Selector `protobuf:"bytes,6,opt,name=to_selector,json=toSelector,proto3" json:"to_selector,omitempty"`
-	// Optional additional metadata about the relationship
-	Metadata      map[string]string `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Path to the property on the "from" entity using dot notation
+	// Examples: "id", "metadata.region", "config.networking.vpc_id"
+	// Will be split on "." for nested property access
+	FromProperty []string `protobuf:"bytes,1,rep,name=from_property,json=fromProperty,proto3" json:"from_property,omitempty"`
+	// Path to the property on the "to" entity using dot notation
+	// Examples: "id", "metadata.region", "metadata.vpc_id"
+	// Will be split on "." for nested property access
+	ToProperty []string `protobuf:"bytes,2,rep,name=to_property,json=toProperty,proto3" json:"to_property,omitempty"`
+	// Comparison operator: "equals", "not_equals", "contains", "starts_with", "ends_with", "regex"
+	// Default is "equals" if not specified
+	Operator      *string `protobuf:"bytes,3,opt,name=operator,proto3,oneof" json:"operator,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RelationshipCondition) Reset() {
-	*x = RelationshipCondition{}
-	mi := &file_workspace_proto_msgTypes[28]
+func (x *PropertyMatcher) Reset() {
+	*x = PropertyMatcher{}
+	mi := &file_workspace_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RelationshipCondition) String() string {
+func (x *PropertyMatcher) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RelationshipCondition) ProtoMessage() {}
+func (*PropertyMatcher) ProtoMessage() {}
 
-func (x *RelationshipCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[28]
+func (x *PropertyMatcher) ProtoReflect() protoreflect.Message {
+	mi := &file_workspace_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2430,54 +2074,266 @@ func (x *RelationshipCondition) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RelationshipCondition.ProtoReflect.Descriptor instead.
-func (*RelationshipCondition) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{28}
+// Deprecated: Use PropertyMatcher.ProtoReflect.Descriptor instead.
+func (*PropertyMatcher) Descriptor() ([]byte, []int) {
+	return file_workspace_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *RelationshipCondition) GetReferenceName() string {
-	if x != nil && x.ReferenceName != nil {
-		return *x.ReferenceName
+func (x *PropertyMatcher) GetFromProperty() []string {
+	if x != nil {
+		return x.FromProperty
+	}
+	return nil
+}
+
+func (x *PropertyMatcher) GetToProperty() []string {
+	if x != nil {
+		return x.ToProperty
+	}
+	return nil
+}
+
+func (x *PropertyMatcher) GetOperator() string {
+	if x != nil && x.Operator != nil {
+		return *x.Operator
 	}
 	return ""
 }
 
-func (x *RelationshipCondition) GetFromType() string {
+// RelationshipRule defines a rule for creating relationships between entities.
+// A single rule can match multiple entities and create multiple relationship instances.
+// For example: "All VPCs should be related to all Kubernetes clusters in the same region"
+type RelationshipRule struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name        string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description *string                `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Reference   string                 `protobuf:"bytes,4,opt,name=reference,proto3" json:"reference,omitempty"`
+	// The type and selector for the source entities (e.g., "resource" with selector for VPCs)
+	FromType     string    `protobuf:"bytes,5,opt,name=from_type,json=fromType,proto3" json:"from_type,omitempty"`
+	FromSelector *Selector `protobuf:"bytes,6,opt,name=from_selector,json=fromSelector,proto3" json:"from_selector,omitempty"`
+	// The type and selector for the target entities (e.g., "resource" with selector for K8s clusters)
+	ToType     string    `protobuf:"bytes,7,opt,name=to_type,json=toType,proto3" json:"to_type,omitempty"`
+	ToSelector *Selector `protobuf:"bytes,8,opt,name=to_selector,json=toSelector,proto3" json:"to_selector,omitempty"`
+	// Optional property matchers for cross-entity conditions
+	// Example: Match VPCs to K8s clusters when metadata.region is the same
+	// If empty, creates a relationship between ALL entities matching the selectors (Cartesian product)
+	PropertyMatchers []*PropertyMatcher `protobuf:"bytes,11,rep,name=property_matchers,json=propertyMatchers,proto3" json:"property_matchers,omitempty"`
+	// The semantic type of the relationship (e.g., "contains", "depends_on", "runs_on")
+	RelationshipType string `protobuf:"bytes,9,opt,name=relationship_type,json=relationshipType,proto3" json:"relationship_type,omitempty"`
+	// Additional metadata for the relationship rule
+	Metadata      map[string]string `protobuf:"bytes,10,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RelationshipRule) Reset() {
+	*x = RelationshipRule{}
+	mi := &file_workspace_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RelationshipRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RelationshipRule) ProtoMessage() {}
+
+func (x *RelationshipRule) ProtoReflect() protoreflect.Message {
+	mi := &file_workspace_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RelationshipRule.ProtoReflect.Descriptor instead.
+func (*RelationshipRule) Descriptor() ([]byte, []int) {
+	return file_workspace_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *RelationshipRule) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RelationshipRule) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *RelationshipRule) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
+}
+
+func (x *RelationshipRule) GetReference() string {
+	if x != nil {
+		return x.Reference
+	}
+	return ""
+}
+
+func (x *RelationshipRule) GetFromType() string {
 	if x != nil {
 		return x.FromType
 	}
 	return ""
 }
 
-func (x *RelationshipCondition) GetToType() string {
-	if x != nil {
-		return x.ToType
-	}
-	return ""
-}
-
-func (x *RelationshipCondition) GetRelationshipType() string {
-	if x != nil {
-		return x.RelationshipType
-	}
-	return ""
-}
-
-func (x *RelationshipCondition) GetFromSelector() *Selector {
+func (x *RelationshipRule) GetFromSelector() *Selector {
 	if x != nil {
 		return x.FromSelector
 	}
 	return nil
 }
 
-func (x *RelationshipCondition) GetToSelector() *Selector {
+func (x *RelationshipRule) GetToType() string {
+	if x != nil {
+		return x.ToType
+	}
+	return ""
+}
+
+func (x *RelationshipRule) GetToSelector() *Selector {
 	if x != nil {
 		return x.ToSelector
 	}
 	return nil
 }
 
-func (x *RelationshipCondition) GetMetadata() map[string]string {
+func (x *RelationshipRule) GetPropertyMatchers() []*PropertyMatcher {
+	if x != nil {
+		return x.PropertyMatchers
+	}
+	return nil
+}
+
+func (x *RelationshipRule) GetRelationshipType() string {
+	if x != nil {
+		return x.RelationshipType
+	}
+	return ""
+}
+
+func (x *RelationshipRule) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+// RelationshipInstance represents a computed relationship between two specific entities.
+// This is generated from a RelationshipRule by evaluating the selectors.
+type RelationshipInstance struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Id     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                       // Unique ID for this instance
+	RuleId string                 `protobuf:"bytes,2,opt,name=rule_id,json=ruleId,proto3" json:"rule_id,omitempty"` // Reference to the RelationshipRule that created this instance
+	// Source entity
+	FromType string `protobuf:"bytes,3,opt,name=from_type,json=fromType,proto3" json:"from_type,omitempty"`
+	FromId   string `protobuf:"bytes,4,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
+	// Target entity
+	ToType string `protobuf:"bytes,5,opt,name=to_type,json=toType,proto3" json:"to_type,omitempty"`
+	ToId   string `protobuf:"bytes,6,opt,name=to_id,json=toId,proto3" json:"to_id,omitempty"`
+	// The semantic type of the relationship (inherited from the rule)
+	RelationshipType string `protobuf:"bytes,7,opt,name=relationship_type,json=relationshipType,proto3" json:"relationship_type,omitempty"`
+	// Additional metadata (inherited from rule + any computed metadata)
+	Metadata      map[string]string `protobuf:"bytes,8,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RelationshipInstance) Reset() {
+	*x = RelationshipInstance{}
+	mi := &file_workspace_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RelationshipInstance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RelationshipInstance) ProtoMessage() {}
+
+func (x *RelationshipInstance) ProtoReflect() protoreflect.Message {
+	mi := &file_workspace_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RelationshipInstance.ProtoReflect.Descriptor instead.
+func (*RelationshipInstance) Descriptor() ([]byte, []int) {
+	return file_workspace_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *RelationshipInstance) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RelationshipInstance) GetRuleId() string {
+	if x != nil {
+		return x.RuleId
+	}
+	return ""
+}
+
+func (x *RelationshipInstance) GetFromType() string {
+	if x != nil {
+		return x.FromType
+	}
+	return ""
+}
+
+func (x *RelationshipInstance) GetFromId() string {
+	if x != nil {
+		return x.FromId
+	}
+	return ""
+}
+
+func (x *RelationshipInstance) GetToType() string {
+	if x != nil {
+		return x.ToType
+	}
+	return ""
+}
+
+func (x *RelationshipInstance) GetToId() string {
+	if x != nil {
+		return x.ToId
+	}
+	return ""
+}
+
+func (x *RelationshipInstance) GetRelationshipType() string {
+	if x != nil {
+		return x.RelationshipType
+	}
+	return ""
+}
+
+func (x *RelationshipInstance) GetMetadata() map[string]string {
 	if x != nil {
 		return x.Metadata
 	}
@@ -2493,7 +2349,7 @@ type ComputeReleaseTargetsResponse struct {
 
 func (x *ComputeReleaseTargetsResponse) Reset() {
 	*x = ComputeReleaseTargetsResponse{}
-	mi := &file_workspace_proto_msgTypes[29]
+	mi := &file_workspace_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2505,7 +2361,7 @@ func (x *ComputeReleaseTargetsResponse) String() string {
 func (*ComputeReleaseTargetsResponse) ProtoMessage() {}
 
 func (x *ComputeReleaseTargetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[29]
+	mi := &file_workspace_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2518,7 +2374,7 @@ func (x *ComputeReleaseTargetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeReleaseTargetsResponse.ProtoReflect.Descriptor instead.
 func (*ComputeReleaseTargetsResponse) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{29}
+	return file_workspace_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ComputeReleaseTargetsResponse) GetReleaseTargets() []*ReleaseTarget {
@@ -2540,7 +2396,7 @@ type ListReleaseTargetsRequest struct {
 
 func (x *ListReleaseTargetsRequest) Reset() {
 	*x = ListReleaseTargetsRequest{}
-	mi := &file_workspace_proto_msgTypes[30]
+	mi := &file_workspace_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2552,7 +2408,7 @@ func (x *ListReleaseTargetsRequest) String() string {
 func (*ListReleaseTargetsRequest) ProtoMessage() {}
 
 func (x *ListReleaseTargetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[30]
+	mi := &file_workspace_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2565,7 +2421,7 @@ func (x *ListReleaseTargetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListReleaseTargetsRequest.ProtoReflect.Descriptor instead.
 func (*ListReleaseTargetsRequest) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{30}
+	return file_workspace_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListReleaseTargetsRequest) GetWorkspaceId() string {
@@ -2605,7 +2461,7 @@ type ListReleaseTargetsResponse struct {
 
 func (x *ListReleaseTargetsResponse) Reset() {
 	*x = ListReleaseTargetsResponse{}
-	mi := &file_workspace_proto_msgTypes[31]
+	mi := &file_workspace_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2617,7 +2473,7 @@ func (x *ListReleaseTargetsResponse) String() string {
 func (*ListReleaseTargetsResponse) ProtoMessage() {}
 
 func (x *ListReleaseTargetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[31]
+	mi := &file_workspace_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2630,7 +2486,7 @@ func (x *ListReleaseTargetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListReleaseTargetsResponse.ProtoReflect.Descriptor instead.
 func (*ListReleaseTargetsResponse) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{31}
+	return file_workspace_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListReleaseTargetsResponse) GetReleaseTargets() []*ReleaseTarget {
@@ -2650,7 +2506,7 @@ type ListDeploymentsRequest struct {
 
 func (x *ListDeploymentsRequest) Reset() {
 	*x = ListDeploymentsRequest{}
-	mi := &file_workspace_proto_msgTypes[32]
+	mi := &file_workspace_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2662,7 +2518,7 @@ func (x *ListDeploymentsRequest) String() string {
 func (*ListDeploymentsRequest) ProtoMessage() {}
 
 func (x *ListDeploymentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[32]
+	mi := &file_workspace_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2675,7 +2531,7 @@ func (x *ListDeploymentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDeploymentsRequest.ProtoReflect.Descriptor instead.
 func (*ListDeploymentsRequest) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{32}
+	return file_workspace_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListDeploymentsRequest) GetWorkspaceId() string {
@@ -2701,7 +2557,7 @@ type ListDeploymentsResponse struct {
 
 func (x *ListDeploymentsResponse) Reset() {
 	*x = ListDeploymentsResponse{}
-	mi := &file_workspace_proto_msgTypes[33]
+	mi := &file_workspace_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2713,7 +2569,7 @@ func (x *ListDeploymentsResponse) String() string {
 func (*ListDeploymentsResponse) ProtoMessage() {}
 
 func (x *ListDeploymentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_workspace_proto_msgTypes[33]
+	mi := &file_workspace_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2726,7 +2582,7 @@ func (x *ListDeploymentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDeploymentsResponse.ProtoReflect.Descriptor instead.
 func (*ListDeploymentsResponse) Descriptor() ([]byte, []int) {
-	return file_workspace_proto_rawDescGZIP(), []int{33}
+	return file_workspace_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ListDeploymentsResponse) GetDeployments() []*Deployment {
@@ -2775,31 +2631,9 @@ const file_workspace_proto_rawDesc = "" +
 	"\x06reason\x18\x04 \x01(\tH\x00R\x06reason\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAtB\t\n" +
-	"\a_reason\"\x81\x01\n" +
-	"\x0eDenyWindowRule\x12-\n" +
-	"\x05rrule\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x05rrule\x12\x19\n" +
-	"\x05dtend\x18\x02 \x01(\tH\x00R\x05dtend\x88\x01\x01\x12\x1b\n" +
-	"\ttime_zone\x18\x03 \x01(\tR\btimeZoneB\b\n" +
-	"\x06_dtend\"+\n" +
-	"\x10UserApprovalRule\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"+\n" +
-	"\x10RoleApprovalRule\x12\x17\n" +
-	"\arole_id\x18\x01 \x01(\tR\x06roleId\"6\n" +
+	"\a_reason\"6\n" +
 	"\x0fAnyApprovalRule\x12#\n" +
-	"\rmin_approvals\x18\x01 \x01(\x05R\fminApprovals\"8\n" +
-	"\x0fConcurrencyRule\x12%\n" +
-	"\x0emax_concurrent\x18\x01 \x01(\x05R\rmaxConcurrent\"\xb7\x01\n" +
-	"\x1dEnvironmentVersionRolloutRule\x12+\n" +
-	"\x11environment_order\x18\x01 \x03(\tR\x10environmentOrder\x12!\n" +
-	"\fwait_seconds\x18\x02 \x01(\x05R\vwaitSeconds\x120\n" +
-	"\x11success_threshold\x18\x03 \x01(\x01H\x00R\x10successThreshold\x88\x01\x01B\x14\n" +
-	"\x12_success_threshold\"1\n" +
-	"\x0eMaxRetriesRule\x12\x1f\n" +
-	"\vmax_retries\x18\x01 \x01(\x05R\n" +
-	"maxRetries\"}\n" +
-	"\x1dDeploymentVersionSelectorRule\x12G\n" +
-	"\x10version_selector\x18\x01 \x01(\v2\x17.google.protobuf.StructH\x00R\x0fversionSelector\x88\x01\x01B\x13\n" +
-	"\x11_version_selector\"\xb7\x04\n" +
+	"\rmin_approvals\x18\x01 \x01(\x05R\fminApprovals\"\xc9\x05\n" +
 	"\bResource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -2820,10 +2654,14 @@ const file_workspace_proto_rawDesc = "" +
 	"updated_at\x18\v \x01(\tH\x02R\tupdatedAt\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"deleted_at\x18\f \x01(\tH\x03R\tdeletedAt\x88\x01\x01\x12=\n" +
-	"\bmetadata\x18\r \x03(\v2!.workspace.Resource.MetadataEntryR\bmetadata\x1a;\n" +
+	"\bmetadata\x18\r \x03(\v2!.workspace.Resource.MetadataEntryR\bmetadata\x12@\n" +
+	"\tvariables\x18\x0e \x03(\v2\".workspace.Resource.VariablesEntryR\tvariables\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aN\n" +
+	"\x0eVariablesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12&\n" +
+	"\x05value\x18\x02 \x01(\v2\x10.workspace.ValueR\x05value:\x028\x01B\x0e\n" +
 	"\f_provider_idB\f\n" +
 	"\n" +
 	"_locked_atB\r\n" +
@@ -2888,53 +2726,49 @@ const file_workspace_proto_rawDesc = "" +
 	"\vresource_id\x18\x02 \x01(\tR\n" +
 	"resourceId\x12%\n" +
 	"\x0eenvironment_id\x18\x03 \x01(\tR\renvironmentId\x12#\n" +
-	"\rdeployment_id\x18\x04 \x01(\tR\fdeploymentId\"\xa1\x02\n" +
-	"\rVariableValue\x12#\n" +
-	"\fstring_value\x18\x02 \x01(\tH\x00R\vstringValue\x12\x1f\n" +
-	"\n" +
-	"bool_value\x18\x03 \x01(\bH\x00R\tboolValue\x12#\n" +
-	"\fdouble_value\x18\x04 \x01(\x01H\x00R\vdoubleValue\x12!\n" +
-	"\vint64_value\x18\x05 \x01(\x03H\x00R\n" +
-	"int64Value\x12<\n" +
-	"\fobject_value\x18\n" +
-	" \x01(\v2\x17.google.protobuf.StructH\x00R\vobjectValue\x12;\n" +
-	"\n" +
-	"null_value\x18\v \x01(\x0e2\x1a.google.protobuf.NullValueH\x00R\tnullValueB\a\n" +
-	"\x05value\"\xeb\x02\n" +
+	"\rdeployment_id\x18\x04 \x01(\tR\fdeploymentId\"\xd6\x01\n" +
+	"\x05Value\x12\x18\n" +
+	"\x06string\x18\x01 \x01(\tH\x00R\x06string\x12\x14\n" +
+	"\x04bool\x18\x02 \x01(\bH\x00R\x04bool\x12\x18\n" +
+	"\x06double\x18\x03 \x01(\x01H\x00R\x06double\x12\x16\n" +
+	"\x05int64\x18\x04 \x01(\x03H\x00R\x05int64\x121\n" +
+	"\x06object\x18\x05 \x01(\v2\x17.google.protobuf.StructH\x00R\x06object\x120\n" +
+	"\x04null\x18\x06 \x01(\x0e2\x1a.google.protobuf.NullValueH\x00R\x04nullB\x06\n" +
+	"\x04data\"\xe3\x02\n" +
 	"\aRelease\x126\n" +
 	"\aversion\x18\x01 \x01(\v2\x1c.workspace.DeploymentVersionR\aversion\x12?\n" +
 	"\tvariables\x18\x02 \x03(\v2!.workspace.Release.VariablesEntryR\tvariables\x12/\n" +
 	"\x13encrypted_variables\x18\x03 \x03(\tR\x12encryptedVariables\x12?\n" +
 	"\x0erelease_target\x18\x05 \x01(\v2\x18.workspace.ReleaseTargetR\rreleaseTarget\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\tR\tcreatedAt\x1aV\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\x1aN\n" +
 	"\x0eVariablesEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12.\n" +
-	"\x05value\x18\x02 \x01(\v2\x18.workspace.VariableValueR\x05value:\x028\x01\"\xf2\x01\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12&\n" +
+	"\x05value\x18\x02 \x01(\v2\x10.workspace.ValueR\x05value:\x028\x01\"\xea\x01\n" +
 	"\x12DeploymentVariable\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x1f\n" +
 	"\vvariable_id\x18\x03 \x01(\tR\n" +
 	"variableId\x12%\n" +
 	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01\x12#\n" +
-	"\rdeployment_id\x18\x05 \x01(\tR\fdeploymentId\x12=\n" +
-	"\rdefault_value\x18\x06 \x01(\v2\x18.workspace.VariableValueR\fdefaultValueB\x0e\n" +
-	"\f_description\"\xfb\x03\n" +
+	"\rdeployment_id\x18\x05 \x01(\tR\fdeploymentId\x125\n" +
+	"\rdefault_value\x18\x06 \x01(\v2\x10.workspace.ValueR\fdefaultValueB\x0e\n" +
+	"\f_description\"\xba\x03\n" +
 	"\x17DeploymentVariableValue\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x124\n" +
 	"\x16deployment_variable_id\x18\x03 \x01(\tR\x14deploymentVariableId\x12\x1a\n" +
-	"\bpriority\x18\x04 \x01(\x03R\bpriority\x12=\n" +
-	"\rdefault_value\x18\x05 \x01(\v2\x18.workspace.VariableValueR\fdefaultValue\x12E\n" +
-	"\x11resource_selector\x18\x06 \x01(\v2\x13.workspace.SelectorH\x01R\x10resourceSelector\x88\x01\x01\x12=\n" +
-	"\fdirect_value\x18\a \x01(\v2\x18.workspace.VariableValueH\x00R\vdirectValue\x12L\n" +
-	"\x0freference_value\x18\b \x01(\v2!.workspace.ReferenceVariableValueH\x00R\x0ereferenceValue\x12L\n" +
-	"\x0fsensitive_value\x18\t \x01(\v2!.workspace.SensitiveVariableValueH\x00R\x0esensitiveValueB\a\n" +
+	"\bpriority\x18\x04 \x01(\x03R\bpriority\x125\n" +
+	"\rdefault_value\x18\x05 \x01(\v2\x10.workspace.ValueR\fdefaultValue\x12E\n" +
+	"\x11resource_selector\x18\x06 \x01(\v2\x13.workspace.SelectorH\x01R\x10resourceSelector\x88\x01\x01\x12*\n" +
+	"\x06direct\x18\a \x01(\v2\x10.workspace.ValueH\x00R\x06direct\x129\n" +
+	"\treference\x18\b \x01(\v2\x19.workspace.ReferenceValueH\x00R\treference\x129\n" +
+	"\tsensitive\x18\t \x01(\v2\x19.workspace.SensitiveValueH\x00R\tsensitiveB\a\n" +
 	"\x05valueB\x14\n" +
-	"\x12_resource_selector\"7\n" +
-	"\x16SensitiveVariableValue\x12\x1d\n" +
+	"\x12_resource_selector\"/\n" +
+	"\x0eSensitiveValue\x12\x1d\n" +
 	"\n" +
-	"value_hash\x18\x01 \x01(\tR\tvalueHash\"v\n" +
-	"\x16ReferenceVariableValue\x12:\n" +
+	"value_hash\x18\x01 \x01(\tR\tvalueHash\"n\n" +
+	"\x0eReferenceValue\x12:\n" +
 	"\treference\x18\x01 \x01(\v2\x17.google.protobuf.StructH\x00R\treference\x88\x01\x01\x12\x12\n" +
 	"\x04path\x18\x02 \x03(\tR\x04pathB\f\n" +
 	"\n" +
@@ -2964,20 +2798,43 @@ const file_workspace_proto_rawDesc = "" +
 	"\tresources\x18\x03 \x03(\v2\x13.workspace.ResourceR\tresources\"B\n" +
 	"\bSelector\x12-\n" +
 	"\x04json\x18\x01 \x01(\v2\x17.google.protobuf.StructH\x00R\x04jsonB\a\n" +
-	"\x05value\"\xb2\x03\n" +
-	"\x15RelationshipCondition\x12*\n" +
-	"\x0ereference_name\x18\x01 \x01(\tH\x00R\rreferenceName\x88\x01\x01\x12\x1b\n" +
-	"\tfrom_type\x18\x02 \x01(\tR\bfromType\x12\x17\n" +
-	"\ato_type\x18\x03 \x01(\tR\x06toType\x12+\n" +
-	"\x11relationship_type\x18\x04 \x01(\tR\x10relationshipType\x128\n" +
-	"\rfrom_selector\x18\x05 \x01(\v2\x13.workspace.SelectorR\ffromSelector\x124\n" +
-	"\vto_selector\x18\x06 \x01(\v2\x13.workspace.SelectorR\n" +
-	"toSelector\x12J\n" +
-	"\bmetadata\x18\a \x03(\v2..workspace.RelationshipCondition.MetadataEntryR\bmetadata\x1a;\n" +
+	"\x05value\"\x85\x01\n" +
+	"\x0fPropertyMatcher\x12#\n" +
+	"\rfrom_property\x18\x01 \x03(\tR\ffromProperty\x12\x1f\n" +
+	"\vto_property\x18\x02 \x03(\tR\n" +
+	"toProperty\x12\x1f\n" +
+	"\boperator\x18\x03 \x01(\tH\x00R\boperator\x88\x01\x01B\v\n" +
+	"\t_operator\"\xab\x04\n" +
+	"\x10RelationshipRule\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +
+	"\vdescription\x18\x03 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1c\n" +
+	"\treference\x18\x04 \x01(\tR\treference\x12\x1b\n" +
+	"\tfrom_type\x18\x05 \x01(\tR\bfromType\x128\n" +
+	"\rfrom_selector\x18\x06 \x01(\v2\x13.workspace.SelectorR\ffromSelector\x12\x17\n" +
+	"\ato_type\x18\a \x01(\tR\x06toType\x124\n" +
+	"\vto_selector\x18\b \x01(\v2\x13.workspace.SelectorR\n" +
+	"toSelector\x12G\n" +
+	"\x11property_matchers\x18\v \x03(\v2\x1a.workspace.PropertyMatcherR\x10propertyMatchers\x12+\n" +
+	"\x11relationship_type\x18\t \x01(\tR\x10relationshipType\x12E\n" +
+	"\bmetadata\x18\n" +
+	" \x03(\v2).workspace.RelationshipRule.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
-	"\x0f_reference_name\"b\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"\xd8\x02\n" +
+	"\x14RelationshipInstance\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\arule_id\x18\x02 \x01(\tR\x06ruleId\x12\x1b\n" +
+	"\tfrom_type\x18\x03 \x01(\tR\bfromType\x12\x17\n" +
+	"\afrom_id\x18\x04 \x01(\tR\x06fromId\x12\x17\n" +
+	"\ato_type\x18\x05 \x01(\tR\x06toType\x12\x13\n" +
+	"\x05to_id\x18\x06 \x01(\tR\x04toId\x12+\n" +
+	"\x11relationship_type\x18\a \x01(\tR\x10relationshipType\x12I\n" +
+	"\bmetadata\x18\b \x03(\v2-.workspace.RelationshipInstance.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
 	"\x1dComputeReleaseTargetsResponse\x12A\n" +
 	"\x0frelease_targets\x18\x01 \x03(\v2\x18.workspace.ReleaseTargetR\x0ereleaseTargets\"\xe4\x02\n" +
 	"\x19ListReleaseTargetsRequest\x12!\n" +
@@ -3036,7 +2893,7 @@ func file_workspace_proto_rawDescGZIP() []byte {
 }
 
 var file_workspace_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_workspace_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
+var file_workspace_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_workspace_proto_goTypes = []any{
 	(ApprovalStatus)(0),                   // 0: workspace.ApprovalStatus
 	(JobStatus)(0),                        // 1: workspace.JobStatus
@@ -3045,101 +2902,100 @@ var file_workspace_proto_goTypes = []any{
 	(*PolicyTargetSelector)(nil),          // 4: workspace.PolicyTargetSelector
 	(*PolicyRule)(nil),                    // 5: workspace.PolicyRule
 	(*UserApprovalRecord)(nil),            // 6: workspace.UserApprovalRecord
-	(*DenyWindowRule)(nil),                // 7: workspace.DenyWindowRule
-	(*UserApprovalRule)(nil),              // 8: workspace.UserApprovalRule
-	(*RoleApprovalRule)(nil),              // 9: workspace.RoleApprovalRule
-	(*AnyApprovalRule)(nil),               // 10: workspace.AnyApprovalRule
-	(*ConcurrencyRule)(nil),               // 11: workspace.ConcurrencyRule
-	(*EnvironmentVersionRolloutRule)(nil), // 12: workspace.EnvironmentVersionRolloutRule
-	(*MaxRetriesRule)(nil),                // 13: workspace.MaxRetriesRule
-	(*DeploymentVersionSelectorRule)(nil), // 14: workspace.DeploymentVersionSelectorRule
-	(*Resource)(nil),                      // 15: workspace.Resource
-	(*Environment)(nil),                   // 16: workspace.Environment
-	(*Deployment)(nil),                    // 17: workspace.Deployment
-	(*JobAgent)(nil),                      // 18: workspace.JobAgent
-	(*Job)(nil),                           // 19: workspace.Job
-	(*ReleaseTarget)(nil),                 // 20: workspace.ReleaseTarget
-	(*VariableValue)(nil),                 // 21: workspace.VariableValue
-	(*Release)(nil),                       // 22: workspace.Release
-	(*DeploymentVariable)(nil),            // 23: workspace.DeploymentVariable
-	(*DeploymentVariableValue)(nil),       // 24: workspace.DeploymentVariableValue
-	(*SensitiveVariableValue)(nil),        // 25: workspace.SensitiveVariableValue
-	(*ReferenceVariableValue)(nil),        // 26: workspace.ReferenceVariableValue
-	(*DeploymentVersion)(nil),             // 27: workspace.DeploymentVersion
-	(*System)(nil),                        // 28: workspace.System
-	(*ComputeReleaseTargetsRequest)(nil),  // 29: workspace.ComputeReleaseTargetsRequest
-	(*Selector)(nil),                      // 30: workspace.Selector
-	(*RelationshipCondition)(nil),         // 31: workspace.RelationshipCondition
-	(*ComputeReleaseTargetsResponse)(nil), // 32: workspace.ComputeReleaseTargetsResponse
-	(*ListReleaseTargetsRequest)(nil),     // 33: workspace.ListReleaseTargetsRequest
-	(*ListReleaseTargetsResponse)(nil),    // 34: workspace.ListReleaseTargetsResponse
-	(*ListDeploymentsRequest)(nil),        // 35: workspace.ListDeploymentsRequest
-	(*ListDeploymentsResponse)(nil),       // 36: workspace.ListDeploymentsResponse
-	nil,                                   // 37: workspace.Resource.MetadataEntry
-	nil,                                   // 38: workspace.Release.VariablesEntry
-	nil,                                   // 39: workspace.RelationshipCondition.MetadataEntry
-	(*structpb.Struct)(nil),               // 40: google.protobuf.Struct
-	(structpb.NullValue)(0),               // 41: google.protobuf.NullValue
+	(*AnyApprovalRule)(nil),               // 7: workspace.AnyApprovalRule
+	(*Resource)(nil),                      // 8: workspace.Resource
+	(*Environment)(nil),                   // 9: workspace.Environment
+	(*Deployment)(nil),                    // 10: workspace.Deployment
+	(*JobAgent)(nil),                      // 11: workspace.JobAgent
+	(*Job)(nil),                           // 12: workspace.Job
+	(*ReleaseTarget)(nil),                 // 13: workspace.ReleaseTarget
+	(*Value)(nil),                         // 14: workspace.Value
+	(*Release)(nil),                       // 15: workspace.Release
+	(*DeploymentVariable)(nil),            // 16: workspace.DeploymentVariable
+	(*DeploymentVariableValue)(nil),       // 17: workspace.DeploymentVariableValue
+	(*SensitiveValue)(nil),                // 18: workspace.SensitiveValue
+	(*ReferenceValue)(nil),                // 19: workspace.ReferenceValue
+	(*DeploymentVersion)(nil),             // 20: workspace.DeploymentVersion
+	(*System)(nil),                        // 21: workspace.System
+	(*ComputeReleaseTargetsRequest)(nil),  // 22: workspace.ComputeReleaseTargetsRequest
+	(*Selector)(nil),                      // 23: workspace.Selector
+	(*PropertyMatcher)(nil),               // 24: workspace.PropertyMatcher
+	(*RelationshipRule)(nil),              // 25: workspace.RelationshipRule
+	(*RelationshipInstance)(nil),          // 26: workspace.RelationshipInstance
+	(*ComputeReleaseTargetsResponse)(nil), // 27: workspace.ComputeReleaseTargetsResponse
+	(*ListReleaseTargetsRequest)(nil),     // 28: workspace.ListReleaseTargetsRequest
+	(*ListReleaseTargetsResponse)(nil),    // 29: workspace.ListReleaseTargetsResponse
+	(*ListDeploymentsRequest)(nil),        // 30: workspace.ListDeploymentsRequest
+	(*ListDeploymentsResponse)(nil),       // 31: workspace.ListDeploymentsResponse
+	nil,                                   // 32: workspace.Resource.MetadataEntry
+	nil,                                   // 33: workspace.Resource.VariablesEntry
+	nil,                                   // 34: workspace.Release.VariablesEntry
+	nil,                                   // 35: workspace.RelationshipRule.MetadataEntry
+	nil,                                   // 36: workspace.RelationshipInstance.MetadataEntry
+	(*structpb.Struct)(nil),               // 37: google.protobuf.Struct
+	(structpb.NullValue)(0),               // 38: google.protobuf.NullValue
 }
 var file_workspace_proto_depIdxs = []int32{
 	4,  // 0: workspace.Policy.selectors:type_name -> workspace.PolicyTargetSelector
 	5,  // 1: workspace.Policy.rules:type_name -> workspace.PolicyRule
-	30, // 2: workspace.PolicyTargetSelector.deployment_selector:type_name -> workspace.Selector
-	30, // 3: workspace.PolicyTargetSelector.environment_selector:type_name -> workspace.Selector
-	30, // 4: workspace.PolicyTargetSelector.resource_selector:type_name -> workspace.Selector
-	10, // 5: workspace.PolicyRule.any_approval:type_name -> workspace.AnyApprovalRule
+	23, // 2: workspace.PolicyTargetSelector.deployment_selector:type_name -> workspace.Selector
+	23, // 3: workspace.PolicyTargetSelector.environment_selector:type_name -> workspace.Selector
+	23, // 4: workspace.PolicyTargetSelector.resource_selector:type_name -> workspace.Selector
+	7,  // 5: workspace.PolicyRule.any_approval:type_name -> workspace.AnyApprovalRule
 	0,  // 6: workspace.UserApprovalRecord.status:type_name -> workspace.ApprovalStatus
-	40, // 7: workspace.DenyWindowRule.rrule:type_name -> google.protobuf.Struct
-	40, // 8: workspace.DeploymentVersionSelectorRule.version_selector:type_name -> google.protobuf.Struct
-	40, // 9: workspace.Resource.config:type_name -> google.protobuf.Struct
-	37, // 10: workspace.Resource.metadata:type_name -> workspace.Resource.MetadataEntry
-	30, // 11: workspace.Environment.resource_selector:type_name -> workspace.Selector
-	40, // 12: workspace.Deployment.job_agent_config:type_name -> google.protobuf.Struct
-	30, // 13: workspace.Deployment.resource_selector:type_name -> workspace.Selector
-	40, // 14: workspace.JobAgent.config:type_name -> google.protobuf.Struct
-	40, // 15: workspace.Job.job_agent_config:type_name -> google.protobuf.Struct
-	1,  // 16: workspace.Job.status:type_name -> workspace.JobStatus
-	40, // 17: workspace.VariableValue.object_value:type_name -> google.protobuf.Struct
-	41, // 18: workspace.VariableValue.null_value:type_name -> google.protobuf.NullValue
-	27, // 19: workspace.Release.version:type_name -> workspace.DeploymentVersion
-	38, // 20: workspace.Release.variables:type_name -> workspace.Release.VariablesEntry
-	20, // 21: workspace.Release.release_target:type_name -> workspace.ReleaseTarget
-	21, // 22: workspace.DeploymentVariable.default_value:type_name -> workspace.VariableValue
-	21, // 23: workspace.DeploymentVariableValue.default_value:type_name -> workspace.VariableValue
-	30, // 24: workspace.DeploymentVariableValue.resource_selector:type_name -> workspace.Selector
-	21, // 25: workspace.DeploymentVariableValue.direct_value:type_name -> workspace.VariableValue
-	26, // 26: workspace.DeploymentVariableValue.reference_value:type_name -> workspace.ReferenceVariableValue
-	25, // 27: workspace.DeploymentVariableValue.sensitive_value:type_name -> workspace.SensitiveVariableValue
-	40, // 28: workspace.ReferenceVariableValue.reference:type_name -> google.protobuf.Struct
-	40, // 29: workspace.DeploymentVersion.config:type_name -> google.protobuf.Struct
-	40, // 30: workspace.DeploymentVersion.job_agent_config:type_name -> google.protobuf.Struct
-	2,  // 31: workspace.DeploymentVersion.status:type_name -> workspace.DeploymentVersionStatus
-	16, // 32: workspace.ComputeReleaseTargetsRequest.environments:type_name -> workspace.Environment
-	17, // 33: workspace.ComputeReleaseTargetsRequest.deployments:type_name -> workspace.Deployment
-	15, // 34: workspace.ComputeReleaseTargetsRequest.resources:type_name -> workspace.Resource
-	40, // 35: workspace.Selector.json:type_name -> google.protobuf.Struct
-	30, // 36: workspace.RelationshipCondition.from_selector:type_name -> workspace.Selector
-	30, // 37: workspace.RelationshipCondition.to_selector:type_name -> workspace.Selector
-	39, // 38: workspace.RelationshipCondition.metadata:type_name -> workspace.RelationshipCondition.MetadataEntry
-	20, // 39: workspace.ComputeReleaseTargetsResponse.release_targets:type_name -> workspace.ReleaseTarget
-	30, // 40: workspace.ListReleaseTargetsRequest.resource_selector:type_name -> workspace.Selector
-	30, // 41: workspace.ListReleaseTargetsRequest.deployment_selector:type_name -> workspace.Selector
-	30, // 42: workspace.ListReleaseTargetsRequest.environment_selector:type_name -> workspace.Selector
-	20, // 43: workspace.ListReleaseTargetsResponse.release_targets:type_name -> workspace.ReleaseTarget
-	30, // 44: workspace.ListDeploymentsRequest.deployment_selector:type_name -> workspace.Selector
-	17, // 45: workspace.ListDeploymentsResponse.deployments:type_name -> workspace.Deployment
-	21, // 46: workspace.Release.VariablesEntry.value:type_name -> workspace.VariableValue
-	29, // 47: workspace.ReleaseTargetService.Compute:input_type -> workspace.ComputeReleaseTargetsRequest
-	33, // 48: workspace.ReleaseTargetService.All:input_type -> workspace.ListReleaseTargetsRequest
-	35, // 49: workspace.DeploymentService.All:input_type -> workspace.ListDeploymentsRequest
-	32, // 50: workspace.ReleaseTargetService.Compute:output_type -> workspace.ComputeReleaseTargetsResponse
-	34, // 51: workspace.ReleaseTargetService.All:output_type -> workspace.ListReleaseTargetsResponse
-	36, // 52: workspace.DeploymentService.All:output_type -> workspace.ListDeploymentsResponse
-	50, // [50:53] is the sub-list for method output_type
-	47, // [47:50] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	37, // 7: workspace.Resource.config:type_name -> google.protobuf.Struct
+	32, // 8: workspace.Resource.metadata:type_name -> workspace.Resource.MetadataEntry
+	33, // 9: workspace.Resource.variables:type_name -> workspace.Resource.VariablesEntry
+	23, // 10: workspace.Environment.resource_selector:type_name -> workspace.Selector
+	37, // 11: workspace.Deployment.job_agent_config:type_name -> google.protobuf.Struct
+	23, // 12: workspace.Deployment.resource_selector:type_name -> workspace.Selector
+	37, // 13: workspace.JobAgent.config:type_name -> google.protobuf.Struct
+	37, // 14: workspace.Job.job_agent_config:type_name -> google.protobuf.Struct
+	1,  // 15: workspace.Job.status:type_name -> workspace.JobStatus
+	37, // 16: workspace.Value.object:type_name -> google.protobuf.Struct
+	38, // 17: workspace.Value.null:type_name -> google.protobuf.NullValue
+	20, // 18: workspace.Release.version:type_name -> workspace.DeploymentVersion
+	34, // 19: workspace.Release.variables:type_name -> workspace.Release.VariablesEntry
+	13, // 20: workspace.Release.release_target:type_name -> workspace.ReleaseTarget
+	14, // 21: workspace.DeploymentVariable.default_value:type_name -> workspace.Value
+	14, // 22: workspace.DeploymentVariableValue.default_value:type_name -> workspace.Value
+	23, // 23: workspace.DeploymentVariableValue.resource_selector:type_name -> workspace.Selector
+	14, // 24: workspace.DeploymentVariableValue.direct:type_name -> workspace.Value
+	19, // 25: workspace.DeploymentVariableValue.reference:type_name -> workspace.ReferenceValue
+	18, // 26: workspace.DeploymentVariableValue.sensitive:type_name -> workspace.SensitiveValue
+	37, // 27: workspace.ReferenceValue.reference:type_name -> google.protobuf.Struct
+	37, // 28: workspace.DeploymentVersion.config:type_name -> google.protobuf.Struct
+	37, // 29: workspace.DeploymentVersion.job_agent_config:type_name -> google.protobuf.Struct
+	2,  // 30: workspace.DeploymentVersion.status:type_name -> workspace.DeploymentVersionStatus
+	9,  // 31: workspace.ComputeReleaseTargetsRequest.environments:type_name -> workspace.Environment
+	10, // 32: workspace.ComputeReleaseTargetsRequest.deployments:type_name -> workspace.Deployment
+	8,  // 33: workspace.ComputeReleaseTargetsRequest.resources:type_name -> workspace.Resource
+	37, // 34: workspace.Selector.json:type_name -> google.protobuf.Struct
+	23, // 35: workspace.RelationshipRule.from_selector:type_name -> workspace.Selector
+	23, // 36: workspace.RelationshipRule.to_selector:type_name -> workspace.Selector
+	24, // 37: workspace.RelationshipRule.property_matchers:type_name -> workspace.PropertyMatcher
+	35, // 38: workspace.RelationshipRule.metadata:type_name -> workspace.RelationshipRule.MetadataEntry
+	36, // 39: workspace.RelationshipInstance.metadata:type_name -> workspace.RelationshipInstance.MetadataEntry
+	13, // 40: workspace.ComputeReleaseTargetsResponse.release_targets:type_name -> workspace.ReleaseTarget
+	23, // 41: workspace.ListReleaseTargetsRequest.resource_selector:type_name -> workspace.Selector
+	23, // 42: workspace.ListReleaseTargetsRequest.deployment_selector:type_name -> workspace.Selector
+	23, // 43: workspace.ListReleaseTargetsRequest.environment_selector:type_name -> workspace.Selector
+	13, // 44: workspace.ListReleaseTargetsResponse.release_targets:type_name -> workspace.ReleaseTarget
+	23, // 45: workspace.ListDeploymentsRequest.deployment_selector:type_name -> workspace.Selector
+	10, // 46: workspace.ListDeploymentsResponse.deployments:type_name -> workspace.Deployment
+	14, // 47: workspace.Resource.VariablesEntry.value:type_name -> workspace.Value
+	14, // 48: workspace.Release.VariablesEntry.value:type_name -> workspace.Value
+	22, // 49: workspace.ReleaseTargetService.Compute:input_type -> workspace.ComputeReleaseTargetsRequest
+	28, // 50: workspace.ReleaseTargetService.All:input_type -> workspace.ListReleaseTargetsRequest
+	30, // 51: workspace.DeploymentService.All:input_type -> workspace.ListDeploymentsRequest
+	27, // 52: workspace.ReleaseTargetService.Compute:output_type -> workspace.ComputeReleaseTargetsResponse
+	29, // 53: workspace.ReleaseTargetService.All:output_type -> workspace.ListReleaseTargetsResponse
+	31, // 54: workspace.DeploymentService.All:output_type -> workspace.ListDeploymentsResponse
+	52, // [52:55] is the sub-list for method output_type
+	49, // [49:52] is the sub-list for method input_type
+	49, // [49:49] is the sub-list for extension type_name
+	49, // [49:49] is the sub-list for extension extendee
+	0,  // [0:49] is the sub-list for field type_name
 }
 
 func init() { file_workspace_proto_init() }
@@ -3153,43 +3009,41 @@ func file_workspace_proto_init() {
 		(*PolicyRule_AnyApproval)(nil),
 	}
 	file_workspace_proto_msgTypes[3].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[4].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[5].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[6].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[7].OneofWrappers = []any{}
 	file_workspace_proto_msgTypes[9].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[11].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[12].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[11].OneofWrappers = []any{
+		(*Value_String_)(nil),
+		(*Value_Bool)(nil),
+		(*Value_Double)(nil),
+		(*Value_Int64)(nil),
+		(*Value_Object)(nil),
+		(*Value_Null)(nil),
+	}
 	file_workspace_proto_msgTypes[13].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[14].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[14].OneofWrappers = []any{
+		(*DeploymentVariableValue_Direct)(nil),
+		(*DeploymentVariableValue_Reference)(nil),
+		(*DeploymentVariableValue_Sensitive)(nil),
+	}
 	file_workspace_proto_msgTypes[16].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[18].OneofWrappers = []any{
-		(*VariableValue_StringValue)(nil),
-		(*VariableValue_BoolValue)(nil),
-		(*VariableValue_DoubleValue)(nil),
-		(*VariableValue_Int64Value)(nil),
-		(*VariableValue_ObjectValue)(nil),
-		(*VariableValue_NullValue)(nil),
-	}
-	file_workspace_proto_msgTypes[20].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[21].OneofWrappers = []any{
-		(*DeploymentVariableValue_DirectValue)(nil),
-		(*DeploymentVariableValue_ReferenceValue)(nil),
-		(*DeploymentVariableValue_SensitiveValue)(nil),
-	}
-	file_workspace_proto_msgTypes[23].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[24].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[25].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[27].OneofWrappers = []any{
+	file_workspace_proto_msgTypes[17].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[18].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[20].OneofWrappers = []any{
 		(*Selector_Json)(nil),
 	}
-	file_workspace_proto_msgTypes[28].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[30].OneofWrappers = []any{}
-	file_workspace_proto_msgTypes[32].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[21].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[22].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[25].OneofWrappers = []any{}
+	file_workspace_proto_msgTypes[27].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_workspace_proto_rawDesc), len(file_workspace_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   37,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

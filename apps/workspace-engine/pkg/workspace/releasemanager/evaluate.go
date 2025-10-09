@@ -282,7 +282,7 @@ func buildRelease(
 	ctx context.Context,
 	releaseTarget *pb.ReleaseTarget,
 	version *pb.DeploymentVersion,
-	variables map[string]*pb.VariableValue,
+	variables map[string]*pb.Value,
 ) *pb.Release {
 	_, span := tracer.Start(ctx, "buildRelease",
 		trace.WithAttributes(
@@ -296,10 +296,10 @@ func buildRelease(
 	defer span.End()
 
 	// Clone variables to avoid mutations affecting this release
-	clonedVariables := make(map[string]*pb.VariableValue, len(variables))
+	clonedVariables := make(map[string]*pb.Value, len(variables))
 	for key, value := range variables {
 		if value != nil {
-			clonedVariables[key] = value.ProtoReflect().Interface().(*pb.VariableValue)
+			clonedVariables[key] = value.ProtoReflect().Interface().(*pb.Value)
 		}
 	}
 

@@ -6,39 +6,39 @@ import (
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
-func ConvertVariableValue(val any) (*VariableValue, error) {
+func ConvertValue(val any) (*Value, error) {
 	switch val := val.(type) {
-	case *VariableValue:
+	case *Value:
 		return val, nil
-	case VariableValue:
+	case Value:
 		return &val, nil
 	case string:
-		return &VariableValue{
-			Value: &VariableValue_StringValue{StringValue: val},
+		return &Value{
+			Data: &Value_String_{String_: val},
 		}, nil
 	case float64:
-		return &VariableValue{
-			Value: &VariableValue_DoubleValue{DoubleValue: val},
+		return &Value{
+			Data: &Value_Double{Double: val},
 		}, nil
 	case int:
-		return &VariableValue{
-			Value: &VariableValue_Int64Value{Int64Value: int64(val)},
+		return &Value{
+			Data: &Value_Int64{Int64: int64(val)},
 		}, nil
 	case int64:
-		return &VariableValue{
-			Value: &VariableValue_Int64Value{Int64Value: val},
+		return &Value{
+			Data: &Value_Int64{Int64: val},
 		}, nil
 	case bool:
-		return &VariableValue{
-			Value: &VariableValue_BoolValue{BoolValue: val},
+		return &Value{
+			Data: &Value_Bool{Bool: val},
 		}, nil
 	case map[string]any:
 		structVal, err := structpb.NewStruct(val)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert map to structpb.Struct: %w", err)
 		}
-		return &VariableValue{
-			Value: &VariableValue_ObjectValue{ObjectValue: structVal},
+		return &Value{
+			Data: &Value_Object{Object: structVal},
 		}, nil
 
 	default:
@@ -58,13 +58,13 @@ func ConvertVariableValue(val any) (*VariableValue, error) {
 //   - float64: converted to VariableValue_DoubleValue
 //   - int, int64: converted to VariableValue_Int64Value
 //   - bool: converted to VariableValue_BoolValue
-//   - map[string]any: converted to VariableValue_ObjectValue (protobuf Struct)
+//   - map[string]any: converted to Value_Object (protobuf Struct)
 //
 // Returns an error if an unsupported type is encountered or if structpb.NewStruct fails.
-func VariablesToMap(variables map[string]any) (map[string]*VariableValue, error) {
-	variablesMap := make(map[string]*VariableValue, len(variables))
+func VariablesToMap(variables map[string]any) (map[string]*Value, error) {
+	variablesMap := make(map[string]*Value, len(variables))
 	for k, v := range variables {
-		value, err := ConvertVariableValue(v)
+		value, err := ConvertValue(v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert variable value: %w", err)
 		}

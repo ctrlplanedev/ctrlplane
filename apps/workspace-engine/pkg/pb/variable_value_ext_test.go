@@ -23,13 +23,13 @@ func TestVariablesToMap_String(t *testing.T) {
 		t.Fatal("VariablesToMap() missing 'name' key")
 	}
 
-	strVal, ok := val.Value.(*VariableValue_StringValue)
+	strVal, ok := val.Data.(*Value_String_)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_StringValue", val.Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_String_", val.Data)
 	}
 
-	if strVal.StringValue != "test-value" {
-		t.Errorf("VariablesToMap() string value = %s, want %s", strVal.StringValue, "test-value")
+	if strVal.String_ != "test-value" {
+		t.Errorf("VariablesToMap() string value = %s, want %s", strVal.String_, "test-value")
 	}
 }
 
@@ -52,13 +52,13 @@ func TestVariablesToMap_Float64(t *testing.T) {
 		t.Fatal("VariablesToMap() missing 'price' key")
 	}
 
-	doubleVal, ok := val.Value.(*VariableValue_DoubleValue)
+	doubleVal, ok := val.Data.(*Value_Double)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_DoubleValue", val.Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_Double", val.Data)
 	}
 
-	if doubleVal.DoubleValue != 99.99 {
-		t.Errorf("VariablesToMap() double value = %f, want %f", doubleVal.DoubleValue, 99.99)
+	if doubleVal.Double != 99.99 {
+		t.Errorf("VariablesToMap() double value = %f, want %f", doubleVal.Double, 99.99)
 	}
 }
 
@@ -81,13 +81,13 @@ func TestVariablesToMap_Int(t *testing.T) {
 		t.Fatal("VariablesToMap() missing 'count' key")
 	}
 
-	intVal, ok := val.Value.(*VariableValue_Int64Value)
+	intVal, ok := val.Data.(*Value_Int64)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_Int64Value", val.Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_Int64", val.Data)
 	}
 
-	if intVal.Int64Value != 42 {
-		t.Errorf("VariablesToMap() int64 value = %d, want %d", intVal.Int64Value, 42)
+	if intVal.Int64 != 42 {
+		t.Errorf("VariablesToMap() int64 value = %d, want %d", intVal.Int64, 42)
 	}
 }
 
@@ -110,13 +110,13 @@ func TestVariablesToMap_Int64(t *testing.T) {
 		t.Fatal("VariablesToMap() missing 'timestamp' key")
 	}
 
-	intVal, ok := val.Value.(*VariableValue_Int64Value)
+	intVal, ok := val.Data.(*Value_Int64)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_Int64Value", val.Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_Int64", val.Data)
 	}
 
-	if intVal.Int64Value != 1234567890 {
-		t.Errorf("VariablesToMap() int64 value = %d, want %d", intVal.Int64Value, 1234567890)
+	if intVal.Int64 != 1234567890 {
+		t.Errorf("VariablesToMap() int64 value = %d, want %d", intVal.Int64, 1234567890)
 	}
 }
 
@@ -155,13 +155,13 @@ func TestVariablesToMap_Bool(t *testing.T) {
 				t.Fatal("VariablesToMap() missing 'enabled' key")
 			}
 
-			boolVal, ok := val.Value.(*VariableValue_BoolValue)
+			boolVal, ok := val.Data.(*Value_Bool)
 			if !ok {
-				t.Fatalf("VariablesToMap() value is %T, want *VariableValue_BoolValue", val.Value)
+				t.Fatalf("VariablesToMap() value is %T, want *Value_Bool", val.Data)
 			}
 
-			if boolVal.BoolValue != tt.boolValue {
-				t.Errorf("VariablesToMap() bool value = %v, want %v", boolVal.BoolValue, tt.boolValue)
+			if boolVal.Bool != tt.boolValue {
+				t.Errorf("VariablesToMap() bool value = %v, want %v", boolVal.Bool, tt.boolValue)
 			}
 		})
 	}
@@ -190,32 +190,32 @@ func TestVariablesToMap_Object(t *testing.T) {
 		t.Fatal("VariablesToMap() missing 'config' key")
 	}
 
-	objVal, ok := val.Value.(*VariableValue_ObjectValue)
+	objVal, ok := val.Data.(*Value_Object)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_ObjectValue", val.Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_Object", val.Data)
 	}
 
-	if objVal.ObjectValue == nil {
+	if objVal.Object == nil {
 		t.Fatal("VariablesToMap() object value is nil")
 	}
 
 	// Verify the nested structure
-	if objVal.ObjectValue.Fields["host"].GetStringValue() != "localhost" {
-		t.Errorf("VariablesToMap() object.host = %s, want %s", objVal.ObjectValue.Fields["host"].GetStringValue(), "localhost")
+	if objVal.Object.Fields["host"].GetStringValue() != "localhost" {
+		t.Errorf("VariablesToMap() object.host = %s, want %s", objVal.Object.Fields["host"].GetStringValue(), "localhost")
 	}
 
-	if objVal.ObjectValue.Fields["port"].GetNumberValue() != 8080 {
-		t.Errorf("VariablesToMap() object.port = %f, want %f", objVal.ObjectValue.Fields["port"].GetNumberValue(), 8080.0)
+	if objVal.Object.Fields["port"].GetNumberValue() != 8080 {
+		t.Errorf("VariablesToMap() object.port = %f, want %f", objVal.Object.Fields["port"].GetNumberValue(), 8080.0)
 	}
 
-	if objVal.ObjectValue.Fields["ssl"].GetBoolValue() != true {
-		t.Errorf("VariablesToMap() object.ssl = %v, want %v", objVal.ObjectValue.Fields["ssl"].GetBoolValue(), true)
+	if objVal.Object.Fields["ssl"].GetBoolValue() != true {
+		t.Errorf("VariablesToMap() object.ssl = %v, want %v", objVal.Object.Fields["ssl"].GetBoolValue(), true)
 	}
 }
 
 func TestVariablesToMap_VariableValuePointer(t *testing.T) {
-	varVal := &VariableValue{
-		Value: &VariableValue_StringValue{StringValue: "existing-value"},
+	varVal := &Value{
+		Data: &Value_String_{String_: "existing-value"},
 	}
 
 	input := map[string]any{
@@ -243,8 +243,8 @@ func TestVariablesToMap_VariableValuePointer(t *testing.T) {
 }
 
 func TestVariablesToMap_VariableValueCopy(t *testing.T) {
-	varVal := &VariableValue{
-		Value: &VariableValue_Int64Value{Int64Value: 123},
+	varVal := &Value{
+		Data: &Value_Int64{Int64: 123},
 	}
 
 	//nolint:govet // intentionally testing copy behavior for VariableValue (non-pointer)
@@ -266,13 +266,13 @@ func TestVariablesToMap_VariableValueCopy(t *testing.T) {
 		t.Fatal("VariablesToMap() missing 'copied' key")
 	}
 
-	intVal, ok := val.Value.(*VariableValue_Int64Value)
+	intVal, ok := val.Data.(*Value_Int64)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_Int64Value", val.Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_Int64", val.Data)
 	}
 
-	if intVal.Int64Value != 123 {
-		t.Errorf("VariablesToMap() int64 value = %d, want %d", intVal.Int64Value, 123)
+	if intVal.Int64 != 123 {
+		t.Errorf("VariablesToMap() int64 value = %d, want %d", intVal.Int64, 123)
 	}
 }
 
@@ -450,17 +450,17 @@ func TestVariablesToMap_ComplexNestedObject(t *testing.T) {
 		t.Fatal("VariablesToMap() missing 'database' key")
 	}
 
-	objVal, ok := val.Value.(*VariableValue_ObjectValue)
+	objVal, ok := val.Data.(*Value_Object)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_ObjectValue", val.Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_Object", val.Data)
 	}
 
-	if objVal.ObjectValue == nil {
+	if objVal.Object == nil {
 		t.Fatal("VariablesToMap() object value is nil")
 	}
 
 	// Verify nested structure exists
-	connFields := objVal.ObjectValue.Fields["connection"].GetStructValue()
+	connFields := objVal.Object.Fields["connection"].GetStructValue()
 	if connFields == nil {
 		t.Fatal("VariablesToMap() missing 'connection' nested object")
 	}
@@ -483,12 +483,12 @@ func TestVariablesToMap_ComplexNestedObject(t *testing.T) {
 
 func TestVariablesToMap_AllTypesIntegration(t *testing.T) {
 	// Test with all supported types in a single call
-	existingVar := &VariableValue{
-		Value: &VariableValue_StringValue{StringValue: "existing"},
+	existingVar := &Value{
+		Data: &Value_String_{String_: "existing"},
 	}
 
-	copiedVar := &VariableValue{
-		Value: &VariableValue_BoolValue{BoolValue: true},
+	copiedVar := &Value{
+		Data: &Value_Bool{Bool: true},
 	}
 
 	//nolint:govet // intentionally testing copy behavior for VariableValue (non-pointer)
@@ -513,32 +513,32 @@ func TestVariablesToMap_AllTypesIntegration(t *testing.T) {
 	}
 
 	// Verify string
-	if strVal, ok := result["string_val"].Value.(*VariableValue_StringValue); !ok || strVal.StringValue != "hello" {
+	if strVal, ok := result["string_val"].Data.(*Value_String_); !ok || strVal.String_ != "hello" {
 		t.Errorf("VariablesToMap() string_val incorrect")
 	}
 
 	// Verify int
-	if intVal, ok := result["int_val"].Value.(*VariableValue_Int64Value); !ok || intVal.Int64Value != 123 {
+	if intVal, ok := result["int_val"].Data.(*Value_Int64); !ok || intVal.Int64 != 123 {
 		t.Errorf("VariablesToMap() int_val incorrect")
 	}
 
 	// Verify int64
-	if int64Val, ok := result["int64_val"].Value.(*VariableValue_Int64Value); !ok || int64Val.Int64Value != 456 {
+	if int64Val, ok := result["int64_val"].Data.(*Value_Int64); !ok || int64Val.Int64 != 456 {
 		t.Errorf("VariablesToMap() int64_val incorrect")
 	}
 
 	// Verify float64
-	if floatVal, ok := result["float64_val"].Value.(*VariableValue_DoubleValue); !ok || floatVal.DoubleValue != 78.9 {
+	if floatVal, ok := result["float64_val"].Data.(*Value_Double); !ok || floatVal.Double != 78.9 {
 		t.Errorf("VariablesToMap() float64_val incorrect")
 	}
 
 	// Verify bool
-	if boolVal, ok := result["bool_val"].Value.(*VariableValue_BoolValue); !ok || boolVal.BoolValue != false {
+	if boolVal, ok := result["bool_val"].Data.(*Value_Bool); !ok || boolVal.Bool != false {
 		t.Errorf("VariablesToMap() bool_val incorrect")
 	}
 
 	// Verify object
-	if objVal, ok := result["object_val"].Value.(*VariableValue_ObjectValue); !ok || objVal.ObjectValue == nil {
+	if objVal, ok := result["object_val"].Data.(*Value_Object); !ok || objVal.Object == nil {
 		t.Errorf("VariablesToMap() object_val incorrect")
 	}
 
@@ -548,7 +548,7 @@ func TestVariablesToMap_AllTypesIntegration(t *testing.T) {
 	}
 
 	// Verify copied variable
-	if copiedBool, ok := result["existing_var_copy"].Value.(*VariableValue_BoolValue); !ok || copiedBool.BoolValue != true {
+	if copiedBool, ok := result["existing_var_copy"].Data.(*Value_Bool); !ok || copiedBool.Bool != true {
 		t.Errorf("VariablesToMap() existing_var_copy incorrect")
 	}
 }
@@ -574,32 +574,32 @@ func TestVariablesToMap_ZeroValues(t *testing.T) {
 	}
 
 	// Verify empty string
-	if strVal, ok := result["empty_string"].Value.(*VariableValue_StringValue); !ok || strVal.StringValue != "" {
+	if strVal, ok := result["empty_string"].Data.(*Value_String_); !ok || strVal.String_ != "" {
 		t.Errorf("VariablesToMap() empty_string incorrect")
 	}
 
 	// Verify zero int
-	if intVal, ok := result["zero_int"].Value.(*VariableValue_Int64Value); !ok || intVal.Int64Value != 0 {
+	if intVal, ok := result["zero_int"].Data.(*Value_Int64); !ok || intVal.Int64 != 0 {
 		t.Errorf("VariablesToMap() zero_int incorrect")
 	}
 
 	// Verify zero int64
-	if int64Val, ok := result["zero_int64"].Value.(*VariableValue_Int64Value); !ok || int64Val.Int64Value != 0 {
+	if int64Val, ok := result["zero_int64"].Data.(*Value_Int64); !ok || int64Val.Int64 != 0 {
 		t.Errorf("VariablesToMap() zero_int64 incorrect")
 	}
 
 	// Verify zero float
-	if floatVal, ok := result["zero_float"].Value.(*VariableValue_DoubleValue); !ok || floatVal.DoubleValue != 0.0 {
+		if floatVal, ok := result["zero_float"].Data.(*Value_Double); !ok || floatVal.Double != 0.0 {
 		t.Errorf("VariablesToMap() zero_float incorrect")
 	}
 
 	// Verify false bool
-	if boolVal, ok := result["false_bool"].Value.(*VariableValue_BoolValue); !ok || boolVal.BoolValue != false {
+	if boolVal, ok := result["false_bool"].Data.(*Value_Bool); !ok || boolVal.Bool != false {
 		t.Errorf("VariablesToMap() false_bool incorrect")
 	}
 
 	// Verify empty object
-	if objVal, ok := result["empty_object"].Value.(*VariableValue_ObjectValue); !ok || objVal.ObjectValue == nil {
+	if objVal, ok := result["empty_object"].Data.(*Value_Object); !ok || objVal.Object == nil {
 		t.Errorf("VariablesToMap() empty_object incorrect")
 	}
 }
@@ -621,18 +621,18 @@ func TestVariablesToMap_NegativeNumbers(t *testing.T) {
 	}
 
 	// Verify negative int
-	if intVal, ok := result["negative_int"].Value.(*VariableValue_Int64Value); !ok || intVal.Int64Value != -42 {
-		t.Errorf("VariablesToMap() negative_int = %d, want -42", intVal.Int64Value)
+	if intVal, ok := result["negative_int"].Data.(*Value_Int64); !ok || intVal.Int64 != -42 {
+		t.Errorf("VariablesToMap() negative_int = %d, want -42", intVal.Int64)
 	}
 
 	// Verify negative int64
-	if int64Val, ok := result["negative_int64"].Value.(*VariableValue_Int64Value); !ok || int64Val.Int64Value != -1000 {
-		t.Errorf("VariablesToMap() negative_int64 = %d, want -1000", int64Val.Int64Value)
+	if int64Val, ok := result["negative_int64"].Data.(*Value_Int64); !ok || int64Val.Int64 != -1000 {
+		t.Errorf("VariablesToMap() negative_int64 = %d, want -1000", int64Val.Int64)
 	}
 
 	// Verify negative float
-	if floatVal, ok := result["negative_float"].Value.(*VariableValue_DoubleValue); !ok || floatVal.DoubleValue != -99.99 {
-		t.Errorf("VariablesToMap() negative_float = %f, want -99.99", floatVal.DoubleValue)
+	if floatVal, ok := result["negative_float"].Data.(*Value_Double); !ok || floatVal.Double != -99.99 {
+		t.Errorf("VariablesToMap() negative_float = %f, want -99.99", floatVal.Double)
 	}
 }
 
@@ -651,12 +651,12 @@ func TestVariablesToMap_ObjectWithMixedTypes(t *testing.T) {
 		t.Fatalf("VariablesToMap() unexpected error = %v", err)
 	}
 
-	objVal, ok := result["mixed"].Value.(*VariableValue_ObjectValue)
+	objVal, ok := result["mixed"].Data.(*Value_Object)
 	if !ok {
-		t.Fatalf("VariablesToMap() value is %T, want *VariableValue_ObjectValue", result["mixed"].Value)
+		t.Fatalf("VariablesToMap() value is %T, want *Value_Object", result["mixed"].Data)
 	}
 
-	fields := objVal.ObjectValue.Fields
+	fields := objVal.Object.Fields
 
 	if fields["name"].GetStringValue() != "test" {
 		t.Errorf("VariablesToMap() mixed.name incorrect")
