@@ -45,6 +45,9 @@ type RelationshipRuleOption func(*TestWorkspace, *pb.RelationshipRule)
 // PropertyMatcherOption configures a PropertyMatcher
 type PropertyMatcherOption func(*TestWorkspace, *pb.PropertyMatcher)
 
+// ResourceVariableOption configures a ResourceVariable
+type ResourceVariableOption func(*TestWorkspace, *pb.ResourceVariable)
+
 type event struct {
 	Type handler.EventType
 	Data any
@@ -153,6 +156,22 @@ func WithRelationshipRule(options ...RelationshipRuleOption) WorkspaceOption {
 			context.Background(),
 			handler.RelationshipRuleCreate,
 			rr,
+		)
+	}
+}
+
+func WithResourceVariable(resourceID string, key string, options ...ResourceVariableOption) WorkspaceOption {
+	return func(ws *TestWorkspace) {
+		rv := c.NewResourceVariable(resourceID, key)
+
+		for _, option := range options {
+			option(ws, rv)
+		}
+
+		ws.PushEvent(
+			context.Background(),
+			handler.ResourceVariableCreate,
+			rv,
 		)
 	}
 }
@@ -580,5 +599,49 @@ func PropertyMatcherToProperty(toProperty []string) PropertyMatcherOption {
 func PropertyMatcherOperator(operator string) PropertyMatcherOption {
 	return func(_ *TestWorkspace, pm *pb.PropertyMatcher) {
 		pm.Operator = &operator
+	}
+}
+
+// ===== ResourceVariable Options =====
+
+func ResourceVariableValue(value *pb.Value) ResourceVariableOption {
+	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
+		rv.Value = value
+	}
+}
+
+func ResourceVariableLiteralValue(value any) ResourceVariableOption {
+	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
+		rv.Value = c.NewValueFromLiteral(c.NewLiteralValue(value))
+	}
+}
+
+func ResourceVariableStringValue(value string) ResourceVariableOption {
+	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
+		rv.Value = c.NewValueFromString(value)
+	}
+}
+
+func ResourceVariableIntValue(value int64) ResourceVariableOption {
+	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
+		rv.Value = c.NewValueFromInt(value)
+	}
+}
+
+func ResourceVariableBoolValue(value bool) ResourceVariableOption {
+	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
+		rv.Value = c.NewValueFromBool(value)
+	}
+}
+
+func ResourceVariableReferenceValue(reference string, path []string) ResourceVariableOption {
+	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
+		rv.Value = c.NewValueFromReference(reference, path)
+	}
+}
+
+func ResourceVariableSensitiveValue(valueHash string) ResourceVariableOption {
+	return func(_ *TestWorkspace, rv *pb.ResourceVariable) {
+		rv.Value = c.NewValueFromSensitive(valueHash)
 	}
 }

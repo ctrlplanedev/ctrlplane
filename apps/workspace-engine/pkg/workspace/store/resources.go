@@ -87,7 +87,7 @@ func (r *Resources) Variables(resourceId string) map[string]*pb.ResourceVariable
 		if item.Val.ResourceId != resourceId {
 			continue
 		}
-		variables[item.Key] = item.Val
+		variables[item.Val.Key] = item.Val
 	}
 	return variables
 }
