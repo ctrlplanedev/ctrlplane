@@ -258,4 +258,3 @@ func TestEngine_ResourceVariableLiteralValue(t *testing.T) {
 		t.Fatalf("nested field not found")
 	}
 }
-

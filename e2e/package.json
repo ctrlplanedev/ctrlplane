@@ -42,7 +42,7 @@
     "date-fns": "catalog:",
     "eslint": "catalog:",
     "ms": "catalog:",
-    "openapi-fetch": "^0.13.0",
+    "openapi-fetch": "^0.13.8",
     "prettier": "catalog:"
   },
   "dependencies": {

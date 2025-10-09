@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/node-sdk",
+  "name": "@ctrlplane/workspace-engine-sdk",
   "private": false,
   "version": "0.2.5",
   "type": "module",
@@ -18,7 +18,7 @@
     "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc",
-    "generate": "pnpm dlx openapi-typescript ../../openapi.v1.json -o src/schema.ts"
+    "generate": "pnpm dlx openapi-typescript ../../apps/workspace-engine/oapi/spec.yaml -o src/schema.ts"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",

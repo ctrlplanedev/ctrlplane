@@ -937,7 +937,7 @@ importers:
         specifier: 'catalog:'
         version: 2.1.3
       openapi-fetch:
-        specifier: ^0.13.0
+        specifier: ^0.13.8
         version: 0.13.8
       prettier:
         specifier: 'catalog:'
@@ -950,7 +950,7 @@ importers:
         version: 1.11.1
       '@ctrlplane/node-sdk':
         specifier: workspace:*
-        version: link:../../packages/node-sdk
+        version: link:../../packages/workspace-engine
     devDependencies:
       '@ctrlplane/eslint-config':
         specifier: workspace:*
@@ -975,7 +975,7 @@ importers:
         version: link:../../packages/logger
       '@ctrlplane/node-sdk':
         specifier: workspace:*
-        version: link:../../packages/node-sdk
+        version: link:../../packages/workspace-engine
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../../packages/validators
@@ -1552,7 +1552,7 @@ importers:
   packages/node-sdk:
     dependencies:
       openapi-fetch:
-        specifier: ^0.13.0
+        specifier: ^0.13.8
         version: 0.13.8
     devDependencies:
       '@ctrlplane/eslint-config':
@@ -1859,6 +1859,40 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.5.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.2
+
+  packages/workspace-engine:
+    dependencies:
+      openapi-fetch:
+        specifier: ^0.13.8
+        version: 0.13.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@openapitools/openapi-generator-cli':
+        specifier: ^2.13.5
+        version: 2.21.0
+      '@types/node':
+        specifier: catalog:node22
+        version: 22.13.10
+      eslint:
+        specifier: 'catalog:'
+        version: 9.11.1(jiti@2.3.3)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.5.3
+      tsup:
+        specifier: ^8.2.4
+        version: 8.5.0(jiti@2.3.3)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.8.2)(yaml@2.6.0)
       typescript:
         specifier: 'catalog:'
         version: 5.8.2
@@ -4152,6 +4186,7 @@ packages:
   '@opentelemetry/exporter-jaeger@2.0.1':
     resolution: {integrity: sha512-FeHtOp2XMhYxzYhC8sXhsc3gMeoDzjI+CGuPX+vRSyUdHZHDKTMoY9jRfk8ObmZsZDTWmd63Yqcf4X472YtHeA==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
 
@@ -13018,7 +13053,7 @@ snapshots:
 
   '@babel/template@7.25.0':
     dependencies:
-      '@babel/code-frame': 7.24.7
+      '@babel/code-frame': 7.27.1
       '@babel/parser': 7.28.0
       '@babel/types': 7.28.0
 

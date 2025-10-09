@@ -73,4 +73,3 @@ func NewValueFromSensitive(valueHash string) *pb.Value {
 		},
 	}
 }
-

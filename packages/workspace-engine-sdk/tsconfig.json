@@ -1,0 +1,19 @@
+{
+  "extends": "@ctrlplane/tsconfig/internal-package.json",
+  "compilerOptions": {
+    "strict": false,
+    "lib": ["ES2015", "DOM"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "types": ["node"],
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
+    "noEmit": false,
+    "isolatedModules": false,
+    "noUncheckedIndexedAccess": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["*.ts", "src"],
+  "exclude": ["node_modules", "./dist", "tsup.config.ts"]
+}
