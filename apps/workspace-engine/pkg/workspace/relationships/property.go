@@ -76,17 +76,17 @@ func getResourceProperty(resource *pb.Resource, propertyPath []string) (*pb.Lite
 			return nil, err
 		}
 		return pb.ConvertValue(value)
-	case "variables":
-		if len(propertyPath) == 1 {
-			return pb.ConvertValue(resource.Variables)
-		}
-		if len(propertyPath) == 2 {
-			if val, ok := resource.Variables[propertyPath[1]]; ok {
-				return pb.ConvertValue(val)
-			}
-			return nil, fmt.Errorf("variable key %s not found", propertyPath[1])
-		}
-		return nil, fmt.Errorf("variables path too deep: %v", propertyPath)
+	// case "variables":
+	// 	if len(propertyPath) == 1 {
+	// 		return pb.ConvertValue(resource.Variables)
+	// 	}
+	// 	if len(propertyPath) == 2 {
+	// 		if val, ok := resource.Variables[propertyPath[1]]; ok {
+	// 			return pb.ConvertValue(val)
+	// 		}
+	// 		return nil, fmt.Errorf("variable key %s not found", propertyPath[1])
+	// 	}
+	// 	return nil, fmt.Errorf("variables path too deep: %v", propertyPath)
 	default:
 		return getPropertyReflection(resource, propertyPath)
 	}

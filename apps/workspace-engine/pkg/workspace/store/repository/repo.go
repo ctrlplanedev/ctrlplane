@@ -8,6 +8,7 @@ import (
 func New() *Repository {
 	return &Repository{
 		Resources:           cmap.New[*pb.Resource](),
+		ResourceVariables:   cmap.New[*pb.ResourceVariable](),
 		Deployments:         cmap.New[*pb.Deployment](),
 		DeploymentVersions:  cmap.New[*pb.DeploymentVersion](),
 		DeploymentVariables: cmap.New[*pb.DeploymentVariable](),
@@ -24,6 +25,7 @@ func New() *Repository {
 
 type Repository struct {
 	Resources           cmap.ConcurrentMap[string, *pb.Resource]
+	ResourceVariables   cmap.ConcurrentMap[string, *pb.ResourceVariable]
 	Deployments         cmap.ConcurrentMap[string, *pb.Deployment]
 	DeploymentVariables cmap.ConcurrentMap[string, *pb.DeploymentVariable]
 	DeploymentVersions  cmap.ConcurrentMap[string, *pb.DeploymentVersion]

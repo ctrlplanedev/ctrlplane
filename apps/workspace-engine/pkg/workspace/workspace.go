@@ -101,6 +101,10 @@ func (w *Workspace) RelationshipRules() *store.RelationshipRules {
 	return w.store.Relationships
 }
 
+func (w *Workspace) ResourceVariables() *store.ResourceVariables {
+	return w.store.ResourceVariables
+}
+
 var workspaces = cmap.New[*Workspace]()
 
 func Exists(id string) bool {

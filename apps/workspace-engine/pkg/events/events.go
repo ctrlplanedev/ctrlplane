@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/events/handler/policies"
 	"workspace-engine/pkg/events/handler/relationshiprules"
 	"workspace-engine/pkg/events/handler/resources"
+	"workspace-engine/pkg/events/handler/resourcevariables"
 	"workspace-engine/pkg/events/handler/system"
 	"workspace-engine/pkg/events/handler/userapprovalrecords"
 )
@@ -23,6 +24,10 @@ var handlers = handler.HandlerRegistry{
 	handler.ResourceCreate: resources.HandleResourceCreated,
 	handler.ResourceUpdate: resources.HandleResourceUpdated,
 	handler.ResourceDelete: resources.HandleResourceDeleted,
+
+	handler.ResourceVariableCreate: resourcevariables.HandleResourceVariableCreated,
+	handler.ResourceVariableUpdate: resourcevariables.HandleResourceVariableUpdated,
+	handler.ResourceVariableDelete: resourcevariables.HandleResourceVariableDeleted,
 
 	handler.DeploymentCreate: deployment.HandleDeploymentCreated,
 	handler.DeploymentUpdate: deployment.HandleDeploymentUpdated,

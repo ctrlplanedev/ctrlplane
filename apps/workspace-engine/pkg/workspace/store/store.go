@@ -29,6 +29,7 @@ func New() *Store {
 	store.UserApprovalRecords = NewUserApprovalRecords(store)
 	store.Relationships = NewRelationshipRules(store)
 	store.Variables = NewVariables(store)
+	store.ResourceVariables = NewResourceVariables(store)
 
 	return store
 }
@@ -38,6 +39,7 @@ type Store struct {
 
 	Policies            *Policies
 	Resources           *Resources
+	ResourceVariables   *ResourceVariables
 	Deployments         *Deployments
 	DeploymentVersions  *DeploymentVersions
 	DeploymentVariables *DeploymentVariables
@@ -80,6 +82,7 @@ func (s *Store) GobDecode(data []byte) error {
 	s.Deployments = NewDeployments(s)
 	s.Environments = NewEnvironments(s)
 	s.Resources = NewResources(s)
+	s.ResourceVariables = NewResourceVariables(s)
 	s.Policies = NewPolicies(s)
 	s.ReleaseTargets = NewReleaseTargets(s)
 	s.DeploymentVersions = NewDeploymentVersions(s)

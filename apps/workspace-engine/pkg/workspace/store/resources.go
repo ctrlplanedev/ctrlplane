@@ -80,3 +80,14 @@ func (r *Resources) Items() map[string]*pb.Resource {
 func (r *Resources) Has(id string) bool {
 	return r.repo.Resources.Has(id)
 }
+
+func (r *Resources) Variables(resourceId string) map[string]*pb.ResourceVariable {
+	variables := make(map[string]*pb.ResourceVariable, 25)
+	for item := range r.repo.ResourceVariables.IterBuffered() {
+		if item.Val.ResourceId != resourceId {
+			continue
+		}
+		variables[item.Key] = item.Val
+	}
+	return variables
+}

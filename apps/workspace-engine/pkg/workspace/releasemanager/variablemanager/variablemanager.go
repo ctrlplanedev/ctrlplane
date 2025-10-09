@@ -41,9 +41,10 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 	if !exists {
 		return nil, fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
 	}
-	resourceVariables := resource.Variables
+	resourceVariables := m.store.Resources.Variables(releaseTarget.ResourceId)
 
-	for key, value := range resourceVariables {
+	for key, rv := range resourceVariables {
+		value := rv.Value
 		result, err := m.store.Variables.ResolveValue(ctx, resource, value)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve variable %q: %w", key, err)
