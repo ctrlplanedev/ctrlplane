@@ -1,12 +1,13 @@
 import type { Tx } from "@ctrlplane/db";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import * as PB from "../../workspace-engine/types/index.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
+import { convertToOapiSelector } from "./util.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
   tx
@@ -27,7 +28,9 @@ const convertDeploymentToNodeEvent = (
   payload: deployment,
 });
 
-const getPbDeployment = (deployment: schema.Deployment): PB.Deployment => ({
+const getOapiDeployment = (
+  deployment: schema.Deployment,
+): WorkspaceEngine["schemas"]["Deployment"] => ({
   id: deployment.id,
   name: deployment.name,
   slug: deployment.slug,
@@ -35,7 +38,7 @@ const getPbDeployment = (deployment: schema.Deployment): PB.Deployment => ({
   systemId: deployment.systemId,
   jobAgentId: deployment.jobAgentId ?? undefined,
   jobAgentConfig: deployment.jobAgentConfig,
-  resourceSelector: PB.wrapSelector(deployment.resourceSelector),
+  resourceSelector: convertToOapiSelector(deployment.resourceSelector),
 });
 
 const convertDeploymentToGoEvent = (
@@ -44,7 +47,7 @@ const convertDeploymentToGoEvent = (
 ) => ({
   workspaceId,
   eventType: Event.DeploymentCreated as const,
-  data: getPbDeployment(deployment),
+  data: getOapiDeployment(deployment),
   timestamp: Date.now(),
 });
 
