@@ -32,7 +32,8 @@ func (m *PropertyMatcher) Evaluate(from any, to any) bool {
 	fromValueStr := extractValueAsString(fromValue)
 	toValueStr := extractValueAsString(toValue)
 
-	switch m.Operator {
+	operator := strings.ToLower(strings.TrimSpace(string(m.Operator)))
+	switch operator {
 	case "equals":
 		return fromValueStr == toValueStr
 	case "not_equals", "notequals":

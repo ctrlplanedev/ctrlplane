@@ -38,13 +38,17 @@ func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.
 	ctx, span := tracer.Start(ctx, "FilterResources")
 	defer span.End()
 
+	// If no selector is provided, return no resources
+	if sel == nil {
+		return map[string]*oapi.Resource{}, nil
+	}
+
 	jsonSelector, err := sel.AsJsonSelector()
 	if err != nil {
 		return nil, err
 	}
 
-	// If no selector is provided, return no resources
-	if sel == nil || jsonSelector.Json == nil {
+	if jsonSelector.Json == nil {
 		return map[string]*oapi.Resource{}, nil
 	}
 

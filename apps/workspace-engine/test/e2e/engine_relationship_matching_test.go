@@ -846,7 +846,11 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 
 	// Should find log-1 and log-2 (app_id ends with their suffix)
 	if len(logs) != 2 {
-		t.Fatalf("expected 2 logs, got %d", len(logs))
+		var ids []string
+		for _, log := range logs {
+			ids = append(ids, log.GetID())
+		}
+		t.Fatalf("expected 2 logs, got %d: %v", len(logs), ids)
 	}
 
 	logIDs := make(map[string]bool)
