@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"workspace-engine/pkg/oapi"
@@ -152,5 +154,65 @@ func setResourceMetadata(resource *oapi.Resource, metadataJSON []byte) error {
 	}
 
 	resource.Metadata = metadataMap
+	return nil
+}
+
+const RESOURCE_INSERT_QUERY = `
+	INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id, config, created_at, locked_at, updated_at, deleted_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+`
+
+func writeResource(ctx context.Context, resource *oapi.Resource, tx pgx.Tx) error {
+	if _, err := tx.Exec(
+		ctx,
+		RESOURCE_INSERT_QUERY,
+		resource.Id,
+		resource.Version,
+		resource.Name,
+		resource.Kind,
+		resource.Identifier,
+		resource.ProviderId,
+		resource.WorkspaceId,
+		resource.Config,
+		resource.CreatedAt,
+		resource.LockedAt,
+		resource.UpdatedAt,
+		resource.DeletedAt,
+	); err != nil {
+		return err
+	}
+
+	if len(resource.Metadata) > 0 {
+		if err := writeManyMetadata(ctx, resource.Id, resource.Metadata, tx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeManyMetadata(ctx context.Context, resourceId string, metadata map[string]string, tx pgx.Tx) error {
+	if len(metadata) == 0 {
+		return nil
+	}
+
+	valueStrings := make([]string, 0, len(metadata))
+	valueArgs := make([]interface{}, 0, len(metadata)*3)
+	i := 1
+	for k, v := range metadata {
+		valueStrings = append(valueStrings,
+			"($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+")",
+		)
+		valueArgs = append(valueArgs, resourceId, k, v)
+		i += 3
+	}
+
+	query := "INSERT INTO resource_metadata (resource_id, key, value) VALUES " +
+		strings.Join(valueStrings, ", ")
+
+	_, err := tx.Exec(ctx, query, valueArgs...)
+	if err != nil {
+		return err
+	}
 	return nil
 }
