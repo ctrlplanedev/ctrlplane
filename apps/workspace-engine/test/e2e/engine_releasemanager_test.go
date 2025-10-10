@@ -174,14 +174,16 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	if config, exists := variables["config"]; !exists {
 		t.Error("config variable not found")
 	} else {
-		obj, _ := config.AsObjectValue()
+		obja, _ := config.AsObjectValue()
+		obj := obja.Object
 		if obj == nil {
 			t.Error("config is not an object")
 		} else {
-			if obj["timeout"] != 30 {
-				t.Errorf("config.timeout = %v, want 30", obj["timeout"])
+			if obj["timeout"] != float64(30) {
+				t.Logf("config.timeout type: %T", obj["timeout"])
+				t.Errorf("config.timeout = %d, want 30", obj["timeout"])
 			}
-			if obj["max_retries"] != 3 {
+			if obj["max_retries"] != float64(3) {
 				t.Errorf("config.max_retries = %v, want 3", obj["max_retries"])
 			}
 			if obj["enabled"] != true {

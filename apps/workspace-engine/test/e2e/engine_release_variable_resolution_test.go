@@ -208,7 +208,6 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 
 	variables := release.Variables
 
-	// Verify database_config exists
 	dbConfig, exists := variables["database_config"]
 	if !exists {
 		t.Fatalf("database_config variable not found")
@@ -221,20 +220,20 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 	}
 
 	// Verify nested fields
-	if obj["host"] != "db.example.com" {
-		t.Errorf("host = %s, want db.example.com", obj["host"])
+	if obj.Object["host"] != "db.example.com" {
+		t.Errorf("host = %s, want db.example.com", obj.Object["host"])
 	}
 
-	if obj["port"] != float64(5432) {
-		t.Errorf("port = %v, want 5432", obj["port"])
+	if obj.Object["port"] != float64(5432) {
+		t.Errorf("port = %v, want 5432", obj.Object["port"])
 	}
 
-	if obj["ssl"] != true {
-		t.Errorf("ssl = %v, want true", obj["ssl"])
+	if obj.Object["ssl"] != true {
+		t.Errorf("ssl = %v, want true", obj.Object["ssl"])
 	}
 
 	// Verify nested pool object
-	pool, ok := obj["pool"].(map[string]interface{})
+	pool, ok := obj.Object["pool"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("pool is not a map")
 	}
@@ -1611,16 +1610,16 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 	}
 
 	// Verify nested fields
-	if obj["timeout"] != float64(30) {
-		t.Errorf("timeout = %v, want 30", obj["timeout"])
+	if obj.Object["timeout"] != float64(30) {
+		t.Errorf("timeout = %v, want 30", obj.Object["timeout"])
 	}
 
-	if obj["retries"] != float64(3) {
-		t.Errorf("retries = %v, want 3", obj["retries"])
+	if obj.Object["retries"] != float64(3) {
+		t.Errorf("retries = %v, want 3", obj.Object["retries"])
 	}
 
 	// Verify nested auth object
-	auth, ok := obj["auth"].(map[string]interface{})
+	auth, ok := obj.Object["auth"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("auth is not a map")
 	}

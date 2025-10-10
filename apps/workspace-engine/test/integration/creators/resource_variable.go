@@ -28,8 +28,8 @@ func NewLiteralValue(value any) *oapi.LiteralValue {
 		_ = literalValue.FromNumberValue(float32(v))
 	case bool:
 		_ = literalValue.FromBooleanValue(v)
-	case map[string]interface{}:
-		_ = literalValue.FromObjectValue(v)
+	case map[string]any:
+		_ = literalValue.FromObjectValue(oapi.ObjectValue{Object: v})
 	default:
 		panic("unsupported type for LiteralValue")
 	}

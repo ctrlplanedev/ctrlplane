@@ -275,7 +275,7 @@ func convertValue(val any) (*oapi.LiteralValue, error) {
 		return lv, err
 	case map[string]any:
 		lv := &oapi.LiteralValue{}
-		err := lv.FromObjectValue(v)
+		err := lv.FromObjectValue(oapi.ObjectValue{Object: v})
 		return lv, err
 	case map[string]string:
 		// Convert map[string]string to map[string]any
@@ -284,7 +284,7 @@ func convertValue(val any) (*oapi.LiteralValue, error) {
 			m[k] = val
 		}
 		lv := &oapi.LiteralValue{}
-		err := lv.FromObjectValue(m)
+		err := lv.FromObjectValue(oapi.ObjectValue{Object: m})
 		return lv, err
 	case nil:
 		lv := &oapi.LiteralValue{}

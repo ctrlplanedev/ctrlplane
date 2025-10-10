@@ -256,11 +256,11 @@ func TestEngine_ResourceVariableLiteralValue(t *testing.T) {
 
 	lv, _ := configVar.Value.AsLiteralValue()
 	objValue, _ := lv.AsObjectValue()
-	if objValue == nil {
+	if objValue.Object == nil {
 		t.Fatalf("object value is nil")
 	}
 
-	nestedField := objValue["nested"]
+	nestedField := objValue.Object["nested"]
 	if nestedField == nil {
 		t.Fatalf("nested field not found")
 	}

@@ -72,3 +72,27 @@ func (x *UserApprovalRecord) Key() string {
 func (j *Job) IsInProcessingState() bool {
 	return j.Status == InProgress || j.Status == ActionRequired || j.Status == Pending
 }
+
+
+func (v *Value) GetType() (string, error) {
+	// Try ReferenceValue - check that required fields are present
+	if rv, err := v.AsReferenceValue(); err == nil {
+		if rv.Reference != "" && rv.Path != nil {
+			return "reference", nil
+		}
+	}
+	
+	// Try SensitiveValue - check that required fields are present
+	if sv, err := v.AsSensitiveValue(); err == nil {
+		if sv.ValueHash != "" {
+			return "sensitive", nil
+		}
+	}
+	
+	// Try LiteralValue (fallback - anything else is a literal)
+	if _, err := v.AsLiteralValue(); err == nil {
+		return "literal", nil
+	}
+	
+	return "", fmt.Errorf("unable to determine value type")
+}

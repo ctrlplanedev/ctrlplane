@@ -296,6 +296,11 @@ func buildRelease(
 
 	// Clone variables to avoid mutations affecting this release
 	clonedVariables := make(map[string]oapi.LiteralValue, len(variables))
+	for key, value := range variables {
+		if value != nil {
+			clonedVariables[key] = *value
+		}
+	}
 
 	return &oapi.Release{
 		ReleaseTarget:      *releaseTarget,

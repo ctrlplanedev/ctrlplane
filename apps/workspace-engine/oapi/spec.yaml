@@ -355,7 +355,13 @@ components:
       type: string
     ObjectValue:
       type: object
-      additionalProperties: true
+      required:
+        - object
+      properties:
+        object:
+          type: object
+          additionalProperties: true
+
     NullValue:
       type: boolean
       enum: [true]
@@ -368,6 +374,7 @@ components:
         - $ref: "#/components/schemas/StringValue"
         - $ref: "#/components/schemas/ObjectValue"
         - $ref: "#/components/schemas/NullValue"
+
     SensitiveValue:
       type: object
       required:

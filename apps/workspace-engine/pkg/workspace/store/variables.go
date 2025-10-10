@@ -18,11 +18,22 @@ func NewVariables(store *Store) *Variables {
 }
 
 func (v *Variables) ResolveValue(ctx context.Context, entity *relationships.Entity, value *oapi.Value) (*oapi.LiteralValue, error) {
-	if lv, err := value.AsLiteralValue(); err == nil {
-		return &lv, nil
+	valueType, err := value.GetType()
+	if err != nil {
+		return nil, err
 	}
-
-	if rv, err := value.AsReferenceValue(); err == nil {
+	switch valueType {
+	case "literal":
+		lv, err := value.AsLiteralValue()
+		if err != nil {
+			return nil, err
+		}
+		return &lv, nil
+	case "reference":
+		rv, err := value.AsReferenceValue()
+		if err != nil {
+			return nil, err
+		}
 		references, _ := v.store.Relationships.GetRelatedEntities(ctx, entity)
 		if references == nil {
 			return nil, fmt.Errorf("references not found: %v", rv.Reference)
@@ -40,6 +51,5 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *relationships.Enti
 
 		return value, nil
 	}
-
 	return nil, fmt.Errorf("unsupported variable type: %T", value)
 }

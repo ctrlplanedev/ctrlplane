@@ -1239,8 +1239,8 @@ func TestGetPropertyValue_TypeVariants(t *testing.T) {
 				if err != nil {
 					t.Errorf("Expected object value, got error: %v", err)
 				}
-				if val["key1"] != "value1" {
-					t.Errorf("Expected 'value1', got %v", val["key1"])
+				if val.Object["key1"] != "value1" {
+					t.Errorf("Expected 'value1', got %v", val.Object["key1"])
 				}
 			},
 		},

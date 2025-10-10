@@ -208,7 +208,9 @@ type NullValue bool
 type NumberValue = float32
 
 // ObjectValue defines model for ObjectValue.
-type ObjectValue map[string]interface{}
+type ObjectValue struct {
+	Object map[string]interface{} `json:"object"`
+}
 
 // Policy defines model for Policy.
 type Policy struct {
