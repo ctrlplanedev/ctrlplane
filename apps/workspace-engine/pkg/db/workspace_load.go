@@ -114,7 +114,6 @@ func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
 		ws.Policies().Upsert(ctx, policy)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbPolicies)))
-	log.Info("Loaded policies", "count", len(dbPolicies))
 	return nil
 }
 
@@ -130,7 +129,18 @@ func loadJobAgents(ctx context.Context, ws *workspace.Workspace) error {
 		ws.JobAgents().Upsert(ctx, jobAgent)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbJobAgents)))
-	log.Info("Loaded job agents", "count", len(dbJobAgents))
+	return nil
+}
+
+func loadRelationships(ctx context.Context, ws *workspace.Workspace) error {
+	ctx, span := tracer.Start(ctx, "loadRelationships")
+	defer span.End()
+
+	dbRelationships, err := getRelationships(ctx, ws.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get relationships: %w", err)
+	}
+	span.SetAttributes(attribute.Int("count", len(dbRelationships)))
 	return nil
 }
 
@@ -177,6 +187,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 
 	if err := loadJobAgents(ctx, ws); err != nil {
 		return nil, fmt.Errorf("failed to load job agents: %w", err)
+	}
+
+	if err := loadRelationships(ctx, ws); err != nil {
+		return nil, fmt.Errorf("failed to load relationships: %w", err)
 	}
 
 	return ws, nil
