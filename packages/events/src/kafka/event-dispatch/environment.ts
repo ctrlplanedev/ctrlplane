@@ -1,12 +1,13 @@
 import type { Tx } from "@ctrlplane/db";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import * as PB from "../../workspace-engine/types/index.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
+import { convertToOapiSelector } from "./util.js";
 
 const getSystem = async (tx: Tx, systemId: string) =>
   tx
@@ -27,12 +28,14 @@ const convertEnvironmentToNodeEvent = (
   payload: environment,
 });
 
-const getPbEnvironment = (environment: schema.Environment): PB.Environment => ({
+const getOapiEnvironment = (
+  environment: schema.Environment,
+): WorkspaceEngine["schemas"]["Environment"] => ({
   id: environment.id,
   name: environment.name,
   description: environment.description ?? undefined,
   systemId: environment.systemId,
-  resourceSelector: PB.wrapSelector(environment.resourceSelector),
+  resourceSelector: convertToOapiSelector(environment.resourceSelector),
   createdAt: environment.createdAt.toISOString(),
 });
 
@@ -42,7 +45,7 @@ const convertEnvironmentToGoEvent = (
 ) => ({
   workspaceId,
   eventType: Event.EnvironmentCreated as const,
-  data: getPbEnvironment(environment),
+  data: getOapiEnvironment(environment),
   timestamp: Date.now(),
 });
 

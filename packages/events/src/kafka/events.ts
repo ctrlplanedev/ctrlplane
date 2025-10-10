@@ -146,9 +146,9 @@ export type GoEventPayload = {
   [Event.DeploymentVersionCreated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionUpdated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionDeleted]: WorkspaceEngine["schemas"]["DeploymentVersion"];
-  [Event.EnvironmentCreated]: PB.Environment;
-  [Event.EnvironmentUpdated]: PB.Environment;
-  [Event.EnvironmentDeleted]: PB.Environment;
+  [Event.EnvironmentCreated]: WorkspaceEngine["schemas"]["Environment"];
+  [Event.EnvironmentUpdated]: WorkspaceEngine["schemas"]["Environment"];
+  [Event.EnvironmentDeleted]: WorkspaceEngine["schemas"]["Environment"];
   [Event.PolicyCreated]: PB.Policy;
   [Event.PolicyUpdated]: PB.Policy;
   [Event.PolicyDeleted]: PB.Policy;
