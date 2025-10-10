@@ -25,6 +25,10 @@ var handlers = handler.HandlerRegistry{
 	handler.ResourceUpdate: resources.HandleResourceUpdated,
 	handler.ResourceDelete: resources.HandleResourceDeleted,
 
+	handler.ResourceProviderCreate: resources.HandleResourceProviderCreated,
+	handler.ResourceProviderUpdate: resources.HandleResourceProviderUpdated,
+	handler.ResourceProviderDelete: resources.HandleResourceProviderDeleted,
+
 	handler.ResourceVariableCreate: resourcevariables.HandleResourceVariableCreated,
 	handler.ResourceVariableUpdate: resourcevariables.HandleResourceVariableUpdated,
 	handler.ResourceVariableDelete: resourcevariables.HandleResourceVariableDeleted,

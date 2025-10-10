@@ -38,6 +38,10 @@ func (r *RelationshipRules) Remove(id string) {
 	r.repo.RelationshipRules.Remove(id)
 }
 
+func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
+	return r.repo.RelationshipRules.Items()
+}
+
 // GetRelatedEntities returns all entities related to the given entity, grouped by relationship reference.
 // This includes relationships where the entity is the "from" side (outgoing) or "to" side (incoming).
 func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *relationships.Entity) (map[string][]*relationships.Entity, error) {

@@ -3,15 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"workspace-engine/pkg/grpc/releasetarget"
+
 	"workspace-engine/pkg/kafka"
-	"workspace-engine/pkg/pb/pbconnect"
+	"workspace-engine/pkg/server"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
@@ -21,8 +20,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 // stripScheme removes http:// or https:// prefix from a URL
@@ -133,25 +130,8 @@ func main() {
 	port := viper.GetInt("port")
 	addr := fmt.Sprintf("%s:%d", host, port)
 
-	mux := http.NewServeMux()
-
-	// Health check endpoint
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
-	})
-
-	// Register the Connect service
-	path, handler := pbconnect.NewReleaseTargetServiceHandler(releasetarget.New())
-	mux.Handle(path, handler)
-
-	// Create an HTTP/2 server with h2c (HTTP/2 cleartext) support
-	// This allows both gRPC and Connect protocols to work
-	server := &http.Server{
-		Addr:    addr,
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
-	}
+	server := server.New()
+	router := server.SetupRouter()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -164,8 +144,8 @@ func main() {
 	}()
 
 	go func() {
-		log.Info("Connect rpc server started", "address", addr)
-		if err := server.ListenAndServe(); err != nil {
+		log.Info("Workspace engine server started", "address", addr)
+		if err := router.Run(addr); err != nil {
 			log.Fatal("Failed to serve", "error", err)
 		}
 	}()
@@ -175,6 +155,4 @@ func main() {
 	<-sigChan
 
 	log.Info("Shutting down workspace engine...")
-
-	server.Shutdown(ctx)
 }

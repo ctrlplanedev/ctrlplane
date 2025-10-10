@@ -30,6 +30,7 @@ func New() *Store {
 	store.Relationships = NewRelationshipRules(store)
 	store.Variables = NewVariables(store)
 	store.ResourceVariables = NewResourceVariables(store)
+	store.ResourceProviders = NewResourceProviders(store)
 
 	return store
 }
@@ -39,6 +40,7 @@ type Store struct {
 
 	Policies            *Policies
 	Resources           *Resources
+	ResourceProviders   *ResourceProviders
 	ResourceVariables   *ResourceVariables
 	Deployments         *Deployments
 	DeploymentVersions  *DeploymentVersions

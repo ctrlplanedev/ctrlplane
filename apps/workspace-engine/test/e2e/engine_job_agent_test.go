@@ -185,7 +185,7 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 	ja := c.NewJobAgent(engine.Workspace().ID)
 	ja.Id = jobAgentID
 	ja.Name = "Config Test Agent"
-	ja.WorkspaceId = engine.Workspace().ID	
+	ja.WorkspaceId = engine.Workspace().ID
 	ja.Config = map[string]any{
 		"namespace":     "default",
 		"timeout":       300,

@@ -327,7 +327,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	}
 
 	// Move environment to system 2 as well - should recreate release target
-			e1Updated := e1
+	e1Updated := e1
 	e1Updated.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1Updated)
 

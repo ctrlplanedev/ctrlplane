@@ -113,6 +113,10 @@ func (w *Workspace) DeploymentVariables() *store.DeploymentVariables {
 	return w.store.DeploymentVariables
 }
 
+func (w *Workspace) ResourceProviders() *store.ResourceProviders {
+	return w.store.ResourceProviders
+}
+
 var workspaces = cmap.New[*Workspace]()
 
 func Exists(id string) bool {
@@ -124,6 +128,10 @@ func Set(id string, workspace *Workspace) {
 	workspaces.Set(id, workspace)
 }
 
+func HasWorkspace(id string) bool {
+	return workspaces.Has(id)
+}
+
 func GetWorkspace(id string) *Workspace {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
@@ -131,4 +139,8 @@ func GetWorkspace(id string) *Workspace {
 		workspaces.Set(id, workspace)
 	}
 	return workspace
+}
+
+func GetAllWorkspaceIds() []string {
+	return workspaces.Keys()
 }

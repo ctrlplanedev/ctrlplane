@@ -158,7 +158,7 @@ func TestEngine_SequentialDeploymentVersionsCreateCorrectJobs(t *testing.T) {
 	jobsByVersion := make(map[string]int)
 	for _, job := range allJobs {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
-		if ok	 {
+		if ok {
 			jobsByVersion[release.Version.Tag]++
 		}
 	}
