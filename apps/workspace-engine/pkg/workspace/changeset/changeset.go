@@ -24,7 +24,7 @@ type Change struct {
 type ChangeSet struct {
 	IsInitialLoad bool
     Changes []Change
-    mu      sync.Mutex
+    Mutex      sync.Mutex
 }
 
 func NewChangeSet() *ChangeSet {
@@ -34,8 +34,8 @@ func NewChangeSet() *ChangeSet {
 }
 
 func (cs *ChangeSet) Record(entity string, changeType ChangeType, id string, data any) {
-    cs.mu.Lock()
-    defer cs.mu.Unlock()
+    cs.Mutex.Lock()
+    defer cs.Mutex.Unlock()
     
     cs.Changes = append(cs.Changes, Change{
         Entity:    entity,

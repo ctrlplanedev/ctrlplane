@@ -1,8 +1,10 @@
 package store
 
 import (
+	"context"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -29,10 +31,16 @@ func (d *DeploymentVariables) Values(varableId string) map[string]*oapi.Deployme
 	return values
 }
 
-func (d *DeploymentVariables) Upsert(id string, deploymentVariable *oapi.DeploymentVariable) {
+func (d *DeploymentVariables) Upsert(ctx context.Context, id string, deploymentVariable *oapi.DeploymentVariable) {
 	d.repo.DeploymentVariables.Set(id, deploymentVariable)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("deployment-variable", changeset.ChangeTypeInsert, id, deploymentVariable)
+	}
 }
 
-func (d *DeploymentVariables) Remove(id string) {
+func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
 	d.repo.DeploymentVariables.Remove(id)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("deployment-variable", changeset.ChangeTypeDelete, id, nil)
+	}
 }

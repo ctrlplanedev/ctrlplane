@@ -143,8 +143,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	}
 
 	changeSet := changeset.NewChangeSet()
-    ctx = changeset.WithChangeSet(ctx, changeSet)
-
 	if !wsExists {
 		fullWs, err := db.LoadWorkspace(ctx, rawEvent.WorkspaceID)
 		if err != nil {
@@ -157,12 +155,12 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		ws = fullWs
 		changeSet.IsInitialLoad = true
 	}
+	ctx = changeset.WithChangeSet(ctx, changeSet)
 
 	err := handler(ctx, ws, rawEvent)
 
 	// Always run a dispatch eval jobs
 	changes := ws.ReleaseManager().Reconcile(ctx)
-
 	for _, change := range changes.Changes.Added {
 		changeSet.Record(
 			"release-target", 
@@ -184,6 +182,13 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
 	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
+
+	if err := db.FlushChangeset(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to flush changeset")
+		log.Error("Failed to flush changeset", "error", err)
+		return fmt.Errorf("failed to flush changeset: %w", err)
+	}
 
 	if err != nil {
 		span.RecordError(err)

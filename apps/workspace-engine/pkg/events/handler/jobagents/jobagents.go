@@ -20,7 +20,7 @@ func HandleJobAgentCreated(
 		return err
 	}
 
-	ws.JobAgents().Upsert(jobAgent)
+	ws.JobAgents().Upsert(ctx, jobAgent)
 
 	return nil
 }
@@ -35,7 +35,7 @@ func HandleJobAgentUpdated(
 		return err
 	}
 
-	ws.JobAgents().Upsert(jobAgent)
+	ws.JobAgents().Upsert(ctx, jobAgent)
 
 	return nil
 }
@@ -50,7 +50,7 @@ func HandleJobAgentDeleted(
 		return err
 	}
 
-	ws.JobAgents().Remove(jobAgent.Id)
+	ws.JobAgents().Remove(ctx, jobAgent.Id)
 
 	return nil
 }

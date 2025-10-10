@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -23,6 +24,9 @@ type RelationshipRules struct {
 
 func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.RelationshipRule) error {
 	r.repo.RelationshipRules.Set(relationship.Id, relationship)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("relationship-rule", changeset.ChangeTypeInsert, relationship.Id, relationship)
+	}
 	return nil
 }
 
@@ -34,8 +38,11 @@ func (r *RelationshipRules) Has(id string) bool {
 	return r.repo.RelationshipRules.Has(id)
 }
 
-func (r *RelationshipRules) Remove(id string) {
+func (r *RelationshipRules) Remove(ctx context.Context, id string) {
 	r.repo.RelationshipRules.Remove(id)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("relationship-rule", changeset.ChangeTypeDelete, id, nil)
+	}
 }
 
 func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {

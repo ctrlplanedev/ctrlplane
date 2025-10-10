@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -42,6 +43,10 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 
 	r.store.ReleaseTargets.Recompute(ctx)
 
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("resource", changeset.ChangeTypeInsert, resource.Id, resource)
+	}
+
 	return resource, nil
 }
 
@@ -71,6 +76,10 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	wg.Wait()
 
 	r.store.ReleaseTargets.Recompute(ctx)
+
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("resource", changeset.ChangeTypeDelete, id, nil)
+	}
 }
 
 func (r *Resources) Items() map[string]*oapi.Resource {

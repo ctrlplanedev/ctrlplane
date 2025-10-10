@@ -66,7 +66,7 @@ func loadDeploymentVersions(ctx context.Context, ws *workspace.Workspace) error 
 		return fmt.Errorf("failed to get deployment versions: %w", err)
 	}
 	for _, deploymentVersion := range dbDeploymentVersions {
-		ws.DeploymentVersions().Upsert(deploymentVersion.DeploymentId, deploymentVersion)
+		ws.DeploymentVersions().Upsert(ctx, deploymentVersion.DeploymentId, deploymentVersion)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbDeploymentVersions)))
 	return nil
@@ -127,7 +127,7 @@ func loadJobAgents(ctx context.Context, ws *workspace.Workspace) error {
 		return fmt.Errorf("failed to get job agents: %w", err)
 	}
 	for _, jobAgent := range dbJobAgents {
-		ws.JobAgents().Upsert(jobAgent)
+		ws.JobAgents().Upsert(ctx, jobAgent)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbJobAgents)))
 	log.Info("Loaded job agents", "count", len(dbJobAgents))

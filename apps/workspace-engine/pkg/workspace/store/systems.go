@@ -4,6 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -104,8 +105,10 @@ func (s *Systems) Remove(ctx context.Context, id string) {
 	}
 
 	s.repo.Systems.Remove(id)
-	s.repo.Deployments.Remove(id)
-	s.repo.Environments.Remove(id)
+
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("system", changeset.ChangeTypeDelete, id, nil)
+	}
 }
 
 // ApplyDeploymentUpdate triggers a recompute of deployments for the affected systems

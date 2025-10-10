@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -26,8 +27,11 @@ func (r *ResourceProviders) Items() map[string]*oapi.ResourceProvider {
 	return r.repo.ResourceProviders.Items()
 }
 
-func (r *ResourceProviders) Set(id string, resourceProvider *oapi.ResourceProvider) {
+func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvider *oapi.ResourceProvider) {
 	r.repo.ResourceProviders.Set(id, resourceProvider)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("resource-provider", changeset.ChangeTypeInsert, id, resourceProvider)
+	}
 }
 
 func (r *ResourceProviders) Remove(ctx context.Context, id string) {
@@ -37,5 +41,8 @@ func (r *ResourceProviders) Remove(ctx context.Context, id string) {
 			resource.ProviderId = nil
 			r.resources.Upsert(ctx, resource)
 		}
+	}
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("resource-provider", changeset.ChangeTypeDelete, id, nil)
 	}
 }

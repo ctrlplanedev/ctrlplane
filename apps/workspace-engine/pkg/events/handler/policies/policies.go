@@ -49,7 +49,7 @@ func HandlePolicyDeleted(
 		return err
 	}
 
-	ws.Policies().Remove(policy.Id)
+	ws.Policies().Remove(ctx, policy.Id)
 
 	return nil
 }

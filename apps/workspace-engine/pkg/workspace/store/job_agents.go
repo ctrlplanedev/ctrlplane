@@ -1,7 +1,9 @@
 package store
 
 import (
+	"context"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -15,16 +17,24 @@ type JobAgents struct {
 	repo *repository.Repository
 }
 
-func (j *JobAgents) Upsert(jobAgent *oapi.JobAgent) {
+func (j *JobAgents) Upsert(ctx context.Context, jobAgent *oapi.JobAgent) {
 	j.repo.JobAgents.Set(jobAgent.Id, jobAgent)
+
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("job-agent", changeset.ChangeTypeInsert, jobAgent.Id, jobAgent)
+	}
 }
 
 func (j *JobAgents) Get(id string) (*oapi.JobAgent, bool) {
 	return j.repo.JobAgents.Get(id)
 }
 
-func (j *JobAgents) Remove(id string) {
+func (j *JobAgents) Remove(ctx context.Context, id string) {
 	j.repo.JobAgents.Remove(id)
+
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("job-agent", changeset.ChangeTypeDelete, id, nil)
+	}
 }
 
 func (j *JobAgents) Items() map[string]*oapi.JobAgent {

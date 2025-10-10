@@ -1,8 +1,10 @@
 package store
 
 import (
+	"context"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -36,11 +38,17 @@ func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
 	return d.repo.DeploymentVersions.Get(id)
 }
 
-func (d *DeploymentVersions) Upsert(id string, version *oapi.DeploymentVersion) {
+func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
 	d.repo.DeploymentVersions.Set(id, version)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("deployment-version", changeset.ChangeTypeInsert, id, version)
+	}
 }
 
-func (d *DeploymentVersions) Remove(id string) {
+func (d *DeploymentVersions) Remove(ctx context.Context, id string) {
 	d.repo.DeploymentVersions.Remove(id)
 	d.deployableVersions.Remove(id)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("deployment-version", changeset.ChangeTypeDelete, id, nil)
+	}
 }

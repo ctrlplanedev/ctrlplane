@@ -18,7 +18,7 @@ func HandleResourceProviderCreated(
 		return err
 	}
 
-	ws.ResourceProviders().Set(resourceProvider.Id, resourceProvider)
+	ws.ResourceProviders().Upsert(ctx, resourceProvider.Id, resourceProvider)
 
 	return nil
 }
@@ -33,7 +33,7 @@ func HandleResourceProviderUpdated(
 		return err
 	}
 
-	ws.ResourceProviders().Set(resourceProvider.Id, resourceProvider)
+	ws.ResourceProviders().Upsert(ctx, resourceProvider.Id, resourceProvider)
 
 	return nil
 }

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -18,14 +19,20 @@ func NewUserApprovalRecords(store *Store) *UserApprovalRecords {
 
 func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oapi.UserApprovalRecord) {
 	u.repo.UserApprovalRecords.Set(userApprovalRecord.Key(), userApprovalRecord)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("user-approval-record", changeset.ChangeTypeInsert, userApprovalRecord.Key(), userApprovalRecord)
+	}
 }
 
 func (u *UserApprovalRecords) Get(versionId, userId string) (*oapi.UserApprovalRecord, bool) {
 	return u.repo.UserApprovalRecords.Get(versionId + userId)
 }
 
-func (u *UserApprovalRecords) Remove(key string) {
+func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 	u.repo.UserApprovalRecords.Remove(key)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("user-approval-record", changeset.ChangeTypeDelete, key, nil)
+	}
 }
 
 func (u *UserApprovalRecords) GetApprovers(versionId string) []string {

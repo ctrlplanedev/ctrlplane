@@ -56,7 +56,7 @@ func HandleUserApprovalRecordDeleted(
 		return err
 	}
 
-	ws.UserApprovalRecords().Remove(userApprovalRecord.Key())
+	ws.UserApprovalRecords().Remove(ctx, userApprovalRecord.Key())
 	v, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
 	if ok {
 		ws.ReleaseManager().TaintDeploymentsReleaseTargets(v.DeploymentId)

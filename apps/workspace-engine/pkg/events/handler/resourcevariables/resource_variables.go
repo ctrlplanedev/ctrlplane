@@ -19,7 +19,7 @@ func HandleResourceVariableCreated(
 		return err
 	}
 
-	ws.ResourceVariables().Upsert(resourceVariable)
+	ws.ResourceVariables().Upsert(ctx, resourceVariable)
 	ws.ReleaseManager().TaintResourcesReleaseTargets(resourceVariable.ResourceId)
 
 	return nil
@@ -35,7 +35,7 @@ func HandleResourceVariableUpdated(
 		return err
 	}
 
-	ws.ResourceVariables().Upsert(resourceVariable)
+	ws.ResourceVariables().Upsert(ctx, resourceVariable)
 	ws.ReleaseManager().TaintResourcesReleaseTargets(resourceVariable.ResourceId)
 
 	return nil
@@ -51,7 +51,7 @@ func HandleResourceVariableDeleted(
 		return err
 	}
 
-	ws.ResourceVariables().Remove(resourceVariable.ResourceId, resourceVariable.Key)
+	ws.ResourceVariables().Remove(ctx, resourceVariable.ResourceId, resourceVariable.Key)
 	ws.ReleaseManager().TaintResourcesReleaseTargets(resourceVariable.ResourceId)
 
 	return nil

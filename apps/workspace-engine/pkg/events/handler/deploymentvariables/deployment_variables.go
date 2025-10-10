@@ -19,7 +19,7 @@ func HandleDeploymentVariableCreated(
 		return err
 	}
 
-	ws.DeploymentVariables().Upsert(deploymentVariable.Id, deploymentVariable)
+	ws.DeploymentVariables().Upsert(ctx, deploymentVariable.Id, deploymentVariable)
 
 	return nil
 }
@@ -34,7 +34,7 @@ func HandleDeploymentVariableUpdated(
 		return err
 	}
 
-	ws.DeploymentVariables().Upsert(deploymentVariable.Id, deploymentVariable)
+	ws.DeploymentVariables().Upsert(ctx, deploymentVariable.Id, deploymentVariable)
 
 	return nil
 }
@@ -49,7 +49,7 @@ func HandleDeploymentVariableDeleted(
 		return err
 	}
 
-	ws.DeploymentVariables().Remove(deploymentVariable.Id)
+	ws.DeploymentVariables().Remove(ctx, deploymentVariable.Id)
 
 	return nil
 }

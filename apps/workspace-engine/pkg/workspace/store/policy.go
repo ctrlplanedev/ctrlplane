@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -123,12 +124,18 @@ func (p *Policies) Has(id string) bool {
 func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 	p.repo.Policies.Set(policy.Id, policy)
 	p.releaseTargets.Set(policy.Id, materialized.New(p.recomputeReleaseTargets(policy.Id)))
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("policy", changeset.ChangeTypeInsert, policy.Id, policy)
+	}
 	return nil
 }
 
-func (p *Policies) Remove(id string) {
+func (p *Policies) Remove(ctx context.Context, id string) {
 	p.repo.Policies.Remove(id)
 	p.releaseTargets.Remove(id)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("policy", changeset.ChangeTypeDelete, id, nil)
+	}
 }
 
 func (p *Policies) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) []*oapi.Policy {

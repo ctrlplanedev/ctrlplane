@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -18,6 +19,9 @@ type Releases struct {
 
 func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
 	r.repo.Releases.Set(release.ID(), release)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("release", changeset.ChangeTypeInsert, release.ID(), release)
+	}
 	return nil
 }
 
@@ -29,8 +33,11 @@ func (r *Releases) Get(id string) (*oapi.Release, bool) {
 	return r.repo.Releases.Get(id)
 }
 
-func (r *Releases) Remove(id string) {
+func (r *Releases) Remove(ctx context.Context, id string) {
 	r.repo.Releases.Remove(id)
+	if cs, ok := changeset.FromContext(ctx); ok {
+		cs.Record("release", changeset.ChangeTypeDelete, id, nil)
+	}
 }
 
 func (r *Releases) Jobs(releaseId string) map[string]*oapi.Job {

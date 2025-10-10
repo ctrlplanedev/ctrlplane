@@ -94,6 +94,8 @@ func TestEvaluate_OnlyResourceVariables(t *testing.T) {
 		"region": "us-east-1",
 	})
 
+	ctx := context.Background()
+
 	// Add resource variables
 	rv1 := &oapi.ResourceVariable{
 		ResourceId: resourceID,
@@ -111,18 +113,17 @@ func TestEvaluate_OnlyResourceVariables(t *testing.T) {
 		Value:      *mustCreateValueFromLiteral(false),
 	}
 
-	ctx := context.Background()
-	st.ResourceVariables.Upsert(&oapi.ResourceVariable{
+	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
 		Key:        rv1.Key,
 		ResourceId: rv1.ResourceId,
 		Value:      rv1.Value,
 	})
-	st.ResourceVariables.Upsert(&oapi.ResourceVariable{
+	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
 		Key:        rv2.Key,
 		ResourceId: rv2.ResourceId,
 		Value:      rv2.Value,
 	})
-	st.ResourceVariables.Upsert(&oapi.ResourceVariable{
+	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
 		Key:        rv3.Key,
 		ResourceId: rv3.ResourceId,
 		Value:      rv3.Value,
@@ -224,7 +225,7 @@ func TestEvaluate_OnlyDeploymentVariablesWithMatch(t *testing.T) {
 		Key:          "region_name",
 		VariableId:   "var-1",
 	}
-	st.DeploymentVariables.Upsert(deploymentVar.Id, deploymentVar)
+	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
 
 	// Add deployment variable value with matching selector
 	// Note: This test assumes the store implementation handles Values correctly
@@ -271,7 +272,7 @@ func TestEvaluate_ResourceVariablesOverrideDeployment(t *testing.T) {
 		Key:        "region_name",
 		Value:      *mustCreateValueFromLiteral("us-east-1-from-resource"),
 	}
-	st.ResourceVariables.Upsert(&oapi.ResourceVariable{
+	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
 		Key:        rv.Key,
 		ResourceId: rv.ResourceId,
 		Value:      rv.Value,
@@ -295,7 +296,7 @@ func TestEvaluate_ResourceVariablesOverrideDeployment(t *testing.T) {
 		VariableId:   "var-1",
 		DefaultValue: mustCreateLiteralValue("us-west-2-from-deployment"),
 	}
-	st.DeploymentVariables.Upsert(deploymentVar.Id, deploymentVar)
+	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
 
 	manager := New(st)
 
@@ -361,7 +362,7 @@ func TestEvaluate_DeploymentVariableDefaultValue(t *testing.T) {
 		VariableId:   "var-1",
 		DefaultValue: defaultValue,
 	}
-	st.DeploymentVariables.Upsert(deploymentVar.Id, deploymentVar)
+	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
 
 	manager := New(st)
 
@@ -509,7 +510,7 @@ func TestEvaluate_MultipleResourceVariables(t *testing.T) {
 			Key:        v.key,
 			Value:      *mustCreateValueFromLiteral(v.value),
 		}
-		st.ResourceVariables.Upsert(&oapi.ResourceVariable{
+		st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
 			Key:        rv.Key,
 			ResourceId: rv.ResourceId,
 			Value:      rv.Value,
@@ -584,7 +585,7 @@ func TestEvaluate_DeploymentVariableNoDefaultValue(t *testing.T) {
 		VariableId:   "var-1",
 		DefaultValue: nil, // No default value
 	}
-	st.DeploymentVariables.Upsert(deploymentVar.Id, deploymentVar)
+	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
 
 	manager := New(st)
 
@@ -684,7 +685,7 @@ func TestEvaluate_ReferenceValueResolution(t *testing.T) {
 		Key:        "db_host",
 		Value:      *mustCreateValueFromReference("database", []string{"config", "host"}),
 	}
-	st.ResourceVariables.Upsert(&oapi.ResourceVariable{
+	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
 		Key:        rv.Key,
 		ResourceId: rv.ResourceId,
 		Value:      rv.Value,
