@@ -23,7 +23,7 @@ func NewDeployment(systemID string) *oapi.Deployment {
 		Description:      &description,
 		SystemId:         systemID,
 		JobAgentId:       nil,
-		JobAgentConfig:   make(map[string]interface{}),
+		JobAgentConfig:   make(map[string]any),
 		ResourceSelector: nil,
 	}
 

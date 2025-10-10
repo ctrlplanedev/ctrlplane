@@ -134,7 +134,7 @@ func TestEngine_DeploymentJobAgentConfiguration(t *testing.T) {
 	}
 
 	d3, _ := engine.Workspace().Deployments().Get(deploymentID3)
-	if *d3.JobAgentId != "" {
+	if d3.JobAgentId != nil {
 		t.Fatalf("deployment 3 should have no job agent, got %s", *d3.JobAgentId)
 	}
 

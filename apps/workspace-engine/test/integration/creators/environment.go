@@ -8,6 +8,14 @@ import (
 	"github.com/google/uuid"
 )
 
+func NewJsonSelector(json map[string]any) *oapi.Selector {
+	selector := &oapi.Selector{}
+	_ = selector.FromJsonSelector(oapi.JsonSelector{
+		Json: json,
+	})
+	return selector
+}
+
 // NewEnvironment creates a test Environment with sensible defaults
 // All fields can be overridden via functional options
 func NewEnvironment(systemID string) *oapi.Environment {
@@ -17,7 +25,7 @@ func NewEnvironment(systemID string) *oapi.Environment {
 
 	selector := &oapi.Selector{}
 	_ = selector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
+		Json: map[string]any{
 			"type":     "name",
 			"operator": "starts-with",
 			"value":    "",

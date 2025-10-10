@@ -107,14 +107,12 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rtProd.Id = rtProd.Key()
 
 	rtDev := &oapi.ReleaseTarget{
 		DeploymentId:  d2ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rtDev.Id = rtDev.Key()
 
 	// Verify policy matches prod release target
 	policiesProd := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtProd)
@@ -195,14 +193,11 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rtEast.Id = rtEast.Key()
-
 	rtWest := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e2.Id,
 		ResourceId:    r1.Id,
 	}
-	rtWest.Id = rtWest.Key()
 
 	// Verify policy matches us-east release target
 	policiesEast := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtEast)
@@ -279,14 +274,12 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rtCritical.Id = rtCritical.Key()
 
 	rtNormal := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r2.Id,
 	}
-	rtNormal.Id = rtNormal.Key()
 
 	// Verify policy matches critical release target
 	policiesCritical := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtCritical)
@@ -392,7 +385,6 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rtMatch.Id = rtMatch.Key()
 
 	// Test the matching release target
 	policiesMatch := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtMatch)
@@ -406,7 +398,6 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rtNoMatch.Id = rtNoMatch.Key()
 
 	policiesNoMatch := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNoMatch)
 	if len(policiesNoMatch) != 0 {
@@ -419,7 +410,6 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 		EnvironmentId: e2.Id,
 		ResourceId:    r1.Id,
 	}
-	rtNoMatch2.Id = rtNoMatch2.Key()
 
 	policiesNoMatch2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNoMatch2)
 	if len(policiesNoMatch2) != 0 {
@@ -432,7 +422,6 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r2.Id,
 	}
-	rtNoMatch3.Id = rtNoMatch3.Key()
 
 	policiesNoMatch3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNoMatch3)
 	if len(policiesNoMatch3) != 0 {
@@ -501,14 +490,12 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rtProd.Id = rtProd.Key()
 
 	rtStaging := &oapi.ReleaseTarget{
 		DeploymentId:  d2ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rtStaging.Id = rtStaging.Key()
 
 	policiesProd := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtProd)
 	if len(policiesProd) != 1 {
@@ -567,14 +554,12 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rtProd.Id = rtProd.Key()
 
 	rtDev := &oapi.ReleaseTarget{
 		DeploymentId:  d2.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rtDev.Id = rtDev.Key()
 
 	policiesProd := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtProd)
 	if len(policiesProd) != 1 {
@@ -648,7 +633,6 @@ func TestEngine_PolicyDelete(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rt.Id = rt.Key()
 
 	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
 	if len(policies) != 1 {
@@ -740,7 +724,6 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rt.Id = rt.Key()
 
 	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
 	if len(policies) != 3 {
@@ -813,7 +796,6 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
-	rt.Id = rt.Key()
 
 	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
 	if len(policies) != 0 {
@@ -861,7 +843,6 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 		EnvironmentId: "non-existent-environment",
 		ResourceId:    "non-existent-resource",
 	}
-	rtNonExistent.Id = rtNonExistent.Key()
 
 	// Should not panic and return empty list
 	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNonExistent)
@@ -965,7 +946,6 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt1.Id = rt1.Key()
 	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
 	if len(policies1) != 1 {
 		t.Fatalf("expected policy to match d1+e1+r1, got %d policies", len(policies1))
@@ -977,7 +957,6 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	rt2.Id = rt2.Key()
 	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
 	if len(policies2) != 1 {
 		t.Fatalf("expected policy to match d3+e2+r1, got %d policies", len(policies2))
@@ -989,7 +968,6 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt3.Id = rt3.Key()
 	policies3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt3)
 	if len(policies3) != 0 {
 		t.Fatalf("expected policy NOT to match d2+e1+r1, got %d policies", len(policies3))
@@ -1001,7 +979,6 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	rt4.Id = rt4.Key()
 	policies4 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt4)
 	if len(policies4) != 0 {
 		t.Fatalf("expected policy NOT to match d1+e2+r1, got %d policies", len(policies4))

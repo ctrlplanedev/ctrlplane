@@ -3,7 +3,7 @@ package e2e
 import (
 	"context"
 	"testing"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 )
 
@@ -334,26 +334,23 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 	}
 
 	// Test each release target
-	rt1 := &pb.ReleaseTarget{
+	rt1 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt1.Id = rt1.Key()
 
-	rt2 := &pb.ReleaseTarget{
+	rt2 := &oapi.ReleaseTarget{
 		DeploymentId:  d2ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt2.Id = rt2.Key()
 
-	rt3 := &pb.ReleaseTarget{
+	rt3 := &oapi.ReleaseTarget{
 		DeploymentId:  d3ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt3.Id = rt3.Key()
 
 	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
 	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
@@ -454,26 +451,23 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 	}
 
 	// Test each release target
-	rt1 := &pb.ReleaseTarget{
+	rt1 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt1.Id = rt1.Key()
 
-	rt2 := &pb.ReleaseTarget{
+	rt2 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	rt2.Id = rt2.Key()
 
-	rt3 := &pb.ReleaseTarget{
+	rt3 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e3ID,
 		ResourceId:    r1ID,
 	}
-	rt3.Id = rt3.Key()
 
 	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
 	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
@@ -595,24 +589,22 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 	ctx := context.Background()
 
 	// Test: d1 (prod web) + e1 (us-east) + r1 should match (selector1)
-	rt1 := &pb.ReleaseTarget{
+	rt1 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt1.Id = rt1.Key()
 	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
 	if len(policies1) != 1 {
 		t.Errorf("expected policy to match d1+e1+r1, got %d policies", len(policies1))
 	}
 
 	// Test: d3 (dev web) + e2 (us-west) + r1 should match (selector2)
-	rt2 := &pb.ReleaseTarget{
+	rt2 := &oapi.ReleaseTarget{
 		DeploymentId:  d3ID,
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	rt2.Id = rt2.Key()
 	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
 	if len(policies2) != 1 {
 		t.Errorf("expected policy to match d3+e2+r1, got %d policies", len(policies2))
@@ -620,24 +612,22 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 
 	// Test: d2 (prod api) + e1 (us-east) + r1 should NOT match (wrong app type)
 	// BUG: Currently matches because AND doesn't filter out "api"
-	rt3 := &pb.ReleaseTarget{
+	rt3 := &oapi.ReleaseTarget{
 		DeploymentId:  d2ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	rt3.Id = rt3.Key()
 	policies3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt3)
 	if len(policies3) != 0 {
 		t.Errorf("expected policy NOT to match d2+e1+r1, got %d policies", len(policies3))
 	}
 
 	// Test: d1 (prod web) + e2 (us-west) + r1 should NOT match (wrong region for selector1)
-	rt4 := &pb.ReleaseTarget{
+	rt4 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	rt4.Id = rt4.Key()
 	policies4 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt4)
 	if len(policies4) != 0 {
 		t.Errorf("expected policy NOT to match d1+e2+r1, got %d policies", len(policies4))

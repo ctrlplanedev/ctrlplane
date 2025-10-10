@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
+
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
@@ -68,7 +69,7 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Get the release for the target
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -79,7 +80,7 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -102,8 +103,9 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 	if !exists {
 		t.Fatalf("app_name variable not found")
 	}
-	if appName.GetString_() != "my-app" {
-		t.Errorf("app_name = %s, want my-app", appName.GetString_())
+	appNameStr, _ := appName.AsStringValue()
+	if appNameStr != "my-app" {
+		t.Errorf("app_name = %s, want my-app", appNameStr)
 	}
 
 	// Check replicas
@@ -111,8 +113,9 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 	if !exists {
 		t.Fatalf("replicas variable not found")
 	}
-	if replicas.GetInt64() != 3 {
-		t.Errorf("replicas = %d, want 3", replicas.GetInt64())
+	replicasInt, _ := replicas.AsIntegerValue()
+	if int64(replicasInt) != 3 {
+		t.Errorf("replicas = %d, want 3", replicasInt)
 	}
 
 	// Check debug_mode
@@ -120,8 +123,9 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 	if !exists {
 		t.Fatalf("debug_mode variable not found")
 	}
-	if debugMode.GetBool() {
-		t.Errorf("debug_mode = %v, want false", debugMode.GetBool())
+	debugModeBool, _ := debugMode.AsBooleanValue()
+	if debugModeBool {
+		t.Errorf("debug_mode = %v, want false", debugModeBool)
 	}
 }
 
@@ -180,7 +184,7 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Get the release for the target
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -191,7 +195,7 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -211,32 +215,32 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 	}
 
 	// Verify it's an object
-	obj := dbConfig.GetObject()
-	if obj == nil {
-		t.Fatalf("database_config is not an object")
+	obj, err := dbConfig.AsObjectValue()
+	if err != nil {
+		t.Fatalf("database_config is not an object: %v", err)
 	}
 
 	// Verify nested fields
-	if obj.Fields["host"].GetStringValue() != "db.example.com" {
-		t.Errorf("host = %s, want db.example.com", obj.Fields["host"].GetStringValue())
+	if obj["host"] != "db.example.com" {
+		t.Errorf("host = %s, want db.example.com", obj["host"])
 	}
 
-	if obj.Fields["port"].GetNumberValue() != 5432 {
-		t.Errorf("port = %v, want 5432", obj.Fields["port"].GetNumberValue())
+	if obj["port"] != float64(5432) {
+		t.Errorf("port = %v, want 5432", obj["port"])
 	}
 
-	if !obj.Fields["ssl"].GetBoolValue() {
-		t.Errorf("ssl = %v, want true", obj.Fields["ssl"].GetBoolValue())
+	if obj["ssl"] != true {
+		t.Errorf("ssl = %v, want true", obj["ssl"])
 	}
 
 	// Verify nested pool object
-	pool := obj.Fields["pool"].GetStructValue()
-	if pool == nil {
-		t.Fatalf("pool is not a struct")
+	pool, ok := obj["pool"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("pool is not a map")
 	}
 
-	if pool.Fields["min_connections"].GetNumberValue() != 5 {
-		t.Errorf("pool.min_connections = %v, want 5", pool.Fields["min_connections"].GetNumberValue())
+	if pool["min_connections"] != float64(5) {
+		t.Errorf("pool.min_connections = %v, want 5", pool["min_connections"])
 	}
 }
 
@@ -285,7 +289,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "vpc_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -332,7 +336,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Get the release for the target
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -343,7 +347,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -366,8 +370,9 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 	if !exists {
 		t.Fatalf("vpc_id variable not found")
 	}
-	if vpcIDVar.GetString_() != vpcID {
-		t.Errorf("vpc_id = %s, want %s", vpcIDVar.GetString_(), vpcID)
+	vpcIDStr, _ := vpcIDVar.AsStringValue()
+	if vpcIDStr != vpcID {
+		t.Errorf("vpc_id = %s, want %s", vpcIDStr, vpcID)
 	}
 
 	// Check vpc_region
@@ -375,8 +380,9 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 	if !exists {
 		t.Fatalf("vpc_region variable not found")
 	}
-	if vpcRegion.GetString_() != "us-east-1" {
-		t.Errorf("vpc_region = %s, want us-east-1", vpcRegion.GetString_())
+	vpcRegionStr, _ := vpcRegion.AsStringValue()
+	if vpcRegionStr != "us-east-1" {
+		t.Errorf("vpc_region = %s, want us-east-1", vpcRegionStr)
 	}
 
 	// Check vpc_cidr
@@ -384,8 +390,9 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 	if !exists {
 		t.Fatalf("vpc_cidr variable not found")
 	}
-	if vpcCIDR.GetString_() != "10.0.0.0/16" {
-		t.Errorf("vpc_cidr = %s, want 10.0.0.0/16", vpcCIDR.GetString_())
+	vpcCIDRStr, _ := vpcCIDR.AsStringValue()
+	if vpcCIDRStr != "10.0.0.0/16" {
+		t.Errorf("vpc_cidr = %s, want 10.0.0.0/16", vpcCIDRStr)
 	}
 }
 
@@ -434,7 +441,7 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "vpc_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -476,7 +483,7 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Get the release for the target
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -487,7 +494,7 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -510,16 +517,18 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 	if !exists {
 		t.Fatalf("cluster_name variable not found")
 	}
-	if clusterName.GetString_() != "prod-cluster" {
-		t.Errorf("cluster_name = %s, want prod-cluster", clusterName.GetString_())
+	clusterNameStr, _ := clusterName.AsStringValue()
+	if clusterNameStr != "prod-cluster" {
+		t.Errorf("cluster_name = %s, want prod-cluster", clusterNameStr)
 	}
 
 	replicas, exists := variables["replicas"]
 	if !exists {
 		t.Fatalf("replicas variable not found")
 	}
-	if replicas.GetInt64() != 5 {
-		t.Errorf("replicas = %d, want 5", replicas.GetInt64())
+	replicasInt, _ := replicas.AsIntegerValue()
+	if int64(replicasInt) != 5 {
+		t.Errorf("replicas = %d, want 5", replicasInt)
 	}
 
 	// Check reference value
@@ -527,8 +536,9 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 	if !exists {
 		t.Fatalf("vpc_name variable not found")
 	}
-	if vpcName.GetString_() != "vpc-main" {
-		t.Errorf("vpc_name = %s, want vpc-main", vpcName.GetString_())
+	vpcNameStr, _ := vpcName.AsStringValue()
+	if vpcNameStr != "vpc-main" {
+		t.Errorf("vpc_name = %s, want vpc-main", vpcNameStr)
 	}
 }
 
@@ -599,7 +609,7 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Get release for resource 1
-	releaseTarget1 := &pb.ReleaseTarget{
+	releaseTarget1 := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID1,
@@ -610,7 +620,7 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 		t.Fatalf("expected 1 job for resource 1, got %d", len(jobs1))
 	}
 
-	var job1 *pb.Job
+	var job1 *oapi.Job
 	for _, j := range jobs1 {
 		job1 = j
 		break
@@ -624,15 +634,17 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 	variables1 := release1.Variables
 
 	// Verify resource 1 variables
-	if variables1["replicas"].GetInt64() != 3 {
-		t.Errorf("resource 1 replicas = %d, want 3", variables1["replicas"].GetInt64())
+	replicas1Int, _ := variables1["replicas"].AsIntegerValue()
+	if int64(replicas1Int) != 3 {
+		t.Errorf("resource 1 replicas = %d, want 3", replicas1Int)
 	}
-	if variables1["region"].GetString_() != "us-east-1" {
-		t.Errorf("resource 1 region = %s, want us-east-1", variables1["region"].GetString_())
+	region1Str, _ := variables1["region"].AsStringValue()
+	if region1Str != "us-east-1" {
+		t.Errorf("resource 1 region = %s, want us-east-1", region1Str)
 	}
 
 	// Get release for resource 2
-	releaseTarget2 := &pb.ReleaseTarget{
+	releaseTarget2 := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID2,
@@ -643,7 +655,7 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 		t.Fatalf("expected 1 job for resource 2, got %d", len(jobs2))
 	}
 
-	var job2 *pb.Job
+	var job2 *oapi.Job
 	for _, j := range jobs2 {
 		job2 = j
 		break
@@ -657,11 +669,13 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 	variables2 := release2.Variables
 
 	// Verify resource 2 variables (different from resource 1)
-	if variables2["replicas"].GetInt64() != 5 {
-		t.Errorf("resource 2 replicas = %d, want 5", variables2["replicas"].GetInt64())
+	replicas2Int, _ := variables2["replicas"].AsIntegerValue()
+	if int64(replicas2Int) != 5 {
+		t.Errorf("resource 2 replicas = %d, want 5", replicas2Int)
 	}
-	if variables2["region"].GetString_() != "us-west-2" {
-		t.Errorf("resource 2 region = %s, want us-west-2", variables2["region"].GetString_())
+	region2Str, _ := variables2["region"].AsStringValue()
+	if region2Str != "us-west-2" {
+		t.Errorf("resource 2 region = %s, want us-west-2", region2Str)
 	}
 }
 
@@ -712,7 +726,7 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "cluster_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		// Cluster -> VPC relationship
@@ -735,7 +749,7 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "vpc_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -781,7 +795,7 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Test pod referencing cluster
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    podID,
@@ -792,7 +806,7 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -810,8 +824,9 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 	if !exists {
 		t.Fatalf("cluster_name variable not found")
 	}
-	if clusterName.GetString_() != "cluster-main" {
-		t.Errorf("cluster_name = %s, want cluster-main", clusterName.GetString_())
+	clusterNameStr, _ := clusterName.AsStringValue()
+	if clusterNameStr != "cluster-main" {
+		t.Errorf("cluster_name = %s, want cluster-main", clusterNameStr)
 	}
 }
 
@@ -856,7 +871,7 @@ func TestEngine_ReleaseVariableResolution_NoVariables(t *testing.T) {
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -867,7 +882,7 @@ func TestEngine_ReleaseVariableResolution_NoVariables(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -964,7 +979,7 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Test database variables
-	dbReleaseTarget := &pb.ReleaseTarget{
+	dbReleaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    dbID,
@@ -975,7 +990,7 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 		t.Fatalf("expected 1 job for database, got %d", len(dbJobs))
 	}
 
-	var dbJob *pb.Job
+	var dbJob *oapi.Job
 	for _, j := range dbJobs {
 		dbJob = j
 		break
@@ -992,16 +1007,18 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 		t.Fatalf("expected 2 database variables, got %d", len(dbVariables))
 	}
 
-	if dbVariables["connection_string"].GetString_() != "postgres://localhost:5432/mydb" {
+	connStr, _ := dbVariables["connection_string"].AsStringValue()
+	if connStr != "postgres://localhost:5432/mydb" {
 		t.Errorf("connection_string mismatch")
 	}
 
-	if dbVariables["max_connections"].GetInt64() != 100 {
+	maxConn, _ := dbVariables["max_connections"].AsIntegerValue()
+	if int64(maxConn) != 100 {
 		t.Errorf("max_connections mismatch")
 	}
 
 	// Test cache variables
-	cacheReleaseTarget := &pb.ReleaseTarget{
+	cacheReleaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    cacheID,
@@ -1012,7 +1029,7 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 		t.Fatalf("expected 1 job for cache, got %d", len(cacheJobs))
 	}
 
-	var cacheJob *pb.Job
+	var cacheJob *oapi.Job
 	for _, j := range cacheJobs {
 		cacheJob = j
 		break
@@ -1029,11 +1046,13 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 		t.Fatalf("expected 2 cache variables, got %d", len(cacheVariables))
 	}
 
-	if cacheVariables["endpoint"].GetString_() != "redis://localhost:6379" {
+	endpoint, _ := cacheVariables["endpoint"].AsStringValue()
+	if endpoint != "redis://localhost:6379" {
 		t.Errorf("endpoint mismatch")
 	}
 
-	if cacheVariables["ttl_seconds"].GetInt64() != 3600 {
+	ttl, _ := cacheVariables["ttl_seconds"].AsIntegerValue()
+	if int64(ttl) != 3600 {
 		t.Errorf("ttl_seconds mismatch")
 	}
 }
@@ -1083,7 +1102,7 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "db_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -1129,7 +1148,7 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    serviceID,
@@ -1140,7 +1159,7 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -1158,16 +1177,19 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 		t.Fatalf("expected 3 variables, got %d", len(variables))
 	}
 
-	if variables["db_host"].GetString_() != "db.example.com" {
-		t.Errorf("db_host = %s, want db.example.com", variables["db_host"].GetString_())
+	dbHost, _ := variables["db_host"].AsStringValue()
+	if dbHost != "db.example.com" {
+		t.Errorf("db_host = %s, want db.example.com", dbHost)
 	}
 
-	if variables["db_port"].GetString_() != "5432" {
-		t.Errorf("db_port = %s, want 5432", variables["db_port"].GetString_())
+	dbPort, _ := variables["db_port"].AsStringValue()
+	if dbPort != "5432" {
+		t.Errorf("db_port = %s, want 5432", dbPort)
 	}
 
-	if variables["db_name"].GetString_() != "production_db" {
-		t.Errorf("db_name = %s, want production_db", variables["db_name"].GetString_())
+	dbName, _ := variables["db_name"].AsStringValue()
+	if dbName != "production_db" {
+		t.Errorf("db_name = %s, want production_db", dbName)
 	}
 }
 
@@ -1218,7 +1240,7 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "db_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		// App -> Cache relationship
@@ -1241,7 +1263,7 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "cache_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -1283,7 +1305,7 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    appID,
@@ -1294,7 +1316,7 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -1312,12 +1334,14 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 		t.Fatalf("expected 2 variables, got %d", len(variables))
 	}
 
-	if variables["db_name"].GetString_() != "postgres-main" {
-		t.Errorf("db_name = %s, want postgres-main", variables["db_name"].GetString_())
+	dbNameStr, _ := variables["db_name"].AsStringValue()
+	if dbNameStr != "postgres-main" {
+		t.Errorf("db_name = %s, want postgres-main", dbNameStr)
 	}
 
-	if variables["cache_name"].GetString_() != "redis-main" {
-		t.Errorf("cache_name = %s, want redis-main", variables["cache_name"].GetString_())
+	cacheNameStr, _ := variables["cache_name"].AsStringValue()
+	if cacheNameStr != "redis-main" {
+		t.Errorf("cache_name = %s, want redis-main", cacheNameStr)
 	}
 }
 
@@ -1344,63 +1368,42 @@ func TestEngine_ReleaseVariableResolution_DirectResolveValue(t *testing.T) {
 	entity := relationships.NewResourceEntity(resource)
 
 	// Test literal string value
-	stringValue := &pb.Value{
-		Data: &pb.Value_Literal{
-			Literal: &pb.LiteralValue{
-				Data: &pb.LiteralValue_String_{
-					String_: "test-string",
-				},
-			},
-		},
-	}
+	stringValue := c.NewValueFromString("test-string")
 
 	resolved, err := engine.Workspace().Variables().ResolveValue(ctx, entity, stringValue)
 	if err != nil {
 		t.Fatalf("failed to resolve string value: %v", err)
 	}
 
-	if resolved.GetString_() != "test-string" {
-		t.Errorf("resolved string = %s, want test-string", resolved.GetString_())
+	resolvedStr, _ := resolved.AsStringValue()
+	if resolvedStr != "test-string" {
+		t.Errorf("resolved string = %s, want test-string", resolvedStr)
 	}
 
 	// Test literal int value
-	intValue := &pb.Value{
-		Data: &pb.Value_Literal{
-			Literal: &pb.LiteralValue{
-				Data: &pb.LiteralValue_Int64{
-					Int64: 42,
-				},
-			},
-		},
-	}
+	intValue := c.NewValueFromInt(42)
 
 	resolved, err = engine.Workspace().Variables().ResolveValue(ctx, entity, intValue)
 	if err != nil {
 		t.Fatalf("failed to resolve int value: %v", err)
 	}
 
-	if resolved.GetInt64() != 42 {
-		t.Errorf("resolved int = %d, want 42", resolved.GetInt64())
+	resolvedInt, _ := resolved.AsIntegerValue()
+	if int64(resolvedInt) != 42 {
+		t.Errorf("resolved int = %d, want 42", resolvedInt)
 	}
 
 	// Test literal bool value
-	boolValue := &pb.Value{
-		Data: &pb.Value_Literal{
-			Literal: &pb.LiteralValue{
-				Data: &pb.LiteralValue_Bool{
-					Bool: true,
-				},
-			},
-		},
-	}
+	boolValue := c.NewValueFromBool(true)
 
 	resolved, err = engine.Workspace().Variables().ResolveValue(ctx, entity, boolValue)
 	if err != nil {
 		t.Fatalf("failed to resolve bool value: %v", err)
 	}
 
-	if !resolved.GetBool() {
-		t.Errorf("resolved bool = %v, want true", resolved.GetBool())
+	resolvedBool, _ := resolved.AsBooleanValue()
+	if !resolvedBool {
+		t.Errorf("resolved bool = %v, want true", resolvedBool)
 	}
 }
 
@@ -1459,7 +1462,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -1470,7 +1473,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -1493,8 +1496,9 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 	if !exists {
 		t.Fatalf("app_port variable not found")
 	}
-	if appPort.GetInt64() != 8080 {
-		t.Errorf("app_port = %d, want 8080", appPort.GetInt64())
+	appPortInt, _ := appPort.AsIntegerValue()
+	if int64(appPortInt) != 8080 {
+		t.Errorf("app_port = %d, want 8080", appPortInt)
 	}
 
 	// Check app_name
@@ -1502,8 +1506,9 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 	if !exists {
 		t.Fatalf("app_name variable not found")
 	}
-	if appName.GetString_() != "my-api" {
-		t.Errorf("app_name = %s, want my-api", appName.GetString_())
+	appNameStr, _ := appName.AsStringValue()
+	if appNameStr != "my-api" {
+		t.Errorf("app_name = %s, want my-api", appNameStr)
 	}
 
 	// Check enable_metrics
@@ -1511,8 +1516,9 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 	if !exists {
 		t.Fatalf("enable_metrics variable not found")
 	}
-	if !enableMetrics.GetBool() {
-		t.Errorf("enable_metrics = %v, want true", enableMetrics.GetBool())
+	enableMetricsBool, _ := enableMetrics.AsBooleanValue()
+	if !enableMetricsBool {
+		t.Errorf("enable_metrics = %v, want true", enableMetricsBool)
 	}
 }
 
@@ -1568,7 +1574,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -1579,7 +1585,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -1599,32 +1605,32 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 	}
 
 	// Verify it's an object
-	obj := apiConfig.GetObject()
-	if obj == nil {
-		t.Fatalf("api_config is not an object")
+	obj, err := apiConfig.AsObjectValue()
+	if err != nil {
+		t.Fatalf("api_config is not an object: %v", err)
 	}
 
 	// Verify nested fields
-	if obj.Fields["timeout"].GetNumberValue() != 30 {
-		t.Errorf("timeout = %v, want 30", obj.Fields["timeout"].GetNumberValue())
+	if obj["timeout"] != float64(30) {
+		t.Errorf("timeout = %v, want 30", obj["timeout"])
 	}
 
-	if obj.Fields["retries"].GetNumberValue() != 3 {
-		t.Errorf("retries = %v, want 3", obj.Fields["retries"].GetNumberValue())
+	if obj["retries"] != float64(3) {
+		t.Errorf("retries = %v, want 3", obj["retries"])
 	}
 
 	// Verify nested auth object
-	auth := obj.Fields["auth"].GetStructValue()
-	if auth == nil {
-		t.Fatalf("auth is not a struct")
+	auth, ok := obj["auth"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("auth is not a map")
 	}
 
-	if !auth.Fields["enabled"].GetBoolValue() {
-		t.Errorf("auth.enabled = %v, want true", auth.Fields["enabled"].GetBoolValue())
+	if auth["enabled"] != true {
+		t.Errorf("auth.enabled = %v, want true", auth["enabled"])
 	}
 
-	if auth.Fields["type"].GetStringValue() != "bearer" {
-		t.Errorf("auth.type = %s, want bearer", auth.Fields["type"].GetStringValue())
+	if auth["type"] != "bearer" {
+		t.Errorf("auth.type = %s, want bearer", auth["type"])
 	}
 }
 
@@ -1685,7 +1691,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -1696,7 +1702,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -1719,8 +1725,9 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 	if !exists {
 		t.Fatalf("replicas variable not found")
 	}
-	if replicas.GetInt64() != 5 {
-		t.Errorf("replicas = %d, want 5 (resource override)", replicas.GetInt64())
+	replicasInt, _ := replicas.AsIntegerValue()
+	if int64(replicasInt) != 5 {
+		t.Errorf("replicas = %d, want 5 (resource override)", replicasInt)
 	}
 
 	// Check region comes from deployment variable
@@ -1728,8 +1735,9 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 	if !exists {
 		t.Fatalf("region variable not found")
 	}
-	if region.GetString_() != "us-west-2" {
-		t.Errorf("region = %s, want us-west-2", region.GetString_())
+	regionStr, _ := region.AsStringValue()
+	if regionStr != "us-west-2" {
+		t.Errorf("region = %s, want us-west-2", regionStr)
 	}
 }
 
@@ -1807,7 +1815,7 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, apiDv)
 
 	// Evaluate variables for API deployment
-	apiReleaseTarget := &pb.ReleaseTarget{
+	apiReleaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deployment1ID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -1818,7 +1826,7 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 		t.Fatalf("expected 1 API job, got %d", len(apiJobs))
 	}
 
-	var apiJob *pb.Job
+	var apiJob *oapi.Job
 	for _, j := range apiJobs {
 		apiJob = j
 		break
@@ -1836,12 +1844,14 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 		t.Fatalf("expected 2 API variables, got %d", len(apiVariables))
 	}
 
-	if apiVariables["port"].GetInt64() != 8080 {
-		t.Errorf("API port = %d, want 8080", apiVariables["port"].GetInt64())
+	apiPort, _ := apiVariables["port"].AsIntegerValue()
+	if int64(apiPort) != 8080 {
+		t.Errorf("API port = %d, want 8080", apiPort)
 	}
 
-	if apiVariables["type"].GetString_() != "api" {
-		t.Errorf("API type = %s, want api", apiVariables["type"].GetString_())
+	apiType, _ := apiVariables["type"].AsStringValue()
+	if apiType != "api" {
+		t.Errorf("API type = %s, want api", apiType)
 	}
 
 	// Create deployment version for Worker
@@ -1851,7 +1861,7 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, workerDv)
 
 	// Evaluate variables for Worker deployment
-	workerReleaseTarget := &pb.ReleaseTarget{
+	workerReleaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deployment2ID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -1862,7 +1872,7 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 		t.Fatalf("expected 1 Worker job, got %d", len(workerJobs))
 	}
 
-	var workerJob *pb.Job
+	var workerJob *oapi.Job
 	for _, j := range workerJobs {
 		workerJob = j
 		break
@@ -1880,12 +1890,14 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 		t.Fatalf("expected 2 Worker variables, got %d", len(workerVariables))
 	}
 
-	if workerVariables["port"].GetInt64() != 9090 {
-		t.Errorf("Worker port = %d, want 9090", workerVariables["port"].GetInt64())
+	workerPort, _ := workerVariables["port"].AsIntegerValue()
+	if int64(workerPort) != 9090 {
+		t.Errorf("Worker port = %d, want 9090", workerPort)
 	}
 
-	if workerVariables["type"].GetString_() != "worker" {
-		t.Errorf("Worker type = %s, want worker", workerVariables["type"].GetString_())
+	workerType, _ := workerVariables["type"].AsStringValue()
+	if workerType != "worker" {
+		t.Errorf("Worker type = %s, want worker", workerType)
 	}
 }
 
@@ -1951,7 +1963,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -1962,7 +1974,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -1981,21 +1993,25 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 	}
 
 	// Check deployment variables
-	if variables["app_version"].GetString_() != "v1.2.3" {
-		t.Errorf("app_version = %s, want v1.2.3", variables["app_version"].GetString_())
+	appVersion, _ := variables["app_version"].AsStringValue()
+	if appVersion != "v1.2.3" {
+		t.Errorf("app_version = %s, want v1.2.3", appVersion)
 	}
 
-	if variables["timeout"].GetInt64() != 30 {
-		t.Errorf("timeout = %d, want 30", variables["timeout"].GetInt64())
+	timeout, _ := variables["timeout"].AsIntegerValue()
+	if int64(timeout) != 30 {
+		t.Errorf("timeout = %d, want 30", timeout)
 	}
 
 	// Check resource variables
-	if variables["instance_id"].GetString_() != "i-1234567890" {
-		t.Errorf("instance_id = %s, want i-1234567890", variables["instance_id"].GetString_())
+	instanceID, _ := variables["instance_id"].AsStringValue()
+	if instanceID != "i-1234567890" {
+		t.Errorf("instance_id = %s, want i-1234567890", instanceID)
 	}
 
-	if variables["zone"].GetString_() != "us-east-1a" {
-		t.Errorf("zone = %s, want us-east-1a", variables["zone"].GetString_())
+	zone, _ := variables["zone"].AsStringValue()
+	if zone != "us-east-1a" {
+		t.Errorf("zone = %s, want us-east-1a", zone)
 	}
 }
 
@@ -2040,7 +2056,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentNoVariables(t *testing.T) {
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -2051,7 +2067,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentNoVariables(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -2119,7 +2135,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
 		EnvironmentId: environmentID,
 		ResourceId:    resourceID,
@@ -2130,7 +2146,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 		t.Fatalf("expected 1 job, got %d", len(jobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range jobs {
 		job = j
 		break
@@ -2150,7 +2166,8 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 	}
 
 	// Verify it's an empty string
-	if optionalValue.GetString_() != "" {
-		t.Errorf("optional_value = %s, want empty string", optionalValue.GetString_())
+	optionalValueStr, _ := optionalValue.AsStringValue()
+	if optionalValueStr != "" {
+		t.Errorf("optional_value = %s, want empty string", optionalValueStr)
 	}
 }

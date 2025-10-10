@@ -4,11 +4,9 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
-
-	"google.golang.org/protobuf/proto"
 )
 
 func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
@@ -58,7 +56,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 	}
 
 	// Get the single release target from the map
-	var rt *pb.ReleaseTarget
+	var rt *oapi.ReleaseTarget
 	for _, target := range releaseTargets {
 		rt = target
 		break
@@ -239,12 +237,12 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	}
 
 	// Update deployment to add a selector for prod only
-	d1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	d1.ResourceSelector = c.NewJsonSelector(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	}))
+	})
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	// Now only prod resource should match - 1 release target
@@ -254,7 +252,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	}
 
 	// Verify it's the prod resource
-	var rt *pb.ReleaseTarget
+	var rt *oapi.ReleaseTarget
 	for _, target := range releaseTargets {
 		rt = target
 		break
@@ -319,7 +317,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 
 	// Move deployment to system 2 - should remove release target
 	// (environment is still in system 1, so no matching deployment+environment pair)
-	d1Updated := proto.Clone(d1).(*pb.Deployment)
+	d1Updated := d1
 	d1Updated.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1Updated)
 
@@ -329,7 +327,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	}
 
 	// Move environment to system 2 as well - should recreate release target
-	e1Updated := proto.Clone(e1).(*pb.Environment)
+			e1Updated := e1
 	e1Updated.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1Updated)
 
@@ -425,7 +423,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 	}
 
 	// Verify the remaining release target is correct
-	var rt *pb.ReleaseTarget
+	var rt *oapi.ReleaseTarget
 	for _, target := range releaseTargets {
 		rt = target
 		break
@@ -546,11 +544,11 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	}
 
 	// Now add a selector to the environment to match all resources
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = c.NewJsonSelector(map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	})
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
 
 	// Now release targets should be created
@@ -690,7 +688,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	}
 
 	// Verify the remaining release target is for d1 + e1 + r1
-	var rt *pb.ReleaseTarget
+	var rt *oapi.ReleaseTarget
 	for _, target := range releaseTargets {
 		rt = target
 		break

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 )
@@ -114,21 +113,21 @@ func TestEngine_SystemEnvironmentMaterializedViews(t *testing.T) {
 	// Create environments for system 1
 	e1 := c.NewEnvironment(s1.Id)
 	e1.Name = "environment-dev-s1"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1.ResourceSelector = c.NewJsonSelector(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "dev",
 		"key":      "env",
-	}))
+	})
 
 	e2 := c.NewEnvironment(s1.Id)
 	e2.Name = "environment-prod-s1"
-	e2.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e2.ResourceSelector = c.NewJsonSelector(map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	}))
+	})
 
 	// Create environment for system 2
 	e3 := c.NewEnvironment(s2.Id)

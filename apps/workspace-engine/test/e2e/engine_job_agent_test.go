@@ -520,7 +520,7 @@ func TestEngine_JobAgentEmptyConfig(t *testing.T) {
 
 	// Verify empty config doesn't cause issues
 	config := retrievedJa.Config
-	if config != nil && len(config) > 0 {
+	if len(config) > 0 {
 		t.Fatalf("expected empty config, got %v", config)
 	}
 }

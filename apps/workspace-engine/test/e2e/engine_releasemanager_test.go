@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
@@ -97,11 +97,11 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	dv := c.NewDeploymentVersion()
 	dv.DeploymentId = deploymentId
 	dv.Tag = "v1.2.3"
-	dv.Config = c.MustNewStructFromMap(map[string]any{
+	dv.Config = map[string]any{
 		"image":        "myapp:v1.2.3",
 		"git_commit":   "abc123def456",
 		"build_number": float64(42),
-	})
+	}
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Step 2: Verify a release was created
@@ -111,7 +111,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	}
 
 	// Get the job
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range pendingJobs {
 		job = j
 		break
@@ -124,7 +124,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	}
 
 	// Step 3: Verify the job is in pending status
-	if job.Status != pb.JobStatus_JOB_STATUS_PENDING {
+	if job.Status != oapi.Pending {
 		t.Errorf("expected job status PENDING, got %v", job.Status)
 	}
 
@@ -152,47 +152,42 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	// Verify app_name
 	if appName, exists := variables["app_name"]; !exists {
 		t.Error("app_name variable not found")
-	} else if appName.GetString_() != "my-app" {
-		t.Errorf("app_name = %s, want my-app", appName.GetString_())
+	} else if v, _ := appName.AsStringValue(); v != "my-app" {
+		t.Errorf("app_name = %s, want my-app", v)
 	}
 
 	// Verify replicas
 	if replicas, exists := variables["replicas"]; !exists {
 		t.Error("replicas variable not found")
-	} else if replicas.GetInt64() != 5 {
-		t.Errorf("replicas = %d, want 5", replicas.GetInt64())
+	} else if v, _ := replicas.AsIntegerValue(); v != 5 {
+		t.Errorf("replicas = %d, want 5", v)
 	}
 
 	// Verify debug_mode
 	if debugMode, exists := variables["debug_mode"]; !exists {
 		t.Error("debug_mode variable not found")
-	} else if !debugMode.GetBool() {
-		t.Errorf("debug_mode = %v, want true", debugMode.GetBool())
+	} else if v, _ := debugMode.AsBooleanValue(); !v {
+		t.Errorf("debug_mode = %v, want true", v)
 	}
 
 	// Verify config object
 	if config, exists := variables["config"]; !exists {
 		t.Error("config variable not found")
 	} else {
-		obj := config.GetObject()
+		obj, _ := config.AsObjectValue()
 		if obj == nil {
 			t.Error("config is not an object")
 		} else {
-			if obj.Fields["timeout"].GetNumberValue() != 30 {
-				t.Errorf("config.timeout = %v, want 30", obj.Fields["timeout"].GetNumberValue())
+			if obj["timeout"] != 30 {
+				t.Errorf("config.timeout = %v, want 30", obj["timeout"])
 			}
-			if obj.Fields["max_retries"].GetNumberValue() != 3 {
-				t.Errorf("config.max_retries = %v, want 3", obj.Fields["max_retries"].GetNumberValue())
+			if obj["max_retries"] != 3 {
+				t.Errorf("config.max_retries = %v, want 3", obj["max_retries"])
 			}
-			if !obj.Fields["enabled"].GetBoolValue() {
-				t.Errorf("config.enabled = %v, want true", obj.Fields["enabled"].GetBoolValue())
+			if obj["enabled"] != true {
+				t.Errorf("config.enabled = %v, want true", obj["enabled"])
 			}
 		}
-	}
-
-	// Step 5: Verify the version on the job (via the release)
-	if release.Version == nil {
-		t.Fatal("expected release version to be set")
 	}
 
 	if release.Version.Tag != "v1.2.3" {
@@ -204,7 +199,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 		t.Fatal("expected release version config to be set")
 	}
 
-	versionConfig := release.Version.Config.AsMap()
+	versionConfig := release.Version.Config
 	if versionConfig["image"] != "myapp:v1.2.3" {
 		t.Errorf("version config image = %v, want myapp:v1.2.3", versionConfig["image"])
 	}
@@ -216,7 +211,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	}
 
 	// Verify job agent config is preserved
-	jobConfig := job.GetJobAgentConfig().AsMap()
+	jobConfig := job.JobAgentConfig
 	if jobConfig["namespace"] != "production" {
 		t.Errorf("job config namespace = %v, want production", jobConfig["namespace"])
 	}
@@ -337,7 +332,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	}
 
 	// Find the job for the application resource
-	var appJob *pb.Job
+	var appJob *oapi.Job
 	for _, job := range pendingJobs {
 		if job.ResourceId == appId {
 			appJob = job
@@ -350,7 +345,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	}
 
 	// Verify the job is pending
-	if appJob.Status != pb.JobStatus_JOB_STATUS_PENDING {
+	if appJob.Status != oapi.Pending {
 		t.Errorf("expected job status PENDING, got %v", appJob.Status)
 	}
 
@@ -360,10 +355,6 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 		t.Fatalf("release %s not found for job", appJob.ReleaseId)
 	}
 
-	// Verify the version
-	if release.Version == nil {
-		t.Fatal("expected release version to be set")
-	}
 	if release.Version.Tag != "v2.0.0" {
 		t.Errorf("release version tag = %s, want v2.0.0", release.Version.Tag)
 	}
@@ -379,27 +370,27 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	// Verify reference variables resolved from database
 	if dbHost, exists := variables["db_host"]; !exists {
 		t.Error("db_host variable not found")
-	} else if dbHost.GetString_() != "db.example.com" {
-		t.Errorf("db_host = %s, want db.example.com", dbHost.GetString_())
+	} else if v, _ := dbHost.AsStringValue(); v != "db.example.com" {
+		t.Errorf("db_host = %s, want db.example.com", v)
 	}
 
 	if dbPort, exists := variables["db_port"]; !exists {
 		t.Error("db_port variable not found")
-	} else if dbPort.GetString_() != "5432" {
-		t.Errorf("db_port = %s, want 5432", dbPort.GetString_())
+	} else if v, _ := dbPort.AsStringValue(); v != "5432" {
+		t.Errorf("db_port = %s, want 5432", v)
 	}
 
 	if dbName, exists := variables["db_name"]; !exists {
 		t.Error("db_name variable not found")
-	} else if dbName.GetString_() != "production_db" {
-		t.Errorf("db_name = %s, want production_db", dbName.GetString_())
+	} else if v, _ := dbName.AsStringValue(); v != "production_db" {
+		t.Errorf("db_name = %s, want production_db", v)
 	}
 
 	// Verify literal variable
 	if appVersion, exists := variables["app_version"]; !exists {
 		t.Error("app_version variable not found")
-	} else if appVersion.GetString_() != "1.0.0" {
-		t.Errorf("app_version = %s, want 1.0.0", appVersion.GetString_())
+	} else if v, _ := appVersion.AsStringValue(); v != "1.0.0" {
+		t.Errorf("app_version = %s, want 1.0.0", v)
 	}
 }
 
@@ -494,9 +485,9 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 	dv := c.NewDeploymentVersion()
 	dv.DeploymentId = deploymentId
 	dv.Tag = "v3.0.0"
-	dv.Config = c.MustNewStructFromMap(map[string]any{
+	dv.Config = map[string]any{
 		"image": "myapp:v3.0.0",
-	})
+	}
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Should create 3 jobs (one for each resource)
@@ -506,12 +497,12 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 	}
 
 	// Verify each job has correct properties
-	jobsByResource := make(map[string]*pb.Job)
+	jobsByResource := make(map[string]*oapi.Job)
 	for _, job := range pendingJobs {
 		jobsByResource[job.ResourceId] = job
 
 		// Verify job is pending
-		if job.Status != pb.JobStatus_JOB_STATUS_PENDING {
+		if job.Status != oapi.Pending {
 			t.Errorf("job %s has status %v, want PENDING", job.Id, job.Status)
 		}
 
@@ -527,11 +518,6 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 		release, releaseExists := engine.Workspace().Releases().Get(job.ReleaseId)
 		if !releaseExists {
 			t.Errorf("release %s not found for job %s", job.ReleaseId, job.Id)
-			continue
-		}
-
-		if release.Version == nil {
-			t.Errorf("release %s has no version", release.ID())
 			continue
 		}
 
@@ -559,11 +545,11 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 			t.Error("release not found for resource 1")
 		} else {
 			vars1 := release1.Variables
-			if vars1["region"].GetString_() != "us-east-1" {
-				t.Errorf("resource 1 region = %s, want us-east-1", vars1["region"].GetString_())
+			if v, _ := vars1["region"].AsStringValue(); v != "us-east-1" {
+				t.Errorf("resource 1 region = %s, want us-east-1", v)
 			}
-			if vars1["instance_count"].GetInt64() != 3 {
-				t.Errorf("resource 1 instance_count = %d, want 3", vars1["instance_count"].GetInt64())
+			if v, _ := vars1["instance_count"].AsIntegerValue(); v != 3 {
+				t.Errorf("resource 1 instance_count = %d, want 3", v)
 			}
 		}
 	}
@@ -575,11 +561,11 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 			t.Error("release not found for resource 2")
 		} else {
 			vars2 := release2.Variables
-			if vars2["region"].GetString_() != "us-west-2" {
-				t.Errorf("resource 2 region = %s, want us-west-2", vars2["region"].GetString_())
+			if v, _ := vars2["region"].AsStringValue(); v != "us-west-2" {
+				t.Errorf("resource 2 region = %s, want us-west-2", v)
 			}
-			if vars2["instance_count"].GetInt64() != 5 {
-				t.Errorf("resource 2 instance_count = %d, want 5", vars2["instance_count"].GetInt64())
+			if v, _ := vars2["instance_count"].AsIntegerValue(); v != 5 {
+				t.Errorf("resource 2 instance_count = %d, want 5", v)
 			}
 		}
 	}
@@ -591,11 +577,11 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 			t.Error("release not found for resource 3")
 		} else {
 			vars3 := release3.Variables
-			if vars3["region"].GetString_() != "eu-west-1" {
-				t.Errorf("resource 3 region = %s, want eu-west-1", vars3["region"].GetString_())
+			if v, _ := vars3["region"].AsStringValue(); v != "eu-west-1" {
+				t.Errorf("resource 3 region = %s, want eu-west-1", v)
 			}
-			if vars3["instance_count"].GetInt64() != 2 {
-				t.Errorf("resource 3 instance_count = %d, want 2", vars3["instance_count"].GetInt64())
+			if v, _ := vars3["instance_count"].AsIntegerValue(); v != 2 {
+				t.Errorf("resource 3 instance_count = %d, want 2", v)
 			}
 		}
 	}
