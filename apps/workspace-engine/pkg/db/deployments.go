@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 )
 
 const DEPLOYMENT_SELECT_QUERY = `
@@ -21,7 +21,7 @@ const DEPLOYMENT_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func getDeployments(ctx context.Context, workspaceID string) ([]*pb.Deployment, error) {
+func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -34,9 +34,9 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*pb.Deployment, 
 	}
 	defer rows.Close()
 
-	deployments := make([]*pb.Deployment, 0)
+	deployments := make([]*oapi.Deployment, 0)
 	for rows.Next() {
-		var deployment pb.Deployment
+		var deployment oapi.Deployment
 		err := rows.Scan(
 			&deployment.Id,
 			&deployment.Name,

@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/selector/langs/jsonselector"
-	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -16,7 +14,7 @@ func NewEnvironments(store *Store) *Environments {
 	return &Environments{
 		repo:      store.repo,
 		store:     store,
-		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
+		resources: cmap.New[*materialized.MaterializedView[map[string]*oapi.Resource]](),
 	}
 }
 
@@ -24,10 +22,10 @@ type Environments struct {
 	repo  *repository.Repository
 	store *Store
 
-	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Resource]]
+	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Resource]]
 }
 
-func (e *Environments) Items() map[string]*pb.Environment {
+func (e *Environments) Items() map[string]*oapi.Environment {
 	return e.repo.Environments.Items()
 }
 
@@ -43,14 +41,14 @@ func (e *Environments) ReinitializeMaterializedViews() {
 }
 
 // environmentResourceRecomputeFunc returns a function that computes resources for a specific environment
-func (e *Environments) environmentResourceRecomputeFunc(environmentId string) materialized.RecomputeFunc[map[string]*pb.Resource] {
-	return func(ctx context.Context) (map[string]*pb.Resource, error) {
+func (e *Environments) environmentResourceRecomputeFunc(environmentId string) materialized.RecomputeFunc[map[string]*oapi.Resource] {
+	return func(ctx context.Context) (map[string]*oapi.Resource, error) {
 		environment, exists := e.repo.Environments.Get(environmentId)
 		if !exists {
 			return nil, fmt.Errorf("environment %s not found", environmentId)
 		}
 
-		repoResources := make([]*pb.Resource, 0, e.repo.Resources.Count())
+		repoResources := make([]*oapi.Resource, 0, e.repo.Resources.Count())
 		for resourceItem := range e.repo.Resources.IterBuffered() {
 			resource := resourceItem.Val
 			repoResources = append(repoResources, resource)
@@ -65,11 +63,11 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 	}
 }
 
-func (e *Environments) IterBuffered() <-chan cmap.Tuple[string, *pb.Environment] {
+func (e *Environments) IterBuffered() <-chan cmap.Tuple[string, *oapi.Environment] {
 	return e.repo.Environments.IterBuffered()
 }
 
-func (e *Environments) Get(id string) (*pb.Environment, bool) {
+func (e *Environments) Get(id string) (*oapi.Environment, bool) {
 	return e.repo.Environments.Get(id)
 }
 
@@ -91,10 +89,10 @@ func (e *Environments) HasResource(envId string, resourceId string) bool {
 	return false
 }
 
-func (e *Environments) Resources(id string) map[string]*pb.Resource {
+func (e *Environments) Resources(id string) map[string]*oapi.Resource {
 	mv, ok := e.resources.Get(id)
 	if !ok {
-		return map[string]*pb.Resource{}
+		return map[string]*oapi.Resource{}
 	}
 
 	mv.WaitRecompute()
@@ -112,19 +110,7 @@ func (e *Environments) RecomputeResources(ctx context.Context, environmentId str
 	return mv.RunRecompute(ctx)
 }
 
-func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) error {
-	// Validate selector before storing
-	if environment.ResourceSelector != nil {
-		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.GetJson().AsMap())
-		if err != nil {
-			return fmt.Errorf("failed to parse selector: %w", err)
-		}
-		_, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
-		if err != nil {
-			return fmt.Errorf("failed to convert selector: %w", err)
-		}
-	}
-
+func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
 	previous, _ := e.repo.Environments.Get(environment.Id)
 	previousSystemId := ""
 	if previous != nil {
@@ -150,23 +136,7 @@ func (e *Environments) Upsert(ctx context.Context, environment *pb.Environment) 
 // ApplyResourceUpdate applies an incremental update for a single resource.
 // This is more efficient than RecomputeResources when only one resource changed.
 // It checks if the resource matches the environment's selector and updates the cached map accordingly.
-func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId string, resource *pb.Resource) error {
-	environment, exists := e.repo.Environments.Get(environmentId)
-	if !exists {
-		return fmt.Errorf("environment %s not found", environmentId)
-	}
-
-	if environment.ResourceSelector != nil {
-		unknownCondition, err := unknown.ParseFromMap(environment.ResourceSelector.GetJson().AsMap())
-		if err != nil {
-			return fmt.Errorf("failed to parse selector for environment %s: %w", environment.Id, err)
-		}
-		_, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
-		if err != nil {
-			return fmt.Errorf("failed to convert selector for environment %s: %w", environment.Id, err)
-		}
-	}
-
+func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId string, resource *oapi.Resource) error {
 	// Apply the incremental update
 	mv, ok := e.resources.Get(environmentId)
 	if !ok {

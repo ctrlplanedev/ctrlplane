@@ -3,10 +3,10 @@ package deploymentvariables
 import (
 	"context"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"google.golang.org/protobuf/encoding/protojson"
+	"encoding/json"
 )
 
 func HandleDeploymentVariableCreated(
@@ -14,8 +14,8 @@ func HandleDeploymentVariableCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	deploymentVariable := &pb.DeploymentVariable{}
-	if err := protojson.Unmarshal(event.Data, deploymentVariable); err != nil {
+	deploymentVariable := &oapi.DeploymentVariable{}
+	if err := json.Unmarshal(event.Data, deploymentVariable); err != nil {
 		return err
 	}
 
@@ -29,8 +29,8 @@ func HandleDeploymentVariableUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	deploymentVariable := &pb.DeploymentVariable{}
-	if err := protojson.Unmarshal(event.Data, deploymentVariable); err != nil {
+	deploymentVariable := &oapi.DeploymentVariable{}
+	if err := json.Unmarshal(event.Data, deploymentVariable); err != nil {
 		return err
 	}
 
@@ -44,8 +44,8 @@ func HandleDeploymentVariableDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	deploymentVariable := &pb.DeploymentVariable{}
-	if err := protojson.Unmarshal(event.Data, deploymentVariable); err != nil {
+	deploymentVariable := &oapi.DeploymentVariable{}
+	if err := json.Unmarshal(event.Data, deploymentVariable); err != nil {
 		return err
 	}
 

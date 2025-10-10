@@ -2,7 +2,7 @@ package store
 
 import (
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -16,15 +16,15 @@ type ResourceVariables struct {
 	repo *repository.Repository
 }
 
-func (r *ResourceVariables) IterBuffered() <-chan cmap.Tuple[string, *pb.ResourceVariable] {
+func (r *ResourceVariables) IterBuffered() <-chan cmap.Tuple[string, *oapi.ResourceVariable] {
 	return r.repo.ResourceVariables.IterBuffered()
 }
 
-func (r *ResourceVariables) Upsert(resourceVariable *pb.ResourceVariable) {
+func (r *ResourceVariables) Upsert(resourceVariable *oapi.ResourceVariable) {
 	r.repo.ResourceVariables.Set(resourceVariable.ID(), resourceVariable)
 }
 
-func (r *ResourceVariables) Get(resourceId string, key string) (*pb.ResourceVariable, bool) {
+func (r *ResourceVariables) Get(resourceId string, key string) (*oapi.ResourceVariable, bool) {
 	return r.repo.ResourceVariables.Get(resourceId + "-" + key)
 }
 

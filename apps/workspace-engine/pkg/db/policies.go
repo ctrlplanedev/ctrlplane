@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"time"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -51,7 +51,7 @@ const POLICY_SELECT_QUERY = `
 	GROUP BY p.id
 `
 
-func getPolicies(ctx context.Context, workspaceID string) ([]*pb.Policy, error) {
+func getPolicies(ctx context.Context, workspaceID string) ([]*oapi.Policy, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func getPolicies(ctx context.Context, workspaceID string) ([]*pb.Policy, error) 
 	}
 	defer rows.Close()
 
-	policies := make([]*pb.Policy, 0)
+	policies := make([]*oapi.Policy, 0)
 	for rows.Next() {
 		policy, err := scanPolicyRow(rows)
 		if err != nil {
@@ -85,8 +85,8 @@ type dbAnyApprovalRule struct {
 	MinApprovals int32     `db:"minApprovals"`
 }
 
-func scanPolicyRow(rows pgx.Rows) (*pb.Policy, error) {
-	policy := &pb.Policy{}
+func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
+	policy := &oapi.Policy{}
 	var createdAt time.Time
 	var anyApprovalRuleRaw *dbAnyApprovalRule
 	var description *string
@@ -107,14 +107,12 @@ func scanPolicyRow(rows pgx.Rows) (*pb.Policy, error) {
 	policy.CreatedAt = createdAt.Format(time.RFC3339)
 
 	if anyApprovalRuleRaw != nil {
-		policy.Rules = append(policy.Rules, &pb.PolicyRule{
+		policy.Rules = append(policy.Rules, oapi.PolicyRule{
 			Id:        anyApprovalRuleRaw.ID,
 			PolicyId:  anyApprovalRuleRaw.PolicyID,
 			CreatedAt: anyApprovalRuleRaw.CreatedAt.Format(time.RFC3339),
-			Rule: &pb.PolicyRule_AnyApproval{
-				AnyApproval: &pb.AnyApprovalRule{
-					MinApprovals: anyApprovalRuleRaw.MinApprovals,
-				},
+			AnyApproval: &oapi.AnyApprovalRule{
+				MinApprovals: anyApprovalRuleRaw.MinApprovals,
 			},
 		})
 	}

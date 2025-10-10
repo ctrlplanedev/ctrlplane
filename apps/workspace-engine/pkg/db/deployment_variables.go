@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -20,7 +20,7 @@ const DEPLOYMENT_VARIABLE_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func getDeploymentVariables(ctx context.Context, workspaceID string) ([]*pb.DeploymentVariable, error) {
+func getDeploymentVariables(ctx context.Context, workspaceID string) ([]*oapi.DeploymentVariable, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func getDeploymentVariables(ctx context.Context, workspaceID string) ([]*pb.Depl
 	}
 	defer rows.Close()
 
-	deploymentVariables := make([]*pb.DeploymentVariable, 0)
+	deploymentVariables := make([]*oapi.DeploymentVariable, 0)
 	for rows.Next() {
 		deploymentVariable, err := scanDeploymentVariable(rows)
 		if err != nil {
@@ -47,8 +47,8 @@ func getDeploymentVariables(ctx context.Context, workspaceID string) ([]*pb.Depl
 	return deploymentVariables, nil
 }
 
-func scanDeploymentVariable(rows pgx.Rows) (*pb.DeploymentVariable, error) {
-	var deploymentVariable pb.DeploymentVariable
+func scanDeploymentVariable(rows pgx.Rows) (*oapi.DeploymentVariable, error) {
+	var deploymentVariable oapi.DeploymentVariable
 
 	err := rows.Scan(
 		&deploymentVariable.Id,

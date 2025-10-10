@@ -2,13 +2,19 @@ package selector
 
 import (
 	"context"
-	"workspace-engine/pkg/pb"
+	"fmt"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
 
-func Match(ctx context.Context, selector *pb.Selector, item any) (bool, error) {
-	unknownCondition, err := unknown.ParseFromMap(selector.GetJson().AsMap())
+func Match(ctx context.Context, selector *oapi.Selector, item any) (bool, error) {
+	jsonSelector, err := selector.AsJsonSelector()
+	if err != nil {
+		return false, fmt.Errorf("selector is not a json selector")
+	}
+
+	unknownCondition, err := unknown.ParseFromMap(jsonSelector.Json)
 	if err != nil {
 		return false, err
 	}

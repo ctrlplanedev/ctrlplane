@@ -3,7 +3,7 @@ package versionmanager
 import (
 	"context"
 	"sort"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
@@ -24,7 +24,7 @@ func New(store *store.Store) *Manager {
 
 // GetCandidateVersions returns all versions for a deployment, sorted newest to oldest.
 // The caller is responsible for filtering based on policies or other criteria.
-func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *pb.ReleaseTarget) []*pb.DeploymentVersion {
+func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.ReleaseTarget) []*oapi.DeploymentVersion {
 	_, span := tracer.Start(ctx, "GetCandidateVersions")
 	defer span.End()
 
@@ -34,7 +34,7 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *pb.Re
 	)
 
 	// Filter versions for the given deployment
-	filtered := make([]*pb.DeploymentVersion, 0, len(versions))
+	filtered := make([]*oapi.DeploymentVersion, 0, len(versions))
 	for _, version := range versions {
 		if version.DeploymentId == releaseTarget.DeploymentId {
 			filtered = append(filtered, version)

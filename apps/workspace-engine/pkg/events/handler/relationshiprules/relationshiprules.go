@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"google.golang.org/protobuf/encoding/protojson"
+	"encoding/json"
 )
 
 func HandleRelationshipRuleCreated(
@@ -15,8 +15,8 @@ func HandleRelationshipRuleCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	relationshipRule := &pb.RelationshipRule{}
-	if err := protojson.Unmarshal(event.Data, relationshipRule); err != nil {
+	relationshipRule := &oapi.RelationshipRule{}
+	if err := json.Unmarshal(event.Data, relationshipRule); err != nil {
 		return err
 	}
 
@@ -32,8 +32,8 @@ func HandleRelationshipRuleUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	relationshipRule := &pb.RelationshipRule{}
-	if err := protojson.Unmarshal(event.Data, relationshipRule); err != nil {
+	relationshipRule := &oapi.RelationshipRule{}
+	if err := json.Unmarshal(event.Data, relationshipRule); err != nil {
 		return err
 	}
 
@@ -45,8 +45,8 @@ func HandleRelationshipRuleDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	relationshipRule := &pb.RelationshipRule{}
-	if err := protojson.Unmarshal(event.Data, relationshipRule); err != nil {
+	relationshipRule := &oapi.RelationshipRule{}
+	if err := json.Unmarshal(event.Data, relationshipRule); err != nil {
 		return err
 	}
 

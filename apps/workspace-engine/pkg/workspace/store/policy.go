@@ -4,75 +4,48 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
-	"workspace-engine/pkg/selector/langs/jsonselector"
-	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
-	"workspace-engine/pkg/selector/langs/util"
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func NewPolicies(store *Store) *Policies {
 	return &Policies{
 		repo:           store.repo,
 		store:          store,
-		releaseTargets: cmap.New[*materialized.MaterializedView[map[string]*pb.ReleaseTarget]](),
+		releaseTargets: cmap.New[*materialized.MaterializedView[map[string]*oapi.ReleaseTarget]](),
 	}
 }
 
 type Policies struct {
 	repo           *repository.Repository
 	store          *Store
-	releaseTargets cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.ReleaseTarget]]
+	releaseTargets cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.ReleaseTarget]]
 }
 
-func (p *Policies) Items() map[string]*pb.Policy {
+func (p *Policies) Items() map[string]*oapi.Policy {
 	return p.repo.Policies.Items()
 }
 
-func parseSelector(selector *structpb.Struct) (util.MatchableCondition, error) {
-	if selector == nil {
-		return nil, nil
-	}
-
-	unknownCondition, err := unknown.ParseFromMap(selector.AsMap())
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse selector: %w", err)
-	}
-	return jsonselector.ConvertToSelector(context.Background(), unknownCondition)
-}
-
-func (p *Policies) recomputeReleaseTargets(policyId string) materialized.RecomputeFunc[map[string]*pb.ReleaseTarget] {
-	return func(ctx context.Context) (map[string]*pb.ReleaseTarget, error) {
+func (p *Policies) recomputeReleaseTargets(policyId string) materialized.RecomputeFunc[map[string]*oapi.ReleaseTarget] {
+	return func(ctx context.Context) (map[string]*oapi.ReleaseTarget, error) {
 		policy, ok := p.Get(policyId)
 		if !ok {
 			return nil, fmt.Errorf("policy %s not found", policyId)
 		}
 
-		releaseTargets := make(map[string]*pb.ReleaseTarget)
+		releaseTargets := make(map[string]*oapi.ReleaseTarget)
 
-		for _, policyTarget := range policy.GetSelectors() {
-			jsonDeploymentSelector := policyTarget.DeploymentSelector.GetJson()
-			jsonEnvironmentSelector := policyTarget.EnvironmentSelector.GetJson()
-			jsonResourceSelector := policyTarget.ResourceSelector.GetJson()
-
-			deploymentCondition, _ := parseSelector(jsonDeploymentSelector)
-			environmentCondition, _ := parseSelector(jsonEnvironmentSelector)
-			resourceCondition, _ := parseSelector(jsonResourceSelector)
-
+		for _, policyTarget := range policy.Selectors {
 			// Build sets of matching deployments and environments
-			matchingDeployments := make(map[string]*pb.Deployment)
-			matchingEnvironments := make(map[string]*pb.Environment)
+			matchingDeployments := make(map[string]*oapi.Deployment)
+			matchingEnvironments := make(map[string]*oapi.Environment)
 
 			for deploymentItem := range p.repo.Deployments.IterBuffered() {
 				deployment := deploymentItem.Val
-				if deploymentCondition != nil {
-					ok, err := deploymentCondition.Matches(deployment)
-					if err != nil {
-						return nil, fmt.Errorf("error matching deployment %s for policy %s: %w", deployment.Id, policyId, err)
-					}
+				if policyTarget.DeploymentSelector != nil {
+					ok, _ := selector.Match(ctx, policyTarget.DeploymentSelector, deployment)
 					if !ok {
 						continue
 					}
@@ -82,11 +55,8 @@ func (p *Policies) recomputeReleaseTargets(policyId string) materialized.Recompu
 
 			for environmentItem := range p.repo.Environments.IterBuffered() {
 				environment := environmentItem.Val
-				if environmentCondition != nil {
-					ok, err := environmentCondition.Matches(environment)
-					if err != nil {
-						return nil, fmt.Errorf("error matching environment %s for policy %s: %w", environment.Id, policyId, err)
-					}
+				if policyTarget.EnvironmentSelector != nil {
+					ok, _ := selector.Match(ctx, policyTarget.EnvironmentSelector, environment)
 					if !ok {
 						continue
 					}
@@ -101,11 +71,8 @@ func (p *Policies) recomputeReleaseTargets(policyId string) materialized.Recompu
 						resource := resourceItem.Val
 
 						// Resource must match resourceCondition (if any)
-						if resourceCondition != nil {
-							ok, err := resourceCondition.Matches(resource)
-							if err != nil {
-								return nil, fmt.Errorf("error matching resource %s for policy %s: %w", resource.Id, policyId, err)
-							}
+						if policyTarget.ResourceSelector != nil {
+							ok, _ := selector.Match(ctx, policyTarget.ResourceSelector, resource)
 							if !ok {
 								continue
 							}
@@ -126,12 +93,11 @@ func (p *Policies) recomputeReleaseTargets(policyId string) materialized.Recompu
 							continue
 						}
 
-						releaseTarget := &pb.ReleaseTarget{
+						releaseTarget := &oapi.ReleaseTarget{
 							DeploymentId:  deployment.Id,
 							EnvironmentId: environment.Id,
 							ResourceId:    resource.Id,
 						}
-						releaseTarget.Id = releaseTarget.Key()
 						releaseTargets[releaseTarget.Key()] = releaseTarget
 					}
 				}
@@ -142,11 +108,11 @@ func (p *Policies) recomputeReleaseTargets(policyId string) materialized.Recompu
 	}
 }
 
-func (p *Policies) IterBuffered() <-chan cmap.Tuple[string, *pb.Policy] {
+func (p *Policies) IterBuffered() <-chan cmap.Tuple[string, *oapi.Policy] {
 	return p.repo.Policies.IterBuffered()
 }
 
-func (p *Policies) Get(id string) (*pb.Policy, bool) {
+func (p *Policies) Get(id string) (*oapi.Policy, bool) {
 	return p.repo.Policies.Get(id)
 }
 
@@ -154,7 +120,7 @@ func (p *Policies) Has(id string) bool {
 	return p.repo.Policies.Has(id)
 }
 
-func (p *Policies) Upsert(ctx context.Context, policy *pb.Policy) error {
+func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 	p.repo.Policies.Set(policy.Id, policy)
 	p.releaseTargets.Set(policy.Id, materialized.New(p.recomputeReleaseTargets(policy.Id)))
 	return nil
@@ -165,8 +131,8 @@ func (p *Policies) Remove(id string) {
 	p.releaseTargets.Remove(id)
 }
 
-func (p *Policies) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *pb.ReleaseTarget) []*pb.Policy {
-	policies := make([]*pb.Policy, 0, p.repo.Policies.Count())
+func (p *Policies) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) []*oapi.Policy {
+	policies := make([]*oapi.Policy, 0, p.repo.Policies.Count())
 
 	for policy := range p.repo.Policies.IterBuffered() {
 		policy := policy.Val

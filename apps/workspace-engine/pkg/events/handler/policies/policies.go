@@ -3,10 +3,10 @@ package policies
 import (
 	"context"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"google.golang.org/protobuf/encoding/protojson"
+	"encoding/json"
 )
 
 func HandlePolicyCreated(
@@ -14,8 +14,8 @@ func HandlePolicyCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	policy := &pb.Policy{}
-	if err := protojson.Unmarshal(event.Data, policy); err != nil {
+	policy := &oapi.Policy{}
+	if err := json.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
 
@@ -29,8 +29,8 @@ func HandlePolicyUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	policy := &pb.Policy{}
-	if err := protojson.Unmarshal(event.Data, policy); err != nil {
+	policy := &oapi.Policy{}
+	if err := json.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
 
@@ -44,8 +44,8 @@ func HandlePolicyDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	policy := &pb.Policy{}
-	if err := protojson.Unmarshal(event.Data, policy); err != nil {
+	policy := &oapi.Policy{}
+	if err := json.Unmarshal(event.Data, policy); err != nil {
 		return err
 	}
 

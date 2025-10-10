@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
-
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Helper function to convert UnknownCondition to *pb.Selector
-func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *pb.Selector {
+// Helper function to convert UnknownCondition to *oapi.Selector
+func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *oapi.Selector {
 	t.Helper()
 
 	// Convert condition to map
@@ -26,21 +24,13 @@ func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *pb.S
 		t.Fatalf("Failed to unmarshal condition: %v", err)
 	}
 
-	// Convert map to structpb
-	jsonStruct, err := structpb.NewStruct(conditionMap)
-	if err != nil {
-		t.Fatalf("Failed to create struct: %v", err)
-	}
-
-	return &pb.Selector{
-		Value: &pb.Selector_Json{
-			Json: jsonStruct,
-		},
-	}
+	v := &oapi.Selector{}
+	v.FromJsonSelector(oapi.JsonSelector{Json: conditionMap})
+	return v
 }
 
 // Helper function to validate filtered results
-func validateFilteredResources(t *testing.T, result map[string]*pb.Resource, expectedCount int, expectedIDs map[string]bool) {
+func validateFilteredResources(t *testing.T, result map[string]*oapi.Resource, expectedCount int, expectedIDs map[string]bool) {
 	t.Helper()
 
 	if len(result) != expectedCount {
@@ -66,7 +56,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 	tests := []struct {
 		name          string
 		condition     unknown.UnknownCondition
-		resources     []*pb.Resource
+		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   map[string]bool
 		wantErr       bool
@@ -78,7 +68,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				Operator: "contains",
 				Value:    "production",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Name: "production-server",
@@ -101,7 +91,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				Operator: "starts-with",
 				Value:    "prod",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Name: "production-server",
@@ -126,7 +116,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				Operator: "ends-with",
 				Value:    "service",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Kind: "web-service",
@@ -151,7 +141,7 @@ func TestFilterResources_StringConditions(t *testing.T) {
 				Operator: "contains",
 				Value:    "k8s",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:         "1",
 					Identifier: "k8s-cluster-us-east",
@@ -191,7 +181,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 	tests := []struct {
 		name          string
 		condition     unknown.UnknownCondition
-		resources     []*pb.Resource
+		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   map[string]bool
 		wantErr       bool
@@ -204,7 +194,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				Value:       "production",
 				MetadataKey: "env",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Name: "server-1",
@@ -239,7 +229,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				Value:       "critical",
 				MetadataKey: "tags",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id: "1",
 					Metadata: map[string]string{
@@ -265,7 +255,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				Value:       "us-",
 				MetadataKey: "region",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id: "1",
 					Metadata: map[string]string{
@@ -297,7 +287,7 @@ func TestFilterResources_MetadataConditions(t *testing.T) {
 				Value:       "value",
 				MetadataKey: "nonexistent",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id: "1",
 					Metadata: map[string]string{
@@ -335,7 +325,7 @@ func TestFilterResources_DateConditions(t *testing.T) {
 	tests := []struct {
 		name          string
 		condition     unknown.UnknownCondition
-		resources     []*pb.Resource
+		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   []string
 		wantErr       bool
@@ -347,7 +337,7 @@ func TestFilterResources_DateConditions(t *testing.T) {
 				Operator: "after",
 				Value:    baseTime.Format(time.RFC3339),
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:        "1",
 					CreatedAt: afterTime.Format(time.RFC3339),
@@ -372,7 +362,7 @@ func TestFilterResources_DateConditions(t *testing.T) {
 				Operator: "before",
 				Value:    baseTime.Format(time.RFC3339),
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:        "1",
 					CreatedAt: afterTime.Format(time.RFC3339),
@@ -397,7 +387,7 @@ func TestFilterResources_DateConditions(t *testing.T) {
 				Operator: "after-or-on",
 				Value:    baseTime.Format(time.RFC3339),
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:        "1",
 					CreatedAt: afterTime.Format(time.RFC3339),
@@ -422,7 +412,7 @@ func TestFilterResources_DateConditions(t *testing.T) {
 				Operator: "before-or-on",
 				Value:    baseTime.Format(time.RFC3339),
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:        "1",
 					CreatedAt: afterTime.Format(time.RFC3339),
@@ -486,7 +476,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 	tests := []struct {
 		name          string
 		condition     unknown.UnknownCondition
-		resources     []*pb.Resource
+		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   []string
 		wantErr       bool
@@ -508,7 +498,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					},
 				},
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Name: "prod-api",
@@ -548,7 +538,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					},
 				},
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id: "1",
 					Metadata: map[string]string{
@@ -599,7 +589,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					},
 				},
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:        "1",
 					Name:      "api-gateway",
@@ -665,7 +655,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					},
 				},
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Kind: "cluster",
@@ -742,7 +732,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					},
 				},
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:        "1",
 					Name:      "prod-api-service",
@@ -824,20 +814,20 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 }
 
 func TestFilterResources_ConfigFieldConditions(t *testing.T) {
-	config1, _ := structpb.NewStruct(map[string]interface{}{
+	config1 := map[string]interface{}{
 		"replicas": "3",
 		"version":  "1.2.0",
-	})
+	}
 
-	config2, _ := structpb.NewStruct(map[string]interface{}{
+	config2 := map[string]interface{}{
 		"replicas": "5",
 		"version":  "2.0.0",
-	})
+	}
 
 	tests := []struct {
 		name          string
 		condition     unknown.UnknownCondition
-		resources     []*pb.Resource
+		resources     []*oapi.Resource
 		expectedCount int
 		expectedIDs   []string
 		wantErr       bool
@@ -849,7 +839,7 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 				Operator: "starts-with",
 				Value:    "1.",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:      "1",
 					Version: "1.2.0",
@@ -872,7 +862,7 @@ func TestFilterResources_ConfigFieldConditions(t *testing.T) {
 				Operator: "contains",
 				Value:    "cluster",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:         "1",
 					Identifier: "aws-cluster-prod",
@@ -932,7 +922,7 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 	tests := []struct {
 		name          string
 		condition     unknown.UnknownCondition
-		resources     []*pb.Resource
+		resources     []*oapi.Resource
 		expectedCount int
 		wantErr       bool
 	}{
@@ -943,7 +933,7 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 				Operator: "contains",
 				Value:    "test",
 			},
-			resources:     []*pb.Resource{},
+			resources:     []*oapi.Resource{},
 			expectedCount: 0,
 			wantErr:       false,
 		},
@@ -954,7 +944,7 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 				Operator: "contains",
 				Value:    "nonexistent",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Name: "existing",
@@ -970,7 +960,7 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 				Operator: "contains",
 				Value:    "service",
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Kind: "service",
@@ -993,7 +983,7 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 				Operator:   "and",
 				Conditions: []unknown.UnknownCondition{},
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Name: "resource-1",
@@ -1012,7 +1002,7 @@ func TestFilterResources_EmptyAndEdgeCases(t *testing.T) {
 				Operator:   "or",
 				Conditions: []unknown.UnknownCondition{},
 			},
-			resources: []*pb.Resource{
+			resources: []*oapi.Resource{
 				{
 					Id:   "1",
 					Name: "resource-1",
@@ -1075,7 +1065,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 			},
 		}
 
-		resources := []*pb.Resource{
+		resources := []*oapi.Resource{
 			{
 				Id:        "1",
 				Name:      "payment-service",
@@ -1187,7 +1177,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 			},
 		}
 
-		resources := []*pb.Resource{
+		resources := []*oapi.Resource{
 			{
 				Id:   "1",
 				Name: "payment-gateway",

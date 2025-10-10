@@ -6,10 +6,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const RESOURCE_SELECT_QUERY = `
@@ -39,7 +38,7 @@ const RESOURCE_SELECT_QUERY = `
 	GROUP BY r.id, r.version, r.name, r.kind, r.identifier, r.provider_id, r.workspace_id, r.config, r.created_at, r.locked_at, r.updated_at, r.deleted_at
 `
 
-func getResources(ctx context.Context, workspaceID string) ([]*pb.Resource, error) {
+func getResources(ctx context.Context, workspaceID string) ([]*oapi.Resource, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -52,7 +51,7 @@ func getResources(ctx context.Context, workspaceID string) ([]*pb.Resource, erro
 	}
 	defer rows.Close()
 
-	resources := make([]*pb.Resource, 0)
+	resources := make([]*oapi.Resource, 0)
 	for rows.Next() {
 		resource, err := scanResourceRow(rows)
 		if err != nil {
@@ -68,8 +67,8 @@ func getResources(ctx context.Context, workspaceID string) ([]*pb.Resource, erro
 	return resources, nil
 }
 
-func scanResourceRow(row pgx.Row) (*pb.Resource, error) {
-	var resource pb.Resource
+func scanResourceRow(row pgx.Row) (*oapi.Resource, error) {
+	var resource oapi.Resource
 	var configJSON []byte
 	var metadataJSON []byte
 	var providerID sql.NullString
@@ -112,7 +111,7 @@ func scanResourceRow(row pgx.Row) (*pb.Resource, error) {
 	return &resource, nil
 }
 
-func setResourceTimestamps(resource *pb.Resource, createdAt time.Time, lockedAt, updatedAt, deletedAt *time.Time) {
+func setResourceTimestamps(resource *oapi.Resource, createdAt time.Time, lockedAt, updatedAt, deletedAt *time.Time) {
 	resource.CreatedAt = createdAt.Format(time.RFC3339)
 
 	if lockedAt != nil {
@@ -129,7 +128,7 @@ func setResourceTimestamps(resource *pb.Resource, createdAt time.Time, lockedAt,
 	}
 }
 
-func setResourceConfig(resource *pb.Resource, configJSON []byte) error {
+func setResourceConfig(resource *oapi.Resource, configJSON []byte) error {
 	if len(configJSON) == 0 {
 		return nil
 	}
@@ -138,17 +137,11 @@ func setResourceConfig(resource *pb.Resource, configJSON []byte) error {
 	if err := json.Unmarshal(configJSON, &configMap); err != nil {
 		return err
 	}
-
-	configStruct, err := structpb.NewStruct(configMap)
-	if err != nil {
-		return err
-	}
-
-	resource.Config = configStruct
+	resource.Config = configMap
 	return nil
 }
 
-func setResourceMetadata(resource *pb.Resource, metadataJSON []byte) error {
+func setResourceMetadata(resource *oapi.Resource, metadataJSON []byte) error {
 	if len(metadataJSON) == 0 {
 		return nil
 	}

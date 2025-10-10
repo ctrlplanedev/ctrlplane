@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policymanager/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policymanager/evaluator/skipdeployed"
 	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
@@ -36,7 +36,7 @@ func New(store *store.Store) *Manager {
 
 func (m *Manager) EvaluateRelease(
 	ctx context.Context,
-	release *pb.Release,
+	release *oapi.Release,
 ) (*DeployDecision, error) {
 	ctx, span := tracer.Start(ctx, "EvaluateRelease",
 		trace.WithAttributes(
@@ -55,7 +55,7 @@ func (m *Manager) EvaluateRelease(
 	}
 	for _, evaluator := range m.releaseRuleEvaluators {
 		policyResult := results.NewPolicyEvaluation("", "")
-		ruleResult, err := evaluator.Evaluate(ctx, release.ReleaseTarget, release)
+		ruleResult, err := evaluator.Evaluate(ctx, &release.ReleaseTarget, release)
 		if err != nil {
 			return nil, err
 		}
@@ -72,8 +72,8 @@ func (m *Manager) EvaluateRelease(
 // - Uses direct function calls (no interface dispatch)
 func (m *Manager) EvaluateVersion(
 	ctx context.Context,
-	version *pb.DeploymentVersion,
-	releaseTarget *pb.ReleaseTarget,
+	version *oapi.DeploymentVersion,
+	releaseTarget *oapi.ReleaseTarget,
 ) (*DeployDecision, error) {
 	startTime := time.Now()
 	ctx, span := tracer.Start(ctx, "PolicyManager.Evaluate",
@@ -123,7 +123,7 @@ func (m *Manager) EvaluateVersion(
 		// Evaluate each rule in the policy
 		for _, rule := range policy.Rules {
 			totalRules++
-			evaluator, err := m.getVersionRuleEvaluator(ctx, rule, version, releaseTarget)
+			evaluator, err := m.getVersionRuleEvaluator(ctx, &rule, version, releaseTarget)
 			if err != nil {
 				span.RecordError(err)
 				span.SetAttributes(
@@ -178,14 +178,15 @@ func (m *Manager) EvaluateVersion(
 // evaluateRule evaluates a single policy rule using direct dispatch.
 func (m *Manager) getVersionRuleEvaluator(
 	_ context.Context,
-	rule *pb.PolicyRule,
-	_ *pb.DeploymentVersion,
-	_ *pb.ReleaseTarget,
+	rule *oapi.PolicyRule,
+	_ *oapi.DeploymentVersion,
+	_ *oapi.ReleaseTarget,
 ) (results.VersionRuleEvaluator, error) {
 	// Direct switch on rule type - compiler optimizes this to a jump table
 	switch {
-	case rule.GetAnyApproval() != nil:
-		return approval.NewAnyApprovalEvaluator(m.store, rule.GetAnyApproval()), nil
+	case rule.AnyApproval != nil:
+		anyApprovalRule := rule.AnyApproval
+		return approval.NewAnyApprovalEvaluator(m.store, anyApprovalRule), nil
 	default:
 		return nil, fmt.Errorf("unknown rule type for rule %s", rule.Id)
 	}

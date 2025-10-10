@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -17,7 +17,7 @@ const SYSTEM_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func getSystems(ctx context.Context, workspaceID string) ([]*pb.System, error) {
+func getSystems(ctx context.Context, workspaceID string) ([]*oapi.System, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func getSystems(ctx context.Context, workspaceID string) ([]*pb.System, error) {
 	}
 	defer rows.Close()
 
-	systems := make([]*pb.System, 0)
+	systems := make([]*oapi.System, 0)
 	for rows.Next() {
 		system, err := scanSystemRow(rows)
 		if err != nil {
@@ -41,8 +41,8 @@ func getSystems(ctx context.Context, workspaceID string) ([]*pb.System, error) {
 	return systems, nil
 }
 
-func scanSystemRow(rows pgx.Rows) (*pb.System, error) {
-	system := &pb.System{}
+func scanSystemRow(rows pgx.Rows) (*oapi.System, error) {
+	system := &oapi.System{}
 	err := rows.Scan(
 		&system.Id,
 		&system.WorkspaceId,

@@ -815,7 +815,6 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 	}
 }
 
-
 // TestEngine_ReleaseVariableResolution_NoVariables tests resource with no variables
 func TestEngine_ReleaseVariableResolution_NoVariables(t *testing.T) {
 	jobAgentID := uuid.New().String()
@@ -1171,7 +1170,6 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 		t.Errorf("db_name = %s, want production_db", variables["db_name"].GetString_())
 	}
 }
-
 
 // TestEngine_ReleaseVariableResolution_MultipleReferences tests resource with multiple relationship references
 func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
@@ -2156,4 +2154,3 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 		t.Errorf("optional_value = %s, want empty string", optionalValue.GetString_())
 	}
 }
-

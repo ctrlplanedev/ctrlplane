@@ -3,10 +3,10 @@ package deploymentversion
 import (
 	"context"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"google.golang.org/protobuf/encoding/protojson"
+	"encoding/json"
 )
 
 func HandleDeploymentVersionCreated(
@@ -14,8 +14,8 @@ func HandleDeploymentVersionCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	deploymentVersion := &pb.DeploymentVersion{}
-	if err := protojson.Unmarshal(event.Data, deploymentVersion); err != nil {
+	deploymentVersion := &oapi.DeploymentVersion{}
+	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
 		return err
 	}
 
@@ -30,8 +30,8 @@ func HandleDeploymentVersionUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	deploymentVersion := &pb.DeploymentVersion{}
-	if err := protojson.Unmarshal(event.Data, deploymentVersion); err != nil {
+	deploymentVersion := &oapi.DeploymentVersion{}
+	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
 		return err
 	}
 
@@ -46,8 +46,8 @@ func HandleDeploymentVersionDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	deploymentVersion := &pb.DeploymentVersion{}
-	if err := protojson.Unmarshal(event.Data, deploymentVersion); err != nil {
+	deploymentVersion := &oapi.DeploymentVersion{}
+	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
 		return err
 	}
 

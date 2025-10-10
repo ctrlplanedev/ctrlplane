@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"google.golang.org/protobuf/encoding/protojson"
+	"encoding/json"
 )
 
 func HandleResourceCreated(
@@ -15,8 +15,8 @@ func HandleResourceCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	resource := &pb.Resource{}
-	if err := protojson.Unmarshal(event.Data, resource); err != nil {
+	resource := &oapi.Resource{}
+	if err := json.Unmarshal(event.Data, resource); err != nil {
 		return err
 	}
 
@@ -35,8 +35,8 @@ func HandleResourceUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	resource := &pb.Resource{}
-	if err := protojson.Unmarshal(event.Data, resource); err != nil {
+	resource := &oapi.Resource{}
+	if err := json.Unmarshal(event.Data, resource); err != nil {
 		return err
 	}
 
@@ -51,8 +51,8 @@ func HandleResourceDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	resource := &pb.Resource{}
-	if err := protojson.Unmarshal(event.Data, resource); err != nil {
+	resource := &oapi.Resource{}
+	if err := json.Unmarshal(event.Data, resource); err != nil {
 		return err
 	}
 

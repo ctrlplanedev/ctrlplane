@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 )
@@ -43,7 +43,7 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 	}
 
 	// Get the single release target
-	var rt *pb.ReleaseTarget
+	var rt *oapi.ReleaseTarget
 	for _, target := range releaseTargets {
 		rt = target
 		break
@@ -102,14 +102,14 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 	}
 
 	// Check which release targets match the policy
-	rtProd := &pb.ReleaseTarget{
+	rtProd := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
 	rtProd.Id = rtProd.Key()
 
-	rtDev := &pb.ReleaseTarget{
+	rtDev := &oapi.ReleaseTarget{
 		DeploymentId:  d2ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
@@ -145,20 +145,24 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	// Create two environments with different names
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-us-east"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-us-west"
-	e2.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e2Selector := &oapi.Selector{}
+	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e2.ResourceSelector = e2Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 
 	// Create a resource
@@ -175,23 +179,25 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-us-east-only"
 	selector := c.NewPolicyTargetSelector()
-	selector.EnvironmentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	envSelector := &oapi.Selector{}
+	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "east",
-	}))
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	}})
+	selector.EnvironmentSelector = envSelector
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Check which release targets match the policy
-	rtEast := &pb.ReleaseTarget{
+	rtEast := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
 	rtEast.Id = rtEast.Key()
 
-	rtWest := &pb.ReleaseTarget{
+	rtWest := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e2.Id,
 		ResourceId:    r1.Id,
@@ -226,11 +232,13 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create two resources with different metadata
@@ -254,25 +262,26 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-critical-only"
 	selector := c.NewPolicyTargetSelector()
-	selector.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	resSelector := &oapi.Selector{}
+	_ = resSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"key":      "priority",
 		"value":    "critical",
-	}),
-	)
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	}})
+	selector.ResourceSelector = resSelector
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Check which release targets match the policy
-	rtCritical := &pb.ReleaseTarget{
+	rtCritical := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
 	rtCritical.Id = rtCritical.Key()
 
-	rtNormal := &pb.ReleaseTarget{
+	rtNormal := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r2.Id,
@@ -313,20 +322,24 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	// Create two environments
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-us-east"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-us-west"
-	e2.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e2Selector := &oapi.Selector{}
+	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e2.ResourceSelector = e2Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 
 	// Create two resources
@@ -348,27 +361,33 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-prod-east-critical"
 	selector := c.NewPolicyTargetSelector()
-	selector.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	depSelector := &oapi.Selector{}
+	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	}))
-	selector.EnvironmentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	}})
+	selector.DeploymentSelector = depSelector
+	envSelector := &oapi.Selector{}
+	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "east",
-	}))
-	selector.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	}})
+	selector.EnvironmentSelector = envSelector
+	resSelector := &oapi.Selector{}
+	_ = resSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"key":      "priority",
 		"value":    "critical",
-	}))
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	}})
+	selector.ResourceSelector = resSelector
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Only the release target with d1 + e1 + r1 should match
-	rtMatch := &pb.ReleaseTarget{
+	rtMatch := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
@@ -382,7 +401,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	}
 
 	// Test a non-matching release target (dev + us-east + critical)
-	rtNoMatch := &pb.ReleaseTarget{
+	rtNoMatch := &oapi.ReleaseTarget{
 		DeploymentId:  d2.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
@@ -395,7 +414,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	}
 
 	// Test another non-matching release target (prod + us-west + critical)
-	rtNoMatch2 := &pb.ReleaseTarget{
+	rtNoMatch2 := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e2.Id,
 		ResourceId:    r1.Id,
@@ -408,7 +427,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	}
 
 	// Test another non-matching release target (prod + us-east + normal)
-	rtNoMatch3 := &pb.ReleaseTarget{
+	rtNoMatch3 := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r2.Id,
@@ -477,14 +496,14 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 	}
 
 	// Both release targets should match the policy
-	rtProd := &pb.ReleaseTarget{
+	rtProd := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
 	rtProd.Id = rtProd.Key()
 
-	rtStaging := &pb.ReleaseTarget{
+	rtStaging := &oapi.ReleaseTarget{
 		DeploymentId:  d2ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
@@ -522,11 +541,13 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -537,18 +558,18 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-all"
 	selector := c.NewPolicyTargetSelector()
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Both release targets should match
-	rtProd := &pb.ReleaseTarget{
+	rtProd := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
 	}
 	rtProd.Id = rtProd.Key()
 
-	rtDev := &pb.ReleaseTarget{
+	rtDev := &oapi.ReleaseTarget{
 		DeploymentId:  d2.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
@@ -565,12 +586,14 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 		t.Fatalf("expected policy to match dev release target initially, got %d policies", len(policiesDev))
 	}
 	// Update policy to only match prod deployments
-	selector.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	depSelector := &oapi.Selector{}
+	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	}))
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	}})
+	selector.DeploymentSelector = depSelector
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Now only prod should match
@@ -600,11 +623,13 @@ func TestEngine_PolicyDelete(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -614,11 +639,11 @@ func TestEngine_PolicyDelete(t *testing.T) {
 	// Create a policy
 	policy := c.NewPolicy(workspaceID)
 	selector := c.NewPolicyTargetSelector()
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Verify policy matches the release target
-	rt := &pb.ReleaseTarget{
+	rt := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
@@ -661,11 +686,13 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -676,35 +703,39 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 	policy1 := c.NewPolicy(workspaceID)
 	policy1.Name = "policy-prod"
 	selector1 := c.NewPolicyTargetSelector()
-	selector1.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	dep1Selector := &oapi.Selector{}
+	_ = dep1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	}))
-	policy1.Selectors = []*pb.PolicyTargetSelector{selector1}
+	}})
+	selector1.DeploymentSelector = dep1Selector
+	policy1.Selectors = []oapi.PolicyTargetSelector{*selector1}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy1)
 
 	// Create policy 2 that matches high priority
 	policy2 := c.NewPolicy(workspaceID)
 	policy2.Name = "policy-high-priority"
 	selector2 := c.NewPolicyTargetSelector()
-	selector2.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	dep2Selector := &oapi.Selector{}
+	_ = dep2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "high",
-	}))
-	policy2.Selectors = []*pb.PolicyTargetSelector{selector2}
+	}})
+	selector2.DeploymentSelector = dep2Selector
+	policy2.Selectors = []oapi.PolicyTargetSelector{*selector2}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy2)
 
 	// Create policy 3 that matches all
 	policy3 := c.NewPolicy(workspaceID)
 	policy3.Name = "policy-all"
 	selector3 := c.NewPolicyTargetSelector()
-	policy3.Selectors = []*pb.PolicyTargetSelector{selector3}
+	policy3.Selectors = []oapi.PolicyTargetSelector{*selector3}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy3)
 
 	// The release target should match all three policies
-	rt := &pb.ReleaseTarget{
+	rt := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
@@ -749,11 +780,13 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -764,16 +797,18 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-prod-only"
 	selector := c.NewPolicyTargetSelector()
-	selector.DeploymentSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	depSelector := &oapi.Selector{}
+	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "contains",
 		"value":    "prod",
-	}))
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	}})
+	selector.DeploymentSelector = depSelector
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// The dev release target should NOT match the policy
-	rt := &pb.ReleaseTarget{
+	rt := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,
 		EnvironmentId: e1.Id,
 		ResourceId:    r1.Id,
@@ -801,11 +836,13 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -815,11 +852,11 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 	// Create a policy with a selector
 	policy := c.NewPolicy(workspaceID)
 	selector := c.NewPolicyTargetSelector()
-	policy.Selectors = []*pb.PolicyTargetSelector{selector}
+	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Test with a non-existent release target
-	rtNonExistent := &pb.ReleaseTarget{
+	rtNonExistent := &oapi.ReleaseTarget{
 		DeploymentId:  "non-existent-deployment",
 		EnvironmentId: "non-existent-environment",
 		ResourceId:    "non-existent-resource",
@@ -923,7 +960,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 	ctx := context.Background()
 
 	// Test: d1 (prod web) + e1 (us-east) + r1 should match
-	rt1 := &pb.ReleaseTarget{
+	rt1 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
@@ -935,7 +972,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 	}
 
 	// Test: d3 (dev web) + e2 (us-west) + r1 should match
-	rt2 := &pb.ReleaseTarget{
+	rt2 := &oapi.ReleaseTarget{
 		DeploymentId:  d3ID,
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
@@ -947,7 +984,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 	}
 
 	// Test: d2 (prod api) + e1 (us-east) + r1 should NOT match (wrong app type)
-	rt3 := &pb.ReleaseTarget{
+	rt3 := &oapi.ReleaseTarget{
 		DeploymentId:  d2ID,
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
@@ -959,7 +996,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 	}
 
 	// Test: d1 (prod web) + e2 (us-west) + r1 should NOT match (wrong region)
-	rt4 := &pb.ReleaseTarget{
+	rt4 := &oapi.ReleaseTarget{
 		DeploymentId:  d1ID,
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,

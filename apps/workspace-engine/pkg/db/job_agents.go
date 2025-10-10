@@ -2,10 +2,9 @@ package db
 
 import (
 	"context"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const JOB_AGENT_SELECT_QUERY = `
@@ -19,7 +18,7 @@ const JOB_AGENT_SELECT_QUERY = `
 	WHERE j.workspace_id = $1
 `
 
-func getJobAgents(ctx context.Context, workspaceID string) ([]*pb.JobAgent, error) {
+func getJobAgents(ctx context.Context, workspaceID string) ([]*oapi.JobAgent, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -32,7 +31,7 @@ func getJobAgents(ctx context.Context, workspaceID string) ([]*pb.JobAgent, erro
 	}
 	defer rows.Close()
 
-	jobAgents := make([]*pb.JobAgent, 0)
+	jobAgents := make([]*oapi.JobAgent, 0)
 	for rows.Next() {
 		jobAgent, err := scanJobAgentRow(rows)
 		if err != nil {
@@ -43,9 +42,9 @@ func getJobAgents(ctx context.Context, workspaceID string) ([]*pb.JobAgent, erro
 	return jobAgents, nil
 }
 
-func scanJobAgentRow(rows pgx.Rows) (*pb.JobAgent, error) {
-	jobAgent := &pb.JobAgent{}
-	var config *structpb.Struct
+func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
+	jobAgent := &oapi.JobAgent{}
+	var config *map[string]interface{}
 	err := rows.Scan(
 		&jobAgent.Id,
 		&jobAgent.WorkspaceId,
@@ -56,6 +55,6 @@ func scanJobAgentRow(rows pgx.Rows) (*pb.JobAgent, error) {
 	if err != nil {
 		return nil, err
 	}
-	jobAgent.Config = config
+	jobAgent.Config = *config
 	return jobAgent, nil
 }

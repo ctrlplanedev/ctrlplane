@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 )
@@ -14,7 +14,7 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
+	jobAgent := c.NewJobAgent(workspaceID)
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	jobAgentConfig := map[string]any{
@@ -30,7 +30,7 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
-	d1.JobAgentConfig = c.MustNewStructFromMap(jobAgentConfig)
+	d1.JobAgentConfig = jobAgentConfig
 
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
@@ -70,13 +70,13 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	}
 
 	// Verify job properties
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range pendingJobs {
 		job = j
 		break
 	}
 
-	if job.Status != pb.JobStatus_JOB_STATUS_PENDING {
+	if job.Status != oapi.Pending {
 		t.Fatalf("expected job status PENDING, got %v", job.Status)
 	}
 	if job.DeploymentId != d1.Id {
@@ -92,7 +92,7 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 		t.Fatalf("expected job job_agent_id %s, got %s", jobAgent.Id, job.JobAgentId)
 	}
 
-	cfg := job.JobAgentConfig.AsMap()
+	cfg := job.JobAgentConfig
 	if cfg["deploymentConfig"] != jobAgentConfig["deploymentConfig"] {
 		t.Fatalf("expected job job_agent_config deploymentConfig %s, got %s", jobAgentConfig["deploymentConfig"], cfg["deploymentConfig"])
 	}
@@ -103,7 +103,7 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
+	jobAgent := c.NewJobAgent(workspaceID)
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	// Create a system
@@ -168,7 +168,7 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 
 	// Verify all jobs are PENDING
 	for _, job := range pendingJobs {
-		if job.Status != pb.JobStatus_JOB_STATUS_PENDING {
+		if job.Status != oapi.Pending {
 			t.Fatalf("expected job status PENDING, got %v", job.Status)
 		}
 		if job.DeploymentId != d1.Id {
@@ -182,7 +182,7 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
+	jobAgent := c.NewJobAgent(workspaceID)
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	// Create a system
@@ -194,23 +194,27 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
-	d1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	d1Selector := &oapi.Selector{}
+	_ = d1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	}))
+	}})
+	d1.ResourceSelector = d1Selector
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment with a resource selector
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create resources with different metadata
@@ -277,7 +281,7 @@ func TestEngine_NoJobsCreatedWithoutReleaseTargets(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
+	jobAgent := c.NewJobAgent(workspaceID)
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	// Create a system
@@ -315,7 +319,7 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
+	jobAgent := c.NewJobAgent(workspaceID)
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	// Create a system
@@ -332,11 +336,13 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -389,11 +395,13 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource
@@ -425,7 +433,7 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
+	jobAgent := c.NewJobAgent(workspaceID)
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	// Create a system
@@ -447,11 +455,13 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "starts-with",
 		"value":    "",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create two resources
@@ -561,7 +571,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	}
 
 	// Get the original job
-	var originalJob *pb.Job
+	var originalJob *oapi.Job
 	for _, job := range pendingJobs {
 		originalJob = job
 		break
@@ -754,7 +764,7 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 	}
 
 	// Find the job for resource 1
-	var jobForR1 *pb.Job
+	var jobForR1 *oapi.Job
 	for _, job := range pendingJobs {
 		if job.ResourceId == r1.Id {
 			jobForR1 = job
@@ -779,7 +789,7 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 	for _, job := range pendingJobsAfter {
 		if job.Id == jobForR1.Id {
 			jobStillExists = true
-			if job.Status == pb.JobStatus_JOB_STATUS_PENDING {
+			if job.Status == oapi.Pending {
 				t.Logf("Job %s is still PENDING after resource deletion (resource=%s)", job.Id, job.ResourceId)
 			}
 			break
@@ -796,7 +806,7 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 	// The job for resource 2 should still be pending
 	jobForR2Exists := false
 	for _, job := range pendingJobsAfter {
-		if job.ResourceId == r2.Id && job.Status == pb.JobStatus_JOB_STATUS_PENDING {
+		if job.ResourceId == r2.Id && job.Status == oapi.Pending {
 			jobForR2Exists = true
 			break
 		}
@@ -811,7 +821,7 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	jobAgent := c.NewJobAgent()
+	jobAgent := c.NewJobAgent(workspaceID)
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	// Create a system
@@ -828,22 +838,26 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	// Create two environments
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
-	e1.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e1Selector := &oapi.Selector{}
+	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "dev",
 		"key":      "env",
-	}))
+	}})
+	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
-	e2.ResourceSelector = pb.NewJsonSelector(c.MustNewStructFromMap(map[string]any{
+	e2Selector := &oapi.Selector{}
+	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "metadata",
 		"operator": "equals",
 		"value":    "prod",
 		"key":      "env",
-	}))
+	}})
+	e2.ResourceSelector = e2Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 
 	// Create resources
@@ -870,7 +884,7 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	}
 
 	// Find the job for environment 1
-	var jobForE1 *pb.Job
+	var jobForE1 *oapi.Job
 	for _, job := range pendingJobs {
 		if job.EnvironmentId == e1.Id {
 			jobForE1 = job
@@ -891,7 +905,7 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	for _, job := range pendingJobsAfter {
 		if job.Id == jobForE1.Id {
 			jobStillExists = true
-			if job.Status == pb.JobStatus_JOB_STATUS_PENDING {
+			if job.Status == oapi.Pending {
 				t.Logf("Job %s is still PENDING after environment deletion (env=%s)", job.Id, job.EnvironmentId)
 			}
 			break
@@ -907,7 +921,7 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	// The job for environment 2 should still be pending
 	jobForE2Exists := false
 	for _, job := range pendingJobsAfter {
-		if job.EnvironmentId == e2.Id && job.Status == pb.JobStatus_JOB_STATUS_PENDING {
+		if job.EnvironmentId == e2.Id && job.Status == oapi.Pending {
 			jobForE2Exists = true
 			break
 		}

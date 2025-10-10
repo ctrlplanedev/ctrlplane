@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -12,8 +12,8 @@ func NewSystems(store *Store) *Systems {
 	return &Systems{
 		repo:         store.repo,
 		store:        store,
-		deployments:  cmap.New[*materialized.MaterializedView[map[string]*pb.Deployment]](),
-		environments: cmap.New[*materialized.MaterializedView[map[string]*pb.Environment]](),
+		deployments:  cmap.New[*materialized.MaterializedView[map[string]*oapi.Deployment]](),
+		environments: cmap.New[*materialized.MaterializedView[map[string]*oapi.Environment]](),
 	}
 }
 
@@ -21,11 +21,11 @@ type Systems struct {
 	repo  *repository.Repository
 	store *Store
 
-	deployments  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Deployment]]
-	environments cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Environment]]
+	deployments  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Deployment]]
+	environments cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Environment]]
 }
 
-func (s *Systems) Upsert(ctx context.Context, system *pb.System) error {
+func (s *Systems) Upsert(ctx context.Context, system *oapi.System) error {
 	s.repo.Systems.Set(system.Id, system)
 
 	if _, ok := s.deployments.Get(system.Id); !ok {
@@ -40,7 +40,7 @@ func (s *Systems) Upsert(ctx context.Context, system *pb.System) error {
 	return nil
 }
 
-func (s *Systems) Get(id string) (*pb.System, bool) {
+func (s *Systems) Get(id string) (*oapi.System, bool) {
 	return s.repo.Systems.Get(id)
 }
 
@@ -48,9 +48,9 @@ func (s *Systems) Has(id string) bool {
 	return s.repo.Systems.Has(id)
 }
 
-func (s *Systems) computeDeployments(systemId string) materialized.RecomputeFunc[map[string]*pb.Deployment] {
-	return func(ctx context.Context) (map[string]*pb.Deployment, error) {
-		deployments := make(map[string]*pb.Deployment, s.repo.Deployments.Count())
+func (s *Systems) computeDeployments(systemId string) materialized.RecomputeFunc[map[string]*oapi.Deployment] {
+	return func(ctx context.Context) (map[string]*oapi.Deployment, error) {
+		deployments := make(map[string]*oapi.Deployment, s.repo.Deployments.Count())
 		for deploymentItem := range s.repo.Deployments.IterBuffered() {
 			if deploymentItem.Val.SystemId != systemId {
 				continue
@@ -61,18 +61,18 @@ func (s *Systems) computeDeployments(systemId string) materialized.RecomputeFunc
 	}
 }
 
-func (s *Systems) Deployments(systemId string) map[string]*pb.Deployment {
+func (s *Systems) Deployments(systemId string) map[string]*oapi.Deployment {
 	mv, ok := s.deployments.Get(systemId)
 	if !ok {
-		return map[string]*pb.Deployment{}
+		return map[string]*oapi.Deployment{}
 	}
 	mv.WaitIfRunning()
 	return mv.Get()
 }
 
-func (s *Systems) computeEnvironments(systemId string) materialized.RecomputeFunc[map[string]*pb.Environment] {
-	return func(ctx context.Context) (map[string]*pb.Environment, error) {
-		environments := make(map[string]*pb.Environment, s.repo.Environments.Count())
+func (s *Systems) computeEnvironments(systemId string) materialized.RecomputeFunc[map[string]*oapi.Environment] {
+	return func(ctx context.Context) (map[string]*oapi.Environment, error) {
+		environments := make(map[string]*oapi.Environment, s.repo.Environments.Count())
 		for environmentItem := range s.repo.Environments.IterBuffered() {
 			if environmentItem.Val.SystemId != systemId {
 				continue
@@ -83,10 +83,10 @@ func (s *Systems) computeEnvironments(systemId string) materialized.RecomputeFun
 	}
 }
 
-func (s *Systems) Environments(systemId string) map[string]*pb.Environment {
+func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
 	mv, ok := s.environments.Get(systemId)
 	if !ok {
-		return map[string]*pb.Environment{}
+		return map[string]*oapi.Environment{}
 	}
 	mv.WaitIfRunning()
 	return mv.Get()
@@ -113,7 +113,7 @@ func (s *Systems) Remove(ctx context.Context, id string) {
 func (s *Systems) ApplyDeploymentUpdate(
 	ctx context.Context,
 	previousSystemId string,
-	deployment *pb.Deployment,
+	deployment *oapi.Deployment,
 ) error {
 	// Recompute deployments for the previous system, if it exists
 	if oldDeployments, exists := s.deployments.Get(previousSystemId); exists {
@@ -135,7 +135,7 @@ func (s *Systems) ApplyDeploymentUpdate(
 func (s *Systems) ApplyEnvironmentUpdate(
 	ctx context.Context,
 	previousSystemId string,
-	environment *pb.Environment,
+	environment *oapi.Environment,
 ) error {
 	// Recompute deployments for the previous system, if it exists
 	if oldEnvironments, exists := s.environments.Get(previousSystemId); exists {
@@ -152,6 +152,6 @@ func (s *Systems) ApplyEnvironmentUpdate(
 	return nil
 }
 
-func (s *Systems) Items() map[string]*pb.System {
+func (s *Systems) Items() map[string]*oapi.System {
 	return s.repo.Systems.Items()
 }

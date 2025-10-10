@@ -2,11 +2,10 @@ package userapprovalrecords
 
 import (
 	"context"
+	"encoding/json"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleUserApprovalRecordCreated(
@@ -14,8 +13,8 @@ func HandleUserApprovalRecordCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	userApprovalRecord := &pb.UserApprovalRecord{}
-	if err := protojson.Unmarshal(event.Data, userApprovalRecord); err != nil {
+	userApprovalRecord := &oapi.UserApprovalRecord{}
+	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
 		return err
 	}
 
@@ -33,8 +32,8 @@ func HandleUserApprovalRecordUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	userApprovalRecord := &pb.UserApprovalRecord{}
-	if err := protojson.Unmarshal(event.Data, userApprovalRecord); err != nil {
+	userApprovalRecord := &oapi.UserApprovalRecord{}
+	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
 		return err
 	}
 
@@ -52,8 +51,8 @@ func HandleUserApprovalRecordDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	userApprovalRecord := &pb.UserApprovalRecord{}
-	if err := protojson.Unmarshal(event.Data, userApprovalRecord); err != nil {
+	userApprovalRecord := &oapi.UserApprovalRecord{}
+	if err := json.Unmarshal(event.Data, userApprovalRecord); err != nil {
 		return err
 	}
 

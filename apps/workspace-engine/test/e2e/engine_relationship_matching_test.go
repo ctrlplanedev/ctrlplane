@@ -3,9 +3,9 @@ package e2e
 import (
 	"context"
 	"testing"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/test/integration"
-	c "workspace-engine/test/integration/creators"
 )
 
 // TestEngine_GetRelatedEntities_ResourceToResource tests finding related resources
@@ -141,7 +141,7 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -226,7 +226,7 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"job_agent_config", "region"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -396,7 +396,7 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"id"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "vpc_id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithRelationshipRule(
@@ -418,7 +418,7 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"id"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "vpc_id"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -512,12 +512,12 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator("not_equals"),
+				integration.PropertyMatcherOperator(oapi.NotEquals),
 			),
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "cluster_name"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "cluster_name"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -600,7 +600,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "prefix"}),
 				integration.PropertyMatcherToProperty([]string{"name"}),
-				integration.PropertyMatcherOperator("contains"),
+				integration.PropertyMatcherOperator(oapi.Contains),
 			),
 		),
 		integration.WithResource(
@@ -690,7 +690,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "region_code"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "code_prefix"}),
-				integration.PropertyMatcherOperator("starts_with"),
+				integration.PropertyMatcherOperator(oapi.StartsWith),
 			),
 		),
 		integration.WithResource(
@@ -789,7 +789,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "app_id"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "suffix"}),
-				integration.PropertyMatcherOperator("ends_with"),
+				integration.PropertyMatcherOperator(oapi.EndsWith),
 			),
 		),
 		integration.WithResource(
@@ -879,7 +879,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -971,19 +971,19 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"config", "dependencies", "database"}),
 				integration.PropertyMatcherToProperty([]string{"name"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
 			integration.ResourceID("service-api"),
 			integration.ResourceName("api-service"),
 			integration.ResourceKind("service"),
-			integration.ResourceConfig(c.MustNewStructFromMap(map[string]any{
-				"dependencies": map[string]any{
+			integration.ResourceConfig(map[string]interface{}{
+				"dependencies": map[string]interface{}{
 					"database": "postgres-service",
 					"cache":    "redis-service",
 				},
-			})),
+			}),
 		),
 		integration.WithResource(
 			integration.ResourceID("service-postgres"),
@@ -1095,7 +1095,7 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator("equals"),
+				integration.PropertyMatcherOperator(oapi.Equals),
 			),
 		),
 		integration.WithResource(
@@ -1135,4 +1135,3 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 		t.Fatalf("expected empty results, got %d relationships", len(relatedEntities))
 	}
 }
-

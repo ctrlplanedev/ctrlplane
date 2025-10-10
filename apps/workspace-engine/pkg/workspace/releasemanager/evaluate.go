@@ -33,15 +33,13 @@ import (
 	"sync"
 	"time"
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager")
@@ -49,11 +47,11 @@ var tracer = otel.Tracer("workspace/releasemanager")
 // EvaluateChange processes detected changes to release targets (WRITES TO STORE).
 // Handles added, updated, and removed release targets concurrently.
 // Returns a map of cancelled jobs (for removed targets).
-func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.ConcurrentMap[string, *pb.Job] {
+func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.ConcurrentMap[string, *oapi.Job] {
 	ctx, span := tracer.Start(ctx, "EvaluateChange")
 	defer span.End()
 
-	cancelledJobs := cmap.New[*pb.Job]()
+	cancelledJobs := cmap.New[*oapi.Job]()
 	var wg sync.WaitGroup
 
 	// Combine Added and Tainted release targets for processing
@@ -62,7 +60,7 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 	// Process added release targets
 	for _, rt := range allToProcess {
 		wg.Add(1)
-		go func(target *pb.ReleaseTarget) {
+		go func(target *oapi.ReleaseTarget) {
 			defer wg.Done()
 			if err := m.ProcessReleaseTarget(ctx, target); err != nil {
 				log.Warn("error processing added release target", "error", err.Error())
@@ -73,12 +71,12 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 	// Cancel jobs for removed release targets
 	for _, rt := range changes.Changes.Removed {
 		wg.Add(1)
-		go func(target *pb.ReleaseTarget) {
+		go func(target *oapi.ReleaseTarget) {
 			defer wg.Done()
 			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(target) {
 				if job != nil {
-					job.Status = pb.JobStatus_JOB_STATUS_CANCELLED
-					job.UpdatedAt = time.Now().Format(time.RFC3339)
+					job.Status = oapi.Cancelled
+					job.UpdatedAt = time.Now()
 					cancelledJobs.Set(job.Id, job)
 				}
 			}
@@ -97,8 +95,8 @@ func (m *Manager) EvaluateChange(ctx context.Context, changes *SyncResult) cmap.
 //
 // If Evaluate() returns nil → Nothing to deploy (already deployed, no versions, or blocked)
 // If Evaluate() returns release → Deploy it (Evaluate() already checked everything)
-func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *pb.ReleaseTarget) error {
-	targetKey := releaseTarget.Id
+func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error {
+	targetKey := releaseTarget.Key()
 	lockInterface, _ := m.releaseTargetLocks.LoadOrStore(targetKey, &sync.Mutex{})
 	lock := lockInterface.(*sync.Mutex)
 
@@ -129,7 +127,7 @@ func (m *Manager) ProcessReleaseTarget(ctx context.Context, releaseTarget *pb.Re
 // executeDeployment performs all write operations to deploy a release (WRITES TO STORE).
 // Precondition: Evaluate() has already determined this release NEEDS to be deployed.
 // No additional "should we deploy" checks here - trust the decision phase.
-func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Release) error {
+func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *oapi.Release) error {
 	ctx, span := tracer.Start(ctx, "executeDeployment")
 	defer span.End()
 
@@ -160,16 +158,16 @@ func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *pb.Rel
 }
 
 // cancelOutdatedJobs cancels jobs for outdated releases (WRITES TO STORE).
-func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Release) {
+func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *oapi.Release) {
 	ctx, span := tracer.Start(ctx, "cancelOutdatedJobs")
 	defer span.End()
 
-	jobs := m.store.Jobs.GetJobsForReleaseTarget(desiredRelease.ReleaseTarget)
+	jobs := m.store.Jobs.GetJobsForReleaseTarget(&desiredRelease.ReleaseTarget)
 
 	for _, job := range jobs {
-		if job.Status == pb.JobStatus_JOB_STATUS_PENDING {
-			job.Status = pb.JobStatus_JOB_STATUS_CANCELLED
-			job.UpdatedAt = time.Now().Format(time.RFC3339)
+		if job.Status == oapi.Pending {
+			job.Status = oapi.Cancelled
+			job.UpdatedAt = time.Now()
 			m.store.Jobs.Upsert(ctx, job)
 		}
 	}
@@ -184,7 +182,7 @@ func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Rel
 //  4. Job already in progress for this release (pending/in-progress job exists)
 //
 // Returns:
-//   - *pb.Release: This release NEEDS to be deployed (definitely needs a new job)
+//   - *oapi.Release: This release NEEDS to be deployed (definitely needs a new job)
 //   - nil: No deployment needed (see decision logic above)
 //   - error: Evaluation failed
 //
@@ -194,7 +192,7 @@ func (m *Manager) cancelOutdatedJobs(ctx context.Context, desiredRelease *pb.Rel
 //	Phase 2 (executeDeployment): ACTION - write operations to make it happen
 //
 // Trust the contract: If this returns a release, caller should deploy it without additional checks.
-func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (*pb.Release, error) {
+func (m *Manager) evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Release, error) {
 	ctx, span := tracer.Start(ctx, "Evaluate",
 		trace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),
@@ -244,9 +242,9 @@ func (m *Manager) evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 // Returns nil if all versions are blocked by policies.
 func (m *Manager) selectDeployableVersion(
 	ctx context.Context,
-	candidateVersions []*pb.DeploymentVersion,
-	releaseTarget *pb.ReleaseTarget,
-) *pb.DeploymentVersion {
+	candidateVersions []*oapi.DeploymentVersion,
+	releaseTarget *oapi.ReleaseTarget,
+) *oapi.DeploymentVersion {
 	ctx, span := tracer.Start(ctx, "selectDeployableVersion")
 	defer span.End()
 
@@ -281,10 +279,10 @@ func (m *Manager) selectDeployableVersion(
 
 func buildRelease(
 	ctx context.Context,
-	releaseTarget *pb.ReleaseTarget,
-	version *pb.DeploymentVersion,
-	variables map[string]*pb.LiteralValue,
-) *pb.Release {
+	releaseTarget *oapi.ReleaseTarget,
+	version *oapi.DeploymentVersion,
+	variables map[string]*oapi.LiteralValue,
+) *oapi.Release {
 	_, span := tracer.Start(ctx, "buildRelease",
 		trace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),
@@ -297,32 +295,15 @@ func buildRelease(
 	defer span.End()
 
 	// Clone variables to avoid mutations affecting this release
-	clonedVariables := make(map[string]*pb.LiteralValue, len(variables))
-	for k, v := range variables {
-		// Deep copy is not strictly necessary for protobuf messages unless you plan to mutate them,
-		// but to be safe, clone the LiteralValue.
-		if v != nil {
-			clonedVariables[k] = proto.Clone(v).(*pb.LiteralValue)
-		} else {
-			clonedVariables[k] = nil
-		}
-	}
+	clonedVariables := make(map[string]oapi.LiteralValue, len(variables))
 
-	return &pb.Release{
-		ReleaseTarget:      releaseTarget,
-		Version:            version,
+	return &oapi.Release{
+		ReleaseTarget:      *releaseTarget,
+		Version:            *version,
 		Variables:          clonedVariables,
 		EncryptedVariables: []string{}, // TODO: Handle encrypted variables
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
-}
-
-func mustNewStructFromMap(m map[string]any) *structpb.Struct {
-	s, err := structpb.NewStruct(m)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create struct: %v", err))
-	}
-	return s
 }
 
 func DeepMerge(dst, src map[string]any) {
@@ -339,7 +320,7 @@ func DeepMerge(dst, src map[string]any) {
 
 // NewJob creates a job for a given release (PURE FUNCTION, NO WRITES).
 // The job is configured with merged settings from JobAgent + Deployment.
-func (m *Manager) NewJob(ctx context.Context, release *pb.Release) (*pb.Job, error) {
+func (m *Manager) NewJob(ctx context.Context, release *oapi.Release) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "NewJob",
 		trace.WithAttributes(
 			attribute.String("deployment.id", release.ReleaseTarget.DeploymentId),
@@ -350,44 +331,44 @@ func (m *Manager) NewJob(ctx context.Context, release *pb.Release) (*pb.Job, err
 		))
 	defer span.End()
 
-	releaseTarget := release.GetReleaseTarget()
+	releaseTarget := release.ReleaseTarget
 
 	// Lookup deployment
-	deployment, exists := m.store.Deployments.Get(releaseTarget.GetDeploymentId())
+	deployment, exists := m.store.Deployments.Get(releaseTarget.DeploymentId)
 	if !exists {
-		return nil, fmt.Errorf("deployment %s not found", releaseTarget.GetDeploymentId())
+		return nil, fmt.Errorf("deployment %s not found", releaseTarget.DeploymentId)
 	}
 
 	// Validate job agent exists
-	jobAgentId := deployment.GetJobAgentId()
-	if jobAgentId == "" {
+	jobAgentId := deployment.JobAgentId
+	if jobAgentId == nil || *jobAgentId == "" {
 		return nil, fmt.Errorf("deployment %s has no job agent configured", deployment.Id)
 	}
 
-	jobAgent, exists := m.store.JobAgents.Get(jobAgentId)
+	jobAgent, exists := m.store.JobAgents.Get(*jobAgentId)
 	if !exists {
-		return nil, fmt.Errorf("job agent %s not found", jobAgentId)
+		return nil, fmt.Errorf("job agent %s not found", *jobAgentId)
 	}
 
 	// Merge job agent config: deployment config overrides agent defaults
 	mergedConfig := make(map[string]any)
-	DeepMerge(mergedConfig, jobAgent.GetConfig().AsMap())
-	DeepMerge(mergedConfig, deployment.GetJobAgentConfig().AsMap())
+	DeepMerge(mergedConfig, jobAgent.Config)
+	DeepMerge(mergedConfig, deployment.JobAgentConfig)
 
-	return &pb.Job{
+	return &oapi.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      release.ID(),
-		JobAgentId:     jobAgentId,
-		JobAgentConfig: mustNewStructFromMap(mergedConfig),
-		Status:         pb.JobStatus_JOB_STATUS_PENDING,
-		ResourceId:     releaseTarget.GetResourceId(),
-		EnvironmentId:  releaseTarget.GetEnvironmentId(),
-		DeploymentId:   releaseTarget.GetDeploymentId(),
-		CreatedAt:      time.Now().Format(time.RFC3339),
-		UpdatedAt:      time.Now().Format(time.RFC3339),
+		JobAgentId:     *jobAgentId,
+		JobAgentConfig: mergedConfig,
+		Status:         oapi.Pending,
+		ResourceId:     releaseTarget.ResourceId,
+		EnvironmentId:  releaseTarget.EnvironmentId,
+		DeploymentId:   releaseTarget.DeploymentId,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}, nil
 }
 
-func (m *Manager) IntegrationDispatch(ctx context.Context, job *pb.Job) error {
+func (m *Manager) IntegrationDispatch(ctx context.Context, job *oapi.Job) error {
 	return nil
 }

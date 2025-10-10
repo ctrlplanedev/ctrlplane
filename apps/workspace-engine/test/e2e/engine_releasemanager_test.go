@@ -600,4 +600,3 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 		}
 	}
 }
-

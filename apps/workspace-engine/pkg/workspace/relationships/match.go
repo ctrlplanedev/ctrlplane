@@ -1,13 +1,13 @@
 package relationships
 
 import (
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 )
 
 type Entity struct {
-	deployment *pb.Deployment
-	environment *pb.Environment
-	resource *pb.Resource
+	deployment  *oapi.Deployment
+	environment *oapi.Environment
+	resource    *oapi.Resource
 }
 
 func (e *Entity) GetType() string {
@@ -23,15 +23,15 @@ func (e *Entity) GetType() string {
 	return ""
 }
 
-func (e *Entity) GetDeployment() *pb.Deployment {
+func (e *Entity) GetDeployment() *oapi.Deployment {
 	return e.deployment
 }
 
-func (e *Entity) GetEnvironment() *pb.Environment {
+func (e *Entity) GetEnvironment() *oapi.Environment {
 	return e.environment
 }
 
-func (e *Entity) GetResource() *pb.Resource {
+func (e *Entity) GetResource() *oapi.Resource {
 	return e.resource
 }
 
@@ -59,14 +59,14 @@ func (e *Entity) Item() any {
 	return nil
 }
 
-func NewDeploymentEntity(deployment *pb.Deployment) *Entity {
+func NewDeploymentEntity(deployment *oapi.Deployment) *Entity {
 	return &Entity{deployment: deployment}
 }
 
-func NewEnvironmentEntity(environment *pb.Environment) *Entity {
+func NewEnvironmentEntity(environment *oapi.Environment) *Entity {
 	return &Entity{environment: environment}
 }
 
-func NewResourceEntity(resource *pb.Resource) *Entity {
+func NewResourceEntity(resource *oapi.Resource) *Entity {
 	return &Entity{resource: resource}
 }

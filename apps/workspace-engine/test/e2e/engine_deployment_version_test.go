@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	"workspace-engine/test/integration/creators"
 
@@ -94,7 +94,7 @@ func TestEngine_DeploymentVersionCreatesJobsForAllReleaseTargets(t *testing.T) {
 		if job.JobAgentId != jobAgentId {
 			t.Errorf("job %s has incorrect job_agent_id: expected %s, got %s", job.Id, jobAgentId, job.JobAgentId)
 		}
-		if job.Status != pb.JobStatus_JOB_STATUS_PENDING {
+		if job.Status != oapi.Pending {
 			t.Errorf("job %s has incorrect status: expected PENDING, got %v", job.Id, job.Status)
 		}
 	}
@@ -158,7 +158,7 @@ func TestEngine_SequentialDeploymentVersionsCreateCorrectJobs(t *testing.T) {
 	jobsByVersion := make(map[string]int)
 	for _, job := range allJobs {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
-		if ok && release.Version != nil {
+		if ok	 {
 			jobsByVersion[release.Version.Tag]++
 		}
 	}
@@ -190,11 +190,11 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 	dv := creators.NewDeploymentVersion()
 	dv.DeploymentId = deploymentId
 	dv.Tag = "v1.0.0"
-	dv.Config = creators.MustNewStructFromMap(map[string]any{
+	dv.Config = map[string]any{
 		"image":      "myapp:v1.0.0",
 		"git_commit": "abc123",
 		"replicas":   3,
-	})
+	}
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 	// Verify job was created
@@ -204,7 +204,7 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 	}
 
 	// Verify job references the correct release with config
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range pendingJobs {
 		job = j
 		break
@@ -213,10 +213,6 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !ok {
 		t.Fatalf("release %s not found for job", job.ReleaseId)
-	}
-
-	if release.Version == nil {
-		t.Fatal("expected release version to be set")
 	}
 
 	if release.Version.Tag != "v1.0.0" {
@@ -228,7 +224,7 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 		t.Fatal("expected version config to be set")
 	}
 
-	config := release.Version.Config.AsMap()
+	config := release.Version.Config
 	if config["image"] != "myapp:v1.0.0" {
 		t.Errorf("expected image=myapp:v1.0.0, got %v", config["image"])
 	}
@@ -561,7 +557,7 @@ func TestEngine_DeploymentVersionJobsWithJobAgentConfig(t *testing.T) {
 		t.Fatalf("expected 1 job, got %d", len(pendingJobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range pendingJobs {
 		job = j
 		break
@@ -571,7 +567,7 @@ func TestEngine_DeploymentVersionJobsWithJobAgentConfig(t *testing.T) {
 		t.Fatal("job agent config is nil")
 	}
 
-	config := job.JobAgentConfig.AsMap()
+	config := job.JobAgentConfig
 	if config["timeout"] != float64(300) {
 		t.Errorf("expected timeout=300, got %v", config["timeout"])
 	}
@@ -648,7 +644,7 @@ func BenchmarkEngine_DeploymentVersionCreation(b *testing.B) {
 
 	const numVersions = 1
 
-	versions := make([]*pb.DeploymentVersion, numVersions)
+	versions := make([]*oapi.DeploymentVersion, numVersions)
 	for i := range versions {
 		versions[i] = creators.NewDeploymentVersion()
 	}
@@ -703,7 +699,7 @@ func TestEngine_LatestWins(t *testing.T) {
 		t.Fatalf("expected 1 pending job after v1.0.0, got %d", len(pendingJobs))
 	}
 
-	var v1Job *pb.Job
+	var v1Job *oapi.Job
 	for _, job := range pendingJobs {
 		v1Job = job
 		break
@@ -738,7 +734,7 @@ func TestEngine_LatestWins(t *testing.T) {
 	}
 
 	// Verify the pending job is for v2.0.0
-	var v2Job *pb.Job
+	var v2Job *oapi.Job
 	for _, job := range pendingJobs {
 		v2Job = job
 		break
@@ -757,7 +753,7 @@ func TestEngine_LatestWins(t *testing.T) {
 	if !ok {
 		t.Fatal("v1 job not found")
 	}
-	if v1JobUpdated.Status != pb.JobStatus_JOB_STATUS_CANCELLED {
+	if v1JobUpdated.Status != oapi.Cancelled {
 		t.Fatalf("expected v1 job to be cancelled, got status %v", v1JobUpdated.Status)
 	}
 
@@ -781,7 +777,7 @@ func TestEngine_LatestWins(t *testing.T) {
 	}
 
 	// Verify the pending job is for v3.0.0
-	var v3Job *pb.Job
+	var v3Job *oapi.Job
 	for _, job := range pendingJobs {
 		v3Job = job
 		break
@@ -800,7 +796,7 @@ func TestEngine_LatestWins(t *testing.T) {
 	if !ok {
 		t.Fatal("v2 job not found")
 	}
-	if v2JobUpdated.Status != pb.JobStatus_JOB_STATUS_CANCELLED {
+	if v2JobUpdated.Status != oapi.Cancelled {
 		t.Fatalf("expected v2 job to be cancelled, got status %v", v2JobUpdated.Status)
 	}
 }
@@ -877,7 +873,7 @@ func TestEngine_LatestWins_MultipleReleaseTargets(t *testing.T) {
 	// Count cancelled jobs - should be 2 (both v1.0.0 jobs)
 	cancelledCount := 0
 	for _, job := range allJobs {
-		if job.Status == pb.JobStatus_JOB_STATUS_CANCELLED {
+		if job.Status == oapi.Cancelled {
 			cancelledCount++
 			// Verify cancelled jobs are v1.0.0
 			release, ok := engine.Workspace().Releases().Get(job.ReleaseId)

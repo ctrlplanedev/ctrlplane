@@ -3,10 +3,10 @@ package resourcevariables
 import (
 	"context"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"google.golang.org/protobuf/encoding/protojson"
+	"encoding/json"
 )
 
 func HandleResourceVariableCreated(
@@ -14,8 +14,8 @@ func HandleResourceVariableCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	resourceVariable := &pb.ResourceVariable{}
-	if err := protojson.Unmarshal(event.Data, resourceVariable); err != nil {
+	resourceVariable := &oapi.ResourceVariable{}
+	if err := json.Unmarshal(event.Data, resourceVariable); err != nil {
 		return err
 	}
 
@@ -30,8 +30,8 @@ func HandleResourceVariableUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	resourceVariable := &pb.ResourceVariable{}
-	if err := protojson.Unmarshal(event.Data, resourceVariable); err != nil {
+	resourceVariable := &oapi.ResourceVariable{}
+	if err := json.Unmarshal(event.Data, resourceVariable); err != nil {
 		return err
 	}
 
@@ -46,8 +46,8 @@ func HandleResourceVariableDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	resourceVariable := &pb.ResourceVariable{}
-	if err := protojson.Unmarshal(event.Data, resourceVariable); err != nil {
+	resourceVariable := &oapi.ResourceVariable{}
+	if err := json.Unmarshal(event.Data, resourceVariable); err != nil {
 		return err
 	}
 

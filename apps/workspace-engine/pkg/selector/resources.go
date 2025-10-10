@@ -3,7 +3,7 @@ package selector
 import (
 	"context"
 
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 
@@ -15,8 +15,13 @@ var tracer = otel.Tracer("selector")
 
 type Selector any
 
-func FilterMatchingResources(ctx context.Context, sel *pb.Selector, resource *pb.Resource) (bool, error) {
-	unknownCondition, err := unknown.ParseFromMap(sel.GetJson().AsMap())
+func FilterMatchingResources(ctx context.Context, sel *oapi.Selector, resource *oapi.Resource) (bool, error) {
+	jsonSelector, err := sel.AsJsonSelector()
+	if err != nil {
+		return false, err
+	}
+
+	unknownCondition, err := unknown.ParseFromMap(jsonSelector.Json)
 	if err != nil {
 		return false, err
 	}
@@ -29,16 +34,21 @@ func FilterMatchingResources(ctx context.Context, sel *pb.Selector, resource *pb
 	return condition.Matches(resource)
 }
 
-func FilterResources(ctx context.Context, sel *pb.Selector, resources []*pb.Resource) (map[string]*pb.Resource, error) {
+func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.Resource) (map[string]*oapi.Resource, error) {
 	ctx, span := tracer.Start(ctx, "FilterResources")
 	defer span.End()
 
-	// If no selector is provided, return no resources
-	if sel == nil || sel.GetJson() == nil {
-		return map[string]*pb.Resource{}, nil
+	jsonSelector, err := sel.AsJsonSelector()
+	if err != nil {
+		return nil, err
 	}
 
-	unknownCondition, err := unknown.ParseFromMap(sel.GetJson().AsMap())
+	// If no selector is provided, return no resources
+	if sel == nil || jsonSelector.Json == nil {
+		return map[string]*oapi.Resource{}, nil
+	}
+
+	unknownCondition, err := unknown.ParseFromMap(jsonSelector.Json)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +63,7 @@ func FilterResources(ctx context.Context, sel *pb.Selector, resources []*pb.Reso
 	// Pre-allocate with reasonable capacity (assume ~50% match rate to minimize reallocations)
 	// This avoids multiple slice reallocations during append
 	estimatedCapacity := max(len(resources)/2, 128)
-	matchedResources := make(map[string]*pb.Resource, estimatedCapacity)
+	matchedResources := make(map[string]*oapi.Resource, estimatedCapacity)
 
 	for _, resource := range resources {
 		matched, err := selector.Matches(resource)

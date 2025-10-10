@@ -3,17 +3,16 @@ package creators
 import (
 	"fmt"
 	"time"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var deploymentVersionCounter = 0
 
 // NewDeploymentVersion creates a test DeploymentVersion with sensible defaults
 // All fields can be overridden via functional options
-func NewDeploymentVersion() *pb.DeploymentVersion {
+func NewDeploymentVersion() *oapi.DeploymentVersion {
 	// Create with defaults
 	id := uuid.New().String()
 	idSubstring := id
@@ -22,25 +21,16 @@ func NewDeploymentVersion() *pb.DeploymentVersion {
 	}
 
 	deploymentVersionCounter++
-	dv := &pb.DeploymentVersion{
+	dv := &oapi.DeploymentVersion{
 		Id:             id,
 		Name:           fmt.Sprintf("dv-%s", idSubstring),
 		Tag:            fmt.Sprintf("v1.0.%d", deploymentVersionCounter),
 		DeploymentId:   uuid.New().String(),
-		Status:         pb.DeploymentVersionStatus_DEPLOYMENT_VERSION_STATUS_READY,
+		Status:         oapi.DeploymentVersionStatusReady,
 		CreatedAt:      time.Now().Format(time.RFC3339Nano),
-		Config:         MustNewStructFromMap(map[string]any{}),
-		JobAgentConfig: MustNewStructFromMap(map[string]any{}),
+		Config:         make(map[string]interface{}),
+		JobAgentConfig: make(map[string]interface{}),
 	}
 
 	return dv
-}
-
-// Helper function to create a structpb.Struct from a map
-func MustNewStructFromMap(m map[string]any) *structpb.Struct {
-	s, err := structpb.NewStruct(m)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create struct: %v", err))
-	}
-	return s
 }

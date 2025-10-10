@@ -2,29 +2,29 @@ package results
 
 import (
 	"context"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 )
 
 type VersionRuleEvaluator interface {
 	Evaluate(
 		ctx context.Context,
-		releaseTarget *pb.ReleaseTarget,
-		version *pb.DeploymentVersion,
+		releaseTarget *oapi.ReleaseTarget,
+		version *oapi.DeploymentVersion,
 	) (*RuleEvaluationResult, error)
 }
 
 type ReleaseRuleEvaluator interface {
 	Evaluate(
 		ctx context.Context,
-		releaseTarget *pb.ReleaseTarget,
-		release *pb.Release,
+		releaseTarget *oapi.ReleaseTarget,
+		release *oapi.Release,
 	) (*RuleEvaluationResult, error)
 }
 
 type ReleaseTargetRuleEvaluator interface {
 	Evaluate(
 		ctx context.Context,
-		releaseTarget *pb.ReleaseTarget,
+		releaseTarget *oapi.ReleaseTarget,
 	) (*RuleEvaluationResult, error)
 }
 

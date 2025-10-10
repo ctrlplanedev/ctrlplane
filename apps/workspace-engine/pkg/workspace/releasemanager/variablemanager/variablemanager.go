@@ -3,7 +3,7 @@ package variablemanager
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
@@ -24,11 +24,11 @@ func New(store *store.Store) *Manager {
 }
 
 type DeploymentVariableWithValues struct {
-	DeploymentVariable *pb.DeploymentVariable
-	Values             map[string]*pb.DeploymentVariableValue
+	DeploymentVariable *oapi.DeploymentVariable
+	Values             map[string]*oapi.DeploymentVariableValue
 }
 
-func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget) (map[string]*pb.LiteralValue, error) {
+func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.LiteralValue, error) {
 	ctx, span := tracer.Start(ctx, "Evaluate", trace.WithAttributes(
 		attribute.String("deployment.id", releaseTarget.DeploymentId),
 		attribute.String("environment.id", releaseTarget.EnvironmentId),
@@ -36,7 +36,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 	))
 	defer span.End()
 
-	resolvedVariables := make(map[string]*pb.LiteralValue)
+	resolvedVariables := make(map[string]*oapi.LiteralValue)
 
 	resource, exists := m.store.Resources.Get(releaseTarget.ResourceId)
 	if !exists {
@@ -45,7 +45,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 	resourceVariables := m.store.Resources.Variables(releaseTarget.ResourceId)
 
 	for key, rv := range resourceVariables {
-		value := rv.Value
+		value := &rv.Value
 		entity := relationships.NewResourceEntity(resource)
 		result, err := m.store.Variables.ResolveValue(ctx, entity, value)
 		if err != nil {
@@ -74,7 +74,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *pb.ReleaseTarget)
 			}
 
 			entity := relationships.NewResourceEntity(resource)
-			result, err := m.store.Variables.ResolveValue(ctx, entity, value.Value)
+			result, err := m.store.Variables.ResolveValue(ctx, entity, &value.Value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve variable %q: %w", key, err)
 			}

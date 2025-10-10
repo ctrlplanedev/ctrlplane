@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/repository"
@@ -21,12 +21,12 @@ type RelationshipRules struct {
 	store *Store
 }
 
-func (r *RelationshipRules) Upsert(ctx context.Context, relationship *pb.RelationshipRule) error {
+func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.RelationshipRule) error {
 	r.repo.RelationshipRules.Set(relationship.Id, relationship)
 	return nil
 }
 
-func (r *RelationshipRules) Get(id string) (*pb.RelationshipRule, bool) {
+func (r *RelationshipRules) Get(id string) (*oapi.RelationshipRule, bool) {
 	return r.repo.RelationshipRules.Get(id)
 }
 
@@ -107,9 +107,9 @@ func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *rela
 // findMatchingEntities is a helper function that finds entities matching a selector and property matchers
 func (r *RelationshipRules) findMatchingEntities(
 	ctx context.Context,
-	rule *pb.RelationshipRule,
+	rule *oapi.RelationshipRule,
 	entityType string,
-	entitySelector *pb.Selector,
+	entitySelector *oapi.Selector,
 	sourceEntity any,
 	evaluateFromTo bool, // true = evaluate(source, target), false = evaluate(target, source)
 ) ([]*relationships.Entity, error) {
@@ -132,7 +132,7 @@ func (r *RelationshipRules) findMatchingEntities(
 			if len(rule.PropertyMatchers) > 0 {
 				allMatch := true
 				for _, pm := range rule.PropertyMatchers {
-					matcher := relationships.NewPropertyMatcher(pm)
+					matcher := relationships.NewPropertyMatcher(&pm)
 					var matches bool
 					if evaluateFromTo {
 						matches = matcher.Evaluate(sourceEntity, deployment)
@@ -167,7 +167,7 @@ func (r *RelationshipRules) findMatchingEntities(
 			if len(rule.PropertyMatchers) > 0 {
 				allMatch := true
 				for _, pm := range rule.PropertyMatchers {
-					matcher := relationships.NewPropertyMatcher(pm)
+					matcher := relationships.NewPropertyMatcher(&pm)
 					var matches bool
 					if evaluateFromTo {
 						matches = matcher.Evaluate(sourceEntity, environment)
@@ -202,7 +202,7 @@ func (r *RelationshipRules) findMatchingEntities(
 			if len(rule.PropertyMatchers) > 0 {
 				allMatch := true
 				for _, pm := range rule.PropertyMatchers {
-					matcher := relationships.NewPropertyMatcher(pm)
+					matcher := relationships.NewPropertyMatcher(&pm)
 					var matches bool
 					if evaluateFromTo {
 						matches = matcher.Evaluate(sourceEntity, resource)

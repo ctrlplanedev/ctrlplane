@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"time"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -13,20 +13,20 @@ func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 	st := store.New()
 	evaluator := NewSkipDeployedEvaluator(st)
 
-	release := &pb.Release{
-		ReleaseTarget: &pb.ReleaseTarget{
+	release := &oapi.Release{
+		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  "deployment-1",
 			EnvironmentId: "env-1",
 			ResourceId:    "resource-1",
 		},
-		Version: &pb.DeploymentVersion{
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
 	}
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), release.ReleaseTarget, release)
+	result, err := evaluator.Evaluate(context.Background(), &release.ReleaseTarget, release)
 
 	// Assert
 	if err != nil {
@@ -47,28 +47,28 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	st := store.New()
 	ctx := context.Background()
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	previousRelease := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	previousRelease := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
 	}
 
 	// Create failed job with completion time
-	completedAt := time.Now().Format(time.RFC3339)
+	completedAt := time.Now()
 	st.Releases.Upsert(ctx, previousRelease)
-	st.Jobs.Upsert(ctx, &pb.Job{
+	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   previousRelease.ID(),
-		Status:      pb.JobStatus_JOB_STATUS_FAILURE,
-		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		Status:      oapi.Failure,
+		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
@@ -86,7 +86,7 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Reason)
 	}
 
-	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_FAILURE.String() {
+	if result.Details["job_status"] != string(oapi.Failure) {
 		t.Errorf("expected job_status to be FAILURE, got %v", result.Details["job_status"])
 	}
 
@@ -100,28 +100,28 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 	st := store.New()
 	ctx := context.Background()
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	deployedRelease := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	deployedRelease := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
 	}
 
 	// Create successful job with completion time
-	completedAt := time.Now().Format(time.RFC3339)
+	completedAt := time.Now()
 	st.Releases.Upsert(ctx, deployedRelease)
-	st.Jobs.Upsert(ctx, &pb.Job{
+	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   deployedRelease.ID(),
-		Status:      pb.JobStatus_JOB_STATUS_SUCCESSFUL,
-		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		Status:      oapi.Successful,
+		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
@@ -147,7 +147,7 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 		t.Errorf("expected version=v1.0.0, got %v", result.Details["version"])
 	}
 
-	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_SUCCESSFUL.String() {
+	if result.Details["job_status"] != string(oapi.Successful) {
 		t.Errorf("expected job_status=SUCCESSFUL, got %v", result.Details["job_status"])
 	}
 }
@@ -157,35 +157,35 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 	st := store.New()
 	ctx := context.Background()
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
 	// v1.0.0 deployed
-	v1Release := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	v1Release := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
 	}
 
-	completedAt := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
+	completedAt := time.Now().Add(-1 * time.Hour)
 	st.Releases.Upsert(ctx, v1Release)
-	st.Jobs.Upsert(ctx, &pb.Job{
+	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-v1",
 		ReleaseId:   v1Release.ID(),
-		Status:      pb.JobStatus_JOB_STATUS_SUCCESSFUL,
-		CreatedAt:   time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+		Status:      oapi.Successful,
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
 	// v2.0.0 to deploy
-	v2Release := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	v2Release := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-2",
 			Tag: "v2.0.0",
 		},
@@ -216,15 +216,15 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	st := store.New()
 	ctx := context.Background()
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	release := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	release := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
@@ -232,11 +232,11 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 
 	// Create in-progress job
 	st.Releases.Upsert(ctx, release)
-	st.Jobs.Upsert(ctx, &pb.Job{
+	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release.ID(),
-		Status:    pb.JobStatus_JOB_STATUS_IN_PROGRESS,
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Status:    oapi.InProgress,
+		CreatedAt: time.Now(),
 	})
 
 	evaluator := NewSkipDeployedEvaluator(st)
@@ -253,7 +253,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 		t.Errorf("expected denied when same release job in progress, got allowed: %s", result.Reason)
 	}
 
-	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_IN_PROGRESS.String() {
+	if result.Details["job_status"] != string(oapi.InProgress) {
 		t.Errorf("expected job_status to be IN_PROGRESS, got %v", result.Details["job_status"])
 	}
 
@@ -267,28 +267,28 @@ func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 	st := store.New()
 	ctx := context.Background()
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	release := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	release := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
 	}
 
 	// Create cancelled job with completion time
-	completedAt := time.Now().Format(time.RFC3339)
+	completedAt := time.Now()
 	st.Releases.Upsert(ctx, release)
-	st.Jobs.Upsert(ctx, &pb.Job{
+	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      pb.JobStatus_JOB_STATUS_CANCELLED,
-		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		Status:      oapi.Cancelled,
+		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
@@ -306,7 +306,7 @@ func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Reason)
 	}
 
-	if result.Details["job_status"] != pb.JobStatus_JOB_STATUS_CANCELLED.String() {
+	if result.Details["job_status"] != string(oapi.Cancelled) {
 		t.Errorf("expected job_status to be CANCELLED, got %v", result.Details["job_status"])
 	}
 
@@ -320,43 +320,48 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	st := store.New()
 	ctx := context.Background()
 
-	releaseTarget := &pb.ReleaseTarget{
+	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  "deployment-1",
 		EnvironmentId: "env-1",
 		ResourceId:    "resource-1",
 	}
 
-	// Deploy with variables: {replicas: 3}
-	release1 := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	replicas := oapi.LiteralValue{}
+	replicas.FromIntegerValue(3)
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1",
 			Tag: "v1.0.0",
 		},
-		Variables: map[string]*pb.LiteralValue{
-			"replicas": {Data: &pb.LiteralValue_Int64{Int64: 3}},
+		Variables: map[string]oapi.LiteralValue{
+			"replicas": replicas,
 		},
 	}
 
-	completedAt := time.Now().Format(time.RFC3339)
+	completedAt := time.Now()
 	st.Releases.Upsert(ctx, release1)
-	st.Jobs.Upsert(ctx, &pb.Job{
+	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release1.ID(),
-		Status:      pb.JobStatus_JOB_STATUS_SUCCESSFUL,
-		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		Status:      oapi.Successful,
+		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
 	// Deploy same version with different variables: {replicas: 5}
-	release2 := &pb.Release{
-		ReleaseTarget: releaseTarget,
-		Version: &pb.DeploymentVersion{
+	replicas2 := oapi.LiteralValue{}
+	replicas2.FromIntegerValue(5)
+
+	release2 := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
 			Id:  "version-1", // Same version!
 			Tag: "v1.0.0",
 		},
-		Variables: map[string]*pb.LiteralValue{
-			"replicas": {Data: &pb.LiteralValue_Int64{Int64: 5}}, // Different!
+		Variables: map[string]oapi.LiteralValue{
+			"replicas": replicas2, // Different value!
 		},
 	}
 	st.Releases.Upsert(ctx, release2)

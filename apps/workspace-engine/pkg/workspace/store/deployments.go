@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/selector/langs/jsonselector"
-	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -16,8 +14,8 @@ func NewDeployments(store *Store) *Deployments {
 	deployments := &Deployments{
 		repo:      store.repo,
 		store:     store,
-		resources: cmap.New[*materialized.MaterializedView[map[string]*pb.Resource]](),
-		versions:  cmap.New[*materialized.MaterializedView[map[string]*pb.DeploymentVersion]](),
+		resources: cmap.New[*materialized.MaterializedView[map[string]*oapi.Resource]](),
+		versions:  cmap.New[*materialized.MaterializedView[map[string]*oapi.DeploymentVersion]](),
 	}
 
 	return deployments
@@ -27,8 +25,8 @@ type Deployments struct {
 	repo  *repository.Repository
 	store *Store
 
-	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.Resource]]
-	versions  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*pb.DeploymentVersion]]
+	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Resource]]
+	versions  cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.DeploymentVersion]]
 }
 
 func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId string) error {
@@ -41,22 +39,22 @@ func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId strin
 }
 
 // deploymentResourceRecomputeFunc returns a function that computes resources for a specific deployment
-func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*pb.Resource] {
-	return func(ctx context.Context) (map[string]*pb.Resource, error) {
+func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*oapi.Resource] {
+	return func(ctx context.Context) (map[string]*oapi.Resource, error) {
 		deployment, exists := e.repo.Deployments.Get(deploymentId)
 		if !exists {
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 
 		if deployment.ResourceSelector == nil {
-			allResources := make(map[string]*pb.Resource, e.repo.Resources.Count())
+			allResources := make(map[string]*oapi.Resource, e.repo.Resources.Count())
 			for resourceItem := range e.repo.Resources.IterBuffered() {
 				allResources[resourceItem.Key] = resourceItem.Val
 			}
 			return allResources, nil
 		}
 
-		items := make([]*pb.Resource, 0, e.repo.Resources.Count())
+		items := make([]*oapi.Resource, 0, e.repo.Resources.Count())
 		for resourceItem := range e.repo.Resources.IterBuffered() {
 			resource := resourceItem.Val
 			items = append(items, resource)
@@ -71,13 +69,13 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 	}
 }
 
-func (e *Deployments) deploymentVersionRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*pb.DeploymentVersion] {
-	return func(ctx context.Context) (map[string]*pb.DeploymentVersion, error) {
+func (e *Deployments) deploymentVersionRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*oapi.DeploymentVersion] {
+	return func(ctx context.Context) (map[string]*oapi.DeploymentVersion, error) {
 		_, exists := e.repo.Deployments.Get(deploymentId)
 		if !exists {
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
-		deploymentVersions := make(map[string]*pb.DeploymentVersion, e.repo.DeploymentVersions.Count())
+		deploymentVersions := make(map[string]*oapi.DeploymentVersion, e.repo.DeploymentVersions.Count())
 		for versionItem := range e.repo.DeploymentVersions.IterBuffered() {
 			if versionItem.Val.DeploymentId != deploymentId {
 				continue
@@ -88,7 +86,7 @@ func (e *Deployments) deploymentVersionRecomputeFunc(deploymentId string) materi
 	}
 }
 
-func (e *Deployments) IterBuffered() <-chan cmap.Tuple[string, *pb.Deployment] {
+func (e *Deployments) IterBuffered() <-chan cmap.Tuple[string, *oapi.Deployment] {
 	return e.repo.Deployments.IterBuffered()
 }
 
@@ -107,7 +105,7 @@ func (e *Deployments) ReinitializeMaterializedViews() {
 	}
 }
 
-func (e *Deployments) Get(id string) (*pb.Deployment, bool) {
+func (e *Deployments) Get(id string) (*oapi.Deployment, bool) {
 	return e.repo.Deployments.Get(id)
 }
 
@@ -129,10 +127,10 @@ func (e *Deployments) HasResource(deploymentId string, resourceId string) bool {
 	return false
 }
 
-func (e *Deployments) Resources(deploymentId string) map[string]*pb.Resource {
+func (e *Deployments) Resources(deploymentId string) map[string]*oapi.Resource {
 	mv, ok := e.resources.Get(deploymentId)
 	if !ok {
-		return map[string]*pb.Resource{}
+		return map[string]*oapi.Resource{}
 	}
 
 	mv.WaitRecompute()
@@ -140,19 +138,7 @@ func (e *Deployments) Resources(deploymentId string) map[string]*pb.Resource {
 	return allResources
 }
 
-func (e *Deployments) Upsert(ctx context.Context, deployment *pb.Deployment) error {
-	// Validate selector before storing
-	if deployment.ResourceSelector != nil {
-		unknownCondition, err := unknown.ParseFromMap(deployment.ResourceSelector.GetJson().AsMap())
-		if err != nil {
-			return fmt.Errorf("failed to parse selector: %w", err)
-		}
-		_, err = jsonselector.ConvertToSelector(ctx, unknownCondition)
-		if err != nil {
-			return fmt.Errorf("failed to convert selector: %w", err)
-		}
-	}
-
+func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) error {
 	previous, _ := e.repo.Deployments.Get(deployment.Id)
 	previousSystemId := ""
 	if previous != nil {
@@ -188,8 +174,8 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 	e.store.ReleaseTargets.Recompute(ctx)
 }
 
-func (e *Deployments) Variables(deploymentId string) map[string]*pb.DeploymentVariable {
-	vars := make(map[string]*pb.DeploymentVariable)
+func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {
+	vars := make(map[string]*oapi.DeploymentVariable)
 	for variable := range e.repo.DeploymentVariables.IterBuffered() {
 		if variable.Val.DeploymentId != deploymentId {
 			continue
@@ -199,6 +185,6 @@ func (e *Deployments) Variables(deploymentId string) map[string]*pb.DeploymentVa
 	return vars
 }
 
-func (e *Deployments) Items() map[string]*pb.Deployment {
+func (e *Deployments) Items() map[string]*oapi.Deployment {
 	return e.repo.Deployments.Items()
 }

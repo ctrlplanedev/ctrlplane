@@ -1,7 +1,7 @@
 package store
 
 import (
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -15,11 +15,11 @@ type JobAgents struct {
 	repo *repository.Repository
 }
 
-func (j *JobAgents) Upsert(jobAgent *pb.JobAgent) {
+func (j *JobAgents) Upsert(jobAgent *oapi.JobAgent) {
 	j.repo.JobAgents.Set(jobAgent.Id, jobAgent)
 }
 
-func (j *JobAgents) Get(id string) (*pb.JobAgent, bool) {
+func (j *JobAgents) Get(id string) (*oapi.JobAgent, bool) {
 	return j.repo.JobAgents.Get(id)
 }
 
@@ -27,6 +27,6 @@ func (j *JobAgents) Remove(id string) {
 	j.repo.JobAgents.Remove(id)
 }
 
-func (j *JobAgents) Items() map[string]*pb.JobAgent {
+func (j *JobAgents) Items() map[string]*oapi.JobAgent {
 	return j.repo.JobAgents.Items()
 }

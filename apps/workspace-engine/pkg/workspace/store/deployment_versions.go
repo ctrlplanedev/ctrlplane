@@ -2,7 +2,7 @@ package store
 
 import (
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -17,10 +17,10 @@ type DeploymentVersions struct {
 	repo  *repository.Repository
 	store *Store
 
-	deployableVersions cmap.ConcurrentMap[string, *pb.DeploymentVersion]
+	deployableVersions cmap.ConcurrentMap[string, *oapi.DeploymentVersion]
 }
 
-func (d *DeploymentVersions) IterBuffered() <-chan cmap.Tuple[string, *pb.DeploymentVersion] {
+func (d *DeploymentVersions) IterBuffered() <-chan cmap.Tuple[string, *oapi.DeploymentVersion] {
 	return d.repo.DeploymentVersions.IterBuffered()
 }
 
@@ -28,15 +28,15 @@ func (d *DeploymentVersions) Has(id string) bool {
 	return d.repo.DeploymentVersions.Has(id)
 }
 
-func (d *DeploymentVersions) Items() map[string]*pb.DeploymentVersion {
+func (d *DeploymentVersions) Items() map[string]*oapi.DeploymentVersion {
 	return d.repo.DeploymentVersions.Items()
 }
 
-func (d *DeploymentVersions) Get(id string) (*pb.DeploymentVersion, bool) {
+func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
 	return d.repo.DeploymentVersions.Get(id)
 }
 
-func (d *DeploymentVersions) Upsert(id string, version *pb.DeploymentVersion) {
+func (d *DeploymentVersions) Upsert(id string, version *oapi.DeploymentVersion) {
 	d.repo.DeploymentVersions.Set(id, version)
 }
 

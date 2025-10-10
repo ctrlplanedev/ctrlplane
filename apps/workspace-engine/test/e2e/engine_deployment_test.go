@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 )
@@ -124,18 +124,18 @@ func TestEngine_DeploymentJobAgentConfiguration(t *testing.T) {
 
 	// Verify job agent assignments
 	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
-	if d1.GetJobAgentId() != jobAgentID1 {
-		t.Fatalf("deployment 1 job agent mismatch: got %s, want %s", d1.GetJobAgentId(), jobAgentID1)
+	if *d1.JobAgentId != jobAgentID1 {
+		t.Fatalf("deployment 1 job agent mismatch: got %s, want %s", *d1.JobAgentId, jobAgentID1)
 	}
 
 	d2, _ := engine.Workspace().Deployments().Get(deploymentID2)
-	if d2.GetJobAgentId() != jobAgentID2 {
-		t.Fatalf("deployment 2 job agent mismatch: got %s, want %s", d2.GetJobAgentId(), jobAgentID2)
+	if *d2.JobAgentId != jobAgentID2 {
+		t.Fatalf("deployment 2 job agent mismatch: got %s, want %s", *d2.JobAgentId, jobAgentID2)
 	}
 
 	d3, _ := engine.Workspace().Deployments().Get(deploymentID3)
-	if d3.GetJobAgentId() != "" {
-		t.Fatalf("deployment 3 should have no job agent, got %s", d3.GetJobAgentId())
+	if *d3.JobAgentId != "" {
+		t.Fatalf("deployment 3 should have no job agent, got %s", *d3.JobAgentId)
 	}
 
 	// Verify job agents exist
@@ -259,7 +259,7 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 
 	// Verify deployment has job agent config
 	d, _ := engine.Workspace().Deployments().Get(deploymentID)
-	config := d.GetJobAgentConfig().AsMap()
+	config := d.JobAgentConfig
 
 	if config["namespace"] != "custom-namespace" {
 		t.Fatalf("deployment job agent config namespace mismatch: got %v, want custom-namespace", config["namespace"])
@@ -275,12 +275,12 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 		t.Fatalf("expected 1 pending job, got %d", len(pendingJobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range pendingJobs {
 		job = j
 		break
 	}
-	jobConfig := job.GetJobAgentConfig().AsMap()
+	jobConfig := job.JobAgentConfig
 
 	// Verify merged config includes deployment-specific settings
 	if jobConfig["namespace"] != "custom-namespace" {
@@ -321,18 +321,18 @@ func TestEngine_DeploymentJobAgentUpdate(t *testing.T) {
 
 	// Verify initial job agent assignment
 	d, _ := engine.Workspace().Deployments().Get(deploymentID)
-	if d.GetJobAgentId() != jobAgentID1 {
-		t.Fatalf("deployment job agent mismatch: got %s, want %s", d.GetJobAgentId(), jobAgentID1)
+	if *d.JobAgentId != jobAgentID1 {
+		t.Fatalf("deployment job agent mismatch: got %s, want %s", *d.JobAgentId, jobAgentID1)
 	}
 
 	// Update deployment to use different job agent
-	d.JobAgentId = &jobAgentID2
+	*d.JobAgentId = jobAgentID2
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d)
 
 	// Verify job agent was updated
 	d, _ = engine.Workspace().Deployments().Get(deploymentID)
-	if d.GetJobAgentId() != jobAgentID2 {
-		t.Fatalf("deployment job agent after update mismatch: got %s, want %s", d.GetJobAgentId(), jobAgentID2)
+	if *d.JobAgentId != jobAgentID2 {
+		t.Fatalf("deployment job agent after update mismatch: got %s, want %s", *d.JobAgentId, jobAgentID2)
 	}
 }
 

@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/materialized"
 
 	"go.opentelemetry.io/otel"
@@ -21,11 +21,11 @@ func NewReleaseTargets(store *Store) *ReleaseTargets {
 type ReleaseTargets struct {
 	store *Store
 
-	targets *materialized.MaterializedView[map[string]*pb.ReleaseTarget]
+	targets *materialized.MaterializedView[map[string]*oapi.ReleaseTarget]
 }
 
 // CurrentState returns the current state of all release targets in the system.
-func (r *ReleaseTargets) Items(ctx context.Context) map[string]*pb.ReleaseTarget {
+func (r *ReleaseTargets) Items(ctx context.Context) map[string]*oapi.ReleaseTarget {
 	r.targets.WaitIfRunning()
 	return r.targets.Get()
 }
@@ -34,11 +34,11 @@ func (r *ReleaseTargets) Recompute(ctx context.Context) {
 	r.targets.StartRecompute(ctx)
 }
 
-func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*pb.ReleaseTarget, error) {
+func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.ReleaseTarget, error) {
 	_, span := tracer.Start(ctx, "computeTargets")
 	defer span.End()
 
-	releaseTargets := make(map[string]*pb.ReleaseTarget, 1000)
+	releaseTargets := make(map[string]*oapi.ReleaseTarget, 1000)
 
 	environments := r.store.Environments
 	deployments := r.store.Deployments
@@ -60,11 +60,10 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*pb.Rel
 					continue
 				}
 				releaseTargetId := key + ":" + resource.Id
-				releaseTargets[releaseTargetId] = &pb.ReleaseTarget{
+				releaseTargets[releaseTargetId] = &oapi.ReleaseTarget{
 					EnvironmentId: environment.Id,
 					DeploymentId:  deployment.Id,
 					ResourceId:    resource.Id,
-					Id:            releaseTargetId,
 				}
 			}
 		}

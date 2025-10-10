@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"sync"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -19,7 +19,7 @@ type Resources struct {
 	store *Store
 }
 
-func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Resource, error) {
+func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.Resource, error) {
 	r.repo.Resources.Set(resource.Id, resource)
 
 	var wg sync.WaitGroup
@@ -45,7 +45,7 @@ func (r *Resources) Upsert(ctx context.Context, resource *pb.Resource) (*pb.Reso
 	return resource, nil
 }
 
-func (r *Resources) Get(id string) (*pb.Resource, bool) {
+func (r *Resources) Get(id string) (*oapi.Resource, bool) {
 	return r.repo.Resources.Get(id)
 }
 
@@ -73,7 +73,7 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	r.store.ReleaseTargets.Recompute(ctx)
 }
 
-func (r *Resources) Items() map[string]*pb.Resource {
+func (r *Resources) Items() map[string]*oapi.Resource {
 	return r.repo.Resources.Items()
 }
 
@@ -81,8 +81,8 @@ func (r *Resources) Has(id string) bool {
 	return r.repo.Resources.Has(id)
 }
 
-func (r *Resources) Variables(resourceId string) map[string]*pb.ResourceVariable {
-	variables := make(map[string]*pb.ResourceVariable, 25)
+func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariable {
+	variables := make(map[string]*oapi.ResourceVariable, 25)
 	for item := range r.repo.ResourceVariables.IterBuffered() {
 		if item.Val.ResourceId != resourceId {
 			continue

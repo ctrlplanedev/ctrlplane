@@ -2,40 +2,40 @@ package repository
 
 import (
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 )
 
 func New() *Repository {
 	return &Repository{
-		Resources:           cmap.New[*pb.Resource](),
-		ResourceVariables:   cmap.New[*pb.ResourceVariable](),
-		Deployments:         cmap.New[*pb.Deployment](),
-		DeploymentVersions:  cmap.New[*pb.DeploymentVersion](),
-		DeploymentVariables: cmap.New[*pb.DeploymentVariable](),
-		Environments:        cmap.New[*pb.Environment](),
-		Policies:            cmap.New[*pb.Policy](),
-		Systems:             cmap.New[*pb.System](),
-		Releases:            cmap.New[*pb.Release](),
-		Jobs:                cmap.New[*pb.Job](),
-		JobAgents:           cmap.New[*pb.JobAgent](),
-		UserApprovalRecords: cmap.New[*pb.UserApprovalRecord](),
-		RelationshipRules:   cmap.New[*pb.RelationshipRule](),
+		Resources:           cmap.New[*oapi.Resource](),
+		ResourceVariables:   cmap.New[*oapi.ResourceVariable](),
+		Deployments:         cmap.New[*oapi.Deployment](),
+		DeploymentVersions:  cmap.New[*oapi.DeploymentVersion](),
+		DeploymentVariables: cmap.New[*oapi.DeploymentVariable](),
+		Environments:        cmap.New[*oapi.Environment](),
+		Policies:            cmap.New[*oapi.Policy](),
+		Systems:             cmap.New[*oapi.System](),
+		Releases:            cmap.New[*oapi.Release](),
+		Jobs:                cmap.New[*oapi.Job](),
+		JobAgents:           cmap.New[*oapi.JobAgent](),
+		UserApprovalRecords: cmap.New[*oapi.UserApprovalRecord](),
+		RelationshipRules:   cmap.New[*oapi.RelationshipRule](),
 	}
 }
 
 type Repository struct {
-	Resources           cmap.ConcurrentMap[string, *pb.Resource]
-	ResourceVariables   cmap.ConcurrentMap[string, *pb.ResourceVariable]
-	Deployments         cmap.ConcurrentMap[string, *pb.Deployment]
-	DeploymentVariables cmap.ConcurrentMap[string, *pb.DeploymentVariable]
-	DeploymentVersions  cmap.ConcurrentMap[string, *pb.DeploymentVersion]
-	Environments        cmap.ConcurrentMap[string, *pb.Environment]
-	Policies            cmap.ConcurrentMap[string, *pb.Policy]
-	Systems             cmap.ConcurrentMap[string, *pb.System]
-	Releases            cmap.ConcurrentMap[string, *pb.Release]
-	Jobs                cmap.ConcurrentMap[string, *pb.Job]
-	JobAgents           cmap.ConcurrentMap[string, *pb.JobAgent]
+	Resources           cmap.ConcurrentMap[string, *oapi.Resource]
+	ResourceVariables   cmap.ConcurrentMap[string, *oapi.ResourceVariable]
+	Deployments         cmap.ConcurrentMap[string, *oapi.Deployment]
+	DeploymentVariables cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
+	DeploymentVersions  cmap.ConcurrentMap[string, *oapi.DeploymentVersion]
+	Environments        cmap.ConcurrentMap[string, *oapi.Environment]
+	Policies            cmap.ConcurrentMap[string, *oapi.Policy]
+	Systems             cmap.ConcurrentMap[string, *oapi.System]
+	Releases            cmap.ConcurrentMap[string, *oapi.Release]
+	Jobs                cmap.ConcurrentMap[string, *oapi.Job]
+	JobAgents           cmap.ConcurrentMap[string, *oapi.JobAgent]
 
-	UserApprovalRecords cmap.ConcurrentMap[string, *pb.UserApprovalRecord]
-	RelationshipRules   cmap.ConcurrentMap[string, *pb.RelationshipRule]
+	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
+	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -29,30 +29,23 @@ func NewSkipDeployedEvaluator(store *store.Store) *SkipDeployedEvaluator {
 //   - Allowed: If not yet attempted or previous job was for a different release
 func (e *SkipDeployedEvaluator) Evaluate(
 	ctx context.Context,
-	releaseTarget *pb.ReleaseTarget,
-	release *pb.Release,
+	releaseTarget *oapi.ReleaseTarget,
+	release *oapi.Release,
 ) (*results.RuleEvaluationResult, error) {
 	// Get all jobs for this release target
 	jobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 
 	// Find the most recent job (any status)
-	var mostRecentJob *pb.Job
+	var mostRecentJob *oapi.Job
 	var mostRecentTime *time.Time
 
 	for _, job := range jobs {
 		// Try to get completion time first
-		completedAt, err := job.CompletedAtTime()
+		completedAt := job.CompletedAt
 		var jobTime *time.Time
 
-		if err == nil && completedAt != nil {
+		if completedAt != nil {
 			jobTime = completedAt
-		} else {
-			// If not completed, use created time
-			createdAt, err := job.CreatedAtTime()
-			if err != nil {
-				continue
-			}
-			jobTime = &createdAt
 		}
 
 		// Track the most recent job
@@ -74,11 +67,11 @@ func (e *SkipDeployedEvaluator) Evaluate(
 		// Already attempted this exact release - deny
 		return results.
 			NewDeniedResult(
-				fmt.Sprintf("Release already attempted (job: %s, status: %s)", mostRecentJob.Id, mostRecentJob.Status.String()),
+				fmt.Sprintf("Release already attempted (job: %s, status: %s)", mostRecentJob.Id, mostRecentJob.Status),
 			).
 			WithDetail("release_id", release.ID()).
 			WithDetail("existing_job_id", mostRecentJob.Id).
-			WithDetail("job_status", mostRecentJob.Status.String()).
+			WithDetail("job_status", string(mostRecentJob.Status)).
 			WithDetail("version", release.Version.Tag), nil
 	}
 

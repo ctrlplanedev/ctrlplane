@@ -2,10 +2,10 @@ package relationships
 
 import (
 	"strings"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 )
 
-func NewPropertyMatcher(pm *pb.PropertyMatcher) *PropertyMatcher {
+func NewPropertyMatcher(pm *oapi.PropertyMatcher) *PropertyMatcher {
 	if pm.Operator == "" {
 		pm.Operator = "equals"
 	}
@@ -16,9 +16,8 @@ func NewPropertyMatcher(pm *pb.PropertyMatcher) *PropertyMatcher {
 
 // PropertyMatcher evaluates property matching between two entities
 type PropertyMatcher struct {
-	*pb.PropertyMatcher
+	*oapi.PropertyMatcher
 }
-
 
 func (m *PropertyMatcher) Evaluate(from any, to any) bool {
 	fromValue, err := GetPropertyValue(from, m.FromProperty)
@@ -33,9 +32,7 @@ func (m *PropertyMatcher) Evaluate(from any, to any) bool {
 	fromValueStr := extractValueAsString(fromValue)
 	toValueStr := extractValueAsString(toValue)
 
-	op := strings.ToLower(m.Operator)
-
-	switch op {
+	switch m.Operator {
 	case "equals":
 		return fromValueStr == toValueStr
 	case "not_equals", "notequals":

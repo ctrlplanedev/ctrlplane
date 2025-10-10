@@ -3,10 +3,10 @@ package environment
 import (
 	"context"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"google.golang.org/protobuf/encoding/protojson"
+	"encoding/json"
 )
 
 func HandleEnvironmentCreated(
@@ -14,8 +14,8 @@ func HandleEnvironmentCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	environment := &pb.Environment{}
-	if err := protojson.Unmarshal(event.Data, environment); err != nil {
+	environment := &oapi.Environment{}
+	if err := json.Unmarshal(event.Data, environment); err != nil {
 		return err
 	}
 
@@ -30,8 +30,8 @@ func HandleEnvironmentUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	environment := &pb.Environment{}
-	if err := protojson.Unmarshal(event.Data, environment); err != nil {
+	environment := &oapi.Environment{}
+	if err := json.Unmarshal(event.Data, environment); err != nil {
 		return err
 	}
 
@@ -46,8 +46,8 @@ func HandleEnvironmentDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	environment := &pb.Environment{}
-	if err := protojson.Unmarshal(event.Data, environment); err != nil {
+	environment := &oapi.Environment{}
+	if err := json.Unmarshal(event.Data, environment); err != nil {
 		return err
 	}
 

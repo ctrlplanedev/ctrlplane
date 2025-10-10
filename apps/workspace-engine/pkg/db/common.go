@@ -2,11 +2,9 @@ package db
 
 import (
 	"encoding/json"
-
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func parseJSONToStruct(jsonData []byte) *structpb.Struct {
+func parseJSONToStruct(jsonData []byte) map[string]interface{} {
 	if len(jsonData) == 0 {
 		return nil
 	}
@@ -16,8 +14,5 @@ func parseJSONToStruct(jsonData []byte) *structpb.Struct {
 		return nil
 	}
 
-	if structData, err := structpb.NewStruct(dataMap); err == nil {
-		return structData
-	}
-	return nil
+	return dataMap
 }

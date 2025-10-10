@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 )
 
 const ENVIRONMENT_SELECT_QUERY = `
@@ -20,7 +20,7 @@ const ENVIRONMENT_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func getEnvironments(ctx context.Context, workspaceID string) ([]*pb.Environment, error) {
+func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environment, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -33,9 +33,9 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*pb.Environment
 	}
 	defer rows.Close()
 
-	environments := make([]*pb.Environment, 0)
+	environments := make([]*oapi.Environment, 0)
 	for rows.Next() {
-		var environment pb.Environment
+		var environment oapi.Environment
 		var createdAt time.Time
 		err := rows.Scan(
 			&environment.Id,

@@ -3,7 +3,7 @@ package releasemanager
 import (
 	"context"
 	"sync"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policymanager"
 	"workspace-engine/pkg/workspace/releasemanager/variablemanager"
 	"workspace-engine/pkg/workspace/releasemanager/versionmanager"
@@ -22,11 +22,11 @@ type Manager struct {
 	policyManager   *policymanager.Manager
 
 	// Current state of release targets (what currently exists)
-	currentTargets      map[string]*pb.ReleaseTarget
+	currentTargets      map[string]*oapi.ReleaseTarget
 	currentTargetsMutex sync.Mutex
 
 	releaseTargetLocks sync.Map
-	tainted            []*pb.ReleaseTarget
+	tainted            []*oapi.ReleaseTarget
 	tainedMutex        sync.Mutex
 }
 
@@ -34,21 +34,21 @@ type Manager struct {
 func New(store *store.Store) *Manager {
 	return &Manager{
 		store:               store,
-		currentTargets:      make(map[string]*pb.ReleaseTarget, 5000),
+		currentTargets:      make(map[string]*oapi.ReleaseTarget, 5000),
 		policyManager:       policymanager.New(store),
 		versionManager:      versionmanager.New(store),
 		variableManager:     variablemanager.New(store),
 		releaseTargetLocks:  sync.Map{},
-		tainted:             make([]*pb.ReleaseTarget, 0, 100),
+		tainted:             make([]*oapi.ReleaseTarget, 0, 100),
 		tainedMutex:         sync.Mutex{},
 		currentTargetsMutex: sync.Mutex{},
 	}
 }
 
 type Changes struct {
-	Added   []*pb.ReleaseTarget
-	Removed []*pb.ReleaseTarget
-	Tainted []*pb.ReleaseTarget
+	Added   []*oapi.ReleaseTarget
+	Removed []*oapi.ReleaseTarget
+	Tainted []*oapi.ReleaseTarget
 }
 
 // SyncResult contains the results of a sync operation
@@ -56,11 +56,11 @@ type SyncResult struct {
 	Changes Changes
 }
 
-func (m *Manager) ReleaseTargets() map[string]*pb.ReleaseTarget {
+func (m *Manager) ReleaseTargets() map[string]*oapi.ReleaseTarget {
 	return m.currentTargets
 }
 
-func (m *Manager) TaintReleaseTargets(releaseTarget *pb.ReleaseTarget) {
+func (m *Manager) TaintReleaseTargets(releaseTarget *oapi.ReleaseTarget) {
 	m.tainedMutex.Lock()
 	defer m.tainedMutex.Unlock()
 
@@ -136,15 +136,15 @@ func (m *Manager) Reconcile(ctx context.Context) *SyncResult {
 	)
 
 	m.tainedMutex.Lock()
-	taintedCopy := make([]*pb.ReleaseTarget, len(m.tainted))
+	taintedCopy := make([]*oapi.ReleaseTarget, len(m.tainted))
 	copy(taintedCopy, m.tainted)
 	m.tainted = m.tainted[:0] // More efficient than allocating new slice
 	m.tainedMutex.Unlock()
 
 	result := &SyncResult{
 		Changes: Changes{
-			Added:   make([]*pb.ReleaseTarget, 0, 100),
-			Removed: make([]*pb.ReleaseTarget, 0, 100),
+			Added:   make([]*oapi.ReleaseTarget, 0, 100),
+			Removed: make([]*oapi.ReleaseTarget, 0, 100),
 			Tainted: taintedCopy,
 		},
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -26,7 +26,7 @@ const DEPLOYMENT_VERSION_SELECT_QUERY = `
 	WHERE s.workspace_id = $1
 `
 
-func getDeploymentVersions(ctx context.Context, workspaceID string) ([]*pb.DeploymentVersion, error) {
+func getDeploymentVersions(ctx context.Context, workspaceID string) ([]*oapi.DeploymentVersion, error) {
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func getDeploymentVersions(ctx context.Context, workspaceID string) ([]*pb.Deplo
 	}
 	defer rows.Close()
 
-	deploymentVersions := make([]*pb.DeploymentVersion, 0)
+	deploymentVersions := make([]*oapi.DeploymentVersion, 0)
 	for rows.Next() {
 		deploymentVersion, err := scanDeploymentVersion(rows)
 		if err != nil {
@@ -53,8 +53,8 @@ func getDeploymentVersions(ctx context.Context, workspaceID string) ([]*pb.Deplo
 	return deploymentVersions, nil
 }
 
-func scanDeploymentVersion(rows pgx.Rows) (*pb.DeploymentVersion, error) {
-	var deploymentVersion pb.DeploymentVersion
+func scanDeploymentVersion(rows pgx.Rows) (*oapi.DeploymentVersion, error) {
+	var deploymentVersion oapi.DeploymentVersion
 	var configJSON, jobAgentConfigJSON []byte
 	var statusStr string
 	var message *string
@@ -91,17 +91,17 @@ func scanDeploymentVersion(rows pgx.Rows) (*pb.DeploymentVersion, error) {
 	return &deploymentVersion, nil
 }
 
-func convertStatusToEnum(statusStr string) pb.DeploymentVersionStatus {
+func convertStatusToEnum(statusStr string) oapi.DeploymentVersionStatus {
 	switch statusStr {
 	case "building":
-		return pb.DeploymentVersionStatus_DEPLOYMENT_VERSION_STATUS_BUILDING
+		return oapi.DeploymentVersionStatusBuilding
 	case "ready":
-		return pb.DeploymentVersionStatus_DEPLOYMENT_VERSION_STATUS_READY
+		return oapi.DeploymentVersionStatusReady
 	case "failed":
-		return pb.DeploymentVersionStatus_DEPLOYMENT_VERSION_STATUS_FAILED
+		return oapi.DeploymentVersionStatusFailed
 	case "rejected":
-		return pb.DeploymentVersionStatus_DEPLOYMENT_VERSION_STATUS_REJECTED
+		return oapi.DeploymentVersionStatusRejected
 	default:
-		return pb.DeploymentVersionStatus_DEPLOYMENT_VERSION_STATUS_UNSPECIFIED
+		return oapi.DeploymentVersionStatusUnspecified
 	}
 }

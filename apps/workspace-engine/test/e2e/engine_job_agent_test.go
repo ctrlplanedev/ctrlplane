@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 )
@@ -160,7 +160,7 @@ func TestEngine_JobAgentDelete(t *testing.T) {
 	}
 
 	// Delete job agent
-	ja := &pb.JobAgent{Id: jobAgentID}
+	ja := &oapi.JobAgent{Id: jobAgentID}
 	engine.PushEvent(ctx, handler.JobAgentDelete, ja)
 
 	// Verify job agent was deleted
@@ -182,11 +182,11 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 	ctx := context.Background()
 
 	// Create job agent with custom config
-	ja := c.NewJobAgent()
+	ja := c.NewJobAgent(engine.Workspace().ID)
 	ja.Id = jobAgentID
 	ja.Name = "Config Test Agent"
-	ja.WorkspaceId = engine.Workspace().ID
-	ja.Config = c.MustNewStructFromMap(map[string]any{
+	ja.WorkspaceId = engine.Workspace().ID	
+	ja.Config = map[string]any{
 		"namespace":     "default",
 		"timeout":       300,
 		"retries":       3,
@@ -196,7 +196,7 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 			"cpu":    "1000m",
 			"memory": "2Gi",
 		},
-	})
+	}
 
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja)
 
@@ -206,7 +206,7 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 		t.Fatal("job agent not found")
 	}
 
-	config := retrievedJa.GetConfig().AsMap()
+	config := retrievedJa.Config
 
 	if config["namespace"] != "default" {
 		t.Fatalf("config namespace mismatch: got %v, want default", config["namespace"])
@@ -246,29 +246,29 @@ func TestEngine_JobAgentConfigUpdate(t *testing.T) {
 	ctx := context.Background()
 
 	// Create job agent with initial config
-	ja := c.NewJobAgent()
+	ja := c.NewJobAgent(engine.Workspace().ID)
 	ja.Id = jobAgentID
 	ja.Name = "Config Update Test"
 	ja.WorkspaceId = engine.Workspace().ID
-	ja.Config = c.MustNewStructFromMap(map[string]any{
+	ja.Config = map[string]any{
 		"timeout": 300,
 		"retries": 3,
-	})
+	}
 
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja)
 
 	// Update config
-	ja.Config = c.MustNewStructFromMap(map[string]any{
+	ja.Config = map[string]any{
 		"timeout":  600,
 		"retries":  5,
 		"newField": "newValue",
-	})
+	}
 
 	engine.PushEvent(ctx, handler.JobAgentUpdate, ja)
 
 	// Verify updated config
 	updatedJa, _ := engine.Workspace().JobAgents().Get(jobAgentID)
-	config := updatedJa.GetConfig().AsMap()
+	config := updatedJa.Config
 
 	if timeout, ok := config["timeout"].(float64); !ok || timeout != 600 {
 		t.Fatalf("updated config timeout mismatch: got %v, want 600", config["timeout"])
@@ -314,8 +314,8 @@ func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
 
 	// Verify deployment is using the job agent
 	deployment, _ := engine.Workspace().Deployments().Get(deploymentID)
-	if deployment.GetJobAgentId() != jobAgentID {
-		t.Fatalf("deployment job agent mismatch: got %s, want %s", deployment.GetJobAgentId(), jobAgentID)
+	if *deployment.JobAgentId != jobAgentID {
+		t.Fatalf("deployment job agent mismatch: got %s, want %s", *deployment.JobAgentId, jobAgentID)
 	}
 
 	// Verify job was created with the job agent
@@ -324,7 +324,7 @@ func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
 		t.Fatalf("expected 1 pending job, got %d", len(pendingJobs))
 	}
 
-	var job *pb.Job
+	var job *oapi.Job
 	for _, j := range pendingJobs {
 		job = j
 		break
@@ -359,12 +359,12 @@ func TestEngine_JobAgentDeleteAffectsDeployments(t *testing.T) {
 
 	// Verify deployment is using the job agent
 	deployment, _ := engine.Workspace().Deployments().Get(deploymentID)
-	if deployment.GetJobAgentId() != jobAgentID {
+	if *deployment.JobAgentId != jobAgentID {
 		t.Fatalf("deployment should be using job agent %s", jobAgentID)
 	}
 
 	// Delete the job agent
-	ja := &pb.JobAgent{Id: jobAgentID}
+	ja := &oapi.JobAgent{Id: jobAgentID}
 	engine.PushEvent(ctx, handler.JobAgentDelete, ja)
 
 	// Verify job agent was deleted
@@ -377,7 +377,7 @@ func TestEngine_JobAgentDeleteAffectsDeployments(t *testing.T) {
 	// This is expected behavior - deployments keep their references
 	// but jobs won't be created when the agent doesn't exist
 	deployment, _ = engine.Workspace().Deployments().Get(deploymentID)
-	if deployment.GetJobAgentId() != jobAgentID {
+	if *deployment.JobAgentId != jobAgentID {
 		t.Fatal("deployment should still reference the job agent ID")
 	}
 }
@@ -400,7 +400,7 @@ func TestEngine_JobAgentTypes(t *testing.T) {
 			engine := integration.NewTestWorkspace(t)
 			ctx := context.Background()
 
-			ja := c.NewJobAgent()
+			ja := c.NewJobAgent(engine.Workspace().ID)
 			ja.WorkspaceId = engine.Workspace().ID
 			ja.Name = tc.name
 			ja.Type = tc.agentType
@@ -472,14 +472,14 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 	d2, _ := engine.Workspace().Deployments().Get(deploymentID2)
 	d3, _ := engine.Workspace().Deployments().Get(deploymentID3)
 
-	if d1.GetJobAgentId() != jobAgentID {
-		t.Fatalf("deployment 1 should use agent %s, got %s", jobAgentID, d1.GetJobAgentId())
+	if *d1.JobAgentId != jobAgentID {
+		t.Fatalf("deployment 1 should use agent %s, got %s", jobAgentID, *d1.JobAgentId)
 	}
-	if d2.GetJobAgentId() != jobAgentID {
-		t.Fatalf("deployment 2 should use agent %s, got %s", jobAgentID, d2.GetJobAgentId())
+	if *d2.JobAgentId != jobAgentID {
+		t.Fatalf("deployment 2 should use agent %s, got %s", jobAgentID, *d2.JobAgentId)
 	}
-	if d3.GetJobAgentId() != jobAgentID {
-		t.Fatalf("deployment 3 should use agent %s, got %s", jobAgentID, d3.GetJobAgentId())
+	if *d3.JobAgentId != jobAgentID {
+		t.Fatalf("deployment 3 should use agent %s, got %s", jobAgentID, *d3.JobAgentId)
 	}
 
 	// Verify all jobs use the same job agent
@@ -502,7 +502,7 @@ func TestEngine_JobAgentEmptyConfig(t *testing.T) {
 	ctx := context.Background()
 
 	// Create job agent with nil/empty config
-	ja := &pb.JobAgent{
+	ja := &oapi.JobAgent{
 		Id:          jobAgentID,
 		WorkspaceId: engine.Workspace().ID,
 		Name:        "Empty Config Agent",
@@ -519,9 +519,9 @@ func TestEngine_JobAgentEmptyConfig(t *testing.T) {
 	}
 
 	// Verify empty config doesn't cause issues
-	config := retrievedJa.GetConfig()
-	if config != nil && len(config.AsMap()) > 0 {
-		t.Fatalf("expected empty config, got %v", config.AsMap())
+	config := retrievedJa.Config
+	if config != nil && len(config) > 0 {
+		t.Fatalf("expected empty config, got %v", config)
 	}
 }
 
@@ -533,12 +533,12 @@ func TestEngine_JobAgentNameUniqueness(t *testing.T) {
 
 	sameName := "Duplicate Name Agent"
 
-	ja1 := c.NewJobAgent()
+	ja1 := c.NewJobAgent(engine.Workspace().ID)
 	ja1.WorkspaceId = engine.Workspace().ID
 	ja1.Name = sameName
 	ja1.Type = "kubernetes"
 
-	ja2 := c.NewJobAgent()
+	ja2 := c.NewJobAgent(engine.Workspace().ID)
 	ja2.WorkspaceId = engine.Workspace().ID
 	ja2.Name = sameName
 	ja2.Type = "docker"

@@ -1,18 +1,19 @@
 package creators
 
 import (
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/google/uuid"
 )
 
-func NewJobAgent() *pb.JobAgent {
-	return &pb.JobAgent{
-		Id:   uuid.New().String(),
-		Name: "test-job-agent",
-		Type: "test-job-agent",
-		Config: MustNewStructFromMap(map[string]any{
+func NewJobAgent(workspaceID string) *oapi.JobAgent {
+	return &oapi.JobAgent{
+		Id:          uuid.New().String(),
+		Name:        "test-job-agent",
+		Type:        "test-job-agent",
+		WorkspaceId: workspaceID,
+		Config: map[string]any{
 			"test": "test",
-		}),
+		},
 	}
 }
