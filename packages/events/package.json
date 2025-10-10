@@ -23,6 +23,7 @@
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/rule-engine": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
+    "@ctrlplane/workspace-engine-sdk": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "bullmq": "catalog:",
     "bullmq-otel": "^1.0.1",

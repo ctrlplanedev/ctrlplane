@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import type * as PB from "../workspace-engine/types/index.js";
 
@@ -130,9 +131,9 @@ export type EventPayload = {
 };
 
 export type GoEventPayload = {
-  [Event.ResourceCreated]: PB.Resource;
-  [Event.ResourceUpdated]: PB.Resource;
-  [Event.ResourceDeleted]: PB.Resource;
+  [Event.ResourceCreated]: WorkspaceEngine["schemas"]["Resource"];
+  [Event.ResourceUpdated]: WorkspaceEngine["schemas"]["Resource"];
+  [Event.ResourceDeleted]: WorkspaceEngine["schemas"]["Resource"];
   [Event.DeploymentCreated]: PB.Deployment;
   [Event.DeploymentUpdated]: PB.Deployment;
   [Event.DeploymentDeleted]: PB.Deployment;

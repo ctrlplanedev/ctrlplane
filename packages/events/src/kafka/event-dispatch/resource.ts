@@ -1,8 +1,9 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+
 import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type * as PB from "../../workspace-engine/types/index.js";
 import type { FullResource } from "../events.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -18,39 +19,9 @@ const getFullResource = async (resource: schema.Resource) => {
   return { ...resource, metadata };
 };
 
-const getPbVariables = async (
-  resourceId: string,
-): Promise<Record<string, PB.Value>> => {
-  const variablesRaw = await db
-    .select()
-    .from(schema.resourceVariable)
-    .where(eq(schema.resourceVariable.resourceId, resourceId));
-
-  const literalVariableKeyValPairs: [string, PB.LiteralValue][] = variablesRaw
-    .filter((v) => v.valueType === "direct" && !v.sensitive)
-    .map((v) => [v.key, v.value]);
-  const referenceVariableKeyValPairs: [string, PB.ReferenceValue][] =
-    variablesRaw
-      .filter((v) => v.valueType === "reference")
-      .map((v) => [
-        v.key,
-        { reference: v.reference ?? "", path: v.path ?? [] },
-      ]);
-  const sensitiveVariableKeyValPairs: [string, PB.SensitiveValue][] =
-    variablesRaw
-      .filter((v) => v.valueType === "direct" && v.sensitive)
-      .map((v) => [v.key, { valueHash: String(v.value) }]);
-
-  const variablesKeyValPairs: [string, PB.Value][] = [
-    ...literalVariableKeyValPairs,
-    ...referenceVariableKeyValPairs,
-    ...sensitiveVariableKeyValPairs,
-  ];
-
-  return Object.fromEntries(variablesKeyValPairs);
-};
-
-const getPbResource = async (resource: FullResource): Promise<PB.Resource> => ({
+const getOapiResource = (
+  resource: FullResource,
+): WorkspaceEngine["schemas"]["Resource"] => ({
   id: resource.id,
   name: resource.name,
   version: resource.version,
@@ -63,7 +34,7 @@ const getPbResource = async (resource: FullResource): Promise<PB.Resource> => ({
   updatedAt: resource.updatedAt?.toISOString() ?? undefined,
   deletedAt: resource.deletedAt?.toISOString() ?? undefined,
   metadata: resource.metadata,
-  variables: await getPbVariables(resource.id),
+  config: resource.config,
 });
 
 const convertFullResourceToNodeEvent = (fullResource: FullResource) => ({
@@ -75,17 +46,17 @@ const convertFullResourceToNodeEvent = (fullResource: FullResource) => ({
   payload: fullResource,
 });
 
-const convertFullResourceToGoEvent = async (fullResource: FullResource) => ({
+const convertFullResourceToGoEvent = (fullResource: FullResource) => ({
   workspaceId: fullResource.workspaceId,
   eventType: Event.ResourceCreated as const,
-  data: await getPbResource(fullResource),
+  data: getOapiResource(fullResource),
   timestamp: Date.now(),
 });
 
 export const dispatchResourceCreated = async (resource: schema.Resource) => {
   const fullResource = await getFullResource(resource);
   const nodeEvent = convertFullResourceToNodeEvent(fullResource);
-  const goEvent = await convertFullResourceToGoEvent(fullResource);
+  const goEvent = convertFullResourceToGoEvent(fullResource);
   await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 
@@ -108,7 +79,7 @@ export const dispatchResourceUpdated = async (
     payload: { previous: previousFullResource, current: currentFullResource },
   };
 
-  const goEvent = await convertFullResourceToGoEvent(currentFullResource);
+  const goEvent = convertFullResourceToGoEvent(currentFullResource);
 
   await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
@@ -116,7 +87,7 @@ export const dispatchResourceUpdated = async (
 export const dispatchResourceDeleted = async (resource: schema.Resource) => {
   const fullResource = await getFullResource(resource);
   const nodeEvent = convertFullResourceToNodeEvent(fullResource);
-  const goEvent = await convertFullResourceToGoEvent(fullResource);
+  const goEvent = convertFullResourceToGoEvent(fullResource);
   await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 
