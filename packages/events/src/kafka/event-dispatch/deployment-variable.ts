@@ -27,27 +27,6 @@ const getWorkspaceIdForVariable = async (variableId: string) =>
     .then(takeFirst)
     .then((row) => row.system.workspaceId);
 
-// const getWorkspaceIdForVariable = async (variableId: string) =>
-//   db
-//     .select()
-//     .from(schema.deploymentVariable)
-//     .innerJoin(schema.deployment, eq(schema.deploymentVariable.deploymentId, schema.deployment.id))
-//     .innerJoin(schema.system, eq(schema.deployment.systemId, schema.system.id))
-//     .where(eq(schema.deploymentVariable.id, variableId))
-//     .then(takeFirst)
-//     .then((row) => row.system.workspaceId);
-
-// const getWorkspaceIdForVariableValue = async (variableValueId: string) =>
-//   db
-//     .select()
-//     .from(schema.deploymentVariableValue)
-//     .innerJoin(schema.deploymentVariable, eq(schema.deploymentVariableValue.variableId, schema.deploymentVariable.id))
-//     .innerJoin(schema.deployment, eq(schema.deploymentVariable.deploymentId, schema.deployment.id))
-//     .innerJoin(schema.system, eq(schema.deployment.systemId, schema.system.id))
-//     .where(eq(schema.deploymentVariableValue.id, variableValueId))
-//     .then(takeFirst)
-//     .then((row) => row.system.workspaceId);
-
 export const dispatchDeploymentVariableCreated = async (
   deploymentVariable: schema.DeploymentVariable,
   source?: "api" | "scheduler" | "user-action",
