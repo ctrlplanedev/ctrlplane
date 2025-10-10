@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/changeset"
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -135,13 +135,16 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	}
 
 	// Execute the handler
-	startTime := time.Now()
 	var ws *workspace.Workspace
 
 	wsExists := workspace.Exists(rawEvent.WorkspaceID)
 	if wsExists {
 		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 	}
+
+	changeSet := changeset.NewChangeSet()
+    ctx = changeset.WithChangeSet(ctx, changeSet)
+
 	if !wsExists {
 		fullWs, err := db.LoadWorkspace(ctx, rawEvent.WorkspaceID)
 		if err != nil {
@@ -152,34 +155,48 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		}
 		workspace.Set(rawEvent.WorkspaceID, fullWs)
 		ws = fullWs
+		changeSet.IsInitialLoad = true
 	}
 
 	err := handler(ctx, ws, rawEvent)
 
 	// Always run a dispatch eval jobs
 	changes := ws.ReleaseManager().Reconcile(ctx)
-	_ = ws.ReleaseManager().EvaluateChange(ctx, changes)
 
-	duration := time.Since(startTime)
+	for _, change := range changes.Changes.Added {
+		changeSet.Record(
+			"release-target", 
+			changeset.ChangeTypeInsert, 
+			change.Key(), 
+			change,
+		)
+	}
+	for _, change := range changes.Changes.Removed {
+		changeSet.Record(
+			"release-target",
+			changeset.ChangeTypeDelete,
+			change.Key(),
+			change,
+		)
+	}
+
+	_ = ws.ReleaseManager().EvaluateChange(ctx, changes)
 
 	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
 	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
-	span.SetAttributes(attribute.Int64("event.processing_duration_ms", duration.Milliseconds()))
 
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "handler failed")
 		log.Error("Handler failed to process event",
 			"eventType", rawEvent.EventType,
-			"error", err,
-			"duration", duration)
+			"error", err)
 		return fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")
 	log.Debug("Successfully processed event",
-		"eventType", rawEvent.EventType,
-		"duration", duration)
+		"eventType", rawEvent.EventType)
 
 	return nil
 }

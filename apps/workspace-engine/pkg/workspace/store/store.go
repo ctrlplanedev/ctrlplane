@@ -85,6 +85,7 @@ func (s *Store) GobDecode(data []byte) error {
 	s.Environments = NewEnvironments(s)
 	s.Resources = NewResources(s)
 	s.ResourceVariables = NewResourceVariables(s)
+	s.ResourceProviders = NewResourceProviders(s)
 	s.Policies = NewPolicies(s)
 	s.ReleaseTargets = NewReleaseTargets(s)
 	s.DeploymentVersions = NewDeploymentVersions(s)

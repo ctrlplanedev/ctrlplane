@@ -12,7 +12,10 @@ type ResourceProviders struct {
 }
 
 func NewResourceProviders(store *Store) *ResourceProviders {
-	return &ResourceProviders{repo: store.repo}
+	return &ResourceProviders{
+		repo:      store.repo,
+		resources: store.Resources,
+	}
 }
 
 func (r *ResourceProviders) Get(id string) (*oapi.ResourceProvider, bool) {

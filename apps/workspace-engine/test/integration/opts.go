@@ -52,6 +52,9 @@ type DeploymentVariableOption func(*TestWorkspace, *oapi.DeploymentVariable)
 // DeploymentVariableValueOption configures a DeploymentVariableValue
 type DeploymentVariableValueOption func(*TestWorkspace, *oapi.DeploymentVariableValue)
 
+// ResourceProviderOption configures a ResourceProvider
+type ResourceProviderOption func(*TestWorkspace, *oapi.ResourceProvider)
+
 type event struct {
 	Type handler.EventType
 	Data any
@@ -191,6 +194,22 @@ func WithDeploymentVariable(deploymentID string, key string, options ...Deployme
 			context.Background(),
 			handler.DeploymentVariableCreate,
 			dv,
+		)
+	}
+}
+
+func WithResourceProvider(options ...ResourceProviderOption) WorkspaceOption {
+	return func(ws *TestWorkspace) {
+		rp := c.NewResourceProvider(ws.workspace.ID)
+
+		for _, option := range options {
+			option(ws, rp)
+		}
+
+		ws.PushEvent(
+			context.Background(),
+			handler.ResourceProviderCreate,
+			rp,
 		)
 	}
 }
@@ -450,6 +469,26 @@ func ResourceMetadata(metadata map[string]string) ResourceOption {
 func ResourceProviderID(providerID string) ResourceOption {
 	return func(_ *TestWorkspace, r *oapi.Resource) {
 		r.ProviderId = &providerID
+	}
+}
+
+// ===== ResourceProvider Options =====
+
+func ProviderName(name string) ResourceProviderOption {
+	return func(_ *TestWorkspace, rp *oapi.ResourceProvider) {
+		rp.Name = name
+	}
+}
+
+func ProviderID(id string) ResourceProviderOption {
+	return func(_ *TestWorkspace, rp *oapi.ResourceProvider) {
+		rp.Id = id
+	}
+}
+
+func ProviderMetadata(metadata map[string]string) ResourceProviderOption {
+	return func(_ *TestWorkspace, rp *oapi.ResourceProvider) {
+		rp.Metadata = metadata
 	}
 }
 
