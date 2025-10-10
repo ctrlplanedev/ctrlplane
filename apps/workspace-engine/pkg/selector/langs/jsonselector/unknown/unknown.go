@@ -2,7 +2,7 @@ package unknown
 
 import (
 	"fmt"
-	"workspace-engine/pkg/pb"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/goccy/go-json"
 )
@@ -65,15 +65,15 @@ func ParseFromMap(selectorMap map[string]any) (UnknownCondition, error) {
 }
 
 // SelectorToUnknownCondition converts a protobuf Selector to an UnknownCondition
-func SelectorToUnknownCondition(selector *pb.Selector) (UnknownCondition, error) {
+func SelectorToUnknownCondition(selector *oapi.Selector) (UnknownCondition, error) {
 	if selector == nil {
 		return UnknownCondition{}, fmt.Errorf("selector is nil")
 	}
 
-	jsonSelector := selector.GetJson()
-	if jsonSelector == nil {
-		return UnknownCondition{}, fmt.Errorf("selector json is nil")
+	jsonSelector, err := selector.AsJsonSelector()
+	if err != nil {
+		return UnknownCondition{}, err
 	}
 
-	return ParseFromMap(jsonSelector.AsMap())
+	return ParseFromMap(jsonSelector.Json)
 }

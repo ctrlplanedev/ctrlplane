@@ -38,26 +38,23 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-		integration.WithResource(
-			integration.ResourceID(resourceID),
-			integration.ResourceName("server-1"),
-			integration.ResourceKind("server"),
-		),
+	integration.WithResource(
+		integration.ResourceID(resourceID),
+		integration.ResourceName("server-1"),
+		integration.ResourceKind("server"),
 		integration.WithResourceVariable(
-			resourceID,
 			"app_name",
 			integration.ResourceVariableStringValue("my-app"),
 		),
 		integration.WithResourceVariable(
-			resourceID,
 			"replicas",
 			integration.ResourceVariableIntValue(3),
 		),
 		integration.WithResourceVariable(
-			resourceID,
 			"debug_mode",
 			integration.ResourceVariableBoolValue(false),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -154,13 +151,11 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-		integration.WithResource(
-			integration.ResourceID(resourceID),
-			integration.ResourceName("server-1"),
-			integration.ResourceKind("server"),
-		),
+	integration.WithResource(
+		integration.ResourceID(resourceID),
+		integration.ResourceName("server-1"),
+		integration.ResourceKind("server"),
 		integration.WithResourceVariable(
-			resourceID,
 			"database_config",
 			integration.ResourceVariableLiteralValue(map[string]any{
 				"host":     "db.example.com",
@@ -173,6 +168,7 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 				},
 			}),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -300,30 +296,27 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 				"cidr":   "10.0.0.0/16",
 			}),
 		),
-		integration.WithResource(
-			integration.ResourceID(resourceID),
-			integration.ResourceName("cluster-main"),
-			integration.ResourceKind("kubernetes-cluster"),
-			integration.ResourceMetadata(map[string]string{
-				"vpc_id": vpcID,
-				"region": "us-east-1",
-			}),
-		),
+	integration.WithResource(
+		integration.ResourceID(resourceID),
+		integration.ResourceName("cluster-main"),
+		integration.ResourceKind("kubernetes-cluster"),
+		integration.ResourceMetadata(map[string]string{
+			"vpc_id": vpcID,
+			"region": "us-east-1",
+		}),
 		integration.WithResourceVariable(
-			resourceID,
 			"vpc_id",
 			integration.ResourceVariableReferenceValue("vpc", []string{"id"}),
 		),
 		integration.WithResourceVariable(
-			resourceID,
 			"vpc_region",
 			integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "region"}),
 		),
 		integration.WithResourceVariable(
-			resourceID,
 			"vpc_cidr",
 			integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "cidr"}),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -448,29 +441,26 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 			integration.ResourceName("vpc-main"),
 			integration.ResourceKind("vpc"),
 		),
-		integration.WithResource(
-			integration.ResourceID(resourceID),
-			integration.ResourceName("cluster-main"),
-			integration.ResourceKind("kubernetes-cluster"),
-			integration.ResourceMetadata(map[string]string{
-				"vpc_id": vpcID,
-			}),
-		),
+	integration.WithResource(
+		integration.ResourceID(resourceID),
+		integration.ResourceName("cluster-main"),
+		integration.ResourceKind("kubernetes-cluster"),
+		integration.ResourceMetadata(map[string]string{
+			"vpc_id": vpcID,
+		}),
 		integration.WithResourceVariable(
-			resourceID,
 			"cluster_name",
 			integration.ResourceVariableStringValue("prod-cluster"),
 		),
 		integration.WithResourceVariable(
-			resourceID,
 			"replicas",
 			integration.ResourceVariableIntValue(5),
 		),
 		integration.WithResourceVariable(
-			resourceID,
 			"vpc_name",
 			integration.ResourceVariableReferenceValue("vpc", []string{"name"}),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -567,36 +557,32 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-		integration.WithResource(
-			integration.ResourceID(resourceID1),
-			integration.ResourceName("server-1"),
-			integration.ResourceKind("server"),
-		),
+	integration.WithResource(
+		integration.ResourceID(resourceID1),
+		integration.ResourceName("server-1"),
+		integration.ResourceKind("server"),
 		integration.WithResourceVariable(
-			resourceID1,
 			"replicas",
 			integration.ResourceVariableIntValue(3),
 		),
 		integration.WithResourceVariable(
-			resourceID1,
 			"region",
 			integration.ResourceVariableStringValue("us-east-1"),
 		),
-		integration.WithResource(
-			integration.ResourceID(resourceID2),
-			integration.ResourceName("server-2"),
-			integration.ResourceKind("server"),
-		),
+	),
+	integration.WithResource(
+		integration.ResourceID(resourceID2),
+		integration.ResourceName("server-2"),
+		integration.ResourceKind("server"),
 		integration.WithResourceVariable(
-			resourceID2,
 			"replicas",
 			integration.ResourceVariableIntValue(5),
 		),
 		integration.WithResourceVariable(
-			resourceID2,
 			"region",
 			integration.ResourceVariableStringValue("us-west-2"),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -767,22 +753,21 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 				"vpc_id": vpcID,
 			}),
 		),
-		integration.WithResource(
-			integration.ResourceID(podID),
-			integration.ResourceName("pod-api-123"),
-			integration.ResourceKind("pod"),
-			integration.ResourceMetadata(map[string]string{
-				"cluster_id": clusterID,
-			}),
-		),
+	integration.WithResource(
+		integration.ResourceID(podID),
+		integration.ResourceName("pod-api-123"),
+		integration.ResourceKind("pod"),
+		integration.ResourceMetadata(map[string]string{
+			"cluster_id": clusterID,
+		}),
 		// Pod can reference its cluster directly
 		integration.WithResourceVariable(
-			podID,
 			"cluster_name",
 			integration.ResourceVariableReferenceValue("cluster", []string{"name"}),
 		),
 		// Pod cannot directly reference VPC (would need cluster as intermediary in real scenario)
 		// But cluster can reference VPC
+	),
 	)
 
 	ctx := context.Background()
@@ -931,42 +916,38 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-		integration.WithResource(
-			integration.ResourceID(dbID),
-			integration.ResourceName("postgres-main"),
-			integration.ResourceKind("database"),
-			integration.ResourceMetadata(map[string]string{
-				"engine": "postgres",
-			}),
-		),
+	integration.WithResource(
+		integration.ResourceID(dbID),
+		integration.ResourceName("postgres-main"),
+		integration.ResourceKind("database"),
+		integration.ResourceMetadata(map[string]string{
+			"engine": "postgres",
+		}),
 		integration.WithResourceVariable(
-			dbID,
 			"connection_string",
 			integration.ResourceVariableStringValue("postgres://localhost:5432/mydb"),
 		),
 		integration.WithResourceVariable(
-			dbID,
 			"max_connections",
 			integration.ResourceVariableIntValue(100),
 		),
-		integration.WithResource(
-			integration.ResourceID(cacheID),
-			integration.ResourceName("redis-main"),
-			integration.ResourceKind("cache"),
-			integration.ResourceMetadata(map[string]string{
-				"engine": "redis",
-			}),
-		),
+	),
+	integration.WithResource(
+		integration.ResourceID(cacheID),
+		integration.ResourceName("redis-main"),
+		integration.ResourceKind("cache"),
+		integration.ResourceMetadata(map[string]string{
+			"engine": "redis",
+		}),
 		integration.WithResourceVariable(
-			cacheID,
 			"endpoint",
 			integration.ResourceVariableStringValue("redis://localhost:6379"),
 		),
 		integration.WithResourceVariable(
-			cacheID,
 			"ttl_seconds",
 			integration.ResourceVariableIntValue(3600),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -1114,29 +1095,26 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 				"database": "production_db",
 			}),
 		),
-		integration.WithResource(
-			integration.ResourceID(serviceID),
-			integration.ResourceName("api-service"),
-			integration.ResourceKind("service"),
-			integration.ResourceMetadata(map[string]string{
-				"db_id": dbID,
-			}),
-		),
+	integration.WithResource(
+		integration.ResourceID(serviceID),
+		integration.ResourceName("api-service"),
+		integration.ResourceKind("service"),
+		integration.ResourceMetadata(map[string]string{
+			"db_id": dbID,
+		}),
 		integration.WithResourceVariable(
-			serviceID,
 			"db_host",
 			integration.ResourceVariableReferenceValue("database", []string{"metadata", "host"}),
 		),
 		integration.WithResourceVariable(
-			serviceID,
 			"db_port",
 			integration.ResourceVariableReferenceValue("database", []string{"metadata", "port"}),
 		),
 		integration.WithResourceVariable(
-			serviceID,
 			"db_name",
 			integration.ResourceVariableReferenceValue("database", []string{"metadata", "database"}),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -1275,25 +1253,23 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 			integration.ResourceName("redis-main"),
 			integration.ResourceKind("cache"),
 		),
-		integration.WithResource(
-			integration.ResourceID(appID),
-			integration.ResourceName("web-app"),
-			integration.ResourceKind("application"),
-			integration.ResourceMetadata(map[string]string{
-				"db_id":    dbID,
-				"cache_id": cacheID,
-			}),
-		),
+	integration.WithResource(
+		integration.ResourceID(appID),
+		integration.ResourceName("web-app"),
+		integration.ResourceKind("application"),
+		integration.ResourceMetadata(map[string]string{
+			"db_id":    dbID,
+			"cache_id": cacheID,
+		}),
 		integration.WithResourceVariable(
-			appID,
 			"db_name",
 			integration.ResourceVariableReferenceValue("database", []string{"name"}),
 		),
 		integration.WithResourceVariable(
-			appID,
 			"cache_name",
 			integration.ResourceVariableReferenceValue("cache", []string{"name"}),
 		),
+	),
 	)
 
 	ctx := context.Background()
@@ -1425,6 +1401,18 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.WithDeploymentVariable(
+					"app_port",
+					integration.DeploymentVariableIntValue(8080),
+				),
+				integration.WithDeploymentVariable(
+					"app_name",
+					integration.DeploymentVariableStringValue("my-api"),
+				),
+				integration.WithDeploymentVariable(
+					"enable_metrics",
+					integration.DeploymentVariableBoolValue(true),
+				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1435,21 +1423,6 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 			integration.ResourceID(resourceID),
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
-		),
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"app_port",
-			integration.DeploymentVariableIntValue(8080),
-		),
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"app_name",
-			integration.DeploymentVariableStringValue("my-api"),
-		),
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"enable_metrics",
-			integration.DeploymentVariableBoolValue(true),
 		),
 	)
 
@@ -1540,6 +1513,17 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.WithDeploymentVariable(
+					"api_config",
+					integration.DeploymentVariableLiteralValue(map[string]any{
+						"timeout": 30,
+						"retries": 3,
+						"auth": map[string]any{
+							"enabled": true,
+							"type":    "bearer",
+						},
+					}),
+				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1550,18 +1534,6 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 			integration.ResourceID(resourceID),
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
-		),
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"api_config",
-			integration.DeploymentVariableLiteralValue(map[string]any{
-				"timeout": 30,
-				"retries": 3,
-				"auth": map[string]any{
-					"enabled": true,
-					"type":    "bearer",
-				},
-			}),
 		),
 	)
 
@@ -1652,6 +1624,14 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.WithDeploymentVariable(
+					"replicas",
+					integration.DeploymentVariableIntValue(3),
+				),
+				integration.WithDeploymentVariable(
+					"region",
+					integration.DeploymentVariableStringValue("us-west-2"),
+				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1662,23 +1642,10 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 			integration.ResourceID(resourceID),
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
-		),
-		// Deployment variable sets replicas to 3
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"replicas",
-			integration.DeploymentVariableIntValue(3),
-		),
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"region",
-			integration.DeploymentVariableStringValue("us-west-2"),
-		),
-		// Resource variable overrides replicas to 5
-		integration.WithResourceVariable(
-			resourceID,
-			"replicas",
-			integration.ResourceVariableIntValue(5),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(5),
+			),
 		),
 	)
 
@@ -1765,11 +1732,27 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 				integration.DeploymentID(deployment1ID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgent1ID),
+				integration.WithDeploymentVariable(
+					"port",
+					integration.DeploymentVariableIntValue(8080),
+				),
+				integration.WithDeploymentVariable(
+					"type",
+					integration.DeploymentVariableStringValue("api"),
+				),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deployment2ID),
 				integration.DeploymentName("worker"),
 				integration.DeploymentJobAgent(jobAgent2ID),
+				integration.WithDeploymentVariable(
+					"port",
+					integration.DeploymentVariableIntValue(9090),
+				),
+				integration.WithDeploymentVariable(
+					"type",
+					integration.DeploymentVariableStringValue("worker"),
+				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1780,28 +1763,6 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 			integration.ResourceID(resourceID),
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
-		),
-		// API deployment variables
-		integration.WithDeploymentVariable(
-			deployment1ID,
-			"port",
-			integration.DeploymentVariableIntValue(8080),
-		),
-		integration.WithDeploymentVariable(
-			deployment1ID,
-			"type",
-			integration.DeploymentVariableStringValue("api"),
-		),
-		// Worker deployment variables
-		integration.WithDeploymentVariable(
-			deployment2ID,
-			"port",
-			integration.DeploymentVariableIntValue(9090),
-		),
-		integration.WithDeploymentVariable(
-			deployment2ID,
-			"type",
-			integration.DeploymentVariableStringValue("worker"),
 		),
 	)
 
@@ -1919,6 +1880,14 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.WithDeploymentVariable(
+					"app_version",
+					integration.DeploymentVariableStringValue("v1.2.3"),
+				),
+				integration.WithDeploymentVariable(
+					"timeout",
+					integration.DeploymentVariableIntValue(30),
+				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1929,28 +1898,14 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 			integration.ResourceID(resourceID),
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
-		),
-		// Deployment variables
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"app_version",
-			integration.DeploymentVariableStringValue("v1.2.3"),
-		),
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"timeout",
-			integration.DeploymentVariableIntValue(30),
-		),
-		// Resource variables
-		integration.WithResourceVariable(
-			resourceID,
-			"instance_id",
-			integration.ResourceVariableStringValue("i-1234567890"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"zone",
-			integration.ResourceVariableStringValue("us-east-1a"),
+			integration.WithResourceVariable(
+				"instance_id",
+				integration.ResourceVariableStringValue("i-1234567890"),
+			),
+			integration.WithResourceVariable(
+				"zone",
+				integration.ResourceVariableStringValue("us-east-1a"),
+			),
 		),
 	)
 
@@ -2108,6 +2063,10 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.WithDeploymentVariable(
+					"optional_value",
+					integration.DeploymentVariableStringValue(""),
+				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -2118,11 +2077,6 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 			integration.ResourceID(resourceID),
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
-		),
-		integration.WithDeploymentVariable(
-			deploymentID,
-			"optional_value",
-			integration.DeploymentVariableStringValue(""),
 		),
 	)
 

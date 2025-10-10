@@ -16,21 +16,18 @@ func TestEngine_ResourceVariableCreation(t *testing.T) {
 		integration.WithResource(
 			integration.ResourceID(resourceID),
 			integration.ResourceName("my-resource"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"env",
-			integration.ResourceVariableStringValue("production"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"replicas",
-			integration.ResourceVariableIntValue(3),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"enabled",
-			integration.ResourceVariableBoolValue(true),
+			integration.WithResourceVariable(
+				"env",
+				integration.ResourceVariableStringValue("production"),
+			),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(3),
+			),
+			integration.WithResourceVariable(
+				"enabled",
+				integration.ResourceVariableBoolValue(true),
+			),
 		),
 	)
 
@@ -96,11 +93,10 @@ func TestEngine_ResourceVariableReferenceValue(t *testing.T) {
 		integration.WithResource(
 			integration.ResourceID(resourceID),
 			integration.ResourceName("my-resource"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"vpc_id",
-			integration.ResourceVariableReferenceValue("vpc-relationship", []string{"id"}),
+			integration.WithResourceVariable(
+				"vpc_id",
+				integration.ResourceVariableReferenceValue("vpc-relationship", []string{"id"}),
+			),
 		),
 	)
 
@@ -135,11 +131,10 @@ func TestEngine_ResourceVariableUpdate(t *testing.T) {
 		integration.WithResource(
 			integration.ResourceID(resourceID),
 			integration.ResourceName("my-resource"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"env",
-			integration.ResourceVariableStringValue("staging"),
+			integration.WithResourceVariable(
+				"env",
+				integration.ResourceVariableStringValue("staging"),
+			),
 		),
 	)
 
@@ -177,16 +172,14 @@ func TestEngine_ResourceVariableDelete(t *testing.T) {
 		integration.WithResource(
 			integration.ResourceID(resourceID),
 			integration.ResourceName("my-resource"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"env",
-			integration.ResourceVariableStringValue("production"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"replicas",
-			integration.ResourceVariableIntValue(3),
+			integration.WithResourceVariable(
+				"env",
+				integration.ResourceVariableStringValue("production"),
+			),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(3),
+			),
 		),
 	)
 
@@ -229,16 +222,15 @@ func TestEngine_ResourceVariableLiteralValue(t *testing.T) {
 		integration.WithResource(
 			integration.ResourceID(resourceID),
 			integration.ResourceName("my-resource"),
-		),
-		integration.WithResourceVariable(
-			resourceID,
-			"config",
-			integration.ResourceVariableLiteralValue(map[string]any{
-				"nested": map[string]any{
-					"key": "value",
-				},
-				"number": 42,
-			}),
+			integration.WithResourceVariable(
+				"config",
+				integration.ResourceVariableLiteralValue(map[string]any{
+					"nested": map[string]any{
+						"key": "value",
+					},
+					"number": 42,
+				}),
+			),
 		),
 	)
 

@@ -56,6 +56,10 @@ type Store struct {
 	Variables           *Variables
 }
 
+func (s *Store) Repo() *repository.Repository {
+	return s.repo
+}
+
 func (s *Store) GobEncode() ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)

@@ -23,7 +23,7 @@ type DeploymentVersionOption func(*TestWorkspace, *oapi.DeploymentVersion)
 type EnvironmentOption func(*TestWorkspace, *oapi.Environment)
 
 // ResourceOption configures a Resource
-type ResourceOption func(*TestWorkspace, *oapi.Resource)
+type ResourceOption func(*TestWorkspace, *oapi.Resource, *eventsBuilder)
 
 // JobAgentOption configures a JobAgent
 type JobAgentOption func(*TestWorkspace, *oapi.JobAgent)
@@ -104,9 +104,14 @@ func WithSystem(options ...SystemOption) WorkspaceOption {
 func WithResource(options ...ResourceOption) WorkspaceOption {
 	return func(ws *TestWorkspace) {
 		r := c.NewResource(ws.workspace.ID)
+		eb := newEventsBuilder()
 
 		for _, option := range options {
-			option(ws, r)
+			option(ws, r, eb)
+		}
+
+		for _, event := range eb.preEvents {
+			ws.PushEvent(context.Background(), event.Type, event.Data)
 		}
 
 		ws.PushEvent(
@@ -114,6 +119,10 @@ func WithResource(options ...ResourceOption) WorkspaceOption {
 			handler.ResourceCreate,
 			r,
 		)
+
+		for _, event := range eb.postEvents {
+			ws.PushEvent(context.Background(), event.Type, event.Data)
+		}
 	}
 }
 
@@ -166,35 +175,33 @@ func WithRelationshipRule(options ...RelationshipRuleOption) WorkspaceOption {
 	}
 }
 
-func WithResourceVariable(resourceID string, key string, options ...ResourceVariableOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
-		rv := c.NewResourceVariable(resourceID, key)
+func WithResourceVariable(key string, options ...ResourceVariableOption) ResourceOption {
+	return func(ws *TestWorkspace, r *oapi.Resource, eb *eventsBuilder) {
+		rv := c.NewResourceVariable(r.Id, key)
 
 		for _, option := range options {
 			option(ws, rv)
 		}
 
-		ws.PushEvent(
-			context.Background(),
-			handler.ResourceVariableCreate,
-			rv,
-		)
+		eb.postEvents = append(eb.postEvents, event{
+			Type: handler.ResourceVariableCreate,
+			Data: rv,
+		})
 	}
 }
 
-func WithDeploymentVariable(deploymentID string, key string, options ...DeploymentVariableOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
-		dv := c.NewDeploymentVariable(deploymentID, key)
+func WithDeploymentVariable(key string, options ...DeploymentVariableOption) DeploymentOption {
+	return func(ws *TestWorkspace, d *oapi.Deployment, eb *eventsBuilder) {
+		dv := c.NewDeploymentVariable(d.Id, key)
 
 		for _, option := range options {
 			option(ws, dv)
 		}
 
-		ws.PushEvent(
-			context.Background(),
-			handler.DeploymentVariableCreate,
-			dv,
-		)
+		eb.postEvents = append(eb.postEvents, event{
+			Type: handler.DeploymentVariableCreate,
+			Data: dv,
+		})
 	}
 }
 
@@ -425,49 +432,49 @@ func EnvironmentNoResourceSelector() EnvironmentOption {
 // ===== Resource Options =====
 
 func ResourceName(name string) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Name = name
 	}
 }
 
 func ResourceID(id string) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Id = id
 	}
 }
 
 func ResourceKind(kind string) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Kind = kind
 	}
 }
 
 func ResourceVersion(version string) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Version = version
 	}
 }
 
 func ResourceIdentifier(identifier string) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Identifier = identifier
 	}
 }
 
 func ResourceConfig(config map[string]interface{}) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Config = config
 	}
 }
 
 func ResourceMetadata(metadata map[string]string) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.Metadata = metadata
 	}
 }
 
 func ResourceProviderID(providerID string) ResourceOption {
-	return func(_ *TestWorkspace, r *oapi.Resource) {
+	return func(_ *TestWorkspace, r *oapi.Resource, _ *eventsBuilder) {
 		r.ProviderId = &providerID
 	}
 }

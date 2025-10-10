@@ -1,9 +1,60 @@
 package repository
 
 import (
+	"encoding/gob"
+	"encoding/json"
+	"os"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 )
+
+func EncodeGob(r *Repository) ([]byte, error) {
+	var buf []byte
+	writer := NewBufferWriter(&buf)
+	encoder := gob.NewEncoder(writer)
+	err := encoder.Encode(r)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
+
+// WriteToJSONFile writes the Repository data to a JSON file at the specified path.
+func WriteToJSONFile(r *Repository, filePath string) error {
+	// Marshal the repository struct into JSON.
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Create or truncate the file.
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Write JSON data to file.
+	_, err = f.Write(data)
+	return err
+}
+
+
+// BufferWriter implements io.Writer for a byte slice pointer
+type BufferWriter struct {
+	buf *[]byte
+}
+
+func NewBufferWriter(b *[]byte) *BufferWriter {
+	return &BufferWriter{buf: b}
+}
+
+func (w *BufferWriter) Write(p []byte) (int, error) {
+	*w.buf = append(*w.buf, p...)
+	return len(p), nil
+}
+
 
 func New() *Repository {
 	return &Repository{
@@ -44,3 +95,5 @@ type Repository struct {
 	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 }
+
+
