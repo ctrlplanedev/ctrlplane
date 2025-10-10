@@ -1,10 +1,11 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { isPresent } from "ts-is-present";
 
 import type { FullPolicy } from "../events.js";
-import * as PB from "../../workspace-engine/types/index.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
+import { convertToOapiSelector } from "./util.js";
 
 const convertFullPolicyToNodeEvent = (policy: FullPolicy) => ({
   workspaceId: policy.workspaceId,
@@ -15,24 +16,28 @@ const convertFullPolicyToNodeEvent = (policy: FullPolicy) => ({
   payload: policy,
 });
 
-const getPbPolicyTarget = (target: schema.PolicyTarget): PB.PolicyTarget => ({
+const getOapiPolicyTarget = (
+  target: schema.PolicyTarget,
+): WorkspaceEngine["schemas"]["PolicyTargetSelector"] => ({
   id: target.id,
-  deploymentSelector: PB.wrapSelector(target.deploymentSelector),
-  environmentSelector: PB.wrapSelector(target.environmentSelector),
-  resourceSelector: PB.wrapSelector(target.resourceSelector),
+  deploymentSelector: convertToOapiSelector(target.deploymentSelector),
+  environmentSelector: convertToOapiSelector(target.environmentSelector),
+  resourceSelector: convertToOapiSelector(target.resourceSelector),
 });
 
 const getAnyApprovalRule = (
   rule: schema.PolicyRuleAnyApproval,
-): PB.PolicyRule => ({
+): WorkspaceEngine["schemas"]["PolicyRule"] => ({
   id: rule.id,
   policyId: rule.policyId,
   createdAt: rule.createdAt.toISOString(),
   anyApproval: { minApprovals: rule.requiredApprovalsCount },
 });
 
-const getPbPolicy = (policy: FullPolicy): PB.Policy => {
-  const selectors = policy.targets.map((target) => getPbPolicyTarget(target));
+const getOapiPolicy = (
+  policy: FullPolicy,
+): WorkspaceEngine["schemas"]["Policy"] => {
+  const selectors = policy.targets.map((target) => getOapiPolicyTarget(target));
   const anyApproval = policy.versionAnyApprovals
     ? getAnyApprovalRule(policy.versionAnyApprovals)
     : null;
@@ -52,7 +57,7 @@ const getPbPolicy = (policy: FullPolicy): PB.Policy => {
 const convertFullPolicyToGoEvent = (policy: FullPolicy) => ({
   workspaceId: policy.workspaceId,
   eventType: Event.PolicyCreated as const,
-  data: getPbPolicy(policy),
+  data: getOapiPolicy(policy),
   timestamp: Date.now(),
 });
 
