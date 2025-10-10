@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 	"workspace-engine/pkg/oapi"
 
@@ -118,4 +120,86 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	}
 
 	return policy, nil
+}
+
+const POLICY_INSERT_QUERY = `
+	INSERT INTO policy (id, name, description, workspace_id, created_at)
+	VALUES ($1, $2, $3, $4, $5)
+`
+
+func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
+	if _, err := tx.Exec(
+		ctx,
+		POLICY_INSERT_QUERY,
+		policy.Id,
+		policy.Name,
+		policy.Description,
+		policy.WorkspaceId,
+		policy.CreatedAt,
+	); err != nil {
+		return err
+	}
+
+	if len(policy.Selectors) > 0 {
+		if err := writeManySelectors(ctx, policy.Id, policy.Selectors, tx); err != nil {
+			return err
+		}
+	}
+
+	for _, rule := range policy.Rules {
+		if rule.AnyApproval != nil {
+			if err := writeApprovalAnyRule(ctx, policy.Id, rule, *rule.AnyApproval, tx); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func writeManySelectors(ctx context.Context, policyId string, selectors []oapi.PolicyTargetSelector, tx pgx.Tx) error {
+	if len(selectors) == 0 {
+		return nil
+	}
+
+	valueStrings := make([]string, 0, len(selectors))
+	valueArgs := make([]interface{}, 0, len(selectors)*3)
+	i := 1
+	for _, selector := range selectors {
+		valueStrings = append(valueStrings, "($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+")")
+		valueArgs = append(valueArgs, policyId, selector.DeploymentSelector, selector.EnvironmentSelector, selector.ResourceSelector)
+		i += 3
+	}
+
+	query := "INSERT INTO policy_target (id, policy_id, deployment_selector, environment_selector, resource_selector) VALUES " +
+		strings.Join(valueStrings, ", ")
+
+	_, err := tx.Exec(ctx, query, valueArgs...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+const APPROVAL_ANY_RULE_INSERT_QUERY = `
+	INSERT INTO policy_rule_any_approval (id, policy_id, created_at, required_approvals_count)
+	VALUES ($1, $2, $3, $4)
+`
+
+func writeApprovalAnyRule(ctx context.Context, policyId string, rule oapi.PolicyRule, anyApproval oapi.AnyApprovalRule, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_INSERT_QUERY, policyId, rule.Id, rule.CreatedAt, anyApproval.MinApprovals); err != nil {
+		return err
+	}
+	return nil
+}
+
+const DELETE_POLICY_QUERY = `
+	DELETE FROM policy WHERE id = $1
+`
+
+func deletePolicy(ctx context.Context, policyId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_POLICY_QUERY, policyId); err != nil {
+		return err
+	}
+	return nil
 }

@@ -19,6 +19,7 @@ const (
 	EntityTypeResource                 EntityType = "resource"
 	EntityTypeDeployment               EntityType = "deployment"
 	EntityTypeEnvironment              EntityType = "environment"
+	EntityTypeReleaseTarget            EntityType = "releaseTarget"
 	EntityTypeJob                      EntityType = "job"
 	EntityTypeJobAgent                 EntityType = "jobAgent"
 	EntityTypeRelease                  EntityType = "release"
@@ -28,6 +29,7 @@ const (
 	EntityTypeResourceProvider         EntityType = "resourceProvider"
 	EntityTypeResourceMetadataGroup    EntityType = "resourceMetadataGroup"
 	EntityTypeResourceRelationshipRule EntityType = "resourceRelationshipRule"
+	EntityTypePolicy                   EntityType = "policy"
 )
 
 type Change struct {

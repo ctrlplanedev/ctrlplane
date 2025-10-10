@@ -216,3 +216,14 @@ func writeManyMetadata(ctx context.Context, resourceId string, metadata map[stri
 	}
 	return nil
 }
+
+const DELETE_RESOURCE_QUERY = `
+	DELETE FROM resource WHERE id = $1
+`
+
+func deleteResource(ctx context.Context, resourceId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_RESOURCE_QUERY, resourceId); err != nil {
+		return err
+	}
+	return nil
+}

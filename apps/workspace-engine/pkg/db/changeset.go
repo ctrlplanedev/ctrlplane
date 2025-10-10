@@ -48,13 +48,66 @@ func FlushChangeset(ctx context.Context) error {
 	return nil
 }
 
+func applyResourceChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
+	oapiResource, err := oapi.ConvertToOapiResource(change.Entity)
+	if err != nil {
+		return err
+	}
+	if change.Type == changeset.ChangeTypeDelete {
+		return deleteResource(ctx, oapiResource.Id, conn)
+	}
+	return writeResource(ctx, oapiResource, conn)
+}
+
+func applyDeploymentChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
+	oapiDeployment, err := oapi.ConvertToOapiDeployment(change.Entity)
+	if err != nil {
+		return err
+	}
+	if change.Type == changeset.ChangeTypeDelete {
+		return deleteDeployment(ctx, oapiDeployment.Id, conn)
+	}
+	return writeDeployment(ctx, oapiDeployment, conn)
+}
+
+func applyEnvironmentChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
+	oapiEnvironment, err := oapi.ConvertToOapiEnvironment(change.Entity)
+	if err != nil {
+		return err
+	}
+	if change.Type == changeset.ChangeTypeDelete {
+		return deleteEnvironment(ctx, oapiEnvironment.Id, conn)
+	}
+	return writeEnvironment(ctx, oapiEnvironment, conn)
+}
+
+func applyPolicyChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
+	oapiPolicy, err := oapi.ConvertToOapiPolicy(change.Entity)
+	if err != nil {
+		return err
+	}
+	if change.Type == changeset.ChangeTypeDelete {
+		return deletePolicy(ctx, oapiPolicy.Id, conn)
+	}
+	return writePolicy(ctx, oapiPolicy, conn)
+}
+
 func applyInsert(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
 	if change.EntityType == changeset.EntityTypeResource {
-		oapiResource, err := oapi.ConvertToOapiResource(change.Entity)
-		if err != nil {
-			return err
-		}
-		return writeResource(ctx, oapiResource, conn)
+		return applyResourceChange(ctx, conn, change)
 	}
+
+	if change.EntityType == changeset.EntityTypeDeployment {
+		return applyDeploymentChange(ctx, conn, change)
+	}
+
+	if change.EntityType == changeset.EntityTypeEnvironment {
+		return applyEnvironmentChange(ctx, conn, change)
+	}
+
+	if change.EntityType == changeset.EntityTypePolicy {
+		return applyPolicyChange(ctx, conn, change)
+	}
+
 	return fmt.Errorf("unknown entity type: %s", change.EntityType)
 }
