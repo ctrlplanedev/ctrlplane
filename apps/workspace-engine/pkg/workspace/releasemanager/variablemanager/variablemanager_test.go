@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"testing"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -29,24 +28,6 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 	return st
 }
 
-// Helper function to add a resource variable directly to the store's repository
-func addResourceVariable(st *store.Store, rv *oapi.ResourceVariable) {
-	// Access the repository directly through reflection or type assertion
-	// Since the store uses a private repo field, we need to use the public API
-	// For now, we'll work around this by not testing resource variables
-	// or by using a different approach
-	_ = st
-	_ = rv
-}
-
-// Helper function to create a JSON selector from a map
-func mustCreateSelector(selectorMap map[string]interface{}) *oapi.Selector {
-	selector := &oapi.Selector{}
-	if err := selector.FromJsonSelector(oapi.JsonSelector{Json: selectorMap}); err != nil {
-		panic(err)
-	}
-	return selector
-}
 
 // Helper function to create a literal value from a Go value
 func mustCreateLiteralValue(value interface{}) *oapi.LiteralValue {
@@ -655,25 +636,17 @@ func TestEvaluate_ReferenceValueResolution(t *testing.T) {
 			"value":    "database",
 		},
 	})
-	// Add relationship rule
-	relationshipRule := &oapi.RelationshipRule{
-		Id:               "rel-1",
-		Name:             "app-to-db",
-		Reference:        "database",
-		FromType:         "resource",
-		ToType:           "resource",
-		RelationshipType: "uses",
-		FromSelector:     fromSelector,
-		ToSelector:       toSelector,
-		PropertyMatchers: []oapi.PropertyMatcher{
+
+	pm := &oapi.RelationshipRule_Matcher{}
+	pm.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
 			{
 				FromProperty: []string{"metadata", "env"},
 				ToProperty:   []string{"metadata", "env"},
 				Operator:     oapi.Equals,
 			},
 		},
-		Metadata: map[string]string{},
-	}
+	})
 
 	// Note: Store needs relationship rules to be set up for reference resolution to work
 	// This test demonstrates the structure, but actual relationship storage would need
@@ -700,15 +673,6 @@ func TestEvaluate_ReferenceValueResolution(t *testing.T) {
 		JobAgentConfig: map[string]interface{}{},
 	}
 	st.Deployments.Upsert(ctx, deployment)
-
-	// Set up the relationship
-	fromEntity := relationships.NewResourceEntity(st.Resources.Items()[resourceID])
-	toEntity := relationships.NewResourceEntity(relatedResource)
-
-	// In a real scenario, the relationship store would handle this
-	_ = fromEntity
-	_ = toEntity
-	_ = relationshipRule
 
 	manager := New(st)
 

@@ -44,35 +44,35 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-	integration.WithResource(
-		integration.ResourceID(resourceId),
-		integration.ResourceName("server-1"),
-		integration.ResourceKind("server"),
-		integration.ResourceMetadata(map[string]string{
-			"region": "us-east-1",
-			"zone":   "us-east-1a",
-		}),
-		integration.WithResourceVariable(
-			"app_name",
-			integration.ResourceVariableStringValue("my-app"),
-		),
-		integration.WithResourceVariable(
-			"replicas",
-			integration.ResourceVariableIntValue(5),
-		),
-		integration.WithResourceVariable(
-			"debug_mode",
-			integration.ResourceVariableBoolValue(true),
-		),
-		integration.WithResourceVariable(
-			"config",
-			integration.ResourceVariableLiteralValue(map[string]any{
-				"timeout":     30,
-				"max_retries": 3,
-				"enabled":     true,
+		integration.WithResource(
+			integration.ResourceID(resourceId),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+				"zone":   "us-east-1a",
 			}),
+			integration.WithResourceVariable(
+				"app_name",
+				integration.ResourceVariableStringValue("my-app"),
+			),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(5),
+			),
+			integration.WithResourceVariable(
+				"debug_mode",
+				integration.ResourceVariableBoolValue(true),
+			),
+			integration.WithResourceVariable(
+				"config",
+				integration.ResourceVariableLiteralValue(map[string]any{
+					"timeout":     30,
+					"max_retries": 3,
+					"enabled":     true,
+				}),
+			),
 		),
-	),
 	)
 
 	ctx := context.Background()
@@ -254,55 +254,55 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 				"database": "production_db",
 			}),
 		),
-	// Application resource that references the database
-	integration.WithResource(
-		integration.ResourceID(appId),
-		integration.ResourceName("api-app"),
-		integration.ResourceKind("application"),
-		integration.ResourceMetadata(map[string]string{
-			"db_id": dbId,
-		}),
-		// Variables on the app that reference the database
-		integration.WithResourceVariable(
-			"db_host",
-			integration.ResourceVariableReferenceValue("database", []string{"metadata", "host"}),
+		// Application resource that references the database
+		integration.WithResource(
+			integration.ResourceID(appId),
+			integration.ResourceName("api-app"),
+			integration.ResourceKind("application"),
+			integration.ResourceMetadata(map[string]string{
+				"db_id": dbId,
+			}),
+			// Variables on the app that reference the database
+			integration.WithResourceVariable(
+				"db_host",
+				integration.ResourceVariableReferenceValue("database", []string{"metadata", "host"}),
+			),
+			integration.WithResourceVariable(
+				"db_port",
+				integration.ResourceVariableReferenceValue("database", []string{"metadata", "port"}),
+			),
+			integration.WithResourceVariable(
+				"db_name",
+				integration.ResourceVariableReferenceValue("database", []string{"metadata", "database"}),
+			),
+			integration.WithResourceVariable(
+				"app_version",
+				integration.ResourceVariableStringValue("1.0.0"),
+			),
 		),
-		integration.WithResourceVariable(
-			"db_port",
-			integration.ResourceVariableReferenceValue("database", []string{"metadata", "port"}),
+		// Relationship rule: app -> database
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("app-to-db"),
+			integration.RelationshipRuleName("app-to-database"),
+			integration.RelationshipRuleReference("database"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "application",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "database",
+			}),
+			integration.WithPropertyMatcher(
+				integration.PropertyMatcherFromProperty([]string{"metadata", "db_id"}),
+				integration.PropertyMatcherToProperty([]string{"id"}),
+				integration.PropertyMatcherOperator("equals"),
+			),
 		),
-		integration.WithResourceVariable(
-			"db_name",
-			integration.ResourceVariableReferenceValue("database", []string{"metadata", "database"}),
-		),
-		integration.WithResourceVariable(
-			"app_version",
-			integration.ResourceVariableStringValue("1.0.0"),
-		),
-	),
-	// Relationship rule: app -> database
-	integration.WithRelationshipRule(
-		integration.RelationshipRuleID("app-to-db"),
-		integration.RelationshipRuleName("app-to-database"),
-		integration.RelationshipRuleReference("database"),
-		integration.RelationshipRuleFromType("resource"),
-		integration.RelationshipRuleToType("resource"),
-		integration.RelationshipRuleFromJsonSelector(map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "application",
-		}),
-		integration.RelationshipRuleToJsonSelector(map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "database",
-		}),
-		integration.WithPropertyMatcher(
-			integration.PropertyMatcherFromProperty([]string{"metadata", "db_id"}),
-			integration.PropertyMatcherToProperty([]string{"id"}),
-			integration.PropertyMatcherOperator("equals"),
-		),
-	),
 	)
 
 	ctx := context.Background()
@@ -414,51 +414,51 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-	integration.WithResource(
-		integration.ResourceID(resource1Id),
-		integration.ResourceName("server-1"),
-		integration.ResourceMetadata(map[string]string{
-			"region": "us-east-1",
-		}),
-		integration.WithResourceVariable(
-			"region",
-			integration.ResourceVariableStringValue("us-east-1"),
+		integration.WithResource(
+			integration.ResourceID(resource1Id),
+			integration.ResourceName("server-1"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+			integration.WithResourceVariable(
+				"region",
+				integration.ResourceVariableStringValue("us-east-1"),
+			),
+			integration.WithResourceVariable(
+				"instance_count",
+				integration.ResourceVariableIntValue(3),
+			),
 		),
-		integration.WithResourceVariable(
-			"instance_count",
-			integration.ResourceVariableIntValue(3),
+		integration.WithResource(
+			integration.ResourceID(resource2Id),
+			integration.ResourceName("server-2"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+			}),
+			integration.WithResourceVariable(
+				"region",
+				integration.ResourceVariableStringValue("us-west-2"),
+			),
+			integration.WithResourceVariable(
+				"instance_count",
+				integration.ResourceVariableIntValue(5),
+			),
 		),
-	),
-	integration.WithResource(
-		integration.ResourceID(resource2Id),
-		integration.ResourceName("server-2"),
-		integration.ResourceMetadata(map[string]string{
-			"region": "us-west-2",
-		}),
-		integration.WithResourceVariable(
-			"region",
-			integration.ResourceVariableStringValue("us-west-2"),
+		integration.WithResource(
+			integration.ResourceID(resource3Id),
+			integration.ResourceName("server-3"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "eu-west-1",
+			}),
+			integration.WithResourceVariable(
+				"region",
+				integration.ResourceVariableStringValue("eu-west-1"),
+			),
+			integration.WithResourceVariable(
+				"instance_count",
+				integration.ResourceVariableIntValue(2),
+			),
 		),
-		integration.WithResourceVariable(
-			"instance_count",
-			integration.ResourceVariableIntValue(5),
-		),
-	),
-	integration.WithResource(
-		integration.ResourceID(resource3Id),
-		integration.ResourceName("server-3"),
-		integration.ResourceMetadata(map[string]string{
-			"region": "eu-west-1",
-		}),
-		integration.WithResourceVariable(
-			"region",
-			integration.ResourceVariableStringValue("eu-west-1"),
-		),
-		integration.WithResourceVariable(
-			"instance_count",
-			integration.ResourceVariableIntValue(2),
-		),
-	),
 	)
 
 	ctx := context.Background()

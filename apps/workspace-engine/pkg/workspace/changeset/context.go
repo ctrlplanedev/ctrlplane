@@ -20,4 +20,3 @@ func FromContext(ctx context.Context) (*ChangeSet, bool) {
 	cs, ok := ctx.Value(changesetKey).(*ChangeSet)
 	return cs, ok
 }
-

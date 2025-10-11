@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceProviders struct {
-	repo *repository.Repository
+	repo      *repository.Repository
 	resources *Resources
 }
 

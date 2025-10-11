@@ -657,7 +657,16 @@ func WithPropertyMatcher(options ...PropertyMatcherOption) RelationshipRuleOptio
 			option(ws, pm)
 		}
 
-		rr.PropertyMatchers = append(rr.PropertyMatchers, *pm)
+		rr.Matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+			Properties: []oapi.PropertyMatcher{*pm},
+		})
+	}
+}
+
+func WithCelMatcher(cel string) RelationshipRuleOption {
+	return func(ws *TestWorkspace, rr *oapi.RelationshipRule) {
+
+		rr.Matcher.FromCelMatcher(oapi.CelMatcher{Cel: cel})
 	}
 }
 

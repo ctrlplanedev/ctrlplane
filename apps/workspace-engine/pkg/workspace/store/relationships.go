@@ -139,10 +139,14 @@ func (r *RelationshipRules) findMatchingEntities(
 				}
 			}
 
+			pm, err := rule.Matcher.AsPropertiesMatcher()
+			if err != nil {
+				return nil, err
+			}
 			// Apply property matchers if any
-			if len(rule.PropertyMatchers) > 0 {
+			if len(pm.Properties) > 0 {
 				allMatch := true
-				for _, pm := range rule.PropertyMatchers {
+				for _, pm := range pm.Properties {
 					matcher := relationships.NewPropertyMatcher(&pm)
 					var matches bool
 					if evaluateFromTo {
@@ -174,10 +178,14 @@ func (r *RelationshipRules) findMatchingEntities(
 				}
 			}
 
+			pm, err := rule.Matcher.AsPropertiesMatcher()
+			if err != nil {
+				return nil, err
+			}
 			// Apply property matchers if any
-			if len(rule.PropertyMatchers) > 0 {
+			if len(pm.Properties) > 0 {
 				allMatch := true
-				for _, pm := range rule.PropertyMatchers {
+				for _, pm := range pm.Properties {
 					matcher := relationships.NewPropertyMatcher(&pm)
 					var matches bool
 					if evaluateFromTo {
@@ -209,10 +217,14 @@ func (r *RelationshipRules) findMatchingEntities(
 				}
 			}
 
+			pm, err := rule.Matcher.AsPropertiesMatcher()
+			if err != nil {
+				return nil, err
+			}
 			// Apply property matchers if any
-			if len(rule.PropertyMatchers) > 0 {
+			if len(pm.Properties) > 0 {
 				allMatch := true
-				for _, pm := range rule.PropertyMatchers {
+				for _, pm := range pm.Properties {
 					matcher := relationships.NewPropertyMatcher(&pm)
 					var matches bool
 					if evaluateFromTo {

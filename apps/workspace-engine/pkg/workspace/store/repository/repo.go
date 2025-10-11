@@ -19,7 +19,6 @@ func EncodeGob(r *Repository) ([]byte, error) {
 	return buf, nil
 }
 
-
 // WriteToJSONFile writes the Repository data to a JSON file at the specified path.
 func WriteToJSONFile(r *Repository, filePath string) error {
 	// Marshal the repository struct into JSON.
@@ -40,7 +39,6 @@ func WriteToJSONFile(r *Repository, filePath string) error {
 	return err
 }
 
-
 // BufferWriter implements io.Writer for a byte slice pointer
 type BufferWriter struct {
 	buf *[]byte
@@ -54,7 +52,6 @@ func (w *BufferWriter) Write(p []byte) (int, error) {
 	*w.buf = append(*w.buf, p...)
 	return len(p), nil
 }
-
 
 func New() *Repository {
 	return &Repository{
@@ -95,5 +92,3 @@ type Repository struct {
 	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 }
-
-
