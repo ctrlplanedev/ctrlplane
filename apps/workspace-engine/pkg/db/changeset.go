@@ -15,12 +15,12 @@ func FlushChangeset(ctx context.Context) error {
 		return nil
 	}
 
+	cs.Mutex.Lock()
+	defer cs.Mutex.Unlock()
+
 	if len(cs.Changes) == 0 {
 		return nil
 	}
-
-	cs.Mutex.Lock()
-	defer cs.Mutex.Unlock()
 
 	conn, err := GetDB(ctx)
 	if err != nil {
@@ -35,7 +35,7 @@ func FlushChangeset(ctx context.Context) error {
 	defer tx.Rollback(ctx)
 
 	for _, change := range cs.Changes {
-		if err := applyInsert(ctx, tx, change); err != nil {
+		if err := applyChange(ctx, tx, change); err != nil {
 			return err
 		}
 	}
@@ -157,7 +157,7 @@ func applyDeploymentVersionChange(ctx context.Context, conn pgx.Tx, change chang
 	return writeDeploymentVersion(ctx, oapiDeploymentVersion, conn)
 }
 
-func applyInsert(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
+func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
 	if change.EntityType == changeset.EntityTypeResource {
 		return applyResourceChange(ctx, conn, change)
 	}

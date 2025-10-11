@@ -163,12 +163,12 @@ func writeManySelectors(ctx context.Context, policyId string, selectors []oapi.P
 	}
 
 	valueStrings := make([]string, 0, len(selectors))
-	valueArgs := make([]interface{}, 0, len(selectors)*3)
+	valueArgs := make([]interface{}, 0, len(selectors)*5)
 	i := 1
 	for _, selector := range selectors {
-		valueStrings = append(valueStrings, "($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+")")
-		valueArgs = append(valueArgs, policyId, selector.DeploymentSelector, selector.EnvironmentSelector, selector.ResourceSelector)
-		i += 3
+		valueStrings = append(valueStrings, "($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+", $"+fmt.Sprintf("%d", i+3)+", $"+fmt.Sprintf("%d", i+4)+")")
+		valueArgs = append(valueArgs, selector.Id, policyId, selector.DeploymentSelector, selector.EnvironmentSelector, selector.ResourceSelector)
+		i += 5
 	}
 
 	query := "INSERT INTO policy_target (id, policy_id, deployment_selector, environment_selector, resource_selector) VALUES " +
@@ -187,7 +187,7 @@ const APPROVAL_ANY_RULE_INSERT_QUERY = `
 `
 
 func writeApprovalAnyRule(ctx context.Context, policyId string, rule oapi.PolicyRule, anyApproval oapi.AnyApprovalRule, tx pgx.Tx) error {
-	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_INSERT_QUERY, policyId, rule.Id, rule.CreatedAt, anyApproval.MinApprovals); err != nil {
+	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_INSERT_QUERY, rule.Id, policyId, rule.CreatedAt, anyApproval.MinApprovals); err != nil {
 		return err
 	}
 	return nil

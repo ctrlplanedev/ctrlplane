@@ -295,20 +295,41 @@ func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.Relations
 	sourceKind, sourceVersion, sourceMetadataEquals := extractFromSelector(relationshipRule.FromSelector)
 	targetKind, targetVersion, targetMetadataEquals := extractToSelector(relationshipRule.ToSelector)
 
+	// Convert optional pointers to interface{} for pgx
+	var nameValue interface{}
+	if relationshipRule.Name != "" {
+		nameValue = relationshipRule.Name
+	}
+
+	var descriptionValue interface{}
+	if relationshipRule.Description != nil {
+		descriptionValue = *relationshipRule.Description
+	}
+
+	var targetKindValue interface{}
+	if targetKind != nil {
+		targetKindValue = *targetKind
+	}
+
+	var targetVersionValue interface{}
+	if targetVersion != nil {
+		targetVersionValue = *targetVersion
+	}
+
 	// Insert main rule
 	if _, err := tx.Exec(
 		ctx,
 		INSERT_RELATIONSHIP_RULE_QUERY,
 		relationshipRule.Id,
-		relationshipRule.Name,
+		nameValue,
 		relationshipRule.Reference,
 		relationshipRule.RelationshipType,
-		relationshipRule.Description,
+		descriptionValue,
 		relationshipRule.WorkspaceId,
 		sourceKind,
 		sourceVersion,
-		targetKind,
-		targetVersion,
+		targetKindValue,
+		targetVersionValue,
 	); err != nil {
 		return err
 	}
