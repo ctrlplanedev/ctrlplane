@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
@@ -277,4 +279,245 @@ func scanRelationshipRuleRow(rows pgx.Rows) (*dbRelationshipRule, error) {
 		return nil, err
 	}
 	return dbRelationship, nil
+}
+
+const INSERT_RELATIONSHIP_RULE_QUERY = `
+	INSERT INTO resource_relationship_rule (id, name, reference, dependency_type, description, workspace_id, source_kind, source_version, target_kind, target_version)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+`
+
+func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.RelationshipRule, tx pgx.Tx) error {
+	// Parse selectors to extract DB fields
+	sourceKind, sourceVersion, sourceMetadataEquals := extractFromSelector(relationshipRule.FromSelector)
+	targetKind, targetVersion, targetMetadataEquals := extractToSelector(relationshipRule.ToSelector)
+
+	// Insert main rule
+	if _, err := tx.Exec(
+		ctx,
+		INSERT_RELATIONSHIP_RULE_QUERY,
+		relationshipRule.Id,
+		relationshipRule.Name,
+		relationshipRule.Reference,
+		relationshipRule.RelationshipType,
+		relationshipRule.Description,
+		relationshipRule.WorkspaceId,
+		sourceKind,
+		sourceVersion,
+		targetKind,
+		targetVersion,
+	); err != nil {
+		return err
+	}
+
+	// Insert metadata matches from property matchers
+	if len(relationshipRule.PropertyMatchers) > 0 {
+		if err := writeManyMetadataMatches(ctx, relationshipRule.Id, relationshipRule.PropertyMatchers, tx); err != nil {
+			return err
+		}
+	}
+
+	// Insert source metadata equals
+	if len(sourceMetadataEquals) > 0 {
+		if err := writeManySourceMetadataEquals(ctx, relationshipRule.Id, sourceMetadataEquals, tx); err != nil {
+			return err
+		}
+	}
+
+	// Insert target metadata equals
+	if len(targetMetadataEquals) > 0 {
+		if err := writeManyTargetMetadataEquals(ctx, relationshipRule.Id, targetMetadataEquals, tx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func extractFromSelector(selector *oapi.Selector) (kind string, version string, metadataEquals []dbRelationshipRuleSourceMetadataEquals) {
+	metadataEquals = make([]dbRelationshipRuleSourceMetadataEquals, 0)
+	if selector == nil {
+		return
+	}
+
+	jsonSelector, err := selector.AsJsonSelector()
+	if err != nil {
+		return
+	}
+
+	selectorType, _ := jsonSelector.Json["type"].(string)
+	if selectorType != "comparison" {
+		return
+	}
+
+	conditions, ok := jsonSelector.Json["conditions"].([]interface{})
+	if !ok {
+		return
+	}
+
+	for _, condition := range conditions {
+		condMap, ok := condition.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		condType, _ := condMap["type"].(string)
+		switch condType {
+		case "kind":
+			if val, ok := condMap["value"].(string); ok {
+				kind = val
+			}
+		case "version":
+			if val, ok := condMap["value"].(string); ok {
+				version = val
+			}
+		case "metadata":
+			key, keyOk := condMap["key"].(string)
+			value, valueOk := condMap["value"].(string)
+			if keyOk && valueOk {
+				metadataEquals = append(metadataEquals, dbRelationshipRuleSourceMetadataEquals{
+					Key:   key,
+					Value: value,
+				})
+			}
+		}
+	}
+
+	return
+}
+
+func extractToSelector(selector *oapi.Selector) (kind *string, version *string, metadataEquals []dbRelationshipRuleTargetMetadataEquals) {
+	metadataEquals = make([]dbRelationshipRuleTargetMetadataEquals, 0)
+	if selector == nil {
+		return
+	}
+
+	jsonSelector, err := selector.AsJsonSelector()
+	if err != nil {
+		return
+	}
+
+	selectorType, _ := jsonSelector.Json["type"].(string)
+	if selectorType != "comparison" {
+		return
+	}
+
+	conditions, ok := jsonSelector.Json["conditions"].([]interface{})
+	if !ok {
+		return
+	}
+
+	for _, condition := range conditions {
+		condMap, ok := condition.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		condType, _ := condMap["type"].(string)
+		switch condType {
+		case "kind":
+			if val, ok := condMap["value"].(string); ok {
+				kind = &val
+			}
+		case "version":
+			if val, ok := condMap["value"].(string); ok {
+				version = &val
+			}
+		case "metadata":
+			key, keyOk := condMap["key"].(string)
+			value, valueOk := condMap["value"].(string)
+			if keyOk && valueOk {
+				metadataEquals = append(metadataEquals, dbRelationshipRuleTargetMetadataEquals{
+					Key:   key,
+					Value: value,
+				})
+			}
+		}
+	}
+
+	return
+}
+
+func writeManyMetadataMatches(ctx context.Context, ruleId string, matchers []oapi.PropertyMatcher, tx pgx.Tx) error {
+	if len(matchers) == 0 {
+		return nil
+	}
+
+	valueStrings := make([]string, 0)
+	valueArgs := make([]interface{}, 0)
+	i := 1
+
+	for _, matcher := range matchers {
+		// Only handle metadata property matchers
+		if len(matcher.FromProperty) >= 2 && len(matcher.ToProperty) >= 2 &&
+			matcher.FromProperty[0] == "metadata" && matcher.ToProperty[0] == "metadata" {
+			valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d)", i, i+1, i+2))
+			valueArgs = append(valueArgs, ruleId, matcher.FromProperty[1], matcher.ToProperty[1])
+			i += 3
+		}
+	}
+
+	if len(valueStrings) == 0 {
+		return nil
+	}
+
+	query := "INSERT INTO resource_relationship_rule_metadata_match (resource_relationship_rule_id, source_key, target_key) VALUES " +
+		strings.Join(valueStrings, ", ")
+
+	_, err := tx.Exec(ctx, query, valueArgs...)
+	return err
+}
+
+func writeManySourceMetadataEquals(ctx context.Context, ruleId string, metadataEquals []dbRelationshipRuleSourceMetadataEquals, tx pgx.Tx) error {
+	if len(metadataEquals) == 0 {
+		return nil
+	}
+
+	valueStrings := make([]string, 0, len(metadataEquals))
+	valueArgs := make([]interface{}, 0, len(metadataEquals)*3)
+	i := 1
+
+	for _, metadata := range metadataEquals {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d)", i, i+1, i+2))
+		valueArgs = append(valueArgs, ruleId, metadata.Key, metadata.Value)
+		i += 3
+	}
+
+	query := "INSERT INTO resource_relationship_rule_source_metadata_equals (resource_relationship_rule_id, key, value) VALUES " +
+		strings.Join(valueStrings, ", ")
+
+	_, err := tx.Exec(ctx, query, valueArgs...)
+	return err
+}
+
+func writeManyTargetMetadataEquals(ctx context.Context, ruleId string, metadataEquals []dbRelationshipRuleTargetMetadataEquals, tx pgx.Tx) error {
+	if len(metadataEquals) == 0 {
+		return nil
+	}
+
+	valueStrings := make([]string, 0, len(metadataEquals))
+	valueArgs := make([]interface{}, 0, len(metadataEquals)*3)
+	i := 1
+
+	for _, metadata := range metadataEquals {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d)", i, i+1, i+2))
+		valueArgs = append(valueArgs, ruleId, metadata.Key, metadata.Value)
+		i += 3
+	}
+
+	query := "INSERT INTO resource_relationship_rule_target_metadata_equals (resource_relationship_rule_id, key, value) VALUES " +
+		strings.Join(valueStrings, ", ")
+
+	_, err := tx.Exec(ctx, query, valueArgs...)
+	return err
+}
+
+const DELETE_RELATIONSHIP_RULE_QUERY = `
+	DELETE FROM resource_relationship_rule WHERE id = $1
+`
+
+func deleteRelationshipRule(ctx context.Context, relationshipRuleId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_RELATIONSHIP_RULE_QUERY, relationshipRuleId); err != nil {
+		return err
+	}
+	return nil
 }

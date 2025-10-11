@@ -92,6 +92,19 @@ func applyPolicyChange(ctx context.Context, conn pgx.Tx, change changeset.Change
 	return writePolicy(ctx, oapiPolicy, conn)
 }
 
+func applyRelationshipRuleChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
+	oapiRelationshipRule, err := oapi.ConvertToOapiRelationshipRule(change.Entity)
+	if err != nil {
+		return err
+	}
+
+	if change.Type == changeset.ChangeTypeDelete {
+		return deleteRelationshipRule(ctx, oapiRelationshipRule.Id, conn)
+	}
+
+	return writeRelationshipRule(ctx, oapiRelationshipRule, conn)
+}
+
 func applyInsert(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
 	if change.EntityType == changeset.EntityTypeResource {
 		return applyResourceChange(ctx, conn, change)
@@ -107,6 +120,10 @@ func applyInsert(ctx context.Context, conn pgx.Tx, change changeset.Change) erro
 
 	if change.EntityType == changeset.EntityTypePolicy {
 		return applyPolicyChange(ctx, conn, change)
+	}
+
+	if change.EntityType == changeset.EntityTypeResourceRelationshipRule {
+		return applyRelationshipRuleChange(ctx, conn, change)
 	}
 
 	return fmt.Errorf("unknown entity type: %s", change.EntityType)

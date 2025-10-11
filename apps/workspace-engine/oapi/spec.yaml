@@ -1297,6 +1297,7 @@ components:
         - propertyMatchers
         - relationshipType
         - metadata
+        - workspaceId
       properties:
         id:
           type: string
@@ -1324,3 +1325,5 @@ components:
           type: object
           additionalProperties:
             type: string
+        workspaceId:
+          type: string
