@@ -13,12 +13,32 @@ const (
 	ChangeTypeDelete ChangeType = "delete"
 )
 
+type EntityType string
+
+const (
+	EntityTypeResource                 EntityType = "resource"
+	EntityTypeDeployment               EntityType = "deployment"
+	EntityTypeEnvironment              EntityType = "environment"
+	EntityTypeReleaseTarget            EntityType = "releaseTarget"
+	EntityTypeJob                      EntityType = "job"
+	EntityTypeJobAgent                 EntityType = "jobAgent"
+	EntityTypeRelease                  EntityType = "release"
+	EntityTypeDeploymentVariable       EntityType = "deploymentVariable"
+	EntityTypeDeploymentVersion        EntityType = "deploymentVersion"
+	EntityTypeVariableSet              EntityType = "variableSet"
+	EntityTypeSystem                   EntityType = "system"
+	EntityTypeResourceProvider         EntityType = "resourceProvider"
+	EntityTypeResourceMetadataGroup    EntityType = "resourceMetadataGroup"
+	EntityTypeResourceRelationshipRule EntityType = "resourceRelationshipRule"
+	EntityTypePolicy                   EntityType = "policy"
+)
+
 type Change struct {
-	Entity    string
-	Type      ChangeType
-	ID        string
-	Data      any
-	Timestamp time.Time
+	EntityType EntityType
+	Type       ChangeType
+	ID         string
+	Entity     any
+	Timestamp  time.Time
 }
 
 type ChangeSet struct {
@@ -33,15 +53,15 @@ func NewChangeSet() *ChangeSet {
 	}
 }
 
-func (cs *ChangeSet) Record(entity string, changeType ChangeType, id string, data any) {
+func (cs *ChangeSet) Record(entityType EntityType, changeType ChangeType, id string, entity any) {
 	cs.Mutex.Lock()
 	defer cs.Mutex.Unlock()
 
 	cs.Changes = append(cs.Changes, Change{
-		Entity:    entity,
-		Type:      changeType,
-		ID:        id,
-		Data:      data,
-		Timestamp: time.Now(),
+		EntityType: entityType,
+		Type:       changeType,
+		ID:         id,
+		Entity:     entity,
+		Timestamp:  time.Now(),
 	})
 }

@@ -163,7 +163,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	changes := ws.ReleaseManager().Reconcile(ctx)
 	for _, change := range changes.Changes.Added {
 		changeSet.Record(
-			"release-target",
+			changeset.EntityTypeReleaseTarget,
 			changeset.ChangeTypeInsert,
 			change.Key(),
 			change,
@@ -171,7 +171,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	}
 	for _, change := range changes.Changes.Removed {
 		changeSet.Record(
-			"release-target",
+			changeset.EntityTypeReleaseTarget,
 			changeset.ChangeTypeDelete,
 			change.Key(),
 			change,
