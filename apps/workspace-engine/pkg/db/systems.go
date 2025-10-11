@@ -54,3 +54,33 @@ func scanSystemRow(rows pgx.Rows) (*oapi.System, error) {
 	}
 	return system, nil
 }
+
+const SYSTEM_INSERT_QUERY = `
+	INSERT INTO system (id, workspace_id, name, description)
+	VALUES ($1, $2, $3, $4)
+`
+
+func writeSystem(ctx context.Context, system *oapi.System, tx pgx.Tx) error {
+	if _, err := tx.Exec(
+		ctx,
+		SYSTEM_INSERT_QUERY,
+		system.Id,
+		system.WorkspaceId,
+		system.Name,
+		system.Description,
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+const DELETE_SYSTEM_QUERY = `
+	DELETE FROM system WHERE id = $1
+`
+
+func deleteSystem(ctx context.Context, systemId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_SYSTEM_QUERY, systemId); err != nil {
+		return err
+	}
+	return nil
+}

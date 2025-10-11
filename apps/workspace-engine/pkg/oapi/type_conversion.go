@@ -90,3 +90,27 @@ func ConvertToOapiUserApprovalRecord(entity any) (*UserApprovalRecord, error) {
 
 	return userApprovalRecord, nil
 }
+
+func ConvertToOapiSystem(entity any) (*System, error) {
+	system, ok := entity.(*System)
+	if !ok {
+		return nil, fmt.Errorf("entity is not a system")
+	}
+	return system, nil
+}
+
+func ConvertToOapiDeploymentVariable(entity any) (*DeploymentVariable, error) {
+	deploymentVariable, ok := entity.(*DeploymentVariable)
+	if !ok {
+		return nil, fmt.Errorf("entity is not a deployment variable")
+	}
+	return deploymentVariable, nil
+}
+
+func ConvertToOapiDeploymentVersion(entity any) (*DeploymentVersion, error) {
+	deploymentVersion, ok := entity.(*DeploymentVersion)
+	if !ok {
+		return nil, fmt.Errorf("entity is not a deployment version")
+	}
+	return deploymentVersion, nil
+}

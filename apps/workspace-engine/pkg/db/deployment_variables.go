@@ -62,3 +62,33 @@ func scanDeploymentVariable(rows pgx.Rows) (*oapi.DeploymentVariable, error) {
 
 	return &deploymentVariable, nil
 }
+
+const DEPLOYMENT_VARIABLE_INSERT_QUERY = `
+	INSERT INTO deployment_variable (id, key, description, deployment_id)
+	VALUES ($1, $2, $3, $4)
+`
+
+func writeDeploymentVariable(ctx context.Context, deploymentVariable *oapi.DeploymentVariable, tx pgx.Tx) error {
+	if _, err := tx.Exec(
+		ctx,
+		DEPLOYMENT_VARIABLE_INSERT_QUERY,
+		deploymentVariable.Id,
+		deploymentVariable.Key,
+		deploymentVariable.Description,
+		deploymentVariable.DeploymentId,
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+const DELETE_DEPLOYMENT_VARIABLE_QUERY = `
+	DELETE FROM deployment_variable WHERE id = $1
+`
+
+func deleteDeploymentVariable(ctx context.Context, deploymentVariableId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_DEPLOYMENT_VARIABLE_QUERY, deploymentVariableId); err != nil {
+		return err
+	}
+	return nil
+}

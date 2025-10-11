@@ -24,6 +24,7 @@ const (
 	EntityTypeJobAgent                 EntityType = "jobAgent"
 	EntityTypeRelease                  EntityType = "release"
 	EntityTypeDeploymentVariable       EntityType = "deploymentVariable"
+	EntityTypeDeploymentVersion        EntityType = "deploymentVersion"
 	EntityTypeVariableSet              EntityType = "variableSet"
 	EntityTypeSystem                   EntityType = "system"
 	EntityTypeResourceProvider         EntityType = "resourceProvider"

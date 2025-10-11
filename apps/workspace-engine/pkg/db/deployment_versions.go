@@ -105,3 +105,37 @@ func convertStatusToEnum(statusStr string) oapi.DeploymentVersionStatus {
 		return oapi.DeploymentVersionStatusUnspecified
 	}
 }
+
+const DEPLOYMENT_VERSION_INSERT_QUERY = `
+	INSERT INTO deployment_version (id, name, tag, config, job_agent_config, deployment_id, status, message)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+`
+
+func writeDeploymentVersion(ctx context.Context, deploymentVersion *oapi.DeploymentVersion, tx pgx.Tx) error {
+	if _, err := tx.Exec(
+		ctx,
+		DEPLOYMENT_VERSION_INSERT_QUERY,
+		deploymentVersion.Id,
+		deploymentVersion.Name,
+		deploymentVersion.Tag,
+		deploymentVersion.Config,
+		deploymentVersion.JobAgentConfig,
+		deploymentVersion.DeploymentId,
+		deploymentVersion.Status,
+		deploymentVersion.Message,
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+const DELETE_DEPLOYMENT_VERSION_QUERY = `
+	DELETE FROM deployment_version WHERE id = $1
+`
+
+func deleteDeploymentVersion(ctx context.Context, deploymentVersionId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_DEPLOYMENT_VERSION_QUERY, deploymentVersionId); err != nil {
+		return err
+	}
+	return nil
+}
