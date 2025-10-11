@@ -59,15 +59,20 @@ func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	return jobAgent, nil
 }
 
-const JOB_AGENT_INSERT_QUERY = `
+const JOB_AGENT_UPSERT_QUERY = `
 	INSERT INTO job_agent (id, workspace_id, name, type, config)
 	VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT (id) DO UPDATE SET
+		workspace_id = EXCLUDED.workspace_id,
+		name = EXCLUDED.name,
+		type = EXCLUDED.type,
+		config = EXCLUDED.config
 `
 
 func writeJobAgent(ctx context.Context, jobAgent *oapi.JobAgent, tx pgx.Tx) error {
 	if _, err := tx.Exec(
 		ctx,
-		JOB_AGENT_INSERT_QUERY,
+		JOB_AGENT_UPSERT_QUERY,
 		jobAgent.Id,
 		jobAgent.WorkspaceId,
 		jobAgent.Name,

@@ -106,15 +106,23 @@ func convertStatusToEnum(statusStr string) oapi.DeploymentVersionStatus {
 	}
 }
 
-const DEPLOYMENT_VERSION_INSERT_QUERY = `
+const DEPLOYMENT_VERSION_UPSERT_QUERY = `
 	INSERT INTO deployment_version (id, name, tag, config, job_agent_config, deployment_id, status, message)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		tag = EXCLUDED.tag,
+		config = EXCLUDED.config,
+		job_agent_config = EXCLUDED.job_agent_config,
+		deployment_id = EXCLUDED.deployment_id,
+		status = EXCLUDED.status,
+		message = EXCLUDED.message
 `
 
 func writeDeploymentVersion(ctx context.Context, deploymentVersion *oapi.DeploymentVersion, tx pgx.Tx) error {
 	if _, err := tx.Exec(
 		ctx,
-		DEPLOYMENT_VERSION_INSERT_QUERY,
+		DEPLOYMENT_VERSION_UPSERT_QUERY,
 		deploymentVersion.Id,
 		deploymentVersion.Name,
 		deploymentVersion.Tag,

@@ -122,15 +122,20 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	return policy, nil
 }
 
-const POLICY_INSERT_QUERY = `
+const POLICY_UPSERT_QUERY = `
 	INSERT INTO policy (id, name, description, workspace_id, created_at)
 	VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		description = EXCLUDED.description,
+		workspace_id = EXCLUDED.workspace_id,
+		created_at = EXCLUDED.created_at
 `
 
 func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
 	if _, err := tx.Exec(
 		ctx,
-		POLICY_INSERT_QUERY,
+		POLICY_UPSERT_QUERY,
 		policy.Id,
 		policy.Name,
 		policy.Description,
@@ -172,7 +177,8 @@ func writeManySelectors(ctx context.Context, policyId string, selectors []oapi.P
 	}
 
 	query := "INSERT INTO policy_target (id, policy_id, deployment_selector, environment_selector, resource_selector) VALUES " +
-		strings.Join(valueStrings, ", ")
+		strings.Join(valueStrings, ", ") +
+		" ON CONFLICT (id) DO UPDATE SET policy_id = EXCLUDED.policy_id, deployment_selector = EXCLUDED.deployment_selector, environment_selector = EXCLUDED.environment_selector, resource_selector = EXCLUDED.resource_selector"
 
 	_, err := tx.Exec(ctx, query, valueArgs...)
 	if err != nil {
@@ -181,13 +187,17 @@ func writeManySelectors(ctx context.Context, policyId string, selectors []oapi.P
 	return nil
 }
 
-const APPROVAL_ANY_RULE_INSERT_QUERY = `
+const APPROVAL_ANY_RULE_UPSERT_QUERY = `
 	INSERT INTO policy_rule_any_approval (id, policy_id, created_at, required_approvals_count)
 	VALUES ($1, $2, $3, $4)
+	ON CONFLICT (id) DO UPDATE SET
+		policy_id = EXCLUDED.policy_id,
+		created_at = EXCLUDED.created_at,
+		required_approvals_count = EXCLUDED.required_approvals_count
 `
 
 func writeApprovalAnyRule(ctx context.Context, policyId string, rule oapi.PolicyRule, anyApproval oapi.AnyApprovalRule, tx pgx.Tx) error {
-	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_INSERT_QUERY, rule.Id, policyId, rule.CreatedAt, anyApproval.MinApprovals); err != nil {
+	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_UPSERT_QUERY, rule.Id, policyId, rule.CreatedAt, anyApproval.MinApprovals); err != nil {
 		return err
 	}
 	return nil

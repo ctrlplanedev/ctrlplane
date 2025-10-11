@@ -59,15 +59,20 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 	return environments, nil
 }
 
-const ENVIRONMENT_INSERT_QUERY = `
+const ENVIRONMENT_UPSERT_QUERY = `
 	INSERT INTO environment (id, name, system_id, description, resource_selector)
 	VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		system_id = EXCLUDED.system_id,
+		description = EXCLUDED.description,
+		resource_selector = EXCLUDED.resource_selector
 `
 
 func writeEnvironment(ctx context.Context, environment *oapi.Environment, tx pgx.Tx) error {
 	if _, err := tx.Exec(
 		ctx,
-		ENVIRONMENT_INSERT_QUERY,
+		ENVIRONMENT_UPSERT_QUERY,
 		environment.Id,
 		environment.Name,
 		environment.SystemId,

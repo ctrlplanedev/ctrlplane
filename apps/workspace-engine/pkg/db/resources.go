@@ -157,15 +157,27 @@ func setResourceMetadata(resource *oapi.Resource, metadataJSON []byte) error {
 	return nil
 }
 
-const RESOURCE_INSERT_QUERY = `
+const RESOURCE_UPSERT_QUERY = `
 	INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id, config, created_at, locked_at, updated_at, deleted_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	ON CONFLICT (id) DO UPDATE SET
+		version = EXCLUDED.version,
+		name = EXCLUDED.name,
+		kind = EXCLUDED.kind,
+		identifier = EXCLUDED.identifier,
+		provider_id = EXCLUDED.provider_id,
+		workspace_id = EXCLUDED.workspace_id,
+		config = EXCLUDED.config,
+		created_at = EXCLUDED.created_at,
+		locked_at = EXCLUDED.locked_at,
+		updated_at = EXCLUDED.updated_at,
+		deleted_at = EXCLUDED.deleted_at
 `
 
 func writeResource(ctx context.Context, resource *oapi.Resource, tx pgx.Tx) error {
 	if _, err := tx.Exec(
 		ctx,
-		RESOURCE_INSERT_QUERY,
+		RESOURCE_UPSERT_QUERY,
 		resource.Id,
 		resource.Version,
 		resource.Name,
@@ -208,7 +220,8 @@ func writeManyMetadata(ctx context.Context, resourceId string, metadata map[stri
 	}
 
 	query := "INSERT INTO resource_metadata (resource_id, key, value) VALUES " +
-		strings.Join(valueStrings, ", ")
+		strings.Join(valueStrings, ", ") +
+		" ON CONFLICT (resource_id, key) DO UPDATE SET value = EXCLUDED.value"
 
 	_, err := tx.Exec(ctx, query, valueArgs...)
 	if err != nil {

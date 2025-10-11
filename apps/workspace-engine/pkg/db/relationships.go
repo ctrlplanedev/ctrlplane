@@ -285,9 +285,19 @@ func scanRelationshipRuleRow(rows pgx.Rows) (*dbRelationshipRule, error) {
 	return dbRelationship, nil
 }
 
-const INSERT_RELATIONSHIP_RULE_QUERY = `
+const UPSERT_RELATIONSHIP_RULE_QUERY = `
 	INSERT INTO resource_relationship_rule (id, name, reference, dependency_type, description, workspace_id, source_kind, source_version, target_kind, target_version)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		reference = EXCLUDED.reference,
+		dependency_type = EXCLUDED.dependency_type,
+		description = EXCLUDED.description,
+		workspace_id = EXCLUDED.workspace_id,
+		source_kind = EXCLUDED.source_kind,
+		source_version = EXCLUDED.source_version,
+		target_kind = EXCLUDED.target_kind,
+		target_version = EXCLUDED.target_version
 `
 
 func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.RelationshipRule, tx pgx.Tx) error {
@@ -319,7 +329,7 @@ func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.Relations
 	// Insert main rule
 	if _, err := tx.Exec(
 		ctx,
-		INSERT_RELATIONSHIP_RULE_QUERY,
+		UPSERT_RELATIONSHIP_RULE_QUERY,
 		relationshipRule.Id,
 		nameValue,
 		relationshipRule.Reference,
@@ -335,8 +345,16 @@ func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.Relations
 	}
 
 	// Insert metadata matches from property matchers
-	if len(relationshipRule.PropertyMatchers) > 0 {
-		if err := writeManyMetadataMatches(ctx, relationshipRule.Id, relationshipRule.PropertyMatchers, tx); err != nil {
+	// Extract from Matcher if PropertyMatchers is empty
+	propertyMatchers := relationshipRule.PropertyMatchers
+	if len(propertyMatchers) == 0 {
+		if propertiesMatcher, err := relationshipRule.Matcher.AsPropertiesMatcher(); err == nil {
+			propertyMatchers = propertiesMatcher.Properties
+		}
+	}
+
+	if len(propertyMatchers) > 0 {
+		if err := writeManyMetadataMatches(ctx, relationshipRule.Id, propertyMatchers, tx); err != nil {
 			return err
 		}
 	}
@@ -486,7 +504,8 @@ func writeManyMetadataMatches(ctx context.Context, ruleId string, matchers []oap
 	}
 
 	query := "INSERT INTO resource_relationship_rule_metadata_match (resource_relationship_rule_id, source_key, target_key) VALUES " +
-		strings.Join(valueStrings, ", ")
+		strings.Join(valueStrings, ", ") +
+		" ON CONFLICT (resource_relationship_rule_id, source_key, target_key) DO NOTHING"
 
 	_, err := tx.Exec(ctx, query, valueArgs...)
 	return err
@@ -508,7 +527,8 @@ func writeManySourceMetadataEquals(ctx context.Context, ruleId string, metadataE
 	}
 
 	query := "INSERT INTO resource_relationship_rule_source_metadata_equals (resource_relationship_rule_id, key, value) VALUES " +
-		strings.Join(valueStrings, ", ")
+		strings.Join(valueStrings, ", ") +
+		" ON CONFLICT (resource_relationship_rule_id, key) DO UPDATE SET value = EXCLUDED.value"
 
 	_, err := tx.Exec(ctx, query, valueArgs...)
 	return err
@@ -530,7 +550,8 @@ func writeManyTargetMetadataEquals(ctx context.Context, ruleId string, metadataE
 	}
 
 	query := "INSERT INTO resource_relationship_rule_target_metadata_equals (resource_relationship_rule_id, key, value) VALUES " +
-		strings.Join(valueStrings, ", ")
+		strings.Join(valueStrings, ", ") +
+		" ON CONFLICT (resource_relationship_rule_id, key) DO UPDATE SET value = EXCLUDED.value"
 
 	_, err := tx.Exec(ctx, query, valueArgs...)
 	return err

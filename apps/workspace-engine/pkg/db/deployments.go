@@ -60,15 +60,23 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 	return deployments, nil
 }
 
-const DEPLOYMENT_INSERT_QUERY = `
+const DEPLOYMENT_UPSERT_QUERY = `
 	INSERT INTO deployment (id, name, slug, description, system_id, job_agent_id, job_agent_config, resource_selector)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		slug = EXCLUDED.slug,
+		description = EXCLUDED.description,
+		system_id = EXCLUDED.system_id,
+		job_agent_id = EXCLUDED.job_agent_id,
+		job_agent_config = EXCLUDED.job_agent_config,
+		resource_selector = EXCLUDED.resource_selector
 `
 
 func writeDeployment(ctx context.Context, deployment *oapi.Deployment, tx pgx.Tx) error {
 	if _, err := tx.Exec(
 		ctx,
-		DEPLOYMENT_INSERT_QUERY,
+		DEPLOYMENT_UPSERT_QUERY,
 		deployment.Id,
 		deployment.Name,
 		deployment.Slug,

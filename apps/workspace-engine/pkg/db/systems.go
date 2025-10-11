@@ -55,15 +55,19 @@ func scanSystemRow(rows pgx.Rows) (*oapi.System, error) {
 	return system, nil
 }
 
-const SYSTEM_INSERT_QUERY = `
+const SYSTEM_UPSERT_QUERY = `
 	INSERT INTO system (id, workspace_id, name, description)
 	VALUES ($1, $2, $3, $4)
+	ON CONFLICT (id) DO UPDATE SET
+		workspace_id = EXCLUDED.workspace_id,
+		name = EXCLUDED.name,
+		description = EXCLUDED.description
 `
 
 func writeSystem(ctx context.Context, system *oapi.System, tx pgx.Tx) error {
 	if _, err := tx.Exec(
 		ctx,
-		SYSTEM_INSERT_QUERY,
+		SYSTEM_UPSERT_QUERY,
 		system.Id,
 		system.WorkspaceId,
 		system.Name,
