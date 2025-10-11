@@ -128,8 +128,7 @@ const POLICY_UPSERT_QUERY = `
 	ON CONFLICT (id) DO UPDATE SET
 		name = EXCLUDED.name,
 		description = EXCLUDED.description,
-		workspace_id = EXCLUDED.workspace_id,
-		created_at = EXCLUDED.created_at
+		workspace_id = EXCLUDED.workspace_id
 `
 
 func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
@@ -148,6 +147,10 @@ func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
 		createdAt,
 	); err != nil {
 		return err
+	}
+
+	if _, err := tx.Exec(ctx, "DELETE FROM policy_target WHERE policy_id = $1", policy.Id); err != nil {
+		return fmt.Errorf("failed to delete existing selectors: %w", err)
 	}
 
 	if len(policy.Selectors) > 0 {
@@ -197,7 +200,6 @@ const APPROVAL_ANY_RULE_UPSERT_QUERY = `
 	VALUES ($1, $2, $3, $4)
 	ON CONFLICT (id) DO UPDATE SET
 		policy_id = EXCLUDED.policy_id,
-		created_at = EXCLUDED.created_at,
 		required_approvals_count = EXCLUDED.required_approvals_count
 `
 

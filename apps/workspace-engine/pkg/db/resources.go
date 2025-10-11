@@ -222,6 +222,10 @@ func writeResource(ctx context.Context, resource *oapi.Resource, tx pgx.Tx) erro
 		return err
 	}
 
+	if _, err := tx.Exec(ctx, "DELETE FROM resource_metadata WHERE resource_id = $1", resource.Id); err != nil {
+		return fmt.Errorf("failed to delete existing metadata: %w", err)
+	}
+
 	if len(resource.Metadata) > 0 {
 		if err := writeManyMetadata(ctx, resource.Id, resource.Metadata, tx); err != nil {
 			return err
