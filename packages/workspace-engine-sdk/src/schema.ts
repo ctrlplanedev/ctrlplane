@@ -507,7 +507,12 @@ export interface components {
     JsonSelector: {
       json: Record<string, never>;
     };
-    Selector: components["schemas"]["JsonSelector"];
+    CelSelector: {
+      cel: string;
+    };
+    Selector:
+      | components["schemas"]["JsonSelector"]
+      | components["schemas"]["CelSelector"];
     PropertyMatcher: {
       fromProperty: string[];
       toProperty: string[];
@@ -706,6 +711,12 @@ export interface components {
       name: string;
       description?: string;
     };
+    CelMatcher: {
+      cel: string;
+    };
+    PropertiesMatcher: {
+      properties: components["schemas"]["PropertyMatcher"][];
+    };
     RelationshipRule: {
       id: string;
       name: string;
@@ -715,11 +726,14 @@ export interface components {
       fromSelector?: components["schemas"]["Selector"];
       toType: string;
       toSelector?: components["schemas"]["Selector"];
-      propertyMatchers: components["schemas"]["PropertyMatcher"][];
+      matcher:
+        | components["schemas"]["CelMatcher"]
+        | components["schemas"]["PropertiesMatcher"];
       relationshipType: string;
       metadata: {
         [key: string]: string;
       };
+      workspaceId: string;
     };
   };
   responses: never;
