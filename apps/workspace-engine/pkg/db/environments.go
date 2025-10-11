@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
+
+	"github.com/jackc/pgx/v5"
 )
 
 const ENVIRONMENT_SELECT_QUERY = `
@@ -55,4 +57,40 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 		return nil, err
 	}
 	return environments, nil
+}
+
+const ENVIRONMENT_UPSERT_QUERY = `
+	INSERT INTO environment (id, name, system_id, description, resource_selector)
+	VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		system_id = EXCLUDED.system_id,
+		description = EXCLUDED.description,
+		resource_selector = EXCLUDED.resource_selector
+`
+
+func writeEnvironment(ctx context.Context, environment *oapi.Environment, tx pgx.Tx) error {
+	if _, err := tx.Exec(
+		ctx,
+		ENVIRONMENT_UPSERT_QUERY,
+		environment.Id,
+		environment.Name,
+		environment.SystemId,
+		environment.Description,
+		environment.ResourceSelector,
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+const DELETE_ENVIRONMENT_QUERY = `
+	DELETE FROM environment WHERE id = $1
+`
+
+func deleteEnvironment(ctx context.Context, environmentId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_ENVIRONMENT_QUERY, environmentId); err != nil {
+		return err
+	}
+	return nil
 }

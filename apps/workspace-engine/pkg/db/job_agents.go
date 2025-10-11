@@ -58,3 +58,39 @@ func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	jobAgent.Config = *config
 	return jobAgent, nil
 }
+
+const JOB_AGENT_UPSERT_QUERY = `
+	INSERT INTO job_agent (id, workspace_id, name, type, config)
+	VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT (id) DO UPDATE SET
+		workspace_id = EXCLUDED.workspace_id,
+		name = EXCLUDED.name,
+		type = EXCLUDED.type,
+		config = EXCLUDED.config
+`
+
+func writeJobAgent(ctx context.Context, jobAgent *oapi.JobAgent, tx pgx.Tx) error {
+	if _, err := tx.Exec(
+		ctx,
+		JOB_AGENT_UPSERT_QUERY,
+		jobAgent.Id,
+		jobAgent.WorkspaceId,
+		jobAgent.Name,
+		jobAgent.Type,
+		jobAgent.Config,
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+const DELETE_JOB_AGENT_QUERY = `
+	DELETE FROM job_agent WHERE id = $1
+`
+
+func deleteJobAgent(ctx context.Context, jobAgentId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_JOB_AGENT_QUERY, jobAgentId); err != nil {
+		return err
+	}
+	return nil
+}

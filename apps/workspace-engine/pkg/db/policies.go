@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 	"workspace-engine/pkg/oapi"
 
@@ -118,4 +120,112 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	}
 
 	return policy, nil
+}
+
+const POLICY_UPSERT_QUERY = `
+	INSERT INTO policy (id, name, description, workspace_id, created_at)
+	VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		description = EXCLUDED.description,
+		workspace_id = EXCLUDED.workspace_id
+`
+
+func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
+	createdAt, err := time.Parse(time.RFC3339, policy.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to parse policy created_at: %w", err)
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		POLICY_UPSERT_QUERY,
+		policy.Id,
+		policy.Name,
+		policy.Description,
+		policy.WorkspaceId,
+		createdAt,
+	); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, "DELETE FROM policy_target WHERE policy_id = $1", policy.Id); err != nil {
+		return fmt.Errorf("failed to delete existing selectors: %w", err)
+	}
+
+	if len(policy.Selectors) > 0 {
+		if err := writeManySelectors(ctx, policy.Id, policy.Selectors, tx); err != nil {
+			return err
+		}
+	}
+
+	if _, err := tx.Exec(ctx, "DELETE FROM policy_rule_any_approval WHERE policy_id = $1", policy.Id); err != nil {
+		return fmt.Errorf("failed to delete existing any-approval rule: %w", err)
+	}
+
+	for _, rule := range policy.Rules {
+		if rule.AnyApproval != nil {
+			if err := writeApprovalAnyRule(ctx, policy.Id, rule, *rule.AnyApproval, tx); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func writeManySelectors(ctx context.Context, policyId string, selectors []oapi.PolicyTargetSelector, tx pgx.Tx) error {
+	if len(selectors) == 0 {
+		return nil
+	}
+
+	valueStrings := make([]string, 0, len(selectors))
+	valueArgs := make([]interface{}, 0, len(selectors)*5)
+	i := 1
+	for _, selector := range selectors {
+		valueStrings = append(valueStrings, "($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+", $"+fmt.Sprintf("%d", i+3)+", $"+fmt.Sprintf("%d", i+4)+")")
+		valueArgs = append(valueArgs, selector.Id, policyId, selector.DeploymentSelector, selector.EnvironmentSelector, selector.ResourceSelector)
+		i += 5
+	}
+
+	query := "INSERT INTO policy_target (id, policy_id, deployment_selector, environment_selector, resource_selector) VALUES " +
+		strings.Join(valueStrings, ", ") +
+		" ON CONFLICT (id) DO UPDATE SET policy_id = EXCLUDED.policy_id, deployment_selector = EXCLUDED.deployment_selector, environment_selector = EXCLUDED.environment_selector, resource_selector = EXCLUDED.resource_selector"
+
+	_, err := tx.Exec(ctx, query, valueArgs...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+const APPROVAL_ANY_RULE_UPSERT_QUERY = `
+	INSERT INTO policy_rule_any_approval (id, policy_id, created_at, required_approvals_count)
+	VALUES ($1, $2, $3, $4)
+	ON CONFLICT (id) DO UPDATE SET
+		policy_id = EXCLUDED.policy_id,
+		required_approvals_count = EXCLUDED.required_approvals_count
+`
+
+func writeApprovalAnyRule(ctx context.Context, policyId string, rule oapi.PolicyRule, anyApproval oapi.AnyApprovalRule, tx pgx.Tx) error {
+	createdAt, err := time.Parse(time.RFC3339, rule.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to parse rule created_at: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_UPSERT_QUERY, rule.Id, policyId, createdAt, anyApproval.MinApprovals); err != nil {
+		return err
+	}
+	return nil
+}
+
+const DELETE_POLICY_QUERY = `
+	DELETE FROM policy WHERE id = $1
+`
+
+func deletePolicy(ctx context.Context, policyId string, tx pgx.Tx) error {
+	if _, err := tx.Exec(ctx, DELETE_POLICY_QUERY, policyId); err != nil {
+		return err
+	}
+	return nil
 }
