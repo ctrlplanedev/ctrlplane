@@ -159,6 +159,10 @@ func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
 		}
 	}
 
+	if _, err := tx.Exec(ctx, "DELETE FROM policy_rule_any_approval WHERE policy_id = $1", policy.Id); err != nil {
+		return fmt.Errorf("failed to delete existing any-approval rule: %w", err)
+	}
+
 	for _, rule := range policy.Rules {
 		if rule.AnyApproval != nil {
 			if err := writeApprovalAnyRule(ctx, policy.Id, rule, *rule.AnyApproval, tx); err != nil {
