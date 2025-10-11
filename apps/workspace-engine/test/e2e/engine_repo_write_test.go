@@ -246,9 +246,9 @@ func TestEngineRepoWrite(t *testing.T) {
 			integration.WithResourceVariable(
 				"backup_config",
 				integration.ResourceVariableLiteralValue(map[string]any{
-					"enabled":           true,
-					"retention_days":    30,
-					"backup_window":     "03:00-04:00",
+					"enabled":            true,
+					"retention_days":     30,
+					"backup_window":      "03:00-04:00",
 					"maintenance_window": "mon:04:00-mon:05:00",
 				}),
 			),

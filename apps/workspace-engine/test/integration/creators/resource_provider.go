@@ -25,4 +25,3 @@ func NewResourceProvider(workspaceID string) *oapi.ResourceProvider {
 
 	return rp
 }
-

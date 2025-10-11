@@ -38,23 +38,23 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-	integration.WithResource(
-		integration.ResourceID(resourceID),
-		integration.ResourceName("server-1"),
-		integration.ResourceKind("server"),
-		integration.WithResourceVariable(
-			"app_name",
-			integration.ResourceVariableStringValue("my-app"),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.WithResourceVariable(
+				"app_name",
+				integration.ResourceVariableStringValue("my-app"),
+			),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(3),
+			),
+			integration.WithResourceVariable(
+				"debug_mode",
+				integration.ResourceVariableBoolValue(false),
+			),
 		),
-		integration.WithResourceVariable(
-			"replicas",
-			integration.ResourceVariableIntValue(3),
-		),
-		integration.WithResourceVariable(
-			"debug_mode",
-			integration.ResourceVariableBoolValue(false),
-		),
-	),
 	)
 
 	ctx := context.Background()
@@ -151,24 +151,24 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-	integration.WithResource(
-		integration.ResourceID(resourceID),
-		integration.ResourceName("server-1"),
-		integration.ResourceKind("server"),
-		integration.WithResourceVariable(
-			"database_config",
-			integration.ResourceVariableLiteralValue(map[string]any{
-				"host":     "db.example.com",
-				"port":     5432,
-				"database": "production_db",
-				"ssl":      true,
-				"pool": map[string]any{
-					"min_connections": 5,
-					"max_connections": 20,
-				},
-			}),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.WithResourceVariable(
+				"database_config",
+				integration.ResourceVariableLiteralValue(map[string]any{
+					"host":     "db.example.com",
+					"port":     5432,
+					"database": "production_db",
+					"ssl":      true,
+					"pool": map[string]any{
+						"min_connections": 5,
+						"max_connections": 20,
+					},
+				}),
+			),
 		),
-	),
 	)
 
 	ctx := context.Background()
@@ -296,27 +296,27 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 				"cidr":   "10.0.0.0/16",
 			}),
 		),
-	integration.WithResource(
-		integration.ResourceID(resourceID),
-		integration.ResourceName("cluster-main"),
-		integration.ResourceKind("kubernetes-cluster"),
-		integration.ResourceMetadata(map[string]string{
-			"vpc_id": vpcID,
-			"region": "us-east-1",
-		}),
-		integration.WithResourceVariable(
-			"vpc_id",
-			integration.ResourceVariableReferenceValue("vpc", []string{"id"}),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("cluster-main"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"vpc_id": vpcID,
+				"region": "us-east-1",
+			}),
+			integration.WithResourceVariable(
+				"vpc_id",
+				integration.ResourceVariableReferenceValue("vpc", []string{"id"}),
+			),
+			integration.WithResourceVariable(
+				"vpc_region",
+				integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "region"}),
+			),
+			integration.WithResourceVariable(
+				"vpc_cidr",
+				integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "cidr"}),
+			),
 		),
-		integration.WithResourceVariable(
-			"vpc_region",
-			integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "region"}),
-		),
-		integration.WithResourceVariable(
-			"vpc_cidr",
-			integration.ResourceVariableReferenceValue("vpc", []string{"metadata", "cidr"}),
-		),
-	),
 	)
 
 	ctx := context.Background()
@@ -441,26 +441,26 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 			integration.ResourceName("vpc-main"),
 			integration.ResourceKind("vpc"),
 		),
-	integration.WithResource(
-		integration.ResourceID(resourceID),
-		integration.ResourceName("cluster-main"),
-		integration.ResourceKind("kubernetes-cluster"),
-		integration.ResourceMetadata(map[string]string{
-			"vpc_id": vpcID,
-		}),
-		integration.WithResourceVariable(
-			"cluster_name",
-			integration.ResourceVariableStringValue("prod-cluster"),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("cluster-main"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"vpc_id": vpcID,
+			}),
+			integration.WithResourceVariable(
+				"cluster_name",
+				integration.ResourceVariableStringValue("prod-cluster"),
+			),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(5),
+			),
+			integration.WithResourceVariable(
+				"vpc_name",
+				integration.ResourceVariableReferenceValue("vpc", []string{"name"}),
+			),
 		),
-		integration.WithResourceVariable(
-			"replicas",
-			integration.ResourceVariableIntValue(5),
-		),
-		integration.WithResourceVariable(
-			"vpc_name",
-			integration.ResourceVariableReferenceValue("vpc", []string{"name"}),
-		),
-	),
 	)
 
 	ctx := context.Background()
@@ -557,32 +557,32 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-	integration.WithResource(
-		integration.ResourceID(resourceID1),
-		integration.ResourceName("server-1"),
-		integration.ResourceKind("server"),
-		integration.WithResourceVariable(
-			"replicas",
-			integration.ResourceVariableIntValue(3),
+		integration.WithResource(
+			integration.ResourceID(resourceID1),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(3),
+			),
+			integration.WithResourceVariable(
+				"region",
+				integration.ResourceVariableStringValue("us-east-1"),
+			),
 		),
-		integration.WithResourceVariable(
-			"region",
-			integration.ResourceVariableStringValue("us-east-1"),
+		integration.WithResource(
+			integration.ResourceID(resourceID2),
+			integration.ResourceName("server-2"),
+			integration.ResourceKind("server"),
+			integration.WithResourceVariable(
+				"replicas",
+				integration.ResourceVariableIntValue(5),
+			),
+			integration.WithResourceVariable(
+				"region",
+				integration.ResourceVariableStringValue("us-west-2"),
+			),
 		),
-	),
-	integration.WithResource(
-		integration.ResourceID(resourceID2),
-		integration.ResourceName("server-2"),
-		integration.ResourceKind("server"),
-		integration.WithResourceVariable(
-			"replicas",
-			integration.ResourceVariableIntValue(5),
-		),
-		integration.WithResourceVariable(
-			"region",
-			integration.ResourceVariableStringValue("us-west-2"),
-		),
-	),
 	)
 
 	ctx := context.Background()
@@ -753,21 +753,21 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 				"vpc_id": vpcID,
 			}),
 		),
-	integration.WithResource(
-		integration.ResourceID(podID),
-		integration.ResourceName("pod-api-123"),
-		integration.ResourceKind("pod"),
-		integration.ResourceMetadata(map[string]string{
-			"cluster_id": clusterID,
-		}),
-		// Pod can reference its cluster directly
-		integration.WithResourceVariable(
-			"cluster_name",
-			integration.ResourceVariableReferenceValue("cluster", []string{"name"}),
+		integration.WithResource(
+			integration.ResourceID(podID),
+			integration.ResourceName("pod-api-123"),
+			integration.ResourceKind("pod"),
+			integration.ResourceMetadata(map[string]string{
+				"cluster_id": clusterID,
+			}),
+			// Pod can reference its cluster directly
+			integration.WithResourceVariable(
+				"cluster_name",
+				integration.ResourceVariableReferenceValue("cluster", []string{"name"}),
+			),
+			// Pod cannot directly reference VPC (would need cluster as intermediary in real scenario)
+			// But cluster can reference VPC
 		),
-		// Pod cannot directly reference VPC (would need cluster as intermediary in real scenario)
-		// But cluster can reference VPC
-	),
 	)
 
 	ctx := context.Background()
@@ -916,38 +916,38 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 				integration.EnvironmentName("production"),
 			),
 		),
-	integration.WithResource(
-		integration.ResourceID(dbID),
-		integration.ResourceName("postgres-main"),
-		integration.ResourceKind("database"),
-		integration.ResourceMetadata(map[string]string{
-			"engine": "postgres",
-		}),
-		integration.WithResourceVariable(
-			"connection_string",
-			integration.ResourceVariableStringValue("postgres://localhost:5432/mydb"),
+		integration.WithResource(
+			integration.ResourceID(dbID),
+			integration.ResourceName("postgres-main"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"engine": "postgres",
+			}),
+			integration.WithResourceVariable(
+				"connection_string",
+				integration.ResourceVariableStringValue("postgres://localhost:5432/mydb"),
+			),
+			integration.WithResourceVariable(
+				"max_connections",
+				integration.ResourceVariableIntValue(100),
+			),
 		),
-		integration.WithResourceVariable(
-			"max_connections",
-			integration.ResourceVariableIntValue(100),
+		integration.WithResource(
+			integration.ResourceID(cacheID),
+			integration.ResourceName("redis-main"),
+			integration.ResourceKind("cache"),
+			integration.ResourceMetadata(map[string]string{
+				"engine": "redis",
+			}),
+			integration.WithResourceVariable(
+				"endpoint",
+				integration.ResourceVariableStringValue("redis://localhost:6379"),
+			),
+			integration.WithResourceVariable(
+				"ttl_seconds",
+				integration.ResourceVariableIntValue(3600),
+			),
 		),
-	),
-	integration.WithResource(
-		integration.ResourceID(cacheID),
-		integration.ResourceName("redis-main"),
-		integration.ResourceKind("cache"),
-		integration.ResourceMetadata(map[string]string{
-			"engine": "redis",
-		}),
-		integration.WithResourceVariable(
-			"endpoint",
-			integration.ResourceVariableStringValue("redis://localhost:6379"),
-		),
-		integration.WithResourceVariable(
-			"ttl_seconds",
-			integration.ResourceVariableIntValue(3600),
-		),
-	),
 	)
 
 	ctx := context.Background()
@@ -1095,26 +1095,26 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 				"database": "production_db",
 			}),
 		),
-	integration.WithResource(
-		integration.ResourceID(serviceID),
-		integration.ResourceName("api-service"),
-		integration.ResourceKind("service"),
-		integration.ResourceMetadata(map[string]string{
-			"db_id": dbID,
-		}),
-		integration.WithResourceVariable(
-			"db_host",
-			integration.ResourceVariableReferenceValue("database", []string{"metadata", "host"}),
+		integration.WithResource(
+			integration.ResourceID(serviceID),
+			integration.ResourceName("api-service"),
+			integration.ResourceKind("service"),
+			integration.ResourceMetadata(map[string]string{
+				"db_id": dbID,
+			}),
+			integration.WithResourceVariable(
+				"db_host",
+				integration.ResourceVariableReferenceValue("database", []string{"metadata", "host"}),
+			),
+			integration.WithResourceVariable(
+				"db_port",
+				integration.ResourceVariableReferenceValue("database", []string{"metadata", "port"}),
+			),
+			integration.WithResourceVariable(
+				"db_name",
+				integration.ResourceVariableReferenceValue("database", []string{"metadata", "database"}),
+			),
 		),
-		integration.WithResourceVariable(
-			"db_port",
-			integration.ResourceVariableReferenceValue("database", []string{"metadata", "port"}),
-		),
-		integration.WithResourceVariable(
-			"db_name",
-			integration.ResourceVariableReferenceValue("database", []string{"metadata", "database"}),
-		),
-	),
 	)
 
 	ctx := context.Background()
@@ -1253,23 +1253,23 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 			integration.ResourceName("redis-main"),
 			integration.ResourceKind("cache"),
 		),
-	integration.WithResource(
-		integration.ResourceID(appID),
-		integration.ResourceName("web-app"),
-		integration.ResourceKind("application"),
-		integration.ResourceMetadata(map[string]string{
-			"db_id":    dbID,
-			"cache_id": cacheID,
-		}),
-		integration.WithResourceVariable(
-			"db_name",
-			integration.ResourceVariableReferenceValue("database", []string{"name"}),
+		integration.WithResource(
+			integration.ResourceID(appID),
+			integration.ResourceName("web-app"),
+			integration.ResourceKind("application"),
+			integration.ResourceMetadata(map[string]string{
+				"db_id":    dbID,
+				"cache_id": cacheID,
+			}),
+			integration.WithResourceVariable(
+				"db_name",
+				integration.ResourceVariableReferenceValue("database", []string{"name"}),
+			),
+			integration.WithResourceVariable(
+				"cache_name",
+				integration.ResourceVariableReferenceValue("cache", []string{"name"}),
+			),
 		),
-		integration.WithResourceVariable(
-			"cache_name",
-			integration.ResourceVariableReferenceValue("cache", []string{"name"}),
-		),
-	),
 	)
 
 	ctx := context.Background()

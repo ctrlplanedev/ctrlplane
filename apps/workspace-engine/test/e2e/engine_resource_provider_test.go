@@ -350,4 +350,3 @@ func TestEngine_ResourceProviderMultipleDeletes(t *testing.T) {
 		t.Fatalf("resource 2 provider ID should be nil after provider 2 delete")
 	}
 }
-

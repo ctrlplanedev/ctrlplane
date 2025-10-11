@@ -14,11 +14,11 @@ func FlushChangeset(ctx context.Context) error {
 	}
 
 	if len(cs.Changes) == 0 {
-        return nil
-    }
+		return nil
+	}
 
 	cs.Mutex.Lock()
-    defer cs.Mutex.Unlock()
+	defer cs.Mutex.Unlock()
 
 	conn, err := GetDB(ctx)
 	if err != nil {
@@ -26,11 +26,11 @@ func FlushChangeset(ctx context.Context) error {
 	}
 	defer conn.Release()
 
-    tx, err := conn.Begin(ctx)
-    if err != nil {
-        return err
-    }
-    defer tx.Rollback(ctx)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
 
 	for _, change := range cs.Changes {
 		if err := applyInsert(ctx, tx, change); err != nil {
@@ -39,11 +39,11 @@ func FlushChangeset(ctx context.Context) error {
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-        return err
-    }
-    
-    cs.Changes = cs.Changes[:0] // Clear changes
-    return nil
+		return err
+	}
+
+	cs.Changes = cs.Changes[:0] // Clear changes
+	return nil
 }
 
 func applyInsert(ctx context.Context, conn pgx.Tx, change changeset.Change) error {

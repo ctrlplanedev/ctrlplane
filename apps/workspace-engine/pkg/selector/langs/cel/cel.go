@@ -2,15 +2,16 @@ package cel
 
 import (
 	"fmt"
-	"workspace-engine/pkg/pb"
+
+	"workspace-engine/pkg/oapi"
 
 	"github.com/google/cel-go/cel"
 )
 
 type Context struct {
-	Resource pb.Resource   `json:"resource"`
-	User     pb.System     `json:"user"`
-	Config   pb.Deployment `json:"config"`
+	Resource oapi.Resource   `json:"resource"`
+	User     oapi.System     `json:"user"`
+	Config   oapi.Deployment `json:"config"`
 }
 
 var Env, _ = cel.NewEnv(
