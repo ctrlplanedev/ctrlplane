@@ -133,6 +133,11 @@ const POLICY_UPSERT_QUERY = `
 `
 
 func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
+	createdAt, err := time.Parse(time.RFC3339, policy.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to parse policy created_at: %w", err)
+	}
+
 	if _, err := tx.Exec(
 		ctx,
 		POLICY_UPSERT_QUERY,
@@ -140,7 +145,7 @@ func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
 		policy.Name,
 		policy.Description,
 		policy.WorkspaceId,
-		policy.CreatedAt,
+		createdAt,
 	); err != nil {
 		return err
 	}
@@ -197,7 +202,12 @@ const APPROVAL_ANY_RULE_UPSERT_QUERY = `
 `
 
 func writeApprovalAnyRule(ctx context.Context, policyId string, rule oapi.PolicyRule, anyApproval oapi.AnyApprovalRule, tx pgx.Tx) error {
-	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_UPSERT_QUERY, rule.Id, policyId, rule.CreatedAt, anyApproval.MinApprovals); err != nil {
+	createdAt, err := time.Parse(time.RFC3339, rule.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to parse rule created_at: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, APPROVAL_ANY_RULE_UPSERT_QUERY, rule.Id, policyId, createdAt, anyApproval.MinApprovals); err != nil {
 		return err
 	}
 	return nil

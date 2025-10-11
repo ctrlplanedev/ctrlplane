@@ -168,13 +168,41 @@ const RESOURCE_UPSERT_QUERY = `
 		provider_id = EXCLUDED.provider_id,
 		workspace_id = EXCLUDED.workspace_id,
 		config = EXCLUDED.config,
-		created_at = EXCLUDED.created_at,
 		locked_at = EXCLUDED.locked_at,
-		updated_at = EXCLUDED.updated_at,
+		updated_at = NOW(),
 		deleted_at = EXCLUDED.deleted_at
 `
 
 func writeResource(ctx context.Context, resource *oapi.Resource, tx pgx.Tx) error {
+	// Parse timestamp strings to time.Time
+	createdAt, err := time.Parse(time.RFC3339, resource.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to parse resource created_at: %w", err)
+	}
+
+	var lockedAt, updatedAt, deletedAt *time.Time
+	if resource.LockedAt != nil {
+		t, err := time.Parse(time.RFC3339, *resource.LockedAt)
+		if err != nil {
+			return fmt.Errorf("failed to parse resource locked_at: %w", err)
+		}
+		lockedAt = &t
+	}
+	if resource.UpdatedAt != nil {
+		t, err := time.Parse(time.RFC3339, *resource.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("failed to parse resource updated_at: %w", err)
+		}
+		updatedAt = &t
+	}
+	if resource.DeletedAt != nil {
+		t, err := time.Parse(time.RFC3339, *resource.DeletedAt)
+		if err != nil {
+			return fmt.Errorf("failed to parse resource deleted_at: %w", err)
+		}
+		deletedAt = &t
+	}
+
 	if _, err := tx.Exec(
 		ctx,
 		RESOURCE_UPSERT_QUERY,
@@ -186,10 +214,10 @@ func writeResource(ctx context.Context, resource *oapi.Resource, tx pgx.Tx) erro
 		resource.ProviderId,
 		resource.WorkspaceId,
 		resource.Config,
-		resource.CreatedAt,
-		resource.LockedAt,
-		resource.UpdatedAt,
-		resource.DeletedAt,
+		createdAt,
+		lockedAt,
+		updatedAt,
+		deletedAt,
 	); err != nil {
 		return err
 	}

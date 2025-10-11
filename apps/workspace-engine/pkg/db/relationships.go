@@ -302,8 +302,15 @@ const UPSERT_RELATIONSHIP_RULE_QUERY = `
 
 func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.RelationshipRule, tx pgx.Tx) error {
 	// Parse selectors to extract DB fields
-	sourceKind, sourceVersion, sourceMetadataEquals := extractFromSelector(relationshipRule.FromSelector)
-	targetKind, targetVersion, targetMetadataEquals := extractToSelector(relationshipRule.ToSelector)
+	sourceKind, sourceVersion, sourceMetadataEquals, err := extractFromSelector(relationshipRule.FromSelector)
+	if err != nil {
+		return fmt.Errorf("failed to extract from selector: %w", err)
+	}
+
+	targetKind, targetVersion, targetMetadataEquals, err := extractToSelector(relationshipRule.ToSelector)
+	if err != nil {
+		return fmt.Errorf("failed to extract to selector: %w", err)
+	}
 
 	// Convert optional pointers to interface{} for pgx
 	var nameValue interface{}
@@ -344,6 +351,19 @@ func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.Relations
 		return err
 	}
 
+	// Delete existing metadata entries to avoid stale data
+	if _, err := tx.Exec(ctx, "DELETE FROM resource_relationship_rule_metadata_match WHERE resource_relationship_rule_id = $1", relationshipRule.Id); err != nil {
+		return fmt.Errorf("failed to delete existing metadata matches: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, "DELETE FROM resource_relationship_rule_source_metadata_equals WHERE resource_relationship_rule_id = $1", relationshipRule.Id); err != nil {
+		return fmt.Errorf("failed to delete existing source metadata equals: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, "DELETE FROM resource_relationship_rule_target_metadata_equals WHERE resource_relationship_rule_id = $1", relationshipRule.Id); err != nil {
+		return fmt.Errorf("failed to delete existing target metadata equals: %w", err)
+	}
+
 	// Insert metadata matches from property matchers
 	// Extract from Matcher if PropertyMatchers is empty
 	propertyMatchers := relationshipRule.PropertyMatchers
@@ -376,25 +396,25 @@ func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.Relations
 	return nil
 }
 
-func extractFromSelector(selector *oapi.Selector) (kind string, version string, metadataEquals []dbRelationshipRuleSourceMetadataEquals) {
+func extractFromSelector(selector *oapi.Selector) (kind string, version string, metadataEquals []dbRelationshipRuleSourceMetadataEquals, err error) {
 	metadataEquals = make([]dbRelationshipRuleSourceMetadataEquals, 0)
 	if selector == nil {
-		return
+		return "", "", metadataEquals, nil
 	}
 
 	jsonSelector, err := selector.AsJsonSelector()
 	if err != nil {
-		return
+		return "", "", nil, fmt.Errorf("failed to convert selector to JSON: %w", err)
 	}
 
 	selectorType, _ := jsonSelector.Json["type"].(string)
 	if selectorType != "comparison" {
-		return
+		return "", "", nil, fmt.Errorf("selector type must be 'comparison', got '%s'", selectorType)
 	}
 
 	conditions, ok := jsonSelector.Json["conditions"].([]interface{})
 	if !ok {
-		return
+		return "", "", metadataEquals, nil
 	}
 
 	for _, condition := range conditions {
@@ -425,28 +445,28 @@ func extractFromSelector(selector *oapi.Selector) (kind string, version string, 
 		}
 	}
 
-	return
+	return kind, version, metadataEquals, nil
 }
 
-func extractToSelector(selector *oapi.Selector) (kind *string, version *string, metadataEquals []dbRelationshipRuleTargetMetadataEquals) {
+func extractToSelector(selector *oapi.Selector) (kind *string, version *string, metadataEquals []dbRelationshipRuleTargetMetadataEquals, err error) {
 	metadataEquals = make([]dbRelationshipRuleTargetMetadataEquals, 0)
 	if selector == nil {
-		return
+		return nil, nil, metadataEquals, nil
 	}
 
 	jsonSelector, err := selector.AsJsonSelector()
 	if err != nil {
-		return
+		return nil, nil, nil, fmt.Errorf("failed to convert selector to JSON: %w", err)
 	}
 
 	selectorType, _ := jsonSelector.Json["type"].(string)
 	if selectorType != "comparison" {
-		return
+		return nil, nil, nil, fmt.Errorf("selector type must be 'comparison', got '%s'", selectorType)
 	}
 
 	conditions, ok := jsonSelector.Json["conditions"].([]interface{})
 	if !ok {
-		return
+		return nil, nil, metadataEquals, nil
 	}
 
 	for _, condition := range conditions {
@@ -477,7 +497,7 @@ func extractToSelector(selector *oapi.Selector) (kind *string, version *string, 
 		}
 	}
 
-	return
+	return kind, version, metadataEquals, nil
 }
 
 func writeManyMetadataMatches(ctx context.Context, ruleId string, matchers []oapi.PropertyMatcher, tx pgx.Tx) error {
