@@ -18,7 +18,7 @@ func NewRelationshipRule(workspaceID string) *oapi.RelationshipRule {
 		ToType:           "resource",
 		RelationshipType: "default",
 		Metadata:         make(map[string]string),
-		PropertyMatchers: []oapi.PropertyMatcher{},
+		Matcher:          oapi.RelationshipRule_Matcher{},
 	}
 }
 

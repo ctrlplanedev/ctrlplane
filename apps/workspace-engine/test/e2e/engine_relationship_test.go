@@ -57,11 +57,15 @@ func TestEngine_RelationshipRuleCreation(t *testing.T) {
 		t.Fatalf("relationship type is %s, want contains", rule.RelationshipType)
 	}
 
-	if len(rule.PropertyMatchers) != 1 {
-		t.Fatalf("property matchers count is %d, want 1", len(rule.PropertyMatchers))
+	pm, err := rule.Matcher.AsPropertiesMatcher()
+	if err != nil {
+		t.Fatalf("error getting property matchers: %v", err)
+	}
+	if len(pm.Properties) != 1 {
+		t.Fatalf("property matchers count is %d, want 1", len(pm.Properties))
 	}
 
-	matcher := rule.PropertyMatchers[0]
+	matcher := pm.Properties[0]
 	if len(matcher.FromProperty) != 2 || matcher.FromProperty[0] != "metadata" || matcher.FromProperty[1] != "region" {
 		t.Fatalf("property matcher from property is %v, want [metadata region]", matcher.FromProperty)
 	}

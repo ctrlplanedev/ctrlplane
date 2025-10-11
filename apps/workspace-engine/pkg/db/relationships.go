@@ -242,13 +242,17 @@ func convertDbRelationshipRuleToOapiRelationshipRule(dbRelationship *dbRelations
 	propertyMatchers := getPropertyMatchers(dbRelationship)
 	name := getName(dbRelationship)
 
+	matcher := &oapi.RelationshipRule_Matcher{}
+	matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: propertyMatchers,
+	})
 	return &oapi.RelationshipRule{
 		Id:               dbRelationship.ID,
 		Name:             name,
 		Description:      dbRelationship.Description,
 		FromSelector:     fromSelector,
 		ToSelector:       toSelector,
-		PropertyMatchers: propertyMatchers,
+		Matcher:          *matcher,
 		FromType:         "resource",
 		ToType:           "resource",
 		RelationshipType: dbRelationship.DependencyType,

@@ -812,10 +812,18 @@ components:
       properties:
         json:
           type: object
+    CelSelector:
+      type: object
+      required:
+        - cel
+      properties:
+        cel:
+          type: string
     # Core message types
     Selector:
       oneOf:
         - $ref: "#/components/schemas/JsonSelector"
+        - $ref: "#/components/schemas/CelSelector"
 
     PropertyMatcher:
       type: object
@@ -1286,6 +1294,24 @@ components:
         description:
           type: string
 
+    CelMatcher:
+      type: object
+      required:
+        - cel
+      properties:
+        cel:
+          type: string
+
+    PropertiesMatcher:
+      type: object
+      required:
+        - properties
+      properties:
+        properties:
+          type: array
+          items:
+            $ref: "#/components/schemas/PropertyMatcher"
+
     RelationshipRule:
       type: object
       required:
@@ -1294,7 +1320,7 @@ components:
         - reference
         - fromType
         - toType
-        - propertyMatchers
+        - matcher
         - relationshipType
         - metadata
       properties:
@@ -1314,10 +1340,10 @@ components:
           type: string
         toSelector:
           $ref: "#/components/schemas/Selector"
-        propertyMatchers:
-          type: array
-          items:
-            $ref: "#/components/schemas/PropertyMatcher"
+        matcher:
+          oneOf:
+            - $ref: "#/components/schemas/CelMatcher"
+            - $ref: "#/components/schemas/PropertiesMatcher"
         relationshipType:
           type: string
         metadata:

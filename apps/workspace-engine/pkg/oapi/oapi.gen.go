@@ -69,6 +69,16 @@ type ApprovalStatus string
 // BooleanValue defines model for BooleanValue.
 type BooleanValue = bool
 
+// CelMatcher defines model for CelMatcher.
+type CelMatcher struct {
+	Cel string `json:"cel"`
+}
+
+// CelSelector defines model for CelSelector.
+type CelSelector struct {
+	Cel string `json:"cel"`
+}
+
 // Deployment defines model for Deployment.
 type Deployment struct {
 	Description      *string                `json:"description,omitempty"`
@@ -211,6 +221,11 @@ type PolicyTargetSelector struct {
 	ResourceSelector    *Selector `json:"resourceSelector,omitempty"`
 }
 
+// PropertiesMatcher defines model for PropertiesMatcher.
+type PropertiesMatcher struct {
+	Properties []PropertyMatcher `json:"properties"`
+}
+
 // PropertyMatcher defines model for PropertyMatcher.
 type PropertyMatcher struct {
 	FromProperty []string                `json:"fromProperty"`
@@ -229,17 +244,22 @@ type ReferenceValue struct {
 
 // RelationshipRule defines model for RelationshipRule.
 type RelationshipRule struct {
-	Description      *string           `json:"description,omitempty"`
-	FromSelector     *Selector         `json:"fromSelector,omitempty"`
-	FromType         string            `json:"fromType"`
-	Id               string            `json:"id"`
-	Metadata         map[string]string `json:"metadata"`
-	Name             string            `json:"name"`
-	PropertyMatchers []PropertyMatcher `json:"propertyMatchers"`
-	Reference        string            `json:"reference"`
-	RelationshipType string            `json:"relationshipType"`
-	ToSelector       *Selector         `json:"toSelector,omitempty"`
-	ToType           string            `json:"toType"`
+	Description      *string                  `json:"description,omitempty"`
+	FromSelector     *Selector                `json:"fromSelector,omitempty"`
+	FromType         string                   `json:"fromType"`
+	Id               string                   `json:"id"`
+	Matcher          RelationshipRule_Matcher `json:"matcher"`
+	Metadata         map[string]string        `json:"metadata"`
+	Name             string                   `json:"name"`
+	Reference        string                   `json:"reference"`
+	RelationshipType string                   `json:"relationshipType"`
+	ToSelector       *Selector                `json:"toSelector,omitempty"`
+	ToType           string                   `json:"toType"`
+}
+
+// RelationshipRule_Matcher defines model for RelationshipRule.Matcher.
+type RelationshipRule_Matcher struct {
+	union json.RawMessage
 }
 
 // Release defines model for Release.
@@ -507,6 +527,68 @@ func (t *LiteralValue) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsCelMatcher returns the union data inside the RelationshipRule_Matcher as a CelMatcher
+func (t RelationshipRule_Matcher) AsCelMatcher() (CelMatcher, error) {
+	var body CelMatcher
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCelMatcher overwrites any union data inside the RelationshipRule_Matcher as the provided CelMatcher
+func (t *RelationshipRule_Matcher) FromCelMatcher(v CelMatcher) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCelMatcher performs a merge with any union data inside the RelationshipRule_Matcher, using the provided CelMatcher
+func (t *RelationshipRule_Matcher) MergeCelMatcher(v CelMatcher) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPropertiesMatcher returns the union data inside the RelationshipRule_Matcher as a PropertiesMatcher
+func (t RelationshipRule_Matcher) AsPropertiesMatcher() (PropertiesMatcher, error) {
+	var body PropertiesMatcher
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPropertiesMatcher overwrites any union data inside the RelationshipRule_Matcher as the provided PropertiesMatcher
+func (t *RelationshipRule_Matcher) FromPropertiesMatcher(v PropertiesMatcher) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePropertiesMatcher performs a merge with any union data inside the RelationshipRule_Matcher, using the provided PropertiesMatcher
+func (t *RelationshipRule_Matcher) MergePropertiesMatcher(v PropertiesMatcher) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t RelationshipRule_Matcher) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *RelationshipRule_Matcher) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsJsonSelector returns the union data inside the Selector as a JsonSelector
 func (t Selector) AsJsonSelector() (JsonSelector, error) {
 	var body JsonSelector
@@ -523,6 +605,32 @@ func (t *Selector) FromJsonSelector(v JsonSelector) error {
 
 // MergeJsonSelector performs a merge with any union data inside the Selector, using the provided JsonSelector
 func (t *Selector) MergeJsonSelector(v JsonSelector) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCelSelector returns the union data inside the Selector as a CelSelector
+func (t Selector) AsCelSelector() (CelSelector, error) {
+	var body CelSelector
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCelSelector overwrites any union data inside the Selector as the provided CelSelector
+func (t *Selector) FromCelSelector(v CelSelector) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCelSelector performs a merge with any union data inside the Selector, using the provided CelSelector
+func (t *Selector) MergeCelSelector(v CelSelector) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

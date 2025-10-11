@@ -2,16 +2,15 @@ package cel
 
 import (
 	"fmt"
-
 	"workspace-engine/pkg/oapi"
 
 	"github.com/google/cel-go/cel"
 )
 
 type Context struct {
-	Resource oapi.Resource   `json:"resource"`
-	User     oapi.System     `json:"user"`
-	Config   oapi.Deployment `json:"config"`
+	Resource    oapi.Resource    `json:"resource"`
+	Deployment  oapi.Deployment  `json:"deployment"`
+	Environment oapi.Environment `json:"environment"`
 }
 
 var Env, _ = cel.NewEnv(
@@ -36,8 +35,8 @@ type CelSelector struct {
 	Program cel.Program
 }
 
-func (s *CelSelector) Matches(context *Context) (bool, error) {
-	val, _, err := s.Program.Eval(context)
+func (s *CelSelector) Matches(ctx *Context) (bool, error) {
+	val, _, err := s.Program.Eval(ctx)
 	if err != nil {
 		return false, err
 	}
