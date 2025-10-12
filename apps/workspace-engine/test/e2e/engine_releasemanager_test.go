@@ -125,14 +125,14 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	}
 
 	// Verify job properties
-	if job.DeploymentId != deploymentId {
-		t.Errorf("job deployment_id = %s, want %s", job.DeploymentId, deploymentId)
+	if release.ReleaseTarget.DeploymentId != deploymentId {
+		t.Errorf("job deployment_id = %s, want %s", release.ReleaseTarget.DeploymentId, deploymentId)
 	}
-	if job.EnvironmentId != environmentId {
-		t.Errorf("job environment_id = %s, want %s", job.EnvironmentId, environmentId)
+	if release.ReleaseTarget.EnvironmentId != environmentId {
+		t.Errorf("job environment_id = %s, want %s", release.ReleaseTarget.EnvironmentId, environmentId)
 	}
-	if job.ResourceId != resourceId {
-		t.Errorf("job resource_id = %s, want %s", job.ResourceId, resourceId)
+	if release.ReleaseTarget.ResourceId != resourceId {
+		t.Errorf("job resource_id = %s, want %s", release.ReleaseTarget.ResourceId, resourceId)
 	}
 	if job.JobAgentId != jobAgentId {
 		t.Errorf("job job_agent_id = %s, want %s", job.JobAgentId, jobAgentId)
@@ -328,7 +328,8 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	// Find the job for the application resource
 	var appJob *oapi.Job
 	for _, job := range pendingJobs {
-		if job.ResourceId == appId {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.ResourceId == appId {
 			appJob = job
 			break
 		}
@@ -487,7 +488,14 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 	// Verify each job has correct properties
 	jobsByResource := make(map[string]*oapi.Job)
 	for _, job := range pendingJobs {
-		jobsByResource[job.ResourceId] = job
+		// Verify release exists and has correct version
+		release, releaseExists := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !releaseExists {
+			t.Errorf("release %s not found for job %s", job.ReleaseId, job.Id)
+			continue
+		}
+
+		jobsByResource[release.ReleaseTarget.ResourceId] = job
 
 		// Verify job is pending
 		if job.Status != oapi.Pending {
@@ -495,18 +503,11 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 		}
 
 		// Verify job has correct deployment and environment
-		if job.DeploymentId != deploymentId {
-			t.Errorf("job %s has deployment_id %s, want %s", job.Id, job.DeploymentId, deploymentId)
+		if release.ReleaseTarget.DeploymentId != deploymentId {
+			t.Errorf("job %s has deployment_id %s, want %s", job.Id, release.ReleaseTarget.DeploymentId, deploymentId)
 		}
-		if job.EnvironmentId != environmentId {
-			t.Errorf("job %s has environment_id %s, want %s", job.Id, job.EnvironmentId, environmentId)
-		}
-
-		// Verify release exists and has correct version
-		release, releaseExists := engine.Workspace().Releases().Get(job.ReleaseId)
-		if !releaseExists {
-			t.Errorf("release %s not found for job %s", job.ReleaseId, job.Id)
-			continue
+		if release.ReleaseTarget.EnvironmentId != environmentId {
+			t.Errorf("job %s has environment_id %s, want %s", job.Id, release.ReleaseTarget.EnvironmentId, environmentId)
 		}
 
 		if release.Version.Tag != "v3.0.0" {

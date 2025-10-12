@@ -79,14 +79,20 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	if job.Status != oapi.Pending {
 		t.Fatalf("expected job status PENDING, got %v", job.Status)
 	}
-	if job.DeploymentId != d1.Id {
-		t.Fatalf("expected job deployment_id %s, got %s", d1.Id, job.DeploymentId)
+
+	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !ok {
+		t.Fatalf("release %s not found", job.ReleaseId)
 	}
-	if job.EnvironmentId != e1.Id {
-		t.Fatalf("expected job environment_id %s, got %s", e1.Id, job.EnvironmentId)
+
+	if release.ReleaseTarget.DeploymentId != d1.Id {
+		t.Fatalf("expected job deployment_id %s, got %s", d1.Id, release.ReleaseTarget.DeploymentId)
 	}
-	if job.ResourceId != r1.Id {
-		t.Fatalf("expected job resource_id %s, got %s", r1.Id, job.ResourceId)
+	if release.ReleaseTarget.EnvironmentId != e1.Id {
+		t.Fatalf("expected job environment_id %s, got %s", e1.Id, release.ReleaseTarget.EnvironmentId)
+	}
+	if release.ReleaseTarget.ResourceId != r1.Id {
+		t.Fatalf("expected job resource_id %s, got %s", r1.Id, release.ReleaseTarget.ResourceId)
 	}
 	if job.JobAgentId != jobAgent.Id {
 		t.Fatalf("expected job job_agent_id %s, got %s", jobAgent.Id, job.JobAgentId)
@@ -171,8 +177,12 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 		if job.Status != oapi.Pending {
 			t.Fatalf("expected job status PENDING, got %v", job.Status)
 		}
-		if job.DeploymentId != d1.Id {
-			t.Fatalf("expected job deployment_id %s, got %s", d1.Id, job.DeploymentId)
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release %s not found", job.ReleaseId)
+		}
+		if release.ReleaseTarget.DeploymentId != d1.Id {
+			t.Fatalf("expected job deployment_id %s, got %s", d1.Id, release.ReleaseTarget.DeploymentId)
 		}
 	}
 }
@@ -262,7 +272,11 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	// Verify jobs are for the correct resources
 	jobResourceIds := make(map[string]bool)
 	for _, job := range pendingJobs {
-		jobResourceIds[job.ResourceId] = true
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		jobResourceIds[release.ReleaseTarget.ResourceId] = true
 	}
 
 	if !jobResourceIds[r1.Id] {
@@ -493,8 +507,12 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 
 	// Verify all jobs are for deployment 1
 	for _, job := range pendingJobs {
-		if job.DeploymentId != d1.Id {
-			t.Fatalf("expected job for deployment %s, got %s", d1.Id, job.DeploymentId)
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release %s not found", job.ReleaseId)
+		}
+		if release.ReleaseTarget.DeploymentId != d1.Id {
+			t.Fatalf("expected job for deployment %s, got %s", d1.Id, release.ReleaseTarget.DeploymentId)
 		}
 	}
 
@@ -514,7 +532,11 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	d1Jobs := 0
 	d2Jobs := 0
 	for _, job := range pendingJobs {
-		switch job.DeploymentId {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		switch release.ReleaseTarget.DeploymentId {
 		case d1.Id:
 			d1Jobs++
 		case d2.Id:
@@ -619,7 +641,8 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	// Verify we have a new job (different ID from original)
 	newJobExists := false
 	for _, job := range pendingJobsAfter {
-		if job.Id != originalJob.Id && job.ResourceId == r1.Id {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && job.Id != originalJob.Id && release.ReleaseTarget.ResourceId == r1.Id {
 			newJobExists = true
 			break
 		}
@@ -709,8 +732,12 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 	envIds := make(map[string]bool)
 	resourceIds := make(map[string]bool)
 	for _, job := range pendingJobs {
-		envIds[job.EnvironmentId] = true
-		resourceIds[job.ResourceId] = true
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		envIds[release.ReleaseTarget.EnvironmentId] = true
+		resourceIds[release.ReleaseTarget.ResourceId] = true
 	}
 
 	if !envIds[e1.Id] {
@@ -766,7 +793,8 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 	// Find the job for resource 1
 	var jobForR1 *oapi.Job
 	for _, job := range pendingJobs {
-		if job.ResourceId == r1.Id {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.ResourceId == r1.Id {
 			jobForR1 = job
 			break
 		}
@@ -790,7 +818,12 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 		if job.Id == jobForR1.Id {
 			jobStillExists = true
 			if job.Status == oapi.Pending {
-				t.Logf("Job %s is still PENDING after resource deletion (resource=%s)", job.Id, job.ResourceId)
+				release, _ := engine.Workspace().Releases().Get(job.ReleaseId)
+				resourceId := ""
+				if release != nil {
+					resourceId = release.ReleaseTarget.ResourceId
+				}
+				t.Logf("Job %s is still PENDING after resource deletion (resource=%s)", job.Id, resourceId)
 			}
 			break
 		}
@@ -806,7 +839,8 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 	// The job for resource 2 should still be pending
 	jobForR2Exists := false
 	for _, job := range pendingJobsAfter {
-		if job.ResourceId == r2.Id && job.Status == oapi.Pending {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.ResourceId == r2.Id && job.Status == oapi.Pending {
 			jobForR2Exists = true
 			break
 		}
@@ -886,7 +920,8 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	// Find the job for environment 1
 	var jobForE1 *oapi.Job
 	for _, job := range pendingJobs {
-		if job.EnvironmentId == e1.Id {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.EnvironmentId == e1.Id {
 			jobForE1 = job
 			break
 		}
@@ -906,7 +941,12 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 		if job.Id == jobForE1.Id {
 			jobStillExists = true
 			if job.Status == oapi.Pending {
-				t.Logf("Job %s is still PENDING after environment deletion (env=%s)", job.Id, job.EnvironmentId)
+				release, _ := engine.Workspace().Releases().Get(job.ReleaseId)
+				envId := ""
+				if release != nil {
+					envId = release.ReleaseTarget.EnvironmentId
+				}
+				t.Logf("Job %s is still PENDING after environment deletion (env=%s)", job.Id, envId)
 			}
 			break
 		}
@@ -921,7 +961,8 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	// The job for environment 2 should still be pending
 	jobForE2Exists := false
 	for _, job := range pendingJobsAfter {
-		if job.EnvironmentId == e2.Id && job.Status == oapi.Pending {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.EnvironmentId == e2.Id && job.Status == oapi.Pending {
 			jobForE2Exists = true
 			break
 		}

@@ -88,8 +88,13 @@ func TestEngine_DeploymentVersionCreatesJobsForAllReleaseTargets(t *testing.T) {
 
 	// Verify all jobs have correct properties
 	for _, job := range pendingJobs {
-		if job.DeploymentId != deploymentId {
-			t.Errorf("job %s has incorrect deployment_id: expected %s, got %s", job.Id, deploymentId, job.DeploymentId)
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Errorf("release %s not found for job %s", job.ReleaseId, job.Id)
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId != deploymentId {
+			t.Errorf("job %s has incorrect deployment_id: expected %s, got %s", job.Id, deploymentId, release.ReleaseTarget.DeploymentId)
 		}
 		if job.JobAgentId != jobAgentId {
 			t.Errorf("job %s has incorrect job_agent_id: expected %s, got %s", job.Id, jobAgentId, job.JobAgentId)
@@ -139,7 +144,8 @@ func TestEngine_SequentialDeploymentVersionsCreateCorrectJobs(t *testing.T) {
 		// Verify at least some jobs exist for this deployment
 		jobsForDeployment := 0
 		for _, job := range allJobs {
-			if job.DeploymentId == deploymentId {
+			release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+			if ok && release.ReleaseTarget.DeploymentId == deploymentId {
 				jobsForDeployment++
 			}
 		}
@@ -286,8 +292,13 @@ func TestEngine_MultipleDeploymentsIndependentVersions(t *testing.T) {
 
 	// Verify all jobs are for deployment1
 	for _, job := range jobsAfterFirst {
-		if job.DeploymentId != deployment1Id {
-			t.Errorf("expected job for deployment1 %s, got %s", deployment1Id, job.DeploymentId)
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Errorf("release %s not found for job %s", job.ReleaseId, job.Id)
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId != deployment1Id {
+			t.Errorf("expected job for deployment1 %s, got %s", deployment1Id, release.ReleaseTarget.DeploymentId)
 		}
 	}
 
@@ -307,9 +318,13 @@ func TestEngine_MultipleDeploymentsIndependentVersions(t *testing.T) {
 	deployment1Jobs := 0
 	deployment2Jobs := 0
 	for _, job := range jobsAfterSecond {
-		if job.DeploymentId == deployment1Id {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deployment1Id {
 			deployment1Jobs++
-		} else if job.DeploymentId == deployment2Id {
+		} else if release.ReleaseTarget.DeploymentId == deployment2Id {
 			deployment2Jobs++
 		}
 	}
@@ -411,9 +426,13 @@ func TestEngine_DeploymentVersionWithFilteredReleaseTargets(t *testing.T) {
 
 	// Verify jobs are only for production resources
 	for _, job := range pendingJobs {
-		resource, ok := engine.Workspace().Resources().Get(job.ResourceId)
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
 		if !ok {
-			t.Fatalf("resource %s not found", job.ResourceId)
+			t.Fatalf("release %s not found", job.ReleaseId)
+		}
+		resource, ok := engine.Workspace().Resources().Get(release.ReleaseTarget.ResourceId)
+		if !ok {
+			t.Fatalf("resource %s not found", release.ReleaseTarget.ResourceId)
 		}
 		if resource.Metadata["tier"] != "production" {
 			t.Errorf("expected job for production resource, got resource with tier=%s", resource.Metadata["tier"])
@@ -503,9 +522,13 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 	devJobs := 0
 	prodJobs := 0
 	for _, job := range pendingJobs {
-		if job.EnvironmentId == envDevId {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.EnvironmentId == envDevId {
 			devJobs++
-		} else if job.EnvironmentId == envProdId {
+		} else if release.ReleaseTarget.EnvironmentId == envProdId {
 			prodJobs++
 		}
 	}
@@ -626,7 +649,8 @@ func TestEngine_ConcurrentDeploymentVersionCreation(t *testing.T) {
 	allJobs := engine.Workspace().Jobs().Items()
 	jobCount := 0
 	for _, job := range allJobs {
-		if job.DeploymentId == deploymentId {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.DeploymentId == deploymentId {
 			jobCount++
 		}
 	}

@@ -201,14 +201,19 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 	jobsWithAgent := 0
 	jobsNoAgent := 0
 	for _, job := range pendingJobs {
-		if job.DeploymentId == deploymentIDWithAgent {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found")
+		}
+
+		if release.ReleaseTarget.DeploymentId == deploymentIDWithAgent {
 			jobsWithAgent++
 			// Verify job has correct job agent
 			if job.JobAgentId != jobAgentID {
 				t.Fatalf("job for deployment with agent has wrong job agent: got %s, want %s", job.JobAgentId, jobAgentID)
 			}
 		}
-		if job.DeploymentId == deploymentIDNoAgent {
+		if release.ReleaseTarget.DeploymentId == deploymentIDNoAgent {
 			jobsNoAgent++
 		}
 	}
@@ -394,13 +399,17 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 	dockerJobFound := false
 
 	for _, job := range pendingJobs {
-		if job.DeploymentId == deploymentK8s {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found")
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentK8s {
 			k8sJobFound = true
 			if job.JobAgentId != jobAgentK8s {
 				t.Fatalf("k8s deployment job has wrong agent: got %s, want %s", job.JobAgentId, jobAgentK8s)
 			}
 		}
-		if job.DeploymentId == deploymentDocker {
+		if release.ReleaseTarget.DeploymentId == deploymentDocker {
 			dockerJobFound = true
 			if job.JobAgentId != jobAgentDocker {
 				t.Fatalf("docker deployment job has wrong agent: got %s, want %s", job.JobAgentId, jobAgentDocker)
