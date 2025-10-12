@@ -30,15 +30,23 @@ func (s *Jobs) ListJobs(c *gin.Context, workspaceId string, params oapi.ListJobs
 		if params.ReleaseId != nil && job.ReleaseId != *params.ReleaseId {
 			continue
 		}
-		if params.DeploymentId != nil && job.DeploymentId != *params.DeploymentId {
+
+		release, ok := ws.Releases().Get(job.ReleaseId)
+		if !ok {
 			continue
 		}
-		if params.EnvironmentId != nil && job.EnvironmentId != *params.EnvironmentId {
+
+		rt := release.ReleaseTarget
+		if params.DeploymentId != nil && rt.DeploymentId != *params.DeploymentId {
 			continue
 		}
-		if params.ResourceId != nil && job.ResourceId != *params.ResourceId {
+		if params.EnvironmentId != nil && rt.EnvironmentId != *params.EnvironmentId {
 			continue
 		}
+		if params.ResourceId != nil && rt.ResourceId != *params.ResourceId {
+			continue
+		}
+
 		filteredJobs = append(filteredJobs, job)
 	}
 

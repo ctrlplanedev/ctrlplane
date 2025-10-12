@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
@@ -21,12 +22,15 @@ func HandleJobUpdated(
 
 	ws.Jobs().Upsert(ctx, job)
 
-	rt := &oapi.ReleaseTarget{
-		EnvironmentId: job.EnvironmentId,
-		DeploymentId:  job.DeploymentId,
-		ResourceId:    job.ResourceId,
+	releaseId := job.ReleaseId
+
+	release, ok := ws.Releases().Get(releaseId)
+	if !ok {
+		return fmt.Errorf("release not found: %s", releaseId)
 	}
-	ws.ReleaseManager().TaintReleaseTargets(rt)
+
+	rt := release.ReleaseTarget
+	ws.ReleaseManager().TaintReleaseTargets(&rt)
 
 	return nil
 }
