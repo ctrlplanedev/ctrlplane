@@ -18,7 +18,7 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 		Name:       "test-resource",
 		Kind:       "server",
 		Identifier: resourceID,
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   metadata,
 		Version:    "v1",
 		CreatedAt:  "2024-01-01T00:00:00Z",
