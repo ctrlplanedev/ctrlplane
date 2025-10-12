@@ -28,7 +28,6 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 	return st
 }
 
-
 // Helper function to create a literal value from a Go value
 func mustCreateLiteralValue(value interface{}) *oapi.LiteralValue {
 	lv := &oapi.LiteralValue{}

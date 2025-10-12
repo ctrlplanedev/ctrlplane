@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 )
 
@@ -41,4 +42,22 @@ func (s *Environments) GetEnvironment(c *gin.Context, workspaceId string, enviro
 	}
 
 	c.JSON(http.StatusOK, environment)
+}
+
+func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string) {
+	ws := utils.GetWorkspace(c, workspaceId)
+	if ws == nil {
+		return
+	}
+
+	resources := ws.Environments().Resources(environmentId)
+
+	resourceList := make([]*oapi.Resource, 0, len(resources))
+	for _, resource := range resources {
+		resourceList = append(resourceList, resource)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"resources": resourceList,
+	})
 }

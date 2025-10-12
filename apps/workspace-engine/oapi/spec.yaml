@@ -497,6 +497,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/NotFoundError"
 
+  /v1/workspaces/{workspaceId}/environments/{environmentId}/resources:
+    get:
+      summary: Get resources for an environment
+      operationId: getEnvironmentResources
+      description: Returns a list of resources for environment {environmentId}.
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: ID of the workspace.
+          schema:
+            type: string
+        - name: environmentId
+          in: path
+          required: true
+          description: ID of the environment.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A resource.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resources:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Resource"
+        "404":
+          description: Resource not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
   /v1/workspaces/{workspaceId}/jobs:
     get:
       summary: List jobs for a specified workspace
