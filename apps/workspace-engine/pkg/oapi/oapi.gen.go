@@ -143,14 +143,11 @@ type IntegerValue = int
 type Job struct {
 	CompletedAt    *time.Time             `json:"completedAt,omitempty"`
 	CreatedAt      time.Time              `json:"createdAt"`
-	DeploymentId   string                 `json:"deploymentId"`
-	EnvironmentId  string                 `json:"environmentId"`
 	ExternalId     *string                `json:"externalId,omitempty"`
 	Id             string                 `json:"id"`
 	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
 	JobAgentId     string                 `json:"jobAgentId"`
 	ReleaseId      string                 `json:"releaseId"`
-	ResourceId     string                 `json:"resourceId"`
 	StartedAt      *time.Time             `json:"startedAt,omitempty"`
 	Status         JobStatus              `json:"status"`
 	UpdatedAt      time.Time              `json:"updatedAt"`

@@ -1108,9 +1108,6 @@ components:
         - jobAgentId
         - jobAgentConfig
         - status
-        - resourceId
-        - environmentId
-        - deploymentId
         - createdAt
         - updatedAt
       properties:
@@ -1127,12 +1124,6 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/JobStatus"
-        resourceId:
-          type: string
-        environmentId:
-          type: string
-        deploymentId:
-          type: string
         createdAt:
           type: string
           format: date-time

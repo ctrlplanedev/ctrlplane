@@ -365,12 +365,10 @@ func writeRelationshipRule(ctx context.Context, relationshipRule *oapi.Relations
 	}
 
 	// Insert metadata matches from property matchers
-	// Extract from Matcher if PropertyMatchers is empty
-	propertyMatchers := relationshipRule.PropertyMatchers
-	if len(propertyMatchers) == 0 {
-		if propertiesMatcher, err := relationshipRule.Matcher.AsPropertiesMatcher(); err == nil {
-			propertyMatchers = propertiesMatcher.Properties
-		}
+	// Extract property matchers from Matcher
+	var propertyMatchers []oapi.PropertyMatcher
+	if propertiesMatcher, err := relationshipRule.Matcher.AsPropertiesMatcher(); err == nil {
+		propertyMatchers = propertiesMatcher.Properties
 	}
 
 	if len(propertyMatchers) > 0 {
