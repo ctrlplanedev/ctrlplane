@@ -37,7 +37,7 @@ func RunConsumer(ctx context.Context) error {
 		log.Error("Failed to create consumer", "error", err)
 		return err
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	err = c.SubscribeTopics([]string{Topic}, nil)
 
@@ -74,6 +74,9 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		c.CommitMessage(msg)
+		if _, err := c.CommitMessage(msg); err != nil {
+			log.Error("Failed to commit message", "error", err)
+			continue
+		}
 	}
 }
