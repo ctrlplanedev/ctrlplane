@@ -13,13 +13,19 @@ func loadWorkspaceWithInitialState(ctx context.Context, ws *workspace.Workspace)
 	}
 
 	for _, system := range initialWorkspaceState.Systems() {
-		ws.Store().Systems.Upsert(ctx, system)
+		if err := ws.Store().Systems.Upsert(ctx, system); err != nil {
+			return err
+		}
 	}
 	for _, resource := range initialWorkspaceState.Resources() {
-		ws.Store().Resources.Upsert(ctx, resource)
+		if _, err := ws.Store().Resources.Upsert(ctx, resource); err != nil {
+			return err
+		}
 	}
 	for _, deployment := range initialWorkspaceState.Deployments() {
-		ws.Store().Deployments.Upsert(ctx, deployment)
+		if err := ws.Store().Deployments.Upsert(ctx, deployment); err != nil {
+			return err
+		}
 	}
 	for _, deploymentVersion := range initialWorkspaceState.DeploymentVersions() {
 		ws.Store().DeploymentVersions.Upsert(ctx, deploymentVersion.Id, deploymentVersion)
@@ -28,16 +34,22 @@ func loadWorkspaceWithInitialState(ctx context.Context, ws *workspace.Workspace)
 		ws.Store().DeploymentVariables.Upsert(ctx, deploymentVariable.Id, deploymentVariable)
 	}
 	for _, environment := range initialWorkspaceState.Environments() {
-		ws.Store().Environments.Upsert(ctx, environment)
+		if err := ws.Store().Environments.Upsert(ctx, environment); err != nil {
+			return err
+		}
 	}
 	for _, policy := range initialWorkspaceState.Policies() {
-		ws.Store().Policies.Upsert(ctx, policy)
+		if err := ws.Store().Policies.Upsert(ctx, policy); err != nil {
+			return err
+		}
 	}
 	for _, jobAgent := range initialWorkspaceState.JobAgents() {
 		ws.Store().JobAgents.Upsert(ctx, jobAgent)
 	}
 	for _, relationship := range initialWorkspaceState.Relationships() {
-		ws.Store().Relationships.Upsert(ctx, relationship)
+		if err := ws.Store().Relationships.Upsert(ctx, relationship); err != nil {
+			return err
+		}
 	}
 
 	return nil
