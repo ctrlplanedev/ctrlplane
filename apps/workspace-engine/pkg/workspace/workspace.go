@@ -2,13 +2,9 @@ package workspace
 
 import (
 	"encoding/gob"
-	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/charmbracelet/log"
 )
 
 var _ gob.GobEncoder = (*Workspace)(nil)
@@ -17,15 +13,10 @@ var _ gob.GobDecoder = (*Workspace)(nil)
 func New(id string) *Workspace {
 	s := store.New()
 	rm := releasemanager.New(s)
-	cc, err := db.NewDBChangesetConsumer()
-	if err != nil {
-		log.Fatal("Failed to create changeset consumer", "error", err)
-	}
 	ws := &Workspace{
-		ID:                id,
-		store:             s,
-		releasemanager:    rm,
-		changesetConsumer: cc,
+		ID:             id,
+		store:          s,
+		releasemanager: rm,
 	}
 	return ws
 }
@@ -33,9 +24,8 @@ func New(id string) *Workspace {
 type Workspace struct {
 	ID string
 
-	store             *store.Store
-	releasemanager    *releasemanager.Manager
-	changesetConsumer *changeset.ChangesetConsumer
+	store          *store.Store
+	releasemanager *releasemanager.Manager
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -129,10 +119,6 @@ func (w *Workspace) DeploymentVariables() *store.DeploymentVariables {
 
 func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
-}
-
-func (w *Workspace) ChangesetConsumer() changeset.ChangesetConsumer {
-	return w.changesetConsumer
 }
 
 var workspaces = cmap.New[*Workspace]()

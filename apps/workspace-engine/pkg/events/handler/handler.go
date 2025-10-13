@@ -182,20 +182,19 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
 	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
 
-	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
+	changesetConsumer, err := db.NewDBChangesetConsumer()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create changeset consumer")
+		log.Error("Failed to create changeset consumer", "error", err)
+		return fmt.Errorf("failed to create changeset consumer: %w", err)
+	}
+
+	if err := changesetConsumer.FlushChangeset(ctx, changeSet); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to flush changeset")
 		log.Error("Failed to flush changeset", "error", err)
 		return fmt.Errorf("failed to flush changeset: %w", err)
-	}
-
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "handler failed")
-		log.Error("Handler failed to process event",
-			"eventType", rawEvent.EventType,
-			"error", err)
-		return fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")

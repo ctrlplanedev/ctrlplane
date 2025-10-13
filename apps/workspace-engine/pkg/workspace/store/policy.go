@@ -3,10 +3,10 @@ package store
 import (
 	"context"
 	"fmt"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
