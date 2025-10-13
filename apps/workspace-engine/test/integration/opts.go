@@ -657,8 +657,15 @@ func WithPropertyMatcher(options ...PropertyMatcherOption) RelationshipRuleOptio
 			option(ws, pm)
 		}
 
+		// Get existing properties matchers and append the new one
+		existingMatcher, err := rr.Matcher.AsPropertiesMatcher()
+		var existingProperties []oapi.PropertyMatcher
+		if err == nil {
+			existingProperties = existingMatcher.Properties
+		}
+
 		rr.Matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
-			Properties: []oapi.PropertyMatcher{*pm},
+			Properties: append(existingProperties, *pm),
 		})
 	}
 }
