@@ -13,14 +13,19 @@ import (
 )
 
 func NewMemSQL[T any](tableBuilder *TableBuilder) *MemSQL[T] {
-	db, _ := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		panic(fmt.Sprintf("failed to open database: %v", err))
+	}
 	db.SetMaxOpenConns(1)
-	db.Exec(tableBuilder.Build())
+	if _, err := db.Exec(tableBuilder.Build()); err != nil {
+		panic(fmt.Sprintf("failed to create table: %v", err))
+	}
 
 	// Check if table exists; if not, create it
 	var tableName = tableBuilder.tableName
 	var exists int
-	err := db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?", tableName).Scan(&exists)
+	err = db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?", tableName).Scan(&exists)
 	if err != nil {
 		panic(fmt.Sprintf("failed to check if table %s exists: %v", tableName, err))
 	}
@@ -55,7 +60,10 @@ func (m *MemSQL[T]) Query(query string, args ...any) ([]T, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		// Explicitly ignore Close error - this is cleanup, main error takes precedence
+		_ = rows.Close()
+	}()
 
 	return m.parseRows(rows)
 }
@@ -391,7 +399,11 @@ func (m *MemSQL[T]) InsertMany(items []T) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		// Explicitly ignore Rollback error - if Commit succeeds, Rollback will error (expected)
+		// If function errors before Commit, Rollback cleans up (error already being returned)
+		_ = tx.Rollback()
+	}()
 
 	// Get column names from the first item
 	typ := reflect.TypeOf(items[0])
@@ -478,7 +490,10 @@ func (m *MemSQL[T]) InsertMany(items []T) error {
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer stmt.Close()
+	defer func() {
+		// Explicitly ignore Close error - this is cleanup
+		_ = stmt.Close()
+	}()
 
 	// Insert each item
 	for _, item := range items {

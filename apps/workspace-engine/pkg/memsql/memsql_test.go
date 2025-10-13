@@ -77,12 +77,14 @@ func TestMemSQL_Query_WithWhere(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO users (id, name, email, age) VALUES 
 		('1', 'Alice', 'alice@example.com', 30),
 		('2', 'Bob', 'bob@example.com', 25),
 		('3', 'Charlie', 'charlie@example.com', 35)
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query with WHERE clause
 	users, err := memSQL.Query("SELECT * FROM users WHERE age > ? ORDER BY id", 26)
@@ -110,11 +112,13 @@ func TestMemSQL_Query_WithJSONTags(t *testing.T) {
 	memSQL := NewMemSQL[Product](tableBuilder)
 
 	// Insert test data
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO products (id, name, price, category) VALUES 
 		('p1', 'Laptop', 999.99, 'Electronics'),
 		('p2', 'Mouse', 29.99, 'Electronics')
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query products
 	products, err := memSQL.Query("SELECT * FROM products ORDER BY id")
@@ -167,10 +171,12 @@ func TestMemSQL_QueryOne_Success(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO users (id, name, email, age) VALUES 
 		('1', 'Alice', 'alice@example.com', 30)
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query single user
 	user, err := memSQL.QueryOne("SELECT * FROM users WHERE id = ?", "1")
@@ -211,11 +217,13 @@ func TestMemSQL_QueryOne_MultipleRows(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert multiple users
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO users (id, name, email, age) VALUES 
 		('1', 'Alice', 'alice@example.com', 30),
 		('2', 'Bob', 'bob@example.com', 25)
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query without WHERE clause (will return multiple rows)
 	_, err := memSQL.QueryOne("SELECT * FROM users")
@@ -235,10 +243,12 @@ func TestMemSQL_Query_SelectSpecificColumns(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO users (id, name, email, age) VALUES 
 		('1', 'Alice', 'alice@example.com', 30)
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query only specific columns
 	users, err := memSQL.Query("SELECT id, name FROM users")
@@ -272,11 +282,13 @@ func TestMemSQL_Query_ComplexStruct(t *testing.T) {
 	memSQL := NewMemSQL[Order](tableBuilder)
 
 	// Insert test data
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO orders (order_id, user_id, total_price, quantity) VALUES 
 		('o1', 'u1', 99.99, 2),
 		('o2', 'u2', 149.99, 3)
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query orders
 	orders, err := memSQL.Query("SELECT * FROM orders ORDER BY order_id")
@@ -308,10 +320,12 @@ func TestMemSQL_Query_CaseInsensitiveMatching(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data with uppercase column names
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO users (ID, NAME, EMAIL, AGE) VALUES 
 		('1', 'Alice', 'alice@example.com', 30)
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query should still work despite case differences
 	users, err := memSQL.Query("SELECT * FROM users")
@@ -344,10 +358,12 @@ func TestMemSQL_Query_JSONTagsWithOmitempty(t *testing.T) {
 	memSQL := NewMemSQL[UserWithTags](tableBuilder)
 
 	// Insert test data
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO users (user_id, full_name, email_address) VALUES 
 		('u1', 'Alice Smith', 'alice@example.com')
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query should correctly map json tags (ignoring omitempty)
 	users, err := memSQL.Query("SELECT * FROM users")
