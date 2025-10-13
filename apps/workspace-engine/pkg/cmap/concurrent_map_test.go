@@ -12,6 +12,11 @@ type Animal struct {
 	name string
 }
 
+// SerializableAnimal is like Animal but with an exported field for JSON serialization
+type SerializableAnimal struct {
+	Name string `json:"name"`
+}
+
 func TestMapCreation(t *testing.T) {
 	m := New[string]()
 	if m.shards == nil {
@@ -639,5 +644,244 @@ func TestUnDrainedIterBuffered(t *testing.T) {
 
 	if counter != 200 {
 		t.Error("We should have counted 200 elements.")
+	}
+}
+
+func TestGobEncode(t *testing.T) {
+	m := New[SerializableAnimal]()
+	elephant := SerializableAnimal{"elephant"}
+	monkey := SerializableAnimal{"monkey"}
+	dolphin := SerializableAnimal{"dolphin"}
+
+	m.Set("elephant", elephant)
+	m.Set("monkey", monkey)
+	m.Set("dolphin", dolphin)
+
+	// Encode the map
+	encoded, err := m.GobEncode()
+	if err != nil {
+		t.Errorf("GobEncode failed: %v", err)
+	}
+
+	if len(encoded) == 0 {
+		t.Error("Encoded data should not be empty")
+	}
+
+	// Verify it's valid JSON
+	var decoded map[string]SerializableAnimal
+	err = json.Unmarshal(encoded, &decoded)
+	if err != nil {
+		t.Errorf("Encoded data is not valid JSON: %v", err)
+	}
+
+	// Verify all elements are present
+	if len(decoded) != 3 {
+		t.Errorf("Expected 3 elements in decoded map, got %d", len(decoded))
+	}
+
+	if decoded["elephant"] != elephant {
+		t.Error("Elephant not encoded correctly")
+	}
+	if decoded["monkey"] != monkey {
+		t.Error("Monkey not encoded correctly")
+	}
+	if decoded["dolphin"] != dolphin {
+		t.Error("Dolphin not encoded correctly")
+	}
+}
+
+func TestGobDecode(t *testing.T) {
+	// Create JSON data to decode
+	data := map[string]SerializableAnimal{
+		"elephant": {"elephant"},
+		"monkey":   {"monkey"},
+		"dolphin":  {"dolphin"},
+	}
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("Failed to create test data: %v", err)
+	}
+
+	// Decode into a new map
+	m := New[SerializableAnimal]()
+	err = m.GobDecode(encoded)
+	if err != nil {
+		t.Errorf("GobDecode failed: %v", err)
+	}
+
+	// Verify all elements are present
+	if m.Count() != 3 {
+		t.Errorf("Expected 3 elements in decoded map, got %d", m.Count())
+	}
+
+	elephant, ok := m.Get("elephant")
+	if !ok || elephant.Name != "elephant" {
+		t.Error("Elephant not decoded correctly")
+	}
+
+	monkey, ok := m.Get("monkey")
+	if !ok || monkey.Name != "monkey" {
+		t.Error("Monkey not decoded correctly")
+	}
+
+	dolphin, ok := m.Get("dolphin")
+	if !ok || dolphin.Name != "dolphin" {
+		t.Error("Dolphin not decoded correctly")
+	}
+}
+
+func TestGobEncodeDecodeRoundTrip(t *testing.T) {
+	// Create a map with data
+	m1 := New[SerializableAnimal]()
+	for i := 0; i < 50; i++ {
+		m1.Set(strconv.Itoa(i), SerializableAnimal{strconv.Itoa(i)})
+	}
+
+	// Encode
+	encoded, err := m1.GobEncode()
+	if err != nil {
+		t.Fatalf("GobEncode failed: %v", err)
+	}
+
+	// Decode into a new map
+	m2 := New[SerializableAnimal]()
+	err = m2.GobDecode(encoded)
+	if err != nil {
+		t.Fatalf("GobDecode failed: %v", err)
+	}
+
+	// Verify counts match
+	if m1.Count() != m2.Count() {
+		t.Errorf("Count mismatch: original %d, decoded %d", m1.Count(), m2.Count())
+	}
+
+	// Verify all elements match
+	for i := 0; i < 50; i++ {
+		key := strconv.Itoa(i)
+		val1, ok1 := m1.Get(key)
+		val2, ok2 := m2.Get(key)
+
+		if ok1 != ok2 {
+			t.Errorf("Existence mismatch for key %s", key)
+		}
+		if val1 != val2 {
+			t.Errorf("Value mismatch for key %s: original %v, decoded %v", key, val1, val2)
+		}
+	}
+}
+
+func TestGobDecodeIntoUninitializedMap(t *testing.T) {
+	// Create test data
+	data := map[string]SerializableAnimal{
+		"elephant": {"elephant"},
+		"monkey":   {"monkey"},
+	}
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("Failed to create test data: %v", err)
+	}
+
+	// Decode into an uninitialized map (no shards)
+	var m ConcurrentMap[string, SerializableAnimal]
+	err = m.GobDecode(encoded)
+	if err != nil {
+		t.Errorf("GobDecode into uninitialized map failed: %v", err)
+	}
+
+	// Verify the map was properly initialized and populated
+	if m.Count() != 2 {
+		t.Errorf("Expected 2 elements, got %d", m.Count())
+	}
+
+	elephant, ok := m.Get("elephant")
+	if !ok || elephant.Name != "elephant" {
+		t.Error("Elephant not decoded correctly")
+	}
+
+	monkey, ok := m.Get("monkey")
+	if !ok || monkey.Name != "monkey" {
+		t.Error("Monkey not decoded correctly")
+	}
+}
+
+func TestGobEncodeEmptyMap(t *testing.T) {
+	m := New[SerializableAnimal]()
+
+	// Encode empty map
+	encoded, err := m.GobEncode()
+	if err != nil {
+		t.Errorf("GobEncode of empty map failed: %v", err)
+	}
+
+	// Should produce valid JSON for empty map
+	var decoded map[string]SerializableAnimal
+	err = json.Unmarshal(encoded, &decoded)
+	if err != nil {
+		t.Errorf("Encoded empty map is not valid JSON: %v", err)
+	}
+
+	if len(decoded) != 0 {
+		t.Errorf("Expected empty map, got %d elements", len(decoded))
+	}
+}
+
+func TestGobDecodeEmptyData(t *testing.T) {
+	// Empty JSON object
+	encoded := []byte("{}")
+
+	m := New[SerializableAnimal]()
+	err := m.GobDecode(encoded)
+	if err != nil {
+		t.Errorf("GobDecode of empty data failed: %v", err)
+	}
+
+	if m.Count() != 0 {
+		t.Errorf("Expected empty map, got %d elements", m.Count())
+	}
+}
+
+func TestGobDecodeInvalidData(t *testing.T) {
+	// Invalid JSON
+	encoded := []byte("invalid json")
+
+	m := New[SerializableAnimal]()
+	err := m.GobDecode(encoded)
+	if err == nil {
+		t.Error("GobDecode should fail with invalid JSON data")
+	}
+}
+
+func TestGobEncodeDecodeWithIntegers(t *testing.T) {
+	// Test with integer values
+	m1 := New[int]()
+	m1.Set("one", 1)
+	m1.Set("two", 2)
+	m1.Set("three", 3)
+
+	encoded, err := m1.GobEncode()
+	if err != nil {
+		t.Fatalf("GobEncode failed: %v", err)
+	}
+
+	m2 := New[int]()
+	err = m2.GobDecode(encoded)
+	if err != nil {
+		t.Fatalf("GobDecode failed: %v", err)
+	}
+
+	if m1.Count() != m2.Count() {
+		t.Errorf("Count mismatch: original %d, decoded %d", m1.Count(), m2.Count())
+	}
+
+	for _, key := range []string{"one", "two", "three"} {
+		val1, ok1 := m1.Get(key)
+		val2, ok2 := m2.Get(key)
+
+		if !ok1 || !ok2 {
+			t.Errorf("Key %s missing after decode", key)
+		}
+		if val1 != val2 {
+			t.Errorf("Value mismatch for key %s: original %d, decoded %d", key, val1, val2)
+		}
 	}
 }
