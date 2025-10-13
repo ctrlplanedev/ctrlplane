@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/changeset"
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -155,7 +155,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		ws = fullWs
 		changeSet.IsInitialLoad = true
 	}
-	ctx = changeset.WithChangeSet(ctx, changeSet)
 
 	err := handler(ctx, ws, rawEvent)
 
@@ -183,7 +182,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
 	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
 
-	if err := db.FlushChangeset(ctx); err != nil {
+	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to flush changeset")
 		log.Error("Failed to flush changeset", "error", err)

@@ -1,6 +1,7 @@
 package changeset
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -64,4 +65,8 @@ func (cs *ChangeSet) Record(entityType EntityType, changeType ChangeType, id str
 		Entity:     entity,
 		Timestamp:  time.Now(),
 	})
+}
+
+type ChangesetConsumer interface {
+	FlushChangeset(ctx context.Context, changeset *ChangeSet) error
 }

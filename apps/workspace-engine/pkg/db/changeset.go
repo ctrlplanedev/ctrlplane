@@ -3,18 +3,32 @@ package db
 import (
 	"context"
 	"fmt"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/changeset"
 
 	"github.com/jackc/pgx/v5"
 )
 
-func FlushChangeset(ctx context.Context) error {
-	cs, ok := changeset.FromContext(ctx)
-	if !ok {
-		return nil
-	}
+type DbChangesetConsumer struct {
+	db *pgx.Conn
+}
 
+func NewDBChangesetConsumer() (*DbChangesetConsumer, error) {
+	ctx := context.Background()
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &DbChangesetConsumer{
+		db: db.Conn(),
+	}, nil
+}
+
+func (d *DbChangesetConsumer) FlushChangeset(ctx context.Context, cs *changeset.ChangeSet) error {
+	return FlushChangeset(ctx, cs)
+}
+
+func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet) error {
 	cs.Mutex.Lock()
 	defer cs.Mutex.Unlock()
 
