@@ -2,7 +2,9 @@ package workspace
 
 import (
 	"encoding/gob"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -13,10 +15,25 @@ var _ gob.GobDecoder = (*Workspace)(nil)
 func New(id string) *Workspace {
 	s := store.New()
 	rm := releasemanager.New(s)
+	cc := db.NewChangesetConsumer()
 	ws := &Workspace{
-		ID:             id,
-		store:          s,
-		releasemanager: rm,
+		ID:                id,
+		store:             s,
+		releasemanager:    rm,
+		changesetConsumer: cc,
+	}
+	return ws
+}
+
+func NewTestWorkspace(id string) *Workspace {
+	s := store.New()
+	rm := releasemanager.New(s)
+	cc := changeset.NewNoopChangesetConsumer()
+	ws := &Workspace{
+		ID:                id,
+		store:             s,
+		releasemanager:    rm,
+		changesetConsumer: cc,
 	}
 	return ws
 }
@@ -24,8 +41,9 @@ func New(id string) *Workspace {
 type Workspace struct {
 	ID string
 
-	store          *store.Store
-	releasemanager *releasemanager.Manager
+	store             *store.Store
+	releasemanager    *releasemanager.Manager
+	changesetConsumer changeset.ChangesetConsumer
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -121,6 +139,10 @@ func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
 }
 
+func (w *Workspace) ChangesetConsumer() changeset.ChangesetConsumer {
+	return w.changesetConsumer
+}
+
 var workspaces = cmap.New[*Workspace]()
 
 func Exists(id string) bool {
@@ -140,6 +162,15 @@ func GetWorkspace(id string) *Workspace {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
 		workspace = New(id)
+		workspaces.Set(id, workspace)
+	}
+	return workspace
+}
+
+func GetTestWorkspace(id string) *Workspace {
+	workspace, _ := workspaces.Get(id)
+	if workspace == nil {
+		workspace = NewTestWorkspace(id)
 		workspaces.Set(id, workspace)
 	}
 	return workspace

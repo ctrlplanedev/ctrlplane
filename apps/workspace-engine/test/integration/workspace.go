@@ -32,7 +32,7 @@ func NewTestWorkspace(
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
-	ws := workspace.GetWorkspace(workspaceID)
+	ws := workspace.GetTestWorkspace(workspaceID)
 
 	tw := &TestWorkspace{}
 	tw.t = t
