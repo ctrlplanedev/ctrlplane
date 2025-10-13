@@ -82,7 +82,7 @@ func createTestSystem(workspaceID, systemID, name string) *oapi.System {
 }
 
 // setupStoreWithEntities creates a store and adds deployments, environments, and resources
-func setupStoreWithEntities(ctx context.Context, workspaceID string) (*store.Store, string, string, string, string) {
+func setupStoreWithEntities(t *testing.T, ctx context.Context, workspaceID string) (*store.Store, string, string, string, string) {
 	st := store.New()
 
 	systemID := uuid.New().String()
@@ -92,11 +92,15 @@ func setupStoreWithEntities(ctx context.Context, workspaceID string) (*store.Sto
 
 	// Create system
 	sys := createTestSystem(workspaceID, systemID, "test-system")
-	st.Systems.Upsert(ctx, sys)
+	if err := st.Systems.Upsert(ctx, sys); err != nil {
+		t.Fatalf("Failed to upsert system: %v", err)
+	}
 
 	// Create deployment
 	dep := createTestDeployment(systemID, deploymentID, "test-deployment")
-	st.Deployments.Upsert(ctx, dep)
+	if err := st.Deployments.Upsert(ctx, dep); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	// Create environment
 	env := createTestEnvironment(systemID, environmentID, "test-environment")
@@ -108,11 +112,15 @@ func setupStoreWithEntities(ctx context.Context, workspaceID string) (*store.Sto
 		"value":    "",
 	}})
 	env.ResourceSelector = selector
-	st.Environments.Upsert(ctx, env)
+	if err := st.Environments.Upsert(ctx, env); err != nil {
+		t.Fatalf("Failed to upsert environment: %v", err)
+	}
 
 	// Create resource
 	res := createTestResource(workspaceID, resourceID, "test-resource")
-	st.Resources.Upsert(ctx, res)
+	if _, err := st.Resources.Upsert(ctx, res); err != nil {
+		t.Fatalf("Failed to upsert resource: %v", err)
+	}
 
 	return st, systemID, deploymentID, environmentID, resourceID
 }
@@ -130,7 +138,7 @@ func TestNew(t *testing.T) {
 func TestManager_EvaluateVersion_NoPolicies(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	manager := New(st)
 
@@ -153,7 +161,7 @@ func TestManager_EvaluateVersion_NoPolicies(t *testing.T) {
 func TestManager_EvaluateVersion_SinglePolicyAllRulesPass(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Add approvals for the version
 	versionID := uuid.New().String()
@@ -185,7 +193,9 @@ func TestManager_EvaluateVersion_SinglePolicyAllRulesPass(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "approval-policy", []oapi.PolicyRule{rule}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -207,7 +217,7 @@ func TestManager_EvaluateVersion_SinglePolicyAllRulesPass(t *testing.T) {
 func TestManager_EvaluateVersion_SinglePolicyRuleDenied(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// No approvals added - rule will be denied
 	versionID := uuid.New().String()
@@ -229,7 +239,9 @@ func TestManager_EvaluateVersion_SinglePolicyRuleDenied(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "approval-policy", []oapi.PolicyRule{rule}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -252,7 +264,7 @@ func TestManager_EvaluateVersion_SinglePolicyRuleDenied(t *testing.T) {
 func TestManager_EvaluateVersion_MultiplePolicies(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	versionID := uuid.New().String()
 
@@ -277,7 +289,9 @@ func TestManager_EvaluateVersion_MultiplePolicies(t *testing.T) {
 	}})
 	selector1.DeploymentSelector = depSelector1
 	policy1 := createTestPolicy(workspaceID, policyID1, "policy-1", []oapi.PolicyRule{rule1}, []oapi.PolicyTargetSelector{selector1})
-	st.Policies.Upsert(ctx, policy1)
+	if err := st.Policies.Upsert(ctx, policy1); err != nil {
+		t.Fatalf("Failed to upsert policy1: %v", err)
+	}
 
 	// Create second policy requiring 3 approvals
 	policyID2 := uuid.New().String()
@@ -293,7 +307,9 @@ func TestManager_EvaluateVersion_MultiplePolicies(t *testing.T) {
 	}})
 	selector2.DeploymentSelector = depSelector2
 	policy2 := createTestPolicy(workspaceID, policyID2, "policy-2", []oapi.PolicyRule{rule2}, []oapi.PolicyTargetSelector{selector2})
-	st.Policies.Upsert(ctx, policy2)
+	if err := st.Policies.Upsert(ctx, policy2); err != nil {
+		t.Fatalf("Failed to upsert policy2: %v", err)
+	}
 
 	manager := New(st)
 
@@ -317,7 +333,7 @@ func TestManager_EvaluateVersion_MultiplePolicies(t *testing.T) {
 func TestManager_EvaluateVersion_ShortCircuitOnDenial(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	versionID := uuid.New().String()
 
@@ -335,7 +351,9 @@ func TestManager_EvaluateVersion_ShortCircuitOnDenial(t *testing.T) {
 	}})
 	selector1.DeploymentSelector = depSelector1
 	policy1 := createTestPolicy(workspaceID, policyID1, "policy-1-deny", []oapi.PolicyRule{rule1}, []oapi.PolicyTargetSelector{selector1})
-	st.Policies.Upsert(ctx, policy1)
+	if err := st.Policies.Upsert(ctx, policy1); err != nil {
+		t.Fatalf("Failed to upsert policy1: %v", err)
+	}
 
 	// Create second policy (should not be evaluated due to short-circuit)
 	policyID2 := uuid.New().String()
@@ -351,7 +369,9 @@ func TestManager_EvaluateVersion_ShortCircuitOnDenial(t *testing.T) {
 	}})
 	selector2.DeploymentSelector = depSelector2
 	policy2 := createTestPolicy(workspaceID, policyID2, "policy-2", []oapi.PolicyRule{rule2}, []oapi.PolicyTargetSelector{selector2})
-	st.Policies.Upsert(ctx, policy2)
+	if err := st.Policies.Upsert(ctx, policy2); err != nil {
+		t.Fatalf("Failed to upsert policy2: %v", err)
+	}
 
 	manager := New(st)
 
@@ -372,7 +392,7 @@ func TestManager_EvaluateVersion_ShortCircuitOnDenial(t *testing.T) {
 func TestManager_EvaluateVersion_PolicyWithMultipleRules(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	versionID := uuid.New().String()
 
@@ -402,7 +422,9 @@ func TestManager_EvaluateVersion_PolicyWithMultipleRules(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "multi-rule-policy", []oapi.PolicyRule{rule1, rule2}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -424,7 +446,7 @@ func TestManager_EvaluateVersion_PolicyWithMultipleRules(t *testing.T) {
 func TestManager_EvaluateVersion_PolicyWithMultipleRulesOneFails(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	versionID := uuid.New().String()
 
@@ -454,7 +476,9 @@ func TestManager_EvaluateVersion_PolicyWithMultipleRulesOneFails(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "multi-rule-policy", []oapi.PolicyRule{rule1, rule2}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -514,7 +538,7 @@ func TestManager_getVersionRuleEvaluator_UnknownRuleType(t *testing.T) {
 func TestManager_EvaluateVersion_UnknownRuleTypeError(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Create policy with unknown rule type (all fields nil)
 	policyID := uuid.New().String()
@@ -529,15 +553,19 @@ func TestManager_EvaluateVersion_UnknownRuleTypeError(t *testing.T) {
 		Id: uuid.New().String(),
 	}
 	depSelector := &oapi.Selector{}
-	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
+	if err := depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
 		"operator": "equals",
 		"value":    "test-deployment",
-	}})
+	}}); err != nil {
+		t.Fatalf("Failed to create deployment selector: %v", err)
+	}
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "unknown-rule-policy", []oapi.PolicyRule{unknownRule}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -556,7 +584,7 @@ func TestManager_EvaluateVersion_UnknownRuleTypeError(t *testing.T) {
 func TestManager_EvaluateVersion_MultipleRulesErrorOnSecondRule(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	versionID := uuid.New().String()
 
@@ -589,7 +617,9 @@ func TestManager_EvaluateVersion_MultipleRulesErrorOnSecondRule(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "mixed-rules-policy", []oapi.PolicyRule{validRule, invalidRule}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -608,7 +638,7 @@ func TestManager_EvaluateVersion_MultipleRulesErrorOnSecondRule(t *testing.T) {
 func TestManager_EvaluateVersion_ErrorInFirstPolicySkipsRest(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Create first policy with unknown rule type (will error)
 	policyID1 := uuid.New().String()
@@ -631,7 +661,9 @@ func TestManager_EvaluateVersion_ErrorInFirstPolicySkipsRest(t *testing.T) {
 	selector1.DeploymentSelector = depSelector1
 
 	policy1 := createTestPolicy(workspaceID, policyID1, "error-policy", []oapi.PolicyRule{invalidRule}, []oapi.PolicyTargetSelector{selector1})
-	st.Policies.Upsert(ctx, policy1)
+	if err := st.Policies.Upsert(ctx, policy1); err != nil {
+		t.Fatalf("Failed to upsert policy1: %v", err)
+	}
 
 	// Create second policy (should not be evaluated due to error in first)
 	policyID2 := uuid.New().String()
@@ -649,7 +681,9 @@ func TestManager_EvaluateVersion_ErrorInFirstPolicySkipsRest(t *testing.T) {
 	selector2.DeploymentSelector = depSelector2
 
 	policy2 := createTestPolicy(workspaceID, policyID2, "valid-policy", []oapi.PolicyRule{validRule}, []oapi.PolicyTargetSelector{selector2})
-	st.Policies.Upsert(ctx, policy2)
+	if err := st.Policies.Upsert(ctx, policy2); err != nil {
+		t.Fatalf("Failed to upsert policy2: %v", err)
+	}
 
 	manager := New(st)
 
@@ -667,7 +701,7 @@ func TestManager_EvaluateVersion_ErrorInFirstPolicySkipsRest(t *testing.T) {
 func TestManager_EvaluateVersion_EvaluatedAtTimestamp(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	manager := New(st)
 
@@ -690,7 +724,7 @@ func TestManager_EvaluateVersion_EvaluatedAtTimestamp(t *testing.T) {
 func TestManager_EvaluateVersion_PreAllocatesSlices(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Create multiple policies
 	for i := 0; i < 5; i++ {
@@ -709,7 +743,9 @@ func TestManager_EvaluateVersion_PreAllocatesSlices(t *testing.T) {
 		selector.DeploymentSelector = depSelector
 
 		policy := createTestPolicy(workspaceID, policyID, "policy-"+uuid.New().String(), []oapi.PolicyRule{rule}, []oapi.PolicyTargetSelector{selector})
-		st.Policies.Upsert(ctx, policy)
+		if err := st.Policies.Upsert(ctx, policy); err != nil {
+			t.Fatalf("Failed to upsert policy: %v", err)
+		}
 	}
 
 	manager := New(st)
@@ -730,7 +766,7 @@ func TestManager_EvaluateVersion_PreAllocatesSlices(t *testing.T) {
 func TestManager_EvaluateVersion_EmptyVersionID(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Create policy with approval rule
 	policyID := uuid.New().String()
@@ -748,7 +784,9 @@ func TestManager_EvaluateVersion_EmptyVersionID(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "approval-policy", []oapi.PolicyRule{rule}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -768,7 +806,7 @@ func TestManager_EvaluateVersion_EmptyVersionID(t *testing.T) {
 func TestManager_EvaluateVersion_PolicyResultsInitialized(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	manager := New(st)
 
@@ -788,7 +826,7 @@ func TestManager_EvaluateVersion_PolicyResultsInitialized(t *testing.T) {
 func TestManager_EvaluateVersion_PolicySelectorNotMatching(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Create policy with selector that doesn't match
 	policyID := uuid.New().String()
@@ -806,7 +844,9 @@ func TestManager_EvaluateVersion_PolicySelectorNotMatching(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "non-matching-policy", []oapi.PolicyRule{rule}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -861,14 +901,14 @@ func TestManager_EvaluateVersion_NilReleaseTarget(t *testing.T) {
 	// Current implementation panics on nil release target (expected behavior)
 	// This test documents that nil inputs are not supported
 	assert.Panics(t, func() {
-		manager.EvaluateVersion(ctx, version, nil)
+		_, _ = manager.EvaluateVersion(ctx, version, nil)
 	})
 }
 
 func TestManager_EvaluateVersion_NilVersion(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	manager := New(st)
 	releaseTarget := createTestReleaseTarget(deploymentID, environmentID, resourceID)
@@ -876,14 +916,14 @@ func TestManager_EvaluateVersion_NilVersion(t *testing.T) {
 	// Current implementation panics on nil version (expected behavior)
 	// This test documents that nil inputs are not supported
 	assert.Panics(t, func() {
-		manager.EvaluateVersion(ctx, nil, releaseTarget)
+		_, _ = manager.EvaluateVersion(ctx, nil, releaseTarget)
 	})
 }
 
 func TestManager_EvaluateVersion_PolicyWithNoRules(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Create policy with no rules
 	policyID := uuid.New().String()
@@ -899,7 +939,9 @@ func TestManager_EvaluateVersion_PolicyWithNoRules(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "no-rules-policy", []oapi.PolicyRule{}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 
@@ -923,7 +965,7 @@ func TestManager_EvaluateVersion_ContextCancellation(t *testing.T) {
 	cancel() // Cancel immediately
 
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(context.Background(), workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, context.Background(), workspaceID)
 
 	manager := New(st)
 
@@ -940,7 +982,7 @@ func TestManager_EvaluateVersion_ContextCancellation(t *testing.T) {
 func TestManager_EvaluateVersion_ConcurrentEvaluations(t *testing.T) {
 	ctx := context.Background()
 	workspaceID := uuid.New().String()
-	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(ctx, workspaceID)
+	st, _, deploymentID, environmentID, resourceID := setupStoreWithEntities(t, ctx, workspaceID)
 
 	// Create a policy
 	policyID := uuid.New().String()
@@ -958,7 +1000,9 @@ func TestManager_EvaluateVersion_ConcurrentEvaluations(t *testing.T) {
 	selector.DeploymentSelector = depSelector
 
 	policy := createTestPolicy(workspaceID, policyID, "concurrent-policy", []oapi.PolicyRule{rule}, []oapi.PolicyTargetSelector{selector})
-	st.Policies.Upsert(ctx, policy)
+	if err := st.Policies.Upsert(ctx, policy); err != nil {
+		t.Fatalf("Failed to upsert policy: %v", err)
+	}
 
 	manager := New(st)
 

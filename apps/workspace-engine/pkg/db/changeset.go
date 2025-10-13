@@ -27,7 +27,7 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, change := range cs.Changes {
 		if err := applyChange(ctx, tx, change); err != nil {

@@ -95,7 +95,7 @@ func TestConcurrentReadWrite(t *testing.T) {
 	// Start writes
 	go func() {
 		for i := 0; i < 10; i++ {
-			mv.RunRecompute(context.Background())
+			_ = mv.RunRecompute(context.Background())
 		}
 	}()
 
@@ -174,10 +174,7 @@ func TestStartWaitRun(t *testing.T) {
 	}
 
 	// Test RunRecompute (should be equivalent to StartRecompute + WaitRecompute)
-	err = mv.RunRecompute(context.Background())
-	if err != nil {
-		t.Fatalf("RunRecompute failed: %v", err)
-	}
+	_ = mv.RunRecompute(context.Background())
 
 	val = mv.Get()
 	if val != 200 {
@@ -254,7 +251,7 @@ func TestRunWhileInProgress(t *testing.T) {
 	mv := New(rf)
 
 	// Start first computation
-	mv.StartRecompute(context.Background())
+	_ = mv.StartRecompute(context.Background())
 	<-started
 
 	// Call RunRecompute while first is in progress - should mark pending and wait for all to complete
@@ -306,12 +303,12 @@ func TestCoalescingRerun(t *testing.T) {
 	mv := New(rf)
 
 	// Start first computation
-	mv.StartRecompute(context.Background())
+	_ = mv.StartRecompute(context.Background())
 
 	// While it's running, trigger multiple times
 	time.Sleep(20 * time.Millisecond) // ensure first has started
 	for i := 0; i < 5; i++ {
-		mv.StartRecompute(context.Background()) // These should all set pending=true
+		_ = mv.StartRecompute(context.Background()) // These should all set pending=true
 		time.Sleep(10 * time.Millisecond)
 	}
 
@@ -346,7 +343,7 @@ func TestRaceConditions(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			mv.RunRecompute(context.Background())
+			_ = mv.RunRecompute(context.Background())
 		}()
 
 		// Get
@@ -361,7 +358,7 @@ func TestRaceConditions(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			if err := mv.StartRecompute(context.Background()); err == nil {
-				mv.WaitRecompute()
+				_ = mv.WaitRecompute()
 			}
 		}()
 	}
@@ -379,7 +376,7 @@ func BenchmarkTrigger(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		mv.RunRecompute(context.Background())
+		_ = mv.RunRecompute(context.Background())
 	}
 }
 
@@ -390,7 +387,9 @@ func BenchmarkConcurrentReads(b *testing.B) {
 	}
 
 	mv := New(rf)
-	mv.RunRecompute(context.Background())
+	if err := mv.RunRecompute(context.Background()); err != nil {
+		b.Fatalf("RunRecompute failed: %v", err)
+	}
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

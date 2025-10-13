@@ -63,7 +63,9 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 
 	// Create failed job with completion time
 	completedAt := time.Now()
-	st.Releases.Upsert(ctx, previousRelease)
+	if err := st.Releases.Upsert(ctx, previousRelease); err != nil {
+		t.Fatalf("Failed to upsert previous release: %v", err)
+	}
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   previousRelease.ID(),
@@ -116,7 +118,9 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 
 	// Create successful job with completion time
 	completedAt := time.Now()
-	st.Releases.Upsert(ctx, deployedRelease)
+	if err := st.Releases.Upsert(ctx, deployedRelease); err != nil {
+		t.Fatalf("Failed to upsert deployed release: %v", err)
+	}
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   deployedRelease.ID(),
@@ -173,7 +177,9 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 	}
 
 	completedAt := time.Now().Add(-1 * time.Hour)
-	st.Releases.Upsert(ctx, v1Release)
+	if err := st.Releases.Upsert(ctx, v1Release); err != nil {
+		t.Fatalf("Failed to upsert v1 release: %v", err)
+	}
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-v1",
 		ReleaseId:   v1Release.ID(),
@@ -190,7 +196,9 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 			Tag: "v2.0.0",
 		},
 	}
-	st.Releases.Upsert(ctx, v2Release)
+	if err := st.Releases.Upsert(ctx, v2Release); err != nil {
+		t.Fatalf("Failed to upsert v2 release: %v", err)
+	}
 
 	evaluator := NewSkipDeployedEvaluator(st)
 
@@ -231,7 +239,9 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	}
 
 	// Create in-progress job
-	st.Releases.Upsert(ctx, release)
+	if err := st.Releases.Upsert(ctx, release); err != nil {
+		t.Fatalf("Failed to upsert release: %v", err)
+	}
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release.ID(),
@@ -283,7 +293,9 @@ func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 
 	// Create cancelled job with completion time
 	completedAt := time.Now()
-	st.Releases.Upsert(ctx, release)
+	if err := st.Releases.Upsert(ctx, release); err != nil {
+		t.Fatalf("Failed to upsert release: %v", err)
+	}
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
@@ -327,7 +339,9 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	}
 
 	replicas := oapi.LiteralValue{}
-	replicas.FromIntegerValue(3)
+	if err := replicas.FromIntegerValue(3); err != nil {
+		t.Fatalf("Failed to create replicas: %v", err)
+	}
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
@@ -341,7 +355,9 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	}
 
 	completedAt := time.Now()
-	st.Releases.Upsert(ctx, release1)
+	if err := st.Releases.Upsert(ctx, release1); err != nil {
+		t.Fatalf("Failed to upsert release1: %v", err)
+	}
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release1.ID(),
@@ -352,7 +368,9 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 
 	// Deploy same version with different variables: {replicas: 5}
 	replicas2 := oapi.LiteralValue{}
-	replicas2.FromIntegerValue(5)
+	if err := replicas2.FromIntegerValue(5); err != nil {
+		t.Fatalf("Failed to create replicas2: %v", err)
+	}
 
 	release2 := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
@@ -364,7 +382,9 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 			"replicas": replicas2, // Different value!
 		},
 	}
-	st.Releases.Upsert(ctx, release2)
+	if err := st.Releases.Upsert(ctx, release2); err != nil {
+		t.Fatalf("Failed to upsert release2: %v", err)
+	}
 
 	evaluator := NewSkipDeployedEvaluator(st)
 

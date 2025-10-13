@@ -25,7 +25,9 @@ func conditionToSelector(t *testing.T, condition unknown.UnknownCondition) *oapi
 	}
 
 	v := &oapi.Selector{}
-	v.FromJsonSelector(oapi.JsonSelector{Json: conditionMap})
+	if err := v.FromJsonSelector(oapi.JsonSelector{Json: conditionMap}); err != nil {
+		t.Fatalf("Failed to create JSON selector: %v", err)
+	}
 	return v
 }
 

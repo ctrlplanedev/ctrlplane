@@ -245,9 +245,11 @@ func convertDbRelationshipRuleToOapiRelationshipRule(dbRelationship *dbRelations
 	name := getName(dbRelationship)
 
 	matcher := &oapi.RelationshipRule_Matcher{}
-	matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+	if err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 		Properties: propertyMatchers,
-	})
+	}); err != nil {
+		return nil, err
+	}
 	return &oapi.RelationshipRule{
 		Id:               dbRelationship.ID,
 		Name:             name,

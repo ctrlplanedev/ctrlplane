@@ -1177,7 +1177,9 @@ func TestMemSQL_CRUD_Integration(t *testing.T) {
 	}
 
 	// Update (via delete and re-insert)
-	memSQL.DeleteOne("ID = ?", "2")
+	if err := memSQL.DeleteOne("ID = ?", "2"); err != nil {
+		t.Fatalf("DeleteOne failed: %v", err)
+	}
 	if err := memSQL.Insert(User{ID: "2", Name: "Bob Updated", Email: "bob.new@example.com", Age: 26}); err != nil {
 		t.Fatalf("Insert failed: %v", err)
 	}
@@ -1558,7 +1560,9 @@ func TestMemSQL_StructPB_Update(t *testing.T) {
 		Name:   "Test Agent",
 		Config: config1,
 	}
-	memSQL.Insert(agent)
+	if err := memSQL.Insert(agent); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	// Update with new config (delete and re-insert)
 	config2, _ := structpb.NewStruct(map[string]interface{}{
@@ -1567,9 +1571,13 @@ func TestMemSQL_StructPB_Update(t *testing.T) {
 		"newField": "value",
 	})
 
-	memSQL.DeleteOne("id = ?", "agent1")
+	if err := memSQL.DeleteOne("id = ?", "agent1"); err != nil {
+		t.Fatalf("DeleteOne failed: %v", err)
+	}
 	agent.Config = config2
-	memSQL.Insert(agent)
+	if err := memSQL.Insert(agent); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	// Query back
 	agents, _ := memSQL.Query("SELECT * FROM job_agents WHERE id = ?", "agent1")
@@ -1610,10 +1618,12 @@ func TestMemSQL_StructPB_Delete(t *testing.T) {
 	config1, _ := structpb.NewStruct(map[string]interface{}{"type": "k8s"})
 	config2, _ := structpb.NewStruct(map[string]interface{}{"type": "docker"})
 
-	memSQL.InsertMany([]JobAgent{
+	if err := memSQL.InsertMany([]JobAgent{
 		{ID: "agent1", Name: "Agent 1", Config: config1},
 		{ID: "agent2", Name: "Agent 2", Config: config2},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Delete one
 	rowsAffected, err := memSQL.Delete("id = ?", "agent1")
@@ -1655,10 +1665,12 @@ func TestMemSQL_StructPB_QueryWithWhere(t *testing.T) {
 	config1, _ := structpb.NewStruct(map[string]interface{}{"enabled": true})
 	config2, _ := structpb.NewStruct(map[string]interface{}{"enabled": false})
 
-	memSQL.InsertMany([]JobAgent{
+	if err := memSQL.InsertMany([]JobAgent{
 		{ID: "agent1", Name: "Active Agent", Config: config1},
 		{ID: "agent2", Name: "Inactive Agent", Config: config2},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Query specific agent with exact match
 	agents, err := memSQL.Query("SELECT * FROM job_agents_query WHERE name = ?", "Active Agent")
@@ -1692,15 +1704,13 @@ func TestMemSQL_Insert_Upsert(t *testing.T) {
 
 	// Insert initial record
 	user1 := User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30}
-	err := memSQL.Insert(user1)
-	if err != nil {
+	if err := memSQL.Insert(user1); err != nil {
 		t.Fatalf("First insert failed: %v", err)
 	}
 
 	// Insert again with same ID (should update)
 	user2 := User{ID: "1", Name: "Alice Updated", Email: "alice.new@example.com", Age: 31}
-	err = memSQL.Insert(user2)
-	if err != nil {
+	if err := memSQL.Insert(user2); err != nil {
 		t.Fatalf("Second insert (upsert) failed: %v", err)
 	}
 
@@ -1880,7 +1890,9 @@ func TestMemSQL_Insert_Upsert_WithStructPB(t *testing.T) {
 		"enabled": true,
 	})
 	agent1 := JobAgent{ID: "agent1", Name: "Test Agent", Config: config1}
-	memSQL.Insert(agent1)
+	if err := memSQL.Insert(agent1); err != nil {
+		t.Fatalf("First insert failed: %v", err)
+	}
 
 	// Upsert with new config
 	config2, _ := structpb.NewStruct(map[string]interface{}{
@@ -1888,7 +1900,9 @@ func TestMemSQL_Insert_Upsert_WithStructPB(t *testing.T) {
 		"enabled": false,
 	})
 	agent2 := JobAgent{ID: "agent1", Name: "Test Agent Updated", Config: config2}
-	memSQL.Insert(agent2)
+	if err := memSQL.Insert(agent2); err != nil {
+		t.Fatalf("Second insert (upsert) failed: %v", err)
+	}
 
 	// Verify was updated
 	agents, _ := memSQL.Query("SELECT * FROM job_agents_upsert WHERE id = ?", "agent1")
@@ -1920,19 +1934,23 @@ func TestMemSQL_InsertMany_Upsert_Mixed(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert 3 users initially
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30},
 		{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25},
 		{ID: "3", Name: "Charlie", Email: "charlie@example.com", Age: 35},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Upsert: update 2, insert 2 new
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice Updated", Email: "alice.new@example.com", Age: 31},
 		{ID: "3", Name: "Charlie Updated", Email: "charlie.new@example.com", Age: 36},
 		{ID: "4", Name: "David", Email: "david@example.com", Age: 40},
 		{ID: "5", Name: "Eve", Email: "eve@example.com", Age: 28},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Verify we have 5 users
 	users, _ := memSQL.Query("SELECT * FROM users ORDER BY ID")
@@ -1974,11 +1992,13 @@ func TestMemSQL_PointerType_Query(t *testing.T) {
 	memSQL := NewMemSQL[*User](tableBuilder)
 
 	// Insert test data using raw SQL
-	memSQL.DB().Exec(`
+	if _, err := memSQL.DB().Exec(`
 		INSERT INTO users (ID, Name, Email, Age) VALUES 
 		('1', 'Alice', 'alice@example.com', 30),
 		('2', 'Bob', 'bob@example.com', 25)
-	`)
+	`); err != nil {
+		t.Fatalf("Failed to insert test data: %v", err)
+	}
 
 	// Query should work with pointer type
 	users, err := memSQL.Query("SELECT * FROM users ORDER BY ID")
@@ -2081,14 +2101,21 @@ func TestMemSQL_PointerType_Upsert(t *testing.T) {
 
 	// Initial insert
 	user1 := &User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30}
-	memSQL.Insert(user1)
+	if err := memSQL.Insert(user1); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	// Upsert
 	user2 := &User{ID: "1", Name: "Alice Updated", Email: "alice.new@example.com", Age: 31}
-	memSQL.Insert(user2)
+	if err := memSQL.Insert(user2); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	// Verify update
-	users, _ := memSQL.Query("SELECT * FROM users WHERE ID = ?", "1")
+	users, err := memSQL.Query("SELECT * FROM users WHERE ID = ?", "1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
 	if len(users) != 1 {
 		t.Fatalf("Expected 1 user, got %d", len(users))
 	}
@@ -2127,7 +2154,10 @@ func TestMemSQL_PointerType_WithTimestamp(t *testing.T) {
 	}
 
 	// Query back
-	events, _ := memSQL.Query("SELECT * FROM events WHERE id = ?", "e1")
+	events, err := memSQL.Query("SELECT * FROM events WHERE id = ?", "e1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
 	if len(events) != 1 {
 		t.Fatalf("Expected 1 event, got %d", len(events))
 	}
@@ -2171,7 +2201,10 @@ func TestMemSQL_PointerType_WithStructPB(t *testing.T) {
 	}
 
 	// Query back
-	agents, _ := memSQL.Query("SELECT * FROM job_agents_ptr WHERE id = ?", "agent1")
+	agents, err := memSQL.Query("SELECT * FROM job_agents_ptr WHERE id = ?", "agent1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
 	if len(agents) != 1 {
 		t.Fatalf("Expected 1 agent, got %d", len(agents))
 	}
@@ -2229,7 +2262,10 @@ func TestMemSQL_PointerType_InsertManyWithNil(t *testing.T) {
 	}
 
 	// Verify only 2 users inserted (nil was skipped)
-	result, _ := memSQL.Query("SELECT * FROM users ORDER BY ID")
+	result, err := memSQL.Query("SELECT * FROM users ORDER BY ID")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
 	if len(result) != 2 {
 		t.Fatalf("Expected 2 users, got %d", len(result))
 	}

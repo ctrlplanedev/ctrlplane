@@ -24,7 +24,9 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 		CreatedAt:  "2024-01-01T00:00:00Z",
 	}
 
-	st.Resources.Upsert(ctx, resource)
+	if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+		panic(err)
+	}
 	return st
 }
 
@@ -117,7 +119,9 @@ func TestEvaluate_OnlyResourceVariables(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	manager := New(st)
 
@@ -196,7 +200,9 @@ func TestEvaluate_OnlyDeploymentVariablesWithMatch(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	// Add deployment variable
 	deploymentVar := &oapi.DeploymentVariable{
@@ -266,7 +272,9 @@ func TestEvaluate_ResourceVariablesOverrideDeployment(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	// Add deployment variable with same key
 	deploymentVar := &oapi.DeploymentVariable{
@@ -331,7 +339,9 @@ func TestEvaluate_DeploymentVariableDefaultValue(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	// Add deployment variable with default value
 	defaultValue := mustCreateLiteralValue("default-region")
@@ -390,7 +400,9 @@ func TestEvaluate_ResourceNotFound(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	manager := New(st)
 
@@ -436,7 +448,9 @@ func TestEvaluate_EmptyVariables(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	manager := New(st)
 
@@ -505,7 +519,9 @@ func TestEvaluate_MultipleResourceVariables(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	manager := New(st)
 
@@ -555,7 +571,9 @@ func TestEvaluate_DeploymentVariableNoDefaultValue(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	// Add deployment variable without default value
 	deploymentVar := &oapi.DeploymentVariable{
@@ -616,28 +634,34 @@ func TestEvaluate_ReferenceValueResolution(t *testing.T) {
 		Version:   "v1",
 		CreatedAt: "2024-01-01T00:00:00Z",
 	}
-	st.Resources.Upsert(ctx, relatedResource)
+	if _, err := st.Resources.Upsert(ctx, relatedResource); err != nil {
+		t.Fatalf("Failed to upsert related resource: %v", err)
+	}
 
 	fromSelector := &oapi.Selector{}
-	fromSelector.FromJsonSelector(oapi.JsonSelector{
+	if err := fromSelector.FromJsonSelector(oapi.JsonSelector{
 		Json: map[string]interface{}{
 			"type":     "metadata",
 			"operator": "equals",
 			"key":      "env",
 			"value":    "production",
 		},
-	})
+	}); err != nil {
+		t.Fatalf("Failed to create from selector: %v", err)
+	}
 	toSelector := &oapi.Selector{}
-	toSelector.FromJsonSelector(oapi.JsonSelector{
+	if err := toSelector.FromJsonSelector(oapi.JsonSelector{
 		Json: map[string]interface{}{
 			"type":     "kind",
 			"operator": "equals",
 			"value":    "database",
 		},
-	})
+	}); err != nil {
+		t.Fatalf("Failed to create to selector: %v", err)
+	}
 
 	pm := &oapi.RelationshipRule_Matcher{}
-	pm.FromPropertiesMatcher(oapi.PropertiesMatcher{
+	if err := pm.FromPropertiesMatcher(oapi.PropertiesMatcher{
 		Properties: []oapi.PropertyMatcher{
 			{
 				FromProperty: []string{"metadata", "env"},
@@ -645,7 +669,9 @@ func TestEvaluate_ReferenceValueResolution(t *testing.T) {
 				Operator:     oapi.Equals,
 			},
 		},
-	})
+	}); err != nil {
+		t.Fatalf("Failed to create properties matcher: %v", err)
+	}
 
 	// Note: Store needs relationship rules to be set up for reference resolution to work
 	// This test demonstrates the structure, but actual relationship storage would need
@@ -671,7 +697,9 @@ func TestEvaluate_ReferenceValueResolution(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("Failed to upsert deployment: %v", err)
+	}
 
 	manager := New(st)
 
