@@ -56,11 +56,12 @@ func scanSystemRow(rows pgx.Rows) (*oapi.System, error) {
 }
 
 const SYSTEM_UPSERT_QUERY = `
-	INSERT INTO system (id, workspace_id, name, description)
-	VALUES ($1, $2, $3, $4)
+	INSERT INTO system (id, workspace_id, name, slug, description)
+	VALUES ($1, $2, $3, $4, $5)
 	ON CONFLICT (id) DO UPDATE SET
 		workspace_id = EXCLUDED.workspace_id,
 		name = EXCLUDED.name,
+		slug = EXCLUDED.slug,
 		description = EXCLUDED.description
 `
 
@@ -70,6 +71,7 @@ func writeSystem(ctx context.Context, system *oapi.System, tx pgx.Tx) error {
 		SYSTEM_UPSERT_QUERY,
 		system.Id,
 		system.WorkspaceId,
+		system.Name,
 		system.Name,
 		system.Description,
 	); err != nil {
