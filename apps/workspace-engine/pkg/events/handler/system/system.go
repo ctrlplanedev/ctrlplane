@@ -19,7 +19,9 @@ func HandleSystemCreated(
 		return err
 	}
 
-	ws.Systems().Upsert(ctx, system)
+	if err := ws.Systems().Upsert(ctx, system); err != nil {
+		return err
+	}
 	ws.ReleaseManager().TaintAllReleaseTargets()
 
 	return nil
@@ -35,7 +37,9 @@ func HandleSystemUpdated(
 		return err
 	}
 
-	ws.Systems().Upsert(ctx, system)
+	if err := ws.Systems().Upsert(ctx, system); err != nil {
+		return err
+	}
 	ws.ReleaseManager().TaintAllReleaseTargets()
 
 	return nil

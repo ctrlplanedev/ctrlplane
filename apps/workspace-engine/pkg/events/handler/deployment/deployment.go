@@ -19,7 +19,9 @@ func HandleDeploymentCreated(
 		return err
 	}
 
-	ws.Deployments().Upsert(ctx, deployment)
+	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
+		return err
+	}
 	ws.ReleaseManager().TaintDeploymentsReleaseTargets(deployment.Id)
 
 	return nil
@@ -35,7 +37,9 @@ func HandleDeploymentUpdated(
 		return err
 	}
 
-	ws.Deployments().Upsert(ctx, deployment)
+	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
+		return err
+	}
 	ws.ReleaseManager().TaintDeploymentsReleaseTargets(deployment.Id)
 
 	return nil

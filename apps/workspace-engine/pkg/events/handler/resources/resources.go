@@ -24,7 +24,9 @@ func HandleResourceCreated(
 		return errors.New("resource workspace id does not match workspace id")
 	}
 
-	ws.Resources().Upsert(ctx, resource)
+	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
+		return err
+	}
 	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
@@ -40,7 +42,9 @@ func HandleResourceUpdated(
 		return err
 	}
 
-	ws.Resources().Upsert(ctx, resource)
+	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
+		return err
+	}
 	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
