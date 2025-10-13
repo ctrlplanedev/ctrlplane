@@ -40,7 +40,9 @@ func NewTestWorkspace(
 	tw.eventListener = events.NewEventHandler()
 
 	for _, option := range options {
-		option(tw)
+		if err := option(tw); err != nil {
+			tw.t.Fatalf("failed to apply option: %v", err)
+		}
 	}
 
 	return tw

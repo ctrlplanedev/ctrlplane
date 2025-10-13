@@ -8,7 +8,7 @@ import (
 )
 
 // WorkspaceOption configures a TestWorkspace
-type WorkspaceOption func(*TestWorkspace)
+type WorkspaceOption func(*TestWorkspace) error
 
 // SystemOption configures a System
 type SystemOption func(*TestWorkspace, *oapi.System, *eventsBuilder)
@@ -38,7 +38,7 @@ type PolicyOption func(*TestWorkspace, *oapi.Policy, *eventsBuilder)
 type PolicyTargetSelectorOption func(*TestWorkspace, *oapi.PolicyTargetSelector)
 
 // RelationshipRuleOption configures a RelationshipRule
-type RelationshipRuleOption func(*TestWorkspace, *oapi.RelationshipRule)
+type RelationshipRuleOption func(*TestWorkspace, *oapi.RelationshipRule) error
 
 // PropertyMatcherOption configures a PropertyMatcher
 type PropertyMatcherOption func(*TestWorkspace, *oapi.PropertyMatcher)
@@ -75,13 +75,14 @@ func newEventsBuilder() *eventsBuilder {
 // ===== Workspace Options =====
 
 func WithWorkspaceID(id string) WorkspaceOption {
-	return func(ws *TestWorkspace) {
+	return func(ws *TestWorkspace) error {
 		ws.workspace.ID = id
+		return nil
 	}
 }
 
 func WithSystem(options ...SystemOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
+	return func(ws *TestWorkspace) error {
 		s := c.NewSystem(ws.workspace.ID)
 
 		eb := newEventsBuilder()
@@ -98,11 +99,13 @@ func WithSystem(options ...SystemOption) WorkspaceOption {
 		for _, event := range eb.postEvents {
 			ws.PushEvent(context.Background(), event.Type, event.Data)
 		}
+
+		return nil
 	}
 }
 
 func WithResource(options ...ResourceOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
+	return func(ws *TestWorkspace) error {
 		r := c.NewResource(ws.workspace.ID)
 		eb := newEventsBuilder()
 
@@ -123,11 +126,13 @@ func WithResource(options ...ResourceOption) WorkspaceOption {
 		for _, event := range eb.postEvents {
 			ws.PushEvent(context.Background(), event.Type, event.Data)
 		}
+
+		return nil
 	}
 }
 
 func WithJobAgent(options ...JobAgentOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
+	return func(ws *TestWorkspace) error {
 		ja := c.NewJobAgent(ws.workspace.ID)
 
 		for _, option := range options {
@@ -139,11 +144,13 @@ func WithJobAgent(options ...JobAgentOption) WorkspaceOption {
 			handler.JobAgentCreate,
 			ja,
 		)
+
+		return nil
 	}
 }
 
 func WithPolicy(options ...PolicyOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
+	return func(ws *TestWorkspace) error {
 		p := c.NewPolicy(ws.workspace.ID)
 
 		eb := newEventsBuilder()
@@ -156,15 +163,19 @@ func WithPolicy(options ...PolicyOption) WorkspaceOption {
 			handler.PolicyCreate,
 			p,
 		)
+
+		return nil
 	}
 }
 
 func WithRelationshipRule(options ...RelationshipRuleOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
+	return func(ws *TestWorkspace) error {
 		rr := c.NewRelationshipRule(ws.workspace.ID)
 
 		for _, option := range options {
-			option(ws, rr)
+			if err := option(ws, rr); err != nil {
+				return err
+			}
 		}
 
 		ws.PushEvent(
@@ -172,6 +183,8 @@ func WithRelationshipRule(options ...RelationshipRuleOption) WorkspaceOption {
 			handler.RelationshipRuleCreate,
 			rr,
 		)
+
+		return nil
 	}
 }
 
@@ -206,7 +219,7 @@ func WithDeploymentVariable(key string, options ...DeploymentVariableOption) Dep
 }
 
 func WithResourceProvider(options ...ResourceProviderOption) WorkspaceOption {
-	return func(ws *TestWorkspace) {
+	return func(ws *TestWorkspace) error {
 		rp := c.NewResourceProvider(ws.workspace.ID)
 
 		for _, option := range options {
@@ -218,6 +231,8 @@ func WithResourceProvider(options ...ResourceProviderOption) WorkspaceOption {
 			handler.ResourceProviderCreate,
 			rp,
 		)
+
+		return nil
 	}
 }
 
@@ -586,71 +601,85 @@ func PolicyTargetJsonResourceSelector(selector map[string]any) PolicyTargetSelec
 // ===== RelationshipRule Options =====
 
 func RelationshipRuleName(name string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.Name = name
+		return nil
 	}
 }
 
 func RelationshipRuleDescription(description string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.Description = &description
+		return nil
 	}
 }
 
 func RelationshipRuleID(id string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.Id = id
+		return nil
 	}
 }
 
 func RelationshipRuleReference(reference string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.Reference = reference
+		return nil
 	}
 }
 
 func RelationshipRuleFromType(fromType string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.FromType = fromType
+		return nil
 	}
 }
 
 func RelationshipRuleToType(toType string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.ToType = toType
+		return nil
 	}
 }
 
 func RelationshipRuleFromJsonSelector(selector map[string]any) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		s := &oapi.Selector{}
-		_ = s.FromJsonSelector(oapi.JsonSelector{Json: selector})
+		if err := s.FromJsonSelector(oapi.JsonSelector{Json: selector}); err != nil {
+			return err
+		}
 		rr.FromSelector = s
+		return nil
 	}
 }
 
 func RelationshipRuleToJsonSelector(selector map[string]any) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		s := &oapi.Selector{}
-		_ = s.FromJsonSelector(oapi.JsonSelector{Json: selector})
+		if err := s.FromJsonSelector(oapi.JsonSelector{Json: selector}); err != nil {
+			return err
+		}
 		rr.ToSelector = s
+		return nil
 	}
 }
 
 func RelationshipRuleType(relType string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.RelationshipType = relType
+		return nil
 	}
 }
 
 func RelationshipRuleMetadata(metadata map[string]string) RelationshipRuleOption {
-	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.Metadata = metadata
+		return nil
 	}
 }
 
 func WithPropertyMatcher(options ...PropertyMatcherOption) RelationshipRuleOption {
-	return func(ws *TestWorkspace, rr *oapi.RelationshipRule) {
+	return func(ws *TestWorkspace, rr *oapi.RelationshipRule) error {
 		pm := c.NewPropertyMatcher([]string{}, []string{})
 
 		for _, option := range options {
@@ -664,16 +693,19 @@ func WithPropertyMatcher(options ...PropertyMatcherOption) RelationshipRuleOptio
 			existingProperties = existingMatcher.Properties
 		}
 
-		rr.Matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		if err := rr.Matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 			Properties: append(existingProperties, *pm),
-		})
+		}); err != nil {
+			return err
+		}
+
+		return nil
 	}
 }
 
 func WithCelMatcher(cel string) RelationshipRuleOption {
-	return func(ws *TestWorkspace, rr *oapi.RelationshipRule) {
-
-		rr.Matcher.FromCelMatcher(oapi.CelMatcher{Cel: cel})
+	return func(ws *TestWorkspace, rr *oapi.RelationshipRule) error {
+		return rr.Matcher.FromCelMatcher(oapi.CelMatcher{Cel: cel})
 	}
 }
 

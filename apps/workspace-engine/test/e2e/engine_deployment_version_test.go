@@ -322,9 +322,10 @@ func TestEngine_MultipleDeploymentsIndependentVersions(t *testing.T) {
 		if !ok {
 			continue
 		}
-		if release.ReleaseTarget.DeploymentId == deployment1Id {
+		switch release.ReleaseTarget.DeploymentId {
+		case deployment1Id:
 			deployment1Jobs++
-		} else if release.ReleaseTarget.DeploymentId == deployment2Id {
+		case deployment2Id:
 			deployment2Jobs++
 		}
 	}
@@ -526,9 +527,10 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 		if !ok {
 			continue
 		}
-		if release.ReleaseTarget.EnvironmentId == envDevId {
+		switch release.ReleaseTarget.EnvironmentId {
+		case envDevId:
 			devJobs++
-		} else if release.ReleaseTarget.EnvironmentId == envProdId {
+		case envProdId:
 			prodJobs++
 		}
 	}
