@@ -9,12 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func FlushChangeset(ctx context.Context) error {
-	cs, ok := changeset.FromContext(ctx)
-	if !ok {
-		return nil
-	}
-
+func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet) error {
 	cs.Mutex.Lock()
 	defer cs.Mutex.Unlock()
 
@@ -195,4 +190,16 @@ func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change) erro
 	}
 
 	return fmt.Errorf("unknown entity type: %s", change.EntityType)
+}
+
+type DbChangesetConsumer struct{}
+
+var _ changeset.ChangesetConsumer = (*DbChangesetConsumer)(nil)
+
+func NewChangesetConsumer() *DbChangesetConsumer {
+	return &DbChangesetConsumer{}
+}
+
+func (c *DbChangesetConsumer) FlushChangeset(ctx context.Context, changeset *changeset.ChangeSet) error {
+	return FlushChangeset(ctx, changeset)
 }

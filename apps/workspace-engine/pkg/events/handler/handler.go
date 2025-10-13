@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"workspace-engine/pkg/changeset"
-	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
@@ -181,7 +180,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
 	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
 
-	if err := db.FlushChangeset(ctx); err != nil {
+	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to flush changeset")
 		log.Error("Failed to flush changeset", "error", err)
