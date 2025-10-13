@@ -81,7 +81,7 @@ func (e *Environments) HasResource(envId string, resourceId string) bool {
 		return false
 	}
 
-	mv.WaitRecompute()
+	_ = mv.WaitRecompute()
 	allResources := mv.Get()
 	if envResources, ok := allResources[resourceId]; ok {
 		return envResources != nil
@@ -95,7 +95,7 @@ func (e *Environments) Resources(id string) map[string]*oapi.Resource {
 		return map[string]*oapi.Resource{}
 	}
 
-	mv.WaitRecompute()
+	_ = mv.WaitRecompute()
 	allResources := mv.Get()
 	return allResources
 }
@@ -107,7 +107,8 @@ func (e *Environments) RecomputeResources(ctx context.Context, environmentId str
 	}
 
 	// RunRecompute will start a new computation or wait for an existing one
-	return mv.RunRecompute(ctx)
+	_ = mv.RunRecompute(ctx)
+	return nil
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
@@ -143,7 +144,7 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
 
-	mv.StartRecompute(ctx)
+	_ = mv.StartRecompute(ctx)
 
 	return nil
 }

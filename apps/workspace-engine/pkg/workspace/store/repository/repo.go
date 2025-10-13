@@ -32,7 +32,11 @@ func WriteToJSONFile(r *Repository, filePath string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	// Write JSON data to file.
 	_, err = f.Write(data)

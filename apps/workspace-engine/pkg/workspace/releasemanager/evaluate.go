@@ -132,7 +132,10 @@ func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *oapi.R
 	defer span.End()
 
 	// Step 1: Persist the release (WRITE)
-	m.store.Releases.Upsert(ctx, releaseToDeploy)
+	if err := m.store.Releases.Upsert(ctx, releaseToDeploy); err != nil {
+		span.RecordError(err)
+		return err
+	}
 
 	// Step 2: Cancel outdated jobs for this release target (WRITES)
 	// Cancel any pending/in-progress jobs for different releases (outdated versions)
@@ -152,7 +155,11 @@ func (m *Manager) executeDeployment(ctx context.Context, releaseToDeploy *oapi.R
 	)
 
 	// Step 4: Dispatch job to integration (ASYNC)
-	go m.IntegrationDispatch(ctx, newJob)
+	go func() {
+		if err := m.IntegrationDispatch(ctx, newJob); err != nil {
+			log.Error("error dispatching job to integration", "error", err.Error())
+		}
+	}()
 
 	return nil
 }

@@ -6,6 +6,8 @@ import (
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewResources(store *Store) *Resources {
@@ -29,14 +31,18 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		defer wg.Done()
 		for item := range r.store.Environments.IterBuffered() {
 			environment := item.Val
-			r.store.Environments.RecomputeResources(ctx, environment.Id)
+			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil {
+				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
+			}
 		}
 	}()
 	go func() {
 		defer wg.Done()
 		for item := range r.store.Deployments.IterBuffered() {
 			deployment := item.Val
-			r.store.Deployments.RecomputeResources(ctx, deployment.Id)
+			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil {
+				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
+			}
 		}
 	}()
 	wg.Wait()
@@ -63,14 +69,18 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 		defer wg.Done()
 		for item := range r.store.Environments.IterBuffered() {
 			environment := item.Val
-			r.store.Environments.RecomputeResources(ctx, environment.Id)
+			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil {
+				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
+			}
 		}
 	}()
 	go func() {
 		defer wg.Done()
 		for item := range r.store.Deployments.IterBuffered() {
 			deployment := item.Val
-			r.store.Deployments.RecomputeResources(ctx, deployment.Id)
+			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil {
+				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
+			}
 		}
 	}()
 	wg.Wait()

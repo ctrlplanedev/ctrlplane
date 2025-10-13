@@ -119,7 +119,7 @@ func (e *Deployments) HasResource(deploymentId string, resourceId string) bool {
 		return false
 	}
 
-	mv.WaitRecompute()
+	_ = mv.WaitRecompute()
 	allResources := mv.Get()
 	if deploymentResources, ok := allResources[resourceId]; ok {
 		return deploymentResources != nil
@@ -133,7 +133,7 @@ func (e *Deployments) Resources(deploymentId string) map[string]*oapi.Resource {
 		return map[string]*oapi.Resource{}
 	}
 
-	mv.WaitRecompute()
+	_ = mv.WaitRecompute()
 	allResources := mv.Get()
 	return allResources
 }

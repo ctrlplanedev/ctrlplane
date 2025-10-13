@@ -494,5 +494,7 @@ func TestEngineRepoWrite(t *testing.T) {
 	)
 
 	repo := engine.Workspace().Store().Repo()
-	repository.WriteToJSONFile(repo, "repo.json")
+	if err := repository.WriteToJSONFile(repo, "repo.json"); err != nil {
+		t.Fatalf("Failed to write repository to JSON file: %v", err)
+	}
 }

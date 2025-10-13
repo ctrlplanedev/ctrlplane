@@ -48,7 +48,9 @@ func HandleResourceProviderDeleted(
 		return err
 	}
 
-	ws.ResourceProviders().Remove(ctx, resourceProvider.Id)
+	if err := ws.ResourceProviders().Remove(ctx, resourceProvider.Id); err != nil {
+		return err
+	}
 
 	return nil
 }

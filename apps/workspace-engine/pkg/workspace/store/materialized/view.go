@@ -42,14 +42,14 @@ func New[V any](rf RecomputeFunc[V], opts ...Option[V]) *MaterializedView[V] {
 		opt(mv)
 	}
 
-	mv.StartRecompute(context.Background())
+	_ = mv.StartRecompute(context.Background())
 
 	return mv
 }
 
 // Get returns the current cached value.
 func (m *MaterializedView[V]) Get() V {
-	m.WaitIfRunning()
+	_ = m.WaitIfRunning()
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.val

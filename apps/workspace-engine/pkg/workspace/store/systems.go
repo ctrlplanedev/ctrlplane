@@ -67,7 +67,7 @@ func (s *Systems) Deployments(systemId string) map[string]*oapi.Deployment {
 	if !ok {
 		return map[string]*oapi.Deployment{}
 	}
-	mv.WaitIfRunning()
+	_ = mv.WaitIfRunning()
 	return mv.Get()
 }
 
@@ -89,7 +89,7 @@ func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
 	if !ok {
 		return map[string]*oapi.Environment{}
 	}
-	mv.WaitIfRunning()
+	_ = mv.WaitIfRunning()
 	return mv.Get()
 }
 
@@ -117,20 +117,19 @@ func (s *Systems) ApplyDeploymentUpdate(
 	ctx context.Context,
 	previousSystemId string,
 	deployment *oapi.Deployment,
-) error {
+) {
 	// Recompute deployments for the previous system, if it exists
 	if oldDeployments, exists := s.deployments.Get(previousSystemId); exists {
-		oldDeployments.StartRecompute(ctx)
+		_ = oldDeployments.StartRecompute(ctx)
 	}
 
 	deploymentHasMoved := previousSystemId != deployment.SystemId
 	if deploymentHasMoved {
 		if newDeployments, exists := s.deployments.Get(deployment.SystemId); exists {
-			newDeployments.StartRecompute(ctx)
+			_ = newDeployments.StartRecompute(ctx)
 		}
 	}
 
-	return nil
 }
 
 // ApplyEnvironmentUpdate triggers a recompute of environments for the affected systems
@@ -139,20 +138,18 @@ func (s *Systems) ApplyEnvironmentUpdate(
 	ctx context.Context,
 	previousSystemId string,
 	environment *oapi.Environment,
-) error {
+) {
 	// Recompute deployments for the previous system, if it exists
 	if oldEnvironments, exists := s.environments.Get(previousSystemId); exists {
-		oldEnvironments.StartRecompute(ctx)
+		_ = oldEnvironments.StartRecompute(ctx)
 	}
 
 	environmentHasMoved := previousSystemId != environment.SystemId
 	if environmentHasMoved {
 		if newEnvironments, exists := s.environments.Get(environment.SystemId); exists {
-			newEnvironments.StartRecompute(ctx)
+			_ = newEnvironments.StartRecompute(ctx)
 		}
 	}
-
-	return nil
 }
 
 func (s *Systems) Items() map[string]*oapi.System {

@@ -34,15 +34,18 @@ func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvi
 	}
 }
 
-func (r *ResourceProviders) Remove(ctx context.Context, id string) {
+func (r *ResourceProviders) Remove(ctx context.Context, id string) error {
 	r.repo.ResourceProviders.Remove(id)
 	for _, resource := range r.resources.Items() {
 		if resource.ProviderId != nil && *resource.ProviderId == id {
 			resource.ProviderId = nil
-			r.resources.Upsert(ctx, resource)
+			if _, err := r.resources.Upsert(ctx, resource); err != nil {
+				return err
+			}
 		}
 	}
 	if cs, ok := changeset.FromContext(ctx); ok {
 		cs.Record("resource-provider", changeset.ChangeTypeDelete, id, nil)
 	}
+	return nil
 }

@@ -26,12 +26,12 @@ type ReleaseTargets struct {
 
 // CurrentState returns the current state of all release targets in the system.
 func (r *ReleaseTargets) Items(ctx context.Context) map[string]*oapi.ReleaseTarget {
-	r.targets.WaitIfRunning()
+	_ = r.targets.WaitIfRunning()
 	return r.targets.Get()
 }
 
 func (r *ReleaseTargets) Recompute(ctx context.Context) {
-	r.targets.StartRecompute(ctx)
+	_ = r.targets.StartRecompute(ctx)
 }
 
 func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.ReleaseTarget, error) {
