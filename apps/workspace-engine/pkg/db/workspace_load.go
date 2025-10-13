@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
@@ -12,139 +12,163 @@ import (
 
 var tracer = otel.Tracer("db")
 
-func loadSystems(ctx context.Context, ws *workspace.Workspace) error {
+type InitialWorkspaceState struct {
+	systems             []*oapi.System
+	resources           []*oapi.Resource
+	deployments         []*oapi.Deployment
+	deploymentVersions  []*oapi.DeploymentVersion
+	deploymentVariables []*oapi.DeploymentVariable
+	environments        []*oapi.Environment
+	policies            []*oapi.Policy
+	jobAgents           []*oapi.JobAgent
+	relationships       []*oapi.RelationshipRule
+}
+
+func (i *InitialWorkspaceState) Systems() []*oapi.System {
+	return i.systems
+}
+
+func (i *InitialWorkspaceState) Resources() []*oapi.Resource {
+	return i.resources
+}
+
+func (i *InitialWorkspaceState) Deployments() []*oapi.Deployment {
+	return i.deployments
+}
+
+func (i *InitialWorkspaceState) DeploymentVersions() []*oapi.DeploymentVersion {
+	return i.deploymentVersions
+}
+
+func (i *InitialWorkspaceState) DeploymentVariables() []*oapi.DeploymentVariable {
+	return i.deploymentVariables
+}
+
+func (i *InitialWorkspaceState) Environments() []*oapi.Environment {
+	return i.environments
+}
+
+func (i *InitialWorkspaceState) Policies() []*oapi.Policy {
+	return i.policies
+}
+
+func (i *InitialWorkspaceState) JobAgents() []*oapi.JobAgent {
+	return i.jobAgents
+}
+
+func (i *InitialWorkspaceState) Relationships() []*oapi.RelationshipRule {
+	return i.relationships
+}
+
+func loadSystems(ctx context.Context, workspaceID string) ([]*oapi.System, error) {
 	ctx, span := tracer.Start(ctx, "loadSystems")
 	defer span.End()
 
-	dbSystems, err := getSystems(ctx, ws.ID)
+	dbSystems, err := getSystems(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get systems: %w", err)
-	}
-	for _, system := range dbSystems {
-		ws.Systems().Upsert(ctx, system)
+		return nil, fmt.Errorf("failed to get systems: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbSystems)))
-	return nil
+	return dbSystems, nil
 }
 
-func loadResources(ctx context.Context, ws *workspace.Workspace) error {
+func loadResources(ctx context.Context, workspaceID string) ([]*oapi.Resource, error) {
 	ctx, span := tracer.Start(ctx, "loadResources")
 	defer span.End()
 
-	dbResources, err := getResources(ctx, ws.ID)
+	dbResources, err := getResources(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get resources: %w", err)
-	}
-	for _, resource := range dbResources {
-		ws.Resources().Upsert(ctx, resource)
+		return nil, fmt.Errorf("failed to get resources: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbResources)))
-	return nil
+	return dbResources, nil
 }
 
-func loadDeployments(ctx context.Context, ws *workspace.Workspace) error {
+func loadDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment, error) {
 	ctx, span := tracer.Start(ctx, "loadDeployments")
 	defer span.End()
 
-	dbDeployments, err := getDeployments(ctx, ws.ID)
+	dbDeployments, err := getDeployments(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get deployments: %w", err)
-	}
-	for _, deployment := range dbDeployments {
-		ws.Deployments().Upsert(ctx, deployment)
+		return nil, fmt.Errorf("failed to get deployments: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbDeployments)))
-	return nil
+	return dbDeployments, nil
 }
 
-func loadDeploymentVersions(ctx context.Context, ws *workspace.Workspace) error {
+func loadDeploymentVersions(ctx context.Context, workspaceID string) ([]*oapi.DeploymentVersion, error) {
 	ctx, span := tracer.Start(ctx, "loadDeploymentVersions")
 	defer span.End()
 
-	dbDeploymentVersions, err := getDeploymentVersions(ctx, ws.ID)
+	dbDeploymentVersions, err := getDeploymentVersions(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get deployment versions: %w", err)
-	}
-	for _, deploymentVersion := range dbDeploymentVersions {
-		ws.DeploymentVersions().Upsert(ctx, deploymentVersion.DeploymentId, deploymentVersion)
+		return nil, fmt.Errorf("failed to get deployment versions: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbDeploymentVersions)))
-	return nil
+	return dbDeploymentVersions, nil
 }
 
-func loadDeploymentVariables(ctx context.Context, ws *workspace.Workspace) error {
+func loadDeploymentVariables(ctx context.Context, workspaceID string) ([]*oapi.DeploymentVariable, error) {
 	ctx, span := tracer.Start(ctx, "loadDeploymentVariables")
 	defer span.End()
 
-	dbDeploymentVariables, err := getDeploymentVariables(ctx, ws.ID)
+	dbDeploymentVariables, err := getDeploymentVariables(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get deployment variables: %w", err)
-	}
-	for _, deploymentVariable := range dbDeploymentVariables {
-		ws.Deployments().Variables(deploymentVariable.DeploymentId)[deploymentVariable.Key] = deploymentVariable
+		return nil, fmt.Errorf("failed to get deployment variables: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbDeploymentVariables)))
-	return nil
+	return dbDeploymentVariables, nil
 }
 
-func loadEnvironments(ctx context.Context, ws *workspace.Workspace) error {
+func loadEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environment, error) {
 	ctx, span := tracer.Start(ctx, "loadEnvironments")
 	defer span.End()
 
-	dbEnvironments, err := getEnvironments(ctx, ws.ID)
+	dbEnvironments, err := getEnvironments(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get environments: %w", err)
-	}
-	for _, environment := range dbEnvironments {
-		ws.Environments().Upsert(ctx, environment)
+		return nil, fmt.Errorf("failed to get environments: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbEnvironments)))
-	return nil
+	return dbEnvironments, nil
 }
 
-func loadPolicies(ctx context.Context, ws *workspace.Workspace) error {
+func loadPolicies(ctx context.Context, workspaceID string) ([]*oapi.Policy, error) {
 	ctx, span := tracer.Start(ctx, "loadPolicies")
 	defer span.End()
 
-	dbPolicies, err := getPolicies(ctx, ws.ID)
+	dbPolicies, err := getPolicies(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get policies: %w", err)
-	}
-	for _, policy := range dbPolicies {
-		ws.Policies().Upsert(ctx, policy)
+		return nil, fmt.Errorf("failed to get policies: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbPolicies)))
-	return nil
+	return dbPolicies, nil
 }
 
-func loadJobAgents(ctx context.Context, ws *workspace.Workspace) error {
+func loadJobAgents(ctx context.Context, workspaceID string) ([]*oapi.JobAgent, error) {
 	ctx, span := tracer.Start(ctx, "loadJobAgents")
 	defer span.End()
 
-	dbJobAgents, err := getJobAgents(ctx, ws.ID)
+	dbJobAgents, err := getJobAgents(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get job agents: %w", err)
-	}
-	for _, jobAgent := range dbJobAgents {
-		ws.JobAgents().Upsert(ctx, jobAgent)
+		return nil, fmt.Errorf("failed to get job agents: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbJobAgents)))
-	return nil
+	return dbJobAgents, nil
 }
 
-func loadRelationships(ctx context.Context, ws *workspace.Workspace) error {
+func loadRelationships(ctx context.Context, workspaceID string) ([]*oapi.RelationshipRule, error) {
 	ctx, span := tracer.Start(ctx, "loadRelationships")
 	defer span.End()
 
-	dbRelationships, err := getRelationships(ctx, ws.ID)
+	dbRelationships, err := getRelationships(ctx, workspaceID)
 	if err != nil {
-		return fmt.Errorf("failed to get relationships: %w", err)
+		return nil, fmt.Errorf("failed to get relationships: %w", err)
 	}
 	span.SetAttributes(attribute.Int("count", len(dbRelationships)))
-	return nil
+	return dbRelationships, nil
 }
 
-func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspace, error) {
+func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceState *InitialWorkspaceState, err error) {
 	ctx, span := tracer.Start(ctx, "LoadWorkspace")
 	defer span.End()
 
@@ -155,43 +179,43 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (*workspace.Workspac
 	}
 	defer db.Release()
 
-	ws := workspace.New(workspaceID)
+	initialWorkspaceState = &InitialWorkspaceState{}
 
-	if err := loadSystems(ctx, ws); err != nil {
+	if initialWorkspaceState.systems, err = loadSystems(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load systems: %w", err)
 	}
 
-	if err := loadResources(ctx, ws); err != nil {
+	if initialWorkspaceState.resources, err = loadResources(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load resources: %w", err)
 	}
 
-	if err := loadDeployments(ctx, ws); err != nil {
+	if initialWorkspaceState.deployments, err = loadDeployments(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load deployments: %w", err)
 	}
 
-	if err := loadDeploymentVersions(ctx, ws); err != nil {
+	if initialWorkspaceState.deploymentVersions, err = loadDeploymentVersions(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load deployment versions: %w", err)
 	}
 
-	if err := loadDeploymentVariables(ctx, ws); err != nil {
+	if initialWorkspaceState.deploymentVariables, err = loadDeploymentVariables(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load deployment variables: %w", err)
 	}
 
-	if err := loadEnvironments(ctx, ws); err != nil {
+	if initialWorkspaceState.environments, err = loadEnvironments(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load environments: %w", err)
 	}
 
-	if err := loadPolicies(ctx, ws); err != nil {
+	if initialWorkspaceState.policies, err = loadPolicies(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load policies: %w", err)
 	}
 
-	if err := loadJobAgents(ctx, ws); err != nil {
+	if initialWorkspaceState.jobAgents, err = loadJobAgents(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load job agents: %w", err)
 	}
 
-	if err := loadRelationships(ctx, ws); err != nil {
+	if initialWorkspaceState.relationships, err = loadRelationships(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load relationships: %w", err)
 	}
 
-	return ws, nil
+	return initialWorkspaceState, nil
 }
