@@ -17,6 +17,15 @@ type SerializableAnimal struct {
 	Name string `json:"name"`
 }
 
+// CustomKey is a custom type that implements fmt.Stringer
+type CustomKey struct {
+	ID int
+}
+
+func (c CustomKey) String() string {
+	return "key-" + strconv.Itoa(c.ID)
+}
+
 func TestMapCreation(t *testing.T) {
 	m := New[string]()
 	if m.shards == nil {
@@ -882,6 +891,328 @@ func TestGobEncodeDecodeWithIntegers(t *testing.T) {
 		}
 		if val1 != val2 {
 			t.Errorf("Value mismatch for key %s: original %d, decoded %d", key, val1, val2)
+		}
+	}
+}
+
+func TestNewStringer(t *testing.T) {
+	// Create a map with CustomKey (which implements fmt.Stringer)
+	m := NewStringer[CustomKey, string]()
+
+	if m.shards == nil {
+		t.Error("map is null.")
+	}
+
+	if m.Count() != 0 {
+		t.Error("new map should be empty.")
+	}
+
+	// Test basic operations with Stringer keys
+	key1 := CustomKey{ID: 1}
+	key2 := CustomKey{ID: 2}
+	key3 := CustomKey{ID: 3}
+
+	m.Set(key1, "value1")
+	m.Set(key2, "value2")
+	m.Set(key3, "value3")
+
+	if m.Count() != 3 {
+		t.Errorf("map should contain exactly 3 elements, got %d", m.Count())
+	}
+
+	// Test retrieval
+	val, ok := m.Get(key1)
+	if !ok {
+		t.Error("key1 should exist in map")
+	}
+	if val != "value1" {
+		t.Errorf("expected 'value1', got '%s'", val)
+	}
+
+	// Test that keys with same ID are equal
+	keyDuplicate := CustomKey{ID: 1}
+	valDup, ok := m.Get(keyDuplicate)
+	if !ok {
+		t.Error("duplicate key should be found")
+	}
+	if valDup != "value1" {
+		t.Errorf("expected 'value1', got '%s'", valDup)
+	}
+
+	// Test removal
+	m.Remove(key2)
+	if m.Count() != 2 {
+		t.Errorf("map should contain 2 elements after removal, got %d", m.Count())
+	}
+
+	if m.Has(key2) {
+		t.Error("key2 should not exist after removal")
+	}
+}
+
+func TestNewWithCustomShardingFunction(t *testing.T) {
+	// Create a custom sharding function that uses simple modulo
+	customSharding := func(key int) uint32 {
+		return uint32(key % SHARD_COUNT)
+	}
+
+	m := NewWithCustomShardingFunction[int, string](customSharding)
+
+	if m.shards == nil {
+		t.Error("map is null.")
+	}
+
+	if m.Count() != 0 {
+		t.Error("new map should be empty.")
+	}
+
+	// Add elements
+	for i := 0; i < 100; i++ {
+		m.Set(i, strconv.Itoa(i))
+	}
+
+	if m.Count() != 100 {
+		t.Errorf("map should contain 100 elements, got %d", m.Count())
+	}
+
+	// Verify all elements can be retrieved
+	for i := 0; i < 100; i++ {
+		val, ok := m.Get(i)
+		if !ok {
+			t.Errorf("key %d should exist", i)
+		}
+		expected := strconv.Itoa(i)
+		if val != expected {
+			t.Errorf("expected '%s', got '%s'", expected, val)
+		}
+	}
+
+	// Verify the sharding function is being used by checking shard distribution
+	// With our custom sharding function, key i should be in shard i % SHARD_COUNT
+	shardCounts := make(map[int]int)
+	for i := 0; i < 100; i++ {
+		shard := m.GetShard(i)
+		shardIndex := i % SHARD_COUNT
+		shard.RLock()
+		if _, exists := shard.Items[i]; exists {
+			shardCounts[shardIndex]++
+		}
+		shard.RUnlock()
+	}
+
+	// Each shard should have some elements
+	totalInShards := 0
+	for _, count := range shardCounts {
+		totalInShards += count
+	}
+
+	if totalInShards != 100 {
+		t.Errorf("expected 100 elements distributed across shards, got %d", totalInShards)
+	}
+}
+
+func TestUnmarshalJSON(t *testing.T) {
+	// Create JSON data
+	jsonData := `{"elephant":"big","monkey":"small","dolphin":"smart"}`
+
+	m := New[string]()
+	err := json.Unmarshal([]byte(jsonData), &m)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON failed: %v", err)
+	}
+
+	if m.Count() != 3 {
+		t.Errorf("Expected 3 elements, got %d", m.Count())
+	}
+
+	// Verify values
+	elephant, ok := m.Get("elephant")
+	if !ok || elephant != "big" {
+		t.Error("elephant not unmarshaled correctly")
+	}
+
+	monkey, ok := m.Get("monkey")
+	if !ok || monkey != "small" {
+		t.Error("monkey not unmarshaled correctly")
+	}
+
+	dolphin, ok := m.Get("dolphin")
+	if !ok || dolphin != "smart" {
+		t.Error("dolphin not unmarshaled correctly")
+	}
+}
+
+func TestUnmarshalJSONIntoExistingMap(t *testing.T) {
+	// Create a map with existing data
+	m := New[string]()
+	m.Set("existing", "value")
+
+	// Unmarshal new data into the same map
+	jsonData := `{"new":"data","another":"item"}`
+	err := json.Unmarshal([]byte(jsonData), &m)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON failed: %v", err)
+	}
+
+	// Should have 3 elements total (1 existing + 2 new)
+	if m.Count() != 3 {
+		t.Errorf("Expected 3 elements, got %d", m.Count())
+	}
+
+	// Verify existing data is still there
+	existing, ok := m.Get("existing")
+	if !ok || existing != "value" {
+		t.Error("existing data was lost")
+	}
+
+	// Verify new data is present
+	newVal, ok := m.Get("new")
+	if !ok || newVal != "data" {
+		t.Error("new data not unmarshaled correctly")
+	}
+
+	another, ok := m.Get("another")
+	if !ok || another != "item" {
+		t.Error("another data not unmarshaled correctly")
+	}
+}
+
+func TestUnmarshalJSONWithIntegers(t *testing.T) {
+	// Test with integer values
+	jsonData := `{"one":1,"two":2,"three":3}`
+
+	m := New[int]()
+	err := json.Unmarshal([]byte(jsonData), &m)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON failed: %v", err)
+	}
+
+	if m.Count() != 3 {
+		t.Errorf("Expected 3 elements, got %d", m.Count())
+	}
+
+	// Verify values
+	one, ok := m.Get("one")
+	if !ok || one != 1 {
+		t.Error("one not unmarshaled correctly")
+	}
+
+	two, ok := m.Get("two")
+	if !ok || two != 2 {
+		t.Error("two not unmarshaled correctly")
+	}
+
+	three, ok := m.Get("three")
+	if !ok || three != 3 {
+		t.Error("three not unmarshaled correctly")
+	}
+}
+
+func TestUnmarshalJSONWithStructs(t *testing.T) {
+	// Test with struct values
+	jsonData := `{"elephant":{"Name":"elephant"},"monkey":{"Name":"monkey"}}`
+
+	m := New[SerializableAnimal]()
+	err := json.Unmarshal([]byte(jsonData), &m)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON failed: %v", err)
+	}
+
+	if m.Count() != 2 {
+		t.Errorf("Expected 2 elements, got %d", m.Count())
+	}
+
+	// Verify values
+	elephant, ok := m.Get("elephant")
+	if !ok || elephant.Name != "elephant" {
+		t.Error("elephant not unmarshaled correctly")
+	}
+
+	monkey, ok := m.Get("monkey")
+	if !ok || monkey.Name != "monkey" {
+		t.Error("monkey not unmarshaled correctly")
+	}
+}
+
+func TestUnmarshalJSONInvalidJSON(t *testing.T) {
+	// Test with invalid JSON (malformed JSON structure)
+	jsonData := `{"invalid": json}`
+
+	m := New[string]()
+	err := json.Unmarshal([]byte(jsonData), &m)
+	if err == nil {
+		t.Error("UnmarshalJSON should fail with invalid JSON")
+	}
+}
+
+func TestUnmarshalJSONTypeMismatch(t *testing.T) {
+	// Test with type mismatch - expecting int values but providing strings
+	// This will trigger the error path inside UnmarshalJSON when it tries to
+	// unmarshal into the temporary map
+	jsonData := `{"one":"not an int","two":"also not an int"}`
+
+	m := New[int]()
+	err := json.Unmarshal([]byte(jsonData), &m)
+	if err == nil {
+		t.Error("UnmarshalJSON should fail with type mismatch")
+	}
+
+	// The map should be empty since unmarshal failed
+	if m.Count() != 0 {
+		t.Errorf("Expected empty map after failed unmarshal, got %d elements", m.Count())
+	}
+}
+
+func TestUnmarshalJSONEmptyObject(t *testing.T) {
+	// Test with empty JSON object
+	jsonData := `{}`
+
+	m := New[string]()
+	err := json.Unmarshal([]byte(jsonData), &m)
+	if err != nil {
+		t.Fatalf("UnmarshalJSON failed: %v", err)
+	}
+
+	if m.Count() != 0 {
+		t.Errorf("Expected 0 elements, got %d", m.Count())
+	}
+}
+
+func TestMarshalUnmarshalRoundTrip(t *testing.T) {
+	// Create a map with data
+	m1 := New[int]()
+	m1.Set("a", 1)
+	m1.Set("b", 2)
+	m1.Set("c", 3)
+
+	// Marshal to JSON
+	jsonData, err := json.Marshal(m1)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+
+	// Unmarshal into a new map
+	m2 := New[int]()
+	err = json.Unmarshal(jsonData, &m2)
+	if err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	// Verify counts match
+	if m1.Count() != m2.Count() {
+		t.Errorf("Count mismatch: original %d, unmarshaled %d", m1.Count(), m2.Count())
+	}
+
+	// Verify all values match
+	for _, key := range []string{"a", "b", "c"} {
+		val1, ok1 := m1.Get(key)
+		val2, ok2 := m2.Get(key)
+
+		if !ok1 || !ok2 {
+			t.Errorf("Key %s missing after unmarshal", key)
+		}
+		if val1 != val2 {
+			t.Errorf("Value mismatch for key %s: original %d, unmarshaled %d", key, val1, val2)
 		}
 	}
 }
