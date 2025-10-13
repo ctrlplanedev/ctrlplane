@@ -568,8 +568,12 @@ func TestMemSQL_Insert_ThenQuery(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert users using Insert
-	memSQL.Insert(User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30})
-	memSQL.Insert(User{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25})
+	if err := memSQL.Insert(User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30}); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+	if err := memSQL.Insert(User{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25}); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	// Query them back
 	users, err := memSQL.Query("SELECT * FROM users WHERE Age > ? ORDER BY ID", 20)
@@ -721,7 +725,9 @@ func TestMemSQL_Timestamp_RangeQuery(t *testing.T) {
 		{ID: "e4", Name: "Event 4", CreatedAt: "2024-03-01T10:00:00Z"},
 	}
 
-	memSQL.InsertMany(events)
+	if err := memSQL.InsertMany(events); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Query for events created after Jan 10, 2024
 	// Since timestamps are stored as integers, we can use direct comparison
@@ -767,8 +773,7 @@ func TestMemSQL_Timestamp_VariousFormats(t *testing.T) {
 
 	for _, tc := range testCases {
 		event := Event{ID: tc.id, Timestamp: tc.timestamp}
-		err := memSQL.Insert(event)
-		if err != nil {
+		if err := memSQL.Insert(event); err != nil {
 			t.Errorf("Failed to insert event with timestamp %s: %v", tc.timestamp, err)
 		}
 	}
@@ -812,8 +817,7 @@ func TestMemSQL_Timestamp_EmptyValue(t *testing.T) {
 		CreatedAt: "",
 	}
 
-	err := memSQL.Insert(event)
-	if err != nil {
+	if err := memSQL.Insert(event); err != nil {
 		t.Fatalf("Insert failed: %v", err)
 	}
 
@@ -844,11 +848,13 @@ func TestMemSQL_Delete_SingleRecord(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30},
 		{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25},
 		{ID: "3", Name: "Charlie", Email: "charlie@example.com", Age: 35},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Delete one user
 	rowsAffected, err := memSQL.Delete("ID = ?", "2")
@@ -882,12 +888,14 @@ func TestMemSQL_Delete_MultipleRecords(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30},
 		{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25},
 		{ID: "3", Name: "Charlie", Email: "charlie@example.com", Age: 35},
 		{ID: "4", Name: "David", Email: "david@example.com", Age: 40},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Delete users over 30
 	rowsAffected, err := memSQL.Delete("Age > ?", 30)
@@ -921,7 +929,9 @@ func TestMemSQL_Delete_NoMatches(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.Insert(User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30})
+	if err := memSQL.Insert(User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30}); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	// Try to delete non-existent user
 	rowsAffected, err := memSQL.Delete("ID = ?", "999")
@@ -968,11 +978,13 @@ func TestMemSQL_Delete_All(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30},
 		{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25},
 		{ID: "3", Name: "Charlie", Email: "charlie@example.com", Age: 35},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Delete all users
 	rowsAffected, err := memSQL.Delete("1=1")
@@ -1002,10 +1014,12 @@ func TestMemSQL_DeleteOne_Success(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30},
 		{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Delete one specific user
 	err := memSQL.DeleteOne("ID = ?", "1")
@@ -1035,7 +1049,9 @@ func TestMemSQL_DeleteOne_NoRows(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.Insert(User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30})
+	if err := memSQL.Insert(User{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30}); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	// Try to delete non-existent user
 	err := memSQL.DeleteOne("ID = ?", "999")
@@ -1055,10 +1071,12 @@ func TestMemSQL_DeleteOne_MultipleRows(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Insert test data
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30},
 		{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 30},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Try to delete multiple users with same age
 	err := memSQL.DeleteOne("Age = ?", 30)
@@ -1101,11 +1119,13 @@ func TestMemSQL_Delete_WithJSONTags(t *testing.T) {
 	memSQL := NewMemSQL[Order](tableBuilder)
 
 	// Insert test data
-	memSQL.InsertMany([]Order{
+	if err := memSQL.InsertMany([]Order{
 		{OrderID: "o1", UserID: "u1", TotalPrice: 99.99, Quantity: 2},
 		{OrderID: "o2", UserID: "u2", TotalPrice: 149.99, Quantity: 3},
 		{OrderID: "o3", UserID: "u1", TotalPrice: 79.99, Quantity: 1},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Delete orders for user u1
 	rowsAffected, err := memSQL.Delete("user_id = ?", "u1")
@@ -1139,11 +1159,13 @@ func TestMemSQL_CRUD_Integration(t *testing.T) {
 	memSQL := NewMemSQL[User](tableBuilder)
 
 	// Create
-	memSQL.InsertMany([]User{
+	if err := memSQL.InsertMany([]User{
 		{ID: "1", Name: "Alice", Email: "alice@example.com", Age: 30},
 		{ID: "2", Name: "Bob", Email: "bob@example.com", Age: 25},
 		{ID: "3", Name: "Charlie", Email: "charlie@example.com", Age: 35},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Read
 	users, err := memSQL.Query("SELECT * FROM users ORDER BY ID")
@@ -1156,7 +1178,9 @@ func TestMemSQL_CRUD_Integration(t *testing.T) {
 
 	// Update (via delete and re-insert)
 	memSQL.DeleteOne("ID = ?", "2")
-	memSQL.Insert(User{ID: "2", Name: "Bob Updated", Email: "bob.new@example.com", Age: 26})
+	if err := memSQL.Insert(User{ID: "2", Name: "Bob Updated", Email: "bob.new@example.com", Age: 26}); err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
 
 	user, err := memSQL.QueryOne("SELECT * FROM users WHERE ID = ?", "2")
 	if err != nil {
@@ -1167,7 +1191,9 @@ func TestMemSQL_CRUD_Integration(t *testing.T) {
 	}
 
 	// Delete
-	memSQL.Delete("Age < ?", 30)
+	if _, err := memSQL.Delete("Age < ?", 30); err != nil {
+		t.Fatalf("Delete failed: %v", err)
+	}
 
 	remainingUsers, _ := memSQL.Query("SELECT * FROM users ORDER BY ID")
 	if len(remainingUsers) != 2 {
@@ -1196,12 +1222,14 @@ func TestMemSQL_Delete_WithTimestamp(t *testing.T) {
 	memSQL := NewMemSQL[Event](tableBuilder)
 
 	// Insert events with timestamps
-	memSQL.InsertMany([]Event{
+	if err := memSQL.InsertMany([]Event{
 		{ID: "e1", Name: "Event 1", CreatedAt: "2024-01-01T10:00:00Z"},
 		{ID: "e2", Name: "Event 2", CreatedAt: "2024-01-15T10:00:00Z"},
 		{ID: "e3", Name: "Event 3", CreatedAt: "2024-02-01T10:00:00Z"},
 		{ID: "e4", Name: "Event 4", CreatedAt: "2024-03-01T10:00:00Z"},
-	})
+	}); err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
 
 	// Delete old events (before Jan 20, 2024)
 	afterDate := int64(1705748400) // Jan 20, 2024 in Unix timestamp
