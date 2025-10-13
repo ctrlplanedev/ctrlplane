@@ -67,19 +67,12 @@ jobs:
           POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
         run: |
           # TODO: Run your migrations here
-          # Example: go run ../../packages/db/migrate.ts
           echo "Migrations would run here"
 
-      - name: Run all tests with coverage
+      - name: Run DB package tests
         env:
           POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
-          POSTGRES_APPLICATION_NAME: "workspace-engine-test"
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
-
-      - name: Run DB package tests specifically
-        env:
-          POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
-        run: go test -v -race ./pkg/db/...
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/db/...
 
       - name: Generate coverage report
         run: go tool cover -html=coverage.out -o coverage.html
@@ -105,9 +98,9 @@ jobs:
         with:
           script: |
             const coverage = '${{ steps.coverage.outputs.percentage }}';
-            const comment = `## 📊 Code Coverage Report (with DB Integration Tests)
+            const comment = `## 📊 DB Package Test Coverage
 
-            **workspace-engine** coverage: \`${coverage}\`
+            **pkg/db** coverage: \`${coverage}\`
 
             [View detailed coverage report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
 
