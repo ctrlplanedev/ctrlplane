@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/changeset"
 
 	"github.com/jackc/pgx/v5"
 )

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/changeset"
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -141,18 +141,16 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	if wsExists {
 		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 	}
-
 	changeSet := changeset.NewChangeSet()
 	if !wsExists {
-		fullWs, err := db.LoadWorkspace(ctx, rawEvent.WorkspaceID)
-		if err != nil {
+		ws = workspace.New(rawEvent.WorkspaceID)
+		if err := loadWorkspaceWithInitialState(ctx, ws); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to load workspace")
 			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
 			return fmt.Errorf("failed to load workspace: %w", err)
 		}
-		workspace.Set(rawEvent.WorkspaceID, fullWs)
-		ws = fullWs
+		workspace.Set(rawEvent.WorkspaceID, ws)
 		changeSet.IsInitialLoad = true
 	}
 	ctx = changeset.WithChangeSet(ctx, changeSet)

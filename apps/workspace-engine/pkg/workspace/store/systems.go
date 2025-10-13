@@ -2,9 +2,9 @@ package store
 
 import (
 	"context"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/changeset"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 )
