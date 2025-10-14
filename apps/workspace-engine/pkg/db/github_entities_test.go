@@ -220,6 +220,10 @@ func TestDBGithubEntities_WorkspaceIsolation(t *testing.T) {
 }
 
 func TestDBGithubEntities_NonexistentWorkspace(t *testing.T) {
+	// Setup test environment (needed for DB connection and skip logic)
+	_, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
 	// Try to get entities for a non-existent workspace
 	nonExistentWorkspaceID := uuid.New().String()
 
