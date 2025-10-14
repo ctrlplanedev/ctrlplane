@@ -8,12 +8,17 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var (
 	Topic   = getEnv("KAFKA_TOPIC", "workspace-events")
 	GroupID = getEnv("KAFKA_GROUP_ID", "workspace-engine")
 	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
+
+	tracer = otel.Tracer("kafka")
 )
 
 func getEnv(varName string, defaultValue string) string {
@@ -57,25 +62,40 @@ func RunConsumer(ctx context.Context) error {
 		default:
 		}
 
+		ctx, span := tracer.Start(ctx, "ReadMessage")
+		defer span.End()
+
+		span.SetAttributes(attribute.String("kafka.topic", Topic))
+		span.SetAttributes(attribute.String("kafka.group_id", GroupID))
+		span.SetAttributes(attribute.String("kafka.brokers", Brokers))
+
 		msg, err := c.ReadMessage(time.Second)
 		if err != nil {
 			if err.(kafka.Error).IsTimeout() {
 				log.Debug("Timeout, continuing")
 				time.Sleep(time.Second)
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "Timeout")
 				continue
 			}
 			log.Error("Consumer error", "error", err)
 			time.Sleep(time.Second)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "Consumer error")
 			continue
 		}
 
 		if err := handler.ListenAndRoute(ctx, msg); err != nil {
 			log.Error("Failed to read message", "error", err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "Failed to read message")
 			continue
 		}
 
 		if _, err := c.CommitMessage(msg); err != nil {
 			log.Error("Failed to commit message", "error", err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "Failed to commit message")
 			continue
 		}
 	}
