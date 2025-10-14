@@ -65,7 +65,6 @@ func RunConsumer(ctx context.Context) error {
 		msg, err := c.ReadMessage(time.Second)
 
 		ctx, span := tracer.Start(ctx, "ReadMessage")
-		defer span.End()
 
 		span.SetAttributes(attribute.String("kafka.topic", Topic))
 		span.SetAttributes(attribute.String("kafka.group_id", GroupID))
@@ -77,12 +76,14 @@ func RunConsumer(ctx context.Context) error {
 				time.Sleep(time.Second)
 				span.RecordError(err)
 				span.SetStatus(codes.Error, "Timeout")
+				span.End()
 				continue
 			}
 			log.Error("Consumer error", "error", err)
 			time.Sleep(time.Second)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Consumer error")
+			span.End()
 			continue
 		}
 
@@ -90,6 +91,7 @@ func RunConsumer(ctx context.Context) error {
 			log.Error("Failed to read message", "error", err)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Failed to read message")
+			span.End()
 			continue
 		}
 
@@ -97,7 +99,10 @@ func RunConsumer(ctx context.Context) error {
 			log.Error("Failed to commit message", "error", err)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Failed to commit message")
+			span.End()
 			continue
 		}
+
+		span.End()
 	}
 }
