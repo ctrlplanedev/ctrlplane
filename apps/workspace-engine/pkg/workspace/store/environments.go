@@ -8,6 +8,8 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func NewEnvironments(store *Store) *Environments {
@@ -54,16 +56,28 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 		// Pre-allocate slice with exact capacity to avoid reallocations
 		resourceCount := e.repo.Resources.Count()
 		repoResources := make([]*oapi.Resource, 0, resourceCount)
-		
+
 		// Use IterCb for more efficient iteration (no channel overhead)
 		e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
 			repoResources = append(repoResources, resource)
 		})
 
+		span.SetAttributes(
+			attribute.Int("repo.resource_count", resourceCount),
+			attribute.Int("repo.resources_loaded", len(repoResources)),
+		)
+
 		environmentResources, err := selector.FilterResources(ctx, environment.ResourceSelector, repoResources)
 		if err != nil {
+			span.SetAttributes(
+				attribute.String("environment.resource_selector", fmt.Sprintf("%v", environment.ResourceSelector)),
+			)
 			return nil, fmt.Errorf("failed to filter resources for environment %s: %w", environmentId, err)
 		}
+
+		span.SetAttributes(
+			attribute.Int("environment.matched_resource_count", len(environmentResources)),
+		)
 
 		return environmentResources, nil
 	}
