@@ -35,7 +35,7 @@ func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId strin
 		return fmt.Errorf("deployment %s not found", deploymentId)
 	}
 
-	return mv.RunRecompute(ctx)
+	return mv.StartRecompute(ctx)
 }
 
 // deploymentResourceRecomputeFunc returns a function that computes resources for a specific deployment
