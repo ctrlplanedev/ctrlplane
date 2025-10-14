@@ -6,12 +6,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
-
-var tracer = otel.Tracer("selector")
 
 type Selector any
 
@@ -35,9 +30,6 @@ func FilterMatchingResources(ctx context.Context, sel *oapi.Selector, resource *
 }
 
 func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.Resource) (map[string]*oapi.Resource, error) {
-	ctx, span := tracer.Start(ctx, "FilterResources")
-	defer span.End()
-
 	// If no selector is provided, return no resources
 	if sel == nil {
 		return map[string]*oapi.Resource{}, nil
@@ -56,8 +48,6 @@ func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.
 	if err != nil {
 		return nil, err
 	}
-
-	span.SetAttributes(attribute.Int("resources.input", len(resources)))
 
 	selector, err := jsonselector.ConvertToSelector(ctx, unknownCondition)
 	if err != nil {
@@ -79,6 +69,5 @@ func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.
 		}
 	}
 
-	span.SetAttributes(attribute.Int("resources.output", len(matchedResources)))
 	return matchedResources, nil
 }
