@@ -62,12 +62,34 @@ jobs:
             sleep 2
           done
 
+      - name: Set up Node.js for migrations
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies for migrations
+        working-directory: ./
+        run: |
+          pnpm install --filter @ctrlplane/db --filter @ctrlplane/validators --filter @ctrlplane/logger --filter @ctrlplane/secrets --frozen-lockfile
+
+      - name: Build packages needed for migrations
+        working-directory: ./
+        run: |
+          pnpm --filter @ctrlplane/validators build
+          pnpm --filter @ctrlplane/logger build
+          pnpm --filter @ctrlplane/secrets build
+          pnpm --filter @ctrlplane/db build
+
       - name: Run migrations
+        working-directory: ./packages/db
         env:
           POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
-        run: |
-          # TODO: Run your migrations here
-          echo "Migrations would run here"
+        run: npx tsx ./migrate.ts
 
       - name: Run DB package tests
         env:
