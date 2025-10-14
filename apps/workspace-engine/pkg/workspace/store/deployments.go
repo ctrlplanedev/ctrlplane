@@ -41,24 +41,30 @@ func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId strin
 // deploymentResourceRecomputeFunc returns a function that computes resources for a specific deployment
 func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*oapi.Resource] {
 	return func(ctx context.Context) (map[string]*oapi.Resource, error) {
+		_, span := tracer.Start(ctx, "deploymentResourceRecomputeFunc")
+		defer span.End()
 		deployment, exists := e.repo.Deployments.Get(deploymentId)
 		if !exists {
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 
 		if deployment.ResourceSelector == nil {
+			// Use IterCb for more efficient iteration (no channel overhead)
 			allResources := make(map[string]*oapi.Resource, e.repo.Resources.Count())
-			for resourceItem := range e.repo.Resources.IterBuffered() {
-				allResources[resourceItem.Key] = resourceItem.Val
-			}
+			e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
+				allResources[key] = resource
+			})
 			return allResources, nil
 		}
 
-		items := make([]*oapi.Resource, 0, e.repo.Resources.Count())
-		for resourceItem := range e.repo.Resources.IterBuffered() {
-			resource := resourceItem.Val
+		// Pre-allocate slice with exact capacity
+		resourceCount := e.repo.Resources.Count()
+		items := make([]*oapi.Resource, 0, resourceCount)
+		
+		// Use IterCb for more efficient iteration (no channel overhead)
+		e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
 			items = append(items, resource)
-		}
+		})
 
 		deploymentResources, err := selector.FilterResources(ctx, deployment.ResourceSelector, items)
 		if err != nil {
@@ -76,12 +82,12 @@ func (e *Deployments) deploymentVersionRecomputeFunc(deploymentId string) materi
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 		deploymentVersions := make(map[string]*oapi.DeploymentVersion, e.repo.DeploymentVersions.Count())
-		for versionItem := range e.repo.DeploymentVersions.IterBuffered() {
-			if versionItem.Val.DeploymentId != deploymentId {
-				continue
+		// Use IterCb for more efficient iteration (no channel overhead)
+		e.repo.DeploymentVersions.IterCb(func(key string, version *oapi.DeploymentVersion) {
+			if version.DeploymentId == deploymentId {
+				deploymentVersions[key] = version
 			}
-			deploymentVersions[versionItem.Key] = versionItem.Val
-		}
+		})
 		return deploymentVersions, nil
 	}
 }
@@ -176,12 +182,12 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 
 func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {
 	vars := make(map[string]*oapi.DeploymentVariable)
-	for variable := range e.repo.DeploymentVariables.IterBuffered() {
-		if variable.Val.DeploymentId != deploymentId {
-			continue
+	// Use IterCb for more efficient iteration (no channel overhead)
+	e.repo.DeploymentVariables.IterCb(func(key string, variable *oapi.DeploymentVariable) {
+		if variable.DeploymentId == deploymentId {
+			vars[variable.Key] = variable
 		}
-		vars[variable.Val.Key] = variable.Val
-	}
+	})
 	return vars
 }
 

@@ -43,16 +43,22 @@ func (e *Environments) ReinitializeMaterializedViews() {
 // environmentResourceRecomputeFunc returns a function that computes resources for a specific environment
 func (e *Environments) environmentResourceRecomputeFunc(environmentId string) materialized.RecomputeFunc[map[string]*oapi.Resource] {
 	return func(ctx context.Context) (map[string]*oapi.Resource, error) {
+		_, span := tracer.Start(ctx, "environmentResourceRecomputeFunc")
+		defer span.End()
+
 		environment, exists := e.repo.Environments.Get(environmentId)
 		if !exists {
 			return nil, fmt.Errorf("environment %s not found", environmentId)
 		}
 
-		repoResources := make([]*oapi.Resource, 0, e.repo.Resources.Count())
-		for resourceItem := range e.repo.Resources.IterBuffered() {
-			resource := resourceItem.Val
+		// Pre-allocate slice with exact capacity to avoid reallocations
+		resourceCount := e.repo.Resources.Count()
+		repoResources := make([]*oapi.Resource, 0, resourceCount)
+		
+		// Use IterCb for more efficient iteration (no channel overhead)
+		e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
 			repoResources = append(repoResources, resource)
-		}
+		})
 
 		environmentResources, err := selector.FilterResources(ctx, environment.ResourceSelector, repoResources)
 		if err != nil {

@@ -60,7 +60,9 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	}()
 	wg.Wait()
 
-	r.store.ReleaseTargets.Recompute(ctx)
+	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil {
+		log.Error("Failed to recompute release targets", "error", err)
+	}
 
 	if cs, ok := changeset.FromContext(ctx); ok {
 		cs.Record("resource", changeset.ChangeTypeInsert, resource.Id, resource)

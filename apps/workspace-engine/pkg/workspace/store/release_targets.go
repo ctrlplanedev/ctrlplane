@@ -30,8 +30,8 @@ func (r *ReleaseTargets) Items(ctx context.Context) map[string]*oapi.ReleaseTarg
 	return r.targets.Get()
 }
 
-func (r *ReleaseTargets) Recompute(ctx context.Context) {
-	_ = r.targets.StartRecompute(ctx)
+func (r *ReleaseTargets) Recompute(ctx context.Context) error {
+	return r.targets.StartRecompute(ctx)
 }
 
 func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.ReleaseTarget, error) {
