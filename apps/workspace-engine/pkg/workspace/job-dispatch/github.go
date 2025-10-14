@@ -23,13 +23,47 @@ type githubJobConfig struct {
 	Ref            *string `json:"ref,omitempty"`
 }
 
+// GithubClient interface for dispatching workflows
+type GithubClient interface {
+	DispatchWorkflow(ctx context.Context, owner, repo string, workflowID int64, ref string, inputs map[string]any) error
+}
+
+// realGithubClient implements GithubClient using the actual GitHub API
+type realGithubClient struct {
+	client *github.Client
+}
+
+func (r *realGithubClient) DispatchWorkflow(ctx context.Context, owner, repo string, workflowID int64, ref string, inputs map[string]any) error {
+	_, err := r.client.Actions.CreateWorkflowDispatchEventByID(
+		ctx,
+		owner,
+		repo,
+		workflowID,
+		github.CreateWorkflowDispatchEventRequest{
+			Ref:    ref,
+			Inputs: inputs,
+		},
+	)
+	return err
+}
+
 type GithubDispatcher struct {
-	repo *repository.Repository
+	repo          *repository.Repository
+	clientFactory func(installationID int) (GithubClient, error)
 }
 
 func NewGithubDispatcher(repo *repository.Repository) *GithubDispatcher {
 	return &GithubDispatcher{
-		repo: repo,
+		repo:          repo,
+		clientFactory: nil, // will use default
+	}
+}
+
+// NewGithubDispatcherWithClientFactory creates a dispatcher with a custom client factory (useful for testing)
+func NewGithubDispatcherWithClientFactory(repo *repository.Repository, clientFactory func(installationID int) (GithubClient, error)) *GithubDispatcher {
+	return &GithubDispatcher{
+		repo:          repo,
+		clientFactory: clientFactory,
 	}
 }
 
@@ -59,7 +93,7 @@ func (d *GithubDispatcher) getEnv(key string) string {
 	return os.Getenv(key)
 }
 
-func (d *GithubDispatcher) createGithubClient(installationID int) (*github.Client, error) {
+func (d *GithubDispatcher) createGithubClient(installationID int) (GithubClient, error) {
 	appIDStr := d.getEnv("GITHUB_BOT_APP_ID")
 	privateKey := d.getEnv("GITHUB_BOT_PRIVATE_KEY")
 
@@ -82,11 +116,22 @@ func (d *GithubDispatcher) createGithubClient(installationID int) (*github.Clien
 		return nil, fmt.Errorf("failed to create GitHub installation transport: %w", err)
 	}
 
-	return github.NewClient(&http.Client{Transport: itr}), nil
+	return &realGithubClient{
+		client: github.NewClient(&http.Client{Transport: itr}),
+	}, nil
 }
 
 func (d *GithubDispatcher) sendToGithub(ctx context.Context, job *oapi.Job, cfg githubJobConfig, ghEntity *oapi.GithubEntity) error {
-	client, err := d.createGithubClient(ghEntity.InstallationId)
+	var client GithubClient
+	var err error
+
+	// Use custom client factory if provided, otherwise use default
+	if d.clientFactory != nil {
+		client, err = d.clientFactory(ghEntity.InstallationId)
+	} else {
+		client, err = d.createGithubClient(ghEntity.InstallationId)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -98,15 +143,13 @@ func (d *GithubDispatcher) sendToGithub(ctx context.Context, job *oapi.Job, cfg 
 
 	inputs := map[string]any{"job_id": job.Id}
 
-	_, err = client.Actions.CreateWorkflowDispatchEventByID(
+	err = client.DispatchWorkflow(
 		ctx,
 		cfg.Owner,
 		cfg.Repo,
 		int64(cfg.WorkflowId),
-		github.CreateWorkflowDispatchEventRequest{
-			Ref:    ref,
-			Inputs: inputs,
-		},
+		ref,
+		inputs,
 	)
 
 	if err != nil {
