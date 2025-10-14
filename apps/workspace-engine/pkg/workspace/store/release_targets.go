@@ -2,12 +2,15 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/materialized"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace/store/release_targets")
@@ -106,4 +109,67 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 	span.SetAttributes(attribute.Int("count", len(releaseTargets)))
 
 	return releaseTargets, nil
+}
+
+func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.Policy, error) {
+	_, span := tracer.Start(ctx, "computePolicies")
+	defer span.End()
+
+	environments, ok := r.store.Environments.Get(releaseTarget.EnvironmentId)
+	if !ok {
+		span.SetAttributes(attribute.String("environment.id", releaseTarget.EnvironmentId))
+		span.SetStatus(codes.Error, "Environment not found")
+		span.RecordError(fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId))
+		return nil, fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId)
+	}
+	deployments, ok := r.store.Deployments.Get(releaseTarget.DeploymentId)
+	if !ok {
+		span.SetAttributes(attribute.String("deployment.id", releaseTarget.DeploymentId))
+		span.SetStatus(codes.Error, "Deployment not found")
+		span.RecordError(fmt.Errorf("deployment %s not found", releaseTarget.DeploymentId))
+		return nil, fmt.Errorf("deployment %s not found", releaseTarget.DeploymentId)
+	}
+	resources, ok := r.store.Resources.Get(releaseTarget.ResourceId)
+	if !ok {
+		span.SetAttributes(attribute.String("resource.id", releaseTarget.ResourceId))
+		span.SetStatus(codes.Error, "Resource not found")
+		span.RecordError(fmt.Errorf("resource %s not found", releaseTarget.ResourceId))
+		return nil, fmt.Errorf("resource %s not found", releaseTarget.ResourceId)
+	}
+
+	matchingPolicies := make(map[string]*oapi.Policy)
+
+	for policyItem := range r.store.Policies.IterBuffered() {
+		policy := policyItem.Val
+		hasMatch := false
+		for _, policyTarget := range policy.Selectors {
+			if policyTarget.EnvironmentSelector != nil {
+				ok, _ := selector.Match(ctx, policyTarget.EnvironmentSelector, environments)
+				if !ok {
+					continue
+				}
+			}
+			if policyTarget.DeploymentSelector != nil {
+				ok, _ := selector.Match(ctx, policyTarget.DeploymentSelector, deployments)
+				if !ok {
+					continue
+				}
+			}
+			if policyTarget.ResourceSelector != nil {
+				ok, _ := selector.Match(ctx, policyTarget.ResourceSelector, resources)
+				if !ok {
+					continue
+				}
+			}
+		}
+		if hasMatch {
+			matchingPolicies[policy.Id] = policy
+		}
+	}
+
+	return matchingPolicies, nil
+}
+
+func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.Policy, error) {
+	return r.computePolicies(ctx, releaseTarget)
 }
