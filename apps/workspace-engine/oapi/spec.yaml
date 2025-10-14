@@ -1151,6 +1151,17 @@ components:
         deploymentId:
           type: string
 
+    GithubEntity:
+      type: object
+      required:
+        - installationId
+        - slug
+      properties:
+        installationId:
+          type: integer
+        slug:
+          type: string
+
     BooleanValue:
       type: boolean
     NumberValue:

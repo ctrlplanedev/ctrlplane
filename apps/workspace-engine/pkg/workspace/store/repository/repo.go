@@ -73,6 +73,7 @@ func New() *Repository {
 		JobAgents:           cmap.New[*oapi.JobAgent](),
 		UserApprovalRecords: cmap.New[*oapi.UserApprovalRecord](),
 		RelationshipRules:   cmap.New[*oapi.RelationshipRule](),
+		GithubEntities:      cmap.New[*oapi.GithubEntity](),
 	}
 }
 
@@ -95,4 +96,6 @@ type Repository struct {
 
 	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
+
+	GithubEntities cmap.ConcurrentMap[string, *oapi.GithubEntity]
 }
