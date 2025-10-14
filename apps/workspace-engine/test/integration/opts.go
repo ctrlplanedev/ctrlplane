@@ -34,6 +34,9 @@ type ReleaseOption func(*TestWorkspace, *oapi.Release)
 // PolicyOption configures a Policy
 type PolicyOption func(*TestWorkspace, *oapi.Policy, *eventsBuilder)
 
+// PolicyRuleOption configures a PolicyRule
+type PolicyRuleOption func(*TestWorkspace, *oapi.PolicyRule)
+
 // PolicyTargetSelectorOption configures a PolicyTargetSelector
 type PolicyTargetSelectorOption func(*TestWorkspace, *oapi.PolicyTargetSelector)
 
@@ -444,6 +447,18 @@ func EnvironmentNoResourceSelector() EnvironmentOption {
 	}
 }
 
+func EnvironmentJsonResourceAllSelector() EnvironmentOption {
+	return func(_ *TestWorkspace, e *oapi.Environment) {
+		s := &oapi.Selector{}
+		_ = s.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
+			"type":     "name",
+			"operator": "starts-with",
+			"value":    "",
+		}})
+		e.ResourceSelector = s
+	}
+}
+
 // ===== Resource Options =====
 
 func ResourceName(name string) ResourceOption {
@@ -566,6 +581,38 @@ func WithPolicyTargetSelector(options ...PolicyTargetSelectorOption) PolicyOptio
 	}
 }
 
+// ===== PolicyRule Options =====
+
+func PolicyRuleID(id string) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) {
+		r.Id = id
+	}
+}
+
+func PolicyRulePolicyID(policyID string) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) {
+		r.PolicyId = policyID
+	}
+}
+
+func PolicyRuleAnyApproval(minApprovals int32) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) {
+		r.AnyApproval = &oapi.AnyApprovalRule{
+			MinApprovals: minApprovals,
+		}
+	}
+}
+
+func WithPolicyRule(options ...PolicyRuleOption) PolicyOption {
+	return func(ws *TestWorkspace, p *oapi.Policy, _ *eventsBuilder) {
+		rule := &oapi.PolicyRule{}
+		for _, option := range options {
+			option(ws, rule)
+		}
+		p.Rules = append(p.Rules, *rule)
+	}
+}
+
 // ===== PolicyTargetSelector Options =====
 
 func PolicyTargetSelectorID(id string) PolicyTargetSelectorOption {
@@ -594,6 +641,18 @@ func PolicyTargetJsonResourceSelector(selector map[string]any) PolicyTargetSelec
 	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
 		sel := &oapi.Selector{}
 		_ = sel.FromJsonSelector(oapi.JsonSelector{Json: selector})
+		s.ResourceSelector = sel
+	}
+}
+
+func PolicyTargetJsonResourceAllSelector() PolicyTargetSelectorOption {
+	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
+		sel := &oapi.Selector{}
+		_ = sel.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
+			"type":     "name",
+			"operator": "starts-with",
+			"value":    "",
+		}})
 		s.ResourceSelector = sel
 	}
 }

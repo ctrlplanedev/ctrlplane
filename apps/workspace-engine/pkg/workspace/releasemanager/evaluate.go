@@ -389,5 +389,9 @@ func (m *Manager) IntegrationDispatch(ctx context.Context, job *oapi.Job) error 
 		return jobdispatch.NewGithubDispatcher(m.store.Repo()).DispatchJob(ctx, job)
 	}
 
+	if jobAgent.Type == string(jobdispatch.JobAgentTypeTest) {
+		return nil
+	}
+
 	return fmt.Errorf("job agent %s not supported", job.JobAgentId)
 }
