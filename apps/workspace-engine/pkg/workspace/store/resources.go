@@ -5,6 +5,7 @@ import (
 	"sync"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
@@ -60,7 +61,7 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	}()
 	wg.Wait()
 
-	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil {
+	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
 		span.RecordError(err)
 		log.Error("Failed to recompute release targets", "error", err)
 	}
@@ -106,7 +107,7 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	}()
 	wg.Wait()
 
-	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil {
+	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
 		span.RecordError(err)
 		log.Error("Failed to recompute release targets", "error", err)
 	}
