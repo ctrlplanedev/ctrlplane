@@ -352,9 +352,9 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 		ResourceId:    r1ID,
 	}
 
-	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
-	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
-	policies3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt3)
+	policies1, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt1)
+	policies2, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt2)
+	policies3, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt3)
 
 	// Expected: Only d1 (prod-web) should match the policy
 	if len(policies1) != 1 {
@@ -469,9 +469,9 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 		ResourceId:    r1ID,
 	}
 
-	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
-	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
-	policies3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt3)
+	policies1, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt1)
+	policies2, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt2)
+	policies3, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt3)
 
 	// Expected: Only e1 (prod-us-east) should match the policy
 	if len(policies1) != 1 {
@@ -594,7 +594,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
+	policies1, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt1)
 	if len(policies1) != 1 {
 		t.Errorf("expected policy to match d1+e1+r1, got %d policies", len(policies1))
 	}
@@ -605,7 +605,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
+	policies2, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt2)
 	if len(policies2) != 1 {
 		t.Errorf("expected policy to match d3+e2+r1, got %d policies", len(policies2))
 	}
@@ -617,7 +617,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	policies3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt3)
+	policies3, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt3)
 	if len(policies3) != 0 {
 		t.Errorf("expected policy NOT to match d2+e1+r1, got %d policies", len(policies3))
 	}
@@ -628,7 +628,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	policies4 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt4)
+	policies4, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt4)
 	if len(policies4) != 0 {
 		t.Errorf("expected policy NOT to match d1+e2+r1, got %d policies", len(policies4))
 	}

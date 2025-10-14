@@ -53,7 +53,7 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 	}
 
 	// Verify the policy matches the release target
-	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
+	policies, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt)
 	if len(policies) != 1 {
 		t.Fatalf("expected policy to match 1 release target, got %d", len(policies))
 	}
@@ -121,13 +121,13 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 	}
 
 	// Verify policy matches prod release target
-	policiesProd := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtProd)
+	policiesProd, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtProd)
 	if len(policiesProd) != 1 {
 		t.Fatalf("expected policy to match prod release target, got %d policies", len(policiesProd))
 	}
 
 	// Verify policy does NOT match dev release target
-	policiesDev := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtDev)
+	policiesDev, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtDev)
 	if len(policiesDev) != 0 {
 		t.Fatalf("expected policy NOT to match dev release target, got %d policies", len(policiesDev))
 	}
@@ -209,13 +209,13 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	}
 
 	// Verify policy matches us-east release target
-	policiesEast := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtEast)
+	policiesEast, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtEast)
 	if len(policiesEast) != 1 {
 		t.Fatalf("expected policy to match us-east release target, got %d policies", len(policiesEast))
 	}
 
 	// Verify policy does NOT match us-west release target
-	policiesWest := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtWest)
+	policiesWest, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtWest)
 	if len(policiesWest) != 0 {
 		t.Fatalf("expected policy NOT to match us-west release target, got %d policies", len(policiesWest))
 	}
@@ -294,13 +294,13 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 	}
 
 	// Verify policy matches critical release target
-	policiesCritical := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtCritical)
+	policiesCritical, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtCritical)
 	if len(policiesCritical) != 1 {
 		t.Fatalf("expected policy to match critical release target, got %d policies", len(policiesCritical))
 	}
 
 	// Verify policy does NOT match normal release target
-	policiesNormal := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNormal)
+	policiesNormal, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtNormal)
 	if len(policiesNormal) != 0 {
 		t.Fatalf("expected policy NOT to match normal release target, got %d policies", len(policiesNormal))
 	}
@@ -402,7 +402,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	}
 
 	// Test the matching release target
-	policiesMatch := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtMatch)
+	policiesMatch, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtMatch)
 	if len(policiesMatch) != 1 {
 		t.Fatalf("expected policy to match prod+east+critical release target, got %d policies", len(policiesMatch))
 	}
@@ -414,7 +414,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 		ResourceId:    r1.Id,
 	}
 
-	policiesNoMatch := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNoMatch)
+	policiesNoMatch, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtNoMatch)
 	if len(policiesNoMatch) != 0 {
 		t.Fatalf("expected policy NOT to match dev+east+critical release target, got %d policies", len(policiesNoMatch))
 	}
@@ -426,7 +426,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 		ResourceId:    r1.Id,
 	}
 
-	policiesNoMatch2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNoMatch2)
+	policiesNoMatch2, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtNoMatch2)
 	if len(policiesNoMatch2) != 0 {
 		t.Fatalf("expected policy NOT to match prod+west+critical release target, got %d policies", len(policiesNoMatch2))
 	}
@@ -438,7 +438,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 		ResourceId:    r2.Id,
 	}
 
-	policiesNoMatch3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNoMatch3)
+	policiesNoMatch3, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtNoMatch3)
 	if len(policiesNoMatch3) != 0 {
 		t.Fatalf("expected policy NOT to match prod+east+normal release target, got %d policies", len(policiesNoMatch3))
 	}
@@ -515,12 +515,12 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 		ResourceId:    r1ID,
 	}
 
-	policiesProd := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtProd)
+	policiesProd, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtProd)
 	if len(policiesProd) != 1 {
 		t.Fatalf("expected policy to match prod release target, got %d policies", len(policiesProd))
 	}
 
-	policiesStaging := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtStaging)
+	policiesStaging, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtStaging)
 	if len(policiesStaging) != 1 {
 		t.Fatalf("expected policy to match staging release target, got %d policies", len(policiesStaging))
 	}
@@ -579,12 +579,12 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 		ResourceId:    r1.Id,
 	}
 
-	policiesProd := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtProd)
+	policiesProd, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtProd)
 	if len(policiesProd) != 1 {
 		t.Fatalf("expected policy to match prod release target initially, got %d policies", len(policiesProd))
 	}
 
-	policiesDev := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtDev)
+	policiesDev, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtDev)
 	if len(policiesDev) != 1 {
 		t.Fatalf("expected policy to match dev release target initially, got %d policies", len(policiesDev))
 	}
@@ -600,12 +600,12 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Now only prod should match
-	policiesProdAfter := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtProd)
+	policiesProdAfter, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtProd)
 	if len(policiesProdAfter) != 1 {
 		t.Fatalf("expected policy to match prod release target after update, got %d policies", len(policiesProdAfter))
 	}
 
-	policiesDevAfter := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtDev)
+	policiesDevAfter, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtDev)
 	if len(policiesDevAfter) != 0 {
 		t.Fatalf("expected policy NOT to match dev release target after update, got %d policies", len(policiesDevAfter))
 	}
@@ -652,7 +652,7 @@ func TestEngine_PolicyDelete(t *testing.T) {
 		ResourceId:    r1.Id,
 	}
 
-	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
+	policies, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt)
 	if len(policies) != 1 {
 		t.Fatalf("expected 1 matching policy, got %d", len(policies))
 	}
@@ -661,7 +661,7 @@ func TestEngine_PolicyDelete(t *testing.T) {
 	engine.PushEvent(ctx, handler.PolicyDelete, policy)
 
 	// Verify policy no longer matches
-	policiesAfter := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
+	policiesAfter, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt)
 	if len(policiesAfter) != 0 {
 		t.Fatalf("expected 0 matching policies after deletion, got %d", len(policiesAfter))
 	}
@@ -743,7 +743,7 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 		ResourceId:    r1.Id,
 	}
 
-	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
+	policies, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt)
 	if len(policies) != 3 {
 		t.Fatalf("expected 3 matching policies, got %d", len(policies))
 	}
@@ -815,7 +815,7 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 		ResourceId:    r1.Id,
 	}
 
-	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt)
+	policies, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt)
 	if len(policies) != 0 {
 		t.Fatalf("expected 0 matching policies, got %d", len(policies))
 	}
@@ -863,7 +863,7 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 	}
 
 	// Should not panic and return empty list
-	policies := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rtNonExistent)
+	policies, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtNonExistent)
 	if len(policies) != 0 {
 		t.Fatalf("expected 0 matching policies for non-existent release target, got %d", len(policies))
 	}
@@ -964,7 +964,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	policies1 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt1)
+	policies1, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt1)
 	if len(policies1) != 1 {
 		t.Fatalf("expected policy to match d1+e1+r1, got %d policies", len(policies1))
 	}
@@ -975,7 +975,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	policies2 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt2)
+	policies2, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt2)
 	if len(policies2) != 1 {
 		t.Fatalf("expected policy to match d3+e2+r1, got %d policies", len(policies2))
 	}
@@ -986,7 +986,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e1ID,
 		ResourceId:    r1ID,
 	}
-	policies3 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt3)
+	policies3, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt3)
 	if len(policies3) != 0 {
 		t.Fatalf("expected policy NOT to match d2+e1+r1, got %d policies", len(policies3))
 	}
@@ -997,8 +997,90 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		EnvironmentId: e2ID,
 		ResourceId:    r1ID,
 	}
-	policies4 := engine.Workspace().Policies().GetPoliciesForReleaseTarget(ctx, rt4)
+	policies4, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rt4)
 	if len(policies4) != 0 {
 		t.Fatalf("expected policy NOT to match d1+e2+r1, got %d policies", len(policies4))
+	}
+}
+
+func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
+	d1ID := "deployment-prod"
+	d2ID := "deployment-staging"
+	e1ID := "env-1"
+	r1ID := "resource-1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithPolicy(
+			integration.PolicyName("policy-prod-or-staging"),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
+					"type":     "name",
+					"operator": "contains",
+					"value":    "prod",
+				}),
+			),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
+					"type":     "name",
+					"operator": "contains",
+					"value":    "staging",
+				}),
+			),
+		),
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.DeploymentID(d1ID),
+				integration.DeploymentName("deployment-prod"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(d2ID),
+				integration.DeploymentName("deployment-staging"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1ID),
+				integration.EnvironmentJsonResourceSelector(map[string]any{
+					"type":     "name",
+					"operator": "starts-with",
+					"value":    "",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1ID),
+		),
+	)
+
+	ctx := context.Background()
+
+	// 2 release targets should exist
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
+	if len(releaseTargets) != 2 {
+		t.Fatalf("expected 2 release targets, got %d", len(releaseTargets))
+	}
+
+	// Both release targets should match the policy
+	rtProd := &oapi.ReleaseTarget{
+		DeploymentId:  d1ID,
+		EnvironmentId: e1ID,
+		ResourceId:    r1ID,
+	}
+
+	rtStaging := &oapi.ReleaseTarget{
+		DeploymentId:  d2ID,
+		EnvironmentId: e1ID,
+		ResourceId:    r1ID,
+	}
+
+	policiesProd, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtProd)
+	if len(policiesProd) != 1 {
+		t.Fatalf("expected policy to match prod release target, got %d policies", len(policiesProd))
+	}
+
+	policiesStaging, _ := engine.Workspace().ReleaseTargets().GetPolicies(ctx, rtStaging)
+	if len(policiesStaging) != 1 {
+		t.Fatalf("expected policy to match staging release target, got %d policies", len(policiesStaging))
 	}
 }
