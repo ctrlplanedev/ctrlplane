@@ -39,6 +39,7 @@ COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/secrets/package.json ./packages/secrets/package.json
 COPY packages/events/package.json ./packages/events/package.json
 COPY packages/rule-engine/package.json ./packages/rule-engine/package.json
+COPY packages/workspace-engine-sdk/package.json ./packages/workspace-engine-sdk/package.json
 
 COPY apps/webservice/package.json ./apps/webservice/package.json
 

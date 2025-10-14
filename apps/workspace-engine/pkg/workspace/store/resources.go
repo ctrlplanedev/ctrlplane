@@ -61,6 +61,7 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	wg.Wait()
 
 	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil {
+		span.RecordError(err)
 		log.Error("Failed to recompute release targets", "error", err)
 	}
 
@@ -76,6 +77,11 @@ func (r *Resources) Get(id string) (*oapi.Resource, bool) {
 }
 
 func (r *Resources) Remove(ctx context.Context, id string) {
+	ctx, span := tracer.Start(ctx, "Remove", trace.WithAttributes(
+		attribute.String("resource.id", id),
+	))
+	defer span.End()
+
 	r.repo.Resources.Remove(id)
 
 	var wg sync.WaitGroup
@@ -100,7 +106,10 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	}()
 	wg.Wait()
 
-	r.store.ReleaseTargets.Recompute(ctx)
+	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil {
+		span.RecordError(err)
+		log.Error("Failed to recompute release targets", "error", err)
+	}
 
 	if cs, ok := changeset.FromContext(ctx); ok {
 		cs.Record("resource", changeset.ChangeTypeDelete, id, nil)
