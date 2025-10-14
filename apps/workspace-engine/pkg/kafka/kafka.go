@@ -9,8 +9,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 var (
@@ -74,29 +72,14 @@ func RunConsumer(ctx context.Context) error {
 			time.Sleep(time.Second)
 			continue
 		}
-
-		ctx, span := tracer.Start(ctx, "ReadMessage")
-
-		span.SetAttributes(attribute.String("kafka.topic", Topic))
-		span.SetAttributes(attribute.String("kafka.group_id", GroupID))
-		span.SetAttributes(attribute.String("kafka.brokers", Brokers))
-
 		if err := handler.ListenAndRoute(ctx, msg); err != nil {
 			log.Error("Failed to read message", "error", err)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "Failed to read message")
-			span.End()
 			continue
 		}
 
 		if _, err := c.CommitMessage(msg); err != nil {
 			log.Error("Failed to commit message", "error", err)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "Failed to commit message")
-			span.End()
 			continue
 		}
-
-		span.End()
 	}
 }
