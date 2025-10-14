@@ -46,7 +46,10 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 
 	if len(releaseTargets) != 0 {
 		t.Fatalf("release targets count is %d, want 0", len(releaseTargets))
@@ -64,15 +67,24 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 	r2.Metadata = map[string]string{"env": "qa"}
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err = engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 
 	if len(releaseTargets) != 0 {
 		// We have no environments yet, so no release targets
 		t.Fatalf("release targets count is %d, want 0", len(releaseTargets))
 	}
 
-	d1Resources := engine.Workspace().Deployments().Resources(deploymentID1)
-	d2Resources := engine.Workspace().Deployments().Resources(deploymentID2)
+	d1Resources, err := engine.Workspace().Deployments().Resources(deploymentID1)
+	if err != nil {
+		t.Fatalf("failed to get deployment resources")
+	}
+	d2Resources, err := engine.Workspace().Deployments().Resources(deploymentID2)
+	if err != nil {
+		t.Fatalf("failed to get deployment resources")
+	}
 
 	if len(d1Resources) != 1 {
 		t.Fatalf("resources count is %d, want 1", len(d1Resources))

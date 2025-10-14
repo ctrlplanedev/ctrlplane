@@ -95,15 +95,18 @@ func (e *Environments) HasResource(envId string, resourceId string) bool {
 	return false
 }
 
-func (e *Environments) Resources(id string) map[string]*oapi.Resource {
+func (e *Environments) Resources(id string) (map[string]*oapi.Resource, error) {
 	mv, ok := e.resources.Get(id)
 	if !ok {
-		return map[string]*oapi.Resource{}
+		return nil, fmt.Errorf("environment %s not found", id)
 	}
 
-	_ = mv.WaitRecompute()
+	if err := mv.WaitRecompute(); err != nil && !materialized.IsNotStarted(err) {
+		return nil, err
+	}
+
 	allResources := mv.Get()
-	return allResources
+	return allResources, nil
 }
 
 func (e *Environments) RecomputeResources(ctx context.Context, environmentId string) error {

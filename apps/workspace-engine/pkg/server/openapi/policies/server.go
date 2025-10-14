@@ -21,7 +21,13 @@ func (s *Policies) ListPolicies(c *gin.Context, workspaceId string) {
 		return
 	}
 
-	releaseTargetsMap := ws.ReleaseTargets().Items(c)
+	releaseTargetsMap, err := ws.ReleaseTargets().Items(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargetsMap))
 	for _, target := range releaseTargetsMap {
 		releaseTargetsList = append(releaseTargetsList, target)

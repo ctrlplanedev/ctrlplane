@@ -50,7 +50,13 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 		return
 	}
 
-	resources := ws.Environments().Resources(environmentId)
+	resources, err := ws.Environments().Resources(environmentId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
 	resourceList := make([]*oapi.Resource, 0, len(resources))
 	for _, resource := range resources {

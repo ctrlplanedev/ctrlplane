@@ -123,13 +123,17 @@ func (m *Manager) Reconcile(ctx context.Context) *SyncResult {
 	m.currentTargetsMutex.Lock()
 	defer m.currentTargetsMutex.Unlock()
 
-	ctx, span := tracer.Start(ctx, "Sync",
+	ctx, span := tracer.Start(ctx, "Reconcile",
 		trace.WithAttributes(
 			attribute.Int("current_targets.count", len(m.currentTargets)),
 		))
 	defer span.End()
 
-	targets := m.store.ReleaseTargets.Items(ctx)
+	targets, err := m.store.ReleaseTargets.Items(ctx)
+	if err != nil {
+		span.RecordError(err)
+		return nil
+	}
 
 	span.SetAttributes(
 		attribute.Int("new_targets.count", len(targets)),

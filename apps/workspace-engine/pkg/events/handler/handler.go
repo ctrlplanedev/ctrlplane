@@ -158,6 +158,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	// Always run a dispatch eval jobs
 	changes := ws.ReleaseManager().Reconcile(ctx)
+
 	for _, change := range changes.Changes.Added {
 		changeSet.Record(
 			changeset.EntityTypeReleaseTarget,

@@ -133,15 +133,17 @@ func (e *Deployments) HasResource(deploymentId string, resourceId string) bool {
 	return false
 }
 
-func (e *Deployments) Resources(deploymentId string) map[string]*oapi.Resource {
+func (e *Deployments) Resources(deploymentId string) (map[string]*oapi.Resource, error) {
 	mv, ok := e.resources.Get(deploymentId)
 	if !ok {
-		return map[string]*oapi.Resource{}
+		return nil, fmt.Errorf("deployment %s not found", deploymentId)
 	}
 
-	_ = mv.WaitRecompute()
-	allResources := mv.Get()
-	return allResources
+	if err := mv.WaitRecompute(); err != nil && !materialized.IsNotStarted(err) {
+		return nil, err
+	}
+
+	return mv.Get(), nil
 }
 
 func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) error {

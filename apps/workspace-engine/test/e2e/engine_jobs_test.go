@@ -46,7 +46,10 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
 
 	// Verify release target was created
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -148,7 +151,10 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r3)
 
 	// Verify release targets were created (1 deployment * 2 environments * 3 resources = 6)
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	expectedReleaseTargets := 6
 	t.Logf("Found %d release targets", len(releaseTargets))
 	for _, rt := range releaseTargets {
@@ -250,7 +256,10 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r3)
 
 	// Verify release targets - should only match prod resources (2)
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	expectedReleaseTargets := 2
 	if len(releaseTargets) != expectedReleaseTargets {
 		t.Fatalf("expected %d release targets, got %d", expectedReleaseTargets, len(releaseTargets))
@@ -316,7 +325,10 @@ func TestEngine_NoJobsCreatedWithoutReleaseTargets(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
 
 	// Verify no release targets exist
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets, got %d", len(releaseTargets))
 	}
@@ -424,7 +436,10 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
 
 	// Verify release target was created
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -488,7 +503,10 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
 	// Verify release targets (2 deployments * 1 environment * 2 resources = 4)
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 4 {
 		t.Fatalf("expected 4 release targets, got %d", len(releaseTargets))
 	}
@@ -603,7 +621,10 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceDelete, r1)
 
 	// Verify release target is removed
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after resource deletion, got %d", len(releaseTargets))
 	}
@@ -615,7 +636,10 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1Readded)
 
 	// Verify release target is recreated
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err = engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target after resource re-add, got %d", len(releaseTargets))
 	}
@@ -717,7 +741,10 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets (2 targets: 1 for dev, 1 for prod)
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets, got %d", len(releaseTargets))
 	}

@@ -399,7 +399,7 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 	}
 
 	// Verify release targets are created correctly
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 
 	// Expected:
 	// - d1 (no filter) matches both r1 and r2 = 2 resources

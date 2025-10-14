@@ -38,7 +38,10 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 	e1, _ := engine.Workspace().Environments().Get(e1Id)
 
 	// Verify no release targets exist yet (no resources)
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets before resources, got %d", len(releaseTargets))
 	}
@@ -50,7 +53,10 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
 
 	// Verify release target was created
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err = engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -74,7 +80,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 	// Delete the deployment - release target should be removed
 	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after deployment deletion, got %d", len(releaseTargets))
 	}
@@ -102,7 +108,7 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 	e1, _ := engine.Workspace().Environments().Get(e1Id)
 
 	// Verify release target was created
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -110,7 +116,7 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 	// Delete the environment - release target should be removed
 	engine.PushEvent(ctx, handler.EnvironmentDelete, e1)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after environment deletion, got %d", len(releaseTargets))
 	}
@@ -139,7 +145,7 @@ func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
 	r1, _ := engine.Workspace().Resources().Get(r1Id)
 
 	// Verify release target was created
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -147,7 +153,7 @@ func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
 	// Delete the resource - release target should be removed
 	engine.PushEvent(ctx, handler.ResourceDelete, r1)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after resource deletion, got %d", len(releaseTargets))
 	}
@@ -192,7 +198,7 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release target was created (only for prod resource)
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target for prod resource, got %d", len(releaseTargets))
 	}
@@ -231,7 +237,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	r1, _ := engine.Workspace().Resources().Get(r1Id)
 
 	// Both resources should match - 2 release targets
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets without selectors, got %d", len(releaseTargets))
 	}
@@ -246,7 +252,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	// Now only prod resource should match - 1 release target
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target after adding deployment selector, got %d", len(releaseTargets))
 	}
@@ -266,7 +272,7 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
 	// Both resources should match again - 2 release targets
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets after removing deployment selector, got %d", len(releaseTargets))
 	}
@@ -310,7 +316,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	e1, _ := engine.Workspace().Environments().Get(e1Id)
 
 	// Verify release target was created
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -321,7 +327,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	d1Updated.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1Updated)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after moving deployment to different system, got %d", len(releaseTargets))
 	}
@@ -331,7 +337,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	e1Updated.SystemId = sys2.Id
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1Updated)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target after moving both to system 2, got %d", len(releaseTargets))
 	}
@@ -393,7 +399,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 	r2, _ := engine.Workspace().Resources().Get(r2Id)
 
 	// Expected: 2 deployments × 2 environments × 2 resources = 8 release targets
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 8 {
 		t.Fatalf("expected 8 release targets (2×2×2), got %d", len(releaseTargets))
 	}
@@ -401,7 +407,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 	// Delete one deployment - should reduce to 4 release targets
 	engine.PushEvent(ctx, handler.DeploymentDelete, d2)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 4 {
 		t.Fatalf("expected 4 release targets after deleting 1 deployment, got %d", len(releaseTargets))
 	}
@@ -409,7 +415,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 	// Delete one environment - should reduce to 2 release targets
 	engine.PushEvent(ctx, handler.EnvironmentDelete, e2)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets after deleting 1 environment, got %d", len(releaseTargets))
 	}
@@ -417,7 +423,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 	// Delete one resource - should reduce to 1 release target
 	engine.PushEvent(ctx, handler.ResourceDelete, r2)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target after deleting 1 resource, got %d", len(releaseTargets))
 	}
@@ -501,7 +507,7 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 	// - r2 matches d1 + e1 = 1 release target
 	// - r3 matches d2 but not e1 (region mismatch) = 0 release targets
 	// Total = 3 release targets
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 3 {
 		t.Fatalf("expected 3 release targets with complex selectors, got %d", len(releaseTargets))
 	}
@@ -511,7 +517,7 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceUpdate, r3)
 
 	// Now r3 should create 1 more release target
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 4 {
 		t.Fatalf("expected 4 release targets after updating r3, got %d", len(releaseTargets))
 	}
@@ -538,7 +544,7 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	e1, _ := engine.Workspace().Environments().Get(envId)
 
 	// Verify NO release targets are created because environment has no selector
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets (environment without selector should match no resources), got %d", len(releaseTargets))
 	}
@@ -552,7 +558,7 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, e1)
 
 	// Now release targets should be created
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets after adding environment selector, got %d", len(releaseTargets))
 	}
@@ -579,7 +585,7 @@ func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
 	e1, _ := engine.Workspace().Environments().Get(e1Id)
 
 	// Verify release targets were created
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets, got %d", len(releaseTargets))
 	}
@@ -588,7 +594,7 @@ func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, sys)
 
 	// Verify all release targets are removed
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after system deletion, got %d", len(releaseTargets))
 	}
@@ -656,7 +662,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	r1, _ := engine.Workspace().Resources().Get(r1Id)
 
 	// Expected: 2 deployments × 2 environments × 1 resource = 4 release targets
-	releaseTargets := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 4 {
 		t.Fatalf("expected 4 release targets (2×2×1), got %d", len(releaseTargets))
 	}
@@ -664,7 +670,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	// Delete one deployment - should remove 2 release targets (d2 × 2 environments)
 	engine.PushEvent(ctx, handler.DeploymentDelete, d2)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets after deleting deployment, got %d", len(releaseTargets))
 	}
@@ -682,7 +688,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	// Delete one environment - should remove 1 release target (d1 × e2)
 	engine.PushEvent(ctx, handler.EnvironmentDelete, e2)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target after deleting environment, got %d", len(releaseTargets))
 	}
@@ -706,7 +712,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	// Delete the remaining deployment - should remove all release targets
 	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after deleting all deployments, got %d", len(releaseTargets))
 	}
@@ -717,7 +723,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentCreate, d3)
 
 	// Should have 1 release target now (d3 × e1 × r1)
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target after recreating deployment, got %d", len(releaseTargets))
 	}
@@ -725,7 +731,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	// Delete the remaining environment - should remove all release targets
 	engine.PushEvent(ctx, handler.EnvironmentDelete, e1)
 
-	releaseTargets = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after deleting all environments, got %d", len(releaseTargets))
 	}

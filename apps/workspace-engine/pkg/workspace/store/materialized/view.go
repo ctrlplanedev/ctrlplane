@@ -56,6 +56,11 @@ func (m *MaterializedView[V]) Get() V {
 }
 
 var ErrAlreadyStarted = errors.New("recompute already in progress")
+var ErrNotStarted = errors.New("recompute not in progress")
+
+func IsNotStarted(err error) bool {
+	return errors.Is(err, ErrNotStarted)
+}
 
 func IsAlreadyStarted(err error) bool {
 	return errors.Is(err, ErrAlreadyStarted)
@@ -90,7 +95,7 @@ func (m *MaterializedView[V]) WaitRecompute() error {
 	m.mu.RUnlock()
 
 	if done == nil {
-		return errors.New("no computation in progress")
+		return ErrNotStarted
 	}
 
 	return <-done
