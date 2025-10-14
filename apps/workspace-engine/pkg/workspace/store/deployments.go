@@ -8,6 +8,8 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func NewDeployments(store *Store) *Deployments {
@@ -43,17 +45,28 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 	return func(ctx context.Context) (map[string]*oapi.Resource, error) {
 		_, span := tracer.Start(ctx, "deploymentResourceRecomputeFunc")
 		defer span.End()
+
 		deployment, exists := e.repo.Deployments.Get(deploymentId)
 		if !exists {
+			span.RecordError(fmt.Errorf("deployment %s not found", deploymentId))
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 
+		span.SetAttributes(
+			attribute.String("deployment.id", deploymentId),
+			attribute.String("deployment.name", deployment.Name),
+		)
+
 		if deployment.ResourceSelector == nil {
-			// Use IterCb for more efficient iteration (no channel overhead)
 			allResources := make(map[string]*oapi.Resource, e.repo.Resources.Count())
+			resourceCount := 0
 			e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
 				allResources[key] = resource
+				resourceCount++
 			})
+			span.SetAttributes(
+				attribute.Int("deployment.resources.without_selector", resourceCount),
+			)
 			return allResources, nil
 		}
 
@@ -66,10 +79,20 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 			items = append(items, resource)
 		})
 
+		span.SetAttributes(
+			attribute.Int("repo.resource_count", resourceCount),
+			attribute.String("deployment.resource_selector", fmt.Sprintf("%v", deployment.ResourceSelector)),
+		)
+
 		deploymentResources, err := selector.FilterResources(ctx, deployment.ResourceSelector, items)
 		if err != nil {
+			span.RecordError(err)
 			return nil, fmt.Errorf("failed to filter resources for deployment %s: %w", deploymentId, err)
 		}
+
+		span.SetAttributes(
+			attribute.Int("deployment.matched_resource_count", len(deploymentResources)),
+		)
 
 		return deploymentResources, nil
 	}
