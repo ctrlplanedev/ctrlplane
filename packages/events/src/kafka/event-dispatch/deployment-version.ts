@@ -65,7 +65,7 @@ export const dispatchDeploymentVersionCreated = async (
   const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
 
   await Promise.all([
-    // sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
+    sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
     sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
   ]);
 };
