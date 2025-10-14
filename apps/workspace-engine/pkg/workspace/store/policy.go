@@ -158,3 +158,10 @@ func (p *Policies) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarge
 
 	return policies
 }
+
+func (p *Policies) RecomputeAll(ctx context.Context) {
+	for policyItem := range p.IterBuffered() {
+		policy := policyItem.Val
+		p.releaseTargets.Set(policy.Id, materialized.New(p.recomputeReleaseTargets(policy.Id)))
+	}
+}

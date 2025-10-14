@@ -176,6 +176,10 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		)
 	}
 
+	if len(changes.Changes.Added) > 0 || len(changes.Changes.Removed) > 0 {
+		ws.Policies().RecomputeAll(ctx)
+	}
+
 	_ = ws.ReleaseManager().EvaluateChange(ctx, changes)
 
 	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
