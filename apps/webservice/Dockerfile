@@ -27,7 +27,7 @@ COPY pnpm-*.yaml .
 COPY tooling/tailwind/package.json ./tooling/tailwind/package.json
 COPY tooling/prettier/package.json ./tooling/prettier/package.json
 COPY tooling/eslint/package.json ./tooling/eslint/package.json
-COPY tooling/typescript/package.json ./tooling/typescript/package.json
+COPY tooling/typescript ./tooling/typescript
 
 COPY packages/api/package.json ./packages/api/package.json
 COPY packages/auth/package.json ./packages/auth/package.json
