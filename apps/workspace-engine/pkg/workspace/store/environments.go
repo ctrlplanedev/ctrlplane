@@ -106,7 +106,7 @@ func (e *Environments) RecomputeResources(ctx context.Context, environmentId str
 		return fmt.Errorf("environment %s not found", environmentId)
 	}
 
-	return mv.RunRecompute(ctx)
+	return mv.StartRecompute(ctx)
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
