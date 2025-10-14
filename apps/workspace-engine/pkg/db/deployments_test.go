@@ -1,0 +1,367 @@
+package db
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+	"workspace-engine/pkg/oapi"
+
+	"github.com/google/uuid"
+)
+
+func validateRetrievedDeployments(t *testing.T, actualDeployments []*oapi.Deployment, expectedDeployments []*oapi.Deployment) {
+	t.Helper()
+	if len(actualDeployments) != len(expectedDeployments) {
+		t.Fatalf("expected %d deployments, got %d", len(expectedDeployments), len(actualDeployments))
+	}
+	for _, expected := range expectedDeployments {
+		var actual *oapi.Deployment
+		for _, ad := range actualDeployments {
+			if ad.Id == expected.Id {
+				actual = ad
+				break
+			}
+		}
+
+		if actual == nil {
+			t.Fatalf("expected deployment with id %s not found", expected.Id)
+		}
+		if actual.Id != expected.Id {
+			t.Fatalf("expected deployment id %s, got %s", expected.Id, actual.Id)
+		}
+		if actual.Name != expected.Name {
+			t.Fatalf("expected deployment name %s, got %s", expected.Name, actual.Name)
+		}
+		if actual.Slug != expected.Slug {
+			t.Fatalf("expected deployment slug %s, got %s", expected.Slug, actual.Slug)
+		}
+		if actual.SystemId != expected.SystemId {
+			t.Fatalf("expected deployment system_id %s, got %s", expected.SystemId, actual.SystemId)
+		}
+		compareStrPtr(t, actual.Description, expected.Description)
+		compareStrPtr(t, actual.JobAgentId, expected.JobAgentId)
+		// Note: ResourceSelector is *Selector (complex type), comparing as pointers only
+		if (actual.ResourceSelector == nil) != (expected.ResourceSelector == nil) {
+			t.Fatalf("resource_selector nil mismatch: expected %v, got %v", expected.ResourceSelector == nil, actual.ResourceSelector == nil)
+		}
+
+		// Validate JobAgentConfig
+		if len(expected.JobAgentConfig) != len(actual.JobAgentConfig) {
+			t.Fatalf("expected %d job_agent_config entries, got %d", len(expected.JobAgentConfig), len(actual.JobAgentConfig))
+		}
+		for key, expectedValue := range expected.JobAgentConfig {
+			actualValue, ok := actual.JobAgentConfig[key]
+			if !ok {
+				t.Fatalf("expected job_agent_config key %s not found", key)
+			}
+			if fmt.Sprintf("%v", actualValue) != fmt.Sprintf("%v", expectedValue) {
+				t.Fatalf("expected job_agent_config[%s] = %v, got %v", key, expectedValue, actualValue)
+			}
+		}
+	}
+}
+
+func TestDBDeployments_BasicWrite(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        fmt.Sprintf("test-system-%s", systemID[:8]),
+		Description: &systemDescription,
+	}
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Create deployment
+	deploymentID := uuid.New().String()
+	description := "test description"
+	deployment := &oapi.Deployment{
+		Id:               deploymentID,
+		Name:             fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		Slug:             fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		SystemId:         systemID,
+		Description:      &description,
+		JobAgentConfig:   map[string]interface{}{},
+		ResourceSelector: nil, // Selector is complex type, skipping for basic test
+	}
+
+	err = writeDeployment(t.Context(), deployment, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	expectedDeployments := []*oapi.Deployment{deployment}
+	actualDeployments, err := getDeployments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	validateRetrievedDeployments(t, actualDeployments, expectedDeployments)
+}
+
+func TestDBDeployments_BasicWriteAndDelete(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        fmt.Sprintf("test-system-%s", systemID[:8]),
+		Description: &systemDescription,
+	}
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Create deployment
+	deploymentID := uuid.New().String()
+	deploymentDescription := fmt.Sprintf("deployment-desc-%s", deploymentID[:8])
+	deployment := &oapi.Deployment{
+		Id:             deploymentID,
+		Name:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		SystemId:       systemID,
+		Description:    &deploymentDescription,
+		JobAgentConfig: map[string]interface{}{},
+	}
+
+	err = writeDeployment(t.Context(), deployment, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify deployment exists
+	actualDeployments, err := getDeployments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	validateRetrievedDeployments(t, actualDeployments, []*oapi.Deployment{deployment})
+
+	// Delete deployment
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	err = deleteDeployment(t.Context(), deploymentID, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify deployment is deleted
+	actualDeployments, err = getDeployments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	validateRetrievedDeployments(t, actualDeployments, []*oapi.Deployment{})
+}
+
+func TestDBDeployments_BasicWriteAndUpdate(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        fmt.Sprintf("test-system-%s", systemID[:8]),
+		Description: &systemDescription,
+	}
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Create deployment
+	deploymentID := uuid.New().String()
+	description := "initial description"
+	deployment := &oapi.Deployment{
+		Id:             deploymentID,
+		Name:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		SystemId:       systemID,
+		Description:    &description,
+		JobAgentConfig: map[string]interface{}{},
+	}
+
+	err = writeDeployment(t.Context(), deployment, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Update deployment
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	updatedDescription := "updated description"
+	deployment.Name = deployment.Name + "-updated"
+	deployment.Description = &updatedDescription
+	deployment.JobAgentConfig = map[string]interface{}{
+		"key":  "value",
+		"port": 8080.0,
+	}
+
+	err = writeDeployment(t.Context(), deployment, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify update
+	actualDeployments, err := getDeployments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	validateRetrievedDeployments(t, actualDeployments, []*oapi.Deployment{deployment})
+}
+
+func TestDBDeployments_WithJobAgentConfig(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        fmt.Sprintf("test-system-%s", systemID[:8]),
+		Description: &systemDescription,
+	}
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Create deployment with job agent config
+	deploymentID := uuid.New().String()
+	deploymentDescription := fmt.Sprintf("deployment-desc-%s", deploymentID[:8])
+	deployment := &oapi.Deployment{
+		Id:          deploymentID,
+		Name:        fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		Slug:        fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
+		SystemId:    systemID,
+		Description: &deploymentDescription,
+		JobAgentConfig: map[string]interface{}{
+			"string": "value",
+			"number": 42.0,
+			"bool":   true,
+			"nested": map[string]interface{}{
+				"key": "value",
+			},
+			"array": []interface{}{"item1", "item2"},
+		},
+	}
+
+	err = writeDeployment(t.Context(), deployment, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify
+	actualDeployments, err := getDeployments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	validateRetrievedDeployments(t, actualDeployments, []*oapi.Deployment{deployment})
+}
+
+func TestDBDeployments_NonexistentSystemThrowsError(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	description := "test"
+	deployment := &oapi.Deployment{
+		Id:             uuid.New().String(),
+		Name:           "test-deployment",
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(), // Non-existent system
+		Description:    &description,
+		JobAgentConfig: map[string]interface{}{},
+	}
+
+	err = writeDeployment(t.Context(), deployment, tx)
+	// should throw fk constraint error
+	if err == nil {
+		t.Fatalf("expected FK violation error, got nil")
+	}
+
+	// Check for foreign key violation (SQLSTATE 23503)
+	if !strings.Contains(err.Error(), "23503") && !strings.Contains(err.Error(), "foreign key") {
+		t.Fatalf("expected FK violation error, got: %v", err)
+	}
+
+	// Keep workspaceID to avoid "declared but not used" error
+	_ = workspaceID
+}
