@@ -173,10 +173,11 @@ func TestGithubDispatcher_DispatchJob_EntityNotFound(t *testing.T) {
 
 func TestGithubDispatcher_ParseConfig(t *testing.T) {
 	tests := []struct {
-		name        string
-		jobConfig   map[string]any
-		expected    githubJobConfig
-		expectError bool
+		name          string
+		jobConfig     map[string]any
+		expected      githubJobConfig
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name: "valid config with all fields",
@@ -213,6 +214,90 @@ func TestGithubDispatcher_ParseConfig(t *testing.T) {
 			},
 			expectError: false,
 		},
+		{
+			name: "missing installationId",
+			jobConfig: map[string]any{
+				"owner":      "test-owner",
+				"repo":       "test-repo",
+				"workflowId": float64(123),
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: installationId",
+		},
+		{
+			name: "missing owner",
+			jobConfig: map[string]any{
+				"installationId": float64(12345),
+				"repo":           "test-repo",
+				"workflowId":     float64(123),
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: owner",
+		},
+		{
+			name: "missing repo",
+			jobConfig: map[string]any{
+				"installationId": float64(12345),
+				"owner":          "test-owner",
+				"workflowId":     float64(123),
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: repo",
+		},
+		{
+			name: "missing workflowId",
+			jobConfig: map[string]any{
+				"installationId": float64(12345),
+				"owner":          "test-owner",
+				"repo":           "test-repo",
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: workflowId",
+		},
+		{
+			name: "empty owner string",
+			jobConfig: map[string]any{
+				"installationId": float64(12345),
+				"owner":          "",
+				"repo":           "test-repo",
+				"workflowId":     float64(123),
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: owner",
+		},
+		{
+			name: "empty repo string",
+			jobConfig: map[string]any{
+				"installationId": float64(12345),
+				"owner":          "test-owner",
+				"repo":           "",
+				"workflowId":     float64(123),
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: repo",
+		},
+		{
+			name: "zero installationId",
+			jobConfig: map[string]any{
+				"installationId": float64(0),
+				"owner":          "test-owner",
+				"repo":           "test-repo",
+				"workflowId":     float64(123),
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: installationId",
+		},
+		{
+			name: "zero workflowId",
+			jobConfig: map[string]any{
+				"installationId": float64(12345),
+				"owner":          "test-owner",
+				"repo":           "test-repo",
+				"workflowId":     float64(0),
+			},
+			expectError:   true,
+			errorContains: "missing required GitHub job config: workflowId",
+		},
 	}
 
 	for _, tt := range tests {
@@ -231,6 +316,12 @@ func TestGithubDispatcher_ParseConfig(t *testing.T) {
 			}
 			if !tt.expectError && err != nil {
 				t.Errorf("Unexpected error: %v", err)
+			}
+
+			if tt.expectError && err != nil && tt.errorContains != "" {
+				if len(err.Error()) < len(tt.errorContains) || err.Error()[:len(tt.errorContains)] != tt.errorContains {
+					t.Errorf("Expected error containing '%s', got: %v", tt.errorContains, err)
+				}
 			}
 
 			if !tt.expectError {

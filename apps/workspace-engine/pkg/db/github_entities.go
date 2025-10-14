@@ -36,6 +36,9 @@ func getGithubEntities(ctx context.Context, workspaceID string) ([]*oapi.GithubE
 		}
 		githubEntities = append(githubEntities, githubEntity)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return githubEntities, nil
 }
 

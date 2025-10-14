@@ -76,6 +76,18 @@ func (d *GithubDispatcher) parseConfig(job *oapi.Job) (githubJobConfig, error) {
 	if err := json.Unmarshal(rawCfg, &parsed); err != nil {
 		return githubJobConfig{}, err
 	}
+	if parsed.InstallationId == 0 {
+		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: installationId")
+	}
+	if parsed.Owner == "" {
+		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: owner")
+	}
+	if parsed.Repo == "" {
+		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: repo")
+	}
+	if parsed.WorkflowId == 0 {
+		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: workflowId")
+	}
 	return parsed, nil
 }
 
