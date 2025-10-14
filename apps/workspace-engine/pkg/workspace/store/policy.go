@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sync"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
@@ -160,8 +161,18 @@ func (p *Policies) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarge
 }
 
 func (p *Policies) RecomputeAll(ctx context.Context) {
+	var wg sync.WaitGroup
+
 	for policyItem := range p.IterBuffered() {
-		policy := policyItem.Val
-		p.releaseTargets.Set(policy.Id, materialized.New(p.recomputeReleaseTargets(policy.Id)))
+		wg.Add(1)
+		policyId := policyItem.Val.Id
+
+		go func() {
+			defer wg.Done()
+			// Create new materialized view which will start computing in background
+			p.releaseTargets.Set(policyId, materialized.New(p.recomputeReleaseTargets(policyId)))
+		}()
 	}
+
+	wg.Wait()
 }
