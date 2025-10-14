@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -42,7 +43,9 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		defer wg.Done()
 		for item := range r.store.Environments.IterBuffered() {
 			environment := item.Val
-			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil {
+			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "Failed to recompute resources for environment")
 				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
 			}
 		}
@@ -54,7 +57,9 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		defer wg.Done()
 		for item := range r.store.Deployments.IterBuffered() {
 			deployment := item.Val
-			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil {
+			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "Failed to recompute resources for deployment")
 				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
 			}
 		}
