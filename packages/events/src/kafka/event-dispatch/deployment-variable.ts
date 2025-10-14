@@ -1,8 +1,10 @@
-import { eq, takeFirst } from "@ctrlplane/db";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import { sendNodeEvent } from "../client.js";
+import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getWorkspaceIdForDeployment = async (deploymentId: string) =>
@@ -27,54 +29,126 @@ const getWorkspaceIdForVariable = async (variableId: string) =>
     .then(takeFirst)
     .then((row) => row.system.workspaceId);
 
+const convertDeploymentVariableToNodeEvent = (
+  deploymentVariable: schema.DeploymentVariable,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.DeploymentVariableCreated,
+  eventId: deploymentVariable.id,
+  timestamp: Date.now(),
+  source: "api" as const,
+  payload: deploymentVariable,
+});
+
+const getDbDefaultValue = (defaultValueId: string) =>
+  db
+    .select()
+    .from(schema.deploymentVariableValue)
+    .leftJoin(
+      schema.deploymentVariableValueDirect,
+      eq(
+        schema.deploymentVariableValueDirect.variableValueId,
+        schema.deploymentVariableValue.id,
+      ),
+    )
+    .where(eq(schema.deploymentVariableValue.id, defaultValueId))
+    .then(takeFirstOrNull);
+
+const getDefaultValue = async (
+  variable: schema.DeploymentVariable,
+): Promise<WorkspaceEngine["schemas"]["LiteralValue"] | undefined> => {
+  const { defaultValueId } = variable;
+  if (defaultValueId == null) return undefined;
+
+  const dbResult = await getDbDefaultValue(defaultValueId);
+  if (dbResult == null) return undefined;
+
+  const { deployment_variable_value_direct: directValue } = dbResult;
+  if (directValue == null) return undefined;
+
+  const { value } = directValue;
+  if (value == null) return undefined;
+
+  if (typeof value === "object")
+    return { object: value as Record<string, unknown> };
+
+  return value;
+};
+
+const getOapiDeploymentVariable = async (
+  deploymentVariable: schema.DeploymentVariable,
+): Promise<WorkspaceEngine["schemas"]["DeploymentVariable"]> => ({
+  id: deploymentVariable.id,
+  key: deploymentVariable.key,
+  description: deploymentVariable.description,
+  deploymentId: deploymentVariable.deploymentId,
+  defaultValue: await getDefaultValue(deploymentVariable),
+});
+
+const convertDeploymentVariableToGoEvent = async (
+  deploymentVariable: schema.DeploymentVariable,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.DeploymentVariableCreated as const,
+  data: await getOapiDeploymentVariable(deploymentVariable),
+  timestamp: Date.now(),
+});
+
 export const dispatchDeploymentVariableCreated = async (
   deploymentVariable: schema.DeploymentVariable,
-  source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceIdForDeployment(
     deploymentVariable.deploymentId,
   );
-  await sendNodeEvent({
+  const nodeEvent = convertDeploymentVariableToNodeEvent(
+    deploymentVariable,
     workspaceId,
-    eventType: Event.DeploymentVariableCreated,
-    eventId: deploymentVariable.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: deploymentVariable,
-  });
+  );
+  const goEvent = await convertDeploymentVariableToGoEvent(
+    deploymentVariable,
+    workspaceId,
+  );
+  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 
 export const dispatchDeploymentVariableUpdated = async (
   previous: schema.DeploymentVariable,
   current: schema.DeploymentVariable,
-  source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceIdForDeployment(current.deploymentId);
-  await sendNodeEvent({
+  const nodeEvent = {
     workspaceId,
     eventType: Event.DeploymentVariableUpdated,
     eventId: current.id,
     timestamp: Date.now(),
-    source: source ?? "api",
+    source: "api" as const,
     payload: { previous, current },
-  });
+  };
+
+  const goEvent = await convertDeploymentVariableToGoEvent(
+    current,
+    workspaceId,
+  );
+  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 
 export const dispatchDeploymentVariableDeleted = async (
   deploymentVariable: schema.DeploymentVariable,
-  source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceIdForDeployment(
     deploymentVariable.deploymentId,
   );
-  await sendNodeEvent({
+  const nodeEvent = convertDeploymentVariableToNodeEvent(
+    deploymentVariable,
     workspaceId,
-    eventType: Event.DeploymentVariableDeleted,
-    eventId: deploymentVariable.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: deploymentVariable,
-  });
+  );
+  const goEvent = await convertDeploymentVariableToGoEvent(
+    deploymentVariable,
+    workspaceId,
+  );
+  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 
 export const dispatchDeploymentVariableValueCreated = async (

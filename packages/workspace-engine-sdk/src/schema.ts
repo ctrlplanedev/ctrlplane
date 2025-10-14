@@ -324,6 +324,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get resources for an environment
+     * @description Returns a list of resources for environment {environmentId}.
+     */
+    get: operations["getEnvironmentResources"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/jobs": {
     parameters: {
       query?: never;
@@ -619,9 +639,6 @@ export interface components {
       };
       externalId?: string;
       status: components["schemas"]["JobStatus"];
-      resourceId: string;
-      environmentId: string;
-      deploymentId: string;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -635,6 +652,10 @@ export interface components {
       resourceId: string;
       environmentId: string;
       deploymentId: string;
+    };
+    GithubEntity: {
+      installationId: number;
+      slug: string;
     };
     BooleanValue: boolean;
     NumberValue: number;
@@ -677,7 +698,6 @@ export interface components {
     DeploymentVariable: {
       id: string;
       key: string;
-      variableId: string;
       description?: string;
       deploymentId: string;
       defaultValue?: components["schemas"]["LiteralValue"];
@@ -1259,6 +1279,42 @@ export interface operations {
         };
       };
       /** @description Deployment not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotFoundError"];
+        };
+      };
+    };
+  };
+  getEnvironmentResources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace. */
+        workspaceId: string;
+        /** @description ID of the environment. */
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A resource. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            resources?: components["schemas"]["Resource"][];
+          };
+        };
+      };
+      /** @description Resource not found. */
       404: {
         headers: {
           [name: string]: unknown;

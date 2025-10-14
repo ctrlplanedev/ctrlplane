@@ -137,9 +137,9 @@ export type GoEventPayload = {
   [Event.DeploymentCreated]: WorkspaceEngine["schemas"]["Deployment"];
   [Event.DeploymentUpdated]: WorkspaceEngine["schemas"]["Deployment"];
   [Event.DeploymentDeleted]: WorkspaceEngine["schemas"]["Deployment"];
-  [Event.DeploymentVariableCreated]: PB.DeploymentVariable;
-  [Event.DeploymentVariableUpdated]: PB.DeploymentVariable;
-  [Event.DeploymentVariableDeleted]: PB.DeploymentVariable;
+  [Event.DeploymentVariableCreated]: WorkspaceEngine["schemas"]["DeploymentVariable"];
+  [Event.DeploymentVariableUpdated]: WorkspaceEngine["schemas"]["DeploymentVariable"];
+  [Event.DeploymentVariableDeleted]: WorkspaceEngine["schemas"]["DeploymentVariable"];
   [Event.DeploymentVariableValueCreated]: PB.DeploymentVariableValue;
   [Event.DeploymentVariableValueUpdated]: PB.DeploymentVariableValue;
   [Event.DeploymentVariableValueDeleted]: PB.DeploymentVariableValue;

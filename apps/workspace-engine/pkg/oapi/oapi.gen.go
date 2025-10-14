@@ -98,7 +98,6 @@ type DeploymentVariable struct {
 	Description  *string       `json:"description,omitempty"`
 	Id           string        `json:"id"`
 	Key          string        `json:"key"`
-	VariableId   string        `json:"variableId"`
 }
 
 // DeploymentVariableValue defines model for DeploymentVariableValue.

@@ -1248,14 +1248,11 @@ components:
       required:
         - id
         - key
-        - variableId
         - deploymentId
       properties:
         id:
           type: string
         key:
-          type: string
-        variableId:
           type: string
         description:
           type: string

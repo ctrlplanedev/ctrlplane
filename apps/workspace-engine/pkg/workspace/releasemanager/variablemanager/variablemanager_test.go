@@ -209,7 +209,6 @@ func TestEvaluate_OnlyDeploymentVariablesWithMatch(t *testing.T) {
 		Id:           "var-1",
 		DeploymentId: deploymentID,
 		Key:          "region_name",
-		VariableId:   "var-1",
 	}
 	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
 
@@ -281,7 +280,6 @@ func TestEvaluate_ResourceVariablesOverrideDeployment(t *testing.T) {
 		Id:           "var-1",
 		DeploymentId: deploymentID,
 		Key:          "region_name", // Same key as resource variable
-		VariableId:   "var-1",
 		DefaultValue: mustCreateLiteralValue("us-west-2-from-deployment"),
 	}
 	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
@@ -349,7 +347,6 @@ func TestEvaluate_DeploymentVariableDefaultValue(t *testing.T) {
 		Id:           "var-1",
 		DeploymentId: deploymentID,
 		Key:          "region_name",
-		VariableId:   "var-1",
 		DefaultValue: defaultValue,
 	}
 	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
@@ -580,7 +577,6 @@ func TestEvaluate_DeploymentVariableNoDefaultValue(t *testing.T) {
 		Id:           "var-1",
 		DeploymentId: deploymentID,
 		Key:          "optional_var",
-		VariableId:   "var-1",
 		DefaultValue: nil, // No default value
 	}
 	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
