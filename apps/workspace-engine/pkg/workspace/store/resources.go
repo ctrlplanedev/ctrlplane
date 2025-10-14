@@ -8,6 +8,8 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func NewResources(store *Store) *Resources {
@@ -23,11 +25,19 @@ type Resources struct {
 }
 
 func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.Resource, error) {
+	ctx, span := tracer.Start(ctx, "Upsert", trace.WithAttributes(
+		attribute.String("resource.id", resource.Id),
+	))
+	defer span.End()
+
 	r.repo.Resources.Set(resource.Id, resource)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
+		ctx, span := tracer.Start(ctx, "RecomputeEnvironmentsResources")
+		defer span.End()
+
 		defer wg.Done()
 		for item := range r.store.Environments.IterBuffered() {
 			environment := item.Val
@@ -37,6 +47,9 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		}
 	}()
 	go func() {
+		ctx, span := tracer.Start(ctx, "RecomputeDeploymentsResources")
+		defer span.End()
+
 		defer wg.Done()
 		for item := range r.store.Deployments.IterBuffered() {
 			deployment := item.Val
