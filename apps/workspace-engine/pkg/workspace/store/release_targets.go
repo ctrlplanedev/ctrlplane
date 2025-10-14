@@ -38,32 +38,53 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 	_, span := tracer.Start(ctx, "computeTargets")
 	defer span.End()
 
-	releaseTargets := make(map[string]*oapi.ReleaseTarget, 1000)
-
 	environments := r.store.Environments
 	deployments := r.store.Deployments
 
+	// Index deployments by SystemId to avoid O(E*D) nested loop
+	deploymentsBySystem := make(map[string][]*oapi.Deployment)
+	for depItem := range deployments.IterBuffered() {
+		deployment := depItem.Val
+		deploymentsBySystem[deployment.SystemId] = append(deploymentsBySystem[deployment.SystemId], deployment)
+	}
+
+	// Pre-allocate based on a reasonable estimate
+	releaseTargets := make(map[string]*oapi.ReleaseTarget, 1000)
+
 	for envItem := range environments.IterBuffered() {
 		environment := envItem.Val
+		
+		// Only process deployments in the same system
+		systemDeployments, ok := deploymentsBySystem[environment.SystemId]
+		if !ok {
+			continue
+		}
 
-		for depItem := range deployments.IterBuffered() {
-			deployment := depItem.Val
+		// Get environment resources once per environment
+		envResources := environments.Resources(environment.Id)
+		if len(envResources) == 0 {
+			continue
+		}
 
-			if environment.SystemId != deployment.SystemId {
+		for _, deployment := range systemDeployments {
+			// Get deployment resources once per deployment
+			depResources := deployments.Resources(deployment.Id)
+			if len(depResources) == 0 {
 				continue
 			}
 
-			key := environment.Id + ":" + deployment.Id
+			// Pre-compute the env:deployment key part
+			keyPrefix := environment.Id + ":" + deployment.Id + ":"
 
-			for _, resource := range environments.Resources(environment.Id) {
-				if !deployments.HasResource(deployment.Id, resource.Id) {
-					continue
-				}
-				releaseTargetId := key + ":" + resource.Id
-				releaseTargets[releaseTargetId] = &oapi.ReleaseTarget{
-					EnvironmentId: environment.Id,
-					DeploymentId:  deployment.Id,
-					ResourceId:    resource.Id,
+			// Find intersection of resources
+			for resourceId := range envResources {
+				if _, hasResource := depResources[resourceId]; hasResource {
+					releaseTargetId := keyPrefix + resourceId
+					releaseTargets[releaseTargetId] = &oapi.ReleaseTarget{
+						EnvironmentId: environment.Id,
+						DeploymentId:  deployment.Id,
+						ResourceId:    resourceId,
+					}
 				}
 			}
 		}
