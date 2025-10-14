@@ -22,6 +22,7 @@ type InitialWorkspaceState struct {
 	policies            []*oapi.Policy
 	jobAgents           []*oapi.JobAgent
 	relationships       []*oapi.RelationshipRule
+	githubEntities      []*oapi.GithubEntity
 }
 
 func (i *InitialWorkspaceState) Systems() []*oapi.System {
@@ -58,6 +59,10 @@ func (i *InitialWorkspaceState) JobAgents() []*oapi.JobAgent {
 
 func (i *InitialWorkspaceState) Relationships() []*oapi.RelationshipRule {
 	return i.relationships
+}
+
+func (i *InitialWorkspaceState) GithubEntities() []*oapi.GithubEntity {
+	return i.githubEntities
 }
 
 func loadSystems(ctx context.Context, workspaceID string) ([]*oapi.System, error) {
@@ -168,6 +173,18 @@ func loadRelationships(ctx context.Context, workspaceID string) ([]*oapi.Relatio
 	return dbRelationships, nil
 }
 
+func loadGithubEntities(ctx context.Context, workspaceID string) ([]*oapi.GithubEntity, error) {
+	ctx, span := tracer.Start(ctx, "loadGithubEntities")
+	defer span.End()
+
+	dbGithubEntities, err := getGithubEntities(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get github entities: %w", err)
+	}
+	span.SetAttributes(attribute.Int("count", len(dbGithubEntities)))
+	return dbGithubEntities, nil
+}
+
 func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceState *InitialWorkspaceState, err error) {
 	ctx, span := tracer.Start(ctx, "LoadWorkspace")
 	defer span.End()
@@ -215,6 +232,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceSta
 
 	if initialWorkspaceState.relationships, err = loadRelationships(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load relationships: %w", err)
+	}
+
+	if initialWorkspaceState.githubEntities, err = loadGithubEntities(ctx, workspaceID); err != nil {
+		return nil, fmt.Errorf("failed to load github entities: %w", err)
 	}
 
 	return initialWorkspaceState, nil
