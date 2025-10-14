@@ -63,29 +63,23 @@ func RunConsumer(ctx context.Context) error {
 		}
 
 		msg, err := c.ReadMessage(time.Second)
+	
+		if err != nil {
+			if err.(kafka.Error).IsTimeout() {
+				log.Debug("Timeout, continuing")
+				time.Sleep(time.Second)
+				continue
+			}
+			log.Error("Consumer error", "error", err)
+			time.Sleep(time.Second)
+			continue
+		}
 
 		ctx, span := tracer.Start(ctx, "ReadMessage")
 
 		span.SetAttributes(attribute.String("kafka.topic", Topic))
 		span.SetAttributes(attribute.String("kafka.group_id", GroupID))
 		span.SetAttributes(attribute.String("kafka.brokers", Brokers))
-	
-		if err != nil {
-			if err.(kafka.Error).IsTimeout() {
-				log.Debug("Timeout, continuing")
-				time.Sleep(time.Second)
-				span.RecordError(err)
-				span.SetStatus(codes.Error, "Timeout")
-				span.End()
-				continue
-			}
-			log.Error("Consumer error", "error", err)
-			time.Sleep(time.Second)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "Consumer error")
-			span.End()
-			continue
-		}
 
 		if err := handler.ListenAndRoute(ctx, msg); err != nil {
 			log.Error("Failed to read message", "error", err)
