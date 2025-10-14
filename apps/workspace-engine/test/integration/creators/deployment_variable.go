@@ -12,7 +12,6 @@ func NewDeploymentVariable(deploymentID string, key string) *oapi.DeploymentVari
 		Id:           uuid.New().String(),
 		Key:          key,
 		DeploymentId: deploymentID,
-		VariableId:   uuid.New().String(),
 	}
 }
 
