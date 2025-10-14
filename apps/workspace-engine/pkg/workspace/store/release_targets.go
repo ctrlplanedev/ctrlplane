@@ -141,7 +141,6 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 
 	for policyItem := range r.store.Policies.IterBuffered() {
 		policy := policyItem.Val
-		hasMatch := false
 		for _, policyTarget := range policy.Selectors {
 			if policyTarget.EnvironmentSelector != nil {
 				ok, _ := selector.Match(ctx, policyTarget.EnvironmentSelector, environments)
@@ -162,9 +161,7 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 				}
 			}
 		}
-		if hasMatch {
-			matchingPolicies[policy.Id] = policy
-		}
+		matchingPolicies[policy.Id] = policy
 	}
 
 	return matchingPolicies, nil
