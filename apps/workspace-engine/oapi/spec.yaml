@@ -951,12 +951,15 @@ components:
       required:
         - userId
         - versionId
+        - environmentId
         - status
         - createdAt
       properties:
         userId:
           type: string
         versionId:
+          type: string
+        environmentId:
           type: string
         status:
           $ref: "#/components/schemas/ApprovalStatus"

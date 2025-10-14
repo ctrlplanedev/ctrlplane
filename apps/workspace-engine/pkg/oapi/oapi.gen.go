@@ -337,11 +337,12 @@ type System struct {
 
 // UserApprovalRecord defines model for UserApprovalRecord.
 type UserApprovalRecord struct {
-	CreatedAt string         `json:"createdAt"`
-	Reason    *string        `json:"reason,omitempty"`
-	Status    ApprovalStatus `json:"status"`
-	UserId    string         `json:"userId"`
-	VersionId string         `json:"versionId"`
+	CreatedAt     string         `json:"createdAt"`
+	EnvironmentId string         `json:"environmentId"`
+	Reason        *string        `json:"reason,omitempty"`
+	Status        ApprovalStatus `json:"status"`
+	UserId        string         `json:"userId"`
+	VersionId     string         `json:"versionId"`
 }
 
 // Value defines model for Value.

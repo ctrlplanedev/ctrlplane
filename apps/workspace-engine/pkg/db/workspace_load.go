@@ -23,6 +23,7 @@ type InitialWorkspaceState struct {
 	jobAgents           []*oapi.JobAgent
 	relationships       []*oapi.RelationshipRule
 	githubEntities      []*oapi.GithubEntity
+	userApprovalRecords []*oapi.UserApprovalRecord
 }
 
 func (i *InitialWorkspaceState) Systems() []*oapi.System {
@@ -63,6 +64,10 @@ func (i *InitialWorkspaceState) Relationships() []*oapi.RelationshipRule {
 
 func (i *InitialWorkspaceState) GithubEntities() []*oapi.GithubEntity {
 	return i.githubEntities
+}
+
+func (i *InitialWorkspaceState) UserApprovalRecords() []*oapi.UserApprovalRecord {
+	return i.userApprovalRecords
 }
 
 func loadSystems(ctx context.Context, workspaceID string) ([]*oapi.System, error) {
@@ -173,6 +178,18 @@ func loadRelationships(ctx context.Context, workspaceID string) ([]*oapi.Relatio
 	return dbRelationships, nil
 }
 
+func loadUserApprovalRecords(ctx context.Context, workspaceID string) ([]*oapi.UserApprovalRecord, error) {
+	ctx, span := tracer.Start(ctx, "loadUserApprovalRecords")
+	defer span.End()
+
+	dbUserApprovalRecords, err := getUserApprovalRecords(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user approval records: %w", err)
+	}
+	span.SetAttributes(attribute.Int("count", len(dbUserApprovalRecords)))
+	return dbUserApprovalRecords, nil
+}
+
 func loadGithubEntities(ctx context.Context, workspaceID string) ([]*oapi.GithubEntity, error) {
 	ctx, span := tracer.Start(ctx, "loadGithubEntities")
 	defer span.End()
@@ -232,6 +249,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceSta
 
 	if initialWorkspaceState.relationships, err = loadRelationships(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load relationships: %w", err)
+	}
+
+	if initialWorkspaceState.userApprovalRecords, err = loadUserApprovalRecords(ctx, workspaceID); err != nil {
+		return nil, fmt.Errorf("failed to load user approval records: %w", err)
 	}
 
 	if initialWorkspaceState.githubEntities, err = loadGithubEntities(ctx, workspaceID); err != nil {
