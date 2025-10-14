@@ -142,24 +142,21 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 	for policyItem := range r.store.Policies.IterBuffered() {
 		policy := policyItem.Val
 		for _, policyTarget := range policy.Selectors {
-			if policyTarget.EnvironmentSelector != nil {
-				ok, _ := selector.Match(ctx, policyTarget.EnvironmentSelector, environments)
-				if !ok {
-					continue
-				}
+		if policyTarget.EnvironmentSelector != nil {
+			if ok, _ := selector.Match(ctx, policyTarget.EnvironmentSelector, environments); !ok {
+				continue
 			}
-			if policyTarget.DeploymentSelector != nil {
-				ok, _ := selector.Match(ctx, policyTarget.DeploymentSelector, deployments)
-				if !ok {
-					continue
-				}
+		}
+		if policyTarget.DeploymentSelector != nil {
+			if ok, _ := selector.Match(ctx, policyTarget.DeploymentSelector, deployments); !ok {
+				continue
 			}
-			if policyTarget.ResourceSelector != nil {
-				ok, _ := selector.Match(ctx, policyTarget.ResourceSelector, resources)
-				if !ok {
-					continue
-				}
+		}
+		if policyTarget.ResourceSelector != nil {
+			if ok, _ := selector.Match(ctx, policyTarget.ResourceSelector, resources); !ok {
+				continue
 			}
+		}
 		}
 		matchingPolicies[policy.Id] = policy
 	}
