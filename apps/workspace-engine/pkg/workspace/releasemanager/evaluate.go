@@ -34,6 +34,7 @@ import (
 	"time"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
+	jobdispatch "workspace-engine/pkg/workspace/job-dispatch"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -379,5 +380,14 @@ func (m *Manager) NewJob(ctx context.Context, release *oapi.Release) (*oapi.Job,
 }
 
 func (m *Manager) IntegrationDispatch(ctx context.Context, job *oapi.Job) error {
-	return nil
+	jobAgent, exists := m.store.JobAgents.Get(job.JobAgentId)
+	if !exists {
+		return fmt.Errorf("job agent %s not found", job.JobAgentId)
+	}
+
+	if jobAgent.Type == string(jobdispatch.JobAgentTypeGithub) {
+		return jobdispatch.NewGithubDispatcher(m.store.Repo()).DispatchJob(ctx, job)
+	}
+
+	return fmt.Errorf("job agent %s not supported", job.JobAgentId)
 }

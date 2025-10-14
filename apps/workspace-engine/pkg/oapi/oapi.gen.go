@@ -136,6 +136,12 @@ type Environment struct {
 	SystemId         string    `json:"systemId"`
 }
 
+// GithubEntity defines model for GithubEntity.
+type GithubEntity struct {
+	InstallationId int    `json:"installationId"`
+	Slug           string `json:"slug"`
+}
+
 // IntegerValue defines model for IntegerValue.
 type IntegerValue = int
 
