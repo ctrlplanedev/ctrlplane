@@ -62,14 +62,15 @@ func RunConsumer(ctx context.Context) error {
 		default:
 		}
 
+		msg, err := c.ReadMessage(time.Second)
+
 		ctx, span := tracer.Start(ctx, "ReadMessage")
 		defer span.End()
 
 		span.SetAttributes(attribute.String("kafka.topic", Topic))
 		span.SetAttributes(attribute.String("kafka.group_id", GroupID))
 		span.SetAttributes(attribute.String("kafka.brokers", Brokers))
-
-		msg, err := c.ReadMessage(time.Second)
+	
 		if err != nil {
 			if err.(kafka.Error).IsTimeout() {
 				log.Debug("Timeout, continuing")
