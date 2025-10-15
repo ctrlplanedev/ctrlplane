@@ -156,26 +156,15 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	err := handler(ctx, ws, rawEvent)
 
-	// Always run a dispatch eval jobs
-	changes := ws.ReleaseManager().Reconcile(ctx)
-
-	for _, change := range changes.Changes.Added {
-		changeSet.Record(
-			changeset.ChangeTypeCreate,
-			change,
-		)
-	}
-	for _, change := range changes.Changes.Removed {
-		changeSet.Record(
-			changeset.ChangeTypeDelete,
-			change,
-		)
+	releaseTargetChanges, err := ws.ReleaseManager().ProcessChanges(ctx, changeSet)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to process target changes")
+		log.Error("Failed to process target changes", "error", err)
+		return fmt.Errorf("failed to process target changes: %w", err)
 	}
 
-	_ = ws.ReleaseManager().EvaluateChange(ctx, changes)
-
-	span.SetAttributes(attribute.Int("release-target.added", len(changes.Changes.Added)))
-	span.SetAttributes(attribute.Int("release-target.removed", len(changes.Changes.Removed)))
+	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
 
 	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
 		span.RecordError(err)

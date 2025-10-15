@@ -85,25 +85,23 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 				return nil, err
 			}
 	
-			if len(depResources) == 0 {
-				continue
-			}
+		if len(depResources) == 0 {
+			continue
+		}
 
-			// Pre-compute the env:deployment key part
-			keyPrefix := environment.Id + ":" + deployment.Id + ":"
-
-			// Find intersection of resources
-			for resourceId := range envResources {
-				if _, hasResource := depResources[resourceId]; hasResource {
-					releaseTargetId := keyPrefix + resourceId
-					releaseTargets[releaseTargetId] = &oapi.ReleaseTarget{
-						EnvironmentId: environment.Id,
-						DeploymentId:  deployment.Id,
-						ResourceId:    resourceId,
-					}
+		// Find intersection of resources
+		for resourceId := range envResources {
+			if _, hasResource := depResources[resourceId]; hasResource {
+				target := &oapi.ReleaseTarget{
+					EnvironmentId: environment.Id,
+					DeploymentId:  deployment.Id,
+					ResourceId:    resourceId,
 				}
+				// Use the standard Key() method for consistency
+				releaseTargets[target.Key()] = target
 			}
 		}
+	}
 	}
 
 	span.SetAttributes(attribute.Int("count", len(releaseTargets)))

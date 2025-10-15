@@ -1,20 +1,26 @@
 package oapi
 
-import "fmt"
+func IsJob(entity any) (*Job, bool) {
+	job, ok := entity.(*Job)
+	if !ok {
+		return nil, false
+	}
+	return job, true
+}
 
 // ConvertToOapiResource converts a generic entity to a Resource type.
 // Returns an error if the entity is not a *Resource.
-func ConvertToOapiResource(entity any) (*Resource, error) {
+func IsResource(entity any) (*Resource, bool) {
 	resource, ok := entity.(*Resource)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a resource")
+		return nil, false
 	}
-	return resource, nil
+	return resource, true
 }
 
 // ConvertToOapiDeployment converts a generic entity to a Deployment type.
 // Returns an error if the entity is not a *Deployment.
-func ConvertToOapiDeployment(entity any) (*Deployment, bool) {
+func IsDeployment(entity any) (*Deployment, bool) {
 	deployment, ok := entity.(*Deployment)
 	if !ok {
 		return nil, false
@@ -24,7 +30,7 @@ func ConvertToOapiDeployment(entity any) (*Deployment, bool) {
 
 // ConvertToOapiEnvironment converts a generic entity to an Environment type.
 // Returns an error if the entity is not an *Environment.
-func ConvertToOapiEnvironment(entity any) (*Environment, bool) {
+func IsEnvironment(entity any) (*Environment, bool) {
 	environment, ok := entity.(*Environment)
 	if !ok {
 		return nil, false
@@ -54,7 +60,7 @@ func ConvertToOapiJobAgent(entity any) (*JobAgent, bool) {
 
 // ConvertToOapiRelease converts a generic entity to a Release type.
 // Returns an error if the entity is not a *Release.
-func ConvertToOapiRelease(entity any) (*Release, bool) {
+func IsRelease(entity any) (*Release, bool) {
 	release, ok := entity.(*Release)
 	if !ok {
 		return nil, false
@@ -64,7 +70,7 @@ func ConvertToOapiRelease(entity any) (*Release, bool) {
 
 // ConvertToOapiRelationshipRule converts a generic entity to a RelationshipRule type.
 // Returns an error if the entity is not a *RelationshipRule.
-func ConvertToOapiRelationshipRule(entity any) (*RelationshipRule, bool) {
+func IsRelationshipRule(entity any) (*RelationshipRule, bool) {
 	relationshipRule, ok := entity.(*RelationshipRule)
 	if !ok {
 		return nil, false
@@ -74,7 +80,7 @@ func ConvertToOapiRelationshipRule(entity any) (*RelationshipRule, bool) {
 
 // ConvertToOapiPolicy converts a generic entity to a Policy type.
 // Returns an error if the entity is not a *Policy.
-func ConvertToOapiPolicy(entity any) (*Policy, bool) {
+func IsPolicy(entity any) (*Policy, bool) {
 	policy, ok := entity.(*Policy)
 	if !ok {
 		return nil, false
@@ -84,7 +90,7 @@ func ConvertToOapiPolicy(entity any) (*Policy, bool) {
 
 // ConvertToOapiPolicyTargetSelector converts a generic entity to a PolicyTargetSelector type.
 // Returns an error if the entity is not a *PolicyTargetSelector.
-func ConvertToOapiPolicyTargetSelector(entity any) (*PolicyTargetSelector, bool) {
+func IsPolicyTargetSelector(entity any) (*PolicyTargetSelector, bool) {
 	policyTargetSelector, ok := entity.(*PolicyTargetSelector)
 	if !ok {
 		return nil, false
@@ -94,7 +100,7 @@ func ConvertToOapiPolicyTargetSelector(entity any) (*PolicyTargetSelector, bool)
 
 // ConvertToOapiPolicyRule converts a generic entity to a PolicyRule type.
 // Returns an error if the entity is not a *PolicyRule.
-func ConvertToOapiPolicyRule(entity any) (*PolicyRule, bool) {
+func IsPolicyRule(entity any) (*PolicyRule, bool) {
 	policyRule, ok := entity.(*PolicyRule)
 	if !ok {
 		return nil, false
@@ -104,7 +110,7 @@ func ConvertToOapiPolicyRule(entity any) (*PolicyRule, bool) {
 
 // ConvertToOapiUserApprovalRecord converts a generic entity to a UserApprovalRecord type.
 // Returns an error if the entity is not a *UserApprovalRecord.
-func ConvertToOapiUserApprovalRecord(entity any) (*UserApprovalRecord, bool) {
+func IsUserApprovalRecord(entity any) (*UserApprovalRecord, bool) {
 	userApprovalRecord, ok := entity.(*UserApprovalRecord)
 	if !ok {
 		return nil, false
@@ -115,7 +121,7 @@ func ConvertToOapiUserApprovalRecord(entity any) (*UserApprovalRecord, bool) {
 
 // ConvertToOapiSystem converts a generic entity to a System type.
 // Returns an error if the entity is not a *System.
-func ConvertToOapiSystem(entity any) (*System, bool) {
+func IsSystem(entity any) (*System, bool) {
 	system, ok := entity.(*System)
 	if !ok {
 		return nil, false
@@ -125,7 +131,7 @@ func ConvertToOapiSystem(entity any) (*System, bool) {
 
 // ConvertToOapiDeploymentVariable converts a generic entity to a DeploymentVariable type.
 // Returns an error if the entity is not a *DeploymentVariable.
-func ConvertToOapiDeploymentVariable(entity any) (*DeploymentVariable, bool) {
+func IsDeploymentVariable(entity any) (*DeploymentVariable, bool) {
 	deploymentVariable, ok := entity.(*DeploymentVariable)
 	if !ok {
 		return nil, false
@@ -135,7 +141,7 @@ func ConvertToOapiDeploymentVariable(entity any) (*DeploymentVariable, bool) {
 
 // ConvertToOapiDeploymentVersion converts a generic entity to a DeploymentVersion type.
 // Returns an error if the entity is not a *DeploymentVersion.
-func ConvertToOapiDeploymentVersion(entity any) (*DeploymentVersion, bool) {
+func IsDeploymentVersion(entity any) (*DeploymentVersion, bool) {
 	deploymentVersion, ok := entity.(*DeploymentVersion)
 	if !ok {
 		return nil, false

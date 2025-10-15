@@ -27,7 +27,6 @@ func HandleResourceCreated(
 	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
 		return err
 	}
-	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
 }
@@ -45,7 +44,6 @@ func HandleResourceUpdated(
 	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
 		return err
 	}
-	ws.ReleaseManager().TaintResourcesReleaseTargets(resource.Id)
 
 	return nil
 }
