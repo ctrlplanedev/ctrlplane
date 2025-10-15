@@ -347,3 +347,304 @@ func TestDBEnvironments_MultipleEnvironments(t *testing.T) {
 	}
 	validateRetrievedEnvironments(t, actualEnvironments, environments)
 }
+
+func TestDBEnvironments_WithJsonResourceSelector(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemName := fmt.Sprintf("test-system-%s", systemID[:8])
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        systemName,
+		Description: &systemDescription,
+	}
+
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Create environment with JSON resource selector
+	envID := uuid.New().String()
+	envName := fmt.Sprintf("test-env-%s", envID[:8])
+	description := fmt.Sprintf("test-description-%s", envID[:8])
+
+	// Create a JSON selector
+	resourceSelector := &oapi.Selector{}
+	err = resourceSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]interface{}{
+			"type":     "metadata",
+			"operator": "contains",
+			"key":      "region",
+			"value":    "us-west",
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to create JSON selector: %v", err)
+	}
+
+	env := &oapi.Environment{
+		Id:               envID,
+		Name:             envName,
+		SystemId:         systemID,
+		Description:      &description,
+		ResourceSelector: resourceSelector,
+	}
+
+	err = writeEnvironment(t.Context(), env, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Read back and validate
+	actualEnvironments, err := getEnvironments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	if len(actualEnvironments) != 1 {
+		t.Fatalf("expected 1 environment, got %d", len(actualEnvironments))
+	}
+
+	actualEnv := actualEnvironments[0]
+	if actualEnv.ResourceSelector == nil {
+		t.Fatalf("expected resource selector to be non-nil")
+	}
+
+	// Validate the selector content
+	jsonSelector, err := actualEnv.ResourceSelector.AsJsonSelector()
+	if err != nil {
+		t.Fatalf("expected JSON selector, got error: %v", err)
+	}
+
+	expectedJson := map[string]interface{}{
+		"type":     "metadata",
+		"operator": "contains",
+		"key":      "region",
+		"value":    "us-west",
+	}
+
+	if jsonSelector.Json["type"] != expectedJson["type"] {
+		t.Fatalf("expected type %v, got %v", expectedJson["type"], jsonSelector.Json["type"])
+	}
+	if jsonSelector.Json["operator"] != expectedJson["operator"] {
+		t.Fatalf("expected operator %v, got %v", expectedJson["operator"], jsonSelector.Json["operator"])
+	}
+	if jsonSelector.Json["key"] != expectedJson["key"] {
+		t.Fatalf("expected key %v, got %v", expectedJson["key"], jsonSelector.Json["key"])
+	}
+	if jsonSelector.Json["value"] != expectedJson["value"] {
+		t.Fatalf("expected value %v, got %v", expectedJson["value"], jsonSelector.Json["value"])
+	}
+}
+
+func TestDBEnvironments_WithCelResourceSelector(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemName := fmt.Sprintf("test-system-%s", systemID[:8])
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        systemName,
+		Description: &systemDescription,
+	}
+
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Create environment with CEL resource selector
+	envID := uuid.New().String()
+	envName := fmt.Sprintf("test-env-%s", envID[:8])
+	description := fmt.Sprintf("test-description-%s", envID[:8])
+
+	// Create a CEL selector
+	resourceSelector := &oapi.Selector{}
+	celExpression := "resource.metadata.environment == 'staging' && resource.kind == 'deployment'"
+	err = resourceSelector.FromCelSelector(oapi.CelSelector{
+		Cel: celExpression,
+	})
+	if err != nil {
+		t.Fatalf("failed to create CEL selector: %v", err)
+	}
+
+	env := &oapi.Environment{
+		Id:               envID,
+		Name:             envName,
+		SystemId:         systemID,
+		Description:      &description,
+		ResourceSelector: resourceSelector,
+	}
+
+	err = writeEnvironment(t.Context(), env, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Read back and validate
+	actualEnvironments, err := getEnvironments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	if len(actualEnvironments) != 1 {
+		t.Fatalf("expected 1 environment, got %d", len(actualEnvironments))
+	}
+
+	actualEnv := actualEnvironments[0]
+	if actualEnv.ResourceSelector == nil {
+		t.Fatalf("expected resource selector to be non-nil")
+	}
+
+	// Validate the selector content
+	celSelector, err := actualEnv.ResourceSelector.AsCelSelector()
+	if err != nil {
+		t.Fatalf("expected CEL selector, got error: %v", err)
+	}
+
+	if celSelector.Cel != celExpression {
+		t.Fatalf("expected CEL expression %s, got %s", celExpression, celSelector.Cel)
+	}
+}
+
+func TestDBEnvironments_UpdateResourceSelector(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemName := fmt.Sprintf("test-system-%s", systemID[:8])
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        systemName,
+		Description: &systemDescription,
+	}
+
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Create environment with JSON selector
+	envID := uuid.New().String()
+	envName := fmt.Sprintf("test-env-%s", envID[:8])
+	description := "test environment"
+
+	initialSelector := &oapi.Selector{}
+	err = initialSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]interface{}{
+			"type":  "name",
+			"value": "initial",
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to create initial JSON selector: %v", err)
+	}
+
+	env := &oapi.Environment{
+		Id:               envID,
+		Name:             envName,
+		SystemId:         systemID,
+		Description:      &description,
+		ResourceSelector: initialSelector,
+	}
+
+	err = writeEnvironment(t.Context(), env, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Update with CEL selector
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	updatedSelector := &oapi.Selector{}
+	celExpression := "resource.metadata.tier == 'backend'"
+	err = updatedSelector.FromCelSelector(oapi.CelSelector{
+		Cel: celExpression,
+	})
+	if err != nil {
+		t.Fatalf("failed to create CEL selector: %v", err)
+	}
+
+	env.ResourceSelector = updatedSelector
+
+	err = writeEnvironment(t.Context(), env, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify update
+	actualEnvironments, err := getEnvironments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	if len(actualEnvironments) != 1 {
+		t.Fatalf("expected 1 environment, got %d", len(actualEnvironments))
+	}
+
+	actualEnv := actualEnvironments[0]
+	if actualEnv.ResourceSelector == nil {
+		t.Fatalf("expected resource selector to be non-nil")
+	}
+
+	// Validate it's now a CEL selector
+	celSelector, err := actualEnv.ResourceSelector.AsCelSelector()
+	if err != nil {
+		t.Fatalf("expected CEL selector, got error: %v", err)
+	}
+
+	if celSelector.Cel != celExpression {
+		t.Fatalf("expected CEL expression %s, got %s", celExpression, celSelector.Cel)
+	}
+}
