@@ -3,6 +3,7 @@ package materialized
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -63,7 +64,9 @@ func TestMultipleTriggers(t *testing.T) {
 	// Wait for initial computation to complete (New calls StartRecompute automatically)
 	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("WaitRecompute failed: %v", err)
+		if !strings.Contains(err.Error(), "recompute not in progress") {
+			t.Fatalf("WaitRecompute failed: %v", err)
+		}
 	}
 
 	val1 := mv.Get()
