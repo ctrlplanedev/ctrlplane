@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -86,7 +87,12 @@ func (m *Manager) EvaluateVersion(
 	defer span.End()
 
 	// Get all policies that apply to this release target
-	applicablePolicies := m.store.Policies.GetPoliciesForReleaseTarget(ctx, releaseTarget)
+	applicablePolicies, err := m.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to get applicable policies")
+		return nil, err
+	}
 
 	span.SetAttributes(
 		attribute.Int("policies.count", len(applicablePolicies)),
