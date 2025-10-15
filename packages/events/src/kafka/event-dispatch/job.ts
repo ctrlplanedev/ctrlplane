@@ -1,8 +1,11 @@
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { JobStatusOapi } from "@ctrlplane/validators/jobs";
 
-import { sendNodeEvent } from "../client.js";
+import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
 const getWorkspaceId = async (job: schema.Job) => {
@@ -53,18 +56,57 @@ const getWorkspaceId = async (job: schema.Job) => {
   throw new Error("Job not found");
 };
 
+const convertJobToNodeEvent = (
+  previous: schema.Job,
+  current: schema.Job,
+  workspaceId: string,
+) => ({
+  workspaceId,
+  eventType: Event.JobUpdated as const,
+  eventId: current.id,
+  timestamp: Date.now(),
+  source: "api" as const,
+  payload: { previous, current },
+});
+
+export const getOapiJob = async (
+  job: schema.Job,
+): Promise<WorkspaceEngine["schemas"]["Job"]> => {
+  const release = await db
+    .select()
+    .from(schema.releaseJob)
+    .where(eq(schema.releaseJob.jobId, job.id))
+    .then(takeFirst);
+
+  const { releaseId } = release;
+
+  return {
+    id: job.id,
+    releaseId,
+    jobAgentId: job.jobAgentId ?? "",
+    jobAgentConfig: job.jobAgentConfig,
+    externalId: job.externalId ?? undefined,
+    status: JobStatusOapi[job.status],
+    createdAt: job.createdAt.toISOString(),
+    updatedAt: job.updatedAt.toISOString(),
+    startedAt: job.startedAt?.toISOString(),
+    completedAt: job.completedAt?.toISOString(),
+  };
+};
+
+const convertJobToGoEvent = async (job: schema.Job, workspaceId: string) => ({
+  workspaceId,
+  eventType: Event.JobUpdated as const,
+  data: await getOapiJob(job),
+  timestamp: Date.now(),
+});
+
 export const dispatchJobUpdated = async (
   previous: schema.Job,
   current: schema.Job,
-  source?: "api" | "scheduler" | "user-action",
 ) => {
   const workspaceId = await getWorkspaceId(current);
-  await sendNodeEvent({
-    workspaceId,
-    eventType: Event.JobUpdated,
-    eventId: current.id,
-    timestamp: Date.now(),
-    source: source ?? "api",
-    payload: { previous, current },
-  });
+  const nodeEvent = convertJobToNodeEvent(previous, current, workspaceId);
+  const goEvent = await convertJobToGoEvent(current, workspaceId);
+  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };

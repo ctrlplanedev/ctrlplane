@@ -152,7 +152,7 @@ export type GoEventPayload = {
   [Event.PolicyCreated]: WorkspaceEngine["schemas"]["Policy"];
   [Event.PolicyUpdated]: WorkspaceEngine["schemas"]["Policy"];
   [Event.PolicyDeleted]: WorkspaceEngine["schemas"]["Policy"];
-  [Event.JobUpdated]: PB.Job;
+  [Event.JobUpdated]: WorkspaceEngine["schemas"]["Job"];
 };
 
 export type Message<T extends keyof EventPayload> = {

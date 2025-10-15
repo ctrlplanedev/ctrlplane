@@ -29,6 +29,19 @@ export const JobStatusReadable = {
   [JobStatus.ExternalRunNotFound]: "External run not found",
 };
 
+export const JobStatusOapi = {
+  [JobStatus.Successful]: "successful",
+  [JobStatus.Cancelled]: "cancelled",
+  [JobStatus.Skipped]: "skipped",
+  [JobStatus.InProgress]: "inProgress",
+  [JobStatus.ActionRequired]: "actionRequired",
+  [JobStatus.Pending]: "pending",
+  [JobStatus.Failure]: "failure",
+  [JobStatus.InvalidJobAgent]: "invalidJobAgent",
+  [JobStatus.InvalidIntegration]: "invalidIntegration",
+  [JobStatus.ExternalRunNotFound]: "externalRunNotFound",
+} as const;
+
 export const activeStatus = [JobStatus.InProgress, JobStatus.ActionRequired];
 export const activeStatusType = activeStatus.map((s) => s as JobStatusType);
 
