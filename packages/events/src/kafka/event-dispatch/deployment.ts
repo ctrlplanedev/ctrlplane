@@ -21,9 +21,10 @@ const getSystem = async (tx: Tx, systemId: string) =>
 const convertDeploymentToNodeEvent = (
   deployment: schema.Deployment,
   workspaceId: string,
+  eventType: Event,
 ) => ({
   workspaceId,
-  eventType: Event.DeploymentCreated,
+  eventType,
   eventId: deployment.id,
   timestamp: Date.now(),
   source: "api" as const,
@@ -46,9 +47,10 @@ const getOapiDeployment = (
 const convertDeploymentToGoEvent = (
   deployment: schema.Deployment,
   workspaceId: string,
+  eventType: keyof GoEventPayload,
 ) => ({
   workspaceId,
-  eventType: Event.DeploymentCreated as const,
+  eventType,
   data: getOapiDeployment(deployment),
   timestamp: Date.now(),
 });
@@ -64,11 +66,18 @@ export const dispatchDeploymentCreated = createSpanWrapper(
     const system = await getSystem(tx, deployment.systemId);
     span.setAttribute("workspace.id", system.workspaceId);
 
+    const eventType = Event.DeploymentCreated;
     await Promise.all([
       sendNodeEvent(
-        convertDeploymentToNodeEvent(deployment, system.workspaceId),
+        convertDeploymentToNodeEvent(deployment, system.workspaceId, eventType),
       ),
-      sendGoEvent(convertDeploymentToGoEvent(deployment, system.workspaceId)),
+      sendGoEvent(
+        convertDeploymentToGoEvent(
+          deployment,
+          system.workspaceId,
+          eventType as keyof GoEventPayload,
+        ),
+      ),
     ]);
   },
 );
@@ -89,16 +98,23 @@ export const dispatchDeploymentUpdated = createSpanWrapper(
     const system = await getSystem(tx, current.systemId);
     span.setAttribute("workspace.id", system.workspaceId);
 
+    const eventType = Event.DeploymentUpdated;
     await Promise.all([
       sendNodeEvent({
         workspaceId: system.workspaceId,
-        eventType: Event.DeploymentUpdated,
+        eventType,
         eventId: current.id,
         timestamp: Date.now(),
         source: "api" as const,
         payload: { previous, current },
       }),
-      sendGoEvent(convertDeploymentToGoEvent(current, system.workspaceId)),
+      sendGoEvent(
+        convertDeploymentToGoEvent(
+          current,
+          system.workspaceId,
+          eventType as keyof GoEventPayload,
+        ),
+      ),
     ]);
   },
 );
@@ -114,11 +130,18 @@ export const dispatchDeploymentDeleted = createSpanWrapper(
     const system = await getSystem(tx, deployment.systemId);
     span.setAttribute("workspace.id", system.workspaceId);
 
+    const eventType = Event.DeploymentDeleted;
     await Promise.all([
       sendNodeEvent(
-        convertDeploymentToNodeEvent(deployment, system.workspaceId),
+        convertDeploymentToNodeEvent(deployment, system.workspaceId, eventType),
       ),
-      sendGoEvent(convertDeploymentToGoEvent(deployment, system.workspaceId)),
+      sendGoEvent(
+        convertDeploymentToGoEvent(
+          deployment,
+          system.workspaceId,
+          eventType as keyof GoEventPayload,
+        ),
+      ),
     ]);
   },
 );

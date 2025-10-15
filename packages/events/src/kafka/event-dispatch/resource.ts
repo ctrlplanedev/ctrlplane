@@ -5,7 +5,12 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { FullResource, Message } from "../events.js";
+import type {
+  FullResource,
+  GoEventPayload,
+  GoMessage,
+  Message,
+} from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -39,26 +44,36 @@ const getOapiResource = (
   config: resource.config,
 });
 
-const convertFullResourceToNodeEvent = (fullResource: FullResource) => ({
+const convertFullResourceToNodeEvent = (
+  fullResource: FullResource,
+  eventType: Event,
+) => ({
   workspaceId: fullResource.workspaceId,
-  eventType: Event.ResourceCreated,
+  eventType,
   eventId: fullResource.id,
   timestamp: Date.now(),
   source: "api" as const,
   payload: fullResource,
 });
 
-const convertFullResourceToGoEvent = (fullResource: FullResource) => ({
+const convertFullResourceToGoEvent = (
+  fullResource: FullResource,
+  eventType: keyof GoEventPayload,
+): GoMessage<keyof GoEventPayload> => ({
   workspaceId: fullResource.workspaceId,
-  eventType: Event.ResourceCreated as const,
+  eventType,
   data: getOapiResource(fullResource),
   timestamp: Date.now(),
 });
 
 export const dispatchResourceCreated = async (resource: schema.Resource) => {
   const fullResource = await getFullResource(resource);
-  const nodeEvent = convertFullResourceToNodeEvent(fullResource);
-  const goEvent = convertFullResourceToGoEvent(fullResource);
+  const eventType = Event.ResourceCreated;
+  const nodeEvent = convertFullResourceToNodeEvent(fullResource, eventType);
+  const goEvent = convertFullResourceToGoEvent(
+    fullResource,
+    eventType as keyof GoEventPayload,
+  );
   await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 
@@ -73,23 +88,31 @@ export const dispatchResourceUpdated = createSpanWrapper(
       getFullResource(previous),
       getFullResource(current),
     ]);
+    const eventType = Event.ResourceUpdated;
     const nodeEvent: Message<Event.ResourceUpdated> = {
       workspaceId: current.workspaceId,
-      eventType: Event.ResourceUpdated,
+      eventType,
       eventId: current.id,
       timestamp: Date.now(),
       source: "api" as const,
       payload: { previous: previousFullResource, current: currentFullResource },
     };
-    const goEvent = convertFullResourceToGoEvent(currentFullResource);
+    const goEvent = convertFullResourceToGoEvent(
+      currentFullResource,
+      eventType as keyof GoEventPayload,
+    );
     await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
   },
 );
 
 export const dispatchResourceDeleted = async (resource: schema.Resource) => {
   const fullResource = await getFullResource(resource);
-  const nodeEvent = convertFullResourceToNodeEvent(fullResource);
-  const goEvent = convertFullResourceToGoEvent(fullResource);
+  const eventType = Event.ResourceDeleted;
+  const nodeEvent = convertFullResourceToNodeEvent(fullResource, eventType);
+  const goEvent = convertFullResourceToGoEvent(
+    fullResource,
+    eventType as keyof GoEventPayload,
+  );
   await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
 };
 

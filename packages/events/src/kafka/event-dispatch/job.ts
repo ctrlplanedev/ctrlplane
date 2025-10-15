@@ -6,6 +6,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatusOapi } from "@ctrlplane/validators/jobs";
 
+import type { GoEventPayload, GoMessage } from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -62,9 +63,10 @@ const convertJobToNodeEvent = (
   previous: schema.Job,
   current: schema.Job,
   workspaceId: string,
+  eventType: Event,
 ) => ({
   workspaceId,
-  eventType: Event.JobUpdated as const,
+  eventType,
   eventId: current.id,
   timestamp: Date.now(),
   source: "api" as const,
@@ -96,9 +98,13 @@ export const getOapiJob = async (
   };
 };
 
-const convertJobToGoEvent = async (job: schema.Job, workspaceId: string) => ({
+const convertJobToGoEvent = async (
+  job: schema.Job,
+  workspaceId: string,
+  eventType: keyof GoEventPayload,
+): Promise<GoMessage<keyof GoEventPayload>> => ({
   workspaceId,
-  eventType: Event.JobUpdated as const,
+  eventType,
   data: await getOapiJob(job),
   timestamp: Date.now(),
 });
@@ -112,8 +118,18 @@ export const dispatchJobUpdated = createSpanWrapper(
     const workspaceId = await getWorkspaceId(current);
     span.setAttribute("workspace.id", workspaceId);
 
-    const nodeEvent = convertJobToNodeEvent(previous, current, workspaceId);
-    const goEvent = await convertJobToGoEvent(current, workspaceId);
+    const eventType = Event.JobUpdated;
+    const nodeEvent = convertJobToNodeEvent(
+      previous,
+      current,
+      workspaceId,
+      eventType,
+    );
+    const goEvent = await convertJobToGoEvent(
+      current,
+      workspaceId,
+      eventType as keyof GoEventPayload,
+    );
     await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
   },
 );

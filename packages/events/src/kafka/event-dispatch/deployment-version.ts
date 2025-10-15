@@ -6,6 +6,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
+import type { GoEventPayload, GoMessage } from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -26,9 +27,10 @@ const getWorkspaceId = async (tx: Tx, deploymentVersionId: string) =>
 const convertVersionToNodeEvent = (
   deploymentVersion: schema.DeploymentVersion,
   workspaceId: string,
+  eventType: Event,
 ) => ({
   workspaceId,
-  eventType: Event.DeploymentVersionCreated,
+  eventType,
   eventId: deploymentVersion.id,
   timestamp: Date.now(),
   source: "api" as const,
@@ -52,9 +54,10 @@ const getOapiDeploymentVersion = (
 const convertVersionToGoEvent = (
   deploymentVersion: schema.DeploymentVersion,
   workspaceId: string,
-) => ({
+  eventType: keyof GoEventPayload,
+): GoMessage<keyof GoEventPayload> => ({
   workspaceId,
-  eventType: Event.DeploymentVersionCreated as const,
+  eventType,
   data: getOapiDeploymentVersion(deploymentVersion),
   timestamp: Date.now(),
 });
@@ -70,9 +73,18 @@ export const dispatchDeploymentVersionCreated = createSpanWrapper(
     const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
     span.setAttribute("workspace.id", workspaceId);
 
+    const eventType = Event.DeploymentVersionCreated;
     await Promise.all([
-      sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
-      sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
+      sendNodeEvent(
+        convertVersionToNodeEvent(deploymentVersion, workspaceId, eventType),
+      ),
+      sendGoEvent(
+        convertVersionToGoEvent(
+          deploymentVersion,
+          workspaceId,
+          eventType as keyof GoEventPayload,
+        ),
+      ),
     ]);
   },
 );
@@ -93,16 +105,23 @@ export const dispatchDeploymentVersionUpdated = createSpanWrapper(
     const workspaceId = await getWorkspaceId(tx, current.id);
     span.setAttribute("workspace.id", workspaceId);
 
+    const eventType = Event.DeploymentVersionUpdated;
     await Promise.all([
       sendNodeEvent({
         workspaceId,
-        eventType: Event.DeploymentVersionUpdated,
+        eventType,
         eventId: current.id,
         timestamp: Date.now(),
         source: "api" as const,
         payload: { previous, current },
       }),
-      sendGoEvent(convertVersionToGoEvent(current, workspaceId)),
+      sendGoEvent(
+        convertVersionToGoEvent(
+          current,
+          workspaceId,
+          eventType as keyof GoEventPayload,
+        ),
+      ),
     ]);
   },
 );
@@ -118,9 +137,18 @@ export const dispatchDeploymentVersionDeleted = createSpanWrapper(
     const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
     span.setAttribute("workspace.id", workspaceId);
 
+    const eventType = Event.DeploymentVersionDeleted;
     await Promise.all([
-      sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
-      sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
+      sendNodeEvent(
+        convertVersionToNodeEvent(deploymentVersion, workspaceId, eventType),
+      ),
+      sendGoEvent(
+        convertVersionToGoEvent(
+          deploymentVersion,
+          workspaceId,
+          eventType as keyof GoEventPayload,
+        ),
+      ),
     ]);
   },
 );
