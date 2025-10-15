@@ -2,6 +2,7 @@ package results
 
 import (
 	"testing"
+	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -31,11 +32,15 @@ func TestNewPolicyEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := NewPolicyEvaluation(tt.policyID, tt.policyName)
+			result := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+				Id:   tt.policyID,
+				Name: tt.policyName,
+			}))
 
 			assert.NotNil(t, result)
-			assert.Equal(t, tt.policyID, result.PolicyID)
-			assert.Equal(t, tt.policyName, result.PolicyName)
+			assert.NotNil(t, result.Policy)
+			assert.Equal(t, tt.policyID, result.Policy.Id)
+			assert.Equal(t, tt.policyName, result.Policy.Name)
 			assert.NotNil(t, result.RuleResults)
 			assert.Empty(t, result.RuleResults)
 			assert.True(t, result.Overall, "Overall should be true by default")
@@ -95,7 +100,10 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			policy := NewPolicyEvaluation("test-policy", "Test Policy")
+			policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+				Id:   "test-policy",
+				Name: "Test Policy",
+			}))
 
 			for _, ruleResult := range tt.ruleResults {
 				policy.AddRuleResult(ruleResult)
@@ -174,7 +182,10 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			policy := NewPolicyEvaluation("test-policy", "Test Policy")
+			policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+				Id:   "test-policy",
+				Name: "Test Policy",
+			}))
 
 			for _, ruleResult := range tt.ruleResults {
 				policy.AddRuleResult(ruleResult)
@@ -243,7 +254,10 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			policy := NewPolicyEvaluation("test-policy", "Test Policy")
+			policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+				Id:   "test-policy",
+				Name: "Test Policy",
+			}))
 
 			for _, ruleResult := range tt.ruleResults {
 				policy.AddRuleResult(ruleResult)
@@ -311,7 +325,10 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			policy := NewPolicyEvaluation("test-policy", "Test Policy")
+			policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+				Id:   "test-policy",
+				Name: "Test Policy",
+			}))
 
 			for _, ruleResult := range tt.ruleResults {
 				policy.AddRuleResult(ruleResult)
@@ -365,7 +382,10 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			policy := NewPolicyEvaluation("test-policy", "Test Policy")
+			policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+				Id:   "test-policy",
+				Name: "Test Policy",
+			}))
 
 			for _, ruleResult := range tt.ruleResults {
 				policy.AddRuleResult(ruleResult)
@@ -378,7 +398,7 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 
 			// Verify all returned results require action
 			for _, result := range pending {
-				assert.True(t, result.RequiresAction)
+				assert.True(t, result.ActionRequired)
 			}
 		})
 	}
@@ -386,7 +406,10 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 
 func TestPolicyEvaluationResult_Integration(t *testing.T) {
 	t.Run("complete workflow with multiple rule types", func(t *testing.T) {
-		policy := NewPolicyEvaluation("prod-policy-123", "Production Deployment Policy")
+		policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+			Id:   "prod-policy-123",
+			Name: "Production Deployment Policy",
+		}))
 
 		// Add various rule results
 		policy.AddRuleResult(NewAllowedResult("time window check passed"))
@@ -416,7 +439,10 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 	})
 
 	t.Run("successful policy evaluation", func(t *testing.T) {
-		policy := NewPolicyEvaluation("dev-policy-456", "Development Deployment Policy")
+		policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+			Id:   "dev-policy-456",
+			Name: "Development Deployment Policy",
+		}))
 
 		// Add only allowed results
 		policy.AddRuleResult(NewAllowedResult("all checks passed"))
@@ -437,7 +463,10 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 	})
 
 	t.Run("policy with only pending actions", func(t *testing.T) {
-		policy := NewPolicyEvaluation("staging-policy-789", "Staging Deployment Policy")
+		policy := NewPolicyEvaluation(WithPolicy(&oapi.Policy{
+			Id:   "staging-policy-789",
+			Name: "Staging Deployment Policy",
+		}))
 
 		// Add multiple pending actions
 		policy.AddRuleResult(NewPendingResult("approval", "security team approval required"))

@@ -131,8 +131,8 @@ func TestNew(t *testing.T) {
 
 	assert.NotNil(t, manager)
 	assert.NotNil(t, manager.store)
-	assert.NotNil(t, manager.releaseRuleEvaluators)
-	assert.Equal(t, 1, len(manager.releaseRuleEvaluators), "should have skipdeployed evaluator by default")
+	assert.NotNil(t, manager.defaultReleaseRuleEvaluators)
+	assert.Equal(t, 1, len(manager.defaultReleaseRuleEvaluators), "should have skipdeployed evaluator by default")
 }
 
 func TestManager_EvaluateVersion_NoPolicies(t *testing.T) {
@@ -507,7 +507,7 @@ func TestManager_getVersionRuleEvaluator_AnyApprovalRule(t *testing.T) {
 	version := createTestVersion(uuid.New().String(), "v1.0.0")
 	releaseTarget := createTestReleaseTarget(uuid.New().String(), uuid.New().String(), uuid.New().String())
 
-	evaluator, err := manager.getVersionRuleEvaluator(ctx, &rule, version, releaseTarget)
+	evaluator, err := manager.createVersionEvaulatorForRule(ctx, &rule, version, releaseTarget)
 
 	require.NoError(t, err)
 	require.NotNil(t, evaluator)
@@ -528,7 +528,7 @@ func TestManager_getVersionRuleEvaluator_UnknownRuleType(t *testing.T) {
 	version := createTestVersion(uuid.New().String(), "v1.0.0")
 	releaseTarget := createTestReleaseTarget(uuid.New().String(), uuid.New().String(), uuid.New().String())
 
-	evaluator, err := manager.getVersionRuleEvaluator(ctx, &rule, version, releaseTarget)
+	evaluator, err := manager.createVersionEvaulatorForRule(ctx, &rule, version, releaseTarget)
 
 	require.Error(t, err)
 	require.Nil(t, evaluator)

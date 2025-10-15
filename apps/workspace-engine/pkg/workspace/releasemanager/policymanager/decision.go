@@ -25,7 +25,7 @@ func (d *DeployDecision) GetPendingActions() []*results.RuleEvaluationResult {
 }
 
 func (d *DeployDecision) CanDeploy() bool {
-	return len(d.GetPendingActions()) == 0
+	return !d.IsBlocked() && len(d.GetPendingActions()) == 0
 }
 
 func (d *DeployDecision) IsPending() bool {

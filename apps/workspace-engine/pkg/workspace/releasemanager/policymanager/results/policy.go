@@ -3,25 +3,32 @@ package results
 import (
 	"fmt"
 	"strings"
+	"workspace-engine/pkg/oapi"
 )
 
-// NewPolicyEvaluationResult creates a new policy evaluation result.
-func NewPolicyEvaluation(policyID, policyName string) *PolicyEvaluationResult {
-	return &PolicyEvaluationResult{
-		PolicyID:    policyID,
-		PolicyName:  policyName,
+type PolicyEvaluationResultOption func(*PolicyEvaluationResult)
+
+func WithPolicy(policy *oapi.Policy) PolicyEvaluationResultOption {
+	return func(per *PolicyEvaluationResult) {
+		per.Policy = policy
+	}
+}
+
+// NewPolicyEvaluation creates a new policy evaluation result with optional settings.
+func NewPolicyEvaluation(opts ...PolicyEvaluationResultOption) *PolicyEvaluationResult {
+	per := &PolicyEvaluationResult{
 		RuleResults: make([]*RuleEvaluationResult, 0),
 		Overall:     true,
 	}
+	for _, opt := range opts {
+		opt(per)
+	}
+	return per
 }
 
 // PolicyEvaluationResult aggregates results from all rules in a policy.
 type PolicyEvaluationResult struct {
-	// PolicyID identifies the policy that was evaluated
-	PolicyID string
-
-	// PolicyName is the human-readable name of the policy
-	PolicyName string
+	Policy *oapi.Policy
 
 	// RuleResults contains the result of each rule evaluation
 	RuleResults []*RuleEvaluationResult
@@ -53,7 +60,7 @@ func (p *PolicyEvaluationResult) GenerateSummary() {
 
 	for _, result := range p.RuleResults {
 		if !result.Allowed {
-			if result.RequiresAction {
+			if result.ActionRequired {
 				pendingRules = append(pendingRules, result.Reason)
 			} else {
 				deniedRules = append(deniedRules, result.Reason)
@@ -75,7 +82,7 @@ func (p *PolicyEvaluationResult) GenerateSummary() {
 // HasDenials returns true if any rule explicitly denied the deployment.
 func (p *PolicyEvaluationResult) HasDenials() bool {
 	for _, result := range p.RuleResults {
-		if !result.Allowed && !result.RequiresAction {
+		if !result.Allowed && !result.ActionRequired {
 			return true
 		}
 	}
@@ -85,7 +92,7 @@ func (p *PolicyEvaluationResult) HasDenials() bool {
 // HasPendingActions returns true if any rule requires action before proceeding.
 func (p *PolicyEvaluationResult) HasPendingActions() bool {
 	for _, result := range p.RuleResults {
-		if result.RequiresAction {
+		if result.ActionRequired {
 			return true
 		}
 	}
@@ -96,7 +103,7 @@ func (p *PolicyEvaluationResult) HasPendingActions() bool {
 func (p *PolicyEvaluationResult) GetPendingActions() []*RuleEvaluationResult {
 	pending := make([]*RuleEvaluationResult, 0)
 	for _, result := range p.RuleResults {
-		if result.RequiresAction {
+		if result.ActionRequired {
 			pending = append(pending, result)
 		}
 	}

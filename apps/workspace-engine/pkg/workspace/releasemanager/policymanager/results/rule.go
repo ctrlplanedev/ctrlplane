@@ -28,6 +28,13 @@ type ReleaseTargetRuleEvaluator interface {
 	) (*RuleEvaluationResult, error)
 }
 
+type ActionType string
+
+const (
+	ActionTypeApproval ActionType = "approval"
+	ActionTypeWait     ActionType = "wait"
+)
+
 // EvaluationResult represents the outcome of evaluating a policy rule.
 type RuleEvaluationResult struct {
 	// Allowed indicates whether the rule permits the deployment
@@ -40,12 +47,12 @@ type RuleEvaluationResult struct {
 	// (e.g., approval status, concurrent deployments count)
 	Details map[string]any
 
-	// RequiresAction indicates if the rule needs external action before proceeding
+	// ActionRequired indicates if the rule needs external action before proceeding
 	// (e.g., approval rules require someone to approve)
-	RequiresAction bool
+	ActionRequired bool
 
 	// ActionType describes what action is needed (e.g., "approval", "wait")
-	ActionType string
+	ActionType ActionType
 }
 
 // WithDetail adds a detail to the result and returns the result for chaining.
@@ -58,12 +65,12 @@ func (r *RuleEvaluationResult) WithDetail(key string, value any) *RuleEvaluation
 }
 
 // NewPendingResult creates a result indicating the rule requires action before proceeding.
-func NewPendingResult(actionType, reason string) *RuleEvaluationResult {
+func NewPendingResult(actionType ActionType, reason string) *RuleEvaluationResult {
 	return &RuleEvaluationResult{
 		Allowed:        false,
 		Reason:         reason,
 		Details:        make(map[string]any),
-		RequiresAction: true,
+		ActionRequired: true,
 		ActionType:     actionType,
 	}
 }
@@ -74,7 +81,7 @@ func NewDeniedResult(reason string) *RuleEvaluationResult {
 		Allowed:        false,
 		Reason:         reason,
 		Details:        make(map[string]any),
-		RequiresAction: false,
+		ActionRequired: false,
 	}
 }
 
@@ -84,6 +91,6 @@ func NewAllowedResult(reason string) *RuleEvaluationResult {
 		Allowed:        true,
 		Reason:         reason,
 		Details:        make(map[string]any),
-		RequiresAction: false,
+		ActionRequired: false,
 	}
 }
