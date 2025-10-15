@@ -8,9 +8,31 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
+// Helper function to create a test store with a resource
+func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
+	st := store.New()
+	ctx := context.Background()
+
+	resource := &oapi.Resource{
+		Id:         resourceID,
+		Name:       "test-resource",
+		Kind:       "server",
+		Identifier: resourceID,
+		Config:     map[string]any{},
+		Metadata:   map[string]string{},
+		Version:    "v1",
+		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+		t.Fatalf("Failed to upsert resource: %v", err)
+	}
+	return st
+}
+
 func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 	// Setup: No previous jobs
-	st := store.New()
+	st := setupStoreWithResource(t, "resource-1")
 	evaluator := NewSkipDeployedEvaluator(st)
 
 	release := &oapi.Release{
@@ -44,7 +66,7 @@ func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 
 func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	// Setup: Previous deployment failed
-	st := store.New()
+	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
 	releaseTarget := &oapi.ReleaseTarget{
@@ -99,7 +121,7 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 
 func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 	// Setup: Previous successful deployment of same release
-	st := store.New()
+	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
 	releaseTarget := &oapi.ReleaseTarget{
@@ -158,7 +180,7 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 
 func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 	// Setup: v1.0.0 deployed successfully, now deploying v2.0.0
-	st := store.New()
+	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
 	releaseTarget := &oapi.ReleaseTarget{
@@ -221,7 +243,7 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 
 func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	// Setup: Previous job is in progress
-	st := store.New()
+	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
 	releaseTarget := &oapi.ReleaseTarget{
@@ -274,7 +296,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 
 func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 	// Setup: Previous job was cancelled
-	st := store.New()
+	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
 	releaseTarget := &oapi.ReleaseTarget{
@@ -329,7 +351,7 @@ func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 
 func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	// Setup: Same version, different variables = different release
-	st := store.New()
+	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
 	releaseTarget := &oapi.ReleaseTarget{
