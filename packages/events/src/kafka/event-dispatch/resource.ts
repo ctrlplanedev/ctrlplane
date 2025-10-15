@@ -5,7 +5,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { FullResource } from "../events.js";
+import type { FullResource, Message } from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -69,9 +69,19 @@ export const dispatchResourceUpdated = createSpanWrapper(
     span.setAttribute("resource.name", current.name);
     span.setAttribute("workspace.id", current.workspaceId);
 
-    const fullResource = await getFullResource(current);
-    const nodeEvent = convertFullResourceToNodeEvent(fullResource);
-    const goEvent = convertFullResourceToGoEvent(fullResource);
+    const [previousFullResource, currentFullResource] = await Promise.all([
+      getFullResource(previous),
+      getFullResource(current),
+    ]);
+    const nodeEvent: Message<Event.ResourceUpdated> = {
+      workspaceId: current.workspaceId,
+      eventType: Event.ResourceUpdated,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: "api" as const,
+      payload: { previous: previousFullResource, current: currentFullResource },
+    };
+    const goEvent = convertFullResourceToGoEvent(currentFullResource);
     await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
   },
 );
