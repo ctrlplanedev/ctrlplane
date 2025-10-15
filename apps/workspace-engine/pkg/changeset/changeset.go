@@ -23,7 +23,7 @@ type Change[T any] struct {
 type ChangeSet[T any] struct {
 	IsInitialLoad bool
 	Changes       []Change[T]
-	Mutex         sync.Mutex
+	mutex         sync.Mutex
 }
 
 func NewChangeSet[T any]() *ChangeSet[T] {
@@ -32,13 +32,25 @@ func NewChangeSet[T any]() *ChangeSet[T] {
 	}
 }
 
+func (cs *ChangeSet[T]) Lock() {
+	cs.mutex.Lock()
+}
+
+func (cs *ChangeSet[T]) Unlock() {
+	cs.mutex.Unlock()
+}
+
 func (cs *ChangeSet[T]) Record(changeType ChangeType, entity T) {
-	cs.Mutex.Lock()
-	defer cs.Mutex.Unlock()
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
 
 	cs.Changes = append(cs.Changes, Change[T]{
 		Type:       changeType,
 		Entity:     entity,
 		Timestamp:  time.Now(),
 	})
+}
+
+func (cs *ChangeSet[T]) Process() *Processor[T] {
+	return NewProcessor(cs)
 }

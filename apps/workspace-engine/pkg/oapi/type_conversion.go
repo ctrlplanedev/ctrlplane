@@ -14,131 +14,131 @@ func ConvertToOapiResource(entity any) (*Resource, error) {
 
 // ConvertToOapiDeployment converts a generic entity to a Deployment type.
 // Returns an error if the entity is not a *Deployment.
-func ConvertToOapiDeployment(entity any) (*Deployment, error) {
+func ConvertToOapiDeployment(entity any) (*Deployment, bool) {
 	deployment, ok := entity.(*Deployment)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a deployment")
+		return nil, false
 	}
-	return deployment, nil
+	return deployment, true
 }
 
 // ConvertToOapiEnvironment converts a generic entity to an Environment type.
 // Returns an error if the entity is not an *Environment.
-func ConvertToOapiEnvironment(entity any) (*Environment, error) {
+func ConvertToOapiEnvironment(entity any) (*Environment, bool) {
 	environment, ok := entity.(*Environment)
 	if !ok {
-		return nil, fmt.Errorf("entity is not an environment")
+		return nil, false
 	}
-	return environment, nil
+	return environment, true
 }
 
 // ConvertToOapiJob converts a generic entity to a Job type.
 // Returns an error if the entity is not a *Job.
-func ConvertToOapiJob(entity any) (*Job, error) {
+func ConvertToOapiJob(entity any) (*Job, bool) {
 	job, ok := entity.(*Job)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a job")
+		return nil, false
 	}
-	return job, nil
+	return job, true
 }
 
 // ConvertToOapiJobAgent converts a generic entity to a JobAgent type.
 // Returns an error if the entity is not a *JobAgent.
-func ConvertToOapiJobAgent(entity any) (*JobAgent, error) {
+func ConvertToOapiJobAgent(entity any) (*JobAgent, bool) {
 	jobAgent, ok := entity.(*JobAgent)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a job agent")
+		return nil, false
 	}
-	return jobAgent, nil
+	return jobAgent, true
 }
 
 // ConvertToOapiRelease converts a generic entity to a Release type.
 // Returns an error if the entity is not a *Release.
-func ConvertToOapiRelease(entity any) (*Release, error) {
+func ConvertToOapiRelease(entity any) (*Release, bool) {
 	release, ok := entity.(*Release)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a release")
+		return nil, false
 	}
-	return release, nil
+	return release, true
 }
 
 // ConvertToOapiRelationshipRule converts a generic entity to a RelationshipRule type.
 // Returns an error if the entity is not a *RelationshipRule.
-func ConvertToOapiRelationshipRule(entity any) (*RelationshipRule, error) {
+func ConvertToOapiRelationshipRule(entity any) (*RelationshipRule, bool) {
 	relationshipRule, ok := entity.(*RelationshipRule)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a relationship rule")
+		return nil, false
 	}
-	return relationshipRule, nil
+	return relationshipRule, true
 }
 
 // ConvertToOapiPolicy converts a generic entity to a Policy type.
 // Returns an error if the entity is not a *Policy.
-func ConvertToOapiPolicy(entity any) (*Policy, error) {
+func ConvertToOapiPolicy(entity any) (*Policy, bool) {
 	policy, ok := entity.(*Policy)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a policy")
+		return nil, false
 	}
-	return policy, nil
+	return policy, true
 }
 
 // ConvertToOapiPolicyTargetSelector converts a generic entity to a PolicyTargetSelector type.
 // Returns an error if the entity is not a *PolicyTargetSelector.
-func ConvertToOapiPolicyTargetSelector(entity any) (*PolicyTargetSelector, error) {
+func ConvertToOapiPolicyTargetSelector(entity any) (*PolicyTargetSelector, bool) {
 	policyTargetSelector, ok := entity.(*PolicyTargetSelector)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a policy target selector")
+		return nil, false
 	}
-	return policyTargetSelector, nil
+	return policyTargetSelector, true
 }
 
 // ConvertToOapiPolicyRule converts a generic entity to a PolicyRule type.
 // Returns an error if the entity is not a *PolicyRule.
-func ConvertToOapiPolicyRule(entity any) (*PolicyRule, error) {
+func ConvertToOapiPolicyRule(entity any) (*PolicyRule, bool) {
 	policyRule, ok := entity.(*PolicyRule)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a policy rule")
+		return nil, false
 	}
-	return policyRule, nil
+	return policyRule, true
 }
 
 // ConvertToOapiUserApprovalRecord converts a generic entity to a UserApprovalRecord type.
 // Returns an error if the entity is not a *UserApprovalRecord.
-func ConvertToOapiUserApprovalRecord(entity any) (*UserApprovalRecord, error) {
+func ConvertToOapiUserApprovalRecord(entity any) (*UserApprovalRecord, bool) {
 	userApprovalRecord, ok := entity.(*UserApprovalRecord)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a user approval record")
+		return nil, false
 	}
 
-	return userApprovalRecord, nil
+	return userApprovalRecord, true
 }
 
 // ConvertToOapiSystem converts a generic entity to a System type.
 // Returns an error if the entity is not a *System.
-func ConvertToOapiSystem(entity any) (*System, error) {
+func ConvertToOapiSystem(entity any) (*System, bool) {
 	system, ok := entity.(*System)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a system")
+		return nil, false
 	}
-	return system, nil
+	return system, true
 }
 
 // ConvertToOapiDeploymentVariable converts a generic entity to a DeploymentVariable type.
 // Returns an error if the entity is not a *DeploymentVariable.
-func ConvertToOapiDeploymentVariable(entity any) (*DeploymentVariable, error) {
+func ConvertToOapiDeploymentVariable(entity any) (*DeploymentVariable, bool) {
 	deploymentVariable, ok := entity.(*DeploymentVariable)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a deployment variable")
+		return nil, false
 	}
-	return deploymentVariable, nil
+	return deploymentVariable, true
 }
 
 // ConvertToOapiDeploymentVersion converts a generic entity to a DeploymentVersion type.
 // Returns an error if the entity is not a *DeploymentVersion.
-func ConvertToOapiDeploymentVersion(entity any) (*DeploymentVersion, error) {
+func ConvertToOapiDeploymentVersion(entity any) (*DeploymentVersion, bool) {
 	deploymentVersion, ok := entity.(*DeploymentVersion)
 	if !ok {
-		return nil, fmt.Errorf("entity is not a deployment version")
+		return nil, false
 	}
-	return deploymentVersion, nil
+	return deploymentVersion, true
 }

@@ -10,8 +10,8 @@ import (
 )
 
 func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any]) error {
-	cs.Mutex.Lock()
-	defer cs.Mutex.Unlock()
+	cs.Lock()
+	defer cs.Unlock()
 
 	if len(cs.Changes) == 0 {
 		return nil
