@@ -15,7 +15,7 @@ import (
 	"time"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
-	jobdispatch "workspace-engine/pkg/workspace/job-dispatch"
+	"workspace-engine/pkg/workspace/jobdispatch"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
