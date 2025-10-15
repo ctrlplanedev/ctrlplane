@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { and, eq, inArray } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../../../trpc";
@@ -61,9 +61,10 @@ export const addRecord = protectedProcedure
       )
       .then((rows) => rows.map((row) => row.release_target));
 
-    await dispatchQueueJob()
-      .toEvaluate()
-      .releaseTargets(affectedReleaseTargets);
+    for (const releaseTarget of affectedReleaseTargets)
+      await eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget, {
+        skipDuplicateCheck: true,
+      });
 
     return record;
   });
