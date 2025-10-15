@@ -24,8 +24,8 @@ func (r *ResourceVariables) IterBuffered() <-chan cmap.Tuple[string, *oapi.Resou
 
 func (r *ResourceVariables) Upsert(ctx context.Context, resourceVariable *oapi.ResourceVariable) {
 	r.repo.ResourceVariables.Set(resourceVariable.ID(), resourceVariable)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("resource-variable", changeset.ChangeTypeInsert, resourceVariable.ID(), resourceVariable)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, resourceVariable)
 	}
 }
 
@@ -34,8 +34,11 @@ func (r *ResourceVariables) Get(resourceId string, key string) (*oapi.ResourceVa
 }
 
 func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key string) {
+	resourceVariable, ok := r.repo.ResourceVariables.Get(resourceId + "-" + key)
+	if !ok { return }
+
 	r.repo.ResourceVariables.Remove(resourceId + "-" + key)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("resource-variable", changeset.ChangeTypeDelete, resourceId+"-"+key, nil)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, resourceVariable)
 	}
 }

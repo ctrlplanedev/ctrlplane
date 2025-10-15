@@ -24,8 +24,8 @@ func (j *Jobs) Items() map[string]*oapi.Job {
 func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
 	j.repo.Jobs.Set(job.Id, job)
 
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("job", changeset.ChangeTypeInsert, job.Id, job)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, job)
 	}
 }
 

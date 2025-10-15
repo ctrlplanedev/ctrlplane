@@ -8,11 +8,11 @@ import (
 
 // Test that recording changes works correctly
 func TestChangeSet_Record(t *testing.T) {
-	cs := NewChangeSet()
+	cs := NewChangeSet[any]()
 
 	// Record a change
 	testEntity := map[string]string{"name": "test-resource"}
-	cs.Record(EntityTypeResource, ChangeTypeInsert, "resource-1", testEntity)
+	cs.Record(ChangeTypeCreate, testEntity)
 
 	// Verify the change was recorded
 	if len(cs.Changes) != 1 {
@@ -20,14 +20,8 @@ func TestChangeSet_Record(t *testing.T) {
 	}
 
 	change := cs.Changes[0]
-	if change.EntityType != EntityTypeResource {
-		t.Errorf("expected EntityType %v, got %v", EntityTypeResource, change.EntityType)
-	}
-	if change.Type != ChangeTypeInsert {
-		t.Errorf("expected ChangeType %v, got %v", ChangeTypeInsert, change.Type)
-	}
-	if change.ID != "resource-1" {
-		t.Errorf("expected ID %s, got %s", "resource-1", change.ID)
+	if change.Type != ChangeTypeCreate {
+		t.Errorf("expected ChangeType %v, got %v", ChangeTypeCreate, change.Type)
 	}
 	if change.Entity == nil {
 		t.Error("expected Entity to be set, got nil")
@@ -39,12 +33,12 @@ func TestChangeSet_Record(t *testing.T) {
 
 // Test that recording multiple changes works correctly
 func TestChangeSet_RecordMultiple(t *testing.T) {
-	cs := NewChangeSet()
+	cs := NewChangeSet[any]()
 
 	// Record multiple changes
-	cs.Record(EntityTypeResource, ChangeTypeInsert, "resource-1", nil)
-	cs.Record(EntityTypeDeployment, ChangeTypeUpdate, "deployment-1", nil)
-	cs.Record(EntityTypeEnvironment, ChangeTypeDelete, "env-1", nil)
+	cs.Record(ChangeTypeCreate, "resource-1")
+	cs.Record(ChangeTypeUpdate, "deployment-1")
+	cs.Record(ChangeTypeDelete, "env-1")
 
 	// Verify all changes were recorded
 	if len(cs.Changes) != 3 {
@@ -52,33 +46,23 @@ func TestChangeSet_RecordMultiple(t *testing.T) {
 	}
 
 	// Verify each change
-	expectedChanges := []struct {
-		entityType EntityType
-		changeType ChangeType
-		id         string
-	}{
-		{EntityTypeResource, ChangeTypeInsert, "resource-1"},
-		{EntityTypeDeployment, ChangeTypeUpdate, "deployment-1"},
-		{EntityTypeEnvironment, ChangeTypeDelete, "env-1"},
+	expectedChanges := []ChangeType{
+		ChangeTypeCreate,
+		ChangeTypeUpdate,
+		ChangeTypeDelete,
 	}
 
 	for i, expected := range expectedChanges {
 		change := cs.Changes[i]
-		if change.EntityType != expected.entityType {
-			t.Errorf("change %d: expected EntityType %v, got %v", i, expected.entityType, change.EntityType)
-		}
-		if change.Type != expected.changeType {
-			t.Errorf("change %d: expected ChangeType %v, got %v", i, expected.changeType, change.Type)
-		}
-		if change.ID != expected.id {
-			t.Errorf("change %d: expected ID %s, got %s", i, expected.id, change.ID)
+		if change.Type != expected {
+			t.Errorf("change %d: expected ChangeType %v, got %v", i, expected, change.Type)
 		}
 	}
 }
 
 // Test thread safety of concurrent Record() calls
 func TestChangeSet_ConcurrentRecord(t *testing.T) {
-	cs := NewChangeSet()
+	cs := NewChangeSet[any]()
 
 	numGoroutines := 100
 	changesPerGoroutine := 10
@@ -91,12 +75,8 @@ func TestChangeSet_ConcurrentRecord(t *testing.T) {
 		go func(goroutineID int) {
 			defer wg.Done()
 			for j := 0; j < changesPerGoroutine; j++ {
-				cs.Record(
-					EntityTypeResource,
-					ChangeTypeInsert,
-					"resource-"+string(rune(goroutineID))+"-"+string(rune(j)),
-					nil,
-				)
+				entity := map[string]int{"goroutine": goroutineID, "iteration": j}
+				cs.Record(ChangeTypeCreate, entity)
 			}
 		}(i)
 	}
@@ -111,14 +91,11 @@ func TestChangeSet_ConcurrentRecord(t *testing.T) {
 
 	// Verify no changes were lost or corrupted
 	for i, change := range cs.Changes {
-		if change.EntityType != EntityTypeResource {
-			t.Errorf("change %d: expected EntityType %v, got %v", i, EntityTypeResource, change.EntityType)
+		if change.Type != ChangeTypeCreate {
+			t.Errorf("change %d: expected ChangeType %v, got %v", i, ChangeTypeCreate, change.Type)
 		}
-		if change.Type != ChangeTypeInsert {
-			t.Errorf("change %d: expected ChangeType %v, got %v", i, ChangeTypeInsert, change.Type)
-		}
-		if change.ID == "" {
-			t.Errorf("change %d: expected non-empty ID", i)
+		if change.Entity == nil {
+			t.Errorf("change %d: expected non-nil Entity", i)
 		}
 		if change.Timestamp.IsZero() {
 			t.Errorf("change %d: expected non-zero Timestamp", i)
@@ -128,23 +105,22 @@ func TestChangeSet_ConcurrentRecord(t *testing.T) {
 
 // Test that change ordering is preserved
 func TestChangeSet_OrderingPreserved(t *testing.T) {
-	cs := NewChangeSet()
+	cs := NewChangeSet[string]()
 
 	// Record changes with a small delay to ensure distinct timestamps
 	changes := []struct {
-		entityType EntityType
 		changeType ChangeType
-		id         string
+		entity     string
 	}{
-		{EntityTypeResource, ChangeTypeInsert, "first"},
-		{EntityTypeDeployment, ChangeTypeUpdate, "second"},
-		{EntityTypeEnvironment, ChangeTypeDelete, "third"},
-		{EntityTypeJob, ChangeTypeInsert, "fourth"},
-		{EntityTypeRelease, ChangeTypeUpdate, "fifth"},
+		{ChangeTypeCreate, "first"},
+		{ChangeTypeUpdate, "second"},
+		{ChangeTypeDelete, "third"},
+		{ChangeTypeCreate, "fourth"},
+		{ChangeTypeUpdate, "fifth"},
 	}
 
 	for _, c := range changes {
-		cs.Record(c.entityType, c.changeType, c.id, nil)
+		cs.Record(c.changeType, c.entity)
 		time.Sleep(1 * time.Millisecond) // Small delay to ensure distinct timestamps
 	}
 
@@ -155,11 +131,8 @@ func TestChangeSet_OrderingPreserved(t *testing.T) {
 
 	for i, expected := range changes {
 		change := cs.Changes[i]
-		if change.ID != expected.id {
-			t.Errorf("position %d: expected ID %s, got %s (ordering not preserved)", i, expected.id, change.ID)
-		}
-		if change.EntityType != expected.entityType {
-			t.Errorf("position %d: expected EntityType %v, got %v", i, expected.entityType, change.EntityType)
+		if change.Entity != expected.entity {
+			t.Errorf("position %d: expected Entity %s, got %s (ordering not preserved)", i, expected.entity, change.Entity)
 		}
 		if change.Type != expected.changeType {
 			t.Errorf("position %d: expected ChangeType %v, got %v", i, expected.changeType, change.Type)

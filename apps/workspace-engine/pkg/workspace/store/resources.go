@@ -71,8 +71,8 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		log.Error("Failed to recompute release targets", "error", err)
 	}
 
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("resource", changeset.ChangeTypeInsert, resource.Id, resource)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, resource)
 	}
 
 	return resource, nil
@@ -87,6 +87,9 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 		attribute.String("resource.id", id),
 	))
 	defer span.End()
+
+	resource, ok := r.repo.Resources.Get(id)
+	if !ok { return }
 
 	r.repo.Resources.Remove(id)
 
@@ -117,8 +120,8 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 		log.Error("Failed to recompute release targets", "error", err)
 	}
 
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("resource", changeset.ChangeTypeDelete, id, nil)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, resource)
 	}
 }
 

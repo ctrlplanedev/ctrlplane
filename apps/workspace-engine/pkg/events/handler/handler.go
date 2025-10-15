@@ -140,7 +140,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	if wsExists {
 		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 	}
-	changeSet := changeset.NewChangeSet()
+	changeSet := changeset.NewChangeSet[any]()
 	if !wsExists {
 		ws = workspace.New(rawEvent.WorkspaceID)
 		if err := loadWorkspaceWithInitialState(ctx, ws); err != nil {
@@ -161,17 +161,13 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	for _, change := range changes.Changes.Added {
 		changeSet.Record(
-			changeset.EntityTypeReleaseTarget,
-			changeset.ChangeTypeInsert,
-			change.Key(),
+			changeset.ChangeTypeCreate,
 			change,
 		)
 	}
 	for _, change := range changes.Changes.Removed {
 		changeSet.Record(
-			changeset.EntityTypeReleaseTarget,
 			changeset.ChangeTypeDelete,
-			change.Key(),
 			change,
 		)
 	}

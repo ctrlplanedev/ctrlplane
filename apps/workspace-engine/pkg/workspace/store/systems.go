@@ -94,6 +94,9 @@ func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
 }
 
 func (s *Systems) Remove(ctx context.Context, id string) {
+	system, ok := s.repo.Systems.Get(id)
+	if !ok { return }
+
 	deployments := s.Deployments(id)
 	for key := range deployments {
 		s.store.Deployments.Remove(ctx, key)
@@ -106,8 +109,8 @@ func (s *Systems) Remove(ctx context.Context, id string) {
 
 	s.repo.Systems.Remove(id)
 
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("system", changeset.ChangeTypeDelete, id, nil)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, system)
 	}
 }
 

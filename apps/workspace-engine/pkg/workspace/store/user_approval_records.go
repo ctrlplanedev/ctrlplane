@@ -19,8 +19,8 @@ func NewUserApprovalRecords(store *Store) *UserApprovalRecords {
 
 func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oapi.UserApprovalRecord) {
 	u.repo.UserApprovalRecords.Set(userApprovalRecord.Key(), userApprovalRecord)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("user-approval-record", changeset.ChangeTypeInsert, userApprovalRecord.Key(), userApprovalRecord)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, userApprovalRecord)
 	}
 }
 
@@ -29,9 +29,12 @@ func (u *UserApprovalRecords) Get(versionId, userId string) (*oapi.UserApprovalR
 }
 
 func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
+	userApprovalRecord, ok := u.repo.UserApprovalRecords.Get(key)
+	if !ok { return }
+
 	u.repo.UserApprovalRecords.Remove(key)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("user-approval-record", changeset.ChangeTypeDelete, key, nil)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, userApprovalRecord)
 	}
 }
 

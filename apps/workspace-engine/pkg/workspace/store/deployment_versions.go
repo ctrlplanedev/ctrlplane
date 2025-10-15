@@ -40,15 +40,19 @@ func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
 
 func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
 	d.repo.DeploymentVersions.Set(id, version)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("deployment-version", changeset.ChangeTypeInsert, id, version)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, version)
 	}
 }
 
 func (d *DeploymentVersions) Remove(ctx context.Context, id string) {
+	version, ok := d.repo.DeploymentVersions.Get(id)
+	if !ok { return }
+
 	d.repo.DeploymentVersions.Remove(id)
 	d.deployableVersions.Remove(id)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("deployment-version", changeset.ChangeTypeDelete, id, nil)
+
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, version)
 	}
 }

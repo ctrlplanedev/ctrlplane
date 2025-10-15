@@ -8,59 +8,36 @@ import (
 type ChangeType string
 
 const (
-	ChangeTypeInsert ChangeType = "insert"
+	ChangeTypeCreate ChangeType = "create"
 	ChangeTypeUpdate ChangeType = "update"
 	ChangeTypeDelete ChangeType = "delete"
+	ChangeTypeTaint  ChangeType = "taint"
 )
 
-type EntityType string
-
-const (
-	EntityTypeResource                 EntityType = "resource"
-	EntityTypeDeployment               EntityType = "deployment"
-	EntityTypeEnvironment              EntityType = "environment"
-	EntityTypeReleaseTarget            EntityType = "releaseTarget"
-	EntityTypeJob                      EntityType = "job"
-	EntityTypeJobAgent                 EntityType = "jobAgent"
-	EntityTypeRelease                  EntityType = "release"
-	EntityTypeDeploymentVariable       EntityType = "deploymentVariable"
-	EntityTypeDeploymentVersion        EntityType = "deploymentVersion"
-	EntityTypeVariableSet              EntityType = "variableSet"
-	EntityTypeSystem                   EntityType = "system"
-	EntityTypeResourceProvider         EntityType = "resourceProvider"
-	EntityTypeResourceMetadataGroup    EntityType = "resourceMetadataGroup"
-	EntityTypeResourceRelationshipRule EntityType = "resourceRelationshipRule"
-	EntityTypePolicy                   EntityType = "policy"
-)
-
-type Change struct {
-	EntityType EntityType
+type Change[T any] struct {
 	Type       ChangeType
-	ID         string
-	Entity     any
+	Entity     T
 	Timestamp  time.Time
 }
 
-type ChangeSet struct {
+type ChangeSet[T any] struct {
 	IsInitialLoad bool
-	Changes       []Change
+	Changes       []Change[T]
 	Mutex         sync.Mutex
 }
 
-func NewChangeSet() *ChangeSet {
-	return &ChangeSet{
-		Changes: make([]Change, 0),
+func NewChangeSet[T any]() *ChangeSet[T] {
+	return &ChangeSet[T]{
+		Changes: make([]Change[T], 0),
 	}
 }
 
-func (cs *ChangeSet) Record(entityType EntityType, changeType ChangeType, id string, entity any) {
+func (cs *ChangeSet[T]) Record(changeType ChangeType, entity T) {
 	cs.Mutex.Lock()
 	defer cs.Mutex.Unlock()
 
-	cs.Changes = append(cs.Changes, Change{
-		EntityType: entityType,
+	cs.Changes = append(cs.Changes, Change[T]{
 		Type:       changeType,
-		ID:         id,
 		Entity:     entity,
 		Timestamp:  time.Now(),
 	})

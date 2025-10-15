@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet) error {
+func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any]) error {
 	cs.Mutex.Lock()
 	defer cs.Mutex.Unlock()
 
@@ -43,163 +43,81 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet) error {
 	return nil
 }
 
-func applyResourceChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiResource, err := oapi.ConvertToOapiResource(change.Entity)
-	if err != nil {
-		return err
-	}
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteResource(ctx, oapiResource.Id, conn)
-	}
-	return writeResource(ctx, oapiResource, conn)
-}
-
-func applyDeploymentChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiDeployment, err := oapi.ConvertToOapiDeployment(change.Entity)
-	if err != nil {
-		return err
-	}
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteDeployment(ctx, oapiDeployment.Id, conn)
-	}
-	return writeDeployment(ctx, oapiDeployment, conn)
-}
-
-func applyEnvironmentChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiEnvironment, err := oapi.ConvertToOapiEnvironment(change.Entity)
-	if err != nil {
-		return err
-	}
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteEnvironment(ctx, oapiEnvironment.Id, conn)
-	}
-	return writeEnvironment(ctx, oapiEnvironment, conn)
-}
-
-func applyPolicyChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiPolicy, err := oapi.ConvertToOapiPolicy(change.Entity)
-	if err != nil {
-		return err
-	}
-	if change.Type == changeset.ChangeTypeDelete {
-		return deletePolicy(ctx, oapiPolicy.Id, conn)
-	}
-	return writePolicy(ctx, oapiPolicy, conn)
-}
-
-func applyRelationshipRuleChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiRelationshipRule, err := oapi.ConvertToOapiRelationshipRule(change.Entity)
-	if err != nil {
-		return err
+func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any]) error {
+	if e, ok := change.Entity.(*oapi.Resource); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteResource(ctx, e.Id, conn)
+		}
+		return writeResource(ctx, e, conn)
 	}
 
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteRelationshipRule(ctx, oapiRelationshipRule.Id, conn)
+	if e, ok := change.Entity.(*oapi.Deployment); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteDeployment(ctx, e.Id, conn)
+		}
+		return writeDeployment(ctx, e, conn)
 	}
 
-	return writeRelationshipRule(ctx, oapiRelationshipRule, conn)
-}
-
-func applyJobAgentChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiJobAgent, err := oapi.ConvertToOapiJobAgent(change.Entity)
-	if err != nil {
-		return err
+	if e, ok := change.Entity.(*oapi.Policy); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deletePolicy(ctx, e.Id, conn)
+		}
+		return writePolicy(ctx, e, conn)
 	}
 
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteJobAgent(ctx, oapiJobAgent.Id, conn)
+	if e, ok := change.Entity.(*oapi.RelationshipRule); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteRelationshipRule(ctx, e.Id, conn)
+		}
+		return writeRelationshipRule(ctx, e, conn)
 	}
 
-	return writeJobAgent(ctx, oapiJobAgent, conn)
-}
-
-func applySystemChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiSystem, err := oapi.ConvertToOapiSystem(change.Entity)
-	if err != nil {
-		return err
+	if e, ok := change.Entity.(*oapi.JobAgent); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteJobAgent(ctx, e.Id, conn)
+		}
+		return writeJobAgent(ctx, e, conn)
 	}
 
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteSystem(ctx, oapiSystem.Id, conn)
+	if e, ok := change.Entity.(*oapi.System); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteSystem(ctx, e.Id, conn)
+		}
+		return writeSystem(ctx, e, conn)
 	}
 
-	return writeSystem(ctx, oapiSystem, conn)
-}
-
-func applyDeploymentVariableChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiDeploymentVariable, err := oapi.ConvertToOapiDeploymentVariable(change.Entity)
-	if err != nil {
-		return err
+	if e, ok := change.Entity.(*oapi.DeploymentVariable); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteDeploymentVariable(ctx, e.Id, conn)
+		}
+		return writeDeploymentVariable(ctx, e, conn)
 	}
 
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteDeploymentVariable(ctx, oapiDeploymentVariable.Id, conn)
+	if e, ok := change.Entity.(*oapi.DeploymentVersion); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteDeploymentVersion(ctx, e.Id, conn)
+		}
+		return writeDeploymentVersion(ctx, e, conn)
 	}
 
-	return writeDeploymentVariable(ctx, oapiDeploymentVariable, conn)
-}
-
-func applyDeploymentVersionChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	oapiDeploymentVersion, err := oapi.ConvertToOapiDeploymentVersion(change.Entity)
-	if err != nil {
-		return err
+	if e, ok := change.Entity.(*oapi.Environment); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteEnvironment(ctx, e.Id, conn)
+		}
+		return writeEnvironment(ctx, e, conn)
 	}
 
-	if change.Type == changeset.ChangeTypeDelete {
-		return deleteDeploymentVersion(ctx, oapiDeploymentVersion.Id, conn)
-	}
-
-	return writeDeploymentVersion(ctx, oapiDeploymentVersion, conn)
-}
-
-func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change) error {
-	if change.EntityType == changeset.EntityTypeResource {
-		return applyResourceChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypeDeployment {
-		return applyDeploymentChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypeEnvironment {
-		return applyEnvironmentChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypePolicy {
-		return applyPolicyChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypeResourceRelationshipRule {
-		return applyRelationshipRuleChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypeJobAgent {
-		return applyJobAgentChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypeSystem {
-		return applySystemChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypeDeploymentVariable {
-		return applyDeploymentVariableChange(ctx, conn, change)
-	}
-
-	if change.EntityType == changeset.EntityTypeDeploymentVersion {
-		return applyDeploymentVersionChange(ctx, conn, change)
-	}
-
-	return fmt.Errorf("unknown entity type: %s", change.EntityType)
+	return fmt.Errorf("unknown entity type: %s", change.Entity)
 }
 
 type DbChangesetConsumer struct{}
 
-var _ changeset.ChangesetConsumer = (*DbChangesetConsumer)(nil)
+var _ changeset.ChangesetConsumer[any] = (*DbChangesetConsumer)(nil)
 
 func NewChangesetConsumer() *DbChangesetConsumer {
 	return &DbChangesetConsumer{}
 }
 
-func (c *DbChangesetConsumer) FlushChangeset(ctx context.Context, changeset *changeset.ChangeSet) error {
+func (c *DbChangesetConsumer) FlushChangeset(ctx context.Context, changeset *changeset.ChangeSet[any]) error {
 	return FlushChangeset(ctx, changeset)
 }

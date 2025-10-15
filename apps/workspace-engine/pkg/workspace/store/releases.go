@@ -19,8 +19,8 @@ type Releases struct {
 
 func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
 	r.repo.Releases.Set(release.ID(), release)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("release", changeset.ChangeTypeInsert, release.ID(), release)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, release)
 	}
 	return nil
 }
@@ -34,9 +34,12 @@ func (r *Releases) Get(id string) (*oapi.Release, bool) {
 }
 
 func (r *Releases) Remove(ctx context.Context, id string) {
+	release, ok := r.repo.Releases.Get(id)
+	if !ok { return }
+
 	r.repo.Releases.Remove(id)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("release", changeset.ChangeTypeDelete, id, nil)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, release)
 	}
 }
 

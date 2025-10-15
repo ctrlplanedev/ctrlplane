@@ -38,15 +38,18 @@ func (p *Policies) Has(id string) bool {
 
 func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 	p.repo.Policies.Set(policy.Id, policy)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("policy", changeset.ChangeTypeInsert, policy.Id, policy)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, policy)
 	}
 	return nil
 }
 
 func (p *Policies) Remove(ctx context.Context, id string) {
+	policy, ok := p.repo.Policies.Get(id)
+	if !ok { return }
+
 	p.repo.Policies.Remove(id)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("policy", changeset.ChangeTypeDelete, id, nil)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, policy)
 	}
 }

@@ -42,7 +42,7 @@ type Workspace struct {
 
 	store             *store.Store
 	releasemanager    *releasemanager.Manager
-	changesetConsumer changeset.ChangesetConsumer
+	changesetConsumer changeset.ChangesetConsumer[any]
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -138,7 +138,7 @@ func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
 }
 
-func (w *Workspace) ChangesetConsumer() changeset.ChangesetConsumer {
+func (w *Workspace) ChangesetConsumer() changeset.ChangesetConsumer[any] {
 	return w.changesetConsumer
 }
 

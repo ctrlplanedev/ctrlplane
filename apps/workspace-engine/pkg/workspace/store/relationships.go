@@ -24,8 +24,8 @@ type RelationshipRules struct {
 
 func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.RelationshipRule) error {
 	r.repo.RelationshipRules.Set(relationship.Id, relationship)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("relationship-rule", changeset.ChangeTypeInsert, relationship.Id, relationship)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeCreate, relationship)
 	}
 	return nil
 }
@@ -39,9 +39,12 @@ func (r *RelationshipRules) Has(id string) bool {
 }
 
 func (r *RelationshipRules) Remove(ctx context.Context, id string) {
+	relationship, ok := r.repo.RelationshipRules.Get(id)
+	if !ok { return }
+
 	r.repo.RelationshipRules.Remove(id)
-	if cs, ok := changeset.FromContext(ctx); ok {
-		cs.Record("relationship-rule", changeset.ChangeTypeDelete, id, nil)
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, relationship)
 	}
 }
 
