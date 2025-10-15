@@ -43,6 +43,11 @@ func loadWorkspaceWithInitialState(ctx context.Context, ws *workspace.Workspace)
 			return err
 		}
 	}
+	for _, release := range initialWorkspaceState.Releases() {
+		if err := ws.Store().Releases.Upsert(ctx, release); err != nil {
+			return err
+		}
+	}
 	for _, jobAgent := range initialWorkspaceState.JobAgents() {
 		ws.Store().JobAgents.Upsert(ctx, jobAgent)
 	}

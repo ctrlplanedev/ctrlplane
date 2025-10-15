@@ -18,6 +18,7 @@ type InitialWorkspaceState struct {
 	deployments         []*oapi.Deployment
 	deploymentVersions  []*oapi.DeploymentVersion
 	deploymentVariables []*oapi.DeploymentVariable
+	releases            []*oapi.Release
 	environments        []*oapi.Environment
 	policies            []*oapi.Policy
 	jobAgents           []*oapi.JobAgent
@@ -44,6 +45,10 @@ func (i *InitialWorkspaceState) DeploymentVersions() []*oapi.DeploymentVersion {
 
 func (i *InitialWorkspaceState) DeploymentVariables() []*oapi.DeploymentVariable {
 	return i.deploymentVariables
+}
+
+func (i *InitialWorkspaceState) Releases() []*oapi.Release {
+	return i.releases
 }
 
 func (i *InitialWorkspaceState) Environments() []*oapi.Environment {
@@ -202,6 +207,18 @@ func loadGithubEntities(ctx context.Context, workspaceID string) ([]*oapi.Github
 	return dbGithubEntities, nil
 }
 
+func loadReleases(ctx context.Context, workspaceID string) ([]*oapi.Release, error) {
+	ctx, span := tracer.Start(ctx, "loadReleases")
+	defer span.End()
+
+	dbReleases, err := getReleases(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get releases: %w", err)
+	}
+	span.SetAttributes(attribute.Int("count", len(dbReleases)))
+	return dbReleases, nil
+}
+
 func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceState *InitialWorkspaceState, err error) {
 	ctx, span := tracer.Start(ctx, "LoadWorkspace")
 	defer span.End()
@@ -257,6 +274,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceSta
 
 	if initialWorkspaceState.githubEntities, err = loadGithubEntities(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load github entities: %w", err)
+	}
+
+	if initialWorkspaceState.releases, err = loadReleases(ctx, workspaceID); err != nil {
+		return nil, fmt.Errorf("failed to load releases: %w", err)
 	}
 
 	return initialWorkspaceState, nil
