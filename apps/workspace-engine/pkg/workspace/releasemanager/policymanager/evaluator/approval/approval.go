@@ -52,7 +52,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 	}
 
 	return results.
-		NewDeniedResult(
+		NewPendingResult("approval",
 			fmt.Sprintf("Not enough approvals (%d/%d).", len(approvers), minApprovals),
 		).
 		WithDetail("min_approvals", minApprovals).

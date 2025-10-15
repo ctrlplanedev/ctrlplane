@@ -72,7 +72,7 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 			name: "one pending rule sets overall to false",
 			ruleResults: []*RuleEvaluationResult{
 				NewAllowedResult("rule 1 passed"),
-				NewPendingResult("approval", "approval", "waiting for approval"),
+				NewPendingResult("approval", "waiting for approval"),
 				NewAllowedResult("rule 3 passed"),
 			},
 			expectedOverall: false,
@@ -132,8 +132,8 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 		{
 			name: "only pending rules",
 			ruleResults: []*RuleEvaluationResult{
-				NewPendingResult("approval", "approval", "waiting for manager approval"),
-				NewPendingResult("approval", "approval", "waiting for security review"),
+				NewPendingResult("approval", "waiting for manager approval"),
+				NewPendingResult("approval", "waiting for security review"),
 			},
 			expectedSummary: "Pending: waiting for manager approval, waiting for security review",
 		},
@@ -141,7 +141,7 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 			name: "mixed denied and pending rules",
 			ruleResults: []*RuleEvaluationResult{
 				NewDeniedResult("concurrency limit exceeded"),
-				NewPendingResult("approval", "approval", "waiting for approval"),
+				NewPendingResult("approval", "waiting for approval"),
 				NewAllowedResult("time window check passed"),
 			},
 			expectedSummary: "Denied by: concurrency limit exceeded; Pending: waiting for approval",
@@ -151,8 +151,8 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 			ruleResults: []*RuleEvaluationResult{
 				NewDeniedResult("reason 1"),
 				NewDeniedResult("reason 2"),
-				NewPendingResult("approval", "approval", "pending 1"),
-				NewPendingResult("approval", "approval", "pending 2"),
+				NewPendingResult("approval", "pending 1"),
+				NewPendingResult("approval", "pending 2"),
 			},
 			expectedSummary: "Denied by: reason 1, reason 2; Pending: pending 1, pending 2",
 		},
@@ -204,8 +204,8 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 		{
 			name: "only pending rules returns false",
 			ruleResults: []*RuleEvaluationResult{
-				NewPendingResult("approval", "approval", "pending"),
-				NewPendingResult("approval", "approval", "pending 2"),
+				NewPendingResult("approval", "pending"),
+				NewPendingResult("approval", "pending 2"),
 			},
 			expectDenial: false,
 		},
@@ -221,7 +221,7 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 			name: "mixed denied and pending returns true",
 			ruleResults: []*RuleEvaluationResult{
 				NewDeniedResult("denied"),
-				NewPendingResult("approval", "approval", "pending"),
+				NewPendingResult("approval", "pending"),
 			},
 			expectDenial: true,
 		},
@@ -265,7 +265,7 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 			name: "has pending action returns true",
 			ruleResults: []*RuleEvaluationResult{
 				NewAllowedResult("allowed"),
-				NewPendingResult("approval", "approval", "pending"),
+				NewPendingResult("approval", "pending"),
 			},
 			expectPending: true,
 		},
@@ -289,7 +289,7 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 			name: "mixed denied and pending returns true",
 			ruleResults: []*RuleEvaluationResult{
 				NewDeniedResult("denied"),
-				NewPendingResult("approval", "approval", "pending"),
+				NewPendingResult("approval", "pending"),
 			},
 			expectPending: true,
 		},
@@ -301,9 +301,9 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 		{
 			name: "multiple pending actions returns true",
 			ruleResults: []*RuleEvaluationResult{
-				NewPendingResult("approval", "approval", "pending 1"),
-				NewPendingResult("approval", "approval", "pending 2"),
-				NewPendingResult("approval", "approval", "pending 3"),
+				NewPendingResult("approval", "pending 1"),
+				NewPendingResult("approval", "pending 2"),
+				NewPendingResult("approval", "pending 3"),
 			},
 			expectPending: true,
 		},
@@ -333,9 +333,9 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 			name: "returns only pending actions",
 			ruleResults: []*RuleEvaluationResult{
 				NewAllowedResult("allowed"),
-				NewPendingResult("approval", "approval", "pending 1"),
+				NewPendingResult("approval", "pending 1"),
 				NewDeniedResult("denied"),
-				NewPendingResult("approval", "approval", "pending 2"),
+				NewPendingResult("approval", "pending 2"),
 			},
 			expectedCount: 2,
 		},
@@ -350,9 +350,9 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 		{
 			name: "returns all when all are pending",
 			ruleResults: []*RuleEvaluationResult{
-				NewPendingResult("approval", "approval", "pending 1"),
-				NewPendingResult("approval", "approval", "pending 2"),
-				NewPendingResult("approval", "approval", "pending 3"),
+				NewPendingResult("approval", "pending 1"),
+				NewPendingResult("approval", "pending 2"),
+				NewPendingResult("approval", "pending 3"),
 			},
 			expectedCount: 3,
 		},
@@ -390,7 +390,7 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 
 		// Add various rule results
 		policy.AddRuleResult(NewAllowedResult("time window check passed"))
-		policy.AddRuleResult(NewPendingResult("approval", "approval", "waiting for manager approval"))
+		policy.AddRuleResult(NewPendingResult("approval", "waiting for manager approval"))
 		policy.AddRuleResult(NewDeniedResult("concurrency limit exceeded"))
 		policy.AddRuleResult(NewAllowedResult("resource quota check passed"))
 
@@ -440,8 +440,8 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		policy := NewPolicyEvaluation("staging-policy-789", "Staging Deployment Policy")
 
 		// Add multiple pending actions
-		policy.AddRuleResult(NewPendingResult("approval", "approval", "security team approval required"))
-		policy.AddRuleResult(NewPendingResult("approval", "approval", "ops team approval required"))
+		policy.AddRuleResult(NewPendingResult("approval", "security team approval required"))
+		policy.AddRuleResult(NewPendingResult("approval", "ops team approval required"))
 
 		// Test overall status
 		assert.False(t, policy.Overall)

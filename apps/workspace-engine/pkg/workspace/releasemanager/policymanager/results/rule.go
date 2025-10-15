@@ -58,7 +58,7 @@ func (r *RuleEvaluationResult) WithDetail(key string, value any) *RuleEvaluation
 }
 
 // NewPendingResult creates a result indicating the rule requires action before proceeding.
-func NewPendingResult(ruleType, actionType, reason string) *RuleEvaluationResult {
+func NewPendingResult(actionType, reason string) *RuleEvaluationResult {
 	return &RuleEvaluationResult{
 		Allowed:        false,
 		Reason:         reason,

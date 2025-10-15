@@ -51,7 +51,7 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -66,7 +66,7 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy 1",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 							results.NewAllowedResult("rule passed"),
 						},
 					},
@@ -74,8 +74,8 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 						PolicyID:   "policy-2",
 						PolicyName: "Test Policy 2",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "waiting for slot"),
-							results.NewPendingResult("approval", "approval", "another approval"),
+							results.NewPendingResult("wait", "waiting for slot"),
+							results.NewPendingResult("approval", "another approval"),
 						},
 					},
 				},
@@ -91,7 +91,7 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
 							results.NewDeniedResult("explicitly denied"),
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -137,7 +137,7 @@ func TestDeployDecision_CanDeploy(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -152,7 +152,7 @@ func TestDeployDecision_CanDeploy(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "waiting for slot"),
+							results.NewPendingResult("wait", "waiting for slot"),
 						},
 					},
 				},
@@ -212,7 +212,7 @@ func TestDeployDecision_IsPending(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -227,7 +227,7 @@ func TestDeployDecision_IsPending(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 							results.NewDeniedResult("explicitly denied"),
 						},
 					},
@@ -326,7 +326,7 @@ func TestDeployDecision_IsBlocked(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -393,7 +393,7 @@ func TestDeployDecision_NeedsApproval(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -408,7 +408,7 @@ func TestDeployDecision_NeedsApproval(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "waiting for slot"),
+							results.NewPendingResult("wait", "waiting for slot"),
 						},
 					},
 				},
@@ -423,8 +423,8 @@ func TestDeployDecision_NeedsApproval(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "waiting for slot"),
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("wait", "waiting for slot"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -477,7 +477,7 @@ func TestDeployDecision_NeedsWait(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "waiting for slot"),
+							results.NewPendingResult("wait", "waiting for slot"),
 						},
 					},
 				},
@@ -492,7 +492,7 @@ func TestDeployDecision_NeedsWait(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
+							results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -507,8 +507,8 @@ func TestDeployDecision_NeedsWait(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "needs approval"),
-							results.NewPendingResult("wait", "wait", "waiting for slot"),
+							results.NewPendingResult("approval", "needs approval"),
+							results.NewPendingResult("wait", "waiting for slot"),
 						},
 					},
 				},
@@ -561,8 +561,8 @@ func TestDeployDecision_GetApprovalActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "approval 1"),
-							results.NewPendingResult("approval", "approval", "approval 2"),
+							results.NewPendingResult("approval", "approval 1"),
+							results.NewPendingResult("approval", "approval 2"),
 						},
 					},
 				},
@@ -577,8 +577,8 @@ func TestDeployDecision_GetApprovalActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "wait 1"),
-							results.NewPendingResult("wait", "wait", "wait 2"),
+							results.NewPendingResult("wait", "wait 1"),
+							results.NewPendingResult("wait", "wait 2"),
 						},
 					},
 				},
@@ -593,9 +593,9 @@ func TestDeployDecision_GetApprovalActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "approval 1"),
-							results.NewPendingResult("wait", "wait", "wait 1"),
-							results.NewPendingResult("approval", "approval", "approval 2"),
+							results.NewPendingResult("approval", "approval 1"),
+							results.NewPendingResult("wait", "wait 1"),
+							results.NewPendingResult("approval", "approval 2"),
 						},
 					},
 				},
@@ -632,15 +632,15 @@ func TestDeployDecision_GetApprovalActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy 1",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "approval 1"),
+							results.NewPendingResult("approval", "approval 1"),
 						},
 					},
 					{
 						PolicyID:   "policy-2",
 						PolicyName: "Test Policy 2",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "approval 2"),
-							results.NewPendingResult("wait", "wait", "wait 1"),
+							results.NewPendingResult("approval", "approval 2"),
+							results.NewPendingResult("wait", "wait 1"),
 						},
 					},
 				},
@@ -675,8 +675,8 @@ func TestDeployDecision_GetWaitActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "wait 1"),
-							results.NewPendingResult("wait", "wait", "wait 2"),
+							results.NewPendingResult("wait", "wait 1"),
+							results.NewPendingResult("wait", "wait 2"),
 						},
 					},
 				},
@@ -691,8 +691,8 @@ func TestDeployDecision_GetWaitActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "approval", "approval 1"),
-							results.NewPendingResult("approval", "approval", "approval 2"),
+							results.NewPendingResult("approval", "approval 1"),
+							results.NewPendingResult("approval", "approval 2"),
 						},
 					},
 				},
@@ -707,9 +707,9 @@ func TestDeployDecision_GetWaitActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "wait 1"),
-							results.NewPendingResult("approval", "approval", "approval 1"),
-							results.NewPendingResult("wait", "wait", "wait 2"),
+							results.NewPendingResult("wait", "wait 1"),
+							results.NewPendingResult("approval", "approval 1"),
+							results.NewPendingResult("wait", "wait 2"),
 						},
 					},
 				},
@@ -746,15 +746,15 @@ func TestDeployDecision_GetWaitActions(t *testing.T) {
 						PolicyID:   "policy-1",
 						PolicyName: "Test Policy 1",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "wait 1"),
+							results.NewPendingResult("wait", "wait 1"),
 						},
 					},
 					{
 						PolicyID:   "policy-2",
 						PolicyName: "Test Policy 2",
 						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "wait", "wait 2"),
-							results.NewPendingResult("approval", "approval", "approval 1"),
+							results.NewPendingResult("wait", "wait 2"),
+							results.NewPendingResult("approval", "approval 1"),
 						},
 					},
 				},
@@ -794,7 +794,7 @@ func TestDeployDecision_ComplexScenarios(t *testing.T) {
 					PolicyID:   "policy-1",
 					PolicyName: "Approval Policy",
 					RuleResults: []*results.RuleEvaluationResult{
-						results.NewPendingResult("approval", "approval", "needs manager approval"),
+						results.NewPendingResult("approval", "needs manager approval"),
 						results.NewAllowedResult("passed rule"),
 					},
 				},
@@ -802,7 +802,7 @@ func TestDeployDecision_ComplexScenarios(t *testing.T) {
 					PolicyID:   "policy-2",
 					PolicyName: "Concurrency Policy",
 					RuleResults: []*results.RuleEvaluationResult{
-						results.NewPendingResult("wait", "wait", "waiting for concurrency slot"),
+						results.NewPendingResult("wait", "waiting for concurrency slot"),
 					},
 				},
 				{
@@ -841,7 +841,7 @@ func TestDeployDecision_ComplexScenarios(t *testing.T) {
 					PolicyName: "Security Policy",
 					RuleResults: []*results.RuleEvaluationResult{
 						results.NewDeniedResult("security check failed"),
-						results.NewPendingResult("approval", "approval", "needs approval"),
+						results.NewPendingResult("approval", "needs approval"),
 					},
 				},
 			},
