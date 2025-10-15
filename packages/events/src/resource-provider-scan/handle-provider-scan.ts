@@ -1,6 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertResource } from "@ctrlplane/db/schema";
 import type { Span } from "@ctrlplane/logger";
+import { isPresent } from "ts-is-present";
 
 import {
   getResources,
@@ -109,14 +110,25 @@ export const handleResourceProviderScan = createSpanWrapper(
         span.setAttribute("resources.deleted", deletedResources.length);
       }
 
-      const changedResources = updatedResources.filter((r) => {
-        const previous = previousResources.find(
-          (pr) =>
-            pr.identifier === r.identifier && pr.workspaceId === r.workspaceId,
-        );
-        if (previous == null) return true;
-        return isResourceChanged(previous, r);
-      });
+      const changedResources = updatedResources
+        .map((r) => {
+          const previous = previousResources.find(
+            (pr) =>
+              pr.identifier === r.identifier &&
+              pr.workspaceId === r.workspaceId,
+          );
+          if (previous == null) return null;
+          if (isResourceChanged(previous, r)) return { previous, current: r };
+          return null;
+        })
+        .filter(isPresent);
+
+      await Promise.all(
+        changedResources.map(({ previous, current }) =>
+          eventDispatcher.dispatchResourceUpdated(previous, current),
+        ),
+      );
+      span.setAttribute("resources.changed", changedResources.length);
 
       await Promise.all(
         insertedResources.map((r) =>
@@ -124,21 +136,6 @@ export const handleResourceProviderScan = createSpanWrapper(
         ),
       );
       span.setAttribute("resources.inserted", insertedResources.length);
-
-      if (changedResources.length > 0) {
-        await Promise.all(
-          changedResources.map(async (r) => {
-            const previous = previousResources.find(
-              (pr) =>
-                pr.identifier === r.identifier &&
-                pr.workspaceId === r.workspaceId,
-            );
-            if (previous != null)
-              await eventDispatcher.dispatchResourceUpdated(previous, r);
-          }),
-        );
-      }
-      span.setAttribute("resources.updated", updatedResources.length);
 
       for (const resource of insertedResources) {
         const { variables } = resource;
