@@ -35,9 +35,6 @@ const sdk = new NodeSDK({
         enhancedDatabaseReporting: true,
         addSqlCommenterCommentToQueries: true,
       },
-      "@opentelemetry/instrumentation-ioredis": {
-        enabled: true,
-      },
       "@opentelemetry/instrumentation-winston": {
         enabled: true,
       },
