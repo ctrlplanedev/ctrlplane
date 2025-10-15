@@ -48,7 +48,9 @@ RUN groupadd -r engine && useradd -r -g engine engine
 USER engine
 
 # Expose gRPC port
-EXPOSE 50051
+EXPOSE 8081
+
+ENV GIN_MODE=release
 
 # Run the binary
 CMD ["./engine"]
