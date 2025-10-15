@@ -86,30 +86,6 @@ export const dispatchResourceUpdated = createSpanWrapper(
   },
 );
 
-// export const dispatchResourceUpdated = async (
-//   previous: schema.Resource,
-//   current: schema.Resource,
-//   source?: "api" | "scheduler" | "user-action",
-// ) => {
-//   const [previousFullResource, currentFullResource] = await Promise.all([
-//     getFullResource(previous),
-//     getFullResource(current),
-//   ]);
-
-//   const nodeEvent = {
-//     workspaceId: current.workspaceId,
-//     eventType: Event.ResourceUpdated,
-//     eventId: current.id,
-//     timestamp: Date.now(),
-//     source: source ?? "api",
-//     payload: { previous: previousFullResource, current: currentFullResource },
-//   };
-
-//   const goEvent = convertFullResourceToGoEvent(currentFullResource);
-
-//   await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
-// };
-
 export const dispatchResourceDeleted = async (resource: schema.Resource) => {
   const fullResource = await getFullResource(resource);
   const nodeEvent = convertFullResourceToNodeEvent(fullResource);
