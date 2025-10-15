@@ -114,20 +114,10 @@ func scanResourceRow(row pgx.Row) (*oapi.Resource, error) {
 }
 
 func setResourceTimestamps(resource *oapi.Resource, createdAt time.Time, lockedAt, updatedAt, deletedAt *time.Time) {
-	resource.CreatedAt = createdAt.Format(time.RFC3339)
-
-	if lockedAt != nil {
-		lockedAtStr := lockedAt.Format(time.RFC3339)
-		resource.LockedAt = &lockedAtStr
-	}
-	if updatedAt != nil {
-		updatedAtStr := updatedAt.Format(time.RFC3339)
-		resource.UpdatedAt = &updatedAtStr
-	}
-	if deletedAt != nil {
-		deletedAtStr := deletedAt.Format(time.RFC3339)
-		resource.DeletedAt = &deletedAtStr
-	}
+	resource.CreatedAt = createdAt
+	resource.LockedAt = lockedAt
+	resource.UpdatedAt = updatedAt
+	resource.DeletedAt = deletedAt
 }
 
 func setResourceConfig(resource *oapi.Resource, configJSON []byte) error {
@@ -174,35 +164,6 @@ const RESOURCE_UPSERT_QUERY = `
 `
 
 func writeResource(ctx context.Context, resource *oapi.Resource, tx pgx.Tx) error {
-	// Parse timestamp strings to time.Time
-	createdAt, err := time.Parse(time.RFC3339, resource.CreatedAt)
-	if err != nil {
-		return fmt.Errorf("failed to parse resource created_at: %w", err)
-	}
-
-	var lockedAt, updatedAt, deletedAt *time.Time
-	if resource.LockedAt != nil {
-		t, err := time.Parse(time.RFC3339, *resource.LockedAt)
-		if err != nil {
-			return fmt.Errorf("failed to parse resource locked_at: %w", err)
-		}
-		lockedAt = &t
-	}
-	if resource.UpdatedAt != nil {
-		t, err := time.Parse(time.RFC3339, *resource.UpdatedAt)
-		if err != nil {
-			return fmt.Errorf("failed to parse resource updated_at: %w", err)
-		}
-		updatedAt = &t
-	}
-	if resource.DeletedAt != nil {
-		t, err := time.Parse(time.RFC3339, *resource.DeletedAt)
-		if err != nil {
-			return fmt.Errorf("failed to parse resource deleted_at: %w", err)
-		}
-		deletedAt = &t
-	}
-
 	if _, err := tx.Exec(
 		ctx,
 		RESOURCE_UPSERT_QUERY,
@@ -214,10 +175,10 @@ func writeResource(ctx context.Context, resource *oapi.Resource, tx pgx.Tx) erro
 		resource.ProviderId,
 		resource.WorkspaceId,
 		resource.Config,
-		createdAt,
-		lockedAt,
-		updatedAt,
-		deletedAt,
+		resource.CreatedAt,
+		resource.LockedAt,
+		resource.UpdatedAt,
+		resource.DeletedAt,
 	); err != nil {
 		return err
 	}

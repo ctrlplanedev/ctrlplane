@@ -61,9 +61,23 @@ func GetDateProperty(entity any, fieldName string) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	if field.Kind() != reflect.String {
-		return time.Time{}, fmt.Errorf("field %s is not a string", fieldName)
+	// Handle time.Time directly
+	if field.Type() == reflect.TypeOf(time.Time{}) {
+		return field.Interface().(time.Time), nil
 	}
 
-	return time.Parse(time.RFC3339, field.String())
+	// Handle *time.Time
+	if field.Type() == reflect.TypeOf((*time.Time)(nil)) {
+		if field.IsNil() {
+			return time.Time{}, fmt.Errorf("field %s is nil", fieldName)
+		}
+		return field.Elem().Interface().(time.Time), nil
+	}
+
+	// Handle string (for backward compatibility)
+	if field.Kind() == reflect.String {
+		return time.Parse(time.RFC3339, field.String())
+	}
+
+	return time.Time{}, fmt.Errorf("field %s is not a time.Time or string", fieldName)
 }

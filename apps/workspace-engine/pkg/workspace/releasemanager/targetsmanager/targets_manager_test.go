@@ -89,7 +89,7 @@ func TestManager_GetTargets(t *testing.T) {
 	targets, err := manager.GetTargets(ctx)
 	require.NoError(t, err)
 	assert.Len(t, targets, 1)
-	
+
 	// Verify the target has the expected IDs using the standard Key() method
 	expectedTarget := createTestReleaseTarget(environmentID, deploymentID, resourceID)
 	assert.Contains(t, targets, expectedTarget.Key())
@@ -206,7 +206,7 @@ func TestManager_DetectChanges_MixedChanges(t *testing.T) {
 	// Check tainted targets (existing target should be tainted by environment change)
 	tainted := getReleaseTargetsByType(changes, changeset.ChangeTypeTaint)
 	assert.Len(t, tainted, 1, "existing target should be tainted by environment change")
-	
+
 	// Verify it's the correct target
 	assert.Equal(t, environmentID, tainted[0].EnvironmentId)
 }
@@ -393,7 +393,7 @@ func BenchmarkManager_DetectChanges_SmallChangeset(b *testing.B) {
 	// This is a simplified benchmark - in reality would need proper store setup
 	st := store.New()
 	manager := New(st)
-	
+
 	// Set empty targets for benchmark
 	manager.currentTargets = make(map[string]*oapi.ReleaseTarget)
 
@@ -416,7 +416,7 @@ func BenchmarkManager_DetectChanges_LargeChangeset(b *testing.B) {
 	// This is a simplified benchmark - in reality would need proper store setup
 	st := store.New()
 	manager := New(st)
-	
+
 	// Set empty targets for benchmark
 	manager.currentTargets = make(map[string]*oapi.ReleaseTarget)
 
@@ -435,4 +435,3 @@ func BenchmarkManager_DetectChanges_LargeChangeset(b *testing.B) {
 		}
 	}
 }
-

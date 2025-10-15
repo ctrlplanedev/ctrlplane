@@ -387,4 +387,3 @@ func (p *Processor[T]) Distinct(keyFunc func(Change[T]) string) *Processor[T] {
 		errors:  p.errors,
 	}
 }
-

@@ -40,7 +40,9 @@ func (r *RelationshipRules) Has(id string) bool {
 
 func (r *RelationshipRules) Remove(ctx context.Context, id string) {
 	relationship, ok := r.repo.RelationshipRules.Get(id)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	r.repo.RelationshipRules.Remove(id)
 	if cs, ok := changeset.FromContext[any](ctx); ok {

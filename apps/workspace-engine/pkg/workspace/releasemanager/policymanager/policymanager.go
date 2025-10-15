@@ -23,7 +23,7 @@ var tracer = otel.Tracer("workspace/releasemanager/policymanager")
 
 // Manager handles policy evaluation for release decisions.
 type Manager struct {
-	store                 *store.Store
+	store *store.Store
 
 	defaultVersionRuleEvaluators []results.VersionRuleEvaluator
 	defaultReleaseRuleEvaluators []results.ReleaseRuleEvaluator
@@ -137,10 +137,10 @@ func (m *Manager) EvaluateVersion(
 }
 
 func (m *Manager) evaluateSingleVersionRule(
-    ctx context.Context,
-    rule *oapi.PolicyRule,
-    version *oapi.DeploymentVersion,
-    releaseTarget *oapi.ReleaseTarget,
+	ctx context.Context,
+	rule *oapi.PolicyRule,
+	version *oapi.DeploymentVersion,
+	releaseTarget *oapi.ReleaseTarget,
 ) (*results.RuleEvaluationResult, error) {
 	evaluator, err := m.createVersionEvaulatorForRule(ctx, rule, version, releaseTarget)
 	if err != nil {

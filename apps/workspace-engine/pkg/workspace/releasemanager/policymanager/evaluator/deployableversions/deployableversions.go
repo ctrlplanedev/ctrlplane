@@ -30,14 +30,14 @@ func (e *DeployableVersionStatusEvaluator) Evaluate(
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// If no policies apply to this release target, allow any version status
 	if len(policies) == 0 {
 		return results.NewAllowedResult("No policies apply").
 			WithDetail("version_id", version.Id).
 			WithDetail("version_status", version.Status), nil
 	}
-	
+
 	// If policies exist, enforce version status check
 	if version.Status == oapi.DeploymentVersionStatusReady {
 		return results.NewAllowedResult("Version is ready").

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -21,7 +22,7 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 		Config:     map[string]any{},
 		Metadata:   metadata,
 		Version:    "v1",
-		CreatedAt:  "2024-01-01T00:00:00Z",
+		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	if _, err := st.Resources.Upsert(ctx, resource); err != nil {
@@ -628,7 +629,7 @@ func TestEvaluate_ReferenceValueResolution(t *testing.T) {
 		},
 		Metadata:  map[string]string{"type": "postgres"},
 		Version:   "v1",
-		CreatedAt: "2024-01-01T00:00:00Z",
+		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 	if _, err := st.Resources.Upsert(ctx, relatedResource); err != nil {
 		t.Fatalf("Failed to upsert related resource: %v", err)

@@ -229,7 +229,7 @@ func TestChangeSetWithDedup_MixedEntities(t *testing.T) {
 	cs.Record(ChangeTypeCreate, testEntity{ID: "resource-2", Name: "Resource 2"})
 	cs.Record(ChangeTypeUpdate, testEntity{ID: "resource-1", Name: "Resource 1 Updated"}) // Duplicate
 	cs.Record(ChangeTypeCreate, testEntity{ID: "resource-3", Name: "Resource 3"})
-	cs.Record(ChangeTypeTaint, testEntity{ID: "resource-2", Name: "Resource 2"}) // Duplicate
+	cs.Record(ChangeTypeTaint, testEntity{ID: "resource-2", Name: "Resource 2"})  // Duplicate
 	cs.Record(ChangeTypeDelete, testEntity{ID: "resource-1", Name: "Resource 1"}) // Duplicate again
 
 	cs.Finalize()

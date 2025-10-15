@@ -40,11 +40,11 @@ type Manager struct {
 // New creates a new release manager for a workspace
 func New(store *store.Store) *Manager {
 	return &Manager{
-		store:               store,
-		targetsManager:      targetsmanager.New(store),
-		policyManager:       policymanager.New(store),
-		versionManager:      versionmanager.New(store),
-		variableManager:     variablemanager.New(store),
+		store:           store,
+		targetsManager:  targetsmanager.New(store),
+		policyManager:   policymanager.New(store),
+		versionManager:  versionmanager.New(store),
+		variableManager: variablemanager.New(store),
 
 		releaseTargetLocks: sync.Map{},
 	}
@@ -92,7 +92,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 		span.SetStatus(codes.Error, "failed to detect changes to release targets")
 		return cmap.New[*oapi.Job](), err
 	}
-	
+
 	if err := m.targetsManager.RefreshTargets(ctx); err != nil {
 		log.Error("error refreshing targets cache", "error", err.Error())
 		span.RecordError(err)

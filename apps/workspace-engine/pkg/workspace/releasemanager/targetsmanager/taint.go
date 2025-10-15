@@ -63,16 +63,16 @@ func (tp *TaintProcessor) processChanges(changeSet *changeset.ChangeSet[any]) {
 			// Global taint: mark all targets and short-circuit further processing
 			tp.taintAll()
 			return
-			
+
 		case *oapi.UserApprovalRecord:
 			tp.taintByEnvironmentId(entity.EnvironmentId)
 
 		case *oapi.Environment:
 			tp.taintByEnvironmentId(entity.Id)
-			
+
 		case *oapi.Deployment:
 			tp.taintByDeploymentId(entity.Id)
-			
+
 		case *oapi.DeploymentVersion:
 			tp.taintByDeploymentId(entity.DeploymentId)
 
@@ -85,10 +85,10 @@ func (tp *TaintProcessor) processChanges(changeSet *changeset.ChangeSet[any]) {
 				continue
 			}
 			tp.taintByDeploymentId(dv.DeploymentId)
-			
+
 		case *oapi.Resource:
 			tp.taintByResourceId(entity.Id)
-			
+
 		case *oapi.Job:
 			rel, ok := tp.store.Releases.Get(entity.ReleaseId)
 			if !ok {

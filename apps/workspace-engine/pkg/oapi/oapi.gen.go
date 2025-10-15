@@ -284,16 +284,16 @@ type ReleaseTarget struct {
 // Resource defines model for Resource.
 type Resource struct {
 	Config      map[string]interface{} `json:"config"`
-	CreatedAt   string                 `json:"createdAt"`
-	DeletedAt   *string                `json:"deletedAt,omitempty"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	DeletedAt   *time.Time             `json:"deletedAt,omitempty"`
 	Id          string                 `json:"id"`
 	Identifier  string                 `json:"identifier"`
 	Kind        string                 `json:"kind"`
-	LockedAt    *string                `json:"lockedAt,omitempty"`
+	LockedAt    *time.Time             `json:"lockedAt,omitempty"`
 	Metadata    map[string]string      `json:"metadata"`
 	Name        string                 `json:"name"`
 	ProviderId  *string                `json:"providerId,omitempty"`
-	UpdatedAt   *string                `json:"updatedAt,omitempty"`
+	UpdatedAt   *time.Time             `json:"updatedAt,omitempty"`
 	Version     string                 `json:"version"`
 	WorkspaceId string                 `json:"workspaceId"`
 }

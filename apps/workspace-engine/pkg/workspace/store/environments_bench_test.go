@@ -12,7 +12,7 @@ import (
 
 // createTestResource creates a test resource with the given ID and workspace
 func createTestResource(workspaceID, resourceID, name string) *oapi.Resource {
-	now := time.Now().Format(time.RFC3339)
+	now := time.Now()
 	return &oapi.Resource{
 		Id:          resourceID,
 		WorkspaceId: workspaceID,
@@ -41,7 +41,7 @@ func createTestEnvironment(systemID, environmentID, name string) *oapi.Environme
 			"value":    "",
 		},
 	})
-	
+
 	description := fmt.Sprintf("Test environment %s", name)
 	return &oapi.Environment{
 		Id:               environmentID,
@@ -82,7 +82,7 @@ func setupBenchmarkStore(b *testing.B, workspaceID string, numResources int) (*S
 		resourceID := uuid.New().String()
 		resourceName := fmt.Sprintf("resource-%d", i)
 		res := createTestResource(workspaceID, resourceID, resourceName)
-		
+
 		// Add some variety to metadata for realistic filtering
 		switch i % 3 {
 		case 0:
@@ -90,7 +90,7 @@ func setupBenchmarkStore(b *testing.B, workspaceID string, numResources int) (*S
 		case 1:
 			res.Metadata["region"] = "eu-west-1"
 		}
-		
+
 		switch i % 2 {
 		case 0:
 			res.Metadata["priority"] = "high"
@@ -115,13 +115,13 @@ func BenchmarkEnvironmentResourceRecomputeFunc(b *testing.B) {
 		b.Run(fmt.Sprintf("resources_%d", count), func(b *testing.B) {
 			// Setup store with resources
 			st, environmentID := setupBenchmarkStore(b, workspaceID, count)
-			
+
 			// Get the recompute function
 			recomputeFunc := st.Environments.environmentResourceRecomputeFunc(environmentID)
-			
+
 			// Reset timer to exclude setup time
 			b.ResetTimer()
-			
+
 			// Run benchmark
 			for range b.N {
 				ctx := context.Background()
@@ -141,13 +141,13 @@ func BenchmarkEnvironmentResourceRecomputeFunc_Parallel(b *testing.B) {
 
 	// Setup store with resources
 	st, environmentID := setupBenchmarkStore(b, workspaceID, resourceCount)
-	
+
 	// Get the recompute function
 	recomputeFunc := st.Environments.environmentResourceRecomputeFunc(environmentID)
-	
+
 	// Reset timer to exclude setup time
 	b.ResetTimer()
-	
+
 	// Run benchmark in parallel
 	b.RunParallel(func(pb *testing.PB) {
 		ctx := context.Background()
@@ -176,7 +176,7 @@ func BenchmarkEnvironmentResourceRecomputeFunc_SelectiveSelector(b *testing.B) {
 	// Create environment with selective selector (only matches high priority resources)
 	environmentID := uuid.New().String()
 	env := createTestEnvironment(systemID, environmentID, "bench-environment")
-	
+
 	// Override selector to only match high priority resources
 	selector := &oapi.Selector{}
 	_ = selector.FromJsonSelector(oapi.JsonSelector{
@@ -195,7 +195,7 @@ func BenchmarkEnvironmentResourceRecomputeFunc_SelectiveSelector(b *testing.B) {
 		resourceID := uuid.New().String()
 		resourceName := fmt.Sprintf("resource-%d", i)
 		res := createTestResource(workspaceID, resourceID, resourceName)
-		
+
 		if i%2 == 0 {
 			res.Metadata["priority"] = "high"
 		} else {
@@ -207,17 +207,17 @@ func BenchmarkEnvironmentResourceRecomputeFunc_SelectiveSelector(b *testing.B) {
 
 	// Get the recompute function
 	recomputeFunc := st.Environments.environmentResourceRecomputeFunc(environmentID)
-	
+
 	// Reset timer to exclude setup time
 	b.ResetTimer()
-	
+
 	// Run benchmark
 	for i := 0; i < b.N; i++ {
 		result, err := recomputeFunc(ctx)
 		if err != nil {
 			b.Fatalf("Recompute failed: %v", err)
 		}
-		
+
 		// Verify we got the expected number of resources (approximately 50%)
 		if i == 0 { // Only verify on first iteration to avoid overhead
 			expectedCount := resourceCount / 2
@@ -245,7 +245,7 @@ func BenchmarkEnvironmentResourceRecomputeFunc_ComplexSelector(b *testing.B) {
 	// Create environment with complex selector (high priority AND us-east-1 region)
 	environmentID := uuid.New().String()
 	env := createTestEnvironment(systemID, environmentID, "bench-environment")
-	
+
 	// Override selector with AND condition
 	selector := &oapi.Selector{}
 	_ = selector.FromJsonSelector(oapi.JsonSelector{
@@ -275,7 +275,7 @@ func BenchmarkEnvironmentResourceRecomputeFunc_ComplexSelector(b *testing.B) {
 		resourceID := uuid.New().String()
 		resourceName := fmt.Sprintf("resource-%d", i)
 		res := createTestResource(workspaceID, resourceID, resourceName)
-		
+
 		if i%3 == 0 {
 			res.Metadata["region"] = "us-east-1"
 		} else if i%3 == 1 {
@@ -283,7 +283,7 @@ func BenchmarkEnvironmentResourceRecomputeFunc_ComplexSelector(b *testing.B) {
 		} else {
 			res.Metadata["region"] = "us-west-1"
 		}
-		
+
 		if i%2 == 0 {
 			res.Metadata["priority"] = "high"
 		} else {
@@ -295,10 +295,10 @@ func BenchmarkEnvironmentResourceRecomputeFunc_ComplexSelector(b *testing.B) {
 
 	// Get the recompute function
 	recomputeFunc := st.Environments.environmentResourceRecomputeFunc(environmentID)
-	
+
 	// Reset timer to exclude setup time
 	b.ResetTimer()
-	
+
 	// Run benchmark
 	for i := 0; i < b.N; i++ {
 		_, err := recomputeFunc(ctx)
@@ -315,16 +315,16 @@ func BenchmarkEnvironmentResourceRecomputeFunc_MemoryAllocation(b *testing.B) {
 
 	// Setup store with resources
 	st, environmentID := setupBenchmarkStore(b, workspaceID, resourceCount)
-	
+
 	// Get the recompute function
 	recomputeFunc := st.Environments.environmentResourceRecomputeFunc(environmentID)
-	
+
 	// Reset timer and report allocations
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	
+
 	// Run benchmark
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		ctx := context.Background()
 		_, err := recomputeFunc(ctx)
 		if err != nil {
@@ -332,4 +332,3 @@ func BenchmarkEnvironmentResourceRecomputeFunc_MemoryAllocation(b *testing.B) {
 		}
 	}
 }
-

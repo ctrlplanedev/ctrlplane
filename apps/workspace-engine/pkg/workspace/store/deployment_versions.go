@@ -47,7 +47,9 @@ func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oap
 
 func (d *DeploymentVersions) Remove(ctx context.Context, id string) {
 	version, ok := d.repo.DeploymentVersions.Get(id)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	d.repo.DeploymentVersions.Remove(id)
 	d.deployableVersions.Remove(id)

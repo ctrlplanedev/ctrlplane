@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-
 func buildRelease(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,

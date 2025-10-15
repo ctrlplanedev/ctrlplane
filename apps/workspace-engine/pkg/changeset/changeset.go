@@ -15,9 +15,9 @@ const (
 )
 
 type Change[T any] struct {
-	Type       ChangeType
-	Entity     T
-	Timestamp  time.Time
+	Type      ChangeType
+	Entity    T
+	Timestamp time.Time
 }
 
 type ChangeSet[T any] struct {

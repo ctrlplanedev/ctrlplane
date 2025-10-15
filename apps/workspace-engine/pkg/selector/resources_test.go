@@ -342,15 +342,15 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
-					CreatedAt: afterTime.Format(time.RFC3339),
+					CreatedAt: afterTime,
 				},
 				{
 					Id:        "2",
-					CreatedAt: beforeTime.Format(time.RFC3339),
+					CreatedAt: beforeTime,
 				},
 				{
 					Id:        "3",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 				},
 			},
 			expectedCount: 1,
@@ -367,15 +367,15 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
-					CreatedAt: afterTime.Format(time.RFC3339),
+					CreatedAt: afterTime,
 				},
 				{
 					Id:        "2",
-					CreatedAt: beforeTime.Format(time.RFC3339),
+					CreatedAt: beforeTime,
 				},
 				{
 					Id:        "3",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 				},
 			},
 			expectedCount: 1,
@@ -392,15 +392,15 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
-					CreatedAt: afterTime.Format(time.RFC3339),
+					CreatedAt: afterTime,
 				},
 				{
 					Id:        "2",
-					CreatedAt: beforeTime.Format(time.RFC3339),
+					CreatedAt: beforeTime,
 				},
 				{
 					Id:        "3",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 				},
 			},
 			expectedCount: 2,
@@ -417,15 +417,15 @@ func TestFilterResources_DateConditions(t *testing.T) {
 			resources: []*oapi.Resource{
 				{
 					Id:        "1",
-					CreatedAt: afterTime.Format(time.RFC3339),
+					CreatedAt: afterTime,
 				},
 				{
 					Id:        "2",
-					CreatedAt: beforeTime.Format(time.RFC3339),
+					CreatedAt: beforeTime,
 				},
 				{
 					Id:        "3",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 				},
 			},
 			expectedCount: 2,
@@ -595,22 +595,22 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 				{
 					Id:        "1",
 					Name:      "api-gateway",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 				},
 				{
 					Id:        "2",
 					Name:      "web-service",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 				},
 				{
 					Id:        "3",
 					Name:      "api-proxy",
-					CreatedAt: recentTime.Add(-1 * time.Hour).Format(time.RFC3339),
+					CreatedAt: recentTime.Add(-1 * time.Hour),
 				},
 				{
 					Id:        "4",
 					Name:      "database",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 				},
 			},
 			expectedCount: 2,
@@ -739,7 +739,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					Id:        "1",
 					Name:      "prod-api-service",
 					Kind:      "kubernetes-service",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 					Metadata: map[string]string{
 						"env": "production",
 					},
@@ -748,7 +748,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					Id:        "2",
 					Name:      "prod-web-service",
 					Kind:      "ecs-service",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 					Metadata: map[string]string{
 						"env": "staging",
 					},
@@ -757,7 +757,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					Id:        "3",
 					Name:      "staging-api-service",
 					Kind:      "kubernetes-service",
-					CreatedAt: baseTime.Format(time.RFC3339),
+					CreatedAt: baseTime,
 					Metadata: map[string]string{
 						"env": "production",
 					},
@@ -766,7 +766,7 @@ func TestFilterResources_DeeplyNestedConditions(t *testing.T) {
 					Id:        "4",
 					Name:      "prod-api-service",
 					Kind:      "kubernetes-service",
-					CreatedAt: recentTime.Add(-1 * time.Hour).Format(time.RFC3339),
+					CreatedAt: recentTime.Add(-1 * time.Hour),
 					Metadata: map[string]string{
 						"env": "production",
 					},
@@ -1072,7 +1072,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 				Id:        "1",
 				Name:      "payment-service",
 				Kind:      "kubernetes-service",
-				CreatedAt: baseTime.Format(time.RFC3339),
+				CreatedAt: baseTime,
 				Metadata: map[string]string{
 					"env":    "production",
 					"region": "us-east-1",
@@ -1082,7 +1082,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 				Id:        "2",
 				Name:      "auth-service",
 				Kind:      "kubernetes-service",
-				CreatedAt: oldTime.Format(time.RFC3339),
+				CreatedAt: oldTime,
 				Metadata: map[string]string{
 					"env":    "production",
 					"region": "us-west-2",
@@ -1092,7 +1092,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 				Id:        "3",
 				Name:      "notification-service",
 				Kind:      "kubernetes-service",
-				CreatedAt: baseTime.Format(time.RFC3339),
+				CreatedAt: baseTime,
 				Metadata: map[string]string{
 					"env":    "staging",
 					"region": "us-east-1",
@@ -1102,7 +1102,7 @@ func TestFilterResources_ComplexRealWorldScenarios(t *testing.T) {
 				Id:        "4",
 				Name:      "billing-service",
 				Kind:      "kubernetes-service",
-				CreatedAt: baseTime.Format(time.RFC3339),
+				CreatedAt: baseTime,
 				Metadata: map[string]string{
 					"env":    "production",
 					"region": "eu-west-1",

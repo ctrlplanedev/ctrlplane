@@ -95,7 +95,7 @@ func TestProcessor_MapEntity(t *testing.T) {
 // Test sorting by timestamp
 func TestProcessor_SortByTimestamp(t *testing.T) {
 	cs := NewChangeSet[TestEntity]()
-	
+
 	// Record with delays to ensure different timestamps
 	cs.Record(ChangeTypeCreate, TestEntity{ID: "3", Name: "Third"})
 	time.Sleep(2 * time.Millisecond)
@@ -119,7 +119,7 @@ func TestProcessor_SortByTimestamp(t *testing.T) {
 // Test sorting by timestamp descending
 func TestProcessor_SortByTimestampDesc(t *testing.T) {
 	cs := NewChangeSet[TestEntity]()
-	
+
 	cs.Record(ChangeTypeCreate, TestEntity{ID: "1", Name: "First"})
 	time.Sleep(2 * time.Millisecond)
 	cs.Record(ChangeTypeUpdate, TestEntity{ID: "2", Name: "Second"})
@@ -654,7 +654,7 @@ func TestProcessor_TypeGuardWithValidation(t *testing.T) {
 	guard := func(raw UnvalidatedConfig) (ValidatedConfig, bool) {
 		host, hasHost := raw.Raw["host"]
 		portStr, hasPort := raw.Raw["port"]
-		
+
 		if !hasHost || !hasPort {
 			return ValidatedConfig{}, false
 		}
@@ -749,4 +749,3 @@ func TestProcessor_ImmutableSource(t *testing.T) {
 		t.Error("processor modified the original changeset")
 	}
 }
-

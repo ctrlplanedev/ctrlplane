@@ -10,14 +10,14 @@ import (
 
 func NewPolicies(store *Store) *Policies {
 	return &Policies{
-		repo:           store.repo,
-		store:          store,
+		repo:  store.repo,
+		store: store,
 	}
 }
 
 type Policies struct {
-	repo           *repository.Repository
-	store          *Store
+	repo  *repository.Repository
+	store *Store
 }
 
 func (p *Policies) Items() map[string]*oapi.Policy {
@@ -46,7 +46,9 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 
 func (p *Policies) Remove(ctx context.Context, id string) {
 	policy, ok := p.repo.Policies.Get(id)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	p.repo.Policies.Remove(id)
 	if cs, ok := changeset.FromContext[any](ctx); ok {

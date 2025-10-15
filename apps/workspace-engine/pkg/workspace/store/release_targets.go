@@ -59,7 +59,7 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 
 	for envItem := range environments.IterBuffered() {
 		environment := envItem.Val
-		
+
 		// Only process deployments in the same system
 		systemDeployments, ok := deploymentsBySystem[environment.SystemId]
 		if !ok {
@@ -84,24 +84,24 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 				log.Error("Failed to get deployment resources", "deploymentId", deployment.Id, "error", err)
 				return nil, err
 			}
-	
-		if len(depResources) == 0 {
-			continue
-		}
 
-		// Find intersection of resources
-		for resourceId := range envResources {
-			if _, hasResource := depResources[resourceId]; hasResource {
-				target := &oapi.ReleaseTarget{
-					EnvironmentId: environment.Id,
-					DeploymentId:  deployment.Id,
-					ResourceId:    resourceId,
+			if len(depResources) == 0 {
+				continue
+			}
+
+			// Find intersection of resources
+			for resourceId := range envResources {
+				if _, hasResource := depResources[resourceId]; hasResource {
+					target := &oapi.ReleaseTarget{
+						EnvironmentId: environment.Id,
+						DeploymentId:  deployment.Id,
+						ResourceId:    resourceId,
+					}
+					// Use the standard Key() method for consistency
+					releaseTargets[target.Key()] = target
 				}
-				// Use the standard Key() method for consistency
-				releaseTargets[target.Key()] = target
 			}
 		}
-	}
 	}
 
 	span.SetAttributes(attribute.Int("count", len(releaseTargets)))

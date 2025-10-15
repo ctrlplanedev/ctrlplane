@@ -61,7 +61,7 @@ func RunConsumer(ctx context.Context) error {
 		}
 
 		msg, err := c.ReadMessage(time.Second)
-	
+
 		if err != nil {
 			if err.(kafka.Error).IsTimeout() {
 				log.Debug("Timeout, continuing")

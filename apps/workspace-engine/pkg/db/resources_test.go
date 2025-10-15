@@ -10,6 +10,20 @@ import (
 	"github.com/google/uuid"
 )
 
+func compareTimePtr(t *testing.T, actual *time.Time, expected *time.Time) {
+	t.Helper()
+	if actual == nil && expected == nil {
+		return
+	}
+	if actual == nil || expected == nil {
+		t.Fatalf("expected %v, got %v", expected, actual)
+	}
+	// Compare with some tolerance for database timestamp precision
+	if actual.Unix() != expected.Unix() {
+		t.Fatalf("expected %v, got %v", expected, actual)
+	}
+}
+
 func validateRetrievedResources(t *testing.T, actualResources []*oapi.Resource, expectedResources []*oapi.Resource) {
 	t.Helper()
 	if len(actualResources) != len(expectedResources) {
@@ -76,15 +90,15 @@ func validateRetrievedResources(t *testing.T, actualResources []*oapi.Resource, 
 		}
 
 		// Validate timestamps (basic presence check)
-		if actualResource.CreatedAt == "" {
+		if actualResource.CreatedAt.IsZero() {
 			t.Fatalf("expected resource created_at to be set")
 		}
-		compareStrPtr(t, actualResource.LockedAt, expectedResource.LockedAt)
+		compareTimePtr(t, actualResource.LockedAt, expectedResource.LockedAt)
 		// Note: updated_at can be set by DB on update, so we just check if expected is set
 		if expectedResource.UpdatedAt != nil && actualResource.UpdatedAt == nil {
 			t.Fatalf("expected resource updated_at to be set")
 		}
-		compareStrPtr(t, actualResource.DeletedAt, expectedResource.DeletedAt)
+		compareTimePtr(t, actualResource.DeletedAt, expectedResource.DeletedAt)
 	}
 }
 
@@ -100,7 +114,7 @@ func TestDBResources_BasicWrite(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          id,
 		Version:     "v1",
@@ -150,7 +164,7 @@ func TestDBResources_BasicWriteAndDelete(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          id,
 		Version:     "v1",
@@ -221,7 +235,7 @@ func TestDBResources_BasicWriteAndUpdate(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          id,
 		Version:     "v1",
@@ -296,7 +310,7 @@ func TestDBResources_MetadataUpdate(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          id,
 		Version:     "v1",
@@ -366,7 +380,7 @@ func TestDBResources_EmptyMetadata(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          id,
 		Version:     "v1",
@@ -409,9 +423,9 @@ func TestDBResources_WithTimestamps(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
-	createdAt := time.Now().Add(-24 * time.Hour).Format(time.RFC3339)
-	lockedAt := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
-	updatedAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now().Add(-24 * time.Hour)
+	lockedAt := time.Now().Add(-1 * time.Hour)
+	updatedAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          id,
 		Version:     "v1",
@@ -456,7 +470,7 @@ func TestDBResources_ComplexConfig(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          id,
 		Version:     "v1",
@@ -505,7 +519,7 @@ func TestDBResources_NonexistentWorkspaceThrowsError(t *testing.T) {
 	}
 	defer tx.Rollback(t.Context())
 
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource := &oapi.Resource{
 		Id:          uuid.New().String(),
 		Version:     "v1",
@@ -540,7 +554,7 @@ func TestDBResources_MultipleResources(t *testing.T) {
 	}
 	defer tx.Rollback(t.Context())
 
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resources := []*oapi.Resource{
 		{
 			Id:          uuid.New().String(),
@@ -610,7 +624,7 @@ func TestDBResources_WorkspaceIsolation(t *testing.T) {
 	}
 	defer tx1.Rollback(t.Context())
 
-	createdAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
 	resource1 := &oapi.Resource{
 		Id:          uuid.New().String(),
 		Version:     "v1",
@@ -697,8 +711,8 @@ func TestDBResources_SoftDeleteFiltering(t *testing.T) {
 	}
 	defer tx.Rollback(t.Context())
 
-	createdAt := time.Now().Format(time.RFC3339)
-	deletedAt := time.Now().Format(time.RFC3339)
+	createdAt := time.Now()
+	deletedAt := time.Now()
 
 	// Create a resource with deleted_at set (soft deleted)
 	softDeletedResource := &oapi.Resource{

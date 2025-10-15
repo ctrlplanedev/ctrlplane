@@ -89,7 +89,9 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	defer span.End()
 
 	resource, ok := r.repo.Resources.Get(id)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	r.repo.Resources.Remove(id)
 

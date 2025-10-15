@@ -34,12 +34,21 @@ func (e *SkipDeployedEvaluator) Evaluate(
 ) (*results.RuleEvaluationResult, error) {
 	// Get all jobs for this release target
 	jobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+	target, ok := e.store.Resources.Get(releaseTarget.ResourceId)
+	if !ok {
+		return nil, fmt.Errorf("resource not found")
+	}
 
 	// Find the most recent job (any status)
 	var mostRecentJob *oapi.Job
 	var mostRecentTime *time.Time
 
 	for _, job := range jobs {
+		// If the job was created before the target was created, ignore it
+		if job.CreatedAt.Before(target.CreatedAt) {
+			// resource might be added, then deleted and readded, so we need to ignore jobs created before the target was created
+			continue
+		}
 		// Try to get completion time first
 		completedAt := job.CompletedAt
 		var jobTime *time.Time

@@ -95,7 +95,9 @@ func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
 
 func (s *Systems) Remove(ctx context.Context, id string) {
 	system, ok := s.repo.Systems.Get(id)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	deployments := s.Deployments(id)
 	for key := range deployments {

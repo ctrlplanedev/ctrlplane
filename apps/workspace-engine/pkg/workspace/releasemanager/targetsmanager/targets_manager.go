@@ -72,7 +72,7 @@ func (m *Manager) RefreshTargets(ctx context.Context) error {
 	rt, err := m.store.ReleaseTargets.Items(ctx)
 	if err != nil {
 		return err
-	}	
+	}
 
 	m.currentTargets = rt
 

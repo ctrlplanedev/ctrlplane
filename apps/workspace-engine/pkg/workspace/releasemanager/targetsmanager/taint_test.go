@@ -49,7 +49,7 @@ func createTestDeploymentVersion(id, deploymentID, tag string) *oapi.DeploymentV
 }
 
 func createTestResource(workspaceID, id, name string) *oapi.Resource {
-	now := time.Now().Format(time.RFC3339)
+	now := time.Now()
 	return &oapi.Resource{
 		Id:          id,
 		WorkspaceId: workspaceID,
@@ -431,7 +431,7 @@ func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
 	env := createTestEnvironment(envID1, uuid.New().String(), "test-env")
 	dep := createTestDeployment(depID1, uuid.New().String(), "test-dep")
 	resource := createTestResource(uuid.New().String(), resID2, "test-resource")
-	
+
 	cs.Record(changeset.ChangeTypeUpdate, env)
 	cs.Record(changeset.ChangeTypeUpdate, dep)
 	cs.Record(changeset.ChangeTypeUpdate, resource)
@@ -494,7 +494,7 @@ func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
 	cs := changeset.NewChangeSet[any]()
 	policy := createTestPolicy(uuid.New().String(), uuid.New().String(), "test-policy")
 	env := createTestEnvironment(envID, uuid.New().String(), "test-env")
-	
+
 	cs.Record(changeset.ChangeTypeCreate, policy)
 	cs.Record(changeset.ChangeTypeUpdate, env)
 
@@ -545,7 +545,7 @@ func TestTaintProcessor_Deduplication(t *testing.T) {
 	env := createTestEnvironment(envID, uuid.New().String(), "test-env")
 	dep := createTestDeployment(depID, uuid.New().String(), "test-dep")
 	resource := createTestResource(uuid.New().String(), resID, "test-resource")
-	
+
 	cs.Record(changeset.ChangeTypeUpdate, env)
 	cs.Record(changeset.ChangeTypeUpdate, dep)
 	cs.Record(changeset.ChangeTypeUpdate, resource)
@@ -558,4 +558,3 @@ func TestTaintProcessor_Deduplication(t *testing.T) {
 	assert.Len(t, tainted, 1, "target should be tainted once despite multiple changes")
 	assert.Contains(t, tainted, target.Key())
 }
-

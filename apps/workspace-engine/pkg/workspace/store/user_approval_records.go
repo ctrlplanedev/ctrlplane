@@ -30,7 +30,9 @@ func (u *UserApprovalRecords) Get(versionId, userId string) (*oapi.UserApprovalR
 
 func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 	userApprovalRecord, ok := u.repo.UserApprovalRecords.Get(key)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	u.repo.UserApprovalRecords.Remove(key)
 	if cs, ok := changeset.FromContext[any](ctx); ok {

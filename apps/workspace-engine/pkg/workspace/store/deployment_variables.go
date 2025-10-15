@@ -40,7 +40,9 @@ func (d *DeploymentVariables) Upsert(ctx context.Context, id string, deploymentV
 
 func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
 	deploymentVariable, ok := d.repo.DeploymentVariables.Get(id)
-	if !ok { return }
+	if !ok {
+		return
+	}
 	d.repo.DeploymentVariables.Remove(id)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, deploymentVariable)

@@ -408,7 +408,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	// Check which versions got deployed (only count non-cancelled jobs)
 	allJobs := engine.Workspace().Jobs().Items()
 	versionActiveJobCounts := make(map[string]int)
-	
+
 	for _, job := range allJobs {
 		// Only count non-cancelled jobs
 		if job.Status == oapi.Cancelled {
@@ -849,4 +849,3 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 		t.Fatalf("expected 0 jobs for v3.0.0, got %d", v3Jobs)
 	}
 }
-

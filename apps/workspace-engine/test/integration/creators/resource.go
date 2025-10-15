@@ -21,7 +21,7 @@ func NewResource(workspaceID string) *oapi.Resource {
 		Version:     "v1.0.0",
 		Kind:        "TestResource",
 		Identifier:  fmt.Sprintf("r-%s", idSubstring),
-		CreatedAt:   time.Now().Format(time.RFC3339),
+		CreatedAt:   time.Now(),
 		WorkspaceId: workspaceID,
 		ProviderId:  nil,
 		Config:      make(map[string]interface{}),

@@ -73,7 +73,7 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 		// Pre-allocate slice with exact capacity
 		resourceCount := e.repo.Resources.Count()
 		items := make([]*oapi.Resource, 0, resourceCount)
-		
+
 		// Use IterCb for more efficient iteration (no channel overhead)
 		e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
 			items = append(items, resource)

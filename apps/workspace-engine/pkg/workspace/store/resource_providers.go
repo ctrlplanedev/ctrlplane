@@ -36,7 +36,9 @@ func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvi
 
 func (r *ResourceProviders) Remove(ctx context.Context, id string) error {
 	resourceProvider, ok := r.repo.ResourceProviders.Get(id)
-	if !ok { return nil }
+	if !ok {
+		return nil
+	}
 
 	r.repo.ResourceProviders.Remove(id)
 	for _, resource := range r.resources.Items() {

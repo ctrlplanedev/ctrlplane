@@ -441,4 +441,3 @@ func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
 		t.Fatalf("expected job for prod deployment with ready version")
 	}
 }
-

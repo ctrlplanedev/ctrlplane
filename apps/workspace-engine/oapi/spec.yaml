@@ -1002,6 +1002,7 @@ components:
           type: string
         createdAt:
           type: string
+          format: date-time
         workspaceId:
           type: string
         providerId:
@@ -1011,10 +1012,13 @@ components:
           additionalProperties: true
         lockedAt:
           type: string
+          format: date-time
         updatedAt:
           type: string
+          format: date-time
         deletedAt:
           type: string
+          format: date-time
         metadata:
           type: object
           additionalProperties:

@@ -133,4 +133,3 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 		t.Fatalf("expected release for dev v2.0.0 to be created")
 	}
 }
-

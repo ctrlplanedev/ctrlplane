@@ -35,7 +35,9 @@ func (r *Releases) Get(id string) (*oapi.Release, bool) {
 
 func (r *Releases) Remove(ctx context.Context, id string) {
 	release, ok := r.repo.Releases.Get(id)
-	if !ok { return }
+	if !ok {
+		return
+	}
 
 	r.repo.Releases.Remove(id)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
