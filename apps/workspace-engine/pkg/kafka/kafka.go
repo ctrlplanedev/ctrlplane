@@ -72,14 +72,13 @@ func RunConsumer(ctx context.Context) error {
 			time.Sleep(time.Second)
 			continue
 		}
+
 		if err := handler.ListenAndRoute(ctx, msg); err != nil {
 			log.Error("Failed to read message", "error", err)
-			continue
 		}
 
 		if _, err := c.CommitMessage(msg); err != nil {
 			log.Error("Failed to commit message", "error", err)
-			continue
 		}
 	}
 }

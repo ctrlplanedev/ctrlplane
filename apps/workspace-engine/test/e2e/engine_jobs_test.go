@@ -629,6 +629,15 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 		t.Fatalf("expected 0 release targets after resource deletion, got %d", len(releaseTargets))
 	}
 
+	// Verify there are no pending jobs for that release
+	pendingJobsAfterDelete := engine.Workspace().Jobs().GetPending()
+	for _, job := range pendingJobsAfterDelete {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.ResourceId == r1.Id {
+			t.Fatalf("expected no pending jobs for deleted resource, but found job %s", job.Id)
+		}
+	}
+
 	// Re-add the same resource (simulating infrastructure recreation)
 	r1Readded := c.NewResource(workspaceID)
 	r1Readded.Id = r1.Id // Same ID as before
@@ -649,15 +658,11 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	pendingJobsAfter := engine.Workspace().Jobs().GetPending()
 
 	// Expected: 2 jobs (original job + new job for re-added resource)
-	expectedJobsAfterReAdd := 2
+	expectedJobsAfterReAdd := 1
 	if len(pendingJobsAfter) != expectedJobsAfterReAdd {
 		// Document actual behavior
 		t.Logf("Expected %d jobs after resource re-add, got %d", expectedJobsAfterReAdd, len(pendingJobsAfter))
 		t.Logf("Jobs: %v", pendingJobsAfter)
-
-		if len(pendingJobsAfter) == 1 {
-			t.Skip("TODO: System does not automatically create jobs when resources are re-added - requires manual sync trigger")
-		}
 
 		t.Fatalf("unexpected number of jobs after resource re-add: expected %d, got %d", expectedJobsAfterReAdd, len(pendingJobsAfter))
 	}

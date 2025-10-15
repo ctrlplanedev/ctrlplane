@@ -28,8 +28,8 @@ func NewDeploymentVersion() *oapi.DeploymentVersion {
 		DeploymentId:   uuid.New().String(),
 		Status:         oapi.DeploymentVersionStatusReady,
 		CreatedAt:      time.Now().Format(time.RFC3339Nano),
-		Config:         make(map[string]interface{}),
-		JobAgentConfig: make(map[string]interface{}),
+		Config:         make(map[string]any),
+		JobAgentConfig: make(map[string]any),
 	}
 
 	return dv
