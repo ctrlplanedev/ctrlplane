@@ -1,8 +1,10 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { Span } from "@ctrlplane/logger";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { isPresent } from "ts-is-present";
 
 import type { FullPolicy } from "../events.js";
+import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 import { convertToOapiSelector } from "./util.js";
@@ -61,37 +63,58 @@ const convertFullPolicyToGoEvent = (policy: FullPolicy) => ({
   timestamp: Date.now(),
 });
 
-export const dispatchPolicyCreated = async (policy: FullPolicy) =>
-  Promise.all([
-    sendNodeEvent(convertFullPolicyToNodeEvent(policy)),
-    sendGoEvent(convertFullPolicyToGoEvent(policy)),
-  ]);
+export const dispatchPolicyCreated = createSpanWrapper(
+  "dispatchPolicyCreated",
+  async (span: Span, policy: FullPolicy) => {
+    span.setAttribute("policy.id", policy.id);
+    span.setAttribute("policy.name", policy.name);
+    span.setAttribute("workspace.id", policy.workspaceId);
 
-export const dispatchPolicyUpdated = async (
-  previous: FullPolicy,
-  current: FullPolicy,
-) =>
-  Promise.all([
-    sendNodeEvent({
-      workspaceId: current.workspaceId,
-      eventType: Event.PolicyUpdated,
-      eventId: current.id,
-      timestamp: Date.now(),
-      source: "api",
-      payload: { previous, current },
-    }),
-    sendGoEvent(convertFullPolicyToGoEvent(current)),
-  ]);
+    await Promise.all([
+      sendNodeEvent(convertFullPolicyToNodeEvent(policy)),
+      sendGoEvent(convertFullPolicyToGoEvent(policy)),
+    ]);
+  },
+);
 
-export const dispatchPolicyDeleted = async (policy: FullPolicy) =>
-  Promise.all([
-    sendNodeEvent({
-      workspaceId: policy.workspaceId,
-      eventType: Event.PolicyDeleted,
-      eventId: policy.id,
-      timestamp: Date.now(),
-      source: "api",
-      payload: policy,
-    }),
-    sendGoEvent(convertFullPolicyToGoEvent(policy)),
-  ]);
+export const dispatchPolicyUpdated = createSpanWrapper(
+  "dispatchPolicyUpdated",
+  async (span: Span, previous: FullPolicy, current: FullPolicy) => {
+    span.setAttribute("policy.id", current.id);
+    span.setAttribute("policy.name", current.name);
+    span.setAttribute("workspace.id", current.workspaceId);
+
+    await Promise.all([
+      sendNodeEvent({
+        workspaceId: current.workspaceId,
+        eventType: Event.PolicyUpdated,
+        eventId: current.id,
+        timestamp: Date.now(),
+        source: "api",
+        payload: { previous, current },
+      }),
+      sendGoEvent(convertFullPolicyToGoEvent(current)),
+    ]);
+  },
+);
+
+export const dispatchPolicyDeleted = createSpanWrapper(
+  "dispatchPolicyDeleted",
+  async (span: Span, policy: FullPolicy) => {
+    span.setAttribute("policy.id", policy.id);
+    span.setAttribute("policy.name", policy.name);
+    span.setAttribute("workspace.id", policy.workspaceId);
+
+    await Promise.all([
+      sendNodeEvent({
+        workspaceId: policy.workspaceId,
+        eventType: Event.PolicyDeleted,
+        eventId: policy.id,
+        timestamp: Date.now(),
+        source: "api",
+        payload: policy,
+      }),
+      sendGoEvent(convertFullPolicyToGoEvent(policy)),
+    ]);
+  },
+);

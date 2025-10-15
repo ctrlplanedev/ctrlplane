@@ -1,7 +1,8 @@
+import type { Span } from "@ctrlplane/logger";
 import type { Producer } from "kafkajs";
 import { Kafka } from "kafkajs";
 
-import { logger } from "@ctrlplane/logger";
+import { logger, SpanStatusCode } from "@ctrlplane/logger";
 
 import type {
   EventPayload,
@@ -10,6 +11,7 @@ import type {
   Message,
 } from "./events.js";
 import { env } from "../config.js";
+import { createSpanWrapper } from "../span.js";
 
 const log = logger.child({ component: "kafka-client" });
 
@@ -30,20 +32,35 @@ const getProducer = async () => {
   return producer;
 };
 
-export const sendGoEvent = async <T extends keyof GoEventPayload>(
-  message: GoMessage<T> | GoMessage<T>[],
-) => {
-  const messages = Array.isArray(message) ? message : [message];
-  const topic = "workspace-events";
-  const producer = await getProducer();
-  await producer.send({
-    topic,
-    messages: messages.map((message) => ({
-      key: message.workspaceId,
-      value: JSON.stringify(message),
-    })),
-  });
-};
+export const sendGoEvent = createSpanWrapper(
+  "sendGoEvent",
+  async <T extends keyof GoEventPayload>(
+    span: Span,
+    message: GoMessage<T> | GoMessage<T>[],
+  ) => {
+    try {
+      const messages = Array.isArray(message) ? message : [message];
+      span.setAttribute("event.type", messages[0]?.eventType ?? "");
+      span.setAttribute("workspace.id", messages[0]?.workspaceId ?? "");
+      const topic = "workspace-events";
+      const producer = await getProducer();
+      await producer.send({
+        topic,
+        messages: messages.map((message) => ({
+          key: message.workspaceId,
+          value: JSON.stringify(message),
+        })),
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: err.message,
+      });
+      throw error;
+    }
+  },
+);
 
 export const sendNodeEvent = async <T extends keyof EventPayload>(
   message: Message<T> | Message<T>[],

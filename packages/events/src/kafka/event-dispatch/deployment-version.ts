@@ -1,10 +1,12 @@
 import type { Tx } from "@ctrlplane/db";
+import type { Span } from "@ctrlplane/logger";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
+import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
@@ -57,49 +59,68 @@ const convertVersionToGoEvent = (
   timestamp: Date.now(),
 });
 
-export const dispatchDeploymentVersionCreated = async (
-  deploymentVersion: schema.DeploymentVersion,
-  db?: Tx,
-) => {
-  const tx = db ?? dbClient;
-  const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
+export const dispatchDeploymentVersionCreated = createSpanWrapper(
+  "dispatchDeploymentVersionCreated",
+  async (span: Span, deploymentVersion: schema.DeploymentVersion, db?: Tx) => {
+    span.setAttribute("deploymentVersion.id", deploymentVersion.id);
+    span.setAttribute("deploymentVersion.name", deploymentVersion.name);
+    span.setAttribute("deployment.id", deploymentVersion.deploymentId);
 
-  await Promise.all([
-    sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
-    sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
-  ]);
-};
+    const tx = db ?? dbClient;
+    const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
+    span.setAttribute("workspace.id", workspaceId);
 
-export const dispatchDeploymentVersionUpdated = async (
-  previous: schema.DeploymentVersion,
-  current: schema.DeploymentVersion,
-  db?: Tx,
-) => {
-  const tx = db ?? dbClient;
-  const workspaceId = await getWorkspaceId(tx, current.id);
+    await Promise.all([
+      sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
+      sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
+    ]);
+  },
+);
 
-  await Promise.all([
-    sendNodeEvent({
-      workspaceId,
-      eventType: Event.DeploymentVersionUpdated,
-      eventId: current.id,
-      timestamp: Date.now(),
-      source: "api" as const,
-      payload: { previous, current },
-    }),
-    sendGoEvent(convertVersionToGoEvent(current, workspaceId)),
-  ]);
-};
+export const dispatchDeploymentVersionUpdated = createSpanWrapper(
+  "dispatchDeploymentVersionUpdated",
+  async (
+    span: Span,
+    previous: schema.DeploymentVersion,
+    current: schema.DeploymentVersion,
+    db?: Tx,
+  ) => {
+    span.setAttribute("deploymentVersion.id", current.id);
+    span.setAttribute("deploymentVersion.name", current.name);
+    span.setAttribute("deployment.id", current.deploymentId);
 
-export const dispatchDeploymentVersionDeleted = async (
-  deploymentVersion: schema.DeploymentVersion,
-  db?: Tx,
-) => {
-  const tx = db ?? dbClient;
-  const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
+    const tx = db ?? dbClient;
+    const workspaceId = await getWorkspaceId(tx, current.id);
+    span.setAttribute("workspace.id", workspaceId);
 
-  await Promise.all([
-    sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
-    sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
-  ]);
-};
+    await Promise.all([
+      sendNodeEvent({
+        workspaceId,
+        eventType: Event.DeploymentVersionUpdated,
+        eventId: current.id,
+        timestamp: Date.now(),
+        source: "api" as const,
+        payload: { previous, current },
+      }),
+      sendGoEvent(convertVersionToGoEvent(current, workspaceId)),
+    ]);
+  },
+);
+
+export const dispatchDeploymentVersionDeleted = createSpanWrapper(
+  "dispatchDeploymentVersionDeleted",
+  async (span: Span, deploymentVersion: schema.DeploymentVersion, db?: Tx) => {
+    span.setAttribute("deploymentVersion.id", deploymentVersion.id);
+    span.setAttribute("deploymentVersion.name", deploymentVersion.name);
+    span.setAttribute("deployment.id", deploymentVersion.deploymentId);
+
+    const tx = db ?? dbClient;
+    const workspaceId = await getWorkspaceId(tx, deploymentVersion.id);
+    span.setAttribute("workspace.id", workspaceId);
+
+    await Promise.all([
+      sendNodeEvent(convertVersionToNodeEvent(deploymentVersion, workspaceId)),
+      sendGoEvent(convertVersionToGoEvent(deploymentVersion, workspaceId)),
+    ]);
+  },
+);

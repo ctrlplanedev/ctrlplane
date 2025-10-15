@@ -1,10 +1,12 @@
 import type { Tx } from "@ctrlplane/db";
+import type { Span } from "@ctrlplane/logger";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
+import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 import { convertToOapiSelector } from "./util.js";
@@ -49,56 +51,83 @@ const convertEnvironmentToGoEvent = (
   timestamp: Date.now(),
 });
 
-export const dispatchEnvironmentCreated = async (
-  environment: schema.Environment,
-  source?: "api" | "scheduler" | "user-action",
-  db?: Tx,
-) => {
-  const tx = db ?? dbClient;
-  const system = await getSystem(tx, environment.systemId);
+export const dispatchEnvironmentCreated = createSpanWrapper(
+  "dispatchEnvironmentCreated",
+  async (
+    span: Span,
+    environment: schema.Environment,
+    source?: "api" | "scheduler" | "user-action",
+    db?: Tx,
+  ) => {
+    span.setAttribute("environment.id", environment.id);
+    span.setAttribute("environment.name", environment.name);
+    span.setAttribute("system.id", environment.systemId);
 
-  await Promise.all([
-    sendNodeEvent(
-      convertEnvironmentToNodeEvent(environment, system.workspaceId),
-    ),
-    sendGoEvent(convertEnvironmentToGoEvent(environment, system.workspaceId)),
-  ]);
-};
+    const tx = db ?? dbClient;
+    const system = await getSystem(tx, environment.systemId);
+    span.setAttribute("workspace.id", system.workspaceId);
 
-export const dispatchEnvironmentUpdated = async (
-  previous: schema.Environment,
-  current: schema.Environment,
-  source?: "api" | "scheduler" | "user-action",
-  db?: Tx,
-) => {
-  const tx = db ?? dbClient;
-  const system = await getSystem(tx, current.systemId);
+    await Promise.all([
+      sendNodeEvent(
+        convertEnvironmentToNodeEvent(environment, system.workspaceId),
+      ),
+      sendGoEvent(convertEnvironmentToGoEvent(environment, system.workspaceId)),
+    ]);
+  },
+);
 
-  await Promise.all([
-    sendNodeEvent({
-      workspaceId: system.workspaceId,
-      eventType: Event.EnvironmentUpdated,
-      eventId: current.id,
-      timestamp: Date.now(),
-      source: source ?? "api",
-      payload: { previous, current },
-    }),
-    sendGoEvent(convertEnvironmentToGoEvent(current, system.workspaceId)),
-  ]);
-};
+export const dispatchEnvironmentUpdated = createSpanWrapper(
+  "dispatchEnvironmentUpdated",
+  async (
+    span: Span,
+    previous: schema.Environment,
+    current: schema.Environment,
+    source?: "api" | "scheduler" | "user-action",
+    db?: Tx,
+  ) => {
+    span.setAttribute("environment.id", current.id);
+    span.setAttribute("environment.name", current.name);
+    span.setAttribute("system.id", current.systemId);
 
-export const dispatchEnvironmentDeleted = async (
-  environment: schema.Environment,
-  source?: "api" | "scheduler" | "user-action",
-  db?: Tx,
-) => {
-  const tx = db ?? dbClient;
-  const system = await getSystem(tx, environment.systemId);
+    const tx = db ?? dbClient;
+    const system = await getSystem(tx, current.systemId);
+    span.setAttribute("workspace.id", system.workspaceId);
 
-  await Promise.all([
-    sendNodeEvent(
-      convertEnvironmentToNodeEvent(environment, system.workspaceId),
-    ),
-    sendGoEvent(convertEnvironmentToGoEvent(environment, system.workspaceId)),
-  ]);
-};
+    await Promise.all([
+      sendNodeEvent({
+        workspaceId: system.workspaceId,
+        eventType: Event.EnvironmentUpdated,
+        eventId: current.id,
+        timestamp: Date.now(),
+        source: source ?? "api",
+        payload: { previous, current },
+      }),
+      sendGoEvent(convertEnvironmentToGoEvent(current, system.workspaceId)),
+    ]);
+  },
+);
+
+export const dispatchEnvironmentDeleted = createSpanWrapper(
+  "dispatchEnvironmentDeleted",
+  async (
+    span: Span,
+    environment: schema.Environment,
+    source?: "api" | "scheduler" | "user-action",
+    db?: Tx,
+  ) => {
+    span.setAttribute("environment.id", environment.id);
+    span.setAttribute("environment.name", environment.name);
+    span.setAttribute("system.id", environment.systemId);
+
+    const tx = db ?? dbClient;
+    const system = await getSystem(tx, environment.systemId);
+    span.setAttribute("workspace.id", system.workspaceId);
+
+    await Promise.all([
+      sendNodeEvent(
+        convertEnvironmentToNodeEvent(environment, system.workspaceId),
+      ),
+      sendGoEvent(convertEnvironmentToGoEvent(environment, system.workspaceId)),
+    ]);
+  },
+);

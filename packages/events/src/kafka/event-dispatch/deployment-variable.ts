@@ -1,9 +1,11 @@
+import type { Span } from "@ctrlplane/logger";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
+import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
@@ -96,60 +98,84 @@ const convertDeploymentVariableToGoEvent = async (
   timestamp: Date.now(),
 });
 
-export const dispatchDeploymentVariableCreated = async (
-  deploymentVariable: schema.DeploymentVariable,
-) => {
-  const workspaceId = await getWorkspaceIdForDeployment(
-    deploymentVariable.deploymentId,
-  );
-  const nodeEvent = convertDeploymentVariableToNodeEvent(
-    deploymentVariable,
-    workspaceId,
-  );
-  const goEvent = await convertDeploymentVariableToGoEvent(
-    deploymentVariable,
-    workspaceId,
-  );
-  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
-};
+export const dispatchDeploymentVariableCreated = createSpanWrapper(
+  "dispatchDeploymentVariableCreated",
+  async (span: Span, deploymentVariable: schema.DeploymentVariable) => {
+    span.setAttribute("deploymentVariable.id", deploymentVariable.id);
+    span.setAttribute("deploymentVariable.key", deploymentVariable.key);
+    span.setAttribute("deployment.id", deploymentVariable.deploymentId);
 
-export const dispatchDeploymentVariableUpdated = async (
-  previous: schema.DeploymentVariable,
-  current: schema.DeploymentVariable,
-) => {
-  const workspaceId = await getWorkspaceIdForDeployment(current.deploymentId);
-  const nodeEvent = {
-    workspaceId,
-    eventType: Event.DeploymentVariableUpdated,
-    eventId: current.id,
-    timestamp: Date.now(),
-    source: "api" as const,
-    payload: { previous, current },
-  };
+    const workspaceId = await getWorkspaceIdForDeployment(
+      deploymentVariable.deploymentId,
+    );
+    span.setAttribute("workspace.id", workspaceId);
 
-  const goEvent = await convertDeploymentVariableToGoEvent(
-    current,
-    workspaceId,
-  );
-  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
-};
+    const nodeEvent = convertDeploymentVariableToNodeEvent(
+      deploymentVariable,
+      workspaceId,
+    );
+    const goEvent = await convertDeploymentVariableToGoEvent(
+      deploymentVariable,
+      workspaceId,
+    );
+    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+  },
+);
 
-export const dispatchDeploymentVariableDeleted = async (
-  deploymentVariable: schema.DeploymentVariable,
-) => {
-  const workspaceId = await getWorkspaceIdForDeployment(
-    deploymentVariable.deploymentId,
-  );
-  const nodeEvent = convertDeploymentVariableToNodeEvent(
-    deploymentVariable,
-    workspaceId,
-  );
-  const goEvent = await convertDeploymentVariableToGoEvent(
-    deploymentVariable,
-    workspaceId,
-  );
-  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
-};
+export const dispatchDeploymentVariableUpdated = createSpanWrapper(
+  "dispatchDeploymentVariableUpdated",
+  async (
+    span: Span,
+    previous: schema.DeploymentVariable,
+    current: schema.DeploymentVariable,
+  ) => {
+    span.setAttribute("deploymentVariable.id", current.id);
+    span.setAttribute("deploymentVariable.key", current.key);
+    span.setAttribute("deployment.id", current.deploymentId);
+
+    const workspaceId = await getWorkspaceIdForDeployment(current.deploymentId);
+    span.setAttribute("workspace.id", workspaceId);
+
+    const nodeEvent = {
+      workspaceId,
+      eventType: Event.DeploymentVariableUpdated,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: "api" as const,
+      payload: { previous, current },
+    };
+
+    const goEvent = await convertDeploymentVariableToGoEvent(
+      current,
+      workspaceId,
+    );
+    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+  },
+);
+
+export const dispatchDeploymentVariableDeleted = createSpanWrapper(
+  "dispatchDeploymentVariableDeleted",
+  async (span: Span, deploymentVariable: schema.DeploymentVariable) => {
+    span.setAttribute("deploymentVariable.id", deploymentVariable.id);
+    span.setAttribute("deploymentVariable.key", deploymentVariable.key);
+    span.setAttribute("deployment.id", deploymentVariable.deploymentId);
+
+    const workspaceId = await getWorkspaceIdForDeployment(
+      deploymentVariable.deploymentId,
+    );
+    span.setAttribute("workspace.id", workspaceId);
+
+    const nodeEvent = convertDeploymentVariableToNodeEvent(
+      deploymentVariable,
+      workspaceId,
+    );
+    const goEvent = await convertDeploymentVariableToGoEvent(
+      deploymentVariable,
+      workspaceId,
+    );
+    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+  },
+);
 
 export const dispatchDeploymentVariableValueCreated = async (
   deploymentVariableValue: schema.DeploymentVariableValue,

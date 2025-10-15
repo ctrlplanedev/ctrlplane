@@ -1,3 +1,4 @@
+import type { Span } from "@ctrlplane/logger";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
@@ -5,6 +6,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatusOapi } from "@ctrlplane/validators/jobs";
 
+import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 
@@ -101,12 +103,17 @@ const convertJobToGoEvent = async (job: schema.Job, workspaceId: string) => ({
   timestamp: Date.now(),
 });
 
-export const dispatchJobUpdated = async (
-  previous: schema.Job,
-  current: schema.Job,
-) => {
-  const workspaceId = await getWorkspaceId(current);
-  const nodeEvent = convertJobToNodeEvent(previous, current, workspaceId);
-  const goEvent = await convertJobToGoEvent(current, workspaceId);
-  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
-};
+export const dispatchJobUpdated = createSpanWrapper(
+  "dispatchJobUpdated",
+  async (span: Span, previous: schema.Job, current: schema.Job) => {
+    span.setAttribute("job.id", current.id);
+    span.setAttribute("job.status", current.status);
+
+    const workspaceId = await getWorkspaceId(current);
+    span.setAttribute("workspace.id", workspaceId);
+
+    const nodeEvent = convertJobToNodeEvent(previous, current, workspaceId);
+    const goEvent = await convertJobToGoEvent(current, workspaceId);
+    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+  },
+);
