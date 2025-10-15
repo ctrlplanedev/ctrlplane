@@ -74,7 +74,8 @@ export const dispatchResourceCreated = async (resource: schema.Resource) => {
     fullResource,
     eventType as keyof GoEventPayload,
   );
-  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+  await sendNodeEvent(nodeEvent);
+  await sendGoEvent(goEvent);
 };
 
 export const dispatchResourceUpdated = createSpanWrapper(
@@ -101,7 +102,8 @@ export const dispatchResourceUpdated = createSpanWrapper(
       currentFullResource,
       eventType as keyof GoEventPayload,
     );
-    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+    await sendNodeEvent(nodeEvent);
+    await sendGoEvent(goEvent);
   },
 );
 
@@ -113,7 +115,8 @@ export const dispatchResourceDeleted = async (resource: schema.Resource) => {
     fullResource,
     eventType as keyof GoEventPayload,
   );
-  await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+  await sendNodeEvent(nodeEvent);
+  await sendGoEvent(goEvent);
 };
 
 export const getWorkspaceIdForResource = async (resourceId: string) =>

@@ -71,22 +71,16 @@ export const dispatchEnvironmentCreated = createSpanWrapper(
     span.setAttribute("workspace.id", system.workspaceId);
 
     const eventType = Event.EnvironmentCreated;
-    await Promise.all([
-      sendNodeEvent(
-        convertEnvironmentToNodeEvent(
-          environment,
-          system.workspaceId,
-          eventType,
-        ),
+    await sendNodeEvent(
+      convertEnvironmentToNodeEvent(environment, system.workspaceId, eventType),
+    );
+    await sendGoEvent(
+      convertEnvironmentToGoEvent(
+        environment,
+        system.workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-      sendGoEvent(
-        convertEnvironmentToGoEvent(
-          environment,
-          system.workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
-      ),
-    ]);
+    );
   },
 );
 
@@ -108,23 +102,21 @@ export const dispatchEnvironmentUpdated = createSpanWrapper(
     span.setAttribute("workspace.id", system.workspaceId);
 
     const eventType = Event.EnvironmentUpdated;
-    await Promise.all([
-      sendNodeEvent({
-        workspaceId: system.workspaceId,
-        eventType,
-        eventId: current.id,
-        timestamp: Date.now(),
-        source: source ?? "api",
-        payload: { previous, current },
-      }),
-      sendGoEvent(
-        convertEnvironmentToGoEvent(
-          current,
-          system.workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
+    await sendNodeEvent({
+      workspaceId: system.workspaceId,
+      eventType,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: source ?? "api",
+      payload: { previous, current },
+    });
+    await sendGoEvent(
+      convertEnvironmentToGoEvent(
+        current,
+        system.workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-    ]);
+    );
   },
 );
 
@@ -145,21 +137,15 @@ export const dispatchEnvironmentDeleted = createSpanWrapper(
     span.setAttribute("workspace.id", system.workspaceId);
 
     const eventType = Event.EnvironmentDeleted;
-    await Promise.all([
-      sendNodeEvent(
-        convertEnvironmentToNodeEvent(
-          environment,
-          system.workspaceId,
-          eventType,
-        ),
+    await sendNodeEvent(
+      convertEnvironmentToNodeEvent(environment, system.workspaceId, eventType),
+    );
+    await sendGoEvent(
+      convertEnvironmentToGoEvent(
+        environment,
+        system.workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-      sendGoEvent(
-        convertEnvironmentToGoEvent(
-          environment,
-          system.workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
-      ),
-    ]);
+    );
   },
 );

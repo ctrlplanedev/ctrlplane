@@ -77,12 +77,10 @@ export const dispatchPolicyCreated = createSpanWrapper(
     span.setAttribute("workspace.id", policy.workspaceId);
 
     const eventType = Event.PolicyCreated;
-    await Promise.all([
-      sendNodeEvent(convertFullPolicyToNodeEvent(policy, eventType)),
-      sendGoEvent(
-        convertFullPolicyToGoEvent(policy, eventType as keyof GoEventPayload),
-      ),
-    ]);
+    await sendNodeEvent(convertFullPolicyToNodeEvent(policy, eventType));
+    await sendGoEvent(
+      convertFullPolicyToGoEvent(policy, eventType as keyof GoEventPayload),
+    );
   },
 );
 
@@ -94,19 +92,17 @@ export const dispatchPolicyUpdated = createSpanWrapper(
     span.setAttribute("workspace.id", current.workspaceId);
 
     const eventType = Event.PolicyUpdated;
-    await Promise.all([
-      sendNodeEvent({
-        workspaceId: current.workspaceId,
-        eventType,
-        eventId: current.id,
-        timestamp: Date.now(),
-        source: "api",
-        payload: { previous, current },
-      }),
-      sendGoEvent(
-        convertFullPolicyToGoEvent(current, eventType as keyof GoEventPayload),
-      ),
-    ]);
+    await sendNodeEvent({
+      workspaceId: current.workspaceId,
+      eventType,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: "api",
+      payload: { previous, current },
+    });
+    await sendGoEvent(
+      convertFullPolicyToGoEvent(current, eventType as keyof GoEventPayload),
+    );
   },
 );
 
@@ -118,18 +114,16 @@ export const dispatchPolicyDeleted = createSpanWrapper(
     span.setAttribute("workspace.id", policy.workspaceId);
 
     const eventType = Event.PolicyDeleted;
-    await Promise.all([
-      sendNodeEvent({
-        workspaceId: policy.workspaceId,
-        eventType,
-        eventId: policy.id,
-        timestamp: Date.now(),
-        source: "api",
-        payload: policy,
-      }),
-      sendGoEvent(
-        convertFullPolicyToGoEvent(policy, eventType as keyof GoEventPayload),
-      ),
-    ]);
+    await sendNodeEvent({
+      workspaceId: policy.workspaceId,
+      eventType,
+      eventId: policy.id,
+      timestamp: Date.now(),
+      source: "api",
+      payload: policy,
+    });
+    await sendGoEvent(
+      convertFullPolicyToGoEvent(policy, eventType as keyof GoEventPayload),
+    );
   },
 );

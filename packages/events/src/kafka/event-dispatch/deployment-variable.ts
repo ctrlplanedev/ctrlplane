@@ -125,7 +125,8 @@ export const dispatchDeploymentVariableCreated = createSpanWrapper(
       workspaceId,
       eventType as keyof GoEventPayload,
     );
-    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+    await sendNodeEvent(nodeEvent);
+    await sendGoEvent(goEvent);
   },
 );
 
@@ -158,7 +159,8 @@ export const dispatchDeploymentVariableUpdated = createSpanWrapper(
       workspaceId,
       eventType as keyof GoEventPayload,
     );
-    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+    await sendNodeEvent(nodeEvent);
+    await sendGoEvent(goEvent);
   },
 );
 
@@ -185,7 +187,8 @@ export const dispatchDeploymentVariableDeleted = createSpanWrapper(
       workspaceId,
       eventType as keyof GoEventPayload,
     );
-    await Promise.all([sendNodeEvent(nodeEvent), sendGoEvent(goEvent)]);
+    await sendNodeEvent(nodeEvent);
+    await sendGoEvent(goEvent);
   },
 );
 

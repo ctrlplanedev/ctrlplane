@@ -74,18 +74,16 @@ export const dispatchDeploymentVersionCreated = createSpanWrapper(
     span.setAttribute("workspace.id", workspaceId);
 
     const eventType = Event.DeploymentVersionCreated;
-    await Promise.all([
-      sendNodeEvent(
-        convertVersionToNodeEvent(deploymentVersion, workspaceId, eventType),
+    await sendNodeEvent(
+      convertVersionToNodeEvent(deploymentVersion, workspaceId, eventType),
+    );
+    await sendGoEvent(
+      convertVersionToGoEvent(
+        deploymentVersion,
+        workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-      sendGoEvent(
-        convertVersionToGoEvent(
-          deploymentVersion,
-          workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
-      ),
-    ]);
+    );
   },
 );
 
@@ -106,23 +104,21 @@ export const dispatchDeploymentVersionUpdated = createSpanWrapper(
     span.setAttribute("workspace.id", workspaceId);
 
     const eventType = Event.DeploymentVersionUpdated;
-    await Promise.all([
-      sendNodeEvent({
+    await sendNodeEvent({
+      workspaceId,
+      eventType,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: "api" as const,
+      payload: { previous, current },
+    });
+    await sendGoEvent(
+      convertVersionToGoEvent(
+        current,
         workspaceId,
-        eventType,
-        eventId: current.id,
-        timestamp: Date.now(),
-        source: "api" as const,
-        payload: { previous, current },
-      }),
-      sendGoEvent(
-        convertVersionToGoEvent(
-          current,
-          workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
+        eventType as keyof GoEventPayload,
       ),
-    ]);
+    );
   },
 );
 
@@ -138,17 +134,15 @@ export const dispatchDeploymentVersionDeleted = createSpanWrapper(
     span.setAttribute("workspace.id", workspaceId);
 
     const eventType = Event.DeploymentVersionDeleted;
-    await Promise.all([
-      sendNodeEvent(
-        convertVersionToNodeEvent(deploymentVersion, workspaceId, eventType),
+    await sendNodeEvent(
+      convertVersionToNodeEvent(deploymentVersion, workspaceId, eventType),
+    );
+    await sendGoEvent(
+      convertVersionToGoEvent(
+        deploymentVersion,
+        workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-      sendGoEvent(
-        convertVersionToGoEvent(
-          deploymentVersion,
-          workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
-      ),
-    ]);
+    );
   },
 );

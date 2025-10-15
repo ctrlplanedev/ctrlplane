@@ -68,18 +68,16 @@ export const dispatchDeploymentCreated = createSpanWrapper(
     span.setAttribute("workspace.id", system.workspaceId);
 
     const eventType = Event.DeploymentCreated;
-    await Promise.all([
-      sendNodeEvent(
-        convertDeploymentToNodeEvent(deployment, system.workspaceId, eventType),
+    await sendNodeEvent(
+      convertDeploymentToNodeEvent(deployment, system.workspaceId, eventType),
+    );
+    await sendGoEvent(
+      convertDeploymentToGoEvent(
+        deployment,
+        system.workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-      sendGoEvent(
-        convertDeploymentToGoEvent(
-          deployment,
-          system.workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
-      ),
-    ]);
+    );
   },
 );
 
@@ -100,23 +98,21 @@ export const dispatchDeploymentUpdated = createSpanWrapper(
     span.setAttribute("workspace.id", system.workspaceId);
 
     const eventType = Event.DeploymentUpdated;
-    await Promise.all([
-      sendNodeEvent({
-        workspaceId: system.workspaceId,
-        eventType,
-        eventId: current.id,
-        timestamp: Date.now(),
-        source: "api" as const,
-        payload: { previous, current },
-      }),
-      sendGoEvent(
-        convertDeploymentToGoEvent(
-          current,
-          system.workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
+    await sendNodeEvent({
+      workspaceId: system.workspaceId,
+      eventType,
+      eventId: current.id,
+      timestamp: Date.now(),
+      source: "api" as const,
+      payload: { previous, current },
+    });
+    await sendGoEvent(
+      convertDeploymentToGoEvent(
+        current,
+        system.workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-    ]);
+    );
   },
 );
 
@@ -132,17 +128,15 @@ export const dispatchDeploymentDeleted = createSpanWrapper(
     span.setAttribute("workspace.id", system.workspaceId);
 
     const eventType = Event.DeploymentDeleted;
-    await Promise.all([
-      sendNodeEvent(
-        convertDeploymentToNodeEvent(deployment, system.workspaceId, eventType),
+    await sendNodeEvent(
+      convertDeploymentToNodeEvent(deployment, system.workspaceId, eventType),
+    );
+    await sendGoEvent(
+      convertDeploymentToGoEvent(
+        deployment,
+        system.workspaceId,
+        eventType as keyof GoEventPayload,
       ),
-      sendGoEvent(
-        convertDeploymentToGoEvent(
-          deployment,
-          system.workspaceId,
-          eventType as keyof GoEventPayload,
-        ),
-      ),
-    ]);
+    );
   },
 );
