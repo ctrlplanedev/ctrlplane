@@ -6,6 +6,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
+import type { GoEventPayload, GoMessage } from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -46,7 +47,7 @@ const convertEnvironmentToGoEvent = (
   environment: schema.Environment,
   workspaceId: string,
   eventType: keyof GoEventPayload,
-) => ({
+): GoMessage<keyof GoEventPayload> => ({
   workspaceId,
   eventType,
   data: getOapiEnvironment(environment),

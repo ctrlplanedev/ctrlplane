@@ -3,7 +3,7 @@ import type { Span } from "@ctrlplane/logger";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { isPresent } from "ts-is-present";
 
-import type { FullPolicy } from "../events.js";
+import type { FullPolicy, GoEventPayload, GoMessage } from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -62,7 +62,7 @@ const getOapiPolicy = (
 const convertFullPolicyToGoEvent = (
   policy: FullPolicy,
   eventType: keyof GoEventPayload,
-) => ({
+): GoMessage<keyof GoEventPayload> => ({
   workspaceId: policy.workspaceId,
   eventType,
   data: getOapiPolicy(policy),
