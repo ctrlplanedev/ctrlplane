@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"slices"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
 
@@ -10,12 +9,11 @@ import (
 )
 
 func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, error) {
-	dbWorkspaceIds, err := db.GetWorkspaceIDs(c.Request.Context())
+	existsInDB, err := db.WorkspaceExists(c.Request.Context(), workspaceId)
 	if err != nil {
 		return nil, err
 	}
-
-	if !slices.Contains(dbWorkspaceIds, workspaceId) {
+	if !existsInDB {
 		return nil, fmt.Errorf("workspace %s not found in database", workspaceId)
 	}
 
