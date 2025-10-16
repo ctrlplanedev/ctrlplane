@@ -81,3 +81,17 @@ func (e *RelatableEntity) GetID() string {
 	}
 	return ""
 }
+
+// Item returns the underlying entity (Resource, Deployment, or Environment) as an interface{}
+// This is used when the actual entity type is needed (e.g., for selectors)
+func (e *RelatableEntity) Item() any {
+	switch e.GetType() {
+	case "deployment":
+		return e.GetDeployment()
+	case "environment":
+		return e.GetEnvironment()
+	case "resource":
+		return e.GetResource()
+	}
+	return nil
+}
