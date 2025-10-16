@@ -29,7 +29,7 @@ type DeploymentVariableWithValues struct {
 }
 
 func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.LiteralValue, error) {
-	ctx, span := tracer.Start(ctx, "Evaluate", trace.WithAttributes(
+	ctx, span := tracer.Start(ctx, "VariableManager.Evaluate", trace.WithAttributes(
 		attribute.String("deployment.id", releaseTarget.DeploymentId),
 		attribute.String("environment.id", releaseTarget.EnvironmentId),
 		attribute.String("resource.id", releaseTarget.ResourceId),

@@ -29,7 +29,7 @@ type Manager struct {
 // New creates a new policy manager.
 func New(store *store.Store) *Manager {
 	return &Manager{
-		store: store,
+		store:            store,
 		evaluatorFactory: NewEvaluatorFactory(store),
 		defaultVersionRuleEvaluators: []evaluator.VersionScopedEvaluator{
 			deployableversions.NewDeployableVersionStatusEvaluator(store),
@@ -133,7 +133,6 @@ func (m *Manager) EvaluateVersion(
 
 	return decision, nil
 }
-
 
 func (m *Manager) EvaluateRelease(
 	ctx context.Context,

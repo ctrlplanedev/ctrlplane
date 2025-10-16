@@ -6,7 +6,12 @@ import (
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("workspace/releasemanager/targets")
 
 func New(store *store.Store) *Manager {
 	return &Manager{
@@ -27,8 +32,13 @@ func (m *Manager) GetTargets(ctx context.Context) (map[string]*oapi.ReleaseTarge
 }
 
 func (m *Manager) DetectChanges(ctx context.Context, changeSet *changeset.ChangeSet[any]) (*changeset.ChangeSet[*oapi.ReleaseTarget], error) {
+	ctx, span := tracer.Start(ctx, "TargetsManager.DetectChanges")
+	defer span.End()
+
 	targets, err := m.store.ReleaseTargets.Items(ctx)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get targets")
 		return nil, err
 	}
 

@@ -26,10 +26,7 @@ type Manager struct {
 	store *store.Store
 
 	// Sub-managers
-	targetsManager  *targets.Manager
-	versionManager  *versions.Manager
-	variableManager *variables.Manager
-	policyManager   *policy.Manager
+	targetsManager *targets.Manager
 
 	// Deployment components
 	planner  *deployment.Planner
@@ -51,9 +48,6 @@ func New(store *store.Store) *Manager {
 	return &Manager{
 		store:              store,
 		targetsManager:     targetsManager,
-		policyManager:      policyManager,
-		versionManager:     versionManager,
-		variableManager:    variableManager,
 		planner:            deployment.NewPlanner(policyManager, versionManager, variableManager),
 		executor:           deployment.NewExecutor(store),
 		releaseTargetLocks: sync.Map{},
@@ -129,8 +123,9 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 // Uses the two-phase deployment pattern: planning (read-only) and execution (writes).
 //
 // Two-Phase Design:
-//   Phase 1 (DECISION): planner.PlanDeployment() answers "What needs deploying?" (read-only)
-//   Phase 2 (ACTION):   executor.ExecuteRelease() creates the job and deploys (writes)
+//
+//	Phase 1 (DECISION): planner.PlanDeployment() answers "What needs deploying?" (read-only)
+//	Phase 2 (ACTION):   executor.ExecuteRelease() creates the job and deploys (writes)
 //
 // If planning returns nil → Nothing to deploy (already deployed, no versions, or blocked)
 // If planning returns release → Deploy it (planning phase already validated everything)

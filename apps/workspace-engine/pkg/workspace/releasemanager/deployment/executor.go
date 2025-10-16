@@ -16,16 +16,16 @@ import (
 
 // Executor handles deployment execution (Phase 2: ACTION - Write operations).
 type Executor struct {
-	store *store.Store
-	jobFactory *jobs.Factory
+	store         *store.Store
+	jobFactory    *jobs.Factory
 	jobDispatcher *jobs.Dispatcher
 }
 
 // NewExecutor creates a new deployment executor.
 func NewExecutor(store *store.Store) *Executor {
 	return &Executor{
-		store: store,
-		jobFactory: jobs.NewFactory(store),
+		store:         store,
+		jobFactory:    jobs.NewFactory(store),
 		jobDispatcher: jobs.NewDispatcher(store),
 	}
 }
@@ -123,4 +123,3 @@ func BuildRelease(
 
 // ErrUnsupportedJobAgent is returned when a job agent type is not supported.
 var ErrUnsupportedJobAgent = errors.New("job agent not supported")
-

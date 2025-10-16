@@ -9,7 +9,7 @@ const (
 
 func NewResult() *RuleEvaluationResult {
 	return &RuleEvaluationResult{
-		Details:        make(map[string]any),
+		Details: make(map[string]any),
 	}
 }
 

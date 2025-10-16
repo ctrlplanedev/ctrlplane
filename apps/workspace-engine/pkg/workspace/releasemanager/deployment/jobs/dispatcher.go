@@ -37,4 +37,3 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 
 	return ErrUnsupportedJobAgent
 }
-
