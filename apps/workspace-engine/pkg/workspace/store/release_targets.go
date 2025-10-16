@@ -149,31 +149,12 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 		return nil, fmt.Errorf("resource %s not found", releaseTarget.ResourceId)
 	}
 
+	resolvedReleaseTarget := selector.NewBasicReleaseTarget(environments, deployments, resources)
 	matchingPolicies := make(map[string]*oapi.Policy)
 
 	for policyItem := range r.store.Policies.IterBuffered() {
 		policy := policyItem.Val
-		hasMatch := false
-		for _, policyTarget := range policy.Selectors {
-			if policyTarget.EnvironmentSelector != nil {
-				if ok, _ := selector.Match(ctx, policyTarget.EnvironmentSelector, environments); !ok {
-					continue
-				}
-			}
-			if policyTarget.DeploymentSelector != nil {
-				if ok, _ := selector.Match(ctx, policyTarget.DeploymentSelector, deployments); !ok {
-					continue
-				}
-			}
-			if policyTarget.ResourceSelector != nil {
-				if ok, _ := selector.Match(ctx, policyTarget.ResourceSelector, resources); !ok {
-					continue
-				}
-			}
-			hasMatch = true
-			break
-		}
-		if hasMatch {
+		if selector.MatchPolicy(ctx, policy, resolvedReleaseTarget) {
 			matchingPolicies[policy.Id] = policy
 		}
 	}
