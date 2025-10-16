@@ -48,7 +48,7 @@ func (m *Manager) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget
 func (m *Manager) EvaluateWorkspace(
 	ctx context.Context,
 	policies map[string]*oapi.Policy,
-) (*DeployDecision, error) {
+) (*oapi.DeployDecision, error) {
 	ctx, span := tracer.Start(ctx, "EvaluateWorkspace")
 	defer span.End()
 
@@ -70,10 +70,10 @@ func (m *Manager) EvaluateWorkspace(
 		}
 
 		for _, ruleResult := range ruleResults {
-			policyResult.AddRuleResult(ruleResult)
+			policyResult.RuleResults = append(policyResult.RuleResults, *ruleResult)
 		}
 
-		decision.PolicyResults = append(decision.PolicyResults, policyResult)
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
 	return decision, nil
@@ -84,7 +84,7 @@ func (m *Manager) EvaluateVersion(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
 	releaseTarget *oapi.ReleaseTarget,
-) (*DeployDecision, error) {
+) (*oapi.DeployDecision, error) {
 	ctx, span := tracer.Start(ctx, "PolicyManager.EvaluateVersion")
 	defer span.End()
 
@@ -104,9 +104,9 @@ func (m *Manager) EvaluateVersion(
 			if err != nil {
 				return nil, err
 			}
-			policyResult.AddRuleResult(ruleResult)
+			policyResult.RuleResults = append(policyResult.RuleResults, *ruleResult)
 		}
-		decision.PolicyResults = append(decision.PolicyResults, policyResult)
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
 	// Fast path: no policies = allowed
@@ -125,10 +125,10 @@ func (m *Manager) EvaluateVersion(
 		}
 
 		for _, ruleResult := range ruleResults {
-			policyResult.AddRuleResult(ruleResult)
+			policyResult.AddRuleResult(*ruleResult)
 		}
 
-		decision.PolicyResults = append(decision.PolicyResults, policyResult)
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
 	return decision, nil
@@ -137,15 +137,34 @@ func (m *Manager) EvaluateVersion(
 func (m *Manager) EvaluateRelease(
 	ctx context.Context,
 	release *oapi.Release,
-) (*DeployDecision, error) {
+) (*oapi.DeployDecision, error) {
 	ctx, span := tracer.Start(ctx, "PolicyManager.EvaluateRelease")
 	defer span.End()
 
 	decision := NewDeployDecision()
+
 	policies, err := m.GetPoliciesForReleaseTarget(ctx, &release.ReleaseTarget)
 	if err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to get policies for release target: %w", err)
+	}
+
+	// Run default release rule evaluators (e.g., skip deployed checks)
+	if len(m.defaultReleaseRuleEvaluators) > 0 {
+		policyResult := results.NewPolicyEvaluation()
+		for _, evaluator := range m.defaultReleaseRuleEvaluators {
+			ruleResult, err := evaluator.Evaluate(ctx, release)
+			if err != nil {
+				return nil, err
+			}
+			policyResult.AddRuleResult(*ruleResult)
+		}
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
+	}
+
+	// Fast path: no policies = allowed
+	if len(policies) == 0 {
+		return decision, nil
 	}
 
 	for _, policy := range policies {
@@ -155,9 +174,9 @@ func (m *Manager) EvaluateRelease(
 			return nil, fmt.Errorf("failed to evaluate release-scoped policy rules: %w", err)
 		}
 		for _, ruleResult := range ruleResults {
-			policyResult.AddRuleResult(ruleResult)
+			policyResult.AddRuleResult(*ruleResult)
 		}
-		decision.PolicyResults = append(decision.PolicyResults, policyResult)
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
 	return decision, nil

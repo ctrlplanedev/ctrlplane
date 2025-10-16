@@ -27,7 +27,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
 	version *oapi.DeploymentVersion,
-) (*results.RuleEvaluationResult, error) {
+) (*oapi.RuleEvaluation, error) {
 	if version.Id == "" {
 		return results.
 			NewDeniedResult("Version ID is required").

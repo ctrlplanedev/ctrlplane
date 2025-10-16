@@ -43,7 +43,7 @@ func TestAnyApprovalEvaluator_EnoughApprovals(t *testing.T) {
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed, got denied: %s", result.Reason)
+		t.Errorf("expected allowed, got denied: %s", result.Message)
 	}
 
 	if result.Details["min_approvals"] != 2 {
@@ -80,7 +80,7 @@ func TestAnyApprovalEvaluator_NotEnoughApprovals(t *testing.T) {
 	}
 
 	if result.Allowed {
-		t.Errorf("expected denied, got allowed: %s", result.Reason)
+		t.Errorf("expected denied, got allowed: %s", result.Message)
 	}
 
 	if result.Details["min_approvals"] != 3 {
@@ -117,7 +117,7 @@ func TestAnyApprovalEvaluator_ExactlyMinApprovals(t *testing.T) {
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed when approvals exactly meet minimum, got denied: %s", result.Reason)
+		t.Errorf("expected allowed when approvals exactly meet minimum, got denied: %s", result.Message)
 	}
 
 	approvers, ok := result.Details["approvers"].([]string)
@@ -146,11 +146,11 @@ func TestAnyApprovalEvaluator_NoApprovalsRequired(t *testing.T) {
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed when no approvals required, got denied: %s", result.Reason)
+		t.Errorf("expected allowed when no approvals required, got denied: %s", result.Message)
 	}
 
-	if result.Reason != "No approvals required" {
-		t.Errorf("expected reason 'No approvals required', got '%s'", result.Reason)
+	if result.Message != "No approvals required" {
+		t.Errorf("expected reason 'No approvals required', got '%s'", result.Message)
 	}
 }
 
@@ -174,7 +174,7 @@ func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
 	}
 
 	if result.Allowed {
-		t.Errorf("expected denied when no approvals given, got allowed: %s", result.Reason)
+		t.Errorf("expected denied when no approvals given, got allowed: %s", result.Message)
 	}
 
 	approvers, ok := result.Details["approvers"].([]string)
@@ -218,7 +218,7 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 		t.Fatalf("unexpected error for version-1: %v", err)
 	}
 	if !result1.Allowed {
-		t.Errorf("expected version-1 allowed (has 2 approvals), got denied: %s", result1.Reason)
+		t.Errorf("expected version-1 allowed (has 2 approvals), got denied: %s", result1.Message)
 	}
 
 	// Test version-2 (1 approval, should fail)
@@ -227,7 +227,7 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 		t.Fatalf("unexpected error for version-2: %v", err)
 	}
 	if result2.Allowed {
-		t.Errorf("expected version-2 denied (has 1 approval), got allowed: %s", result2.Reason)
+		t.Errorf("expected version-2 denied (has 1 approval), got allowed: %s", result2.Message)
 	}
 
 	// Verify approvers are version-specific
@@ -261,11 +261,11 @@ func TestAnyApprovalEvaluator_EmptyVersionId(t *testing.T) {
 	}
 
 	if result.Allowed {
-		t.Errorf("expected denied for empty version ID, got allowed: %s", result.Reason)
+		t.Errorf("expected denied for empty version ID, got allowed: %s", result.Message)
 	}
 
-	if result.Reason != "Version ID is required" {
-		t.Errorf("expected 'Version ID is required', got '%s'", result.Reason)
+	if result.Message != "Version ID is required" {
+		t.Errorf("expected 'Version ID is required', got '%s'", result.Message)
 	}
 }
 
@@ -300,8 +300,8 @@ func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
 		t.Error("expected Details to contain 'approvers'")
 	}
 
-	if result.Reason == "" {
-		t.Error("expected Reason to be set")
+	if result.Message == "" {
+		t.Error("expected Message to be set")
 	}
 
 	// Verify approvers is correct type
@@ -335,7 +335,7 @@ func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed when approvals exceed minimum (5 > 2), got denied: %s", result.Reason)
+		t.Errorf("expected allowed when approvals exceed minimum (5 > 2), got denied: %s", result.Message)
 	}
 
 	approvers := result.Details["approvers"].([]string)

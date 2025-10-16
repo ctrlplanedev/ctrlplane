@@ -24,7 +24,7 @@ func (e *DeployableVersionStatusEvaluator) Evaluate(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
 	version *oapi.DeploymentVersion,
-) (*results.RuleEvaluationResult, error) {
+) (*oapi.RuleEvaluation, error) {
 	// Check if any policies apply to this release target
 	// Only enforce version status check if policies exist
 	policies, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)

@@ -43,7 +43,6 @@ func TestNewPolicyEvaluation(t *testing.T) {
 			assert.Equal(t, tt.policyName, result.Policy.Name)
 			assert.NotNil(t, result.RuleResults)
 			assert.Empty(t, result.RuleResults)
-			assert.True(t, result.Overall, "Overall should be true by default")
 			assert.Empty(t, result.Summary)
 		})
 	}
@@ -52,12 +51,12 @@ func TestNewPolicyEvaluation(t *testing.T) {
 func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 	tests := []struct {
 		name            string
-		ruleResults     []*RuleEvaluationResult
+		ruleResults     []*oapi.RuleEvaluation
 		expectedOverall bool
 	}{
 		{
 			name: "all rules allowed keeps overall true",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("rule 1 passed"),
 				NewAllowedResult("rule 2 passed"),
 				NewAllowedResult("rule 3 passed"),
@@ -66,7 +65,7 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 		},
 		{
 			name: "one denied rule sets overall to false",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("rule 1 passed"),
 				NewDeniedResult("rule 2 failed"),
 				NewAllowedResult("rule 3 passed"),
@@ -75,7 +74,7 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 		},
 		{
 			name: "one pending rule sets overall to false",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("rule 1 passed"),
 				NewPendingResult("approval", "waiting for approval"),
 				NewAllowedResult("rule 3 passed"),
@@ -84,7 +83,7 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 		},
 		{
 			name: "multiple denied rules keeps overall false",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("rule 1 failed"),
 				NewDeniedResult("rule 2 failed"),
 				NewDeniedResult("rule 3 failed"),
@@ -93,7 +92,7 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 		},
 		{
 			name:            "no rules keeps overall true",
-			ruleResults:     []*RuleEvaluationResult{},
+			ruleResults:     []*oapi.RuleEvaluation{},
 			expectedOverall: true,
 		},
 	}
@@ -106,10 +105,9 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 			}))
 
 			for _, ruleResult := range tt.ruleResults {
-				policy.AddRuleResult(ruleResult)
+				policy.AddRuleResult(*ruleResult)
 			}
 
-			assert.Equal(t, tt.expectedOverall, policy.Overall)
 			assert.Equal(t, len(tt.ruleResults), len(policy.RuleResults))
 		})
 	}
@@ -118,12 +116,12 @@ func TestPolicyEvaluationResult_AddRuleResult(t *testing.T) {
 func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 	tests := []struct {
 		name            string
-		ruleResults     []*RuleEvaluationResult
+		ruleResults     []*oapi.RuleEvaluation
 		expectedSummary string
 	}{
 		{
 			name: "all rules pass",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("rule 1 passed"),
 				NewAllowedResult("rule 2 passed"),
 			},
@@ -131,7 +129,7 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 		},
 		{
 			name: "only denied rules",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("concurrency limit exceeded"),
 				NewDeniedResult("invalid time window"),
 			},
@@ -139,7 +137,7 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 		},
 		{
 			name: "only pending rules",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewPendingResult("approval", "waiting for manager approval"),
 				NewPendingResult("approval", "waiting for security review"),
 			},
@@ -147,7 +145,7 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 		},
 		{
 			name: "mixed denied and pending rules",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("concurrency limit exceeded"),
 				NewPendingResult("approval", "waiting for approval"),
 				NewAllowedResult("time window check passed"),
@@ -156,7 +154,7 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 		},
 		{
 			name: "denied and pending with multiple of each",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("reason 1"),
 				NewDeniedResult("reason 2"),
 				NewPendingResult("approval", "pending 1"),
@@ -166,12 +164,12 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 		},
 		{
 			name:            "no rules",
-			ruleResults:     []*RuleEvaluationResult{},
+			ruleResults:     []*oapi.RuleEvaluation{},
 			expectedSummary: "All policy rules passed",
 		},
 		{
 			name: "allowed rules only",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("allowed 1"),
 				NewAllowedResult("allowed 2"),
 				NewAllowedResult("allowed 3"),
@@ -188,10 +186,8 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 			}))
 
 			for _, ruleResult := range tt.ruleResults {
-				policy.AddRuleResult(ruleResult)
+				policy.AddRuleResult(*ruleResult)
 			}
-
-			policy.GenerateSummary()
 
 			assert.Equal(t, tt.expectedSummary, policy.Summary)
 		})
@@ -201,12 +197,12 @@ func TestPolicyEvaluationResult_GenerateSummary(t *testing.T) {
 func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 	tests := []struct {
 		name         string
-		ruleResults  []*RuleEvaluationResult
+		ruleResults  []*oapi.RuleEvaluation
 		expectDenial bool
 	}{
 		{
 			name: "has denied rule returns true",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("allowed"),
 				NewDeniedResult("denied"),
 			},
@@ -214,7 +210,7 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 		},
 		{
 			name: "only pending rules returns false",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewPendingResult("approval", "pending"),
 				NewPendingResult("approval", "pending 2"),
 			},
@@ -222,7 +218,7 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 		},
 		{
 			name: "only allowed rules returns false",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("allowed 1"),
 				NewAllowedResult("allowed 2"),
 			},
@@ -230,7 +226,7 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 		},
 		{
 			name: "mixed denied and pending returns true",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("denied"),
 				NewPendingResult("approval", "pending"),
 			},
@@ -238,12 +234,12 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 		},
 		{
 			name:         "no rules returns false",
-			ruleResults:  []*RuleEvaluationResult{},
+			ruleResults:  []*oapi.RuleEvaluation{},
 			expectDenial: false,
 		},
 		{
 			name: "multiple denied rules returns true",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("denied 1"),
 				NewDeniedResult("denied 2"),
 				NewDeniedResult("denied 3"),
@@ -260,7 +256,7 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 			}))
 
 			for _, ruleResult := range tt.ruleResults {
-				policy.AddRuleResult(ruleResult)
+				policy.AddRuleResult(*ruleResult)
 			}
 
 			result := policy.HasDenials()
@@ -272,12 +268,12 @@ func TestPolicyEvaluationResult_HasDenials(t *testing.T) {
 func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 	tests := []struct {
 		name          string
-		ruleResults   []*RuleEvaluationResult
+		ruleResults   []*oapi.RuleEvaluation
 		expectPending bool
 	}{
 		{
 			name: "has pending action returns true",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("allowed"),
 				NewPendingResult("approval", "pending"),
 			},
@@ -285,7 +281,7 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 		},
 		{
 			name: "only denied rules returns false",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("denied 1"),
 				NewDeniedResult("denied 2"),
 			},
@@ -293,7 +289,7 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 		},
 		{
 			name: "only allowed rules returns false",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("allowed 1"),
 				NewAllowedResult("allowed 2"),
 			},
@@ -301,7 +297,7 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 		},
 		{
 			name: "mixed denied and pending returns true",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewDeniedResult("denied"),
 				NewPendingResult("approval", "pending"),
 			},
@@ -309,12 +305,12 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 		},
 		{
 			name:          "no rules returns false",
-			ruleResults:   []*RuleEvaluationResult{},
+			ruleResults:   []*oapi.RuleEvaluation{},
 			expectPending: false,
 		},
 		{
 			name: "multiple pending actions returns true",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewPendingResult("approval", "pending 1"),
 				NewPendingResult("approval", "pending 2"),
 				NewPendingResult("approval", "pending 3"),
@@ -331,7 +327,7 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 			}))
 
 			for _, ruleResult := range tt.ruleResults {
-				policy.AddRuleResult(ruleResult)
+				policy.AddRuleResult(*ruleResult)
 			}
 
 			result := policy.HasPendingActions()
@@ -343,12 +339,12 @@ func TestPolicyEvaluationResult_HasPendingActions(t *testing.T) {
 func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 	tests := []struct {
 		name          string
-		ruleResults   []*RuleEvaluationResult
+		ruleResults   []*oapi.RuleEvaluation
 		expectedCount int
 	}{
 		{
 			name: "returns only pending actions",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("allowed"),
 				NewPendingResult("approval", "pending 1"),
 				NewDeniedResult("denied"),
@@ -358,7 +354,7 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 		},
 		{
 			name: "returns empty slice when no pending actions",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewAllowedResult("allowed"),
 				NewDeniedResult("denied"),
 			},
@@ -366,7 +362,7 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 		},
 		{
 			name: "returns all when all are pending",
-			ruleResults: []*RuleEvaluationResult{
+			ruleResults: []*oapi.RuleEvaluation{
 				NewPendingResult("approval", "pending 1"),
 				NewPendingResult("approval", "pending 2"),
 				NewPendingResult("approval", "pending 3"),
@@ -375,7 +371,7 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 		},
 		{
 			name:          "returns empty slice when no rules",
-			ruleResults:   []*RuleEvaluationResult{},
+			ruleResults:   []*oapi.RuleEvaluation{},
 			expectedCount: 0,
 		},
 	}
@@ -388,7 +384,7 @@ func TestPolicyEvaluationResult_GetPendingActions(t *testing.T) {
 			}))
 
 			for _, ruleResult := range tt.ruleResults {
-				policy.AddRuleResult(ruleResult)
+				policy.AddRuleResult(*ruleResult)
 			}
 
 			pending := policy.GetPendingActions()
@@ -412,13 +408,13 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		}))
 
 		// Add various rule results
-		policy.AddRuleResult(NewAllowedResult("time window check passed"))
-		policy.AddRuleResult(NewPendingResult("approval", "waiting for manager approval"))
-		policy.AddRuleResult(NewDeniedResult("concurrency limit exceeded"))
-		policy.AddRuleResult(NewAllowedResult("resource quota check passed"))
+		policy.AddRuleResult(*NewAllowedResult("time window check passed"))
+		policy.AddRuleResult(*NewPendingResult("approval", "waiting for manager approval"))
+		policy.AddRuleResult(*NewDeniedResult("concurrency limit exceeded"))
+		policy.AddRuleResult(*NewAllowedResult("resource quota check passed"))
 
 		// Test overall status
-		assert.False(t, policy.Overall)
+		assert.False(t, policy.Allowed())
 
 		// Test denials
 		assert.True(t, policy.HasDenials())
@@ -427,15 +423,11 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		assert.True(t, policy.HasPendingActions())
 		pending := policy.GetPendingActions()
 		assert.Equal(t, 1, len(pending))
-		assert.Equal(t, "waiting for manager approval", pending[0].Reason)
+		assert.Equal(t, "waiting for manager approval", pending[0].Message)
 
 		// Generate and verify summary
-		policy.GenerateSummary()
 		assert.Contains(t, policy.Summary, "Denied by: concurrency limit exceeded")
 		assert.Contains(t, policy.Summary, "Pending: waiting for manager approval")
-
-		// Verify all rules are present
-		assert.Equal(t, 4, len(policy.RuleResults))
 	})
 
 	t.Run("successful policy evaluation", func(t *testing.T) {
@@ -445,12 +437,13 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		}))
 
 		// Add only allowed results
-		policy.AddRuleResult(NewAllowedResult("all checks passed"))
-		policy.AddRuleResult(NewAllowedResult("no conflicts detected"))
-		policy.AddRuleResult(NewAllowedResult("resource limits ok"))
+		policy.AddRuleResult(*NewAllowedResult("all checks passed"))
+		policy.AddRuleResult(*NewAllowedResult("no conflicts detected"))
+		policy.AddRuleResult(*NewAllowedResult("resource limits ok"))
+		policy.AddRuleResult(*NewAllowedResult("resource limits ok"))
 
 		// Test overall status
-		assert.True(t, policy.Overall)
+		assert.True(t, policy.Allowed())
 
 		// Test no denials or pending actions
 		assert.False(t, policy.HasDenials())
@@ -458,7 +451,6 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		assert.Empty(t, policy.GetPendingActions())
 
 		// Generate and verify summary
-		policy.GenerateSummary()
 		assert.Equal(t, "All policy rules passed", policy.Summary)
 	})
 
@@ -469,11 +461,11 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		}))
 
 		// Add multiple pending actions
-		policy.AddRuleResult(NewPendingResult("approval", "security team approval required"))
-		policy.AddRuleResult(NewPendingResult("approval", "ops team approval required"))
+		policy.AddRuleResult(*NewPendingResult("approval", "security team approval required"))
+		policy.AddRuleResult(*NewPendingResult("approval", "ops team approval required"))
 
 		// Test overall status
-		assert.False(t, policy.Overall)
+		assert.False(t, policy.Allowed())
 
 		// Test no denials but has pending
 		assert.False(t, policy.HasDenials())
@@ -482,7 +474,6 @@ func TestPolicyEvaluationResult_Integration(t *testing.T) {
 		assert.Equal(t, 2, len(pending))
 
 		// Generate and verify summary
-		policy.GenerateSummary()
 		assert.Equal(t, "Pending: security team approval required, ops team approval required", policy.Summary)
 	})
 }

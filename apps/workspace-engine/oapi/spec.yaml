@@ -23,498 +23,14 @@ paths:
                     items:
                       type: string
 
-  /v1/workspaces/{workspaceId}/release-targets:
-    get:
-      summary: List release targets for a specified workspace ({workspaceId})
-      operationId: listPolicies
-      description: Returns a list of policies for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the release targets for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of policies.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  releaseTargets:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/ReleaseTarget"
-        "404":
-          description: Workspace not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/releases:
-    get:
-      summary: List releases for a specified workspace ({workspaceId})
-      operationId: listReleases
-      description: Returns a list of releases for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the releases for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of releases.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  releases:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Release"
-        "404":
-          description: Workspace not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/releases/{releaseId}:
-    get:
-      summary: Get a release for a specified workspace ({workspaceId}) and release ({releaseId})
-      operationId: getRelease
-      description: Returns a release for a specified workspace and release identified by {workspaceId} and {releaseId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the release for.
-          schema:
-            type: string
-        - name: releaseId
-          in: path
-          required: true
-          description: ID of the release to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A release.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Release"
-        "404":
-          description: Release not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/systems:
-    get:
-      summary: List systems for a specified workspace ({workspaceId})
-      operationId: listSystems
-      description: Returns a list of systems for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the systems for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of systems.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  systems:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/System"
-
-  /v1/workspaces/{workspaceId}/environments:
-    get:
-      summary: List environments for a specified workspace ({workspaceId})
-      operationId: listEnvironments
-      description: Returns a list of environments for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the environments for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of environments.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Environment"
-        "404":
-          description: Workspace not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/deployments:
-    get:
-      summary: List deployments for a specified workspace ({workspaceId})
-      operationId: listDeployments
-      description: Returns a list of deployments for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the deployments for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of deployments.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Deployment"
-        "404":
-          description: Workspace not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/resources:
-    get:
-      summary: List resources for a specified workspace ({workspaceId})
-      operationId: listResources
-      description: Returns a list of resources for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the resources for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of resources.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Resource"
-        "404":
-          description: Workspace not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/resources/{resourceId}:
-    get:
-      summary: Get a specific resource
-      operationId: getResource
-      description: Returns a specific resource identified by {resourceId} in workspace {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: resourceId
-          in: path
-          required: true
-          description: ID of the resource to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A resource.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Resource"
-        "404":
-          description: Resource not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/resources/{resourceId}/variables:
-    get:
-      summary: List variables for a specific resource
-      operationId: listResourceVariables
-      description: Returns a list of variables for a specific resource identified by {resourceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: resourceId
-          in: path
-          required: true
-          description: ID of the resource.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of resource variables.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  variables:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/ResourceVariable"
-        "404":
-          description: Resource not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/systems/{systemId}:
-    get:
-      summary: Get a specific system
-      operationId: getSystem
-      description: Returns a specific system identified by {systemId} in workspace {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: systemId
-          in: path
-          required: true
-          description: ID of the system to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A system.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/System"
-        "404":
-          description: System not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/environments/{environmentId}:
-    get:
-      summary: Get a specific environment
-      operationId: getEnvironment
-      description: Returns a specific environment identified by {environmentId} in workspace {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: environmentId
-          in: path
-          required: true
-          description: ID of the environment to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: An environment.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Environment"
-        "404":
-          description: Environment not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/deployments/{deploymentId}:
-    get:
-      summary: Get a specific deployment
-      operationId: getDeployment
-      description: Returns a specific deployment identified by {deploymentId} in workspace {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: deploymentId
-          in: path
-          required: true
-          description: ID of the deployment to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A deployment.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Deployment"
-        "404":
-          description: Deployment not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions:
-    get:
-      summary: List versions for a specific deployment
-      operationId: listDeploymentVersions
-      description: Returns a list of versions for a specific deployment identified by {deploymentId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: deploymentId
-          in: path
-          required: true
-          description: ID of the deployment.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of deployment versions.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  versions:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/DeploymentVersion"
-        "404":
-          description: Deployment not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions/{versionId}:
-    get:
-      summary: Get a specific deployment version
-      operationId: getDeploymentVersion
-      description: Returns a specific version identified by {versionId} for deployment {deploymentId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: deploymentId
-          in: path
-          required: true
-          description: ID of the deployment.
-          schema:
-            type: string
-        - name: versionId
-          in: path
-          required: true
-          description: ID of the version to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A deployment version.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DeploymentVersion"
-        "404":
-          description: Deployment version not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables:
-    get:
-      summary: List variables for a specific deployment
-      operationId: listDeploymentVariables
-      description: Returns a list of variables for a specific deployment identified by {deploymentId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: deploymentId
-          in: path
-          required: true
-          description: ID of the deployment.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of deployment variables.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  variables:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/DeploymentVariable"
-        "404":
-          description: Deployment not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
   /v1/workspaces/{workspaceId}/environments/{environmentId}/resources:
     get:
       summary: Get resources for an environment
       operationId: getEnvironmentResources
       description: Returns a list of resources for environment {environmentId}.
       parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: environmentId
-          in: path
-          required: true
-          description: ID of the environment.
-          schema:
-            type: string
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/environmentId"
       responses:
         "200":
           description: A resource.
@@ -534,253 +50,148 @@ paths:
               schema:
                 $ref: "#/components/schemas/NotFoundError"
 
-  /v1/workspaces/{workspaceId}/jobs:
+  /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources:
     get:
-      summary: List jobs for a specified workspace
-      operationId: listJobs
-      description: Returns a list of jobs for a specified workspace identified by {workspaceId}.
+      summary: Get resources for a deployment
+      operationId: getDeploymentResources
+      description: Returns a list of resources for deployment {deploymentId}.
       parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the jobs for.
-          schema:
-            type: string
-        - name: releaseId
-          in: query
-          required: false
-          description: Optional filter by release ID.
-          schema:
-            type: string
-        - name: deploymentId
-          in: query
-          required: false
-          description: Optional filter by deployment ID.
-          schema:
-            type: string
-        - name: environmentId
-          in: query
-          required: false
-          description: Optional filter by environment ID.
-          schema:
-            type: string
-        - name: resourceId
-          in: query
-          required: false
-          description: Optional filter by resource ID.
-          schema:
-            type: string
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/deploymentId"
       responses:
         "200":
-          description: A list of jobs.
+          description: A resource.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  jobs:
+                  resources:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Job"
+                      $ref: "#/components/schemas/Resource"
         "404":
-          description: Workspace not found.
+          description: Resource not found.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NotFoundError"
 
-  /v1/workspaces/{workspaceId}/jobs/{jobId}:
-    get:
-      summary: Get a specific job
-      operationId: getJob
-      description: Returns a specific job identified by {jobId} in workspace {workspaceId}.
+  /v1/workspaces/{workspaceId}/release-targets/evaluate:
+    post:
+      summary: Evaluate policies for a release target
+      operationId: evaluateReleaseTarget
+      description: Evaluates all policies and rules that apply to a given release target and returns the evaluation results.
       parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          description: ID of the job to get.
-          schema:
-            type: string
+        - $ref: "#/components/parameters/workspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateReleaseTargetRequest"
       responses:
         "200":
-          description: A job.
+          description: Policy evaluation results for the release target.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Job"
-        "404":
-          description: Job not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/job-agents:
-    get:
-      summary: List job agents for a specified workspace
-      operationId: listJobAgents
-      description: Returns a list of job agents for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the job agents for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of job agents.
-          content:
-            application/json:
-              schema:
-                type: object
                 properties:
-                  jobAgents:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/JobAgent"
+                  workspaceDecision:
+                    $ref: "#/components/schemas/DeployDecision"
+                  versionDecision:
+                    $ref: "#/components/schemas/DeployDecision"
         "404":
-          description: Workspace not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/job-agents/{jobAgentId}:
-    get:
-      summary: Get a specific job agent
-      operationId: getJobAgent
-      description: Returns a specific job agent identified by {jobAgentId} in workspace {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: jobAgentId
-          in: path
-          required: true
-          description: ID of the job agent to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A job agent.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/JobAgent"
-        "404":
-          description: Job agent not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/release-targets/{policyId}:
-    get:
-      summary: Get a specific policy (release target)
-      operationId: getPolicy
-      description: Returns a specific policy identified by {policyId} in workspace {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: policyId
-          in: path
-          required: true
-          description: ID of the policy to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A policy.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Policy"
-        "404":
-          description: Policy not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/relationship-rules:
-    get:
-      summary: List relationship rules for a specified workspace
-      operationId: listRelationshipRules
-      description: Returns a list of relationship rules for a specified workspace identified by {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace to get the relationship rules for.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A list of relationship rules.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  relationshipRules:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/RelationshipRule"
-        "404":
-          description: Workspace not found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NotFoundError"
-
-  /v1/workspaces/{workspaceId}/relationship-rules/{ruleId}:
-    get:
-      summary: Get a specific relationship rule
-      operationId: getRelationshipRule
-      description: Returns a specific relationship rule identified by {ruleId} in workspace {workspaceId}.
-      parameters:
-        - name: workspaceId
-          in: path
-          required: true
-          description: ID of the workspace.
-          schema:
-            type: string
-        - name: ruleId
-          in: path
-          required: true
-          description: ID of the relationship rule to get.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A relationship rule.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RelationshipRule"
-        "404":
-          description: Relationship rule not found.
+          description: Workspace or target not found.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NotFoundError"
 
 components:
+  parameters:
+    workspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      description: ID of the workspace.
+      schema:
+        type: string
+    resourceId:
+      name: resourceId
+      in: path
+      required: true
+      description: ID of the resource.
+      schema:
+        type: string
+    deploymentId:
+      name: deploymentId
+      in: path
+      required: true
+      description: ID of the deployment.
+      schema:
+        type: string
+    environmentId:
+      name: environmentId
+      in: path
+      required: true
+      description: ID of the environment.
+      schema:
+        type: string
   schemas:
+    DeployDecision:
+      type: object
+      required:
+        - policyResults
+      properties:
+        policyResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyEvaluation"
+
+    PolicyEvaluation:
+      type: object
+      required:
+        - ruleResults
+      properties:
+        policy:
+          $ref: "#/components/schemas/Policy"
+          nullable: true
+        summary:
+          type: string
+        ruleResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuleEvaluation"
+
+    RuleEvaluation:
+      type: object
+      required:
+        - allowed
+        - actionRequired
+        - message
+        - details
+      properties:
+        allowed:
+          type: boolean
+          description: Whether the rule allows the deployment
+        actionRequired:
+          type: boolean
+          description: Whether the rule requires an action (e.g., approval, wait)
+        actionType:
+          type: string
+          enum:
+            - approval
+            - wait
+          description: Type of action required
+        message:
+          type: string
+          description: Human-readable explanation of the rule result
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional details about the rule evaluation
+
     NotFoundError:
       type: object
       properties:
@@ -1396,3 +807,14 @@ components:
             type: string
         workspaceId:
           type: string
+
+    EvaluateReleaseTargetRequest:
+      type: object
+      required:
+        - releaseTarget
+        - version
+      properties:
+        releaseTarget:
+          $ref: "#/components/schemas/ReleaseTarget"
+        version:
+          $ref: "#/components/schemas/DeploymentVersion"

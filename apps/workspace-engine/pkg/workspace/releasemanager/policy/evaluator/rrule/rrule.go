@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -37,7 +38,7 @@ func NewRRuleEvaluator(store *store.Store, rruleStr string, isAllowWindow bool) 
 
 func (e *RRuleEvaluator) Evaluate(
 	ctx context.Context,
-) (*results.RuleEvaluationResult, error) {
+) (*oapi.RuleEvaluation, error) {
 	_, span := tracer.Start(ctx, "RRuleEvaluator.Evaluate")
 	defer span.End()
 

@@ -31,7 +31,7 @@ func NewSkipDeployedEvaluator(store *store.Store) *SkipDeployedEvaluator {
 func (e *SkipDeployedEvaluator) Evaluate(
 	ctx context.Context,
 	release *oapi.Release,
-) (*results.RuleEvaluationResult, error) {
+) (*oapi.RuleEvaluation, error) {
 	releaseTarget := release.ReleaseTarget
 
 	// Get all jobs for this release target

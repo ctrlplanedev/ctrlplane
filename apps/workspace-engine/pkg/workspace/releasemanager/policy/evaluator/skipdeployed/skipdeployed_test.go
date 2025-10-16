@@ -56,11 +56,11 @@ func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed when no previous deployment, got denied: %s", result.Reason)
+		t.Errorf("expected allowed when no previous deployment, got denied: %s", result.Message)
 	}
 
-	if result.Reason != "No previous deployment found" {
-		t.Errorf("expected 'No previous deployment found', got '%s'", result.Reason)
+	if result.Message != "No previous deployment found" {
+		t.Errorf("expected 'No previous deployment found', got '%s'", result.Message)
 	}
 }
 
@@ -107,7 +107,7 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	}
 
 	if result.Allowed {
-		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Reason)
+		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Message)
 	}
 
 	if result.Details["job_status"] != string(oapi.Failure) {
@@ -162,7 +162,7 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 	}
 
 	if result.Allowed {
-		t.Errorf("expected denied when already deployed, got allowed: %s", result.Reason)
+		t.Errorf("expected denied when already deployed, got allowed: %s", result.Message)
 	}
 
 	if result.Details["existing_job_id"] != "job-1" {
@@ -233,7 +233,7 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed for new version, got denied: %s", result.Reason)
+		t.Errorf("expected allowed for new version, got denied: %s", result.Message)
 	}
 
 	if result.Details["previous_release_id"] != v1Release.ID() {
@@ -282,7 +282,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	}
 
 	if result.Allowed {
-		t.Errorf("expected denied when same release job in progress, got allowed: %s", result.Reason)
+		t.Errorf("expected denied when same release job in progress, got allowed: %s", result.Message)
 	}
 
 	if result.Details["job_status"] != string(oapi.InProgress) {
@@ -337,7 +337,7 @@ func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 	}
 
 	if result.Allowed {
-		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Reason)
+		t.Errorf("expected denied for retry of same release, got allowed: %s", result.Message)
 	}
 
 	if result.Details["job_status"] != string(oapi.Cancelled) {
@@ -419,7 +419,7 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed for different variables, got denied: %s", result.Reason)
+		t.Errorf("expected allowed for different variables, got denied: %s", result.Message)
 	}
 
 	// Verify release IDs are different

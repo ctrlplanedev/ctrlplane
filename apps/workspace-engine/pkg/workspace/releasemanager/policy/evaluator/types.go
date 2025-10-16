@@ -3,7 +3,6 @@ package evaluator
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 )
 
 // WorkspaceScopedEvaluator evaluates policy rules at the workspace level,
@@ -12,7 +11,7 @@ import (
 type WorkspaceScopedEvaluator interface {
 	Evaluate(
 		ctx context.Context,
-	) (*results.RuleEvaluationResult, error)
+	) (*oapi.RuleEvaluation, error)
 }
 
 // TargetScopedEvaluator evaluates policy rules that apply to release targets
@@ -22,7 +21,7 @@ type TargetScopedEvaluator interface {
 	Evaluate(
 		ctx context.Context,
 		releaseTarget *oapi.ReleaseTarget,
-	) (*results.RuleEvaluationResult, error)
+	) (*oapi.RuleEvaluation, error)
 }
 
 // ReleaseScopedEvaluator evaluates policy rules that apply to entire releases within
@@ -32,7 +31,7 @@ type ReleaseScopedEvaluator interface {
 	Evaluate(
 		ctx context.Context,
 		release *oapi.Release,
-	) (*results.RuleEvaluationResult, error)
+	) (*oapi.RuleEvaluation, error)
 }
 
 // VersionScopedEvaluator evaluates policy rules that apply to specific deployment versions
@@ -43,5 +42,5 @@ type VersionScopedEvaluator interface {
 		ctx context.Context,
 		releaseTarget *oapi.ReleaseTarget,
 		version *oapi.DeploymentVersion,
-	) (*results.RuleEvaluationResult, error)
+	) (*oapi.RuleEvaluation, error)
 }

@@ -12,34 +12,34 @@ import (
 func TestDeployDecision_GetPendingActions(t *testing.T) {
 	tests := []struct {
 		name     string
-		decision *DeployDecision
+		decision *oapi.DeployDecision
 		want     int
 	}{
 		{
 			name: "nil policy results",
-			decision: &DeployDecision{
+			decision: &oapi.DeployDecision{
 				PolicyResults: nil,
 			},
 			want: 0,
 		},
 		{
 			name: "empty policy results",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{},
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{},
 			},
 			want: 0,
 		},
 		{
 			name: "single policy with no pending actions",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewAllowedResult("rule passed"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewAllowedResult("rule passed"),
 						},
 					},
 				},
@@ -48,15 +48,15 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 		},
 		{
 			name: "single policy with one pending action",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "needs approval"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -65,16 +65,16 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 		},
 		{
 			name: "multiple policies with multiple pending actions",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy 1",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "needs approval"),
-							results.NewAllowedResult("rule passed"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewPendingResult("approval", "needs approval"),
+							*results.NewAllowedResult("rule passed"),
 						},
 					},
 					{
@@ -82,9 +82,9 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 							Id:   "policy-2",
 							Name: "Test Policy 2",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "waiting for slot"),
-							results.NewPendingResult("approval", "another approval"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewPendingResult("wait", "waiting for slot"),
+							*results.NewPendingResult("approval", "another approval"),
 						},
 					},
 				},
@@ -93,16 +93,16 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 		},
 		{
 			name: "policy with denied and pending results",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewDeniedResult("explicitly denied"),
-							results.NewPendingResult("approval", "needs approval"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewDeniedResult("explicitly denied"),
+							*results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -113,7 +113,7 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.decision.GetPendingActions()
+			got := tt.decision.PolicyResults[0].GetPendingActions()
 			assert.Equal(t, tt.want, len(got))
 		})
 	}
@@ -122,20 +122,20 @@ func TestDeployDecision_GetPendingActions(t *testing.T) {
 func TestDeployDecision_CanDeploy(t *testing.T) {
 	tests := []struct {
 		name     string
-		decision *DeployDecision
+		decision *oapi.DeployDecision
 		want     bool
 	}{
 		{
 			name: "no pending actions - can deploy",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewAllowedResult("all good"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewAllowedResult("all good"),
 						},
 					},
 				},
@@ -144,15 +144,15 @@ func TestDeployDecision_CanDeploy(t *testing.T) {
 		},
 		{
 			name: "has pending approval - cannot deploy",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "needs approval"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -161,15 +161,15 @@ func TestDeployDecision_CanDeploy(t *testing.T) {
 		},
 		{
 			name: "has pending wait - cannot deploy",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("wait", "waiting for slot"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewPendingResult("wait", "waiting for slot"),
 						},
 					},
 				},
@@ -178,29 +178,29 @@ func TestDeployDecision_CanDeploy(t *testing.T) {
 		},
 		{
 			name: "nil policy results - can deploy",
-			decision: &DeployDecision{
+			decision: &oapi.DeployDecision{
 				PolicyResults: nil,
 			},
 			want: true,
 		},
 		{
 			name: "empty policy results - can deploy",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{},
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{},
 			},
 			want: true,
 		},
 		{
 			name: "has denial - cannot deploy",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewDeniedResult("explicitly denied"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewDeniedResult("explicitly denied"),
 						},
 					},
 				},
@@ -220,20 +220,20 @@ func TestDeployDecision_CanDeploy(t *testing.T) {
 func TestDeployDecision_IsPending(t *testing.T) {
 	tests := []struct {
 		name     string
-		decision *DeployDecision
+		decision *oapi.DeployDecision
 		want     bool
 	}{
 		{
 			name: "has pending actions and not blocked - is pending",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "needs approval"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewPendingResult("approval", "needs approval"),
 						},
 					},
 				},
@@ -242,16 +242,16 @@ func TestDeployDecision_IsPending(t *testing.T) {
 		},
 		{
 			name: "has pending actions but also blocked - not pending",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewPendingResult("approval", "needs approval"),
-							results.NewDeniedResult("explicitly denied"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewPendingResult("approval", "needs approval"),
+							*results.NewDeniedResult("explicitly denied"),
 						},
 					},
 				},
@@ -260,15 +260,15 @@ func TestDeployDecision_IsPending(t *testing.T) {
 		},
 		{
 			name: "no pending actions - not pending",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewAllowedResult("all good"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewAllowedResult("all good"),
 						},
 					},
 				},
@@ -277,15 +277,15 @@ func TestDeployDecision_IsPending(t *testing.T) {
 		},
 		{
 			name: "blocked but no pending actions - not pending",
-			decision: &DeployDecision{
-				PolicyResults: []*results.PolicyEvaluationResult{
+			decision: &oapi.DeployDecision{
+				PolicyResults: []oapi.PolicyEvaluation{
 					{
 						Policy: &oapi.Policy{
 							Id:   "policy-1",
 							Name: "Test Policy",
 						},
-						RuleResults: []*results.RuleEvaluationResult{
-							results.NewDeniedResult("explicitly denied"),
+						RuleResults: []oapi.RuleEvaluation{
+							*results.NewDeniedResult("explicitly denied"),
 						},
 					},
 				},
@@ -294,7 +294,7 @@ func TestDeployDecision_IsPending(t *testing.T) {
 		},
 		{
 			name: "nil policy results - not pending",
-			decision: &DeployDecision{
+			decision: &oapi.DeployDecision{
 				PolicyResults: nil,
 			},
 			want: false,

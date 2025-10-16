@@ -58,6 +58,12 @@ const (
 	StartsWith PropertyMatcherOperator = "startsWith"
 )
 
+// Defines values for RuleEvaluationActionType.
+const (
+	Approval RuleEvaluationActionType = "approval"
+	Wait     RuleEvaluationActionType = "wait"
+)
+
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -77,6 +83,11 @@ type CelMatcher struct {
 // CelSelector defines model for CelSelector.
 type CelSelector struct {
 	Cel string `json:"cel"`
+}
+
+// DeployDecision defines model for DeployDecision.
+type DeployDecision struct {
+	PolicyResults []PolicyEvaluation `json:"policyResults"`
 }
 
 // Deployment defines model for Deployment.
@@ -133,6 +144,12 @@ type Environment struct {
 	Name             string    `json:"name"`
 	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
 	SystemId         string    `json:"systemId"`
+}
+
+// EvaluateReleaseTargetRequest defines model for EvaluateReleaseTargetRequest.
+type EvaluateReleaseTargetRequest struct {
+	ReleaseTarget ReleaseTarget     `json:"releaseTarget"`
+	Version       DeploymentVersion `json:"version"`
 }
 
 // GithubEntity defines model for GithubEntity.
@@ -205,6 +222,13 @@ type Policy struct {
 	Rules       []PolicyRule           `json:"rules"`
 	Selectors   []PolicyTargetSelector `json:"selectors"`
 	WorkspaceId string                 `json:"workspaceId"`
+}
+
+// PolicyEvaluation defines model for PolicyEvaluation.
+type PolicyEvaluation struct {
+	Policy      *Policy          `json:"policy,omitempty"`
+	RuleResults []RuleEvaluation `json:"ruleResults"`
+	Summary     *string          `json:"summary,omitempty"`
 }
 
 // PolicyRule defines model for PolicyRule.
@@ -314,6 +338,27 @@ type ResourceVariable struct {
 	Value      Value  `json:"value"`
 }
 
+// RuleEvaluation defines model for RuleEvaluation.
+type RuleEvaluation struct {
+	// ActionRequired Whether the rule requires an action (e.g., approval, wait)
+	ActionRequired bool `json:"actionRequired"`
+
+	// ActionType Type of action required
+	ActionType *RuleEvaluationActionType `json:"actionType,omitempty"`
+
+	// Allowed Whether the rule allows the deployment
+	Allowed bool `json:"allowed"`
+
+	// Details Additional details about the rule evaluation
+	Details map[string]interface{} `json:"details"`
+
+	// Message Human-readable explanation of the rule result
+	Message string `json:"message"`
+}
+
+// RuleEvaluationActionType Type of action required
+type RuleEvaluationActionType string
+
 // Selector defines model for Selector.
 type Selector struct {
 	union json.RawMessage
@@ -350,20 +395,20 @@ type Value struct {
 	union json.RawMessage
 }
 
-// ListJobsParams defines parameters for ListJobs.
-type ListJobsParams struct {
-	// ReleaseId Optional filter by release ID.
-	ReleaseId *string `form:"releaseId,omitempty" json:"releaseId,omitempty"`
+// DeploymentId defines model for deploymentId.
+type DeploymentId = string
 
-	// DeploymentId Optional filter by deployment ID.
-	DeploymentId *string `form:"deploymentId,omitempty" json:"deploymentId,omitempty"`
+// EnvironmentId defines model for environmentId.
+type EnvironmentId = string
 
-	// EnvironmentId Optional filter by environment ID.
-	EnvironmentId *string `form:"environmentId,omitempty" json:"environmentId,omitempty"`
+// ResourceId defines model for resourceId.
+type ResourceId = string
 
-	// ResourceId Optional filter by resource ID.
-	ResourceId *string `form:"resourceId,omitempty" json:"resourceId,omitempty"`
-}
+// WorkspaceId defines model for workspaceId.
+type WorkspaceId = string
+
+// EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
+type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
 
 // AsBooleanValue returns the union data inside the LiteralValue as a BooleanValue
 func (t LiteralValue) AsBooleanValue() (BooleanValue, error) {
@@ -748,75 +793,15 @@ type ServerInterface interface {
 	// List workspace IDs
 	// (GET /v1/workspaces)
 	ListWorkspaceIds(c *gin.Context)
-	// List deployments for a specified workspace ({workspaceId})
-	// (GET /v1/workspaces/{workspaceId}/deployments)
-	ListDeployments(c *gin.Context, workspaceId string)
-	// Get a specific deployment
-	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId})
-	GetDeployment(c *gin.Context, workspaceId string, deploymentId string)
-	// List variables for a specific deployment
-	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables)
-	ListDeploymentVariables(c *gin.Context, workspaceId string, deploymentId string)
-	// List versions for a specific deployment
-	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions)
-	ListDeploymentVersions(c *gin.Context, workspaceId string, deploymentId string)
-	// Get a specific deployment version
-	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions/{versionId})
-	GetDeploymentVersion(c *gin.Context, workspaceId string, deploymentId string, versionId string)
-	// List environments for a specified workspace ({workspaceId})
-	// (GET /v1/workspaces/{workspaceId}/environments)
-	ListEnvironments(c *gin.Context, workspaceId string)
-	// Get a specific environment
-	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId})
-	GetEnvironment(c *gin.Context, workspaceId string, environmentId string)
+	// Get resources for a deployment
+	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
+	GetDeploymentResources(c *gin.Context, workspaceId WorkspaceId, deploymentId DeploymentId)
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
-	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string)
-	// List job agents for a specified workspace
-	// (GET /v1/workspaces/{workspaceId}/job-agents)
-	ListJobAgents(c *gin.Context, workspaceId string)
-	// Get a specific job agent
-	// (GET /v1/workspaces/{workspaceId}/job-agents/{jobAgentId})
-	GetJobAgent(c *gin.Context, workspaceId string, jobAgentId string)
-	// List jobs for a specified workspace
-	// (GET /v1/workspaces/{workspaceId}/jobs)
-	ListJobs(c *gin.Context, workspaceId string, params ListJobsParams)
-	// Get a specific job
-	// (GET /v1/workspaces/{workspaceId}/jobs/{jobId})
-	GetJob(c *gin.Context, workspaceId string, jobId string)
-	// List relationship rules for a specified workspace
-	// (GET /v1/workspaces/{workspaceId}/relationship-rules)
-	ListRelationshipRules(c *gin.Context, workspaceId string)
-	// Get a specific relationship rule
-	// (GET /v1/workspaces/{workspaceId}/relationship-rules/{ruleId})
-	GetRelationshipRule(c *gin.Context, workspaceId string, ruleId string)
-	// List release targets for a specified workspace ({workspaceId})
-	// (GET /v1/workspaces/{workspaceId}/release-targets)
-	ListPolicies(c *gin.Context, workspaceId string)
-	// Get a specific policy (release target)
-	// (GET /v1/workspaces/{workspaceId}/release-targets/{policyId})
-	GetPolicy(c *gin.Context, workspaceId string, policyId string)
-	// List releases for a specified workspace ({workspaceId})
-	// (GET /v1/workspaces/{workspaceId}/releases)
-	ListReleases(c *gin.Context, workspaceId string)
-	// Get a release for a specified workspace ({workspaceId}) and release ({releaseId})
-	// (GET /v1/workspaces/{workspaceId}/releases/{releaseId})
-	GetRelease(c *gin.Context, workspaceId string, releaseId string)
-	// List resources for a specified workspace ({workspaceId})
-	// (GET /v1/workspaces/{workspaceId}/resources)
-	ListResources(c *gin.Context, workspaceId string)
-	// Get a specific resource
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceId})
-	GetResource(c *gin.Context, workspaceId string, resourceId string)
-	// List variables for a specific resource
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceId}/variables)
-	ListResourceVariables(c *gin.Context, workspaceId string, resourceId string)
-	// List systems for a specified workspace ({workspaceId})
-	// (GET /v1/workspaces/{workspaceId}/systems)
-	ListSystems(c *gin.Context, workspaceId string)
-	// Get a specific system
-	// (GET /v1/workspaces/{workspaceId}/systems/{systemId})
-	GetSystem(c *gin.Context, workspaceId string, systemId string)
+	GetEnvironmentResources(c *gin.Context, workspaceId WorkspaceId, environmentId EnvironmentId)
+	// Evaluate policies for a release target
+	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
+	EvaluateReleaseTarget(c *gin.Context, workspaceId WorkspaceId)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -841,37 +826,13 @@ func (siw *ServerInterfaceWrapper) ListWorkspaceIds(c *gin.Context) {
 	siw.Handler.ListWorkspaceIds(c)
 }
 
-// ListDeployments operation middleware
-func (siw *ServerInterfaceWrapper) ListDeployments(c *gin.Context) {
+// GetDeploymentResources operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentResources(c *gin.Context) {
 
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListDeployments(c, workspaceId)
-}
-
-// GetDeployment operation middleware
-func (siw *ServerInterfaceWrapper) GetDeployment(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
+	var workspaceId WorkspaceId
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -880,7 +841,7 @@ func (siw *ServerInterfaceWrapper) GetDeployment(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "deploymentId" -------------
-	var deploymentId string
+	var deploymentId DeploymentId
 
 	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -895,172 +856,7 @@ func (siw *ServerInterfaceWrapper) GetDeployment(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetDeployment(c, workspaceId, deploymentId)
-}
-
-// ListDeploymentVariables operation middleware
-func (siw *ServerInterfaceWrapper) ListDeploymentVariables(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "deploymentId" -------------
-	var deploymentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListDeploymentVariables(c, workspaceId, deploymentId)
-}
-
-// ListDeploymentVersions operation middleware
-func (siw *ServerInterfaceWrapper) ListDeploymentVersions(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "deploymentId" -------------
-	var deploymentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListDeploymentVersions(c, workspaceId, deploymentId)
-}
-
-// GetDeploymentVersion operation middleware
-func (siw *ServerInterfaceWrapper) GetDeploymentVersion(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "deploymentId" -------------
-	var deploymentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "versionId" -------------
-	var versionId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "versionId", c.Param("versionId"), &versionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter versionId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetDeploymentVersion(c, workspaceId, deploymentId, versionId)
-}
-
-// ListEnvironments operation middleware
-func (siw *ServerInterfaceWrapper) ListEnvironments(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListEnvironments(c, workspaceId)
-}
-
-// GetEnvironment operation middleware
-func (siw *ServerInterfaceWrapper) GetEnvironment(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "environmentId" -------------
-	var environmentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "environmentId", c.Param("environmentId"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environmentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetEnvironment(c, workspaceId, environmentId)
+	siw.Handler.GetDeploymentResources(c, workspaceId, deploymentId)
 }
 
 // GetEnvironmentResources operation middleware
@@ -1069,7 +865,7 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
+	var workspaceId WorkspaceId
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1078,7 +874,7 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "environmentId" -------------
-	var environmentId string
+	var environmentId EnvironmentId
 
 	err = runtime.BindStyledParameterWithOptions("simple", "environmentId", c.Param("environmentId"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1096,13 +892,13 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId)
 }
 
-// ListJobAgents operation middleware
-func (siw *ServerInterfaceWrapper) ListJobAgents(c *gin.Context) {
+// EvaluateReleaseTarget operation middleware
+func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
+	var workspaceId WorkspaceId
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1117,450 +913,7 @@ func (siw *ServerInterfaceWrapper) ListJobAgents(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.ListJobAgents(c, workspaceId)
-}
-
-// GetJobAgent operation middleware
-func (siw *ServerInterfaceWrapper) GetJobAgent(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "jobAgentId" -------------
-	var jobAgentId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "jobAgentId", c.Param("jobAgentId"), &jobAgentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobAgentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetJobAgent(c, workspaceId, jobAgentId)
-}
-
-// ListJobs operation middleware
-func (siw *ServerInterfaceWrapper) ListJobs(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListJobsParams
-
-	// ------------- Optional query parameter "releaseId" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "releaseId", c.Request.URL.Query(), &params.ReleaseId)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "deploymentId" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "deploymentId", c.Request.URL.Query(), &params.DeploymentId)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "environmentId" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "environmentId", c.Request.URL.Query(), &params.EnvironmentId)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environmentId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "resourceId" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "resourceId", c.Request.URL.Query(), &params.ResourceId)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListJobs(c, workspaceId, params)
-}
-
-// GetJob operation middleware
-func (siw *ServerInterfaceWrapper) GetJob(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "jobId" -------------
-	var jobId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "jobId", c.Param("jobId"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetJob(c, workspaceId, jobId)
-}
-
-// ListRelationshipRules operation middleware
-func (siw *ServerInterfaceWrapper) ListRelationshipRules(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListRelationshipRules(c, workspaceId)
-}
-
-// GetRelationshipRule operation middleware
-func (siw *ServerInterfaceWrapper) GetRelationshipRule(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "ruleId" -------------
-	var ruleId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "ruleId", c.Param("ruleId"), &ruleId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter ruleId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetRelationshipRule(c, workspaceId, ruleId)
-}
-
-// ListPolicies operation middleware
-func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListPolicies(c, workspaceId)
-}
-
-// GetPolicy operation middleware
-func (siw *ServerInterfaceWrapper) GetPolicy(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "policyId" -------------
-	var policyId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "policyId", c.Param("policyId"), &policyId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter policyId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetPolicy(c, workspaceId, policyId)
-}
-
-// ListReleases operation middleware
-func (siw *ServerInterfaceWrapper) ListReleases(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListReleases(c, workspaceId)
-}
-
-// GetRelease operation middleware
-func (siw *ServerInterfaceWrapper) GetRelease(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "releaseId" -------------
-	var releaseId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "releaseId", c.Param("releaseId"), &releaseId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetRelease(c, workspaceId, releaseId)
-}
-
-// ListResources operation middleware
-func (siw *ServerInterfaceWrapper) ListResources(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListResources(c, workspaceId)
-}
-
-// GetResource operation middleware
-func (siw *ServerInterfaceWrapper) GetResource(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceId" -------------
-	var resourceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceId", c.Param("resourceId"), &resourceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetResource(c, workspaceId, resourceId)
-}
-
-// ListResourceVariables operation middleware
-func (siw *ServerInterfaceWrapper) ListResourceVariables(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "resourceId" -------------
-	var resourceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "resourceId", c.Param("resourceId"), &resourceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListResourceVariables(c, workspaceId, resourceId)
-}
-
-// ListSystems operation middleware
-func (siw *ServerInterfaceWrapper) ListSystems(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListSystems(c, workspaceId)
-}
-
-// GetSystem operation middleware
-func (siw *ServerInterfaceWrapper) GetSystem(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "systemId" -------------
-	var systemId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "systemId", c.Param("systemId"), &systemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter systemId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetSystem(c, workspaceId, systemId)
+	siw.Handler.EvaluateReleaseTarget(c, workspaceId)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -1591,27 +944,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments", wrapper.ListDeployments)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/variables", wrapper.ListDeploymentVariables)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/versions", wrapper.ListDeploymentVersions)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/versions/:versionId", wrapper.GetDeploymentVersion)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments", wrapper.ListEnvironments)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents", wrapper.ListJobAgents)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents/:jobAgentId", wrapper.GetJobAgent)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs", wrapper.ListJobs)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs/:jobId", wrapper.GetJob)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.ListRelationshipRules)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:ruleId", wrapper.GetRelationshipRule)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets", wrapper.ListPolicies)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:policyId", wrapper.GetPolicy)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/releases", wrapper.ListReleases)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/releases/:releaseId", wrapper.GetRelease)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources", wrapper.ListResources)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceId", wrapper.GetResource)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceId/variables", wrapper.ListResourceVariables)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 }
