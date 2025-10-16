@@ -19,8 +19,7 @@ func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, err
 		return nil, fmt.Errorf("workspace %s not found in database", workspaceId)
 	}
 
-	wsExists := workspace.Exists(workspaceId)
-	if wsExists {
+	if workspace.Exists(workspaceId) {
 		return workspace.GetWorkspace(workspaceId), nil
 	}
 
