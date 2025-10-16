@@ -11,10 +11,6 @@ import (
 
 type Environments struct{}
 
-func New() *Environments {
-	return &Environments{}
-}
-
 func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string) {
 	ws := utils.GetWorkspace(c, workspaceId)
 	if ws == nil {

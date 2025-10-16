@@ -401,6 +401,12 @@ type DeploymentId = string
 // EnvironmentId defines model for environmentId.
 type EnvironmentId = string
 
+// PolicyId defines model for policyId.
+type PolicyId = string
+
+// ReleaseTargetId defines model for releaseTargetId.
+type ReleaseTargetId = string
+
 // ResourceId defines model for resourceId.
 type ResourceId = string
 
@@ -799,9 +805,15 @@ type ServerInterface interface {
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
 	GetEnvironmentResources(c *gin.Context, workspaceId WorkspaceId, environmentId EnvironmentId)
+	// Get release targets for a policy
+	// (GET /v1/workspaces/{workspaceId}/policies/{policyId}/release-targets)
+	GetReleaseTargetsForPolicy(c *gin.Context, workspaceId WorkspaceId, policyId PolicyId)
 	// Evaluate policies for a release target
 	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
 	EvaluateReleaseTarget(c *gin.Context, workspaceId WorkspaceId)
+	// Get policies for a release target
+	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies)
+	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId WorkspaceId, releaseTargetId ReleaseTargetId)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -892,6 +904,39 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId)
 }
 
+// GetReleaseTargetsForPolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetsForPolicy(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId WorkspaceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "policyId" -------------
+	var policyId PolicyId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "policyId", c.Param("policyId"), &policyId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter policyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReleaseTargetsForPolicy(c, workspaceId, policyId)
+}
+
 // EvaluateReleaseTarget operation middleware
 func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 
@@ -914,6 +959,39 @@ func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 	}
 
 	siw.Handler.EvaluateReleaseTarget(c, workspaceId)
+}
+
+// GetPoliciesForReleaseTarget operation middleware
+func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId WorkspaceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseTargetId" -------------
+	var releaseTargetId ReleaseTargetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetId", c.Param("releaseTargetId"), &releaseTargetId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetId)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -946,5 +1024,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetId/policies", wrapper.GetPoliciesForReleaseTarget)
 }

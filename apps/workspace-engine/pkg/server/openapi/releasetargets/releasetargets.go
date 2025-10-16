@@ -5,17 +5,11 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ReleaseTargets struct {
-	store *store.Store
-}
-
-func New(store *store.Store) *ReleaseTargets {
-	return &ReleaseTargets{store: store}
 }
 
 // EvaluateReleaseTarget implements oapi.ServerInterface.
@@ -70,5 +64,36 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId oapi.
 		"policiesEvaulated": len(policies),
 		"workspaceDecision": workspaceDecision,
 		"versionDecision":   versionDecision,
+	})
+}
+
+// GetPoliciesForReleaseTarget implements oapi.ServerInterface.
+func (s *ReleaseTargets) GetPoliciesForReleaseTarget(c *gin.Context, workspaceId oapi.WorkspaceId, releaseTargetId oapi.ReleaseTargetId) {
+	ws := utils.GetWorkspace(c, workspaceId)
+	if ws == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Workspace not found",
+		})
+		return
+	}
+
+	releaseTarget := ws.ReleaseTargets().FromId(string(releaseTargetId))
+	if releaseTarget == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Release target not found",
+		})
+		return
+	}
+
+	policies, err := ws.ReleaseTargets().GetPolicies(c.Request.Context(), releaseTarget)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get policies for release target: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"policies": policies,
 	})
 }

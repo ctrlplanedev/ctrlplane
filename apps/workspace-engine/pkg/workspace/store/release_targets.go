@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/materialized"
@@ -26,6 +27,19 @@ type ReleaseTargets struct {
 	store *Store
 
 	targets *materialized.MaterializedView[map[string]*oapi.ReleaseTarget]
+}
+
+func (r *ReleaseTargets) FromId(id string) *oapi.ReleaseTarget {
+	target := &oapi.ReleaseTarget{}
+	t := strings.Split(id, "-")
+	if len(t) != 3 {
+		return nil
+	}
+	target.ResourceId = t[0]
+	target.EnvironmentId = t[1]
+	target.DeploymentId = t[2]
+
+	return target
 }
 
 // CurrentState returns the current state of all release targets in the system.

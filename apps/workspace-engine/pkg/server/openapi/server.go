@@ -4,6 +4,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/deployments"
 	"workspace-engine/pkg/server/openapi/environments"
+	"workspace-engine/pkg/server/openapi/policies"
 	"workspace-engine/pkg/server/openapi/releasetargets"
 )
 
@@ -17,4 +18,5 @@ type Server struct {
 	deployments.Deployments
 	environments.Environments
 	releasetargets.ReleaseTargets
+	policies.Policies
 }

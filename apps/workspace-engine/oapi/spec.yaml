@@ -108,8 +108,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/NotFoundError"
 
+  /v1/workspaces/{workspaceId}/policies/{policyId}/release-targets:
+    get:
+      summary: Get release targets for a policy
+      operationId: getReleaseTargetsForPolicy
+      description: Returns a list of release targets for a policy {policyId}.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/policyId"
+      responses:
+        "200":
+          description: A list of release targets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  releaseTargets:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReleaseTarget"
+        "404":
+          description: Policy not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
+  /v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies:
+    get:
+      summary: Get policies for a release target
+      operationId: getPoliciesForReleaseTarget
+      description: Returns a list of policies for a release target {releaseTargetId}.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/releaseTargetId"
+      responses:
+        "200":
+          description: A list of policies.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  policies:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Policy"
+        "404":
+          description: Release target not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
 components:
   parameters:
+    policyId:
+      name: policyId
+      in: path
+      required: true
+      description: ID of the policy.
+      schema:
+        type: string
     workspaceId:
       name: workspaceId
       in: path
@@ -136,6 +197,13 @@ components:
       in: path
       required: true
       description: ID of the environment.
+      schema:
+        type: string
+    releaseTargetId:
+      name: releaseTargetId
+      in: path
+      required: true
+      description: ID of the release target.
       schema:
         type: string
   schemas:

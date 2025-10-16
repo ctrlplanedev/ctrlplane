@@ -10,10 +10,6 @@ import (
 
 type Deployments struct{}
 
-func New() *Deployments {
-	return &Deployments{}
-}
-
 func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string) {
 	ws := utils.GetWorkspace(c, workspaceId)
 	if ws == nil {
