@@ -10,7 +10,7 @@ import (
 
 type Deployments struct{}
 
-func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string) {
+func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId oapi.WorkspaceId, deploymentId oapi.DeploymentId) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
