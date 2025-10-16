@@ -5,9 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store"
+
+	"github.com/stretchr/testify/require"
 )
 
 // mockGithubClient stores dispatched workflows for validation
@@ -36,19 +37,19 @@ func (m *mockGithubClient) DispatchWorkflow(ctx context.Context, owner, repo str
 
 func TestGithubDispatcher_DispatchJob_Success(t *testing.T) {
 	// Setup mock repository with GitHub entity
-	mockRepo := &repository.Repository{
-		GithubEntities: cmap.New[*oapi.GithubEntity](),
-	}
-	mockRepo.GithubEntities.Set("test-entity", &oapi.GithubEntity{
+	mockStore := store.New()
+	if err := mockStore.GithubEntities.Upsert(context.Background(), &oapi.GithubEntity{
 		InstallationId: 12345,
 		Slug:           "test-owner",
-	})
+	}); err != nil {
+		t.Fatalf("Failed to upsert GitHub entity: %v", err)
+	}
 
 	// Setup mock client
 	mockClient := &mockGithubClient{}
 
 	// Create dispatcher with mock client factory
-	dispatcher := NewGithubDispatcherWithClientFactory(mockRepo, func(installationID int) (GithubClient, error) {
+	dispatcher := NewGithubDispatcherWithClientFactory(mockStore, func(installationID int) (GithubClient, error) {
 		return mockClient, nil
 	})
 
@@ -93,17 +94,17 @@ func TestGithubDispatcher_DispatchJob_Success(t *testing.T) {
 }
 
 func TestGithubDispatcher_DispatchJob_WithCustomRef(t *testing.T) {
-	mockRepo := &repository.Repository{
-		GithubEntities: cmap.New[*oapi.GithubEntity](),
-	}
-	mockRepo.GithubEntities.Set("test-entity", &oapi.GithubEntity{
+	mockStore := store.New()
+	if err := mockStore.GithubEntities.Upsert(context.Background(), &oapi.GithubEntity{
 		InstallationId: 12345,
 		Slug:           "test-owner",
-	})
+	}); err != nil {
+		t.Fatalf("Failed to upsert GitHub entity: %v", err)
+	}
 
 	mockClient := &mockGithubClient{}
 
-	dispatcher := NewGithubDispatcherWithClientFactory(mockRepo, func(installationID int) (GithubClient, error) {
+	dispatcher := NewGithubDispatcherWithClientFactory(mockStore, func(installationID int) (GithubClient, error) {
 		return mockClient, nil
 	})
 
@@ -135,13 +136,11 @@ func TestGithubDispatcher_DispatchJob_WithCustomRef(t *testing.T) {
 }
 
 func TestGithubDispatcher_DispatchJob_EntityNotFound(t *testing.T) {
-	mockRepo := &repository.Repository{
-		GithubEntities: cmap.New[*oapi.GithubEntity](),
-	}
+	mockStore := store.New()
 
 	mockClient := &mockGithubClient{}
 
-	dispatcher := NewGithubDispatcherWithClientFactory(mockRepo, func(installationID int) (GithubClient, error) {
+	dispatcher := NewGithubDispatcherWithClientFactory(mockStore, func(installationID int) (GithubClient, error) {
 		return mockClient, nil
 	})
 
@@ -405,30 +404,31 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockRepo := &repository.Repository{
-				GithubEntities: cmap.New[*oapi.GithubEntity](),
+			mockStore := store.New()
+			if err := mockStore.GithubEntities.Upsert(context.Background(), &oapi.GithubEntity{
+				InstallationId: tt.entities[0].installationID,
+				Slug:           tt.entities[0].slug,
+			}); err != nil {
+				t.Fatalf("Failed to upsert GitHub entity: %v", err)
 			}
 
 			// Add test entities
-			for i, e := range tt.entities {
-				mockRepo.GithubEntities.Set(
-					string(rune(i)),
-					&oapi.GithubEntity{
-						InstallationId: e.installationID,
-						Slug:           e.slug,
-					},
-				)
+			for _, e := range tt.entities {
+				if err := mockStore.GithubEntities.Upsert(context.Background(), &oapi.GithubEntity{
+					InstallationId: e.installationID,
+					Slug:           e.slug,
+				}); err != nil {
+					t.Fatalf("Failed to upsert GitHub entity: %v", err)
+				}
 			}
 
-			dispatcher := NewGithubDispatcher(mockRepo)
-			result := dispatcher.getGithubEntity(tt.searchCfg)
-
-			if tt.expectFound && result == nil {
-				t.Error("Expected to find entity, got nil")
+			dispatcher := NewGithubDispatcher(mockStore)
+			result, exists := dispatcher.store.GithubEntities.Get(tt.searchCfg.Owner, tt.searchCfg.InstallationId)
+			if !exists {
+				t.Errorf("Expected to find entity, got nil")
 			}
-			if !tt.expectFound && result != nil {
-				t.Errorf("Expected nil, got entity: %+v", result)
-			}
+			require.Equal(t, tt.searchCfg.InstallationId, result.InstallationId)
+			require.Equal(t, tt.searchCfg.Owner, result.Slug)
 		})
 	}
 }

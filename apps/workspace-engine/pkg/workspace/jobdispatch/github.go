@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v66/github"
@@ -48,21 +48,21 @@ func (r *realGithubClient) DispatchWorkflow(ctx context.Context, owner, repo str
 }
 
 type GithubDispatcher struct {
-	repo          *repository.Repository
+	store         *store.Store
 	clientFactory func(installationID int) (GithubClient, error)
 }
 
-func NewGithubDispatcher(repo *repository.Repository) *GithubDispatcher {
+func NewGithubDispatcher(store *store.Store) *GithubDispatcher {
 	return &GithubDispatcher{
-		repo:          repo,
+		store:         store,
 		clientFactory: nil, // will use default
 	}
 }
 
 // NewGithubDispatcherWithClientFactory creates a dispatcher with a custom client factory (useful for testing)
-func NewGithubDispatcherWithClientFactory(repo *repository.Repository, clientFactory func(installationID int) (GithubClient, error)) *GithubDispatcher {
+func NewGithubDispatcherWithClientFactory(store *store.Store, clientFactory func(installationID int) (GithubClient, error)) *GithubDispatcher {
 	return &GithubDispatcher{
-		repo:          repo,
+		store:         store,
 		clientFactory: clientFactory,
 	}
 }
@@ -89,16 +89,6 @@ func (d *GithubDispatcher) parseConfig(job *oapi.Job) (githubJobConfig, error) {
 		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: workflowId")
 	}
 	return parsed, nil
-}
-
-func (d *GithubDispatcher) getGithubEntity(cfg githubJobConfig) *oapi.GithubEntity {
-	ghEntities := d.repo.GithubEntities.IterBuffered()
-	for ghEntity := range ghEntities {
-		if ghEntity.Val.InstallationId == cfg.InstallationId && ghEntity.Val.Slug == cfg.Owner {
-			return ghEntity.Val
-		}
-	}
-	return nil
 }
 
 func (d *GithubDispatcher) getEnv(key string) string {
@@ -177,8 +167,8 @@ func (d *GithubDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return err
 	}
 
-	ghEntity := d.getGithubEntity(cfg)
-	if ghEntity == nil {
+	ghEntity, exists := d.store.GithubEntities.Get(cfg.Owner, cfg.InstallationId)
+	if !exists {
 		return fmt.Errorf("github entity not found for job %s", job.Id)
 	}
 

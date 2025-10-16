@@ -31,6 +31,7 @@ func New() *Store {
 	store.Variables = NewVariables(store)
 	store.ResourceVariables = NewResourceVariables(store)
 	store.ResourceProviders = NewResourceProviders(store)
+	store.GithubEntities = NewGithubEntities(store)
 
 	return store
 }
@@ -54,6 +55,7 @@ type Store struct {
 	UserApprovalRecords *UserApprovalRecords
 	Relationships       *RelationshipRules
 	Variables           *Variables
+	GithubEntities      *GithubEntities
 }
 
 func (s *Store) Repo() *repository.Repository {
@@ -101,6 +103,7 @@ func (s *Store) GobDecode(data []byte) error {
 	s.UserApprovalRecords = NewUserApprovalRecords(s)
 	s.Relationships = NewRelationshipRules(s)
 	s.Variables = NewVariables(s)
+	s.GithubEntities = NewGithubEntities(s)
 
 	// Reinitialize materialized views for environments and deployments
 	s.Environments.ReinitializeMaterializedViews()
