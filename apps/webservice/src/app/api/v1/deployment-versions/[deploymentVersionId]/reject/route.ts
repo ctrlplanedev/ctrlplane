@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -56,11 +57,17 @@ export const POST = request()
       environmentId: environment.id,
     }));
 
-    const record = await ctx.db
+    const createdRecords = await ctx.db
       .insert(schema.policyRuleAnyApprovalRecord)
       .values(recordsToInsert)
       .onConflictDoNothing()
       .returning();
 
-    return NextResponse.json(record);
+    await Promise.all(
+      createdRecords.map((record) =>
+        eventDispatcher.dispatchUserApprovalRecordCreated(record),
+      ),
+    );
+
+    return NextResponse.json(createdRecords);
   });

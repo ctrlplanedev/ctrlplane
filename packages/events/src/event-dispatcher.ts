@@ -94,4 +94,14 @@ export interface EventDispatcher {
     releaseTarget: schema.ReleaseTarget,
     opts?: { skipDuplicateCheck?: boolean },
   ): Promise<void>;
+
+  dispatchUserApprovalRecordCreated(
+    userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void>;
+  dispatchUserApprovalRecordUpdated(
+    userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void>;
+  dispatchUserApprovalRecordDeleted(
+    userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void>;
 }

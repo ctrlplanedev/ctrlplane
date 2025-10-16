@@ -63,7 +63,7 @@ export const POST = request()
       environmentId: environment.id,
     }));
 
-    const record = await ctx.db
+    const createdRecords = await ctx.db
       .insert(schema.policyRuleAnyApprovalRecord)
       .values(recordsToInsert)
       .onConflictDoNothing()
@@ -82,5 +82,11 @@ export const POST = request()
       ),
     );
 
-    return NextResponse.json(record);
+    await Promise.all(
+      createdRecords.map((record) =>
+        eventDispatcher.dispatchUserApprovalRecordCreated(record),
+      ),
+    );
+
+    return NextResponse.json(createdRecords);
   });

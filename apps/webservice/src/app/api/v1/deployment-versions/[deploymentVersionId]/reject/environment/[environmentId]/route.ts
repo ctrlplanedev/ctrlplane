@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { and, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -106,6 +107,12 @@ export const POST = request()
         },
       })
       .returning();
+
+    await Promise.all(
+      record.map((record) =>
+        eventDispatcher.dispatchUserApprovalRecordCreated(record),
+      ),
+    );
 
     return NextResponse.json(record);
   });

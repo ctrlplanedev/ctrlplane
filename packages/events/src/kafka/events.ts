@@ -41,6 +41,10 @@ export enum Event {
   // JobDeleted = "job.deleted",
   EvaluateReleaseTarget = "evaluate-release-target",
 
+  UserApprovalRecordCreated = "user-approval-record.created",
+  UserApprovalRecordUpdated = "user-approval-record.updated",
+  UserApprovalRecordDeleted = "user-approval-record.deleted",
+
   // ReleaseCreated = "release.created",
   // ReleaseUpdated = "release.updated",
   // ReleaseDeleted = "release.deleted",
@@ -123,6 +127,9 @@ export type EventPayload = {
     releaseTarget: FullReleaseTarget;
     opts?: { skipDuplicateCheck?: boolean };
   };
+  [Event.UserApprovalRecordCreated]: schema.PolicyRuleAnyApprovalRecord;
+  [Event.UserApprovalRecordUpdated]: schema.PolicyRuleAnyApprovalRecord;
+  [Event.UserApprovalRecordDeleted]: schema.PolicyRuleAnyApprovalRecord;
   // [Event.JobCreated]: schema.Job;
   // [Event.JobDeleted]: schema.Job;
   // [Event.SystemCreated]: schema.System;
@@ -153,6 +160,9 @@ export type GoEventPayload = {
   [Event.PolicyUpdated]: WorkspaceEngine["schemas"]["Policy"];
   [Event.PolicyDeleted]: WorkspaceEngine["schemas"]["Policy"];
   [Event.JobUpdated]: WorkspaceEngine["schemas"]["Job"];
+  [Event.UserApprovalRecordCreated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
+  [Event.UserApprovalRecordUpdated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
+  [Event.UserApprovalRecordDeleted]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
 };
 
 export type Message<T extends keyof EventPayload> = {

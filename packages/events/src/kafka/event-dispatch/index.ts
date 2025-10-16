@@ -9,6 +9,7 @@ import * as jobDispatch from "./job.js";
 import * as policyDispatch from "./policy.js";
 import * as releaseTargetDispatch from "./release-target.js";
 import * as resourceDispatch from "./resource.js";
+import * as userApprovalRecordDispatch from "./user-approval-record.js";
 
 export class KafkaEventDispatcher implements EventDispatcher {
   async dispatchResourceCreated(resource: schema.Resource): Promise<void> {
@@ -190,6 +191,30 @@ export class KafkaEventDispatcher implements EventDispatcher {
     await releaseTargetDispatch.dispatchEvaluateReleaseTarget(
       releaseTarget,
       opts,
+    );
+  }
+
+  async dispatchUserApprovalRecordCreated(
+    userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void> {
+    await userApprovalRecordDispatch.dispatchUserApprovalRecordCreated(
+      userApprovalRecord,
+    );
+  }
+
+  async dispatchUserApprovalRecordUpdated(
+    userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void> {
+    await userApprovalRecordDispatch.dispatchUserApprovalRecordUpdated(
+      userApprovalRecord,
+    );
+  }
+
+  async dispatchUserApprovalRecordDeleted(
+    userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void> {
+    await userApprovalRecordDispatch.dispatchUserApprovalRecordDeleted(
+      userApprovalRecord,
     );
   }
 }

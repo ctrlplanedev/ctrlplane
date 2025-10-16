@@ -358,4 +358,22 @@ export class BullMQEventDispatcher implements EventDispatcher {
       skipDuplicateCheck: opts?.skipDuplicateCheck,
     });
   }
+
+  async dispatchUserApprovalRecordCreated(
+    _: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async dispatchUserApprovalRecordUpdated(
+    _: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async dispatchUserApprovalRecordDeleted(
+    _: schema.PolicyRuleAnyApprovalRecord,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
 }

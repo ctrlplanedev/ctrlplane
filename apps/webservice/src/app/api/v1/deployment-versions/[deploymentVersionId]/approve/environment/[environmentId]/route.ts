@@ -87,7 +87,7 @@ export const POST = request()
     const approvedAt =
       body.approvedAt != null ? new Date(body.approvedAt) : new Date();
 
-    const record = await db
+    const createdRecords = await db
       .insert(schema.policyRuleAnyApprovalRecord)
       .values({
         deploymentVersionId,
@@ -113,5 +113,11 @@ export const POST = request()
       ),
     );
 
-    return NextResponse.json(record);
+    await Promise.all(
+      createdRecords.map((record) =>
+        eventDispatcher.dispatchUserApprovalRecordCreated(record),
+      ),
+    );
+
+    return NextResponse.json(createdRecords);
   });
