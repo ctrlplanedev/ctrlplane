@@ -52,6 +52,12 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 		if err != nil {
 			return nil, err
 		}
+
+		// Wrap selector from unwrapped database format to JsonSelector format
+		if err := wrapSelectorFromDB(deployment.ResourceSelector); err != nil {
+			return nil, err
+		}
+
 		deployments = append(deployments, &deployment)
 	}
 	if err := rows.Err(); err != nil {
@@ -74,6 +80,12 @@ const DEPLOYMENT_UPSERT_QUERY = `
 `
 
 func writeDeployment(ctx context.Context, deployment *oapi.Deployment, tx pgx.Tx) error {
+	// Unwrap selector for database storage (database stores unwrapped ResourceCondition format)
+	selectorToStore, err := unwrapSelectorForDB(deployment.ResourceSelector)
+	if err != nil {
+		return err
+	}
+
 	if _, err := tx.Exec(
 		ctx,
 		DEPLOYMENT_UPSERT_QUERY,
@@ -84,7 +96,7 @@ func writeDeployment(ctx context.Context, deployment *oapi.Deployment, tx pgx.Tx
 		deployment.SystemId,
 		deployment.JobAgentId,
 		deployment.JobAgentConfig,
-		deployment.ResourceSelector,
+		selectorToStore,
 	); err != nil {
 		return err
 	}

@@ -108,6 +108,19 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	policy.Description = description
 	policy.CreatedAt = createdAt.Format(time.RFC3339)
 
+	// Wrap selectors from unwrapped database format
+	for i := range policy.Selectors {
+		if err := wrapSelectorFromDB(policy.Selectors[i].DeploymentSelector); err != nil {
+			return nil, fmt.Errorf("failed to wrap deployment selector: %w", err)
+		}
+		if err := wrapSelectorFromDB(policy.Selectors[i].EnvironmentSelector); err != nil {
+			return nil, fmt.Errorf("failed to wrap environment selector: %w", err)
+		}
+		if err := wrapSelectorFromDB(policy.Selectors[i].ResourceSelector); err != nil {
+			return nil, fmt.Errorf("failed to wrap resource selector: %w", err)
+		}
+	}
+
 	if anyApprovalRuleRaw != nil {
 		policy.Rules = append(policy.Rules, oapi.PolicyRule{
 			Id:        anyApprovalRuleRaw.ID,
@@ -183,8 +196,22 @@ func writeManySelectors(ctx context.Context, policyId string, selectors []oapi.P
 	valueArgs := make([]interface{}, 0, len(selectors)*5)
 	i := 1
 	for _, selector := range selectors {
+		// Unwrap selectors for database storage
+		deploymentSelector, err := unwrapSelectorForDB(selector.DeploymentSelector)
+		if err != nil {
+			return fmt.Errorf("failed to unwrap deployment selector: %w", err)
+		}
+		environmentSelector, err := unwrapSelectorForDB(selector.EnvironmentSelector)
+		if err != nil {
+			return fmt.Errorf("failed to unwrap environment selector: %w", err)
+		}
+		resourceSelector, err := unwrapSelectorForDB(selector.ResourceSelector)
+		if err != nil {
+			return fmt.Errorf("failed to unwrap resource selector: %w", err)
+		}
+
 		valueStrings = append(valueStrings, "($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+", $"+fmt.Sprintf("%d", i+3)+", $"+fmt.Sprintf("%d", i+4)+")")
-		valueArgs = append(valueArgs, selector.Id, policyId, selector.DeploymentSelector, selector.EnvironmentSelector, selector.ResourceSelector)
+		valueArgs = append(valueArgs, selector.Id, policyId, deploymentSelector, environmentSelector, resourceSelector)
 		i += 5
 	}
 
