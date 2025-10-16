@@ -55,6 +55,11 @@ func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error
 			return err
 		}
 	}
+	for _, githubEntity := range initialWorkspaceState.GithubEntities() {
+		if err := ws.Store().GithubEntities.Upsert(ctx, githubEntity); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

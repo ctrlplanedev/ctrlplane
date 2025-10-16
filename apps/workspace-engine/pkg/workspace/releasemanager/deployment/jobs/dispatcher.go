@@ -32,7 +32,7 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 	}
 
 	if jobAgent.Type == string(jobdispatch.JobAgentTypeGithub) {
-		return jobdispatch.NewGithubDispatcher(d.store.Repo()).DispatchJob(ctx, job)
+		return jobdispatch.NewGithubDispatcher(d.store).DispatchJob(ctx, job)
 	}
 
 	return ErrUnsupportedJobAgent
