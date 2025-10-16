@@ -29,6 +29,10 @@ type Systems struct {
 func (s *Systems) Upsert(ctx context.Context, system *oapi.System) error {
 	s.repo.Systems.Set(system.Id, system)
 
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeUpsert, system)
+	}
+
 	if _, ok := s.deployments.Get(system.Id); !ok {
 		s.deployments.Set(system.Id,
 			materialized.New(s.computeDeployments(system.Id)),
