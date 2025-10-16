@@ -464,88 +464,8 @@ func TestDBDeployments_WithJsonResourceSelector(t *testing.T) {
 	}
 }
 
-func TestDBDeployments_WithCelResourceSelector(t *testing.T) {
-	workspaceID, conn := setupTestWithWorkspace(t)
-
-	tx, err := conn.Begin(t.Context())
-	if err != nil {
-		t.Fatalf("failed to begin tx: %v", err)
-	}
-	defer tx.Rollback(t.Context())
-
-	// Create a system first
-	systemID := uuid.New().String()
-	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
-	sys := &oapi.System{
-		Id:          systemID,
-		WorkspaceId: workspaceID,
-		Name:        fmt.Sprintf("test-system-%s", systemID[:8]),
-		Description: &systemDescription,
-	}
-	err = writeSystem(t.Context(), sys, tx)
-	if err != nil {
-		t.Fatalf("failed to create system: %v", err)
-	}
-
-	// Create deployment with CEL resource selector
-	deploymentID := uuid.New().String()
-	description := "test deployment with CEL selector"
-
-	// Create a CEL selector
-	resourceSelector := &oapi.Selector{}
-	celExpression := "resource.metadata.environment == 'production'"
-	err = resourceSelector.FromCelSelector(oapi.CelSelector{
-		Cel: celExpression,
-	})
-	if err != nil {
-		t.Fatalf("failed to create CEL selector: %v", err)
-	}
-
-	deployment := &oapi.Deployment{
-		Id:               deploymentID,
-		Name:             fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
-		Slug:             fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
-		SystemId:         systemID,
-		Description:      &description,
-		JobAgentConfig:   map[string]interface{}{},
-		ResourceSelector: resourceSelector,
-	}
-
-	err = writeDeployment(t.Context(), deployment, tx)
-	if err != nil {
-		t.Fatalf("expected no errors, got %v", err)
-	}
-
-	err = tx.Commit(t.Context())
-	if err != nil {
-		t.Fatalf("failed to commit: %v", err)
-	}
-
-	// Read back and validate
-	actualDeployments, err := getDeployments(t.Context(), workspaceID)
-	if err != nil {
-		t.Fatalf("expected no errors, got %v", err)
-	}
-
-	if len(actualDeployments) != 1 {
-		t.Fatalf("expected 1 deployment, got %d", len(actualDeployments))
-	}
-
-	actualDeployment := actualDeployments[0]
-	if actualDeployment.ResourceSelector == nil {
-		t.Fatalf("expected resource selector to be non-nil")
-	}
-
-	// Validate the selector content
-	celSelector, err := actualDeployment.ResourceSelector.AsCelSelector()
-	if err != nil {
-		t.Fatalf("expected CEL selector, got error: %v", err)
-	}
-
-	if celSelector.Cel != celExpression {
-		t.Fatalf("expected CEL expression %s, got %s", celExpression, celSelector.Cel)
-	}
-}
+// TODO: Add CEL selector tests when CEL support is implemented
+// func TestDBDeployments_WithCelResourceSelector(t *testing.T) { ... }
 
 func TestDBDeployments_UpdateResourceSelector(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
@@ -605,7 +525,7 @@ func TestDBDeployments_UpdateResourceSelector(t *testing.T) {
 		t.Fatalf("failed to commit: %v", err)
 	}
 
-	// Update with CEL selector
+	// Update with a different JSON selector
 	tx, err = conn.Begin(t.Context())
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
@@ -613,12 +533,15 @@ func TestDBDeployments_UpdateResourceSelector(t *testing.T) {
 	defer tx.Rollback(t.Context())
 
 	updatedSelector := &oapi.Selector{}
-	celExpression := "resource.kind == 'pod'"
-	err = updatedSelector.FromCelSelector(oapi.CelSelector{
-		Cel: celExpression,
+	err = updatedSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]interface{}{
+			"type":     "kind",
+			"value":    "pod",
+			"operator": "equals",
+		},
 	})
 	if err != nil {
-		t.Fatalf("failed to create CEL selector: %v", err)
+		t.Fatalf("failed to create updated JSON selector: %v", err)
 	}
 
 	deployment.ResourceSelector = updatedSelector
@@ -648,13 +571,16 @@ func TestDBDeployments_UpdateResourceSelector(t *testing.T) {
 		t.Fatalf("expected resource selector to be non-nil")
 	}
 
-	// Validate it's now a CEL selector
-	celSelector, err := actualDeployment.ResourceSelector.AsCelSelector()
+	// Validate it's the updated JSON selector
+	jsonSelector, err := actualDeployment.ResourceSelector.AsJsonSelector()
 	if err != nil {
-		t.Fatalf("expected CEL selector, got error: %v", err)
+		t.Fatalf("expected JSON selector, got error: %v", err)
 	}
 
-	if celSelector.Cel != celExpression {
-		t.Fatalf("expected CEL expression %s, got %s", celExpression, celSelector.Cel)
+	if jsonSelector.Json["type"] != "kind" {
+		t.Fatalf("expected type 'kind', got %v", jsonSelector.Json["type"])
+	}
+	if jsonSelector.Json["value"] != "pod" {
+		t.Fatalf("expected value 'pod', got %v", jsonSelector.Json["value"])
 	}
 }

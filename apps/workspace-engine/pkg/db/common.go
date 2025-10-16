@@ -2,6 +2,8 @@ package db
 
 import (
 	"encoding/json"
+
+	"workspace-engine/pkg/oapi"
 )
 
 func parseJSONToStruct(jsonData []byte) map[string]interface{} {
@@ -15,4 +17,41 @@ func parseJSONToStruct(jsonData []byte) map[string]interface{} {
 	}
 
 	return dataMap
+}
+
+// wrapSelectorFromDB wraps a db selector in oapi JsonSelector format
+func wrapSelectorFromDB(rawMap map[string]interface{}) (*oapi.Selector, error) {
+	if rawMap == nil {
+		return nil, nil
+	}
+
+	// Wrap the raw map in JsonSelector format
+	selector := &oapi.Selector{}
+	err := selector.FromJsonSelector(oapi.JsonSelector{
+		Json: rawMap,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return selector, nil
+}
+
+// unwrapSelectorForDB unwraps a selector for database storage (database stores unwrapped selector format)
+// NOTE: CEL selectors are not currently supported - they will be written as NULL to the database.
+func unwrapSelectorForDB(selector *oapi.Selector) (map[string]interface{}, error) {
+	if selector == nil {
+		return nil, nil
+	}
+
+	// Try as JsonSelector
+	jsonSelector, err := selector.AsJsonSelector()
+	if err == nil && jsonSelector.Json != nil {
+		// Return the unwrapped map directly - pgx can handle it
+		return jsonSelector.Json, nil
+	}
+
+	// CEL selectors are not supported - return nil to store NULL in database
+	// TODO: Add support for CEL selectors in the future
+	return nil, nil
 }

@@ -87,11 +87,19 @@ type dbAnyApprovalRule struct {
 	MinApprovals int32     `db:"minApprovals"`
 }
 
+type dbPolicyTargetSelector struct {
+	Id                  string                 `json:"id"`
+	DeploymentSelector  map[string]interface{} `json:"deploymentSelector"`
+	EnvironmentSelector map[string]interface{} `json:"environmentSelector"`
+	ResourceSelector    map[string]interface{} `json:"resourceSelector"`
+}
+
 func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	policy := &oapi.Policy{}
 	var createdAt time.Time
 	var anyApprovalRuleRaw *dbAnyApprovalRule
 	var description *string
+	var dbSelectors []dbPolicyTargetSelector
 
 	err := rows.Scan(
 		&policy.Id,
@@ -99,7 +107,7 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 		&description,
 		&policy.WorkspaceId,
 		&createdAt,
-		&policy.Selectors,
+		&dbSelectors,
 		&anyApprovalRuleRaw,
 	)
 	if err != nil {
@@ -107,6 +115,30 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	}
 	policy.Description = description
 	policy.CreatedAt = createdAt.Format(time.RFC3339)
+
+	// Convert database selectors to OAPI selectors with wrapping
+	policy.Selectors = make([]oapi.PolicyTargetSelector, len(dbSelectors))
+	for i, dbSel := range dbSelectors {
+		deploymentSelector, err := wrapSelectorFromDB(dbSel.DeploymentSelector)
+		if err != nil {
+			return nil, fmt.Errorf("failed to wrap deployment selector: %w", err)
+		}
+		environmentSelector, err := wrapSelectorFromDB(dbSel.EnvironmentSelector)
+		if err != nil {
+			return nil, fmt.Errorf("failed to wrap environment selector: %w", err)
+		}
+		resourceSelector, err := wrapSelectorFromDB(dbSel.ResourceSelector)
+		if err != nil {
+			return nil, fmt.Errorf("failed to wrap resource selector: %w", err)
+		}
+
+		policy.Selectors[i] = oapi.PolicyTargetSelector{
+			Id:                  dbSel.Id,
+			DeploymentSelector:  deploymentSelector,
+			EnvironmentSelector: environmentSelector,
+			ResourceSelector:    resourceSelector,
+		}
+	}
 
 	if anyApprovalRuleRaw != nil {
 		policy.Rules = append(policy.Rules, oapi.PolicyRule{
@@ -183,8 +215,22 @@ func writeManySelectors(ctx context.Context, policyId string, selectors []oapi.P
 	valueArgs := make([]interface{}, 0, len(selectors)*5)
 	i := 1
 	for _, selector := range selectors {
+		// Unwrap selectors for database storage
+		deploymentSelector, err := unwrapSelectorForDB(selector.DeploymentSelector)
+		if err != nil {
+			return fmt.Errorf("failed to unwrap deployment selector: %w", err)
+		}
+		environmentSelector, err := unwrapSelectorForDB(selector.EnvironmentSelector)
+		if err != nil {
+			return fmt.Errorf("failed to unwrap environment selector: %w", err)
+		}
+		resourceSelector, err := unwrapSelectorForDB(selector.ResourceSelector)
+		if err != nil {
+			return fmt.Errorf("failed to unwrap resource selector: %w", err)
+		}
+
 		valueStrings = append(valueStrings, "($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+", $"+fmt.Sprintf("%d", i+3)+", $"+fmt.Sprintf("%d", i+4)+")")
-		valueArgs = append(valueArgs, selector.Id, policyId, selector.DeploymentSelector, selector.EnvironmentSelector, selector.ResourceSelector)
+		valueArgs = append(valueArgs, selector.Id, policyId, deploymentSelector, environmentSelector, resourceSelector)
 		i += 5
 	}
 

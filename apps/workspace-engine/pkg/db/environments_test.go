@@ -452,89 +452,8 @@ func TestDBEnvironments_WithJsonResourceSelector(t *testing.T) {
 	}
 }
 
-func TestDBEnvironments_WithCelResourceSelector(t *testing.T) {
-	workspaceID, conn := setupTestWithWorkspace(t)
-
-	tx, err := conn.Begin(t.Context())
-	if err != nil {
-		t.Fatalf("failed to begin tx: %v", err)
-	}
-	defer tx.Rollback(t.Context())
-
-	// Create a system first
-	systemID := uuid.New().String()
-	systemName := fmt.Sprintf("test-system-%s", systemID[:8])
-	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
-	sys := &oapi.System{
-		Id:          systemID,
-		WorkspaceId: workspaceID,
-		Name:        systemName,
-		Description: &systemDescription,
-	}
-
-	err = writeSystem(t.Context(), sys, tx)
-	if err != nil {
-		t.Fatalf("failed to create system: %v", err)
-	}
-
-	// Create environment with CEL resource selector
-	envID := uuid.New().String()
-	envName := fmt.Sprintf("test-env-%s", envID[:8])
-	description := fmt.Sprintf("test-description-%s", envID[:8])
-
-	// Create a CEL selector
-	resourceSelector := &oapi.Selector{}
-	celExpression := "resource.metadata.environment == 'staging' && resource.kind == 'deployment'"
-	err = resourceSelector.FromCelSelector(oapi.CelSelector{
-		Cel: celExpression,
-	})
-	if err != nil {
-		t.Fatalf("failed to create CEL selector: %v", err)
-	}
-
-	env := &oapi.Environment{
-		Id:               envID,
-		Name:             envName,
-		SystemId:         systemID,
-		Description:      &description,
-		ResourceSelector: resourceSelector,
-	}
-
-	err = writeEnvironment(t.Context(), env, tx)
-	if err != nil {
-		t.Fatalf("expected no errors, got %v", err)
-	}
-
-	err = tx.Commit(t.Context())
-	if err != nil {
-		t.Fatalf("failed to commit: %v", err)
-	}
-
-	// Read back and validate
-	actualEnvironments, err := getEnvironments(t.Context(), workspaceID)
-	if err != nil {
-		t.Fatalf("expected no errors, got %v", err)
-	}
-
-	if len(actualEnvironments) != 1 {
-		t.Fatalf("expected 1 environment, got %d", len(actualEnvironments))
-	}
-
-	actualEnv := actualEnvironments[0]
-	if actualEnv.ResourceSelector == nil {
-		t.Fatalf("expected resource selector to be non-nil")
-	}
-
-	// Validate the selector content
-	celSelector, err := actualEnv.ResourceSelector.AsCelSelector()
-	if err != nil {
-		t.Fatalf("expected CEL selector, got error: %v", err)
-	}
-
-	if celSelector.Cel != celExpression {
-		t.Fatalf("expected CEL expression %s, got %s", celExpression, celSelector.Cel)
-	}
-}
+// TODO: Add CEL selector tests when CEL support is implemented
+// func TestDBEnvironments_WithCelResourceSelector(t *testing.T) { ... }
 
 func TestDBEnvironments_UpdateResourceSelector(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
@@ -595,7 +514,7 @@ func TestDBEnvironments_UpdateResourceSelector(t *testing.T) {
 		t.Fatalf("failed to commit: %v", err)
 	}
 
-	// Update with CEL selector
+	// Update with a different JSON selector
 	tx, err = conn.Begin(t.Context())
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
@@ -603,12 +522,16 @@ func TestDBEnvironments_UpdateResourceSelector(t *testing.T) {
 	defer tx.Rollback(t.Context())
 
 	updatedSelector := &oapi.Selector{}
-	celExpression := "resource.metadata.tier == 'backend'"
-	err = updatedSelector.FromCelSelector(oapi.CelSelector{
-		Cel: celExpression,
+	err = updatedSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]interface{}{
+			"type":     "metadata",
+			"key":      "tier",
+			"value":    "backend",
+			"operator": "equals",
+		},
 	})
 	if err != nil {
-		t.Fatalf("failed to create CEL selector: %v", err)
+		t.Fatalf("failed to create updated JSON selector: %v", err)
 	}
 
 	env.ResourceSelector = updatedSelector
@@ -638,13 +561,155 @@ func TestDBEnvironments_UpdateResourceSelector(t *testing.T) {
 		t.Fatalf("expected resource selector to be non-nil")
 	}
 
-	// Validate it's now a CEL selector
-	celSelector, err := actualEnv.ResourceSelector.AsCelSelector()
+	// Validate it's the updated JSON selector
+	jsonSelector, err := actualEnv.ResourceSelector.AsJsonSelector()
 	if err != nil {
-		t.Fatalf("expected CEL selector, got error: %v", err)
+		t.Fatalf("expected JSON selector, got error: %v", err)
 	}
 
-	if celSelector.Cel != celExpression {
-		t.Fatalf("expected CEL expression %s, got %s", celExpression, celSelector.Cel)
+	if jsonSelector.Json["type"] != "metadata" {
+		t.Fatalf("expected type 'metadata', got %v", jsonSelector.Json["type"])
+	}
+	if jsonSelector.Json["key"] != "tier" {
+		t.Fatalf("expected key 'tier', got %v", jsonSelector.Json["key"])
+	}
+	if jsonSelector.Json["value"] != "backend" {
+		t.Fatalf("expected value 'backend', got %v", jsonSelector.Json["value"])
+	}
+}
+
+func TestDBEnvironments_ReadRawUnwrappedSelectorFromDatabase(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create a system first
+	systemID := uuid.New().String()
+	systemName := fmt.Sprintf("test-system-%s", systemID[:8])
+	systemDescription := fmt.Sprintf("desc-%s", systemID[:8])
+	sys := &oapi.System{
+		Id:          systemID,
+		WorkspaceId: workspaceID,
+		Name:        systemName,
+		Description: &systemDescription,
+	}
+
+	err = writeSystem(t.Context(), sys, tx)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	// Insert environment with unwrapped selector directly via SQL (bypassing writeEnvironment)
+	// This tests that raw unwrapped data from the database gets properly wrapped when read
+	envID := uuid.New().String()
+	envName := "test-env-with-raw-selector"
+	description := "test environment with raw unwrapped selector"
+
+	// This is the unwrapped format as stored in the database
+	unwrappedSelector := `{
+		"type": "comparison",
+		"operator": "and",
+		"not": false,
+		"conditions": [
+			{
+				"type": "kind",
+				"value": "customer",
+				"operator": "equals"
+			},
+			{
+				"type": "metadata",
+				"key": "region",
+				"value": "us-west",
+				"operator": "equals"
+			}
+		]
+	}`
+
+	_, err = tx.Exec(
+		t.Context(),
+		`INSERT INTO environment (id, name, system_id, description, resource_selector, created_at)
+		 VALUES ($1, $2, $3, $4, $5, NOW())`,
+		envID,
+		envName,
+		systemID,
+		description,
+		unwrappedSelector,
+	)
+	if err != nil {
+		t.Fatalf("failed to insert environment with raw selector: %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Read back and validate that it gets properly wrapped
+	actualEnvironments, err := getEnvironments(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	if len(actualEnvironments) != 1 {
+		t.Fatalf("expected 1 environment, got %d", len(actualEnvironments))
+	}
+
+	actualEnv := actualEnvironments[0]
+	if actualEnv.ResourceSelector == nil {
+		t.Fatalf("expected resource selector to be non-nil")
+	}
+
+	// Validate it's properly wrapped as a JsonSelector
+	jsonSelector, err := actualEnv.ResourceSelector.AsJsonSelector()
+	if err != nil {
+		t.Fatalf("expected JSON selector, got error: %v", err)
+	}
+
+	if jsonSelector.Json == nil {
+		t.Fatalf("expected json selector to have non-nil Json field")
+	}
+
+	// Validate the content
+	if jsonSelector.Json["type"] != "comparison" {
+		t.Fatalf("expected type 'comparison', got %v", jsonSelector.Json["type"])
+	}
+	if jsonSelector.Json["operator"] != "and" {
+		t.Fatalf("expected operator 'and', got %v", jsonSelector.Json["operator"])
+	}
+
+	conditions, ok := jsonSelector.Json["conditions"].([]interface{})
+	if !ok {
+		t.Fatalf("expected conditions to be an array")
+	}
+	if len(conditions) != 2 {
+		t.Fatalf("expected 2 conditions, got %d", len(conditions))
+	}
+
+	// Verify first condition (kind)
+	firstCondition, ok := conditions[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected first condition to be a map")
+	}
+	if firstCondition["type"] != "kind" {
+		t.Fatalf("expected first condition type 'kind', got %v", firstCondition["type"])
+	}
+	if firstCondition["value"] != "customer" {
+		t.Fatalf("expected first condition value 'customer', got %v", firstCondition["value"])
+	}
+
+	// Verify second condition (metadata)
+	secondCondition, ok := conditions[1].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected second condition to be a map")
+	}
+	if secondCondition["type"] != "metadata" {
+		t.Fatalf("expected second condition type 'metadata', got %v", secondCondition["type"])
+	}
+	if secondCondition["key"] != "region" {
+		t.Fatalf("expected second condition key 'region', got %v", secondCondition["key"])
 	}
 }

@@ -39,18 +39,27 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 	for rows.Next() {
 		var environment oapi.Environment
 		var createdAt time.Time
+		var rawSelector map[string]interface{}
+
 		err := rows.Scan(
 			&environment.Id,
 			&environment.Name,
 			&environment.SystemId,
 			&createdAt,
 			&environment.Description,
-			&environment.ResourceSelector,
+			&rawSelector,
 		)
 		if err != nil {
 			return nil, err
 		}
 		environment.CreatedAt = createdAt.Format(time.RFC3339)
+
+		// Wrap selector from unwrapped database format to JsonSelector format
+		environment.ResourceSelector, err = wrapSelectorFromDB(rawSelector)
+		if err != nil {
+			return nil, err
+		}
+
 		environments = append(environments, &environment)
 	}
 	if err := rows.Err(); err != nil {
@@ -70,6 +79,12 @@ const ENVIRONMENT_UPSERT_QUERY = `
 `
 
 func writeEnvironment(ctx context.Context, environment *oapi.Environment, tx pgx.Tx) error {
+	// Unwrap selector for database storage (database stores unwrapped ResourceCondition format)
+	selectorToStore, err := unwrapSelectorForDB(environment.ResourceSelector)
+	if err != nil {
+		return err
+	}
+
 	if _, err := tx.Exec(
 		ctx,
 		ENVIRONMENT_UPSERT_QUERY,
@@ -77,7 +92,7 @@ func writeEnvironment(ctx context.Context, environment *oapi.Environment, tx pgx
 		environment.Name,
 		environment.SystemId,
 		environment.Description,
-		environment.ResourceSelector,
+		selectorToStore,
 	); err != nil {
 		return err
 	}
