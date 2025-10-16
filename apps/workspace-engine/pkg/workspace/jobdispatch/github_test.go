@@ -424,11 +424,18 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 
 			dispatcher := NewGithubDispatcher(mockStore)
 			result, exists := dispatcher.store.GithubEntities.Get(tt.searchCfg.Owner, tt.searchCfg.InstallationId)
-			if !exists {
-				t.Errorf("Expected to find entity, got nil")
+
+			if tt.expectFound {
+				if !exists {
+					t.Fatalf("Expected to find entity, but it was not found")
+				}
+				require.Equal(t, tt.searchCfg.InstallationId, result.InstallationId)
+				require.Equal(t, tt.searchCfg.Owner, result.Slug)
+			} else {
+				if exists {
+					t.Fatalf("Expected entity not to be found, but found: %+v", result)
+				}
 			}
-			require.Equal(t, tt.searchCfg.InstallationId, result.InstallationId)
-			require.Equal(t, tt.searchCfg.Owner, result.Slug)
 		})
 	}
 }
