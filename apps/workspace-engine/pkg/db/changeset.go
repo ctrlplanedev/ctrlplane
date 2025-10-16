@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any]) error {
+func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspaceID string) error {
 	cs.Lock()
 	defer cs.Unlock()
 
@@ -30,7 +30,7 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any]) error {
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, change := range cs.Changes {
-		if err := applyChange(ctx, tx, change); err != nil {
+		if err := applyChange(ctx, tx, change, workspaceID); err != nil {
 			return err
 		}
 	}
@@ -43,7 +43,7 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any]) error {
 	return nil
 }
 
-func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any]) error {
+func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any], workspaceID string) error {
 	if e, ok := change.Entity.(*oapi.Resource); ok && e != nil {
 		if change.Type == changeset.ChangeTypeDelete {
 			return deleteResource(ctx, e.Id, conn)
@@ -107,17 +107,42 @@ func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any])
 		return writeEnvironment(ctx, e, conn)
 	}
 
+	if e, ok := change.Entity.(*oapi.UserApprovalRecord); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteUserApprovalRecord(ctx, e, conn)
+		}
+		return writeUserApprovalRecord(ctx, e, conn)
+	}
+
+	if e, ok := change.Entity.(*oapi.Release); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteRelease(ctx, e.ID(), conn)
+		}
+		return writeRelease(ctx, e, workspaceID, conn)
+	}
+
+	if e, ok := change.Entity.(*oapi.Job); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteJob(ctx, e.Id, conn)
+		}
+		return writeJob(ctx, e, conn)
+	}
+
 	return fmt.Errorf("unknown entity type: %s", change.Entity)
 }
 
-type DbChangesetConsumer struct{}
+type DbChangesetConsumer struct {
+	workspaceID string
+}
 
 var _ changeset.ChangesetConsumer[any] = (*DbChangesetConsumer)(nil)
 
-func NewChangesetConsumer() *DbChangesetConsumer {
-	return &DbChangesetConsumer{}
+func NewChangesetConsumer(workspaceID string) *DbChangesetConsumer {
+	return &DbChangesetConsumer{
+		workspaceID: workspaceID,
+	}
 }
 
 func (c *DbChangesetConsumer) FlushChangeset(ctx context.Context, changeset *changeset.ChangeSet[any]) error {
-	return FlushChangeset(ctx, changeset)
+	return FlushChangeset(ctx, changeset, c.workspaceID)
 }
