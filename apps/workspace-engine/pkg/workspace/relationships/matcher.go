@@ -1,6 +1,7 @@
 package relationships
 
 import (
+	"context"
 	"strings"
 	"workspace-engine/pkg/oapi"
 )
@@ -19,7 +20,7 @@ type PropertyMatcher struct {
 	*oapi.PropertyMatcher
 }
 
-func (m *PropertyMatcher) Evaluate(from any, to any) bool {
+func (m *PropertyMatcher) Evaluate(ctx context.Context, from *oapi.RelatableEntity, to *oapi.RelatableEntity) bool {
 	fromValue, err := GetPropertyValue(from, m.FromProperty)
 	if err != nil {
 		return false

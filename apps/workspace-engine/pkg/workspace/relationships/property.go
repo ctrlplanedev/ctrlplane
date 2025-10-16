@@ -12,22 +12,22 @@ import (
 // GetPropertyValue extracts a property value from an entity using a property path
 // The property path is a slice of strings representing nested property access
 // Examples: ["id"], ["metadata", "region"], ["config", "networking", "vpc_id"]
-func GetPropertyValue(entity any, propertyPath []string) (*oapi.LiteralValue, error) {
+func GetPropertyValue(entity *oapi.RelatableEntity, propertyPath []string) (*oapi.LiteralValue, error) {
 	if len(propertyPath) == 0 {
 		return nil, fmt.Errorf("property path is empty")
 	}
 
 	// Special handling for common oapi entity types
-	switch e := entity.(type) {
-	case *oapi.Resource:
-		return getResourceProperty(e, propertyPath)
-	case *oapi.Deployment:
-		return getDeploymentProperty(e, propertyPath)
-	case *oapi.Environment:
-		return getEnvironmentProperty(e, propertyPath)
+	switch entity.GetType() {
+	case "resource":
+		return getResourceProperty(entity.GetResource(), propertyPath)
+	case "deployment":
+		return getDeploymentProperty(entity.GetDeployment(), propertyPath)
+	case "environment":
+		return getEnvironmentProperty(entity.GetEnvironment(), propertyPath)
 	default:
 		// Fall back to reflection for other types
-		return getPropertyReflection(entity, propertyPath)
+		return nil, fmt.Errorf("unsupported entity type: %s", entity.GetType())
 	}
 }
 

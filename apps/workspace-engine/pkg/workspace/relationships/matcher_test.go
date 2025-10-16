@@ -1,6 +1,7 @@
 package relationships
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -60,25 +61,25 @@ func TestNewPropertyMatcher(t *testing.T) {
 func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "equal string values",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "Test Resource",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-east-1"},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "Another Resource",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-east-1"},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"metadata", "region"},
 				ToProperty:   []string{"metadata", "region"},
@@ -88,18 +89,18 @@ func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 		},
 		{
 			name: "unequal string values",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "Test Resource",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-east-1"},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "Another Resource",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-west-2"},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"metadata", "region"},
 				ToProperty:   []string{"metadata", "region"},
@@ -109,14 +110,14 @@ func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 		},
 		{
 			name: "equal IDs",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"id"},
 				ToProperty:   []string{"id"},
@@ -126,14 +127,14 @@ func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 		},
 		{
 			name: "default operator equals",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"id"},
 				ToProperty:   []string{"id"},
@@ -144,7 +145,7 @@ func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -156,23 +157,23 @@ func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 func TestPropertyMatcher_Evaluate_NotEquals(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "not equal string values with not_equals",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-east-1"},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-west-2"},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"metadata", "region"},
 				ToProperty:   []string{"metadata", "region"},
@@ -182,16 +183,16 @@ func TestPropertyMatcher_Evaluate_NotEquals(t *testing.T) {
 		},
 		{
 			name: "equal string values with not_equals",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-east-1"},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-east-1"},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"metadata", "region"},
 				ToProperty:   []string{"metadata", "region"},
@@ -201,14 +202,14 @@ func TestPropertyMatcher_Evaluate_NotEquals(t *testing.T) {
 		},
 		{
 			name: "notequals variant",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"id"},
 				ToProperty:   []string{"id"},
@@ -220,7 +221,7 @@ func TestPropertyMatcher_Evaluate_NotEquals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -232,23 +233,23 @@ func TestPropertyMatcher_Evaluate_NotEquals(t *testing.T) {
 func TestPropertyMatcher_Evaluate_Contains(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "string contains substring",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "my-production-database",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "production",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -258,16 +259,16 @@ func TestPropertyMatcher_Evaluate_Contains(t *testing.T) {
 		},
 		{
 			name: "string does not contain substring",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "staging-database",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "production",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -277,16 +278,16 @@ func TestPropertyMatcher_Evaluate_Contains(t *testing.T) {
 		},
 		{
 			name: "contain variant",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "test-resource",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "test",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -298,7 +299,7 @@ func TestPropertyMatcher_Evaluate_Contains(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -310,23 +311,23 @@ func TestPropertyMatcher_Evaluate_Contains(t *testing.T) {
 func TestPropertyMatcher_Evaluate_StartsWith(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "string starts with prefix",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "production-database",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "production",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -336,16 +337,16 @@ func TestPropertyMatcher_Evaluate_StartsWith(t *testing.T) {
 		},
 		{
 			name: "string does not start with prefix",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "staging-database",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "production",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -355,16 +356,16 @@ func TestPropertyMatcher_Evaluate_StartsWith(t *testing.T) {
 		},
 		{
 			name: "startswith variant",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "test-resource",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "test",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -376,7 +377,7 @@ func TestPropertyMatcher_Evaluate_StartsWith(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -388,23 +389,23 @@ func TestPropertyMatcher_Evaluate_StartsWith(t *testing.T) {
 func TestPropertyMatcher_Evaluate_EndsWith(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "string ends with suffix",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "my-production-database",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "database",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -414,16 +415,16 @@ func TestPropertyMatcher_Evaluate_EndsWith(t *testing.T) {
 		},
 		{
 			name: "string does not end with suffix",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "staging-server",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "database",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -433,16 +434,16 @@ func TestPropertyMatcher_Evaluate_EndsWith(t *testing.T) {
 		},
 		{
 			name: "endswith variant",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "my-test",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				Name:        "test",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -454,7 +455,7 @@ func TestPropertyMatcher_Evaluate_EndsWith(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -466,21 +467,21 @@ func TestPropertyMatcher_Evaluate_EndsWith(t *testing.T) {
 func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "invalid property path in from",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"nonexistent", "property"},
 				ToProperty:   []string{"id"},
@@ -490,14 +491,14 @@ func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 		},
 		{
 			name: "invalid property path in to",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"id"},
 				ToProperty:   []string{"nonexistent", "property"},
@@ -507,16 +508,16 @@ func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 		},
 		{
 			name: "missing metadata key in from",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"region": "us-east-1"},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"metadata", "region"},
 				ToProperty:   []string{"metadata", "region"},
@@ -526,14 +527,14 @@ func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 		},
 		{
 			name: "unknown operator defaults to true",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"id"},
 				ToProperty:   []string{"id"},
@@ -543,14 +544,14 @@ func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 		},
 		{
 			name: "case insensitive operator",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"id"},
 				ToProperty:   []string{"id"},
@@ -562,7 +563,7 @@ func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -574,21 +575,21 @@ func TestPropertyMatcher_Evaluate_EdgeCases(t *testing.T) {
 func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "resource to deployment by workspace_id",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Deployment{
+			}),
+			to: NewDeploymentEntity(&oapi.Deployment{
 				Id:       "deployment-1",
 				SystemId: "workspace-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"workspace_id"},
 				ToProperty:   []string{"system_id"},
@@ -598,16 +599,16 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 		},
 		{
 			name: "resource to environment by name",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				Name:        "production",
 				WorkspaceId: "workspace-1",
-			},
-			to: &oapi.Environment{
+			}),
+			to: NewEnvironmentEntity(&oapi.Environment{
 				Id:       "env-1",
 				Name:     "production",
 				SystemId: "system-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -617,16 +618,16 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 		},
 		{
 			name: "deployment to environment name contains",
-			from: &oapi.Deployment{
+			from: NewDeploymentEntity(&oapi.Deployment{
 				Id:       "deployment-1",
 				Name:     "my-production-deploy",
 				SystemId: "system-1",
-			},
-			to: &oapi.Environment{
+			}),
+			to: NewEnvironmentEntity(&oapi.Environment{
 				Id:       "env-1",
 				Name:     "production",
 				SystemId: "system-1",
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
 				ToProperty:   []string{"name"},
@@ -638,7 +639,7 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -651,14 +652,14 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		from     any
-		to       any
+		from     *oapi.RelatableEntity
+		to       *oapi.RelatableEntity
 		matcher  *PropertyMatcher
 		expected bool
 	}{
 		{
 			name: "nested config string match",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
@@ -667,8 +668,8 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 						"region": "us-east-1",
 					},
 				},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
@@ -677,7 +678,7 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 						"region": "us-west-2",
 					},
 				},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"config", "networking", "vpc_id"},
 				ToProperty:   []string{"config", "networking", "vpc_id"},
@@ -687,7 +688,7 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 		},
 		{
 			name: "nested config different values",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
@@ -695,8 +696,8 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 						"vpc_id": "vpc-123",
 					},
 				},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
@@ -704,7 +705,7 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 						"vpc_id": "vpc-456",
 					},
 				},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"config", "networking", "vpc_id"},
 				ToProperty:   []string{"config", "networking", "vpc_id"},
@@ -714,7 +715,7 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 		},
 		{
 			name: "nested config contains",
-			from: &oapi.Resource{
+			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
@@ -722,8 +723,8 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 						"environment": "production-us-east-1",
 					},
 				},
-			},
-			to: &oapi.Resource{
+			}),
+			to: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-2",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
@@ -731,7 +732,7 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 						"environment": "production",
 					},
 				},
-			},
+			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"config", "tags", "environment"},
 				ToProperty:   []string{"config", "tags", "environment"},
@@ -743,7 +744,7 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.matcher.Evaluate(tt.from, tt.to)
+			result := tt.matcher.Evaluate(context.Background(), tt.from, tt.to)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -753,16 +754,16 @@ func TestPropertyMatcher_Evaluate_NestedConfig(t *testing.T) {
 
 // TestPropertyMatcher_Evaluate_CaseInsensitivity tests case insensitivity of operators
 func TestPropertyMatcher_Evaluate_CaseInsensitivity(t *testing.T) {
-	resource1 := &oapi.Resource{
+	resource1 := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-1",
 		Name:        "Test Resource",
 		WorkspaceId: "workspace-1",
-	}
-	resource2 := &oapi.Resource{
+	})
+	resource2 := NewResourceEntity(&oapi.Resource{
 		Id:          "resource-2",
 		Name:        "Test Resource",
 		WorkspaceId: "workspace-1",
-	}
+	})
 
 	operators := []string{
 		"equals", "EQUALS", "Equals",
@@ -784,7 +785,7 @@ func TestPropertyMatcher_Evaluate_CaseInsensitivity(t *testing.T) {
 				Operator:     oapi.PropertyMatcherOperator(op),
 			})
 			// Should not panic and should return a valid boolean
-			result := matcher.Evaluate(resource1, resource2)
+			result := matcher.Evaluate(context.Background(), resource1, resource2)
 			if result != true && result != false {
 				t.Errorf("operator %s did not return a boolean value", op)
 			}
@@ -950,7 +951,8 @@ func TestGetPropertyValue_Resource(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPropertyValue(tt.resource, tt.propertyPath)
+			entity := NewResourceEntity(tt.resource)
+			got, err := GetPropertyValue(entity, tt.propertyPath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPropertyValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1092,7 +1094,8 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPropertyValue(tt.deployment, tt.propertyPath)
+			entity := NewDeploymentEntity(tt.deployment)
+			got, err := GetPropertyValue(entity, tt.propertyPath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPropertyValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1185,7 +1188,8 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPropertyValue(tt.environment, tt.propertyPath)
+			entity := NewEnvironmentEntity(tt.environment)
+			got, err := GetPropertyValue(entity, tt.propertyPath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPropertyValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1271,7 +1275,8 @@ func TestGetPropertyValue_TypeVariants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPropertyValue(tt.resource, tt.propertyPath)
+			entity := NewResourceEntity(tt.resource)
+			got, err := GetPropertyValue(entity, tt.propertyPath)
 			if err != nil {
 				t.Errorf("GetPropertyValue() error = %v", err)
 				return
@@ -1289,24 +1294,24 @@ func TestGetPropertyValue_TypeVariants(t *testing.T) {
 func TestGetPropertyValue_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name         string
-		entity       any
+		entity       *oapi.RelatableEntity
 		propertyPath []string
 		wantErr      bool
 		errContains  string
 	}{
 		{
 			name: "empty property path",
-			entity: &oapi.Resource{
+			entity: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-123",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			propertyPath: []string{},
 			wantErr:      true,
 			errContains:  "empty",
 		},
 		{
 			name: "deeply nested config path",
-			entity: &oapi.Resource{
+			entity: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-123",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
@@ -1318,39 +1323,39 @@ func TestGetPropertyValue_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-			},
+			}),
 			propertyPath: []string{"config", "level1", "level2", "level3", "value"},
 			wantErr:      false,
 		},
 		{
 			name: "metadata path too deep",
-			entity: &oapi.Resource{
+			entity: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-123",
 				WorkspaceId: "workspace-1",
 				Metadata:    map[string]string{"key": "value"},
-			},
+			}),
 			propertyPath: []string{"metadata", "key", "nested"},
 			wantErr:      true,
 			errContains:  "too deep",
 		},
 		{
 			name: "non-existent top-level property",
-			entity: &oapi.Resource{
+			entity: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-123",
 				WorkspaceId: "workspace-1",
-			},
+			}),
 			propertyPath: []string{"nonexistent"},
 			wantErr:      true,
 		},
 		{
 			name: "config key not found",
-			entity: &oapi.Resource{
+			entity: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-123",
 				WorkspaceId: "workspace-1",
 				Config: map[string]any{
 					"existing": "value",
 				},
-			},
+			}),
 			propertyPath: []string{"config", "nonexistent"},
 			wantErr:      true,
 			errContains:  "not found",

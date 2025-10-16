@@ -17,7 +17,7 @@ func NewVariables(store *Store) *Variables {
 	return &Variables{repo: store.repo, store: store}
 }
 
-func (v *Variables) ResolveValue(ctx context.Context, entity *relationships.Entity, value *oapi.Value) (*oapi.LiteralValue, error) {
+func (v *Variables) ResolveValue(ctx context.Context, entity *oapi.RelatableEntity, value *oapi.Value) (*oapi.LiteralValue, error) {
 	valueType, err := value.GetType()
 	if err != nil {
 		return nil, err
@@ -43,8 +43,8 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *relationships.Enti
 			return nil, fmt.Errorf("reference not found: %v", rv.Reference)
 		}
 
-		refEntity := refEntities[0]
-		value, err := relationships.GetPropertyValue(refEntity.Item(), rv.Path)
+		computeEntityRelationship := refEntities[0]
+		value, err := relationships.GetPropertyValue(computeEntityRelationship.RelatedEntity.Entity, rv.Path)
 		if err != nil {
 			return nil, err
 		}

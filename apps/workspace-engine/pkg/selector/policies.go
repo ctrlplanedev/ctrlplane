@@ -8,15 +8,15 @@ import (
 func NewBasicReleaseTarget(environment *oapi.Environment, deployment *oapi.Deployment, resource *oapi.Resource) *BasicReleaseTarget {
 	return &BasicReleaseTarget{
 		environment: environment,
-		deployment: deployment,
-		resource: resource,
+		deployment:  deployment,
+		resource:    resource,
 	}
 }
 
 type BasicReleaseTarget struct {
 	environment *oapi.Environment
-	deployment *oapi.Deployment
-	resource *oapi.Resource
+	deployment  *oapi.Deployment
+	resource    *oapi.Resource
 }
 
 func (b *BasicReleaseTarget) Environment() *oapi.Environment {

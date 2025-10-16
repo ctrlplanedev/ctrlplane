@@ -58,10 +58,37 @@ const (
 	StartsWith PropertyMatcherOperator = "startsWith"
 )
 
+// Defines values for RelatableEntityType.
+const (
+	RelatableEntityTypeDeployment  RelatableEntityType = "deployment"
+	RelatableEntityTypeEnvironment RelatableEntityType = "environment"
+	RelatableEntityTypeResource    RelatableEntityType = "resource"
+)
+
+// Defines values for RelationDirection.
+const (
+	From RelationDirection = "from"
+	To   RelationDirection = "to"
+)
+
 // Defines values for RuleEvaluationActionType.
 const (
 	Approval RuleEvaluationActionType = "approval"
 	Wait     RuleEvaluationActionType = "wait"
+)
+
+// Defines values for EntityType.
+const (
+	EntityTypeDeployment  EntityType = "deployment"
+	EntityTypeEnvironment EntityType = "environment"
+	EntityTypeResource    EntityType = "resource"
+)
+
+// Defines values for GetRelatedEntitiesParamsEntityType.
+const (
+	GetRelatedEntitiesParamsEntityTypeDeployment  GetRelatedEntitiesParamsEntityType = "deployment"
+	GetRelatedEntitiesParamsEntityTypeEnvironment GetRelatedEntitiesParamsEntityType = "environment"
+	GetRelatedEntitiesParamsEntityTypeResource    GetRelatedEntitiesParamsEntityType = "resource"
 )
 
 // AnyApprovalRule defines model for AnyApprovalRule.
@@ -268,11 +295,33 @@ type ReferenceValue struct {
 	Reference string   `json:"reference"`
 }
 
+// RelatableEntity defines model for RelatableEntity.
+type RelatableEntity struct {
+	union json.RawMessage
+}
+
+// RelatableEntityType defines model for RelatableEntityType.
+type RelatableEntityType string
+
+// RelatedEntityGroup defines model for RelatedEntityGroup.
+type RelatedEntityGroup struct {
+	Direction RelationDirection `json:"direction"`
+	Entity    RelatableEntity   `json:"entity"`
+
+	// EntityId ID of the related entity
+	EntityId   string              `json:"entityId"`
+	EntityType RelatableEntityType `json:"entityType"`
+	Rule       *RelationshipRule   `json:"rule,omitempty"`
+}
+
+// RelationDirection defines model for RelationDirection.
+type RelationDirection string
+
 // RelationshipRule defines model for RelationshipRule.
 type RelationshipRule struct {
 	Description      *string                  `json:"description,omitempty"`
 	FromSelector     *Selector                `json:"fromSelector,omitempty"`
-	FromType         string                   `json:"fromType"`
+	FromType         RelatableEntityType      `json:"fromType"`
 	Id               string                   `json:"id"`
 	Matcher          RelationshipRule_Matcher `json:"matcher"`
 	Metadata         map[string]string        `json:"metadata"`
@@ -280,7 +329,7 @@ type RelationshipRule struct {
 	Reference        string                   `json:"reference"`
 	RelationshipType string                   `json:"relationshipType"`
 	ToSelector       *Selector                `json:"toSelector,omitempty"`
-	ToType           string                   `json:"toType"`
+	ToType           RelatableEntityType      `json:"toType"`
 	WorkspaceId      string                   `json:"workspaceId"`
 }
 
@@ -398,6 +447,12 @@ type Value struct {
 // DeploymentId defines model for deploymentId.
 type DeploymentId = string
 
+// EntityId defines model for entityId.
+type EntityId = string
+
+// EntityType defines model for entityType.
+type EntityType string
+
 // EnvironmentId defines model for environmentId.
 type EnvironmentId = string
 
@@ -412,6 +467,9 @@ type ResourceId = string
 
 // WorkspaceId defines model for workspaceId.
 type WorkspaceId = string
+
+// GetRelatedEntitiesParamsEntityType defines parameters for GetRelatedEntities.
+type GetRelatedEntitiesParamsEntityType string
 
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
@@ -578,6 +636,94 @@ func (t LiteralValue) MarshalJSON() ([]byte, error) {
 }
 
 func (t *LiteralValue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDeployment returns the union data inside the RelatableEntity as a Deployment
+func (t RelatableEntity) AsDeployment() (Deployment, error) {
+	var body Deployment
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeployment overwrites any union data inside the RelatableEntity as the provided Deployment
+func (t *RelatableEntity) FromDeployment(v Deployment) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeployment performs a merge with any union data inside the RelatableEntity, using the provided Deployment
+func (t *RelatableEntity) MergeDeployment(v Deployment) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsEnvironment returns the union data inside the RelatableEntity as a Environment
+func (t RelatableEntity) AsEnvironment() (Environment, error) {
+	var body Environment
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromEnvironment overwrites any union data inside the RelatableEntity as the provided Environment
+func (t *RelatableEntity) FromEnvironment(v Environment) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeEnvironment performs a merge with any union data inside the RelatableEntity, using the provided Environment
+func (t *RelatableEntity) MergeEnvironment(v Environment) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsResource returns the union data inside the RelatableEntity as a Resource
+func (t RelatableEntity) AsResource() (Resource, error) {
+	var body Resource
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromResource overwrites any union data inside the RelatableEntity as the provided Resource
+func (t *RelatableEntity) FromResource(v Resource) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeResource performs a merge with any union data inside the RelatableEntity, using the provided Resource
+func (t *RelatableEntity) MergeResource(v Resource) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t RelatableEntity) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *RelatableEntity) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -802,6 +948,9 @@ type ServerInterface interface {
 	// Get resources for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
 	GetDeploymentResources(c *gin.Context, workspaceId WorkspaceId, deploymentId DeploymentId)
+	// Get related entities for a given entity
+	// (GET /v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships)
+	GetRelatedEntities(c *gin.Context, workspaceId WorkspaceId, entityType GetRelatedEntitiesParamsEntityType, entityId EntityId)
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
 	GetEnvironmentResources(c *gin.Context, workspaceId WorkspaceId, environmentId EnvironmentId)
@@ -869,6 +1018,48 @@ func (siw *ServerInterfaceWrapper) GetDeploymentResources(c *gin.Context) {
 	}
 
 	siw.Handler.GetDeploymentResources(c, workspaceId, deploymentId)
+}
+
+// GetRelatedEntities operation middleware
+func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId WorkspaceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "entityType" -------------
+	var entityType GetRelatedEntitiesParamsEntityType
+
+	err = runtime.BindStyledParameterWithOptions("simple", "entityType", c.Param("entityType"), &entityType, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter entityType: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "entityId" -------------
+	var entityId EntityId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "entityId", c.Param("entityId"), &entityId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter entityId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRelatedEntities(c, workspaceId, entityType, entityId)
 }
 
 // GetEnvironmentResources operation middleware
@@ -1023,6 +1214,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:entityType/:entityId/relationships", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)

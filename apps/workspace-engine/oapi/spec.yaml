@@ -162,6 +162,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/NotFoundError"
 
+  /v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships:
+    get:
+      summary: Get related entities for a given entity
+      operationId: getRelatedEntities
+      description: Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/entityType"
+        - $ref: "#/components/parameters/entityId"
+      responses:
+        "200":
+          description: Related entities grouped by relationship reference.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  relationships:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/RelatedEntityGroup"
+        "404":
+          description: Entity not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+        "400":
+          description: Invalid entity type.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+
 components:
   parameters:
     policyId:
@@ -204,6 +240,24 @@ components:
       in: path
       required: true
       description: ID of the release target.
+      schema:
+        type: string
+    entityType:
+      name: entityType
+      in: path
+      required: true
+      description: Type of the entity (deployment, environment, or resource).
+      schema:
+        type: string
+        enum:
+          - deployment
+          - environment
+          - resource
+    entityId:
+      name: entityId
+      in: path
+      required: true
+      description: ID of the entity.
       schema:
         type: string
   schemas:
@@ -834,6 +888,12 @@ components:
           items:
             $ref: "#/components/schemas/PropertyMatcher"
 
+    RelationDirection:
+      type: string
+      enum:
+        - from
+        - to
+
     RelationshipRule:
       type: object
       required:
@@ -856,11 +916,11 @@ components:
         reference:
           type: string
         fromType:
-          type: string
+          $ref: "#/components/schemas/RelatableEntityType"
         fromSelector:
           $ref: "#/components/schemas/Selector"
         toType:
-          type: string
+          $ref: "#/components/schemas/RelatableEntityType"
         toSelector:
           $ref: "#/components/schemas/Selector"
         matcher:
@@ -875,6 +935,40 @@ components:
             type: string
         workspaceId:
           type: string
+
+    RelatedEntityGroup:
+      type: object
+      required:
+        - relationshipRule
+        - direction
+        - entityType
+        - entityId
+        - entity
+      properties:
+        rule:
+          $ref: "#/components/schemas/RelationshipRule"
+        direction:
+          $ref: "#/components/schemas/RelationDirection"
+        entityType:
+          $ref: "#/components/schemas/RelatableEntityType"
+        entityId:
+          type: string
+          description: ID of the related entity
+        entity:
+          $ref: "#/components/schemas/RelatableEntity"
+
+    RelatableEntity:
+      oneOf:
+        - $ref: "#/components/schemas/Deployment"
+        - $ref: "#/components/schemas/Environment"
+        - $ref: "#/components/schemas/Resource"
+
+    RelatableEntityType:
+      type: string
+      enum:
+        - deployment
+        - environment
+        - resource
 
     EvaluateReleaseTargetRequest:
       type: object

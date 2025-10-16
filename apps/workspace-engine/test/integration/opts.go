@@ -628,14 +628,14 @@ func RelationshipRuleReference(reference string) RelationshipRuleOption {
 	}
 }
 
-func RelationshipRuleFromType(fromType string) RelationshipRuleOption {
+func RelationshipRuleFromType(fromType oapi.RelatableEntityType) RelationshipRuleOption {
 	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.FromType = fromType
 		return nil
 	}
 }
 
-func RelationshipRuleToType(toType string) RelationshipRuleOption {
+func RelationshipRuleToType(toType oapi.RelatableEntityType) RelationshipRuleOption {
 	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		rr.ToType = toType
 		return nil
