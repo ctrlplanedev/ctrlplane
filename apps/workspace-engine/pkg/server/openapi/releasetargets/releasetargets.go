@@ -15,10 +15,10 @@ type ReleaseTargets struct {
 // EvaluateReleaseTarget implements oapi.ServerInterface.
 func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId oapi.WorkspaceId) {
 	// Get workspace
-	ws := utils.GetWorkspace(c, workspaceId)
-	if ws == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Workspace not found",
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}

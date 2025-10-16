@@ -11,8 +11,11 @@ import (
 type Deployments struct{}
 
 func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string) {
-	ws := utils.GetWorkspace(c, workspaceId)
-	if ws == nil {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
