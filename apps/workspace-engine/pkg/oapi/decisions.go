@@ -70,7 +70,8 @@ func (d *DeployDecision) GetWaitActions() []*RuleEvaluation {
 
 func (d *PolicyEvaluation) HasDenials() bool {
 	for _, ruleResult := range d.RuleResults {
-		if !ruleResult.Allowed {
+		// A denial is when it's not allowed AND not a pending action
+		if !ruleResult.Allowed && !ruleResult.ActionRequired {
 			return true
 		}
 	}
@@ -79,9 +80,9 @@ func (d *PolicyEvaluation) HasDenials() bool {
 
 func (d *PolicyEvaluation) GetPendingActions() []*RuleEvaluation {
 	pending := make([]*RuleEvaluation, 0)
-	for _, ruleResult := range d.RuleResults {
-		if ruleResult.ActionRequired {
-			pending = append(pending, &ruleResult)
+	for i := range d.RuleResults {
+		if d.RuleResults[i].ActionRequired {
+			pending = append(pending, &d.RuleResults[i])
 		}
 	}
 	return pending
