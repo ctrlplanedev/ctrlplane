@@ -25,7 +25,7 @@ func (r *ResourceVariables) IterBuffered() <-chan cmap.Tuple[string, *oapi.Resou
 func (r *ResourceVariables) Upsert(ctx context.Context, resourceVariable *oapi.ResourceVariable) {
 	r.repo.ResourceVariables.Set(resourceVariable.ID(), resourceVariable)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, resourceVariable)
+		cs.Record(changeset.ChangeTypeUpsert, resourceVariable)
 	}
 }
 

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -143,6 +144,10 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 	e.repo.Environments.Set(environment.Id, environment)
 	e.store.Systems.ApplyEnvironmentUpdate(ctx, previousSystemId, environment)
 
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeUpsert, environment)
+	}
+
 	// Create materialized view with immediate computation of environment resources
 	mv := materialized.New(
 		e.environmentResourceRecomputeFunc(environment.Id),
@@ -169,6 +174,15 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 }
 
 func (e *Environments) Remove(ctx context.Context, id string) {
+	env, ok := e.Get(id)
+	if !ok {
+		return
+	}
+
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, env)
+	}
+
 	e.repo.Environments.Remove(id)
 	e.resources.Remove(id)
 

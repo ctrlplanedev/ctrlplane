@@ -20,7 +20,7 @@ func NewUserApprovalRecords(store *Store) *UserApprovalRecords {
 func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oapi.UserApprovalRecord) {
 	u.repo.UserApprovalRecords.Set(userApprovalRecord.Key(), userApprovalRecord)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, userApprovalRecord)
+		cs.Record(changeset.ChangeTypeUpsert, userApprovalRecord)
 	}
 }
 

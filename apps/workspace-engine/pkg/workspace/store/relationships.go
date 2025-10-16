@@ -25,7 +25,7 @@ type RelationshipRules struct {
 func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.RelationshipRule) error {
 	r.repo.RelationshipRules.Set(relationship.Id, relationship)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, relationship)
+		cs.Record(changeset.ChangeTypeUpsert, relationship)
 	}
 	return nil
 }

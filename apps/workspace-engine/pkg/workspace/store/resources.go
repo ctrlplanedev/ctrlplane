@@ -72,7 +72,7 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	}
 
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, resource)
+		cs.Record(changeset.ChangeTypeUpsert, resource)
 	}
 
 	return resource, nil

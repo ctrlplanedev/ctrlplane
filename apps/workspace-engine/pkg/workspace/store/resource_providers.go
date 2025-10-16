@@ -30,7 +30,7 @@ func (r *ResourceProviders) Items() map[string]*oapi.ResourceProvider {
 func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvider *oapi.ResourceProvider) {
 	r.repo.ResourceProviders.Set(id, resourceProvider)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, resourceProvider)
+		cs.Record(changeset.ChangeTypeUpsert, resourceProvider)
 	}
 }
 

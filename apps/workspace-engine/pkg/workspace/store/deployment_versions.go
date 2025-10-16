@@ -41,7 +41,7 @@ func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
 func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
 	d.repo.DeploymentVersions.Set(id, version)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, version)
+		cs.Record(changeset.ChangeTypeUpsert, version)
 	}
 }
 

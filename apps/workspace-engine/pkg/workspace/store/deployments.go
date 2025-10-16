@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -194,10 +195,22 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 
 	e.store.ReleaseTargets.Recompute(ctx)
 
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeUpsert, deployment)
+	}
+
 	return nil
 }
 
 func (e *Deployments) Remove(ctx context.Context, id string) {
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		d, ok := e.Get(id)
+		if !ok {
+			return
+		}
+		cs.Record(changeset.ChangeTypeDelete, d)
+	}
+
 	e.repo.Deployments.Remove(id)
 	e.resources.Remove(id)
 	e.versions.Remove(id)

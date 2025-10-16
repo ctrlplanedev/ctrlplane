@@ -12,6 +12,7 @@ const (
 	ChangeTypeUpdate ChangeType = "update"
 	ChangeTypeDelete ChangeType = "delete"
 	ChangeTypeTaint  ChangeType = "taint"
+	ChangeTypeUpsert ChangeType = "upsert"
 )
 
 type Change[T any] struct {

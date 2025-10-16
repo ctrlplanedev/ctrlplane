@@ -25,7 +25,7 @@ func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
 	j.repo.Jobs.Set(job.Id, job)
 
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, job)
+		cs.Record(changeset.ChangeTypeUpsert, job)
 	}
 }
 

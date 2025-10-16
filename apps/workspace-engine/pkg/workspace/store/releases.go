@@ -20,7 +20,7 @@ type Releases struct {
 func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
 	r.repo.Releases.Set(release.ID(), release)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeCreate, release)
+		cs.Record(changeset.ChangeTypeUpsert, release)
 	}
 	return nil
 }
