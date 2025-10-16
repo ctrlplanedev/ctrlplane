@@ -6,7 +6,7 @@ import { z } from "zod";
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
-import { Channel, eventDispatcher, getQueue } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -38,8 +38,7 @@ const createForceDeployment = async (
         message: "No release exists for this target",
       });
 
-    const job = await createReleaseJob(tx, existingRelease.release);
-    getQueue(Channel.DispatchJob).add(job.id, { jobId: job.id });
+    await createReleaseJob(tx, existingRelease.release);
 
     return existingRelease;
   });

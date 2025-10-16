@@ -14,8 +14,6 @@ export const env = createEnv({
       .transform((value) => parseInt(value)),
 
     POSTGRES_APPLICATION_NAME: z.string().default("ctrlplane"),
-
-    REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

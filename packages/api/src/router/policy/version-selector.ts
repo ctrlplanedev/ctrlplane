@@ -1,25 +1,19 @@
-import type { Tx } from "@ctrlplane/db";
 import { z } from "zod";
 
 import {
   buildConflictUpdateColumns,
   eq,
+  rulesAndTargets,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
-
-const getPolicyTargets = async (db: Tx, policyId: string) =>
-  db
-    .select()
-    .from(schema.policyTarget)
-    .where(eq(schema.policyTarget.policyId, policyId));
 
 export const policyVersionSelectorRouter = createTRPCRouter({
   byPolicyId: protectedProcedure
@@ -98,12 +92,13 @@ export const policyVersionSelectorRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const policyTargets = await getPolicyTargets(ctx.db, policyId);
-      for (const policyTarget of policyTargets)
-        dispatchQueueJob()
-          .toCompute()
-          .policyTarget(policyTarget)
-          .releaseTargetSelector();
+      const fullPolicy = await ctx.db.query.policy.findFirst({
+        where: eq(schema.policy.id, policyId),
+        with: rulesAndTargets,
+      });
+
+      if (fullPolicy == null) throw new Error("Policy not found");
+      await eventDispatcher.dispatchPolicyUpdated(fullPolicy, fullPolicy);
 
       return vs;
     }),
@@ -136,12 +131,12 @@ export const policyVersionSelectorRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const policyTargets = await getPolicyTargets(ctx.db, policyId);
-      for (const policyTarget of policyTargets)
-        dispatchQueueJob()
-          .toCompute()
-          .policyTarget(policyTarget)
-          .releaseTargetSelector();
+      const fullPolicy = await ctx.db.query.policy.findFirst({
+        where: eq(schema.policy.id, policyId),
+        with: rulesAndTargets,
+      });
+      if (fullPolicy == null) throw new Error("Policy not found");
+      await eventDispatcher.dispatchPolicyUpdated(fullPolicy, fullPolicy);
 
       return vs;
     }),

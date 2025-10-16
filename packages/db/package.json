@@ -46,11 +46,9 @@
     "@t3-oss/env-core": "catalog:",
     "drizzle-orm": "^0.37.0",
     "drizzle-zod": "^0.5.1",
-    "ioredis": "catalog:",
     "lodash": "catalog:",
     "ms": "catalog:",
     "pg": "^8.14.1",
-    "redis-semaphore": "catalog:",
     "rrule": "^2.8.1",
     "ts-is-present": "catalog:",
     "zod": "catalog:"

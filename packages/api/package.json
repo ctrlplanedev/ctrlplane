@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-iam": "^3.696.0",
+    "@aws-sdk/client-sts": "^3.696.0",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
