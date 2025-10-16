@@ -12,8 +12,11 @@ import (
 type Environments struct{}
 
 func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string) {
-	ws := utils.GetWorkspace(c, workspaceId)
-	if ws == nil {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 

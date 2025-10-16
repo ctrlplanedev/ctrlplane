@@ -12,10 +12,10 @@ import (
 type Policies struct{}
 
 func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId oapi.WorkspaceId, policyId oapi.PolicyId) {
-	ws := utils.GetWorkspace(c, workspaceId)
-	if ws == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Workspace not found",
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
 		})
 		return
 	}

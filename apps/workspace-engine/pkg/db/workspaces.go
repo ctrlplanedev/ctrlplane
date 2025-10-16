@@ -33,3 +33,22 @@ func GetWorkspaceIDs(ctx context.Context) ([]string, error) {
 	}
 	return workspaceIDs, nil
 }
+
+const WORKSPACE_EXISTS_QUERY = `
+	SELECT EXISTS(SELECT 1 FROM workspace WHERE id = $1)
+`
+
+func WorkspaceExists(ctx context.Context, workspaceId string) (bool, error) {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer db.Release()
+
+	var exists bool
+	err = db.QueryRow(ctx, WORKSPACE_EXISTS_QUERY, workspaceId).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}

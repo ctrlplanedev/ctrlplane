@@ -143,7 +143,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	changeSet := changeset.NewChangeSet[any]()
 	if !wsExists {
 		ws = workspace.New(rawEvent.WorkspaceID)
-		if err := loadWorkspaceWithInitialState(ctx, ws); err != nil {
+		if err := workspace.PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to load workspace")
 			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
@@ -154,7 +154,14 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	}
 	ctx = changeset.WithChangeSet(ctx, changeSet)
 
-	err := handler(ctx, ws, rawEvent)
+	if err := handler(ctx, ws, rawEvent); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "handler failed")
+		log.Error("Handler failed to process event",
+			"eventType", rawEvent.EventType,
+			"error", err)
+		return fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
+	}
 
 	releaseTargetChanges, err := ws.ReleaseManager().ProcessChanges(ctx, changeSet)
 	if err != nil {
@@ -171,15 +178,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		span.SetStatus(codes.Error, "failed to flush changeset")
 		log.Error("Failed to flush changeset", "error", err)
 		return fmt.Errorf("failed to flush changeset: %w", err)
-	}
-
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "handler failed")
-		log.Error("Handler failed to process event",
-			"eventType", rawEvent.EventType,
-			"error", err)
-		return fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")

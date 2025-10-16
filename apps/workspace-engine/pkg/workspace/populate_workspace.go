@@ -1,12 +1,11 @@
-package handler
+package workspace
 
 import (
 	"context"
 	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/workspace"
 )
 
-func loadWorkspaceWithInitialState(ctx context.Context, ws *workspace.Workspace) error {
+func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error {
 	initialWorkspaceState, err := db.LoadWorkspace(ctx, ws.ID)
 	if err != nil {
 		return err
