@@ -4,6 +4,7 @@ import httpStatus from "http-status";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
@@ -58,6 +59,10 @@ export const PATCH = request()
       .where(eq(schema.system.id, systemId))
       .returning()
       .then(takeFirst)
+      .then(async (system) => {
+        await eventDispatcher.dispatchSystemUpdated(system);
+        return system;
+      })
       .then((system) => NextResponse.json(system, { status: httpStatus.OK }))
       .catch((error) =>
         NextResponse.json(
@@ -93,6 +98,10 @@ export const DELETE = request()
         .where(eq(schema.system.id, systemId))
         .returning()
         .then(takeFirst)
+        .then(async (system) => {
+          await eventDispatcher.dispatchSystemDeleted(system);
+          return system;
+        })
         .then((system) =>
           NextResponse.json(
             { message: "System deleted", system },

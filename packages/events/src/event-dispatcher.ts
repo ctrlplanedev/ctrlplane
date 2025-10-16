@@ -13,6 +13,10 @@ export type FullPolicy = schema.Policy & {
 };
 
 export interface EventDispatcher {
+  dispatchSystemCreated(system: schema.System): Promise<void>;
+  dispatchSystemUpdated(system: schema.System): Promise<void>;
+  dispatchSystemDeleted(system: schema.System): Promise<void>;
+
   dispatchResourceCreated(resource: schema.Resource): Promise<void>;
   dispatchResourceUpdated(
     previous: schema.Resource,

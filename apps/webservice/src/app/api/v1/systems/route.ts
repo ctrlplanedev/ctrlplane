@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -38,7 +39,6 @@ export const POST = request()
         .then(takeFirstOrNull);
 
       if (existingSystem != null) {
-        // Update existing system
         const updatedSystem = await ctx.db
           .update(schema.system)
           .set(ctx.body)
@@ -46,15 +46,18 @@ export const POST = request()
           .returning()
           .then(takeFirst);
 
+        await eventDispatcher.dispatchSystemUpdated(updatedSystem);
+
         return NextResponse.json(updatedSystem, { status: httpStatus.OK });
       }
 
-      // Create new system
       const newSystem = await ctx.db
         .insert(schema.system)
         .values(ctx.body)
         .returning()
         .then(takeFirst);
+
+      await eventDispatcher.dispatchSystemCreated(newSystem);
 
       return NextResponse.json(newSystem, { status: httpStatus.CREATED });
     } catch (error) {

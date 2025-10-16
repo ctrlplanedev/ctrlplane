@@ -70,6 +70,12 @@ const workspaceHandlers: Record<Event, Handler<any>> = {
   [Event.PolicyDeleted]: deletedPolicy,
   [Event.JobUpdated]: updateJob,
   [Event.EvaluateReleaseTarget]: evaluateReleaseTarget,
+  [Event.SystemCreated]: () => Promise.resolve(),
+  [Event.SystemUpdated]: () => Promise.resolve(),
+  [Event.SystemDeleted]: () => Promise.resolve(),
+  [Event.UserApprovalRecordCreated]: () => Promise.resolve(),
+  [Event.UserApprovalRecordUpdated]: () => Promise.resolve(),
+  [Event.UserApprovalRecordDeleted]: () => Promise.resolve(),
 };
 
 export type Handler<T extends keyof EventPayload> = (

@@ -9,9 +9,22 @@ import * as jobDispatch from "./job.js";
 import * as policyDispatch from "./policy.js";
 import * as releaseTargetDispatch from "./release-target.js";
 import * as resourceDispatch from "./resource.js";
+import * as systemDispatch from "./system.js";
 import * as userApprovalRecordDispatch from "./user-approval-record.js";
 
 export class KafkaEventDispatcher implements EventDispatcher {
+  async dispatchSystemCreated(system: schema.System): Promise<void> {
+    await systemDispatch.dispatchSystemCreated(system);
+  }
+
+  async dispatchSystemUpdated(system: schema.System): Promise<void> {
+    await systemDispatch.dispatchSystemUpdated(system);
+  }
+
+  async dispatchSystemDeleted(system: schema.System): Promise<void> {
+    await systemDispatch.dispatchSystemDeleted(system);
+  }
+
   async dispatchResourceCreated(resource: schema.Resource): Promise<void> {
     await resourceDispatch.dispatchResourceCreated(resource);
   }

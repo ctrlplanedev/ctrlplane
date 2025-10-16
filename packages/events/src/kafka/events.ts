@@ -4,6 +4,10 @@ import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type * as PB from "../workspace-engine/types/index.js";
 
 export enum Event {
+  SystemCreated = "system.created",
+  SystemUpdated = "system.updated",
+  SystemDeleted = "system.deleted",
+
   ResourceCreated = "resource.created",
   ResourceUpdated = "resource.updated",
   ResourceDeleted = "resource.deleted",
@@ -130,6 +134,9 @@ export type EventPayload = {
   [Event.UserApprovalRecordCreated]: schema.PolicyRuleAnyApprovalRecord;
   [Event.UserApprovalRecordUpdated]: schema.PolicyRuleAnyApprovalRecord;
   [Event.UserApprovalRecordDeleted]: schema.PolicyRuleAnyApprovalRecord;
+  [Event.SystemCreated]: schema.System;
+  [Event.SystemUpdated]: schema.System;
+  [Event.SystemDeleted]: schema.System;
   // [Event.JobCreated]: schema.Job;
   // [Event.JobDeleted]: schema.Job;
   // [Event.SystemCreated]: schema.System;
@@ -138,6 +145,9 @@ export type EventPayload = {
 };
 
 export type GoEventPayload = {
+  [Event.SystemCreated]: WorkspaceEngine["schemas"]["System"];
+  [Event.SystemUpdated]: WorkspaceEngine["schemas"]["System"];
+  [Event.SystemDeleted]: WorkspaceEngine["schemas"]["System"];
   [Event.ResourceCreated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceUpdated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceDeleted]: WorkspaceEngine["schemas"]["Resource"];

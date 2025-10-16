@@ -28,6 +28,7 @@ import {
   updateSystem,
   workspace,
 } from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,
@@ -199,11 +200,20 @@ export const systemRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        await Promise.all([
+        await eventDispatcher.dispatchSystemCreated(sys);
+
+        const defaultEnvs = await Promise.all([
           upsertEnv(db, { systemId: sys.id, name: "Production" }),
           upsertEnv(db, { systemId: sys.id, name: "QA" }),
           upsertEnv(db, { systemId: sys.id, name: "Staging" }),
         ]);
+
+        await Promise.all(
+          defaultEnvs.map((env) =>
+            eventDispatcher.dispatchEnvironmentCreated(env),
+          ),
+        );
+
         return sys;
       }),
     ),
@@ -222,7 +232,11 @@ export const systemRouter = createTRPCRouter({
         .set(input.data)
         .where(eq(system.id, input.id))
         .returning()
-        .then(takeFirst),
+        .then(takeFirst)
+        .then((sys) => {
+          eventDispatcher.dispatchSystemUpdated(sys);
+          return sys;
+        }),
     ),
 
   delete: protectedProcedure
@@ -238,7 +252,11 @@ export const systemRouter = createTRPCRouter({
         .delete(system)
         .where(eq(system.id, input))
         .returning()
-        .then(takeFirst),
+        .then(takeFirst)
+        .then((sys) => {
+          eventDispatcher.dispatchSystemDeleted(sys);
+          return sys;
+        }),
     ),
 
   resources: protectedProcedure

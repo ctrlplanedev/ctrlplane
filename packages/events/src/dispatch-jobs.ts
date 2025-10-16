@@ -163,6 +163,18 @@ export const dispatchQueueJob = () => ({
 });
 
 export class BullMQEventDispatcher implements EventDispatcher {
+  async dispatchSystemCreated(_: schema.System): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async dispatchSystemUpdated(_: schema.System): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async dispatchSystemDeleted(_: schema.System): Promise<void> {
+    return Promise.resolve();
+  }
+
   async dispatchResourceCreated(resource: schema.Resource): Promise<void> {
     await getQueue(Channel.NewResource).add(resource.id, resource);
   }
