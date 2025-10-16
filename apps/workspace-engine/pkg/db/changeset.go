@@ -7,9 +7,16 @@ import (
 	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspaceID string) error {
+	ctx, span := tracer.Start(ctx, "DBFlushChangeset")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("workspace.id", workspaceID))
+	span.SetAttributes(attribute.Int("changeset.count", len(cs.Changes)))
+
 	cs.Lock()
 	defer cs.Unlock()
 
@@ -39,7 +46,8 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspace
 		return err
 	}
 
-	cs.Changes = cs.Changes[:0] // Clear changes
+	cs.Changes = []changeset.Change[any]{}
+
 	return nil
 }
 
