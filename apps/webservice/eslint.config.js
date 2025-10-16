@@ -5,7 +5,7 @@ import reactConfig from "@ctrlplane/eslint-config/react";
 /** @type {import('typescript-eslint').Config} */
 export default [
   {
-    ignores: [".next/**"],
+    ignores: [".next/**", "**/*_pb.js"],
   },
   ...baseConfig,
   ...reactConfig,

@@ -1,7 +1,7 @@
 import type { RouterOutputs } from "@ctrlplane/api";
+import type * as schema from "@ctrlplane/db/schema";
 import { IconAward, IconUserCheck } from "@tabler/icons-react";
 
-import * as schema from "@ctrlplane/db/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import {
   Tooltip,
