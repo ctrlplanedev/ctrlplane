@@ -1,4 +1,4 @@
-package versionmanager
+package versions
 
 import (
 	"context"

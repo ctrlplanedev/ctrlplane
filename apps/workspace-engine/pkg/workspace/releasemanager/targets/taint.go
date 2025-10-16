@@ -1,4 +1,4 @@
-package targetsmanager
+package targets
 
 import (
 	"workspace-engine/pkg/changeset"

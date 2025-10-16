@@ -1,9 +1,16 @@
-package policymanager
+package policy
 
 import (
 	"time"
-	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 )
+
+func NewDeployDecision() *DeployDecision {
+	return &DeployDecision{
+		PolicyResults: make([]*results.PolicyEvaluationResult, 0),
+		EvaluatedAt:   time.Now(),
+	}
+}
 
 // DeployDecision represents the final decision about whether a deployment can proceed.
 // It provides detailed information about policy evaluation results and required actions.

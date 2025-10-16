@@ -3,11 +3,12 @@ package deployableversions
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ results.VersionRuleEvaluator = &DeployableVersionStatusEvaluator{}
+var _ evaluator.VersionScopedEvaluator = &DeployableVersionStatusEvaluator{}
 
 type DeployableVersionStatusEvaluator struct {
 	store *store.Store

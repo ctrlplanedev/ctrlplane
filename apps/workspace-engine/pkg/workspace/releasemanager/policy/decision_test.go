@@ -1,10 +1,10 @@
-package policymanager
+package policy
 
 import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 
 	"github.com/stretchr/testify/assert"
 )

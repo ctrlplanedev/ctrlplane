@@ -48,7 +48,7 @@ func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 	}
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), &release.ReleaseTarget, release)
+	result, err := evaluator.Evaluate(context.Background(), release)
 
 	// Assert
 	if err != nil {
@@ -99,7 +99,7 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	evaluator := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	result, err := evaluator.Evaluate(ctx, releaseTarget, previousRelease)
+	result, err := evaluator.Evaluate(ctx, previousRelease)
 
 	// Assert: Should DENY retry of same release, even if it failed
 	if err != nil {
@@ -154,7 +154,7 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 	evaluator := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	result, err := evaluator.Evaluate(ctx, releaseTarget, deployedRelease)
+	result, err := evaluator.Evaluate(ctx, deployedRelease)
 
 	// Assert: Should deny re-deployment
 	if err != nil {
@@ -225,7 +225,7 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 	evaluator := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy v2.0.0
-	result, err := evaluator.Evaluate(ctx, releaseTarget, v2Release)
+	result, err := evaluator.Evaluate(ctx, v2Release)
 
 	// Assert: Should allow deploying new version
 	if err != nil {
@@ -274,7 +274,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	evaluator := NewSkipDeployedEvaluator(st)
 
 	// Act: Check same release
-	result, err := evaluator.Evaluate(ctx, releaseTarget, release)
+	result, err := evaluator.Evaluate(ctx, release)
 
 	// Assert: Should DENY - same release already has a job, even if in progress
 	if err != nil {
@@ -329,7 +329,7 @@ func TestSkipDeployedEvaluator_CancelledJobDeniesRedeploy(t *testing.T) {
 	evaluator := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	result, err := evaluator.Evaluate(ctx, releaseTarget, release)
+	result, err := evaluator.Evaluate(ctx, release)
 
 	// Assert: Should DENY retry of same release, even if cancelled
 	if err != nil {
@@ -411,7 +411,7 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	evaluator := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy with different variables
-	result, err := evaluator.Evaluate(ctx, releaseTarget, release2)
+	result, err := evaluator.Evaluate(ctx, release2)
 
 	// Assert: Should allow (different release ID due to different variables)
 	if err != nil {

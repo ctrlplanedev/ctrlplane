@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ results.VersionRuleEvaluator = &AnyApprovalEvaluator{}
+var _ evaluator.VersionScopedEvaluator = &AnyApprovalEvaluator{}
 
 type AnyApprovalEvaluator struct {
 	store *store.Store

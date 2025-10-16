@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policymanager/results"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ results.ReleaseRuleEvaluator = &SkipDeployedEvaluator{}
+var _ evaluator.ReleaseScopedEvaluator = &SkipDeployedEvaluator{}
 
 // SkipDeployedEvaluator prevents re-deploying releases that are already successfully deployed.
 // This ensures idempotency - the same release (version + variables + target) won't be deployed twice.
@@ -29,11 +30,12 @@ func NewSkipDeployedEvaluator(store *store.Store) *SkipDeployedEvaluator {
 //   - Allowed: If not yet attempted or previous job was for a different release
 func (e *SkipDeployedEvaluator) Evaluate(
 	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
 	release *oapi.Release,
 ) (*results.RuleEvaluationResult, error) {
+	releaseTarget := release.ReleaseTarget
+
 	// Get all jobs for this release target
-	jobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+	jobs := e.store.Jobs.GetJobsForReleaseTarget(&releaseTarget)
 	target, ok := e.store.Resources.Get(releaseTarget.ResourceId)
 	if !ok {
 		return nil, fmt.Errorf("resource not found")

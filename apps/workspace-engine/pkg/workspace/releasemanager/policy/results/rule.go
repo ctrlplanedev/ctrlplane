@@ -1,33 +1,5 @@
 package results
 
-import (
-	"context"
-	"workspace-engine/pkg/oapi"
-)
-
-type VersionRuleEvaluator interface {
-	Evaluate(
-		ctx context.Context,
-		releaseTarget *oapi.ReleaseTarget,
-		version *oapi.DeploymentVersion,
-	) (*RuleEvaluationResult, error)
-}
-
-type ReleaseRuleEvaluator interface {
-	Evaluate(
-		ctx context.Context,
-		releaseTarget *oapi.ReleaseTarget,
-		release *oapi.Release,
-	) (*RuleEvaluationResult, error)
-}
-
-type ReleaseTargetRuleEvaluator interface {
-	Evaluate(
-		ctx context.Context,
-		releaseTarget *oapi.ReleaseTarget,
-	) (*RuleEvaluationResult, error)
-}
-
 type ActionType string
 
 const (
@@ -35,9 +7,15 @@ const (
 	ActionTypeWait     ActionType = "wait"
 )
 
+func NewResult() *RuleEvaluationResult {
+	return &RuleEvaluationResult{
+		Details:        make(map[string]any),
+	}
+}
+
 // EvaluationResult represents the outcome of evaluating a policy rule.
 type RuleEvaluationResult struct {
-	// Allowed indicates whether the rule permits the deployment
+	// Allowed indicates whether the rule permits the action
 	Allowed bool
 
 	// Reason provides a human-readable explanation for the result
@@ -55,6 +33,22 @@ type RuleEvaluationResult struct {
 	ActionType ActionType
 }
 
+func (r *RuleEvaluationResult) Allow() *RuleEvaluationResult {
+	r.Allowed = true
+	return r
+}
+
+func (r *RuleEvaluationResult) WithReason(reason string) *RuleEvaluationResult {
+	r.Reason = reason
+	return r
+}
+
+func (r *RuleEvaluationResult) WithActionRequired(actionType ActionType) *RuleEvaluationResult {
+	r.ActionRequired = true
+	r.ActionType = actionType
+	return r
+}
+
 // WithDetail adds a detail to the result and returns the result for chaining.
 func (r *RuleEvaluationResult) WithDetail(key string, value any) *RuleEvaluationResult {
 	if r.Details == nil {
@@ -66,31 +60,19 @@ func (r *RuleEvaluationResult) WithDetail(key string, value any) *RuleEvaluation
 
 // NewPendingResult creates a result indicating the rule requires action before proceeding.
 func NewPendingResult(actionType ActionType, reason string) *RuleEvaluationResult {
-	return &RuleEvaluationResult{
-		Allowed:        false,
-		Reason:         reason,
-		Details:        make(map[string]any),
-		ActionRequired: true,
-		ActionType:     actionType,
-	}
+	return NewResult().
+		WithActionRequired(actionType).
+		WithReason(reason)
 }
 
 // NewDeniedResult creates a result indicating the rule denies the deployment.
 func NewDeniedResult(reason string) *RuleEvaluationResult {
-	return &RuleEvaluationResult{
-		Allowed:        false,
-		Reason:         reason,
-		Details:        make(map[string]any),
-		ActionRequired: false,
-	}
+	return NewResult().WithReason(reason)
 }
 
 // NewAllowedResult creates a result indicating the rule allows the deployment.
 func NewAllowedResult(reason string) *RuleEvaluationResult {
-	return &RuleEvaluationResult{
-		Allowed:        true,
-		Reason:         reason,
-		Details:        make(map[string]any),
-		ActionRequired: false,
-	}
+	return NewResult().
+		Allow().
+		WithReason(reason)
 }
