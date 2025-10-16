@@ -87,11 +87,19 @@ type dbAnyApprovalRule struct {
 	MinApprovals int32     `db:"minApprovals"`
 }
 
+type dbPolicyTargetSelector struct {
+	Id                  string                 `json:"id"`
+	DeploymentSelector  map[string]interface{} `json:"deploymentSelector"`
+	EnvironmentSelector map[string]interface{} `json:"environmentSelector"`
+	ResourceSelector    map[string]interface{} `json:"resourceSelector"`
+}
+
 func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	policy := &oapi.Policy{}
 	var createdAt time.Time
 	var anyApprovalRuleRaw *dbAnyApprovalRule
 	var description *string
+	var dbSelectors []dbPolicyTargetSelector
 
 	err := rows.Scan(
 		&policy.Id,
@@ -99,7 +107,7 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 		&description,
 		&policy.WorkspaceId,
 		&createdAt,
-		&policy.Selectors,
+		&dbSelectors,
 		&anyApprovalRuleRaw,
 	)
 	if err != nil {
@@ -108,16 +116,27 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	policy.Description = description
 	policy.CreatedAt = createdAt.Format(time.RFC3339)
 
-	// Wrap selectors from unwrapped database format
-	for i := range policy.Selectors {
-		if err := wrapSelectorFromDB(policy.Selectors[i].DeploymentSelector); err != nil {
+	// Convert database selectors to OAPI selectors with wrapping
+	policy.Selectors = make([]oapi.PolicyTargetSelector, len(dbSelectors))
+	for i, dbSel := range dbSelectors {
+		deploymentSelector, err := wrapSelectorFromDB(dbSel.DeploymentSelector)
+		if err != nil {
 			return nil, fmt.Errorf("failed to wrap deployment selector: %w", err)
 		}
-		if err := wrapSelectorFromDB(policy.Selectors[i].EnvironmentSelector); err != nil {
+		environmentSelector, err := wrapSelectorFromDB(dbSel.EnvironmentSelector)
+		if err != nil {
 			return nil, fmt.Errorf("failed to wrap environment selector: %w", err)
 		}
-		if err := wrapSelectorFromDB(policy.Selectors[i].ResourceSelector); err != nil {
+		resourceSelector, err := wrapSelectorFromDB(dbSel.ResourceSelector)
+		if err != nil {
 			return nil, fmt.Errorf("failed to wrap resource selector: %w", err)
+		}
+
+		policy.Selectors[i] = oapi.PolicyTargetSelector{
+			Id:                  dbSel.Id,
+			DeploymentSelector:  deploymentSelector,
+			EnvironmentSelector: environmentSelector,
+			ResourceSelector:    resourceSelector,
 		}
 	}
 

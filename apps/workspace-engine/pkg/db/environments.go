@@ -39,13 +39,15 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 	for rows.Next() {
 		var environment oapi.Environment
 		var createdAt time.Time
+		var rawSelector map[string]interface{}
+
 		err := rows.Scan(
 			&environment.Id,
 			&environment.Name,
 			&environment.SystemId,
 			&createdAt,
 			&environment.Description,
-			&environment.ResourceSelector,
+			&rawSelector,
 		)
 		if err != nil {
 			return nil, err
@@ -53,7 +55,8 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 		environment.CreatedAt = createdAt.Format(time.RFC3339)
 
 		// Wrap selector from unwrapped database format to JsonSelector format
-		if err := wrapSelectorFromDB(environment.ResourceSelector); err != nil {
+		environment.ResourceSelector, err = wrapSelectorFromDB(rawSelector)
+		if err != nil {
 			return nil, err
 		}
 

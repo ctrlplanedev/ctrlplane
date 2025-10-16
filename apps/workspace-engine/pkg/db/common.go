@@ -19,35 +19,25 @@ func parseJSONToStruct(jsonData []byte) map[string]interface{} {
 	return dataMap
 }
 
-// wrapSelectorFromDB wraps an unwrapped ResourceCondition from the database
-// into JsonSelector format. The database stores JSON selectors in unwrapped format
-// (just the condition tree without the "json" wrapper).
-func wrapSelectorFromDB(selector *oapi.Selector) error {
-	if selector == nil {
-		return nil
+// wrapSelectorFromDB wraps a db selector in oapi JsonSelector format
+func wrapSelectorFromDB(rawMap map[string]interface{}) (*oapi.Selector, error) {
+	if rawMap == nil {
+		return nil, nil
 	}
 
-	// Get the raw unwrapped selector data from the database
-	var rawMap map[string]interface{}
-	selectorBytes, err := selector.MarshalJSON()
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(selectorBytes, &rawMap); err != nil {
-		return err
-	}
-
-	// It's an unwrapped ResourceCondition from the database, wrap it in JsonSelector format
-	wrappedSelector := oapi.JsonSelector{
+	// Wrap the raw map in JsonSelector format
+	selector := &oapi.Selector{}
+	err := selector.FromJsonSelector(oapi.JsonSelector{
 		Json: rawMap,
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return selector.FromJsonSelector(wrappedSelector)
+	return selector, nil
 }
 
-// unwrapSelectorForDB extracts the inner condition from a JsonSelector for database storage.
-// The database stores JSON selectors in unwrapped ResourceCondition format.
+// unwrapSelectorForDB unwraps a selector for database storage (database stores unwrapped selector format)
 // NOTE: CEL selectors are not currently supported - they will be written as NULL to the database.
 func unwrapSelectorForDB(selector *oapi.Selector) (map[string]interface{}, error) {
 	if selector == nil {

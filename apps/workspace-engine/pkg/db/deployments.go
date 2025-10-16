@@ -39,6 +39,8 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 	deployments := make([]*oapi.Deployment, 0)
 	for rows.Next() {
 		var deployment oapi.Deployment
+		var rawSelector map[string]interface{}
+
 		err := rows.Scan(
 			&deployment.Id,
 			&deployment.Name,
@@ -47,14 +49,15 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 			&deployment.SystemId,
 			&deployment.JobAgentId,
 			&deployment.JobAgentConfig,
-			&deployment.ResourceSelector,
+			&rawSelector,
 		)
 		if err != nil {
 			return nil, err
 		}
 
 		// Wrap selector from unwrapped database format to JsonSelector format
-		if err := wrapSelectorFromDB(deployment.ResourceSelector); err != nil {
+		deployment.ResourceSelector, err = wrapSelectorFromDB(rawSelector)
+		if err != nil {
 			return nil, err
 		}
 
