@@ -596,3 +596,596 @@ func TestDBUserApprovalRecords_DifferentStatuses(t *testing.T) {
 		t.Fatalf("expected 1 rejected record, got %d", rejectedCount)
 	}
 }
+
+func TestDBUserApprovalRecords_BasicWrite(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
+	// Create required dependencies
+	userID := uuid.New().String()
+	_, err := conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		userID, "Test User", "test@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	systemID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO system (id, name, slug, workspace_id) VALUES ($1, $2, $3, $4)`,
+		systemID, "Test System", "test-system", workspaceID)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	environmentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO environment (id, name, system_id) VALUES ($1, $2, $3)`,
+		environmentID, "Test Environment", systemID)
+	if err != nil {
+		t.Fatalf("failed to create environment: %v", err)
+	}
+
+	deploymentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment (id, name, slug, description, system_id) VALUES ($1, $2, $3, $4, $5)`,
+		deploymentID, "Test Deployment", "test-deployment", "Test deployment description", systemID)
+	if err != nil {
+		t.Fatalf("failed to create deployment: %v", err)
+	}
+
+	versionID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment_version (id, name, tag, deployment_id) VALUES ($1, $2, $3, $4)`,
+		versionID, "v1.0.0", "latest", deploymentID)
+	if err != nil {
+		t.Fatalf("failed to create deployment version: %v", err)
+	}
+
+	// Write approval record using the function
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	reason := "Approved via write function"
+	approvalRecord := &oapi.UserApprovalRecord{
+		UserId:        userID,
+		VersionId:     versionID,
+		EnvironmentId: environmentID,
+		Status:        oapi.ApprovalStatusApproved,
+		Reason:        &reason,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	err = writeUserApprovalRecord(t.Context(), approvalRecord, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify the record was created
+	records, err := getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	expectedRecords := []*oapi.UserApprovalRecord{approvalRecord}
+	validateRetrievedUserApprovalRecords(t, records, expectedRecords)
+}
+
+func TestDBUserApprovalRecords_WriteUpsert(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
+	// Create required dependencies
+	userID := uuid.New().String()
+	_, err := conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		userID, "Test User", "test@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	systemID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO system (id, name, slug, workspace_id) VALUES ($1, $2, $3, $4)`,
+		systemID, "Test System", "test-system", workspaceID)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	environmentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO environment (id, name, system_id) VALUES ($1, $2, $3)`,
+		environmentID, "Test Environment", systemID)
+	if err != nil {
+		t.Fatalf("failed to create environment: %v", err)
+	}
+
+	deploymentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment (id, name, slug, description, system_id) VALUES ($1, $2, $3, $4, $5)`,
+		deploymentID, "Test Deployment", "test-deployment", "Test deployment description", systemID)
+	if err != nil {
+		t.Fatalf("failed to create deployment: %v", err)
+	}
+
+	versionID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment_version (id, name, tag, deployment_id) VALUES ($1, $2, $3, $4)`,
+		versionID, "v1.0.0", "latest", deploymentID)
+	if err != nil {
+		t.Fatalf("failed to create deployment version: %v", err)
+	}
+
+	// Write initial approval record
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	reason1 := "Initial approval"
+	approvalRecord := &oapi.UserApprovalRecord{
+		UserId:        userID,
+		VersionId:     versionID,
+		EnvironmentId: environmentID,
+		Status:        oapi.ApprovalStatusApproved,
+		Reason:        &reason1,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	err = writeUserApprovalRecord(t.Context(), approvalRecord, tx)
+	if err != nil {
+		t.Fatalf("expected no errors on first write, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Update the same record with different status and reason
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	reason2 := "Changed mind, rejecting"
+	approvalRecord.Status = oapi.ApprovalStatusRejected
+	approvalRecord.Reason = &reason2
+
+	err = writeUserApprovalRecord(t.Context(), approvalRecord, tx)
+	if err != nil {
+		t.Fatalf("expected no errors on upsert, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify only one record exists with updated values
+	records, err := getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record after upsert, got %d", len(records))
+	}
+
+	if records[0].Status != oapi.ApprovalStatusRejected {
+		t.Fatalf("expected status to be rejected after upsert, got %v", records[0].Status)
+	}
+
+	if records[0].Reason == nil || *records[0].Reason != reason2 {
+		t.Fatalf("expected reason to be %q after upsert, got %v", reason2, records[0].Reason)
+	}
+}
+
+func TestDBUserApprovalRecords_WriteWithoutReason(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
+	// Create required dependencies
+	userID := uuid.New().String()
+	_, err := conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		userID, "Test User", "test@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	systemID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO system (id, name, slug, workspace_id) VALUES ($1, $2, $3, $4)`,
+		systemID, "Test System", "test-system", workspaceID)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	environmentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO environment (id, name, system_id) VALUES ($1, $2, $3)`,
+		environmentID, "Test Environment", systemID)
+	if err != nil {
+		t.Fatalf("failed to create environment: %v", err)
+	}
+
+	deploymentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment (id, name, slug, description, system_id) VALUES ($1, $2, $3, $4, $5)`,
+		deploymentID, "Test Deployment", "test-deployment", "Test deployment description", systemID)
+	if err != nil {
+		t.Fatalf("failed to create deployment: %v", err)
+	}
+
+	versionID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment_version (id, name, tag, deployment_id) VALUES ($1, $2, $3, $4)`,
+		versionID, "v1.0.0", "latest", deploymentID)
+	if err != nil {
+		t.Fatalf("failed to create deployment version: %v", err)
+	}
+
+	// Write approval record without a reason
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	approvalRecord := &oapi.UserApprovalRecord{
+		UserId:        userID,
+		VersionId:     versionID,
+		EnvironmentId: environmentID,
+		Status:        oapi.ApprovalStatusApproved,
+		Reason:        nil,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	err = writeUserApprovalRecord(t.Context(), approvalRecord, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify the record was created without a reason
+	records, err := getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
+	}
+
+	if records[0].Reason != nil {
+		t.Fatalf("expected reason to be nil, got %v", *records[0].Reason)
+	}
+}
+
+func TestDBUserApprovalRecords_BasicDelete(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
+	// Create required dependencies
+	userID := uuid.New().String()
+	_, err := conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		userID, "Test User", "test@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	systemID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO system (id, name, slug, workspace_id) VALUES ($1, $2, $3, $4)`,
+		systemID, "Test System", "test-system", workspaceID)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	environmentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO environment (id, name, system_id) VALUES ($1, $2, $3)`,
+		environmentID, "Test Environment", systemID)
+	if err != nil {
+		t.Fatalf("failed to create environment: %v", err)
+	}
+
+	deploymentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment (id, name, slug, description, system_id) VALUES ($1, $2, $3, $4, $5)`,
+		deploymentID, "Test Deployment", "test-deployment", "Test deployment description", systemID)
+	if err != nil {
+		t.Fatalf("failed to create deployment: %v", err)
+	}
+
+	versionID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment_version (id, name, tag, deployment_id) VALUES ($1, $2, $3, $4)`,
+		versionID, "v1.0.0", "latest", deploymentID)
+	if err != nil {
+		t.Fatalf("failed to create deployment version: %v", err)
+	}
+
+	// Write approval record
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	reason := "Approved for deletion test"
+	approvalRecord := &oapi.UserApprovalRecord{
+		UserId:        userID,
+		VersionId:     versionID,
+		EnvironmentId: environmentID,
+		Status:        oapi.ApprovalStatusApproved,
+		Reason:        &reason,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	err = writeUserApprovalRecord(t.Context(), approvalRecord, tx)
+	if err != nil {
+		t.Fatalf("expected no errors on write, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify record exists
+	records, err := getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record before delete, got %d", len(records))
+	}
+
+	// Delete the record
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	err = deleteUserApprovalRecord(t.Context(), approvalRecord, tx)
+	if err != nil {
+		t.Fatalf("expected no errors on delete, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify record is deleted
+	records, err = getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	if len(records) != 0 {
+		t.Fatalf("expected 0 records after delete, got %d", len(records))
+	}
+}
+
+func TestDBUserApprovalRecords_DeleteNonexistent(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
+	// Create required dependencies but don't create a record
+	userID := uuid.New().String()
+	_, err := conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		userID, "Test User", "test@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	systemID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO system (id, name, slug, workspace_id) VALUES ($1, $2, $3, $4)`,
+		systemID, "Test System", "test-system", workspaceID)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	environmentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO environment (id, name, system_id) VALUES ($1, $2, $3)`,
+		environmentID, "Test Environment", systemID)
+	if err != nil {
+		t.Fatalf("failed to create environment: %v", err)
+	}
+
+	deploymentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment (id, name, slug, description, system_id) VALUES ($1, $2, $3, $4, $5)`,
+		deploymentID, "Test Deployment", "test-deployment", "Test deployment description", systemID)
+	if err != nil {
+		t.Fatalf("failed to create deployment: %v", err)
+	}
+
+	versionID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment_version (id, name, tag, deployment_id) VALUES ($1, $2, $3, $4)`,
+		versionID, "v1.0.0", "latest", deploymentID)
+	if err != nil {
+		t.Fatalf("failed to create deployment version: %v", err)
+	}
+
+	// Try to delete a record that doesn't exist
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	approvalRecord := &oapi.UserApprovalRecord{
+		UserId:        userID,
+		VersionId:     versionID,
+		EnvironmentId: environmentID,
+	}
+
+	// Should not error when deleting non-existent record
+	err = deleteUserApprovalRecord(t.Context(), approvalRecord, tx)
+	if err != nil {
+		t.Fatalf("expected no errors when deleting non-existent record, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+}
+
+func TestDBUserApprovalRecords_DeleteOneOfMany(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
+	// Create required dependencies
+	user1ID := uuid.New().String()
+	_, err := conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		user1ID, "User 1", "user1@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user1: %v", err)
+	}
+
+	user2ID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		user2ID, "User 2", "user2@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user2: %v", err)
+	}
+
+	systemID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO system (id, name, slug, workspace_id) VALUES ($1, $2, $3, $4)`,
+		systemID, "Test System", "test-system", workspaceID)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	environmentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO environment (id, name, system_id) VALUES ($1, $2, $3)`,
+		environmentID, "Test Environment", systemID)
+	if err != nil {
+		t.Fatalf("failed to create environment: %v", err)
+	}
+
+	deploymentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment (id, name, slug, description, system_id) VALUES ($1, $2, $3, $4, $5)`,
+		deploymentID, "Test Deployment", "test-deployment", "Test deployment description", systemID)
+	if err != nil {
+		t.Fatalf("failed to create deployment: %v", err)
+	}
+
+	versionID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment_version (id, name, tag, deployment_id) VALUES ($1, $2, $3, $4)`,
+		versionID, "v1.0.0", "latest", deploymentID)
+	if err != nil {
+		t.Fatalf("failed to create deployment version: %v", err)
+	}
+
+	// Write two approval records
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	reason1 := "User 1 approval"
+	record1 := &oapi.UserApprovalRecord{
+		UserId:        user1ID,
+		VersionId:     versionID,
+		EnvironmentId: environmentID,
+		Status:        oapi.ApprovalStatusApproved,
+		Reason:        &reason1,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	reason2 := "User 2 approval"
+	record2 := &oapi.UserApprovalRecord{
+		UserId:        user2ID,
+		VersionId:     versionID,
+		EnvironmentId: environmentID,
+		Status:        oapi.ApprovalStatusApproved,
+		Reason:        &reason2,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	err = writeUserApprovalRecord(t.Context(), record1, tx)
+	if err != nil {
+		t.Fatalf("expected no errors writing record1, got %v", err)
+	}
+
+	err = writeUserApprovalRecord(t.Context(), record2, tx)
+	if err != nil {
+		t.Fatalf("expected no errors writing record2, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify both records exist
+	records, err := getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	if len(records) != 2 {
+		t.Fatalf("expected 2 records before delete, got %d", len(records))
+	}
+
+	// Delete only record1
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	err = deleteUserApprovalRecord(t.Context(), record1, tx)
+	if err != nil {
+		t.Fatalf("expected no errors on delete, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify only record2 remains
+	records, err = getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record after delete, got %d", len(records))
+	}
+
+	if records[0].UserId != user2ID {
+		t.Fatalf("expected remaining record to belong to user2, got user %s", records[0].UserId)
+	}
+}

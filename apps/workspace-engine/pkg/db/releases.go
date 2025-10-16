@@ -228,6 +228,11 @@ func writeRelease(ctx context.Context, release *oapi.Release, workspaceID string
 	return err
 }
 
-func deleteRelease() error {
-	return nil
+const DELETE_RELEASE_QUERY = `
+	DELETE FROM release WHERE id = $1
+`
+
+func deleteRelease(ctx context.Context, releaseID string, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, DELETE_RELEASE_QUERY, releaseID)
+	return err
 }
