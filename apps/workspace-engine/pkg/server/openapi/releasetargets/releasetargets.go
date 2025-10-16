@@ -69,10 +69,10 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId oapi.
 
 // GetPoliciesForReleaseTarget implements oapi.ServerInterface.
 func (s *ReleaseTargets) GetPoliciesForReleaseTarget(c *gin.Context, workspaceId oapi.WorkspaceId, releaseTargetId oapi.ReleaseTargetId) {
-	ws := utils.GetWorkspace(c, workspaceId)
-	if ws == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Workspace not found",
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
 		})
 		return
 	}
