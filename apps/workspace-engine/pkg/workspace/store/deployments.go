@@ -203,12 +203,9 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 }
 
 func (e *Deployments) Remove(ctx context.Context, id string) {
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		d, ok := e.Get(id)
-		if !ok {
-			return
-		}
-		cs.Record(changeset.ChangeTypeDelete, d)
+	deployment, ok := e.Get(id)
+	if !ok {
+		return
 	}
 
 	e.repo.Deployments.Remove(id)
@@ -216,6 +213,10 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 	e.versions.Remove(id)
 
 	e.store.ReleaseTargets.Recompute(ctx)
+
+	if cs, ok := changeset.FromContext[any](ctx); ok {
+		cs.Record(changeset.ChangeTypeDelete, deployment)
+	}
 }
 
 func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {
