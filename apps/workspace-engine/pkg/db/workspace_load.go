@@ -19,6 +19,7 @@ type InitialWorkspaceState struct {
 	deploymentVersions  []*oapi.DeploymentVersion
 	deploymentVariables []*oapi.DeploymentVariable
 	releases            []*oapi.Release
+	jobs                []*oapi.Job
 	environments        []*oapi.Environment
 	policies            []*oapi.Policy
 	jobAgents           []*oapi.JobAgent
@@ -49,6 +50,10 @@ func (i *InitialWorkspaceState) DeploymentVariables() []*oapi.DeploymentVariable
 
 func (i *InitialWorkspaceState) Releases() []*oapi.Release {
 	return i.releases
+}
+
+func (i *InitialWorkspaceState) Jobs() []*oapi.Job {
+	return i.jobs
 }
 
 func (i *InitialWorkspaceState) Environments() []*oapi.Environment {
@@ -219,6 +224,18 @@ func loadReleases(ctx context.Context, workspaceID string) ([]*oapi.Release, err
 	return dbReleases, nil
 }
 
+func loadJobs(ctx context.Context, workspaceID string) ([]*oapi.Job, error) {
+	ctx, span := tracer.Start(ctx, "loadJobs")
+	defer span.End()
+
+	dbJobs, err := getJobs(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get jobs: %w", err)
+	}
+	span.SetAttributes(attribute.Int("count", len(dbJobs)))
+	return dbJobs, nil
+}
+
 func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceState *InitialWorkspaceState, err error) {
 	ctx, span := tracer.Start(ctx, "LoadWorkspace")
 	defer span.End()
@@ -278,6 +295,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceSta
 
 	if initialWorkspaceState.releases, err = loadReleases(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load releases: %w", err)
+	}
+
+	if initialWorkspaceState.jobs, err = loadJobs(ctx, workspaceID); err != nil {
+		return nil, fmt.Errorf("failed to load jobs: %w", err)
 	}
 
 	return initialWorkspaceState, nil
