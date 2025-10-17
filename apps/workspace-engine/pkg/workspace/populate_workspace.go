@@ -56,9 +56,10 @@ func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error
 		}
 	}
 	for _, githubEntity := range initialWorkspaceState.GithubEntities() {
-		if err := ws.GithubEntities().Upsert(ctx, githubEntity); err != nil {
-			return err
-		}
+		ws.GithubEntities().Upsert(ctx, githubEntity)
+	}
+	for _, userApprovalRecord := range initialWorkspaceState.UserApprovalRecords() {
+		ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
 	}
 
 	return nil

@@ -22,13 +22,12 @@ func (g *GithubEntities) key(slug string, installationId int) string {
 	return fmt.Sprintf("%s-%d", slug, installationId)
 }
 
-func (g *GithubEntities) Upsert(ctx context.Context, githubEntity *oapi.GithubEntity) error {
+func (g *GithubEntities) Upsert(ctx context.Context, githubEntity *oapi.GithubEntity) {
 	key := g.key(githubEntity.Slug, githubEntity.InstallationId)
 	g.repo.GithubEntities.Set(key, githubEntity)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, githubEntity)
 	}
-	return nil
 }
 
 func (g *GithubEntities) Get(slug string, installationId int) (*oapi.GithubEntity, bool) {

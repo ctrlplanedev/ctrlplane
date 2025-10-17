@@ -98,6 +98,10 @@ func (w *Workspace) GithubEntities() *store.GithubEntities {
 	return w.store.GithubEntities
 }
 
+func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
+	return w.store.UserApprovalRecords
+}
+
 func (w *Workspace) GobEncode() ([]byte, error) {
 	return w.store.GobEncode()
 }
@@ -117,10 +121,6 @@ func (w *Workspace) GobDecode(data []byte) error {
 	w.releasemanager = releasemanager.New(w.store)
 
 	return nil
-}
-
-func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
-	return w.store.UserApprovalRecords
 }
 
 func (w *Workspace) RelationshipRules() *store.RelationshipRules {
