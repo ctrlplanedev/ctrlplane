@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -57,9 +58,16 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 
 	// Load workspaces and seek to stored offsets if workspace loader is provided
 	if workspaceLoader != nil {
-		if err := loadWorkspacesAndApplyOffsets(ctx, consumer, workspaceLoader); err != nil {
-			log.Warn("Failed to load workspaces and apply stored offsets, starting from default position", "error", err)
+		assignedPartitions, err := waitForPartitionAssignment(consumer)
+		if err != nil {
+			return fmt.Errorf("failed to wait for partition assignment: %w", err)
 		}
+
+		if err := loadWorkspaces(ctx, consumer, assignedPartitions, workspaceLoader); err != nil {
+			return fmt.Errorf("failed to load workspaces: %w", err)
+		}
+
+		applyOffsets(consumer, assignedPartitions)
 	}
 
 	log.Info("Started Kafka consumer for ctrlplane-events")

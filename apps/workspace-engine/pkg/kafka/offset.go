@@ -12,35 +12,36 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-// loadWorkspacesAndApplyOffsets orchestrates workspace loading and offset seeking on consumer startup
-func loadWorkspacesAndApplyOffsets(ctx context.Context, c *kafka.Consumer, workspaceLoader workspace.WorkspaceLoader) error {
-	// Step 1: Wait for Kafka to assign partitions to this consumer
-	assignedPartitions, err := waitForPartitionAssignment(c)
-	if err != nil {
-		return err
-	}
-
+// loadWorkspaces loads workspaces for the assigned partitions
+// Returns the list of assigned partitions
+func loadWorkspaces(ctx context.Context, c *kafka.Consumer, assignedPartitions []int32, workspaceLoader workspace.WorkspaceLoader) error {
 	if len(assignedPartitions) == 0 {
 		log.Info("No partitions assigned to this consumer")
 		return nil
 	}
 
-	// Step 2: Get total partition count for the topic
+	// Get total partition count for the topic
 	numPartitions, err := getTopicPartitionCount(c)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get topic partition count: %w", err)
 	}
 
-	// Step 3: Load workspaces that belong to our assigned partitions
+	// Load workspaces that belong to our assigned partitions
 	err = workspaceLoader(ctx, assignedPartitions, numPartitions)
 	if err != nil {
 		return fmt.Errorf("failed to load workspaces: %w", err)
 	}
 
-	// Step 4: Seek each partition to its stored offset
-	seekStoredOffsets(c, assignedPartitions)
-
 	return nil
+}
+
+// applyOffsets seeks each assigned partition to its stored offset
+func applyOffsets(c *kafka.Consumer, assignedPartitions []int32) {
+	if len(assignedPartitions) == 0 {
+		return
+	}
+
+	seekStoredOffsets(c, assignedPartitions)
 }
 
 // waitForPartitionAssignment blocks until Kafka assigns partitions to this consumer (or timeout)
