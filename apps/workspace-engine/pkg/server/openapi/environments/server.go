@@ -11,6 +11,26 @@ import (
 
 type Environments struct{}
 
+func (s *Environments) GetEnvironment(c *gin.Context, workspaceId string, environmentId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	environment, ok := ws.Environments().Get(environmentId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Environment not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, environment)
+}
+
 func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {

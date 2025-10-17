@@ -10,6 +10,26 @@ import (
 
 type Deployments struct{}
 
+func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deploymentId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	deployment, ok := ws.Deployments().Get(deploymentId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Deployment not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, deployment)
+}
+
 func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {

@@ -1043,6 +1043,65 @@
             "summary": "List workspace IDs"
          }
       },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {
+         "get": {
+            "description": "Returns a specific deployment by ID.",
+            "operationId": "getDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Deployment"
+                        }
+                     }
+                  },
+                  "description": "The requested deployment"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment"
+         }
+      },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources": {
          "get": {
             "description": "Returns a list of resources for deployment {deploymentId}.",
@@ -1171,6 +1230,65 @@
                }
             },
             "summary": "Get related entities for a given entity"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
+         "get": {
+            "description": "Returns a specific environment by ID.",
+            "operationId": "getEnvironment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Environment"
+                        }
+                     }
+                  },
+                  "description": "The requested environment"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get environment"
          }
       },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
@@ -1506,6 +1624,124 @@
                }
             },
             "summary": "Get policies for a release target"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}": {
+         "get": {
+            "description": "Returns a specific resource by its identifier.",
+            "operationId": "getResourceByIdentifier",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Identifier of the resource",
+                  "in": "path",
+                  "name": "resourceIdentifier",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Resource"
+                        }
+                     }
+                  },
+                  "description": "The requested resource"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get resource by identifier"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}": {
+         "get": {
+            "description": "Returns a specific system by ID.",
+            "operationId": "getSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/System"
+                        }
+                     }
+                  },
+                  "description": "The requested system"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get system"
          }
       }
    }

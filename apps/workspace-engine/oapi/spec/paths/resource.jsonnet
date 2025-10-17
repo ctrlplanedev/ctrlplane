@@ -48,4 +48,20 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse(),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}': {
+    get: {
+      summary: 'Get resource by identifier',
+      operationId: 'getResourceByIdentifier',
+      description: 'Returns a specific resource by its identifier.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.resourceIdentifierParam(),
+      ],
+      responses: openapi.okResponse(
+        'The requested resource',
+        openapi.schemaRef('Resource')
+      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
 }

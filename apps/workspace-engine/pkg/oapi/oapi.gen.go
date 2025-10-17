@@ -904,12 +904,18 @@ type ServerInterface interface {
 	// List workspace IDs
 	// (GET /v1/workspaces)
 	ListWorkspaceIds(c *gin.Context)
+	// Get deployment
+	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId})
+	GetDeployment(c *gin.Context, workspaceId string, deploymentId string)
 	// Get resources for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
 	GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string)
 	// Get related entities for a given entity
 	// (GET /v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships)
 	GetRelatedEntities(c *gin.Context, workspaceId string, relatableEntityType RelatableEntityType, entityId string)
+	// Get environment
+	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId})
+	GetEnvironment(c *gin.Context, workspaceId string, environmentId string)
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
 	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string)
@@ -928,6 +934,12 @@ type ServerInterface interface {
 	// Get policies for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies)
 	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetId string)
+	// Get resource by identifier
+	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
+	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
+	// Get system
+	// (GET /v1/workspaces/{workspaceId}/systems/{systemId})
+	GetSystem(c *gin.Context, workspaceId string, systemId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -950,6 +962,39 @@ func (siw *ServerInterfaceWrapper) ListWorkspaceIds(c *gin.Context) {
 	}
 
 	siw.Handler.ListWorkspaceIds(c)
+}
+
+// GetDeployment operation middleware
+func (siw *ServerInterfaceWrapper) GetDeployment(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "deploymentId" -------------
+	var deploymentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeployment(c, workspaceId, deploymentId)
 }
 
 // GetDeploymentResources operation middleware
@@ -1025,6 +1070,39 @@ func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
 	}
 
 	siw.Handler.GetRelatedEntities(c, workspaceId, relatableEntityType, entityId)
+}
+
+// GetEnvironment operation middleware
+func (siw *ServerInterfaceWrapper) GetEnvironment(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "environmentId" -------------
+	var environmentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "environmentId", c.Param("environmentId"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environmentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetEnvironment(c, workspaceId, environmentId)
 }
 
 // GetEnvironmentResources operation middleware
@@ -1207,6 +1285,72 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetId)
 }
 
+// GetResourceByIdentifier operation middleware
+func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "resourceIdentifier" -------------
+	var resourceIdentifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetResourceByIdentifier(c, workspaceId, resourceIdentifier)
+}
+
+// GetSystem operation middleware
+func (siw *ServerInterfaceWrapper) GetSystem(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "systemId" -------------
+	var systemId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "systemId", c.Param("systemId"), &systemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter systemId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetSystem(c, workspaceId, systemId)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -1235,12 +1379,16 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies", wrapper.ListPolicies)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetId/policies", wrapper.GetPoliciesForReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
 }

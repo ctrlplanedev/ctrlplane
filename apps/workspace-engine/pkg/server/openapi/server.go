@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/server/openapi/policies"
 	"workspace-engine/pkg/server/openapi/relations"
 	"workspace-engine/pkg/server/openapi/releasetargets"
+	"workspace-engine/pkg/server/openapi/resources"
+	"workspace-engine/pkg/server/openapi/systems"
 )
 
 func New() *Server {
@@ -21,4 +23,6 @@ type Server struct {
 	releasetargets.ReleaseTargets
 	policies.Policies
 	relations.Relations
+	resources.Resources
+	systems.Systems
 }

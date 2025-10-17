@@ -12,8 +12,10 @@
   workspaceIdParam():: self.stringParam('workspaceId', 'ID of the workspace'),
   policyIdParam():: self.stringParam('policyId', 'ID of the policy'),
   resourceIdParam():: self.stringParam('resourceId', 'ID of the resource'),
+  resourceIdentifierParam():: self.stringParam('resourceIdentifier', 'Identifier of the resource'),
   deploymentIdParam():: self.stringParam('deploymentId', 'ID of the deployment'),
   environmentIdParam():: self.stringParam('environmentId', 'ID of the environment'),
+  systemIdParam():: self.stringParam('systemId', 'ID of the system'),
   releaseTargetIdParam():: self.stringParam('releaseTargetId', 'ID of the release target'),
   
   entityTypeParam():: {

@@ -12,7 +12,10 @@
     (import 'paths/resource.jsonnet') +
     (import 'paths/policy.jsonnet') +
     (import 'paths/release-target.jsonnet') +
-    (import 'paths/relationship.jsonnet'),
+    (import 'paths/relationship.jsonnet') +
+    (import 'paths/deployment.jsonnet') +
+    (import 'paths/environment.jsonnet') +
+    (import 'paths/system.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),
