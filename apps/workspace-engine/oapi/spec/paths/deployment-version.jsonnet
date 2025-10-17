@@ -57,8 +57,6 @@ local openapi = import '../lib/openapi.libsonnet';
                         },
                       },
                     },
-                    // Optional rollout time
-                    rolloutTime: { type: 'string', format: 'date-time' },
                   },
                 },
               },
