@@ -136,6 +136,13 @@ func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any],
 		return writeJob(ctx, e, conn)
 	}
 
+	if e, ok := change.Entity.(*oapi.ReleaseTarget); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteReleaseTarget(ctx, e, conn)
+		}
+		return writeReleaseTarget(ctx, e, conn)
+	}
+
 	return fmt.Errorf("unknown entity type: %s", change.Entity)
 }
 
