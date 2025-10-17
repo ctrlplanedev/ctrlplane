@@ -31,6 +31,27 @@ services:
     volumes:
       - redisinsight-data:/data
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: ctrlplane-jaeger
+    command: ["--collector.otlp.enabled=true"]
+    ports:
+      - "16686:16686" # UI
+      # OTLP ports (4317, 4318) are exposed via otel-collector instead
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.1
+    container_name: ctrlplane-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-local.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+    depends_on:
+      - jaeger
+
   # otel-collector:
   #   image: otel/opentelemetry-collector-contrib:latest
   #   container_name: ctrlplane-otel-collector
