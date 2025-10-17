@@ -94,6 +94,10 @@ func (w *Workspace) Releases() *store.Releases {
 	return w.store.Releases
 }
 
+func (w *Workspace) GithubEntities() *store.GithubEntities {
+	return w.store.GithubEntities
+}
+
 func (w *Workspace) GobEncode() ([]byte, error) {
 	return w.store.GobEncode()
 }
