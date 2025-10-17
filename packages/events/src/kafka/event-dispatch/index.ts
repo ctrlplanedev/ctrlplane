@@ -5,6 +5,7 @@ import * as deploymentVariableDispatch from "./deployment-variable.js";
 import * as deploymentVersionDispatch from "./deployment-version.js";
 import * as deploymentDispatch from "./deployment.js";
 import * as environmentDispatch from "./environment.js";
+import * as jobAgentDispatch from "./job-agent.js";
 import * as jobDispatch from "./job.js";
 import * as policyDispatch from "./policy.js";
 import * as releaseTargetDispatch from "./release-target.js";
@@ -173,6 +174,18 @@ export class KafkaEventDispatcher implements EventDispatcher {
     await deploymentVariableDispatch.dispatchDeploymentVariableValueDeleted(
       deploymentVariableValue,
     );
+  }
+
+  async dispatchJobAgentCreated(jobAgent: schema.JobAgent): Promise<void> {
+    await jobAgentDispatch.dispatchJobAgentCreated(jobAgent);
+  }
+
+  async dispatchJobAgentUpdated(jobAgent: schema.JobAgent): Promise<void> {
+    await jobAgentDispatch.dispatchJobAgentUpdated(jobAgent);
+  }
+
+  async dispatchJobAgentDeleted(jobAgent: schema.JobAgent): Promise<void> {
+    await jobAgentDispatch.dispatchJobAgentDeleted(jobAgent);
   }
 
   async dispatchPolicyCreated(policy: FullPolicy): Promise<void> {

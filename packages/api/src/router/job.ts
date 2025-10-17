@@ -15,6 +15,7 @@ import {
   takeFirst,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { updateJob } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobAgentType } from "@ctrlplane/validators/jobs";
@@ -86,7 +87,15 @@ const jobAgentRouter = createTRPCRouter({
     })
     .input(schema.createJobAgent)
     .mutation(({ ctx, input }) =>
-      ctx.db.insert(schema.jobAgent).values(input).returning().then(takeFirst),
+      ctx.db
+        .insert(schema.jobAgent)
+        .values(input)
+        .returning()
+        .then(takeFirst)
+        .then(async (agent) => {
+          await eventDispatcher.dispatchJobAgentCreated(agent);
+          return agent;
+        }),
     ),
 
   update: protectedProcedure
@@ -103,7 +112,11 @@ const jobAgentRouter = createTRPCRouter({
         .set(input.data)
         .where(eq(schema.jobAgent.id, input.id))
         .returning()
-        .then(takeFirst),
+        .then(takeFirst)
+        .then(async (agent) => {
+          await eventDispatcher.dispatchJobAgentUpdated(agent);
+          return agent;
+        }),
     ),
 
   history: createTRPCRouter({

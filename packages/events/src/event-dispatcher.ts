@@ -82,6 +82,10 @@ export interface EventDispatcher {
     deploymentVariableValue: schema.DeploymentVariableValue,
   ): Promise<void>;
 
+  dispatchJobAgentCreated(jobAgent: schema.JobAgent): Promise<void>;
+  dispatchJobAgentUpdated(jobAgent: schema.JobAgent): Promise<void>;
+  dispatchJobAgentDeleted(jobAgent: schema.JobAgent): Promise<void>;
+
   dispatchPolicyCreated(policy: FullPolicy): Promise<void>;
   dispatchPolicyUpdated(
     previous: FullPolicy,

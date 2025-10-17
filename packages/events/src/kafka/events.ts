@@ -32,6 +32,10 @@ export enum Event {
   DeploymentVersionUpdated = "deployment-version.updated",
   DeploymentVersionDeleted = "deployment-version.deleted",
 
+  JobAgentCreated = "job-agent.created",
+  JobAgentUpdated = "job-agent.updated",
+  JobAgentDeleted = "job-agent.deleted",
+
   EnvironmentCreated = "environment.created",
   EnvironmentUpdated = "environment.updated",
   EnvironmentDeleted = "environment.deleted",
@@ -117,6 +121,9 @@ export type EventPayload = {
     current: schema.DeploymentVersion;
   };
   [Event.DeploymentVersionDeleted]: schema.DeploymentVersion;
+  [Event.JobAgentCreated]: schema.JobAgent;
+  [Event.JobAgentUpdated]: schema.JobAgent;
+  [Event.JobAgentDeleted]: schema.JobAgent;
   [Event.EnvironmentCreated]: schema.Environment;
   [Event.EnvironmentUpdated]: {
     previous: schema.Environment;
@@ -163,6 +170,9 @@ export type GoEventPayload = {
   [Event.DeploymentVersionCreated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionUpdated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionDeleted]: WorkspaceEngine["schemas"]["DeploymentVersion"];
+  [Event.JobAgentCreated]: WorkspaceEngine["schemas"]["JobAgent"];
+  [Event.JobAgentUpdated]: WorkspaceEngine["schemas"]["JobAgent"];
+  [Event.JobAgentDeleted]: WorkspaceEngine["schemas"]["JobAgent"];
   [Event.EnvironmentCreated]: WorkspaceEngine["schemas"]["Environment"];
   [Event.EnvironmentUpdated]: WorkspaceEngine["schemas"]["Environment"];
   [Event.EnvironmentDeleted]: WorkspaceEngine["schemas"]["Environment"];

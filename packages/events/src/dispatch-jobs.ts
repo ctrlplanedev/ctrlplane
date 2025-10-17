@@ -324,6 +324,17 @@ export class BullMQEventDispatcher implements EventDispatcher {
     await Promise.resolve();
   }
 
+  async dispatchJobAgentCreated(_: schema.JobAgent): Promise<void> {
+    return Promise.resolve();
+  }
+  async dispatchJobAgentUpdated(_: schema.JobAgent): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async dispatchJobAgentDeleted(_: schema.JobAgent): Promise<void> {
+    return Promise.resolve();
+  }
+
   async dispatchPolicyCreated(policy: FullPolicy): Promise<void> {
     await getQueue(Channel.NewPolicy).add(policy.id, policy);
   }

@@ -76,6 +76,9 @@ const workspaceHandlers: Record<Event, Handler<any>> = {
   [Event.UserApprovalRecordCreated]: () => Promise.resolve(),
   [Event.UserApprovalRecordUpdated]: () => Promise.resolve(),
   [Event.UserApprovalRecordDeleted]: () => Promise.resolve(),
+  [Event.JobAgentCreated]: () => Promise.resolve(),
+  [Event.JobAgentUpdated]: () => Promise.resolve(),
+  [Event.JobAgentDeleted]: () => Promise.resolve(),
 };
 
 export type Handler<T extends keyof EventPayload> = (

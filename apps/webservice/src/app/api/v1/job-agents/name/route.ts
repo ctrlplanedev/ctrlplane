@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { jobAgent, workspace } from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -47,6 +48,8 @@ export const PATCH = request()
       })
       .returning()
       .then(takeFirst);
+
+    await eventDispatcher.dispatchJobAgentCreated(tp);
 
     return NextResponse.json(tp);
   });

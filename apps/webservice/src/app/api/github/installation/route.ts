@@ -11,6 +11,7 @@ import { auth } from "@ctrlplane/auth";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { githubEntity, jobAgent, user, workspace } from "@ctrlplane/db/schema";
+import { eventDispatcher } from "@ctrlplane/events";
 
 import type { AuthedOctokitClient } from "../octokit";
 import { env } from "~/env";
@@ -162,15 +163,21 @@ export const GET = async (req: NextRequest) => {
     u.id,
   );
 
-  await db.insert(jobAgent).values({
-    workspaceId: activeWorkspace.id,
-    name: entity.slug,
-    type: "github-app",
-    config: {
-      installationId: entity.installationId,
-      owner: entity.slug,
-    },
-  });
+  const createdAgent = await db
+    .insert(jobAgent)
+    .values({
+      workspaceId: activeWorkspace.id,
+      name: entity.slug,
+      type: "github-app",
+      config: {
+        installationId: entity.installationId,
+        owner: entity.slug,
+      },
+    })
+    .returning()
+    .then(takeFirst);
+
+  await eventDispatcher.dispatchJobAgentCreated(createdAgent);
 
   return NextResponse.redirect(
     `${env.BASE_URL}/${activeWorkspace.slug}/settings/workspace/integrations/github`,
