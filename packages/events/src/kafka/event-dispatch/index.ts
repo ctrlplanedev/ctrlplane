@@ -5,6 +5,7 @@ import * as deploymentVariableDispatch from "./deployment-variable.js";
 import * as deploymentVersionDispatch from "./deployment-version.js";
 import * as deploymentDispatch from "./deployment.js";
 import * as environmentDispatch from "./environment.js";
+import * as githubEntityDispatch from "./github-entities.js";
 import * as jobAgentDispatch from "./job-agent.js";
 import * as jobDispatch from "./job.js";
 import * as policyDispatch from "./policy.js";
@@ -242,5 +243,23 @@ export class KafkaEventDispatcher implements EventDispatcher {
     await userApprovalRecordDispatch.dispatchUserApprovalRecordDeleted(
       userApprovalRecord,
     );
+  }
+
+  async dispatchGithubEntityCreated(
+    githubEntity: schema.GithubEntity,
+  ): Promise<void> {
+    await githubEntityDispatch.dispatchGithubEntityCreated(githubEntity);
+  }
+
+  async dispatchGithubEntityUpdated(
+    githubEntity: schema.GithubEntity,
+  ): Promise<void> {
+    await githubEntityDispatch.dispatchGithubEntityUpdated(githubEntity);
+  }
+
+  async dispatchGithubEntityDeleted(
+    githubEntity: schema.GithubEntity,
+  ): Promise<void> {
+    await githubEntityDispatch.dispatchGithubEntityDeleted(githubEntity);
   }
 }

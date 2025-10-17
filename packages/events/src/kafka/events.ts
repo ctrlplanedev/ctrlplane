@@ -53,6 +53,10 @@ export enum Event {
   UserApprovalRecordUpdated = "user-approval-record.updated",
   UserApprovalRecordDeleted = "user-approval-record.deleted",
 
+  GithubEntityCreated = "github-entity.created",
+  GithubEntityUpdated = "github-entity.updated",
+  GithubEntityDeleted = "github-entity.deleted",
+
   // ReleaseCreated = "release.created",
   // ReleaseUpdated = "release.updated",
   // ReleaseDeleted = "release.deleted",
@@ -141,6 +145,9 @@ export type EventPayload = {
   [Event.UserApprovalRecordCreated]: schema.PolicyRuleAnyApprovalRecord;
   [Event.UserApprovalRecordUpdated]: schema.PolicyRuleAnyApprovalRecord;
   [Event.UserApprovalRecordDeleted]: schema.PolicyRuleAnyApprovalRecord;
+  [Event.GithubEntityCreated]: schema.GithubEntity;
+  [Event.GithubEntityUpdated]: schema.GithubEntity;
+  [Event.GithubEntityDeleted]: schema.GithubEntity;
   [Event.SystemCreated]: schema.System;
   [Event.SystemUpdated]: schema.System;
   [Event.SystemDeleted]: schema.System;
@@ -183,6 +190,9 @@ export type GoEventPayload = {
   [Event.UserApprovalRecordCreated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
   [Event.UserApprovalRecordUpdated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
   [Event.UserApprovalRecordDeleted]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
+  [Event.GithubEntityCreated]: WorkspaceEngine["schemas"]["GithubEntity"];
+  [Event.GithubEntityUpdated]: WorkspaceEngine["schemas"]["GithubEntity"];
+  [Event.GithubEntityDeleted]: WorkspaceEngine["schemas"]["GithubEntity"];
 };
 
 export type Message<T extends keyof EventPayload> = {

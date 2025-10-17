@@ -112,4 +112,8 @@ export interface EventDispatcher {
   dispatchUserApprovalRecordDeleted(
     userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,
   ): Promise<void>;
+
+  dispatchGithubEntityCreated(githubEntity: schema.GithubEntity): Promise<void>;
+  dispatchGithubEntityUpdated(githubEntity: schema.GithubEntity): Promise<void>;
+  dispatchGithubEntityDeleted(githubEntity: schema.GithubEntity): Promise<void>;
 }

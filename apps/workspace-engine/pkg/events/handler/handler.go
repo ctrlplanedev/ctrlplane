@@ -70,6 +70,10 @@ const (
 	UserApprovalRecordCreate EventType = "user-approval-record.created"
 	UserApprovalRecordUpdate EventType = "user-approval-record.updated"
 	UserApprovalRecordDelete EventType = "user-approval-record.deleted"
+
+	GithubEntityCreate EventType = "github-entity.created"
+	GithubEntityUpdate EventType = "github-entity.updated"
+	GithubEntityDelete EventType = "github-entity.deleted"
 )
 
 // RawEvent represents the raw event data received from Kafka messages

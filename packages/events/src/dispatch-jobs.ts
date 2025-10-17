@@ -399,4 +399,16 @@ export class BullMQEventDispatcher implements EventDispatcher {
   ): Promise<void> {
     return Promise.resolve();
   }
+
+  async dispatchGithubEntityCreated(_: schema.GithubEntity): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async dispatchGithubEntityUpdated(_: schema.GithubEntity): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async dispatchGithubEntityDeleted(_: schema.GithubEntity): Promise<void> {
+    return Promise.resolve();
+  }
 }

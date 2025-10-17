@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/events/handler/deploymentvariables"
 	"workspace-engine/pkg/events/handler/deploymentversion"
 	"workspace-engine/pkg/events/handler/environment"
+	"workspace-engine/pkg/events/handler/githubentities"
 	"workspace-engine/pkg/events/handler/jobagents"
 	"workspace-engine/pkg/events/handler/jobs"
 	"workspace-engine/pkg/events/handler/policies"
@@ -66,6 +67,10 @@ var handlers = handler.HandlerRegistry{
 	handler.UserApprovalRecordCreate: userapprovalrecords.HandleUserApprovalRecordCreated,
 	handler.UserApprovalRecordUpdate: userapprovalrecords.HandleUserApprovalRecordUpdated,
 	handler.UserApprovalRecordDelete: userapprovalrecords.HandleUserApprovalRecordDeleted,
+
+	handler.GithubEntityCreate: githubentities.HandleGithubEntityCreated,
+	handler.GithubEntityUpdate: githubentities.HandleGithubEntityUpdated,
+	handler.GithubEntityDelete: githubentities.HandleGithubEntityDeleted,
 }
 
 func NewEventHandler() *handler.EventListener {
