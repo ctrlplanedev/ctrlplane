@@ -6,8 +6,6 @@ import (
 	"time"
 	"workspace-engine/pkg/events"
 
-	state "workspace-engine/pkg/workspace/kafka"
-
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.opentelemetry.io/otel"
@@ -86,14 +84,6 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		topicPartition := state.TopicPartition{
-			Topic:     *msg.TopicPartition.Topic,
-			Partition: int32(msg.TopicPartition.Partition),
-		}
-
-		ws.Kafka[topicPartition] = state.KafkaProgress{
-			LastApplied:   int64(msg.TopicPartition.Offset),
-			LastTimestamp: int64(msg.Timestamp.Unix()),
-		}
+		ws.KafkaProgress.FromMessage(msg)
 	}
 }

@@ -25,7 +25,7 @@ func New(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
-		Kafka:             make(kafka.KafkaProgressMap),
+		KafkaProgress:     make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -39,7 +39,7 @@ func NewTestWorkspace(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
-		Kafka:             make(kafka.KafkaProgressMap),
+		KafkaProgress:     make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -50,7 +50,7 @@ type Workspace struct {
 	store             *store.Store
 	releasemanager    *releasemanager.Manager
 	changesetConsumer changeset.ChangesetConsumer[any]
-	Kafka             map[kafka.TopicPartition]kafka.KafkaProgress
+	KafkaProgress     kafka.KafkaProgressMap
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -119,7 +119,7 @@ func (w *Workspace) GobEncode() ([]byte, error) {
 	// Create workspace data with ID and store
 	data := WorkspaceStorageObject{
 		ID:            w.ID,
-		KafkaProgress: w.Kafka,
+		KafkaProgress: w.KafkaProgress,
 		StoreData:     storeData,
 	}
 
@@ -145,7 +145,7 @@ func (w *Workspace) GobDecode(data []byte) error {
 
 	// Restore the workspace ID
 	w.ID = wsData.ID
-	w.Kafka = wsData.KafkaProgress
+	w.KafkaProgress = wsData.KafkaProgress
 
 	// Initialize store if needed
 	if w.store == nil {
