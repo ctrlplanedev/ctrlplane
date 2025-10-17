@@ -6,8 +6,6 @@ import { logger } from "@ctrlplane/logger";
 
 import type { EventDispatcher } from "./event-dispatcher.js";
 import type { ChannelMap } from "./types.js";
-import { env } from "./config.js";
-import { BullMQEventDispatcher } from "./index.js";
 import { KafkaEventDispatcher } from "./kafka/index.js";
 import { bullmqRedis } from "./redis.js";
 
@@ -43,6 +41,4 @@ export * from "./resource-provider-scan/handle-provider-scan.js";
 export * from "./dispatch-jobs.js";
 export * from "./kafka/index.js";
 
-export const eventDispatcher: EventDispatcher = env.KAFKA_EVENT_QUEUE_ENABLED
-  ? new KafkaEventDispatcher()
-  : new BullMQEventDispatcher();
+export const eventDispatcher: EventDispatcher = new KafkaEventDispatcher();
