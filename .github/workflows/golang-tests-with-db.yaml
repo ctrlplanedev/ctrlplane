@@ -12,6 +12,9 @@ on:
 jobs:
   workspace-engine-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     
     # Add PostgreSQL service for integration tests
     services:
