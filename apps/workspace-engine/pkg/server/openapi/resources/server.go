@@ -78,4 +78,3 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string) {
 		"resources": matchedResources,
 	})
 }
-

@@ -28,4 +28,3 @@ func (s *Systems) GetSystem(c *gin.Context, workspaceId string, systemId string)
 
 	c.JSON(http.StatusOK, system)
 }
-

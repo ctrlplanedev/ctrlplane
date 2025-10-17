@@ -1,10 +1,14 @@
 package workspace
 
 import (
+	"bytes"
+	"context"
 	"encoding/gob"
+	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/workspace/kafka"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -21,6 +25,7 @@ func New(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
+		Kafka:             make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -34,6 +39,7 @@ func NewTestWorkspace(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
+		Kafka:             make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -44,6 +50,7 @@ type Workspace struct {
 	store             *store.Store
 	releasemanager    *releasemanager.Manager
 	changesetConsumer changeset.ChangesetConsumer[any]
+	Kafka             map[kafka.TopicPartition]kafka.KafkaProgress
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -103,17 +110,50 @@ func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
 }
 
 func (w *Workspace) GobEncode() ([]byte, error) {
-	return w.store.GobEncode()
+	// Encode the store
+	storeData, err := w.store.GobEncode()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create workspace data with ID and store
+	data := WorkspaceStorageObject{
+		ID:            w.ID,
+		KafkaProgress: w.Kafka,
+		StoreData:     storeData,
+	}
+
+	// Encode the workspace data
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(data); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
 
 func (w *Workspace) GobDecode(data []byte) error {
+	// Decode the workspace data
+	var wsData WorkspaceStorageObject
+
+	buf := bytes.NewReader(data)
+	dec := gob.NewDecoder(buf)
+	if err := dec.Decode(&wsData); err != nil {
+		return err
+	}
+
+	// Restore the workspace ID
+	w.ID = wsData.ID
+	w.Kafka = wsData.KafkaProgress
+
 	// Initialize store if needed
 	if w.store == nil {
 		w.store = &store.Store{}
 	}
 
 	// Decode the store
-	if err := w.store.GobDecode(data); err != nil {
+	if err := w.store.GobDecode(wsData.StoreData); err != nil {
 		return err
 	}
 
@@ -182,4 +222,36 @@ func GetTestWorkspace(id string) *Workspace {
 
 func GetAllWorkspaceIds() []string {
 	return workspaces.Keys()
+}
+
+// SaveToStorage serializes the workspace state and saves it to a storage client
+func (w *Workspace) SaveToStorage(ctx context.Context, storage StorageClient, path string) error {
+	// Encode the workspace using gob
+	data, err := w.GobEncode()
+	if err != nil {
+		return fmt.Errorf("failed to encode workspace: %w", err)
+	}
+
+	// Write to file with appropriate permissions
+	if err := storage.Put(ctx, path, data); err != nil {
+		return fmt.Errorf("failed to write workspace to disk: %w", err)
+	}
+
+	return nil
+}
+
+// LoadFromStorage deserializes the workspace state from a storage client
+func (w *Workspace) LoadFromStorage(ctx context.Context, storage StorageClient, path string) error {
+	// Read from file
+	data, err := storage.Get(ctx, path)
+	if err != nil {
+		return fmt.Errorf("failed to read workspace from disk: %w", err)
+	}
+
+	// Decode the workspace
+	if err := w.GobDecode(data); err != nil {
+		return fmt.Errorf("failed to decode workspace: %w", err)
+	}
+
+	return nil
 }

@@ -100,7 +100,7 @@ func NewEventListener(handlers HandlerRegistry) *EventListener {
 }
 
 // ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler
-func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message) error {
+func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message) (*workspace.Workspace, error) {
 	ctx, span := tracer.Start(ctx, "ListenAndRoute",
 		trace.WithAttributes(
 			attribute.String("kafka.topic", *msg.TopicPartition.Topic),
@@ -116,7 +116,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to unmarshal event")
 		log.Error("Failed to unmarshal event", "error", err, "message", string(msg.Value))
-		return fmt.Errorf("failed to unmarshal event: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal event: %w", err)
 	}
 
 	// Add event metadata to span
@@ -134,7 +134,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "no handler found")
 		log.Warn("No handler found for event type", "eventType", rawEvent.EventType)
-		return err
+		return nil, err
 	}
 
 	// Execute the handler
@@ -151,7 +151,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to load workspace")
 			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
-			return fmt.Errorf("failed to load workspace: %w", err)
+			return nil, fmt.Errorf("failed to load workspace: %w", err)
 		}
 		workspace.Set(rawEvent.WorkspaceID, ws)
 		changeSet.IsInitialLoad = true
@@ -164,7 +164,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		log.Error("Handler failed to process event",
 			"eventType", rawEvent.EventType,
 			"error", err)
-		return fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
+		return nil, fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
 	releaseTargetChanges, err := ws.ReleaseManager().ProcessChanges(ctx, changeSet)
@@ -172,7 +172,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to process target changes")
 		log.Error("Failed to process target changes", "error", err)
-		return fmt.Errorf("failed to process target changes: %w", err)
+		return nil, fmt.Errorf("failed to process target changes: %w", err)
 	}
 
 	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
@@ -181,12 +181,12 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to flush changeset")
 		log.Error("Failed to flush changeset", "error", err)
-		return fmt.Errorf("failed to flush changeset: %w", err)
+		return nil, fmt.Errorf("failed to flush changeset: %w", err)
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")
 	log.Debug("Successfully processed event",
 		"eventType", rawEvent.EventType)
 
-	return nil
+	return ws, nil
 }

@@ -6,6 +6,8 @@ import (
 	"time"
 	"workspace-engine/pkg/events"
 
+	state "workspace-engine/pkg/workspace/kafka"
+
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.opentelemetry.io/otel"
@@ -73,12 +75,25 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		if err := handler.ListenAndRoute(ctx, msg); err != nil {
+		ws, err := handler.ListenAndRoute(ctx, msg)
+		if err != nil {
 			log.Error("Failed to read message", "error", err)
+			continue
 		}
 
 		if _, err := c.CommitMessage(msg); err != nil {
 			log.Error("Failed to commit message", "error", err)
+			continue
+		}
+
+		topicPartition := state.TopicPartition{
+			Topic:     *msg.TopicPartition.Topic,
+			Partition: int32(msg.TopicPartition.Partition),
+		}
+
+		ws.Kafka[topicPartition] = state.KafkaProgress{
+			LastApplied:   int64(msg.TopicPartition.Offset),
+			LastTimestamp: int64(msg.Timestamp.Unix()),
 		}
 	}
 }
