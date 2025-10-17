@@ -24,7 +24,7 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse(),
     },
   },
-  
+
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources': {
     get: {
       summary: 'Get resources for a deployment',
@@ -49,4 +49,3 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 }
-

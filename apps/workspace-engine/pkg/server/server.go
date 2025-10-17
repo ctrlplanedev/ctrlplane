@@ -43,11 +43,11 @@ func (s *Server) SetupRouter() *gin.Engine {
 	router.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/swagger/index.html")
 	})
-	router.GET("/openapi.yaml", func(c *gin.Context) {
-		c.File("oapi/spec.yaml")
+	router.GET("/openapi.json", func(c *gin.Context) {
+		c.File("oapi/openapi.json")
 	})
 	router.GET("/healthz", s.HealthCheck)
-	router.GET("/swagger/*any", ginswagger.WrapHandler(swaggerfiles.Handler, ginswagger.URL("/openapi.yaml")))
+	router.GET("/swagger/*any", ginswagger.WrapHandler(swaggerfiles.Handler, ginswagger.URL("/openapi.json")))
 
 	// Register OpenAPI handlers
 	oapi.RegisterHandlers(router, openapi.New())

@@ -1,3 +1,66 @@
 local openapi = import '../lib/openapi.libsonnet';
 
-{}
+{
+  '/v1/workspaces/{workspaceId}/policies': {
+    get: {
+      summary: 'List policies',
+      operationId: 'listPolicies',
+      description: 'Returns a list of policies for workspace {workspaceId}.',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      responses: openapi.okResponse(
+        'A list of policies',
+        {
+          type: 'object',
+          properties: {
+            policies: {
+              type: 'array',
+              items: openapi.schemaRef('Policy'),
+            },
+          },
+        }
+      ) + openapi.notFoundResponse(),
+    },
+  },
+
+  '/v1/workspaces/{workspaceId}/policies/{policyId}': {
+    get: {
+      summary: 'Get policy',
+      operationId: 'getPolicy',
+      description: 'Returns a specific policy by ID.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.policyIdParam(),
+      ],
+      responses: openapi.okResponse(
+        'The requested policy',
+        openapi.schemaRef('Policy')
+      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
+
+  '/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets': {
+    get: {
+      summary: 'Get release targets for a policy',
+      operationId: 'getReleaseTargetsForPolicy',
+      description: 'Returns a list of release targets for a policy {policyId}.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.policyIdParam(),
+      ],
+      responses: openapi.okResponse(
+        'A list of release targets',
+        {
+          type: 'object',
+          properties: {
+            releaseTargets: {
+              type: 'array',
+              items: openapi.schemaRef('ReleaseTarget'),
+            },
+          },
+        }
+      ) + openapi.notFoundResponse(),
+    },
+  },
+}

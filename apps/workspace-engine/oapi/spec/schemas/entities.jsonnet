@@ -36,7 +36,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   ResourceProvider: {
     type: 'object',
     required: ['id', 'workspaceId', 'name', 'createdAt', 'metadata'],
@@ -51,7 +51,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   ResourceVariable: {
     type: 'object',
     required: ['resourceId', 'key', 'value'],
@@ -61,7 +61,7 @@ local openapi = import '../lib/openapi.libsonnet';
       value: openapi.schemaRef('Value'),
     },
   },
-  
+
   Environment: {
     type: 'object',
     required: ['id', 'name', 'systemId', 'createdAt'],
@@ -74,7 +74,7 @@ local openapi = import '../lib/openapi.libsonnet';
       createdAt: { type: 'string' },
     },
   },
-  
+
   Deployment: {
     type: 'object',
     required: ['id', 'name', 'slug', 'systemId', 'jobAgentConfig'],
@@ -92,7 +92,7 @@ local openapi = import '../lib/openapi.libsonnet';
       resourceSelector: openapi.schemaRef('Selector'),
     },
   },
-  
+
   DeploymentVariable: {
     type: 'object',
     required: ['id', 'key', 'deploymentId'],
@@ -104,7 +104,7 @@ local openapi = import '../lib/openapi.libsonnet';
       defaultValue: openapi.schemaRef('LiteralValue'),
     },
   },
-  
+
   DeploymentVariableValue: {
     type: 'object',
     required: ['id', 'deploymentVariableId', 'priority', 'value'],
@@ -116,7 +116,7 @@ local openapi = import '../lib/openapi.libsonnet';
       value: openapi.schemaRef('Value'),
     },
   },
-  
+
   DeploymentVersion: {
     type: 'object',
     required: [
@@ -147,7 +147,7 @@ local openapi = import '../lib/openapi.libsonnet';
       createdAt: { type: 'string' },
     },
   },
-  
+
   System: {
     type: 'object',
     required: ['id', 'workspaceId', 'name'],
@@ -158,7 +158,7 @@ local openapi = import '../lib/openapi.libsonnet';
       description: { type: 'string' },
     },
   },
-  
+
   JobAgent: {
     type: 'object',
     required: ['id', 'workspaceId', 'name', 'type', 'config'],
@@ -173,7 +173,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   Job: {
     type: 'object',
     required: [
@@ -201,7 +201,7 @@ local openapi = import '../lib/openapi.libsonnet';
       completedAt: { type: 'string', format: 'date-time' },
     },
   },
-  
+
   ReleaseTarget: {
     type: 'object',
     required: ['resourceId', 'environmentId', 'deploymentId'],
@@ -211,7 +211,7 @@ local openapi = import '../lib/openapi.libsonnet';
       deploymentId: { type: 'string' },
     },
   },
-  
+
   Release: {
     type: 'object',
     required: ['version', 'variables', 'encryptedVariables', 'releaseTarget', 'createdAt'],
@@ -229,7 +229,7 @@ local openapi = import '../lib/openapi.libsonnet';
       createdAt: { type: 'string' },
     },
   },
-  
+
   GithubEntity: {
     type: 'object',
     required: ['installationId', 'slug'],
@@ -238,7 +238,7 @@ local openapi = import '../lib/openapi.libsonnet';
       slug: { type: 'string' },
     },
   },
-  
+
   RelatableEntity: {
     oneOf: [
       openapi.schemaRef('Deployment'),

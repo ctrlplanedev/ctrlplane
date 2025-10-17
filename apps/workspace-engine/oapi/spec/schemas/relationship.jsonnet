@@ -8,7 +8,7 @@ local openapi = import '../lib/openapi.libsonnet';
       cel: { type: 'string' },
     },
   },
-  
+
   PropertiesMatcher: {
     type: 'object',
     required: ['properties'],
@@ -19,7 +19,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   RelationshipRule: {
     type: 'object',
     required: [
@@ -56,7 +56,7 @@ local openapi = import '../lib/openapi.libsonnet';
       workspaceId: { type: 'string' },
     },
   },
-  
+
   RelatedEntityGroup: {
     type: 'object',
     required: ['relationshipRule', 'direction', 'entityType', 'entityId', 'entity'],

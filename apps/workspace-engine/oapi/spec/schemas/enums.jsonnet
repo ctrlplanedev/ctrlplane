@@ -1,12 +1,12 @@
 {
   ApprovalStatus: {
     type: 'string',
-    'enum': ['approved', 'rejected'],
+    enum: ['approved', 'rejected'],
   },
-  
+
   JobStatus: {
     type: 'string',
-    'enum': [
+    enum: [
       'cancelled',
       'skipped',
       'inProgress',
@@ -19,20 +19,19 @@
       'successful',
     ],
   },
-  
+
   DeploymentVersionStatus: {
     type: 'string',
-    'enum': ['unspecified', 'building', 'ready', 'failed', 'rejected'],
+    enum: ['unspecified', 'building', 'ready', 'failed', 'rejected'],
   },
-  
+
   RelationDirection: {
     type: 'string',
-    'enum': ['from', 'to'],
+    enum: ['from', 'to'],
   },
-  
+
   RelatableEntityType: {
     type: 'string',
-    'enum': ['deployment', 'environment', 'resource'],
+    enum: ['deployment', 'environment', 'resource'],
   },
 }
-

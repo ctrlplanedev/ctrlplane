@@ -913,6 +913,12 @@ type ServerInterface interface {
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
 	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string)
+	// List policies
+	// (GET /v1/workspaces/{workspaceId}/policies)
+	ListPolicies(c *gin.Context, workspaceId string)
+	// Get policy
+	// (GET /v1/workspaces/{workspaceId}/policies/{policyId})
+	GetPolicy(c *gin.Context, workspaceId string, policyId string)
 	// Get release targets for a policy
 	// (GET /v1/workspaces/{workspaceId}/policies/{policyId}/release-targets)
 	GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string, policyId string)
@@ -1054,6 +1060,63 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId)
 }
 
+// ListPolicies operation middleware
+func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListPolicies(c, workspaceId)
+}
+
+// GetPolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetPolicy(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "policyId" -------------
+	var policyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "policyId", c.Param("policyId"), &policyId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter policyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPolicy(c, workspaceId, policyId)
+}
+
 // GetReleaseTargetsForPolicy operation middleware
 func (siw *ServerInterfaceWrapper) GetReleaseTargetsForPolicy(c *gin.Context) {
 
@@ -1175,6 +1238,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies", wrapper.ListPolicies)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetId/policies", wrapper.GetPoliciesForReleaseTarget)

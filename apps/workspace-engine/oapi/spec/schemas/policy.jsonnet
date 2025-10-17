@@ -20,7 +20,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   PolicyTargetSelector: {
     type: 'object',
     required: ['id'],
@@ -31,7 +31,7 @@ local openapi = import '../lib/openapi.libsonnet';
       resourceSelector: openapi.schemaRef('Selector'),
     },
   },
-  
+
   PolicyRule: {
     type: 'object',
     required: ['id', 'policyId', 'createdAt'],
@@ -42,7 +42,7 @@ local openapi = import '../lib/openapi.libsonnet';
       anyApproval: openapi.schemaRef('AnyApprovalRule'),
     },
   },
-  
+
   AnyApprovalRule: {
     type: 'object',
     required: ['minApprovals'],
@@ -50,7 +50,7 @@ local openapi = import '../lib/openapi.libsonnet';
       minApprovals: { type: 'integer', format: 'int32' },
     },
   },
-  
+
   UserApprovalRecord: {
     type: 'object',
     required: ['userId', 'versionId', 'environmentId', 'status', 'createdAt'],
@@ -63,7 +63,7 @@ local openapi = import '../lib/openapi.libsonnet';
       createdAt: { type: 'string' },
     },
   },
-  
+
   DeployDecision: {
     type: 'object',
     required: ['policyResults'],
@@ -74,7 +74,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   PolicyEvaluation: {
     type: 'object',
     required: ['ruleResults'],
@@ -87,7 +87,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   RuleEvaluation: {
     type: 'object',
     required: ['allowed', 'actionRequired', 'message', 'details'],
@@ -102,7 +102,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       actionType: {
         type: 'string',
-        'enum': ['approval', 'wait'],
+        enum: ['approval', 'wait'],
         description: 'Type of action required',
       },
       message: {
@@ -116,7 +116,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   EvaluateReleaseTargetRequest: {
     type: 'object',
     required: ['releaseTarget', 'version'],
@@ -126,4 +126,3 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 }
-

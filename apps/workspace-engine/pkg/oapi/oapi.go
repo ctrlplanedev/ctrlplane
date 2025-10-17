@@ -1,4 +1,4 @@
-//go:generate jsonnetfmt -i ../../oapi/spec/main.jsonnet
+//go:generate sh -c "jsonnetfmt -i ../../oapi/spec/**/*.jsonnet"
 //go:generate sh -c "jsonnet ../../oapi/spec/main.jsonnet > ../../oapi/openapi.json"
 //go:generate go tool oapi-codegen -config ../../oapi/cfg.yaml ../../oapi/openapi.json
 

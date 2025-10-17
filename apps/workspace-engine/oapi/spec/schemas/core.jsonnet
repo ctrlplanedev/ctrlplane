@@ -9,7 +9,7 @@ local openapi = import '../lib/openapi.libsonnet';
       json: { type: 'object' },
     },
   },
-  
+
   CelSelector: {
     type: 'object',
     required: ['cel'],
@@ -17,14 +17,14 @@ local openapi = import '../lib/openapi.libsonnet';
       cel: { type: 'string' },
     },
   },
-  
+
   Selector: {
     oneOf: [
       openapi.schemaRef('JsonSelector'),
       openapi.schemaRef('CelSelector'),
     ],
   },
-  
+
   // Property matcher
   PropertyMatcher: {
     type: 'object',
@@ -40,17 +40,17 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       operator: {
         type: 'string',
-        'enum': ['equals', 'notEquals', 'contains', 'startsWith', 'endsWith', 'regex'],
+        enum: ['equals', 'notEquals', 'contains', 'startsWith', 'endsWith', 'regex'],
       },
     },
   },
-  
+
   // Value types
   BooleanValue: { type: 'boolean' },
   NumberValue: { type: 'number' },
   IntegerValue: { type: 'integer' },
   StringValue: { type: 'string' },
-  
+
   ObjectValue: {
     type: 'object',
     required: ['object'],
@@ -61,12 +61,12 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   NullValue: {
     type: 'boolean',
-    'enum': [true],
+    enum: [true],
   },
-  
+
   LiteralValue: {
     oneOf: [
       openapi.schemaRef('BooleanValue'),
@@ -77,7 +77,7 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('NullValue'),
     ],
   },
-  
+
   SensitiveValue: {
     type: 'object',
     required: ['valueHash'],
@@ -85,7 +85,7 @@ local openapi = import '../lib/openapi.libsonnet';
       valueHash: { type: 'string' },
     },
   },
-  
+
   ReferenceValue: {
     type: 'object',
     required: ['reference', 'path'],
@@ -97,7 +97,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   Value: {
     oneOf: [
       openapi.schemaRef('LiteralValue'),
@@ -105,7 +105,7 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('SensitiveValue'),
     ],
   },
-  
+
   // Error schemas
   ErrorResponse: {
     type: 'object',
@@ -117,4 +117,3 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 }
-

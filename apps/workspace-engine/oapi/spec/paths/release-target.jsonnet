@@ -28,31 +28,7 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse(),
     },
   },
-  
-  '/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets': {
-    get: {
-      summary: 'Get release targets for a policy',
-      operationId: 'getReleaseTargetsForPolicy',
-      description: 'Returns a list of release targets for a policy {policyId}.',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.policyIdParam(),
-      ],
-      responses: openapi.okResponse(
-        'A list of release targets',
-        {
-          type: 'object',
-          properties: {
-            releaseTargets: {
-              type: 'array',
-              items: openapi.schemaRef('ReleaseTarget'),
-            },
-          },
-        }
-      ) + openapi.notFoundResponse(),
-    },
-  },
-  
+
   '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies': {
     get: {
       summary: 'Get policies for a release target',
@@ -77,4 +53,3 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 }
-

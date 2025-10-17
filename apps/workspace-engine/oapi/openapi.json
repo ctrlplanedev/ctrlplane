@@ -1230,6 +1230,113 @@
             "summary": "Get resources for an environment"
          }
       },
+      "/v1/workspaces/{workspaceId}/policies": {
+         "get": {
+            "description": "Returns a list of policies for workspace {workspaceId}.",
+            "operationId": "listPolicies",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "policies": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Policy"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of policies"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List policies"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/policies/{policyId}": {
+         "get": {
+            "description": "Returns a specific policy by ID.",
+            "operationId": "getPolicy",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the policy",
+                  "in": "path",
+                  "name": "policyId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Policy"
+                        }
+                     }
+                  },
+                  "description": "The requested policy"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get policy"
+         }
+      },
       "/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets": {
          "get": {
             "description": "Returns a list of release targets for a policy {policyId}.",

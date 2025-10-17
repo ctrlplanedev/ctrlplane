@@ -11,6 +11,46 @@ import (
 
 type Policies struct{}
 
+func (p *Policies) ListPolicies(c *gin.Context, workspaceId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	policiesMap := ws.Policies().Items()
+	policyList := make([]*oapi.Policy, 0, len(policiesMap))
+	for _, policy := range policiesMap {
+		policyList = append(policyList, policy)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"policies": policyList,
+	})
+}
+
+func (p *Policies) GetPolicy(c *gin.Context, workspaceId string, policyId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	policy, ok := ws.Policies().Get(policyId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Policy not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, policy)
+}
+
 func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string, policyId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
