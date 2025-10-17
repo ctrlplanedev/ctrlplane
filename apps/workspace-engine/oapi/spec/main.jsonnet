@@ -14,6 +14,7 @@
     (import 'paths/release-target.jsonnet') +
     (import 'paths/relationship.jsonnet') +
     (import 'paths/deployment.jsonnet') +
+    (import 'paths/deployment-version.jsonnet') +
     (import 'paths/environment.jsonnet') +
     (import 'paths/system.jsonnet'),
 

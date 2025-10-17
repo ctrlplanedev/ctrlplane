@@ -907,6 +907,9 @@ type ServerInterface interface {
 	// List workspace IDs
 	// (GET /v1/workspaces)
 	ListWorkspaceIds(c *gin.Context)
+	// Get deployment version jobs list
+	// (GET /v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list)
+	GetDeploymentVersionJobsList(c *gin.Context, workspaceId string, versionId string)
 	// Get deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId})
 	GetDeployment(c *gin.Context, workspaceId string, deploymentId string)
@@ -968,6 +971,39 @@ func (siw *ServerInterfaceWrapper) ListWorkspaceIds(c *gin.Context) {
 	}
 
 	siw.Handler.ListWorkspaceIds(c)
+}
+
+// GetDeploymentVersionJobsList operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentVersionJobsList(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "versionId" -------------
+	var versionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "versionId", c.Param("versionId"), &versionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter versionId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeploymentVersionJobsList(c, workspaceId, versionId)
 }
 
 // GetDeployment operation middleware
@@ -1409,6 +1445,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-versions/:versionId/jobs-list", wrapper.GetDeploymentVersionJobsList)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)

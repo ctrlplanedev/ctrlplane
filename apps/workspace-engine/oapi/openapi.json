@@ -1043,6 +1043,142 @@
             "summary": "List workspace IDs"
          }
       },
+      "/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list": {
+         "get": {
+            "description": "Returns jobs grouped by environment and release target for a deployment version.",
+            "operationId": "getDeploymentVersionJobsList",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "versionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "items": {
+                              "properties": {
+                                 "environment": {
+                                    "$ref": "#/components/schemas/Environment"
+                                 },
+                                 "releaseTargets": {
+                                    "items": {
+                                       "properties": {
+                                          "deployment": {
+                                             "$ref": "#/components/schemas/Deployment"
+                                          },
+                                          "deploymentId": {
+                                             "type": "string"
+                                          },
+                                          "environment": {
+                                             "$ref": "#/components/schemas/Environment"
+                                          },
+                                          "environmentId": {
+                                             "type": "string"
+                                          },
+                                          "id": {
+                                             "type": "string"
+                                          },
+                                          "jobs": {
+                                             "items": {
+                                                "properties": {
+                                                   "createdAt": {
+                                                      "format": "date-time",
+                                                      "type": "string"
+                                                   },
+                                                   "externalId": {
+                                                      "type": "string"
+                                                   },
+                                                   "id": {
+                                                      "type": "string"
+                                                   },
+                                                   "links": {
+                                                      "additionalProperties": {
+                                                         "type": "string"
+                                                      },
+                                                      "type": "object"
+                                                   },
+                                                   "status": {
+                                                      "$ref": "#/components/schemas/JobStatus"
+                                                   }
+                                                },
+                                                "required": [
+                                                   "id",
+                                                   "createdAt",
+                                                   "status"
+                                                ],
+                                                "type": "object"
+                                             },
+                                             "type": "array"
+                                          },
+                                          "resource": {
+                                             "$ref": "#/components/schemas/Resource"
+                                          },
+                                          "resourceId": {
+                                             "type": "string"
+                                          },
+                                          "rolloutTime": {
+                                             "format": "date-time",
+                                             "type": "string"
+                                          }
+                                       },
+                                       "type": "object"
+                                    },
+                                    "type": "array"
+                                 }
+                              },
+                              "required": [
+                                 "environment",
+                                 "releaseTargets"
+                              ],
+                              "type": "object"
+                           },
+                           "type": "array"
+                        }
+                     }
+                  },
+                  "description": "Jobs list grouped by environment and release target"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment version jobs list"
+         }
+      },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {
          "get": {
             "description": "Returns a specific deployment by ID.",
