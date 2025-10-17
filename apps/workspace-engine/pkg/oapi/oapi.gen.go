@@ -430,9 +430,6 @@ type Value struct {
 	union json.RawMessage
 }
 
-// EntityType defines model for entityType.
-type EntityType = RelatableEntityType
-
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
 
@@ -911,8 +908,8 @@ type ServerInterface interface {
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
 	GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string)
 	// Get related entities for a given entity
-	// (GET /v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships)
-	GetRelatedEntities(c *gin.Context, workspaceId string, entityType EntityType, entityId string)
+	// (GET /v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships)
+	GetRelatedEntities(c *gin.Context, workspaceId string, relatableEntityType RelatableEntityType, entityId string)
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
 	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string)
@@ -996,12 +993,12 @@ func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
 		return
 	}
 
-	// ------------- Path parameter "entityType" -------------
-	var entityType EntityType
+	// ------------- Path parameter "relatableEntityType" -------------
+	var relatableEntityType RelatableEntityType
 
-	err = runtime.BindStyledParameterWithOptions("simple", "entityType", c.Param("entityType"), &entityType, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "relatableEntityType", c.Param("relatableEntityType"), &relatableEntityType, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter entityType: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter relatableEntityType: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1021,7 +1018,7 @@ func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetRelatedEntities(c, workspaceId, entityType, entityId)
+	siw.Handler.GetRelatedEntities(c, workspaceId, relatableEntityType, entityId)
 }
 
 // GetEnvironmentResources operation middleware
@@ -1176,7 +1173,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:entityType/:entityId/relationships", wrapper.GetRelatedEntities)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)

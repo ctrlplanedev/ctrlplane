@@ -1,10 +1,10 @@
 {
    "components": {
       "parameters": {
-         "entityType": {
+         "relatableEntityType": {
             "description": "Type of the entity (deployment, environment, or resource)",
             "in": "path",
-            "name": "entityType",
+            "name": "relatableEntityType",
             "required": true,
             "schema": {
                "$ref": "#/components/schemas/RelatableEntityType"
@@ -1100,7 +1100,7 @@
             "summary": "Get resources for a deployment"
          }
       },
-      "/v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships": {
+      "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships": {
          "get": {
             "description": "Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.",
             "operationId": "getRelatedEntities",
@@ -1115,7 +1115,7 @@
                   }
                },
                {
-                  "$ref": "#/components/parameters/entityType"
+                  "$ref": "#/components/parameters/relatableEntityType"
                },
                {
                   "description": "ID of the entity",

@@ -1,14 +1,14 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  '/v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships': {
+  '/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships': {
     get: {
       summary: 'Get related entities for a given entity',
       operationId: 'getRelatedEntities',
       description: 'Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.',
       parameters: [
         openapi.workspaceIdParam(),
-        { '$ref': '#/components/parameters/entityType' },
+        { '$ref': '#/components/parameters/relatableEntityType' },
         openapi.entityIdParam(),
       ],
       responses: openapi.okResponse(

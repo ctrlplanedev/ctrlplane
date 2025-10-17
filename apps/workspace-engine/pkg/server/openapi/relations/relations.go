@@ -13,7 +13,7 @@ import (
 
 type Relations struct{}
 
-func (s *Relations) GetRelatedEntities(c *gin.Context, workspaceId string, entityType oapi.EntityType, entityId string) {
+func (s *Relations) GetRelatedEntities(c *gin.Context, workspaceId string, entityType oapi.RelatableEntityType, entityId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -35,7 +35,7 @@ func (s *Relations) GetRelatedEntities(c *gin.Context, workspaceId string, entit
 	c.JSON(http.StatusOK, gin.H{"relationships": relatedEntities})
 }
 
-func (s *Relations) getEntityByType(ws *workspace.Workspace, entityType oapi.EntityType, entityId string) (*oapi.RelatableEntity, error) {
+func (s *Relations) getEntityByType(ws *workspace.Workspace, entityType oapi.RelatableEntityType, entityId string) (*oapi.RelatableEntity, error) {
 	switch entityType {
 	case oapi.RelatableEntityTypeDeployment:
 		if entity, ok := ws.Deployments().Get(entityId); ok {
