@@ -1,0 +1,1405 @@
+{
+   "components": {
+      "parameters": {
+         "entityType": {
+            "description": "Type of the entity (deployment, environment, or resource)",
+            "in": "path",
+            "name": "entityType",
+            "required": true,
+            "schema": {
+               "$ref": "#/components/schemas/RelatableEntityType"
+            }
+         }
+      },
+      "schemas": {
+         "AnyApprovalRule": {
+            "properties": {
+               "minApprovals": {
+                  "format": "int32",
+                  "type": "integer"
+               }
+            },
+            "required": [
+               "minApprovals"
+            ],
+            "type": "object"
+         },
+         "ApprovalStatus": {
+            "enum": [
+               "approved",
+               "rejected"
+            ],
+            "type": "string"
+         },
+         "BooleanValue": {
+            "type": "boolean"
+         },
+         "CelMatcher": {
+            "properties": {
+               "cel": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "cel"
+            ],
+            "type": "object"
+         },
+         "CelSelector": {
+            "properties": {
+               "cel": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "cel"
+            ],
+            "type": "object"
+         },
+         "DeployDecision": {
+            "properties": {
+               "policyResults": {
+                  "items": {
+                     "$ref": "#/components/schemas/PolicyEvaluation"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "policyResults"
+            ],
+            "type": "object"
+         },
+         "Deployment": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "slug": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "slug",
+               "systemId",
+               "jobAgentConfig"
+            ],
+            "type": "object"
+         },
+         "DeploymentVariable": {
+            "properties": {
+               "defaultValue": {
+                  "$ref": "#/components/schemas/LiteralValue"
+               },
+               "deploymentId": {
+                  "type": "string"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "key": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "key",
+               "deploymentId"
+            ],
+            "type": "object"
+         },
+         "DeploymentVariableValue": {
+            "properties": {
+               "deploymentVariableId": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "priority": {
+                  "format": "int64",
+                  "type": "integer"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "value": {
+                  "$ref": "#/components/schemas/Value"
+               }
+            },
+            "required": [
+               "id",
+               "deploymentVariableId",
+               "priority",
+               "value"
+            ],
+            "type": "object"
+         },
+         "DeploymentVersion": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "createdAt": {
+                  "type": "string"
+               },
+               "deploymentId": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "message": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/DeploymentVersionStatus"
+               },
+               "tag": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "tag",
+               "config",
+               "jobAgentConfig",
+               "deploymentId",
+               "status",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "DeploymentVersionStatus": {
+            "enum": [
+               "unspecified",
+               "building",
+               "ready",
+               "failed",
+               "rejected"
+            ],
+            "type": "string"
+         },
+         "Environment": {
+            "properties": {
+               "createdAt": {
+                  "type": "string"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "systemId",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "ErrorResponse": {
+            "properties": {
+               "error": {
+                  "example": "Workspace not found",
+                  "type": "string"
+               }
+            },
+            "type": "object"
+         },
+         "EvaluateReleaseTargetRequest": {
+            "properties": {
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "version"
+            ],
+            "type": "object"
+         },
+         "GithubEntity": {
+            "properties": {
+               "installationId": {
+                  "type": "integer"
+               },
+               "slug": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "installationId",
+               "slug"
+            ],
+            "type": "object"
+         },
+         "IntegerValue": {
+            "type": "integer"
+         },
+         "Job": {
+            "properties": {
+               "completedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "externalId": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "releaseId": {
+                  "type": "string"
+               },
+               "startedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/JobStatus"
+               },
+               "updatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "releaseId",
+               "jobAgentId",
+               "jobAgentConfig",
+               "status",
+               "createdAt",
+               "updatedAt"
+            ],
+            "type": "object"
+         },
+         "JobAgent": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workspaceId",
+               "name",
+               "type",
+               "config"
+            ],
+            "type": "object"
+         },
+         "JobStatus": {
+            "enum": [
+               "cancelled",
+               "skipped",
+               "inProgress",
+               "actionRequired",
+               "pending",
+               "failure",
+               "invalidJobAgent",
+               "invalidIntegration",
+               "externalRunNotFound",
+               "successful"
+            ],
+            "type": "string"
+         },
+         "JsonSelector": {
+            "properties": {
+               "json": {
+                  "type": "object"
+               }
+            },
+            "required": [
+               "json"
+            ],
+            "type": "object"
+         },
+         "LiteralValue": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/BooleanValue"
+               },
+               {
+                  "$ref": "#/components/schemas/NumberValue"
+               },
+               {
+                  "$ref": "#/components/schemas/IntegerValue"
+               },
+               {
+                  "$ref": "#/components/schemas/StringValue"
+               },
+               {
+                  "$ref": "#/components/schemas/ObjectValue"
+               },
+               {
+                  "$ref": "#/components/schemas/NullValue"
+               }
+            ]
+         },
+         "NullValue": {
+            "enum": [
+               true
+            ],
+            "type": "boolean"
+         },
+         "NumberValue": {
+            "type": "number"
+         },
+         "ObjectValue": {
+            "properties": {
+               "object": {
+                  "additionalProperties": true,
+                  "type": "object"
+               }
+            },
+            "required": [
+               "object"
+            ],
+            "type": "object"
+         },
+         "Policy": {
+            "properties": {
+               "createdAt": {
+                  "type": "string"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "rules": {
+                  "items": {
+                     "$ref": "#/components/schemas/PolicyRule"
+                  },
+                  "type": "array"
+               },
+               "selectors": {
+                  "items": {
+                     "$ref": "#/components/schemas/PolicyTargetSelector"
+                  },
+                  "type": "array"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "createdAt",
+               "workspaceId",
+               "selectors",
+               "rules"
+            ],
+            "type": "object"
+         },
+         "PolicyEvaluation": {
+            "properties": {
+               "policy": {
+                  "$ref": "#/components/schemas/Policy",
+                  "nullable": true
+               },
+               "ruleResults": {
+                  "items": {
+                     "$ref": "#/components/schemas/RuleEvaluation"
+                  },
+                  "type": "array"
+               },
+               "summary": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "ruleResults"
+            ],
+            "type": "object"
+         },
+         "PolicyRule": {
+            "properties": {
+               "anyApproval": {
+                  "$ref": "#/components/schemas/AnyApprovalRule"
+               },
+               "createdAt": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "policyId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "policyId",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "PolicyTargetSelector": {
+            "properties": {
+               "deploymentSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "environmentSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               }
+            },
+            "required": [
+               "id"
+            ],
+            "type": "object"
+         },
+         "PropertiesMatcher": {
+            "properties": {
+               "properties": {
+                  "items": {
+                     "$ref": "#/components/schemas/PropertyMatcher"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "properties"
+            ],
+            "type": "object"
+         },
+         "PropertyMatcher": {
+            "properties": {
+               "fromProperty": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "operator": {
+                  "enum": [
+                     "equals",
+                     "notEquals",
+                     "contains",
+                     "startsWith",
+                     "endsWith",
+                     "regex"
+                  ],
+                  "type": "string"
+               },
+               "toProperty": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "fromProperty",
+               "toProperty",
+               "operator"
+            ],
+            "type": "object"
+         },
+         "ReferenceValue": {
+            "properties": {
+               "path": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "reference": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "reference",
+               "path"
+            ],
+            "type": "object"
+         },
+         "RelatableEntity": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               {
+                  "$ref": "#/components/schemas/Resource"
+               }
+            ]
+         },
+         "RelatableEntityType": {
+            "enum": [
+               "deployment",
+               "environment",
+               "resource"
+            ],
+            "type": "string"
+         },
+         "RelatedEntityGroup": {
+            "properties": {
+               "direction": {
+                  "$ref": "#/components/schemas/RelationDirection"
+               },
+               "entity": {
+                  "$ref": "#/components/schemas/RelatableEntity"
+               },
+               "entityId": {
+                  "description": "ID of the related entity",
+                  "type": "string"
+               },
+               "entityType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "rule": {
+                  "$ref": "#/components/schemas/RelationshipRule"
+               }
+            },
+            "required": [
+               "relationshipRule",
+               "direction",
+               "entityType",
+               "entityId",
+               "entity"
+            ],
+            "type": "object"
+         },
+         "RelationDirection": {
+            "enum": [
+               "from",
+               "to"
+            ],
+            "type": "string"
+         },
+         "RelationshipRule": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "fromSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "fromType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "matcher": {
+                  "oneOf": [
+                     {
+                        "$ref": "#/components/schemas/CelMatcher"
+                     },
+                     {
+                        "$ref": "#/components/schemas/PropertiesMatcher"
+                     }
+                  ]
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "reference": {
+                  "type": "string"
+               },
+               "relationshipType": {
+                  "type": "string"
+               },
+               "toSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "toType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "reference",
+               "fromType",
+               "toType",
+               "matcher",
+               "relationshipType",
+               "metadata",
+               "workspaceId"
+            ],
+            "type": "object"
+         },
+         "Release": {
+            "properties": {
+               "createdAt": {
+                  "type": "string"
+               },
+               "encryptedVariables": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "variables": {
+                  "additionalProperties": {
+                     "$ref": "#/components/schemas/LiteralValue"
+                  },
+                  "type": "object"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+               }
+            },
+            "required": [
+               "version",
+               "variables",
+               "encryptedVariables",
+               "releaseTarget",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "ReleaseTarget": {
+            "properties": {
+               "deploymentId": {
+                  "type": "string"
+               },
+               "environmentId": {
+                  "type": "string"
+               },
+               "resourceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "resourceId",
+               "environmentId",
+               "deploymentId"
+            ],
+            "type": "object"
+         },
+         "Resource": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "deletedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "identifier": {
+                  "type": "string"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "lockedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "providerId": {
+                  "type": "string"
+               },
+               "updatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "version": {
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "version",
+               "kind",
+               "identifier",
+               "createdAt",
+               "workspaceId",
+               "config",
+               "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceProvider": {
+            "properties": {
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "format": "uuid",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workspaceId",
+               "name",
+               "createdAt",
+               "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceVariable": {
+            "properties": {
+               "key": {
+                  "type": "string"
+               },
+               "resourceId": {
+                  "type": "string"
+               },
+               "value": {
+                  "$ref": "#/components/schemas/Value"
+               }
+            },
+            "required": [
+               "resourceId",
+               "key",
+               "value"
+            ],
+            "type": "object"
+         },
+         "RuleEvaluation": {
+            "properties": {
+               "actionRequired": {
+                  "description": "Whether the rule requires an action (e.g., approval, wait)",
+                  "type": "boolean"
+               },
+               "actionType": {
+                  "description": "Type of action required",
+                  "enum": [
+                     "approval",
+                     "wait"
+                  ],
+                  "type": "string"
+               },
+               "allowed": {
+                  "description": "Whether the rule allows the deployment",
+                  "type": "boolean"
+               },
+               "details": {
+                  "additionalProperties": true,
+                  "description": "Additional details about the rule evaluation",
+                  "type": "object"
+               },
+               "message": {
+                  "description": "Human-readable explanation of the rule result",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "allowed",
+               "actionRequired",
+               "message",
+               "details"
+            ],
+            "type": "object"
+         },
+         "Selector": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/JsonSelector"
+               },
+               {
+                  "$ref": "#/components/schemas/CelSelector"
+               }
+            ]
+         },
+         "SensitiveValue": {
+            "properties": {
+               "valueHash": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "valueHash"
+            ],
+            "type": "object"
+         },
+         "StringValue": {
+            "type": "string"
+         },
+         "System": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workspaceId",
+               "name"
+            ],
+            "type": "object"
+         },
+         "UserApprovalRecord": {
+            "properties": {
+               "createdAt": {
+                  "type": "string"
+               },
+               "environmentId": {
+                  "type": "string"
+               },
+               "reason": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/ApprovalStatus"
+               },
+               "userId": {
+                  "type": "string"
+               },
+               "versionId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "userId",
+               "versionId",
+               "environmentId",
+               "status",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "Value": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/LiteralValue"
+               },
+               {
+                  "$ref": "#/components/schemas/ReferenceValue"
+               },
+               {
+                  "$ref": "#/components/schemas/SensitiveValue"
+               }
+            ]
+         }
+      }
+   },
+   "info": {
+      "description": "OpenAPI schemas for workspace engine protobuf messages",
+      "title": "Workspace Engine API",
+      "version": "1.0.0"
+   },
+   "openapi": "3.0.0",
+   "paths": {
+      "/v1/workspaces": {
+         "get": {
+            "description": "Returns a list of workspace that are in memory. These could be inactive.",
+            "operationId": "listWorkspaceIds",
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "workspaceIds": {
+                                 "items": {
+                                    "type": "string"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of workspace IDs"
+               }
+            },
+            "summary": "List workspace IDs"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources": {
+         "get": {
+            "description": "Returns a list of resources for deployment {deploymentId}.",
+            "operationId": "getDeploymentResources",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "resources": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Resource"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of resources"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get resources for a deployment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships": {
+         "get": {
+            "description": "Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.",
+            "operationId": "getRelatedEntities",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "$ref": "#/components/parameters/entityType"
+               },
+               {
+                  "description": "ID of the entity",
+                  "in": "path",
+                  "name": "entityId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "relationships": {
+                                 "additionalProperties": {
+                                    "items": {
+                                       "$ref": "#/components/schemas/RelatedEntityGroup"
+                                    },
+                                    "type": "array"
+                                 },
+                                 "type": "object"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Related entities grouped by relationship reference"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get related entities for a given entity"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
+         "get": {
+            "description": "Returns a list of resources for environment {environmentId}.",
+            "operationId": "getEnvironmentResources",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "resources": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Resource"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of resources"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get resources for an environment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets": {
+         "get": {
+            "description": "Returns a list of release targets for a policy {policyId}.",
+            "operationId": "getReleaseTargetsForPolicy",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the policy",
+                  "in": "path",
+                  "name": "policyId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "releaseTargets": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/ReleaseTarget"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of release targets"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get release targets for a policy"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/release-targets/evaluate": {
+         "post": {
+            "description": "Evaluates all policies and rules that apply to a given release target and returns the evaluation results.",
+            "operationId": "evaluateReleaseTarget",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/EvaluateReleaseTargetRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "versionDecision": {
+                                 "$ref": "#/components/schemas/DeployDecision"
+                              },
+                              "workspaceDecision": {
+                                 "$ref": "#/components/schemas/DeployDecision"
+                              }
+                           }
+                        }
+                     }
+                  },
+                  "description": "Policy evaluation results for the release target"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Evaluate policies for a release target"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies": {
+         "get": {
+            "description": "Returns a list of policies for a release target {releaseTargetId}.",
+            "operationId": "getPoliciesForReleaseTarget",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the release target",
+                  "in": "path",
+                  "name": "releaseTargetId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "policies": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Policy"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of policies"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get policies for a release target"
+         }
+      }
+   }
+}

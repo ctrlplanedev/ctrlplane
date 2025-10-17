@@ -4,745 +4,694 @@
  */
 
 export interface paths {
-  "/v1/workspaces": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workspace IDs
+         * @description Returns a list of workspace that are in memory. These could be inactive.
+         */
+        get: operations["listWorkspaceIds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List workspace IDs
-     * @description Returns a list of workspace that are in memory. These could be inactive.
-     */
-    get: operations["listWorkspaceIds"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get resources for a deployment
+         * @description Returns a list of resources for deployment {deploymentId}.
+         */
+        get: operations["getDeploymentResources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get resources for an environment
-     * @description Returns a list of resources for environment {environmentId}.
-     */
-    get: operations["getEnvironmentResources"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get related entities for a given entity
+         * @description Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.
+         */
+        get: operations["getRelatedEntities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get resources for a deployment
-     * @description Returns a list of resources for deployment {deploymentId}.
-     */
-    get: operations["getDeploymentResources"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/release-targets/evaluate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get resources for an environment
+         * @description Returns a list of resources for environment {environmentId}.
+         */
+        get: operations["getEnvironmentResources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Evaluate policies for a release target
-     * @description Evaluates all policies and rules that apply to a given release target and returns the evaluation results.
-     */
-    post: operations["evaluateReleaseTarget"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get release targets for a policy
+         * @description Returns a list of release targets for a policy {policyId}.
+         */
+        get: operations["getReleaseTargetsForPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get release targets for a policy
-     * @description Returns a list of release targets for a policy {policyId}.
-     */
-    get: operations["getReleaseTargetsForPolicy"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/release-targets/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate policies for a release target
+         * @description Evaluates all policies and rules that apply to a given release target and returns the evaluation results.
+         */
+        post: operations["evaluateReleaseTarget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get policies for a release target
-     * @description Returns a list of policies for a release target {releaseTargetId}.
-     */
-    get: operations["getPoliciesForReleaseTarget"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get policies for a release target
+         * @description Returns a list of policies for a release target {releaseTargetId}.
+         */
+        get: operations["getPoliciesForReleaseTarget"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get related entities for a given entity
-     * @description Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.
-     */
-    get: operations["getRelatedEntities"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    DeployDecision: {
-      policyResults: components["schemas"]["PolicyEvaluation"][];
+    schemas: {
+        AnyApprovalRule: {
+            /** Format: int32 */
+            minApprovals: number;
+        };
+        /** @enum {string} */
+        ApprovalStatus: "approved" | "rejected";
+        BooleanValue: boolean;
+        CelMatcher: {
+            cel: string;
+        };
+        CelSelector: {
+            cel: string;
+        };
+        DeployDecision: {
+            policyResults: components["schemas"]["PolicyEvaluation"][];
+        };
+        Deployment: {
+            description?: string;
+            id: string;
+            jobAgentConfig: {
+                [key: string]: unknown;
+            };
+            jobAgentId?: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            slug: string;
+            systemId: string;
+        };
+        DeploymentVariable: {
+            defaultValue?: components["schemas"]["LiteralValue"];
+            deploymentId: string;
+            description?: string;
+            id: string;
+            key: string;
+        };
+        DeploymentVariableValue: {
+            deploymentVariableId: string;
+            id: string;
+            /** Format: int64 */
+            priority: number;
+            resourceSelector?: components["schemas"]["Selector"];
+            value: components["schemas"]["Value"];
+        };
+        DeploymentVersion: {
+            config: {
+                [key: string]: unknown;
+            };
+            createdAt: string;
+            deploymentId: string;
+            id: string;
+            jobAgentConfig: {
+                [key: string]: unknown;
+            };
+            message?: string;
+            name: string;
+            status: components["schemas"]["DeploymentVersionStatus"];
+            tag: string;
+        };
+        /** @enum {string} */
+        DeploymentVersionStatus: "unspecified" | "building" | "ready" | "failed" | "rejected";
+        Environment: {
+            createdAt: string;
+            description?: string;
+            id: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            systemId: string;
+        };
+        ErrorResponse: {
+            /** @example Workspace not found */
+            error?: string;
+        };
+        EvaluateReleaseTargetRequest: {
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            version: components["schemas"]["DeploymentVersion"];
+        };
+        GithubEntity: {
+            installationId: number;
+            slug: string;
+        };
+        IntegerValue: number;
+        Job: {
+            /** Format: date-time */
+            completedAt?: string;
+            /** Format: date-time */
+            createdAt: string;
+            externalId?: string;
+            id: string;
+            jobAgentConfig: {
+                [key: string]: unknown;
+            };
+            jobAgentId: string;
+            releaseId: string;
+            /** Format: date-time */
+            startedAt?: string;
+            status: components["schemas"]["JobStatus"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        JobAgent: {
+            config: {
+                [key: string]: unknown;
+            };
+            id: string;
+            name: string;
+            type: string;
+            workspaceId: string;
+        };
+        /** @enum {string} */
+        JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
+        JsonSelector: {
+            json: Record<string, never>;
+        };
+        LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
+        /** @enum {boolean} */
+        NullValue: true;
+        NumberValue: number;
+        ObjectValue: {
+            object: {
+                [key: string]: unknown;
+            };
+        };
+        Policy: {
+            createdAt: string;
+            description?: string;
+            id: string;
+            name: string;
+            rules: components["schemas"]["PolicyRule"][];
+            selectors: components["schemas"]["PolicyTargetSelector"][];
+            workspaceId: string;
+        };
+        PolicyEvaluation: {
+            policy?: components["schemas"]["Policy"];
+            ruleResults: components["schemas"]["RuleEvaluation"][];
+            summary?: string;
+        };
+        PolicyRule: {
+            anyApproval?: components["schemas"]["AnyApprovalRule"];
+            createdAt: string;
+            id: string;
+            policyId: string;
+        };
+        PolicyTargetSelector: {
+            deploymentSelector?: components["schemas"]["Selector"];
+            environmentSelector?: components["schemas"]["Selector"];
+            id: string;
+            resourceSelector?: components["schemas"]["Selector"];
+        };
+        PropertiesMatcher: {
+            properties: components["schemas"]["PropertyMatcher"][];
+        };
+        PropertyMatcher: {
+            fromProperty: string[];
+            /** @enum {string} */
+            operator: "equals" | "notEquals" | "contains" | "startsWith" | "endsWith" | "regex";
+            toProperty: string[];
+        };
+        ReferenceValue: {
+            path: string[];
+            reference: string;
+        };
+        RelatableEntity: components["schemas"]["Deployment"] | components["schemas"]["Environment"] | components["schemas"]["Resource"];
+        /** @enum {string} */
+        RelatableEntityType: "deployment" | "environment" | "resource";
+        RelatedEntityGroup: {
+            direction: components["schemas"]["RelationDirection"];
+            entity: components["schemas"]["RelatableEntity"];
+            /** @description ID of the related entity */
+            entityId: string;
+            entityType: components["schemas"]["RelatableEntityType"];
+            rule?: components["schemas"]["RelationshipRule"];
+        };
+        /** @enum {string} */
+        RelationDirection: "from" | "to";
+        RelationshipRule: {
+            description?: string;
+            fromSelector?: components["schemas"]["Selector"];
+            fromType: components["schemas"]["RelatableEntityType"];
+            id: string;
+            matcher: components["schemas"]["CelMatcher"] | components["schemas"]["PropertiesMatcher"];
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            reference: string;
+            relationshipType: string;
+            toSelector?: components["schemas"]["Selector"];
+            toType: components["schemas"]["RelatableEntityType"];
+            workspaceId: string;
+        };
+        Release: {
+            createdAt: string;
+            encryptedVariables: string[];
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            variables: {
+                [key: string]: components["schemas"]["LiteralValue"];
+            };
+            version: components["schemas"]["DeploymentVersion"];
+        };
+        ReleaseTarget: {
+            deploymentId: string;
+            environmentId: string;
+            resourceId: string;
+        };
+        Resource: {
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            deletedAt?: string;
+            id: string;
+            identifier: string;
+            kind: string;
+            /** Format: date-time */
+            lockedAt?: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            providerId?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            version: string;
+            workspaceId: string;
+        };
+        ResourceProvider: {
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            /** Format: uuid */
+            workspaceId: string;
+        };
+        ResourceVariable: {
+            key: string;
+            resourceId: string;
+            value: components["schemas"]["Value"];
+        };
+        RuleEvaluation: {
+            /** @description Whether the rule requires an action (e.g., approval, wait) */
+            actionRequired: boolean;
+            /**
+             * @description Type of action required
+             * @enum {string}
+             */
+            actionType?: "approval" | "wait";
+            /** @description Whether the rule allows the deployment */
+            allowed: boolean;
+            /** @description Additional details about the rule evaluation */
+            details: {
+                [key: string]: unknown;
+            };
+            /** @description Human-readable explanation of the rule result */
+            message: string;
+        };
+        Selector: components["schemas"]["JsonSelector"] | components["schemas"]["CelSelector"];
+        SensitiveValue: {
+            valueHash: string;
+        };
+        StringValue: string;
+        System: {
+            description?: string;
+            id: string;
+            name: string;
+            workspaceId: string;
+        };
+        UserApprovalRecord: {
+            createdAt: string;
+            environmentId: string;
+            reason?: string;
+            status: components["schemas"]["ApprovalStatus"];
+            userId: string;
+            versionId: string;
+        };
+        Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
     };
-    PolicyEvaluation: {
-      policy?: components["schemas"]["Policy"];
-      summary?: string;
-      ruleResults: components["schemas"]["RuleEvaluation"][];
+    responses: never;
+    parameters: {
+        /** @description Type of the entity (deployment, environment, or resource) */
+        entityType: components["schemas"]["RelatableEntityType"];
     };
-    RuleEvaluation: {
-      /** @description Whether the rule allows the deployment */
-      allowed: boolean;
-      /** @description Whether the rule requires an action (e.g., approval, wait) */
-      actionRequired: boolean;
-      /**
-       * @description Type of action required
-       * @enum {string}
-       */
-      actionType?: "approval" | "wait";
-      /** @description Human-readable explanation of the rule result */
-      message: string;
-      /** @description Additional details about the rule evaluation */
-      details: {
-        [key: string]: unknown;
-      };
-    };
-    NotFoundError: {
-      /** @example Workspace not found */
-      error?: string;
-    };
-    ResourceProvider: {
-      id: string;
-      /** Format: uuid */
-      workspaceId: string;
-      name: string;
-      /** Format: date-time */
-      createdAt: string;
-      metadata: {
-        [key: string]: string;
-      };
-    };
-    /** @enum {string} */
-    ApprovalStatus: "approved" | "rejected";
-    /** @enum {string} */
-    JobStatus:
-      | "cancelled"
-      | "skipped"
-      | "inProgress"
-      | "actionRequired"
-      | "pending"
-      | "failure"
-      | "invalidJobAgent"
-      | "invalidIntegration"
-      | "externalRunNotFound"
-      | "successful";
-    /** @enum {string} */
-    DeploymentVersionStatus:
-      | "unspecified"
-      | "building"
-      | "ready"
-      | "failed"
-      | "rejected";
-    JsonSelector: {
-      json: Record<string, never>;
-    };
-    CelSelector: {
-      cel: string;
-    };
-    Selector:
-      | components["schemas"]["JsonSelector"]
-      | components["schemas"]["CelSelector"];
-    PropertyMatcher: {
-      fromProperty: string[];
-      toProperty: string[];
-      /** @enum {string} */
-      operator:
-        | "equals"
-        | "notEquals"
-        | "contains"
-        | "startsWith"
-        | "endsWith"
-        | "regex";
-    };
-    Policy: {
-      id: string;
-      name: string;
-      description?: string;
-      createdAt: string;
-      workspaceId: string;
-      selectors: components["schemas"]["PolicyTargetSelector"][];
-      rules: components["schemas"]["PolicyRule"][];
-    };
-    PolicyTargetSelector: {
-      id: string;
-      deploymentSelector?: components["schemas"]["Selector"];
-      environmentSelector?: components["schemas"]["Selector"];
-      resourceSelector?: components["schemas"]["Selector"];
-    };
-    PolicyRule: {
-      id: string;
-      policyId: string;
-      createdAt: string;
-      anyApproval?: components["schemas"]["AnyApprovalRule"];
-    };
-    UserApprovalRecord: {
-      userId: string;
-      versionId: string;
-      environmentId: string;
-      status: components["schemas"]["ApprovalStatus"];
-      reason?: string;
-      createdAt: string;
-    };
-    AnyApprovalRule: {
-      /** Format: int32 */
-      minApprovals: number;
-    };
-    Resource: {
-      id: string;
-      name: string;
-      version: string;
-      kind: string;
-      identifier: string;
-      /** Format: date-time */
-      createdAt: string;
-      workspaceId: string;
-      providerId?: string;
-      config: {
-        [key: string]: unknown;
-      };
-      /** Format: date-time */
-      lockedAt?: string;
-      /** Format: date-time */
-      updatedAt?: string;
-      /** Format: date-time */
-      deletedAt?: string;
-      metadata: {
-        [key: string]: string;
-      };
-    };
-    ResourceVariable: {
-      resourceId: string;
-      key: string;
-      value: components["schemas"]["Value"];
-    };
-    Environment: {
-      id: string;
-      name: string;
-      description?: string;
-      systemId: string;
-      resourceSelector?: components["schemas"]["Selector"];
-      createdAt: string;
-    };
-    Deployment: {
-      id: string;
-      name: string;
-      slug: string;
-      description?: string;
-      systemId: string;
-      jobAgentId?: string;
-      jobAgentConfig: {
-        [key: string]: unknown;
-      };
-      resourceSelector?: components["schemas"]["Selector"];
-    };
-    JobAgent: {
-      id: string;
-      workspaceId: string;
-      name: string;
-      type: string;
-      config: {
-        [key: string]: unknown;
-      };
-    };
-    Job: {
-      id: string;
-      releaseId: string;
-      jobAgentId: string;
-      jobAgentConfig: {
-        [key: string]: unknown;
-      };
-      externalId?: string;
-      status: components["schemas"]["JobStatus"];
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
-      /** Format: date-time */
-      startedAt?: string;
-      /** Format: date-time */
-      completedAt?: string;
-    };
-    ReleaseTarget: {
-      resourceId: string;
-      environmentId: string;
-      deploymentId: string;
-    };
-    GithubEntity: {
-      installationId: number;
-      slug: string;
-    };
-    BooleanValue: boolean;
-    NumberValue: number;
-    IntegerValue: number;
-    StringValue: string;
-    ObjectValue: {
-      object: {
-        [key: string]: unknown;
-      };
-    };
-    /** @enum {boolean} */
-    NullValue: true;
-    LiteralValue:
-      | components["schemas"]["BooleanValue"]
-      | components["schemas"]["NumberValue"]
-      | components["schemas"]["IntegerValue"]
-      | components["schemas"]["StringValue"]
-      | components["schemas"]["ObjectValue"]
-      | components["schemas"]["NullValue"];
-    SensitiveValue: {
-      valueHash: string;
-    };
-    ReferenceValue: {
-      reference: string;
-      path: string[];
-    };
-    Value:
-      | components["schemas"]["LiteralValue"]
-      | components["schemas"]["ReferenceValue"]
-      | components["schemas"]["SensitiveValue"];
-    Release: {
-      version: components["schemas"]["DeploymentVersion"];
-      variables: {
-        [key: string]: components["schemas"]["LiteralValue"];
-      };
-      encryptedVariables: string[];
-      releaseTarget: components["schemas"]["ReleaseTarget"];
-      createdAt: string;
-    };
-    DeploymentVariable: {
-      id: string;
-      key: string;
-      description?: string;
-      deploymentId: string;
-      defaultValue?: components["schemas"]["LiteralValue"];
-    };
-    DeploymentVariableValue: {
-      id: string;
-      deploymentVariableId: string;
-      /** Format: int64 */
-      priority: number;
-      resourceSelector?: components["schemas"]["Selector"];
-      value: components["schemas"]["Value"];
-    };
-    DeploymentVersion: {
-      id: string;
-      name: string;
-      tag: string;
-      config: {
-        [key: string]: unknown;
-      };
-      jobAgentConfig: {
-        [key: string]: unknown;
-      };
-      deploymentId: string;
-      status: components["schemas"]["DeploymentVersionStatus"];
-      message?: string;
-      createdAt: string;
-    };
-    System: {
-      id: string;
-      workspaceId: string;
-      name: string;
-      description?: string;
-    };
-    CelMatcher: {
-      cel: string;
-    };
-    PropertiesMatcher: {
-      properties: components["schemas"]["PropertyMatcher"][];
-    };
-    /** @enum {string} */
-    RelationDirection: "from" | "to";
-    RelationshipRule: {
-      id: string;
-      name: string;
-      description?: string;
-      reference: string;
-      fromType: components["schemas"]["RelatableEntityType"];
-      fromSelector?: components["schemas"]["Selector"];
-      toType: components["schemas"]["RelatableEntityType"];
-      toSelector?: components["schemas"]["Selector"];
-      matcher:
-        | components["schemas"]["CelMatcher"]
-        | components["schemas"]["PropertiesMatcher"];
-      relationshipType: string;
-      metadata: {
-        [key: string]: string;
-      };
-      workspaceId: string;
-    };
-    RelatedEntityGroup: {
-      rule?: components["schemas"]["RelationshipRule"];
-      direction: components["schemas"]["RelationDirection"];
-      entityType: components["schemas"]["RelatableEntityType"];
-      /** @description ID of the related entity */
-      entityId: string;
-      entity: components["schemas"]["RelatableEntity"];
-    };
-    RelatableEntity:
-      | components["schemas"]["Deployment"]
-      | components["schemas"]["Environment"]
-      | components["schemas"]["Resource"];
-    /** @enum {string} */
-    RelatableEntityType: "deployment" | "environment" | "resource";
-    EvaluateReleaseTargetRequest: {
-      releaseTarget: components["schemas"]["ReleaseTarget"];
-      version: components["schemas"]["DeploymentVersion"];
-    };
-  };
-  responses: never;
-  parameters: {
-    /** @description ID of the policy. */
-    policyId: string;
-    /** @description ID of the workspace. */
-    workspaceId: string;
-    /** @description ID of the resource. */
-    resourceId: string;
-    /** @description ID of the deployment. */
-    deploymentId: string;
-    /** @description ID of the environment. */
-    environmentId: string;
-    /** @description ID of the release target. */
-    releaseTargetId: string;
-    /** @description Type of the entity (deployment, environment, or resource). */
-    entityType: "deployment" | "environment" | "resource";
-    /** @description ID of the entity. */
-    entityId: string;
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  listWorkspaceIds: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description A list of workspace IDs. */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    listWorkspaceIds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": {
-            workspaceIds?: string[];
-          };
-        };
-      };
-    };
-  };
-  getEnvironmentResources: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace. */
-        workspaceId: components["parameters"]["workspaceId"];
-        /** @description ID of the environment. */
-        environmentId: components["parameters"]["environmentId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description A resource. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            resources?: components["schemas"]["Resource"][];
-          };
-        };
-      };
-      /** @description Resource not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotFoundError"];
-        };
-      };
-    };
-  };
-  getDeploymentResources: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace. */
-        workspaceId: components["parameters"]["workspaceId"];
-        /** @description ID of the deployment. */
-        deploymentId: components["parameters"]["deploymentId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description A resource. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            resources?: components["schemas"]["Resource"][];
-          };
-        };
-      };
-      /** @description Resource not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotFoundError"];
-        };
-      };
-    };
-  };
-  evaluateReleaseTarget: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace. */
-        workspaceId: components["parameters"]["workspaceId"];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["EvaluateReleaseTargetRequest"];
-      };
-    };
-    responses: {
-      /** @description Policy evaluation results for the release target. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            workspaceDecision?: components["schemas"]["DeployDecision"];
-            versionDecision?: components["schemas"]["DeployDecision"];
-          };
-        };
-      };
-      /** @description Workspace or target not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotFoundError"];
-        };
-      };
-    };
-  };
-  getReleaseTargetsForPolicy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace. */
-        workspaceId: components["parameters"]["workspaceId"];
-        /** @description ID of the policy. */
-        policyId: components["parameters"]["policyId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description A list of release targets. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            releaseTargets?: components["schemas"]["ReleaseTarget"][];
-          };
-        };
-      };
-      /** @description Policy not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotFoundError"];
-        };
-      };
-    };
-  };
-  getPoliciesForReleaseTarget: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace. */
-        workspaceId: components["parameters"]["workspaceId"];
-        /** @description ID of the release target. */
-        releaseTargetId: components["parameters"]["releaseTargetId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description A list of policies. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            policies?: components["schemas"]["Policy"][];
-          };
-        };
-      };
-      /** @description Release target not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotFoundError"];
-        };
-      };
-    };
-  };
-  getRelatedEntities: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace. */
-        workspaceId: components["parameters"]["workspaceId"];
-        /** @description Type of the entity (deployment, environment, or resource). */
-        entityType: components["parameters"]["entityType"];
-        /** @description ID of the entity. */
-        entityId: components["parameters"]["entityId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Related entities grouped by relationship reference. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            relationships?: {
-              [key: string]: components["schemas"]["RelatedEntityGroup"][];
+        requestBody?: never;
+        responses: {
+            /** @description A list of workspace IDs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        workspaceIds?: string[];
+                    };
+                };
             };
-          };
         };
-      };
-      /** @description Invalid entity type. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotFoundError"];
-        };
-      };
-      /** @description Entity not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotFoundError"];
-        };
-      };
     };
-  };
+    getDeploymentResources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of resources */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        resources?: components["schemas"]["Resource"][];
+                    };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRelatedEntities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Type of the entity (deployment, environment, or resource) */
+                entityType: "deployment" | "environment" | "resource";
+                /** @description ID of the entity */
+                entityId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Related entities grouped by relationship reference */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        relationships?: {
+                            [key: string]: components["schemas"]["RelatedEntityGroup"][];
+                        };
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getEnvironmentResources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of resources */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        resources?: components["schemas"]["Resource"][];
+                    };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReleaseTargetsForPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the policy */
+                policyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of release targets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        releaseTargets?: components["schemas"]["ReleaseTarget"][];
+                    };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    evaluateReleaseTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluateReleaseTargetRequest"];
+            };
+        };
+        responses: {
+            /** @description Policy evaluation results for the release target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        versionDecision?: components["schemas"]["DeployDecision"];
+                        workspaceDecision?: components["schemas"]["DeployDecision"];
+                    };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPoliciesForReleaseTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the release target */
+                releaseTargetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of policies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        policies?: components["schemas"]["Policy"][];
+                    };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
 }

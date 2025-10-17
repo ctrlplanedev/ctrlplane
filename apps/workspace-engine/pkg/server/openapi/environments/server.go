@@ -11,7 +11,7 @@ import (
 
 type Environments struct{}
 
-func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId oapi.WorkspaceId, environmentId oapi.EnvironmentId) {
+func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

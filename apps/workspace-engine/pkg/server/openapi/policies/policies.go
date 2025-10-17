@@ -11,7 +11,7 @@ import (
 
 type Policies struct{}
 
-func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId oapi.WorkspaceId, policyId oapi.PolicyId) {
+func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string, policyId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

@@ -18,7 +18,7 @@
     "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc",
-    "generate": "pnpm dlx openapi-typescript ../../apps/workspace-engine/oapi/spec.yaml -o src/schema.ts"
+    "generate": "pnpm dlx openapi-typescript ../../apps/workspace-engine/oapi/openapi.json -o src/schema.ts"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",

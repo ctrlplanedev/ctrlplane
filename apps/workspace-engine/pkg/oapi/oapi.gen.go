@@ -77,20 +77,6 @@ const (
 	Wait     RuleEvaluationActionType = "wait"
 )
 
-// Defines values for EntityType.
-const (
-	EntityTypeDeployment  EntityType = "deployment"
-	EntityTypeEnvironment EntityType = "environment"
-	EntityTypeResource    EntityType = "resource"
-)
-
-// Defines values for GetRelatedEntitiesParamsEntityType.
-const (
-	GetRelatedEntitiesParamsEntityTypeDeployment  GetRelatedEntitiesParamsEntityType = "deployment"
-	GetRelatedEntitiesParamsEntityTypeEnvironment GetRelatedEntitiesParamsEntityType = "environment"
-	GetRelatedEntitiesParamsEntityTypeResource    GetRelatedEntitiesParamsEntityType = "resource"
-)
-
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -173,6 +159,11 @@ type Environment struct {
 	SystemId         string    `json:"systemId"`
 }
 
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	Error *string `json:"error,omitempty"`
+}
+
 // EvaluateReleaseTargetRequest defines model for EvaluateReleaseTargetRequest.
 type EvaluateReleaseTargetRequest struct {
 	ReleaseTarget ReleaseTarget     `json:"releaseTarget"`
@@ -222,11 +213,6 @@ type JsonSelector struct {
 // LiteralValue defines model for LiteralValue.
 type LiteralValue struct {
 	union json.RawMessage
-}
-
-// NotFoundError defines model for NotFoundError.
-type NotFoundError struct {
-	Error *string `json:"error,omitempty"`
 }
 
 // NullValue defines model for NullValue.
@@ -444,32 +430,8 @@ type Value struct {
 	union json.RawMessage
 }
 
-// DeploymentId defines model for deploymentId.
-type DeploymentId = string
-
-// EntityId defines model for entityId.
-type EntityId = string
-
 // EntityType defines model for entityType.
-type EntityType string
-
-// EnvironmentId defines model for environmentId.
-type EnvironmentId = string
-
-// PolicyId defines model for policyId.
-type PolicyId = string
-
-// ReleaseTargetId defines model for releaseTargetId.
-type ReleaseTargetId = string
-
-// ResourceId defines model for resourceId.
-type ResourceId = string
-
-// WorkspaceId defines model for workspaceId.
-type WorkspaceId = string
-
-// GetRelatedEntitiesParamsEntityType defines parameters for GetRelatedEntities.
-type GetRelatedEntitiesParamsEntityType string
+type EntityType = RelatableEntityType
 
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
@@ -947,22 +909,22 @@ type ServerInterface interface {
 	ListWorkspaceIds(c *gin.Context)
 	// Get resources for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
-	GetDeploymentResources(c *gin.Context, workspaceId WorkspaceId, deploymentId DeploymentId)
+	GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string)
 	// Get related entities for a given entity
 	// (GET /v1/workspaces/{workspaceId}/entities/{entityType}/{entityId}/relationships)
-	GetRelatedEntities(c *gin.Context, workspaceId WorkspaceId, entityType GetRelatedEntitiesParamsEntityType, entityId EntityId)
+	GetRelatedEntities(c *gin.Context, workspaceId string, entityType EntityType, entityId string)
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
-	GetEnvironmentResources(c *gin.Context, workspaceId WorkspaceId, environmentId EnvironmentId)
+	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string)
 	// Get release targets for a policy
 	// (GET /v1/workspaces/{workspaceId}/policies/{policyId}/release-targets)
-	GetReleaseTargetsForPolicy(c *gin.Context, workspaceId WorkspaceId, policyId PolicyId)
+	GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string, policyId string)
 	// Evaluate policies for a release target
 	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
-	EvaluateReleaseTarget(c *gin.Context, workspaceId WorkspaceId)
+	EvaluateReleaseTarget(c *gin.Context, workspaceId string)
 	// Get policies for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies)
-	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId WorkspaceId, releaseTargetId ReleaseTargetId)
+	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -993,7 +955,7 @@ func (siw *ServerInterfaceWrapper) GetDeploymentResources(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId WorkspaceId
+	var workspaceId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1002,7 +964,7 @@ func (siw *ServerInterfaceWrapper) GetDeploymentResources(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "deploymentId" -------------
-	var deploymentId DeploymentId
+	var deploymentId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1026,7 +988,7 @@ func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId WorkspaceId
+	var workspaceId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1035,7 +997,7 @@ func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "entityType" -------------
-	var entityType GetRelatedEntitiesParamsEntityType
+	var entityType EntityType
 
 	err = runtime.BindStyledParameterWithOptions("simple", "entityType", c.Param("entityType"), &entityType, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1044,7 +1006,7 @@ func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "entityId" -------------
-	var entityId EntityId
+	var entityId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "entityId", c.Param("entityId"), &entityId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1068,7 +1030,7 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId WorkspaceId
+	var workspaceId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1077,7 +1039,7 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "environmentId" -------------
-	var environmentId EnvironmentId
+	var environmentId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "environmentId", c.Param("environmentId"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1101,7 +1063,7 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForPolicy(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId WorkspaceId
+	var workspaceId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1110,7 +1072,7 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForPolicy(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "policyId" -------------
-	var policyId PolicyId
+	var policyId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "policyId", c.Param("policyId"), &policyId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1134,7 +1096,7 @@ func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId WorkspaceId
+	var workspaceId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1158,7 +1120,7 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId WorkspaceId
+	var workspaceId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -1167,7 +1129,7 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	}
 
 	// ------------- Path parameter "releaseTargetId" -------------
-	var releaseTargetId ReleaseTargetId
+	var releaseTargetId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetId", c.Param("releaseTargetId"), &releaseTargetId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {

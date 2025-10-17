@@ -1,0 +1,27 @@
+{
+  openapi: '3.0.0',
+  info: {
+    title: 'Workspace Engine API',
+    version: '1.0.0',
+    description: 'OpenAPI schemas for workspace engine protobuf messages',
+  },
+
+  // Combine all path modules
+  paths:
+    (import 'paths/workspace.jsonnet') +
+    (import 'paths/resource.jsonnet') +
+    (import 'paths/policy.jsonnet') +
+    (import 'paths/release-target.jsonnet') +
+    (import 'paths/relationship.jsonnet'),
+
+  components: {
+    parameters: (import 'parameters/core.jsonnet'),
+    // Combine all schema modules
+    schemas:
+      (import 'schemas/enums.jsonnet') +
+      (import 'schemas/core.jsonnet') +
+      (import 'schemas/entities.jsonnet') +
+      (import 'schemas/policy.jsonnet') +
+      (import 'schemas/relationship.jsonnet'),
+  },
+}

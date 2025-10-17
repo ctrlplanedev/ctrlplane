@@ -1,4 +1,6 @@
-//go:generate go tool oapi-codegen -config ../../oapi/cfg.yaml ../../oapi/spec.yaml
+//go:generate jsonnetfmt -i ../../oapi/spec/main.jsonnet
+//go:generate sh -c "jsonnet ../../oapi/spec/main.jsonnet > ../../oapi/openapi.json"
+//go:generate go tool oapi-codegen -config ../../oapi/cfg.yaml ../../oapi/openapi.json
 
 package oapi
 

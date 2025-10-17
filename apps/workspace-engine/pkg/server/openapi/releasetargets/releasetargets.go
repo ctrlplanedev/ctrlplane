@@ -13,7 +13,7 @@ type ReleaseTargets struct {
 }
 
 // EvaluateReleaseTarget implements oapi.ServerInterface.
-func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId oapi.WorkspaceId) {
+func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId string) {
 	// Get workspace
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
@@ -68,7 +68,7 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId oapi.
 }
 
 // GetPoliciesForReleaseTarget implements oapi.ServerInterface.
-func (s *ReleaseTargets) GetPoliciesForReleaseTarget(c *gin.Context, workspaceId oapi.WorkspaceId, releaseTargetId oapi.ReleaseTargetId) {
+func (s *ReleaseTargets) GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
