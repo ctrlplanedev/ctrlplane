@@ -12,6 +12,11 @@ export const env = createEnv({
     GITHUB_BOT_CLIENT_ID: z.string().optional(),
     GITHUB_BOT_CLIENT_SECRET: z.string().optional(),
     GITHUB_BOT_APP_ID: z.string().optional(),
+    WORKSPACE_ENGINE_URL: z
+      .string()
+      .url()
+      .optional()
+      .default("http://localhost:8081"),
 
     WORKSPACE_CREATE_GOOGLE_SERVICE_ACCOUNTS: z
       .enum(["true", "false"])

@@ -32,6 +32,7 @@
     "@ctrlplane/rule-engine": "workspace:*",
     "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
+    "@ctrlplane/workspace-engine-sdk": "workspace:*",
     "@octokit/auth-app": "catalog:",
     "@octokit/rest": "catalog:",
     "@octokit/types": "^13.5.0",
