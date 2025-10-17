@@ -433,6 +433,9 @@ type Value struct {
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
 
+// QueryResourcesJSONRequestBody defines body for QueryResources for application/json ContentType.
+type QueryResourcesJSONRequestBody = Selector
+
 // AsBooleanValue returns the union data inside the LiteralValue as a BooleanValue
 func (t LiteralValue) AsBooleanValue() (BooleanValue, error) {
 	var body BooleanValue
@@ -934,6 +937,9 @@ type ServerInterface interface {
 	// Get policies for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies)
 	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetId string)
+	// Query resources with CEL expression
+	// (POST /v1/workspaces/{workspaceId}/resources/query)
+	QueryResources(c *gin.Context, workspaceId string)
 	// Get resource by identifier
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
 	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
@@ -1285,6 +1291,30 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetId)
 }
 
+// QueryResources operation middleware
+func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.QueryResources(c, workspaceId)
+}
+
 // GetResourceByIdentifier operation middleware
 func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
 
@@ -1389,6 +1419,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetId/policies", wrapper.GetPoliciesForReleaseTarget)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
 }

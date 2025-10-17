@@ -1626,6 +1626,64 @@
             "summary": "Get policies for a release target"
          }
       },
+      "/v1/workspaces/{workspaceId}/resources/query": {
+         "post": {
+            "description": "Returns resources that match the provided CEL expression. Use the \"resource\" variable in your expression to access resource properties.",
+            "operationId": "queryResources",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/Selector"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "resources": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Resource"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "List of matching resources"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Query resources with CEL expression"
+         }
+      },
       "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}": {
          "get": {
             "description": "Returns a specific resource by its identifier.",

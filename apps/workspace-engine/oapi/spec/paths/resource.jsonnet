@@ -64,4 +64,35 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/resources/query': {
+    post: {
+      summary: 'Query resources with CEL expression',
+      operationId: 'queryResources',
+      description: 'Returns resources that match the provided CEL expression. Use the "resource" variable in your expression to access resource properties.',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('Selector'),
+          },
+        },
+      },
+      responses: openapi.okResponse(
+        'List of matching resources',
+        {
+          type: 'object',
+          properties: {
+            resources: {
+              type: 'array',
+              items: openapi.schemaRef('Resource'),
+            },
+          },
+        }
+      ) + openapi.badRequestResponse(),
+    },
+  },
 }
