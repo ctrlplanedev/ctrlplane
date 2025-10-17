@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 )
 
@@ -52,15 +53,21 @@ func (m *Manager) DetectChanges(ctx context.Context, changeSet *changeset.Change
 
 	taintedTargets := NewTaintProcessor(m.store, changeSet, targets).Tainted()
 
+	var numTainted int
+	var numCreated int
+	var numDeleted int
+
 	// Record all tainted targets to the changeset
 	for _, target := range taintedTargets {
 		changes.Record(changeset.ChangeTypeTaint, target)
+		numTainted++
 	}
 
 	// Detect created targets
 	for id, target := range targets {
 		if _, existed := m.currentTargets[id]; !existed {
 			changes.Record(changeset.ChangeTypeCreate, target)
+			numCreated++
 		}
 	}
 
@@ -68,8 +75,13 @@ func (m *Manager) DetectChanges(ctx context.Context, changeSet *changeset.Change
 	for id, oldTarget := range m.currentTargets {
 		if _, exists := targets[id]; !exists {
 			changes.Record(changeset.ChangeTypeDelete, oldTarget)
+			numDeleted++
 		}
 	}
+
+	span.SetAttributes(attribute.Int("release-target.tainted", numTainted))
+	span.SetAttributes(attribute.Int("release-target.created", numCreated))
+	span.SetAttributes(attribute.Int("release-target.deleted", numDeleted))
 
 	return changes, nil
 }

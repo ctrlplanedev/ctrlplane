@@ -85,7 +85,13 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 
 	added := targetChanges.Process().FilterByType(changeset.ChangeTypeCreate).CollectEntities()
 	tainted := targetChanges.Process().FilterByType(changeset.ChangeTypeTaint).CollectEntities()
+	removed := targetChanges.Process().FilterByType(changeset.ChangeTypeDelete).CollectEntities()
 	allToProcess := append(added, tainted...)
+
+	targetChanges.Finalize()
+	for _, change := range targetChanges.Changes {
+		changes.Record(change.Type, change.Entity)
+	}
 
 	// Process added/tainted release targets
 	for _, rt := range allToProcess {
@@ -97,8 +103,6 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 			}
 		}(rt)
 	}
-
-	removed := targetChanges.Process().FilterByType(changeset.ChangeTypeDelete).CollectEntities()
 
 	// Cancel jobs for removed release targets
 	for _, rt := range removed {
@@ -116,6 +120,11 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 	}
 
 	wg.Wait()
+
+	cancelledJobs.IterCb(func(_ string, job *oapi.Job) {
+		changes.Record(changeset.ChangeTypeUpdate, job)
+	})
+
 	return cancelledJobs, nil
 }
 

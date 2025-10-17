@@ -107,15 +107,9 @@ const RELEASE_TARGET_SELECT_QUERY = `
 	SELECT id FROM release_target WHERE resource_id = $1 AND environment_id = $2 AND deployment_id = $3
 `
 
-func getReleaseTargetId(ctx context.Context, release *oapi.Release) (string, error) {
-	db, err := GetDB(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer db.Release()
-
+func getReleaseTargetId(ctx context.Context, release *oapi.Release, tx pgx.Tx) (string, error) {
 	var releaseTargetId string
-	err = db.QueryRow(ctx, RELEASE_TARGET_SELECT_QUERY, release.ReleaseTarget.ResourceId, release.ReleaseTarget.EnvironmentId, release.ReleaseTarget.DeploymentId).Scan(&releaseTargetId)
+	err := tx.QueryRow(ctx, RELEASE_TARGET_SELECT_QUERY, release.ReleaseTarget.ResourceId, release.ReleaseTarget.EnvironmentId, release.ReleaseTarget.DeploymentId).Scan(&releaseTargetId)
 	if err != nil {
 		return "", err
 	}
@@ -209,7 +203,7 @@ const RELEASE_INSERT_QUERY = `
 `
 
 func writeRelease(ctx context.Context, release *oapi.Release, workspaceID string, tx pgx.Tx) error {
-	releaseTargetId, err := getReleaseTargetId(ctx, release)
+	releaseTargetId, err := getReleaseTargetId(ctx, release, tx)
 	if err != nil {
 		return err
 	}
