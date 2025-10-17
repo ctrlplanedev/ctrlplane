@@ -4,21 +4,21 @@ import (
 	"context"
 	"os"
 	"time"
+
 	"workspace-engine/pkg/events"
+	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"go.opentelemetry.io/otel"
 )
 
+// Configuration variables loaded from environment
 var (
 	Topic   = getEnv("KAFKA_TOPIC", "workspace-events")
 	GroupID = getEnv("KAFKA_GROUP_ID", "workspace-engine")
 	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
-
-	tracer = otel.Tracer("kafka")
 )
 
+// getEnv retrieves an environment variable or returns a default value
 func getEnv(varName string, defaultValue string) string {
 	v := os.Getenv(varName)
 	if v == "" {
@@ -27,32 +27,48 @@ func getEnv(varName string, defaultValue string) string {
 	return v
 }
 
+// RunConsumer starts the Kafka consumer without offset resume
+// Uses default Kafka offsets (committed offsets or 'earliest')
 func RunConsumer(ctx context.Context) error {
-	log.Info("Connecting to Kafka", "brokers", Brokers)
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":  Brokers,
-		"group.id":           GroupID,
-		"auto.offset.reset":  "earliest",
-		"enable.auto.commit": false,
-	})
+	return RunConsumerWithWorkspaceLoader(ctx, nil)
+}
 
+// RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
+//
+// Flow:
+//  1. Connect to Kafka and subscribe to topic
+//  2. Wait for partition assignment
+//  3. Load workspaces for assigned partitions (if workspaceLoader provided)
+//  4. Seek to stored offsets per partition
+//  5. Start consuming and processing messages
+func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspace.WorkspaceLoader) error {
+	// Initialize Kafka consumer
+	consumer, err := createConsumer()
 	if err != nil {
-		log.Error("Failed to create consumer", "error", err)
 		return err
 	}
-	defer func() { _ = c.Close() }()
+	defer consumer.Close()
 
-	err = c.SubscribeTopics([]string{Topic}, nil)
-
-	if err != nil {
+	// Subscribe to topic
+	if err := consumer.SubscribeTopics([]string{Topic}, nil); err != nil {
 		log.Error("Failed to subscribe", "error", err)
 		return err
 	}
 
+	// Load workspaces and seek to stored offsets if workspace loader is provided
+	if workspaceLoader != nil {
+		if err := loadWorkspacesAndApplyOffsets(ctx, consumer, workspaceLoader); err != nil {
+			log.Warn("Failed to load workspaces and apply stored offsets, starting from default position", "error", err)
+		}
+	}
+
 	log.Info("Started Kafka consumer for ctrlplane-events")
+
+	// Start consuming messages
 	handler := events.NewEventHandler()
 
 	for {
+		// Check for cancellation
 		select {
 		case <-ctx.Done():
 			log.Info("Context cancelled, stopping consumer")
@@ -60,30 +76,17 @@ func RunConsumer(ctx context.Context) error {
 		default:
 		}
 
-		msg, err := c.ReadMessage(time.Second)
-
+		// Read message from Kafka
+		msg, err := consumer.ReadMessage(time.Second)
 		if err != nil {
-			if err.(kafka.Error).IsTimeout() {
-				log.Debug("Timeout, continuing")
-				time.Sleep(time.Second)
-				continue
-			}
-			log.Error("Consumer error", "error", err)
-			time.Sleep(time.Second)
+			handleReadError(err)
 			continue
 		}
 
-		ws, err := handler.ListenAndRoute(ctx, msg)
-		if err != nil {
-			log.Error("Failed to read message", "error", err)
+		// Process message and update workspace state
+		if err := processMessage(ctx, consumer, handler, msg); err != nil {
+			log.Error("Failed to process message", "error", err)
 			continue
 		}
-
-		if _, err := c.CommitMessage(msg); err != nil {
-			log.Error("Failed to commit message", "error", err)
-			continue
-		}
-
-		ws.KafkaProgress.FromMessage(msg)
 	}
 }

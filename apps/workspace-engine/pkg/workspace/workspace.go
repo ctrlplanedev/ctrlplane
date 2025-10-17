@@ -255,3 +255,32 @@ func (w *Workspace) LoadFromStorage(ctx context.Context, storage StorageClient, 
 
 	return nil
 }
+
+type WorkspaceLoader func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error
+
+// CreateWorkspaceLoader creates a workspace loader function that:
+// 1. Discovers all available workspace IDs
+// 2. Determines which workspaces belong to which partitions
+// 3. Loads workspaces for the assigned partitions from storage
+func CreateWorkspaceLoader(
+	storage StorageClient,
+	discoverer kafka.WorkspaceIDDiscoverer,
+) WorkspaceLoader {
+	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
+		workspaceIDs, err := kafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
+		if err != nil {
+			return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
+		}
+
+		for _, workspaceID := range workspaceIDs {
+			ws := GetWorkspace(workspaceID)
+			if err := ws.LoadFromStorage(ctx, storage, fmt.Sprintf("%s.gob", workspaceID)); err != nil {
+				return fmt.Errorf("failed to load workspace %s: %w", workspaceID, err)
+			}
+
+			Set(workspaceID, ws)
+		}
+
+		return nil
+	}
+}
