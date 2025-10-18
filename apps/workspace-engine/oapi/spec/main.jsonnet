@@ -26,6 +26,7 @@
       (import 'schemas/core.jsonnet') +
       (import 'schemas/entities.jsonnet') +
       (import 'schemas/policy.jsonnet') +
-      (import 'schemas/relationship.jsonnet'),
+      (import 'schemas/relationship.jsonnet') +
+      (import 'schemas/jobs.jsonnet'),
   },
 }

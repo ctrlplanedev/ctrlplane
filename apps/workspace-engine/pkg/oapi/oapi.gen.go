@@ -43,6 +43,20 @@ const (
 	Successful          JobStatus = "successful"
 )
 
+// Defines values for JobUpdateEventFieldsToUpdate.
+const (
+	CompletedAt    JobUpdateEventFieldsToUpdate = "completedAt"
+	CreatedAt      JobUpdateEventFieldsToUpdate = "createdAt"
+	ExternalId     JobUpdateEventFieldsToUpdate = "externalId"
+	Id             JobUpdateEventFieldsToUpdate = "id"
+	JobAgentConfig JobUpdateEventFieldsToUpdate = "jobAgentConfig"
+	JobAgentId     JobUpdateEventFieldsToUpdate = "jobAgentId"
+	ReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
+	StartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
+	Status         JobUpdateEventFieldsToUpdate = "status"
+	UpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
+)
+
 // Defines values for NullValue.
 const (
 	True NullValue = true
@@ -204,6 +218,25 @@ type JobAgent struct {
 
 // JobStatus defines model for JobStatus.
 type JobStatus string
+
+// JobUpdateEvent defines model for JobUpdateEvent.
+type JobUpdateEvent struct {
+	AgentId        *string                         `json:"agentId,omitempty"`
+	ExternalId     *string                         `json:"externalId,omitempty"`
+	FieldsToUpdate *[]JobUpdateEventFieldsToUpdate `json:"fieldsToUpdate,omitempty"`
+	Id             *string                         `json:"id,omitempty"`
+	Job            Job                             `json:"job"`
+	union          json.RawMessage
+}
+
+// JobUpdateEventFieldsToUpdate defines model for JobUpdateEvent.FieldsToUpdate.
+type JobUpdateEventFieldsToUpdate string
+
+// JobUpdateEvent0 defines model for .
+type JobUpdateEvent0 = interface{}
+
+// JobUpdateEvent1 defines model for .
+type JobUpdateEvent1 = interface{}
 
 // JsonSelector defines model for JsonSelector.
 type JsonSelector struct {
@@ -435,6 +468,157 @@ type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
 
 // QueryResourcesJSONRequestBody defines body for QueryResources for application/json ContentType.
 type QueryResourcesJSONRequestBody = Selector
+
+// AsJobUpdateEvent0 returns the union data inside the JobUpdateEvent as a JobUpdateEvent0
+func (t JobUpdateEvent) AsJobUpdateEvent0() (JobUpdateEvent0, error) {
+	var body JobUpdateEvent0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromJobUpdateEvent0 overwrites any union data inside the JobUpdateEvent as the provided JobUpdateEvent0
+func (t *JobUpdateEvent) FromJobUpdateEvent0(v JobUpdateEvent0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeJobUpdateEvent0 performs a merge with any union data inside the JobUpdateEvent, using the provided JobUpdateEvent0
+func (t *JobUpdateEvent) MergeJobUpdateEvent0(v JobUpdateEvent0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsJobUpdateEvent1 returns the union data inside the JobUpdateEvent as a JobUpdateEvent1
+func (t JobUpdateEvent) AsJobUpdateEvent1() (JobUpdateEvent1, error) {
+	var body JobUpdateEvent1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromJobUpdateEvent1 overwrites any union data inside the JobUpdateEvent as the provided JobUpdateEvent1
+func (t *JobUpdateEvent) FromJobUpdateEvent1(v JobUpdateEvent1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeJobUpdateEvent1 performs a merge with any union data inside the JobUpdateEvent, using the provided JobUpdateEvent1
+func (t *JobUpdateEvent) MergeJobUpdateEvent1(v JobUpdateEvent1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t JobUpdateEvent) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.AgentId != nil {
+		object["agentId"], err = json.Marshal(t.AgentId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'agentId': %w", err)
+		}
+	}
+
+	if t.ExternalId != nil {
+		object["externalId"], err = json.Marshal(t.ExternalId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'externalId': %w", err)
+		}
+	}
+
+	if t.FieldsToUpdate != nil {
+		object["fieldsToUpdate"], err = json.Marshal(t.FieldsToUpdate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fieldsToUpdate': %w", err)
+		}
+	}
+
+	if t.Id != nil {
+		object["id"], err = json.Marshal(t.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
+	object["job"], err = json.Marshal(t.Job)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'job': %w", err)
+	}
+
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *JobUpdateEvent) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["agentId"]; found {
+		err = json.Unmarshal(raw, &t.AgentId)
+		if err != nil {
+			return fmt.Errorf("error reading 'agentId': %w", err)
+		}
+	}
+
+	if raw, found := object["externalId"]; found {
+		err = json.Unmarshal(raw, &t.ExternalId)
+		if err != nil {
+			return fmt.Errorf("error reading 'externalId': %w", err)
+		}
+	}
+
+	if raw, found := object["fieldsToUpdate"]; found {
+		err = json.Unmarshal(raw, &t.FieldsToUpdate)
+		if err != nil {
+			return fmt.Errorf("error reading 'fieldsToUpdate': %w", err)
+		}
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &t.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+	}
+
+	if raw, found := object["job"]; found {
+		err = json.Unmarshal(raw, &t.Job)
+		if err != nil {
+			return fmt.Errorf("error reading 'job': %w", err)
+		}
+	}
+
+	return err
+}
 
 // AsBooleanValue returns the union data inside the LiteralValue as a BooleanValue
 func (t LiteralValue) AsBooleanValue() (BooleanValue, error) {

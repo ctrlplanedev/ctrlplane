@@ -37,6 +37,18 @@ func (j *Jobs) Has(id string) bool {
 	return j.repo.Jobs.Has(id)
 }
 
+func (j *Jobs) GetByJobAgentAndExternalId(jobAgentId string, externalId string) (*oapi.Job, bool) {
+	for jobItem := range j.repo.Jobs.IterBuffered() {
+		if jobItem.Val.JobAgentId == jobAgentId &&
+			jobItem.Val.ExternalId != nil &&
+			*jobItem.Val.ExternalId == externalId {
+			return jobItem.Val, true
+		}
+	}
+
+	return nil, false
+}
+
 func (j *Jobs) GetPending() map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job, j.repo.Jobs.Count())
 	for jobItem := range j.repo.Jobs.IterBuffered() {

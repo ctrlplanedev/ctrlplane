@@ -174,34 +174,6 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  Job: {
-    type: 'object',
-    required: [
-      'id',
-      'releaseId',
-      'jobAgentId',
-      'jobAgentConfig',
-      'status',
-      'createdAt',
-      'updatedAt',
-    ],
-    properties: {
-      id: { type: 'string' },
-      releaseId: { type: 'string' },
-      jobAgentId: { type: 'string' },
-      jobAgentConfig: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      externalId: { type: 'string' },
-      status: openapi.schemaRef('JobStatus'),
-      createdAt: { type: 'string', format: 'date-time' },
-      updatedAt: { type: 'string', format: 'date-time' },
-      startedAt: { type: 'string', format: 'date-time' },
-      completedAt: { type: 'string', format: 'date-time' },
-    },
-  },
-
   ReleaseTarget: {
     type: 'object',
     required: ['resourceId', 'environmentId', 'deploymentId'],

@@ -2,11 +2,12 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-
-	"encoding/json"
 )
 
 func HandleJobUpdated(
@@ -14,12 +15,53 @@ func HandleJobUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	job := &oapi.Job{}
-	if err := json.Unmarshal(event.Data, job); err != nil {
+	var jobUpdateEvent *oapi.JobUpdateEvent
+	if err := json.Unmarshal(event.Data, &jobUpdateEvent); err != nil {
 		return err
 	}
 
-	ws.Jobs().Upsert(ctx, job)
+	job, exists := getJob(ws, jobUpdateEvent)
+	if !exists {
+		return fmt.Errorf("job not found")
+	}
+
+	// No fields specified - replace entire job
+	if jobUpdateEvent.FieldsToUpdate == nil || len(*jobUpdateEvent.FieldsToUpdate) == 0 {
+		ws.Jobs().Upsert(ctx, &jobUpdateEvent.Job)
+		return nil
+	}
+
+	file := make([]string, len(*jobUpdateEvent.FieldsToUpdate))
+	for i, field := range *jobUpdateEvent.FieldsToUpdate {
+		file[i] = string(field)
+	}
+	mergedJob, err := handler.MergeFields(job, &jobUpdateEvent.Job, file)
+	if err != nil {
+		return err
+	}
+
+	ws.Jobs().Upsert(ctx, mergedJob)
 
 	return nil
 }
+
+
+func getJob(ws *workspace.Workspace, job *oapi.JobUpdateEvent) (*oapi.Job, bool) {
+	if job.Id != nil && *job.Id != "" {
+		if existing, exists := ws.Jobs().Get(*job.Id); exists {
+			return existing, true
+		}
+	}
+	
+	if job.AgentId == nil || *job.AgentId == "" {
+		return nil, false
+	}
+
+	if job.ExternalId == nil || *job.ExternalId == "" {
+		return nil, false
+	}
+
+	// Try finding by job agent ID + external ID
+	return ws.Jobs().GetByJobAgentAndExternalId(*job.AgentId, *job.ExternalId)
+}
+
