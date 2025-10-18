@@ -63,10 +63,10 @@ func getReleaseTargetJobs(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTa
 
 type fullReleaseTarget struct {
 	*oapi.ReleaseTarget
-	Jobs        []*oapi.Job
-	Environment *oapi.Environment
-	Deployment  *oapi.Deployment
-	Resource    *oapi.Resource
+	Jobs        []*oapi.Job       `json:"jobs"`
+	Environment *oapi.Environment `json:"environment,omitempty"`
+	Deployment  *oapi.Deployment  `json:"deployment,omitempty"`
+	Resource    *oapi.Resource    `json:"resource,omitempty"`
 }
 
 type environmentWithTargets struct {

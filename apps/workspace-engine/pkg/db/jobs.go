@@ -129,6 +129,32 @@ const JOB_UPSERT_QUERY = `
 		updated_at = EXCLUDED.updated_at
 `
 
+const RELEASE_JOB_CHECK_QUERY = `
+	SELECT EXISTS(SELECT 1 FROM release_job WHERE release_id = $1 AND job_id = $2)
+`
+
+const RELEASE_JOB_INSERT_QUERY = `
+	INSERT INTO release_job (release_id, job_id)
+	VALUES ($1, $2)
+`
+
+func writeReleaseJob(ctx context.Context, releaseId string, jobId string, tx pgx.Tx) error {
+	// Check if the association already exists
+	var exists bool
+	err := tx.QueryRow(ctx, RELEASE_JOB_CHECK_QUERY, releaseId, jobId).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	// Only insert if it doesn't exist
+	if !exists {
+		_, err := tx.Exec(ctx, RELEASE_JOB_INSERT_QUERY, releaseId, jobId)
+		return err
+	}
+
+	return nil
+}
+
 func convertOapiJobStatusToStr(status oapi.JobStatus) string {
 	switch status {
 	case oapi.Pending:
@@ -170,7 +196,16 @@ func writeJob(ctx context.Context, job *oapi.Job, tx pgx.Tx) error {
 		job.StartedAt,
 		job.CompletedAt,
 		job.UpdatedAt)
-	return err
+	if err != nil {
+		return err
+	}
+
+	if job.ReleaseId != "" {
+		if err := writeReleaseJob(ctx, job.ReleaseId, job.Id, tx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 const DELETE_JOB_QUERY = `

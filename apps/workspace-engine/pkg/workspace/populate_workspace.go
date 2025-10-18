@@ -47,6 +47,9 @@ func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error
 			return err
 		}
 	}
+	for _, job := range initialWorkspaceState.Jobs() {
+		ws.Jobs().Upsert(ctx, job)
+	}
 	for _, jobAgent := range initialWorkspaceState.JobAgents() {
 		ws.JobAgents().Upsert(ctx, jobAgent)
 	}
