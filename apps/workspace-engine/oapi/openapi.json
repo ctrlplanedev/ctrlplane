@@ -376,6 +376,57 @@
             ],
             "type": "string"
          },
+         "JobUpdateEvent": {
+            "oneOf": [
+               {
+                  "required": [
+                     "id"
+                  ]
+               },
+               {
+                  "required": [
+                     "agentId",
+                     "externalId"
+                  ]
+               }
+            ],
+            "properties": {
+               "agentId": {
+                  "type": "string"
+               },
+               "externalId": {
+                  "type": "string"
+               },
+               "fieldsToUpdate": {
+                  "items": {
+                     "enum": [
+                        "completedAt",
+                        "createdAt",
+                        "externalId",
+                        "id",
+                        "jobAgentConfig",
+                        "jobAgentId",
+                        "releaseId",
+                        "startedAt",
+                        "status",
+                        "updatedAt"
+                     ],
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "job": {
+                  "$ref": "#/components/schemas/Job"
+               }
+            },
+            "required": [
+               "job"
+            ],
+            "type": "object"
+         },
          "JsonSelector": {
             "properties": {
                "json": {
