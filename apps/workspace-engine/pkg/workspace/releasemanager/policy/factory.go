@@ -5,6 +5,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -27,12 +28,20 @@ func (f *EvaluatorFactory) EvaluateVersionScopedPolicyRules(
 	releaseTarget *oapi.ReleaseTarget,
 	version *oapi.DeploymentVersion,
 ) []*oapi.RuleEvaluation {
-	return evaluateRules(policy, func(rule *oapi.PolicyRule) (*oapi.RuleEvaluation, error) {
+	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
 		eval := f.createVersionScopedEvaluator(rule)
 		if eval == nil {
 			return nil, nil // Skip unknown rule types
 		}
-		return eval.Evaluate(ctx, releaseTarget, version)
+		ruleResults := make([]*oapi.RuleEvaluation, 0, len(eval))
+		for _, eval := range eval {
+			result, err := eval.Evaluate(ctx, releaseTarget, version)
+			if err != nil {
+				return nil, err
+			}
+			ruleResults = append(ruleResults, result)
+		}
+		return ruleResults, nil
 	})
 }
 
@@ -43,12 +52,20 @@ func (f *EvaluatorFactory) EvaluateTargetScopedPolicyRules(
 	policy *oapi.Policy,
 	releaseTarget *oapi.ReleaseTarget,
 ) []*oapi.RuleEvaluation {
-	return evaluateRules(policy, func(rule *oapi.PolicyRule) (*oapi.RuleEvaluation, error) {
-		eval := f.createTargetScopedEvaluator(rule)
-		if eval == nil {
+	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
+		evals := f.createTargetScopedEvaluator(rule)
+		if evals == nil {
 			return nil, nil // Skip unknown rule types
 		}
-		return eval.Evaluate(ctx, releaseTarget)
+		ruleResults := make([]*oapi.RuleEvaluation, 0, len(evals))
+		for _, eval := range evals {
+			result, err := eval.Evaluate(ctx, releaseTarget)
+			if err != nil {
+				return nil, err
+			}
+			ruleResults = append(ruleResults, result)
+		}
+		return ruleResults, nil
 	})
 }
 
@@ -60,12 +77,20 @@ func (f *EvaluatorFactory) EvaluateReleaseScopedPolicyRules(
 	releaseTarget *oapi.ReleaseTarget,
 	release *oapi.Release,
 ) []*oapi.RuleEvaluation {
-	return evaluateRules(policy, func(rule *oapi.PolicyRule) (*oapi.RuleEvaluation, error) {
-		eval := f.createReleaseScopedEvaluator(rule)
-		if eval == nil {
+	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
+		evals := f.createReleaseScopedEvaluator(rule)
+		if evals == nil {
 			return nil, nil // Skip unknown rule types
 		}
-		return eval.Evaluate(ctx, release)
+		ruleResults := make([]*oapi.RuleEvaluation, 0, len(evals))
+		for _, eval := range evals {
+			result, err := eval.Evaluate(ctx, release)
+			if err != nil {
+				return nil, err
+			}
+			ruleResults = append(ruleResults, result)
+		}
+		return ruleResults, nil
 	})
 }
 
@@ -75,19 +100,27 @@ func (f *EvaluatorFactory) EvaluateWorkspaceScopedPolicyRules(
 	ctx context.Context,
 	policy *oapi.Policy,
 ) []*oapi.RuleEvaluation {
-	return evaluateRules(policy, func(rule *oapi.PolicyRule) (*oapi.RuleEvaluation, error) {
+	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
 		eval := f.createWorkspaceScopedEvaluator(rule)
 		if eval == nil {
 			return nil, nil // Skip unknown rule types
 		}
-		return eval.Evaluate(ctx)
+		ruleResults := make([]*oapi.RuleEvaluation, 0, len(eval))
+		for _, eval := range eval {
+			result, err := eval.Evaluate(ctx)
+			if err != nil {
+				return nil, err
+			}
+			ruleResults = append(ruleResults, result)
+		}
+		return ruleResults, nil
 	})
 }
 
 // evaluateRules is a helper that evaluates all rules in a policy using the provided evaluator function.
 func evaluateRules(
 	policy *oapi.Policy,
-	evalFn func(*oapi.PolicyRule) (*oapi.RuleEvaluation, error),
+	evalFn func(*oapi.PolicyRule) ([]*oapi.RuleEvaluation, error),
 ) []*oapi.RuleEvaluation {
 	ruleResults := make([]*oapi.RuleEvaluation, 0, len(policy.Rules))
 
@@ -96,7 +129,7 @@ func evaluateRules(
 		if err != nil {
 			return nil
 		}
-		if result != nil {
+		for _, result := range result {
 			ruleResults = append(ruleResults, result)
 		}
 	}
@@ -106,27 +139,27 @@ func evaluateRules(
 
 // createVersionScopedEvaluator creates a version-scoped evaluator for the given rule.
 // Returns nil for unknown rule types.
-func (f *EvaluatorFactory) createVersionScopedEvaluator(rule *oapi.PolicyRule) evaluator.VersionScopedEvaluator {
-	switch {
-	case rule.AnyApproval != nil:
-		return approval.NewAnyApprovalEvaluator(f.store, rule.AnyApproval)
-	default:
-		return nil
+func (f *EvaluatorFactory) createVersionScopedEvaluator(rule *oapi.PolicyRule) []evaluator.VersionScopedEvaluator {
+	evaluators := []evaluator.VersionScopedEvaluator{}
+	if rule.AnyApproval != nil {
+		evaluators = append(evaluators, approval.NewAnyApprovalEvaluator(f.store, rule.AnyApproval))
 	}
+	if rule.EnvironmentProgression != nil {
+		evaluators = append(evaluators, environmentprogression.NewEnvironmentProgressionEvaluator(f.store, rule.EnvironmentProgression))
+	}
+	return evaluators
 }
 
 // createTargetScopedEvaluator creates a target-scoped evaluator for the given rule.
 // Returns nil for unknown rule types.
-func (f *EvaluatorFactory) createTargetScopedEvaluator(rule *oapi.PolicyRule) evaluator.TargetScopedEvaluator {
-	switch {
-	default:
-		return nil
-	}
+func (f *EvaluatorFactory) createTargetScopedEvaluator(rule *oapi.PolicyRule) []evaluator.TargetScopedEvaluator {
+	evaluators := []evaluator.TargetScopedEvaluator{}
+	return evaluators
 }
 
 // createReleaseScopedEvaluator creates a release-scoped evaluator for the given rule.
 // Returns nil for unknown rule types.
-func (f *EvaluatorFactory) createReleaseScopedEvaluator(rule *oapi.PolicyRule) evaluator.ReleaseScopedEvaluator {
+func (f *EvaluatorFactory) createReleaseScopedEvaluator(rule *oapi.PolicyRule) []evaluator.ReleaseScopedEvaluator {
 	switch {
 	default:
 		return nil
@@ -135,9 +168,7 @@ func (f *EvaluatorFactory) createReleaseScopedEvaluator(rule *oapi.PolicyRule) e
 
 // createWorkspaceScopedEvaluator creates a workspace-scoped evaluator for the given rule.
 // Returns nil for unknown rule types.
-func (f *EvaluatorFactory) createWorkspaceScopedEvaluator(rule *oapi.PolicyRule) evaluator.WorkspaceScopedEvaluator {
-	switch {
-	default:
-		return nil
-	}
+func (f *EvaluatorFactory) createWorkspaceScopedEvaluator(rule *oapi.PolicyRule) []evaluator.WorkspaceScopedEvaluator {
+	evaluators := []evaluator.WorkspaceScopedEvaluator{}
+	return evaluators
 }

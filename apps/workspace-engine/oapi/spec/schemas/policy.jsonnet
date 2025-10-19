@@ -40,6 +40,35 @@ local openapi = import '../lib/openapi.libsonnet';
       policyId: { type: 'string' },
       createdAt: { type: 'string' },
       anyApproval: openapi.schemaRef('AnyApprovalRule'),
+      environmentProgression: openapi.schemaRef('EnvironmentProgressionRule'),
+    },
+  },
+
+  EnvironmentProgressionRule: {
+    type: 'object',
+    required: ['id', 'policyId', 'dependsOnEnvironmentSelector'],
+    properties: {
+      id: { type: 'string' },
+      policyId: { type: 'string' },
+      dependsOnEnvironmentSelector: openapi.schemaRef('Selector'),
+
+      minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },
+      successStatuses: { type: 'array', items: openapi.schemaRef('JobStatus') },
+
+      minimumSockTimeMinutes: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        default: 0,
+        description: 'Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed',
+      },
+
+      maximumAgeHours: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Maximum age of dependency deployment before blocking progression (prevents stale promotions)',
+      },
     },
   },
 

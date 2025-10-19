@@ -8,7 +8,7 @@ import (
 // mergeFields creates a new entity by copying target and updating specified fields from source
 func MergeFields[T any](target, source *T, fieldsToUpdate []string) (*T, error) {
 	result := new(T)
-	
+
 	// Copy all fields from target to result
 	targetValue := reflect.ValueOf(target).Elem()
 	resultValue := reflect.ValueOf(result).Elem()
@@ -40,13 +40,13 @@ func MergeFields[T any](target, source *T, fieldsToUpdate []string) (*T, error) 
 // Includes both the struct field name and JSON tag name
 func buildFieldMap(t reflect.Type) map[string]int {
 	fieldMap := make(map[string]int)
-	
+
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		
+
 		// Add struct field name
 		fieldMap[field.Name] = i
-		
+
 		// Add JSON tag name if present
 		if jsonTag := field.Tag.Get("json"); jsonTag != "" {
 			jsonName := strings.Split(jsonTag, ",")[0]
@@ -55,8 +55,6 @@ func buildFieldMap(t reflect.Type) map[string]int {
 			}
 		}
 	}
-	
+
 	return fieldMap
 }
-
-

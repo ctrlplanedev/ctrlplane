@@ -274,9 +274,9 @@ func TestMergeFields_ZeroValues(t *testing.T) {
 	}
 
 	source := &TestEntity{
-		Name:   "",     // Zero value for string
-		Count:  0,      // Zero value for int
-		Active: false,  // Zero value for bool
+		Name:   "",    // Zero value for string
+		Count:  0,     // Zero value for int
+		Active: false, // Zero value for bool
 	}
 
 	// Update with zero values - should update to zero values
@@ -359,7 +359,7 @@ func TestMergeFields_DoesNotModifyOriginal(t *testing.T) {
 func TestBuildFieldMap(t *testing.T) {
 	entity := TestEntity{}
 	entityType := reflect.TypeOf(entity)
-	
+
 	fieldMap := buildFieldMap(entityType)
 
 	// Check struct field names
@@ -400,4 +400,3 @@ func TestBuildFieldMap(t *testing.T) {
 		t.Errorf("Expected 'Name' and 'name' to map to same index, got %d and %d", nameIndex, jsonNameIndex)
 	}
 }
-

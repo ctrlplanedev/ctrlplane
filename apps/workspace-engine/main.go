@@ -11,6 +11,7 @@ import (
 
 	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/server"
+	"workspace-engine/pkg/ticker"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
@@ -135,6 +136,22 @@ func main() {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// Initialize Kafka producer for ticker
+	producer, err := kafka.NewProducer()
+	if err != nil {
+		log.Fatal("Failed to create Kafka producer", "error", err)
+	}
+	defer producer.Close()
+
+	// Start periodic ticker for time-sensitive policy evaluation
+	workspaceTicker := ticker.New(producer)
+	go func() {
+		log.Info("Workspace ticker started")
+		if err := workspaceTicker.Run(ctx); err != nil {
+			log.Error("Ticker error", "error", err)
+		}
+	}()
 
 	go func() {
 		log.Info("Kafka consumer started")

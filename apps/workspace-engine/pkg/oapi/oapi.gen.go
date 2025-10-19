@@ -173,6 +173,21 @@ type Environment struct {
 	SystemId         string    `json:"systemId"`
 }
 
+// EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
+type EnvironmentProgressionRule struct {
+	DependsOnEnvironmentSelector Selector `json:"dependsOnEnvironmentSelector"`
+	Id                           string   `json:"id"`
+
+	// MaximumAgeHours Maximum age of dependency deployment before blocking progression (prevents stale promotions)
+	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
+
+	// MinimumSockTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+	MinimumSockTimeMinutes   *int32       `json:"minimumSockTimeMinutes,omitempty"`
+	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
+	PolicyId                 string       `json:"policyId"`
+	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error *string `json:"error,omitempty"`
@@ -279,10 +294,11 @@ type PolicyEvaluation struct {
 
 // PolicyRule defines model for PolicyRule.
 type PolicyRule struct {
-	AnyApproval *AnyApprovalRule `json:"anyApproval,omitempty"`
-	CreatedAt   string           `json:"createdAt"`
-	Id          string           `json:"id"`
-	PolicyId    string           `json:"policyId"`
+	AnyApproval            *AnyApprovalRule            `json:"anyApproval,omitempty"`
+	CreatedAt              string                      `json:"createdAt"`
+	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
+	Id                     string                      `json:"id"`
+	PolicyId               string                      `json:"policyId"`
 }
 
 // PolicyTargetSelector defines model for PolicyTargetSelector.

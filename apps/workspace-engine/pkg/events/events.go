@@ -14,6 +14,7 @@ import (
 	"workspace-engine/pkg/events/handler/resources"
 	"workspace-engine/pkg/events/handler/resourcevariables"
 	"workspace-engine/pkg/events/handler/system"
+	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/userapprovalrecords"
 )
 
@@ -71,6 +72,8 @@ var handlers = handler.HandlerRegistry{
 	handler.GithubEntityCreate: githubentities.HandleGithubEntityCreated,
 	handler.GithubEntityUpdate: githubentities.HandleGithubEntityUpdated,
 	handler.GithubEntityDelete: githubentities.HandleGithubEntityDeleted,
+
+	handler.WorkspaceTick: tick.HandleWorkspaceTick,
 }
 
 func NewEventHandler() *handler.EventListener {

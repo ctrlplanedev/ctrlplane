@@ -74,6 +74,8 @@ const (
 	GithubEntityCreate EventType = "github-entity.created"
 	GithubEntityUpdate EventType = "github-entity.updated"
 	GithubEntityDelete EventType = "github-entity.deleted"
+
+	WorkspaceTick EventType = "workspace.tick"
 )
 
 // RawEvent represents the raw event data received from Kafka messages
