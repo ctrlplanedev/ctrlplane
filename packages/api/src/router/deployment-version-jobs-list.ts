@@ -178,12 +178,12 @@ export const deploymentVersionJobsList = protectedProcedure
           deploymentId: releaseTarget.deploymentId,
           desiredReleaseId: null,
           desiredVersionId: null,
-          jobs: (releaseTarget.jobs ?? []).map((job) => ({
+          jobs: releaseTarget.jobs.map((job) => ({
             createdAt: new Date(job.createdAt),
             externalId: job.externalId ?? null,
             id: job.id,
             status: convertOapiJobStatusToSchema(job.status),
-            links: getJobLinks(job.metadata ?? {}),
+            links: getJobLinks(job.metadata),
           })),
         })),
       }));
