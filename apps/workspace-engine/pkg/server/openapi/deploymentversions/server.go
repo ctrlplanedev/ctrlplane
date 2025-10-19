@@ -48,10 +48,18 @@ func getDeploymentReleaseTargets(c *gin.Context, ws *workspace.Workspace, deploy
 	return releaseTargets, nil
 }
 
-func getReleaseTargetJobs(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Job, error) {
+func getReleaseTargetJobs(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTarget, versionId string) ([]*oapi.Job, error) {
 	jobsMap := ws.Jobs().GetJobsForReleaseTarget(releaseTarget)
 	jobs := make([]*oapi.Job, 0)
 	for _, job := range jobsMap {
+		release, ok := ws.Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+
+		if release.Version.Id != versionId {
+			continue
+		}
 		jobs = append(jobs, job)
 	}
 
@@ -74,8 +82,8 @@ type environmentWithTargets struct {
 	ReleaseTargets []*fullReleaseTarget `json:"releaseTargets"`
 }
 
-func getFullReleaseTarget(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTarget) (*fullReleaseTarget, error) {
-	jobs, err := getReleaseTargetJobs(ws, releaseTarget)
+func getFullReleaseTarget(ws *workspace.Workspace, releaseTarget *oapi.ReleaseTarget, versionId string) (*fullReleaseTarget, error) {
+	jobs, err := getReleaseTargetJobs(ws, releaseTarget, versionId)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +138,7 @@ func (s *DeploymentVersions) GetDeploymentVersionJobsList(c *gin.Context, worksp
 		environmentReleaseTargets := getEnvironmentReleaseTargets(releaseTargets, environment.Id)
 		fullReleaseTargets := make([]*fullReleaseTarget, 0)
 		for _, releaseTarget := range environmentReleaseTargets {
-			fullReleaseTarget, err := getFullReleaseTarget(ws, releaseTarget)
+			fullReleaseTarget, err := getFullReleaseTarget(ws, releaseTarget, versionId)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": err.Error(),
