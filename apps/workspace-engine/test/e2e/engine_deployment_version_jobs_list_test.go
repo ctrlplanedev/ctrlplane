@@ -23,7 +23,6 @@ type fullReleaseTarget struct {
 
 // Helper to get full release target with all related data
 func getFullReleaseTarget(
-	ws interface{},
 	rt *oapi.ReleaseTarget,
 	jobs []*oapi.Job,
 	env *oapi.Environment,
@@ -178,6 +177,10 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 
 	// Set different statuses to test sorting
 	// We want: failure first, then inProgress, then successful
+	// Use deterministic timestamps to ensure predictable ordering
+	baseTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+	timestampIndex := 0
+
 	for _, rt := range releaseTargets {
 		resource, _ := ws.Resources().Get(rt.ResourceId)
 		jobs := ws.Jobs().GetJobsForReleaseTarget(rt)
@@ -186,13 +189,15 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 			switch resource.Name {
 			case "z-server":
 				job.Status = oapi.Failure // Should come first despite "z" name
+				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
 			case "a-server":
 				job.Status = oapi.InProgress
+				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
 			case "m-server":
 				job.Status = oapi.Successful
+				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
 			}
-			// Ensure different timestamps for deterministic sorting
-			time.Sleep(10 * time.Millisecond)
+			timestampIndex++
 		}
 	}
 
@@ -221,7 +226,7 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 		}
 
 		fullTargets = append(fullTargets, getFullReleaseTarget(
-			ws, rt, jobSlice, env, deployment, resource,
+			rt, jobSlice, env, deployment, resource,
 		))
 	}
 

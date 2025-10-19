@@ -141,20 +141,8 @@ const RELEASE_JOB_INSERT_QUERY = `
 `
 
 func writeReleaseJob(ctx context.Context, releaseId string, jobId string, tx pgx.Tx) error {
-	// Check if the association already exists
-	var exists bool
-	err := tx.QueryRow(ctx, RELEASE_JOB_CHECK_QUERY, releaseId, jobId).Scan(&exists)
-	if err != nil {
-		return err
-	}
-
-	// Only insert if it doesn't exist
-	if !exists {
-		_, err := tx.Exec(ctx, RELEASE_JOB_INSERT_QUERY, releaseId, jobId)
-		return err
-	}
-
-	return nil
+	_, err := tx.Exec(ctx, RELEASE_JOB_INSERT_QUERY, releaseId, jobId)
+	return err
 }
 
 func convertOapiJobStatusToStr(status oapi.JobStatus) string {

@@ -6,7 +6,6 @@ import (
 )
 
 func compareReleaseTargets(a *fullReleaseTarget, b *fullReleaseTarget) int {
-	// Get the first job status from both
 	var statusA *oapi.JobStatus
 	var statusB *oapi.JobStatus
 
@@ -25,9 +24,7 @@ func compareReleaseTargets(a *fullReleaseTarget, b *fullReleaseTarget) int {
 		return -1
 	}
 
-	// If both statuses exist, compare them
 	if statusA != nil && statusB != nil {
-		// Prioritize failures - they should come first
 		if *statusA == oapi.Failure && *statusB != oapi.Failure {
 			return -1
 		}
@@ -35,13 +32,11 @@ func compareReleaseTargets(a *fullReleaseTarget, b *fullReleaseTarget) int {
 			return 1
 		}
 
-		// If statuses are different, compare lexicographically
 		if *statusA != *statusB {
 			return strings.Compare(string(*statusA), string(*statusB))
 		}
 	}
 
-	// Compare createdAt times (most recent first)
 	var createdAtA, createdAtB int64
 	if len(a.Jobs) > 0 {
 		createdAtA = a.Jobs[0].CreatedAt.Unix()
@@ -51,10 +46,8 @@ func compareReleaseTargets(a *fullReleaseTarget, b *fullReleaseTarget) int {
 	}
 
 	if createdAtA != createdAtB {
-		// Return negative if b is more recent (b should come first)
 		return int(createdAtB - createdAtA)
 	}
 
-	// Finally, compare resource names
 	return strings.Compare(a.Resource.Name, b.Resource.Name)
 }
