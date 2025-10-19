@@ -4,11 +4,9 @@ import { z } from "zod";
 
 import { and, count, eq, ilike, takeFirst, upsertEnv } from "@ctrlplane/db";
 import {
-  computedEnvironmentResource,
   createEnvironment,
   environment,
   environmentMetadata,
-  resource,
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
@@ -16,6 +14,7 @@ import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { getWorkspaceEngineClient } from "../workspace-engine-client";
 import { environmentPageRouter } from "./environment-page/router";
 import { environmentStatsRouter } from "./environment-stats";
 import { versionPinningRouter } from "./version-pinning";
@@ -247,23 +246,27 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const resources = await ctx.db
+      const workspaceId = await ctx.db
         .select()
-        .from(computedEnvironmentResource)
-        .innerJoin(
-          resource,
-          eq(computedEnvironmentResource.resourceId, resource.id),
-        )
-        .where(eq(computedEnvironmentResource.environmentId, input))
-        .limit(500)
-        .then((rows) => rows.map((r) => r.resource));
+        .from(environment)
+        .innerJoin(system, eq(environment.systemId, system.id))
+        .where(eq(environment.id, input))
+        .then(takeFirst)
+        .then((row) => row.system.workspaceId);
 
-      const { count: total } = await ctx.db
-        .select({ count: count() })
-        .from(computedEnvironmentResource)
-        .where(eq(computedEnvironmentResource.environmentId, input))
-        .then(takeFirst);
+      const client = getWorkspaceEngineClient();
+      const resp = await client.GET(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources",
+        {
+          params: {
+            path: {
+              workspaceId,
+              environmentId: input,
+            },
+          },
+        },
+      );
 
-      return { resources, total };
+      return resp.data?.resources ?? [];
     }),
 });

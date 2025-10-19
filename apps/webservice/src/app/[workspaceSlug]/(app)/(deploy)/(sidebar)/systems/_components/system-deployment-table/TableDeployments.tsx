@@ -31,7 +31,7 @@ const EnvHeader: React.FC<{
   workspace: SCHEMA.Workspace;
 }> = ({ systemSlug, environment: env, workspace }) => {
   const { data, isLoading } = api.environment.resources.useQuery(env.id);
-  const total = data?.total ?? 0;
+  const total = data?.length ?? 0;
 
   const systemUrls = urls.workspace(workspace.slug).system(systemSlug);
   const envUrl = systemUrls.environment(env.id).baseUrl();
