@@ -50,6 +50,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@ctrlplane/eslint-config": "workspace:*",
+    "@ctrlplane/prettier-config": "workspace:*",
     "@react-router/dev": "^7.9.2",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22",

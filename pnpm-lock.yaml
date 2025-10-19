@@ -687,6 +687,12 @@ importers:
         specifier: 'catalog:'
         version: 3.24.2
     devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
       '@react-router/dev':
         specifier: ^7.9.2
         version: 7.9.4(@react-router/serve@7.9.4(react-router@7.9.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(typescript@5.9.3))(@types/node@22.16.2)(jiti@2.6.1)(lightningcss@1.30.2)(react-router@7.9.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(terser@5.36.0)(tsx@4.20.3)(typescript@5.9.3)(vite@7.1.10(@types/node@22.16.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0))(yaml@2.6.0)
