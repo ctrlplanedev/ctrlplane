@@ -60,7 +60,7 @@ func (e *SkipDeployedEvaluator) Evaluate(
 		}
 
 		// Track the most recent job
-		if mostRecentTime == nil || jobTime.After(*mostRecentTime) {
+		if jobTime != nil && (mostRecentTime == nil || jobTime.After(*mostRecentTime)) {
 			mostRecentTime = jobTime
 			mostRecentJob = job
 		}

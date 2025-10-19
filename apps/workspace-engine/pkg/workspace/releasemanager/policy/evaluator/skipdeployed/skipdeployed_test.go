@@ -427,3 +427,156 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 		t.Error("expected different release IDs for different variables")
 	}
 }
+
+func TestSkipDeployedEvaluator_NilCompletedAtHandling(t *testing.T) {
+	// Regression test for nil pointer dereference bug
+	// Setup: Multiple jobs where some have nil completedAt (in progress/pending)
+	st := setupStoreWithResource(t, "resource-1")
+	ctx := context.Background()
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+
+	// Release 1: Has a job that's in progress (nil completedAt)
+	release1 := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+
+	// Release 2: Has a completed job
+	release2 := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
+			Id:  "version-2",
+			Tag: "v2.0.0",
+		},
+	}
+
+	// Release 3: New release to evaluate
+	release3 := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
+			Id:  "version-3",
+			Tag: "v3.0.0",
+		},
+	}
+
+	if err := st.Releases.Upsert(ctx, release1); err != nil {
+		t.Fatalf("Failed to upsert release1: %v", err)
+	}
+	if err := st.Releases.Upsert(ctx, release2); err != nil {
+		t.Fatalf("Failed to upsert release2: %v", err)
+	}
+	if err := st.Releases.Upsert(ctx, release3); err != nil {
+		t.Fatalf("Failed to upsert release3: %v", err)
+	}
+
+	// Create job with nil completedAt (in progress)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-1",
+		ReleaseId:   release1.ID(),
+		Status:      oapi.InProgress,
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		CompletedAt: nil, // Explicitly nil
+	})
+
+	// Create completed job
+	completedAt := time.Now().Add(-1 * time.Hour)
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-2",
+		ReleaseId:   release2.ID(),
+		Status:      oapi.Successful,
+		CreatedAt:   time.Now().Add(-90 * time.Minute),
+		CompletedAt: &completedAt,
+	})
+
+	evaluator := NewSkipDeployedEvaluator(st)
+
+	// Act: Evaluate new release - should not panic
+	result, err := evaluator.Evaluate(ctx, release3)
+
+	// Assert: Should not panic and should allow (different release)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !result.Allowed {
+		t.Errorf("expected allowed for new release, got denied: %s", result.Message)
+	}
+
+	// The most recent completed job should be release2
+	if result.Details["previous_release_id"] != release2.ID() {
+		t.Errorf("expected previous_release_id=%s, got %v", release2.ID(), result.Details["previous_release_id"])
+	}
+}
+
+func TestSkipDeployedEvaluator_OnlyJobsWithNilCompletedAt(t *testing.T) {
+	// Test case where all jobs have nil completedAt
+	// Even though they don't have completedAt, they should still be tracked using createdAt
+	st := setupStoreWithResource(t, "resource-1")
+	ctx := context.Background()
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+
+	release := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+	}
+
+	if err := st.Releases.Upsert(ctx, release); err != nil {
+		t.Fatalf("Failed to upsert release: %v", err)
+	}
+
+	// Create multiple jobs, all with nil completedAt
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-1",
+		ReleaseId:   release.ID(),
+		Status:      oapi.Pending,
+		CreatedAt:   time.Now().Add(-2 * time.Hour),
+		CompletedAt: nil,
+	})
+
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-2",
+		ReleaseId:   release.ID(),
+		Status:      oapi.InProgress,
+		CreatedAt:   time.Now().Add(-1 * time.Hour),
+		CompletedAt: nil,
+	})
+
+	evaluator := NewSkipDeployedEvaluator(st)
+
+	// Act: Evaluate same release - should not panic
+	result, err := evaluator.Evaluate(ctx, release)
+
+	// Assert: Should not panic. Jobs with nil completedAt use createdAt as fallback,
+	// so the most recent job (job-2) should be found and deny the re-deployment
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Allowed {
+		t.Errorf("expected denied for same release with in-progress job, got allowed: %s", result.Message)
+	}
+
+	if result.Details["existing_job_id"] != "job-2" {
+		t.Errorf("expected existing_job_id=job-2, got %v", result.Details["existing_job_id"])
+	}
+
+	if result.Details["job_status"] != string(oapi.InProgress) {
+		t.Errorf("expected job_status=inProgress, got %v", result.Details["job_status"])
+	}
+}
