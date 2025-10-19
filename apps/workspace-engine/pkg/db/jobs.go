@@ -141,7 +141,15 @@ const RELEASE_JOB_INSERT_QUERY = `
 `
 
 func writeReleaseJob(ctx context.Context, releaseId string, jobId string, tx pgx.Tx) error {
-	_, err := tx.Exec(ctx, RELEASE_JOB_INSERT_QUERY, releaseId, jobId)
+	var exists bool
+	err := tx.QueryRow(ctx, RELEASE_JOB_CHECK_QUERY, releaseId, jobId).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	_, err = tx.Exec(ctx, RELEASE_JOB_INSERT_QUERY, releaseId, jobId)
 	return err
 }
 
