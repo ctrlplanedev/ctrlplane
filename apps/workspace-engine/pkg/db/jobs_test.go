@@ -83,6 +83,25 @@ func validateRetrievedJobs(t *testing.T, actualJobs []*oapi.Job, expectedJobs []
 				t.Fatalf("expected config[%s] = %v, got %v", key, expectedValue, actualValue)
 			}
 		}
+
+		// Validate metadata
+		if (actual.Metadata == nil) != (expected.Metadata == nil) {
+			t.Fatalf("expected metadata nil=%v, got nil=%v", expected.Metadata == nil, actual.Metadata == nil)
+		}
+		if actual.Metadata != nil && expected.Metadata != nil {
+			if len(*actual.Metadata) != len(*expected.Metadata) {
+				t.Fatalf("expected %d metadata entries, got %d", len(*expected.Metadata), len(*actual.Metadata))
+			}
+			for key, expectedValue := range *expected.Metadata {
+				actualValue, ok := (*actual.Metadata)[key]
+				if !ok {
+					t.Fatalf("expected metadata key %s not found", key)
+				}
+				if actualValue != expectedValue {
+					t.Fatalf("expected metadata[%s] = %v, got %v", key, expectedValue, actualValue)
+				}
+			}
+		}
 	}
 }
 
@@ -1064,4 +1083,453 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 	if foundUpdatedJob.StartedAt == nil {
 		t.Error("expected StartedAt to be set after update")
 	}
+}
+
+// TestDBJobs_BasicMetadata tests writing and reading jobs with metadata
+func TestDBJobs_BasicMetadata(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	testStore.Repo().Releases.Set(releaseID, &release)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	jobID := uuid.New().String()
+	now := time.Now()
+
+	metadata := map[string]string{
+		"environment": "production",
+		"region":      "us-west-2",
+		"version":     "1.2.3",
+	}
+
+	job := &oapi.Job{
+		Id:             jobID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.Pending,
+		JobAgentConfig: map[string]interface{}{},
+		Metadata:       &metadata,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	err = writeJob(t.Context(), job, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Register cleanup
+	t.Cleanup(func() {
+		cleanupJobs(t, conn, jobID)
+	})
+
+	// Verify job with metadata was created
+	actualJobs, err := getJobs(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	validateRetrievedJobs(t, actualJobs, []*oapi.Job{job})
+
+	// Verify metadata exists in database
+	var count int
+	err = conn.QueryRow(t.Context(),
+		"SELECT COUNT(*) FROM job_metadata WHERE job_id = $1",
+		jobID).Scan(&count)
+	if err != nil {
+		t.Fatalf("failed to check job_metadata: %v", err)
+	}
+	if count != 3 {
+		t.Fatalf("expected 3 metadata entries, got %d", count)
+	}
+}
+
+// TestDBJobs_EmptyMetadata tests writing jobs with no metadata
+func TestDBJobs_EmptyMetadata(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	testStore.Repo().Releases.Set(releaseID, &release)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	jobID := uuid.New().String()
+	now := time.Now()
+
+	job := &oapi.Job{
+		Id:             jobID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.Pending,
+		JobAgentConfig: map[string]interface{}{},
+		Metadata:       nil, // No metadata
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	err = writeJob(t.Context(), job, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Register cleanup
+	t.Cleanup(func() {
+		cleanupJobs(t, conn, jobID)
+	})
+
+	// Verify job with no metadata was created
+	actualJobs, err := getJobs(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	validateRetrievedJobs(t, actualJobs, []*oapi.Job{job})
+}
+
+// TestDBJobs_MetadataUpdate tests updating job metadata
+func TestDBJobs_MetadataUpdate(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	testStore.Repo().Releases.Set(releaseID, &release)
+
+	// Create job with initial metadata
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	jobID := uuid.New().String()
+	now := time.Now()
+
+	initialMetadata := map[string]string{
+		"environment": "staging",
+		"region":      "us-east-1",
+	}
+
+	job := &oapi.Job{
+		Id:             jobID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.Pending,
+		JobAgentConfig: map[string]interface{}{},
+		Metadata:       &initialMetadata,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	err = writeJob(t.Context(), job, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Register cleanup
+	t.Cleanup(func() {
+		cleanupJobs(t, conn, jobID)
+	})
+
+	// Update job with new metadata
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx for update: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	updatedMetadata := map[string]string{
+		"environment": "production", // Changed value
+		"region":      "us-west-2",  // Changed value
+		"version":     "2.0.0",      // New key
+		// "region" key removed from initial metadata would be replaced
+	}
+
+	job.Metadata = &updatedMetadata
+	job.Status = oapi.InProgress
+	job.UpdatedAt = time.Now()
+
+	err = writeJob(t.Context(), job, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit update: %v", err)
+	}
+
+	// Verify updated metadata
+	actualJobs, err := getJobs(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	validateRetrievedJobs(t, actualJobs, []*oapi.Job{job})
+
+	// Verify metadata count in database
+	var count int
+	err = conn.QueryRow(t.Context(),
+		"SELECT COUNT(*) FROM job_metadata WHERE job_id = $1",
+		jobID).Scan(&count)
+	if err != nil {
+		t.Fatalf("failed to check job_metadata: %v", err)
+	}
+	if count != 3 {
+		t.Fatalf("expected 3 metadata entries after update, got %d", count)
+	}
+}
+
+// TestDBJobs_MetadataRemoval tests removing all metadata from a job
+func TestDBJobs_MetadataRemoval(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	testStore.Repo().Releases.Set(releaseID, &release)
+
+	// Create job with metadata
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	jobID := uuid.New().String()
+	now := time.Now()
+
+	metadata := map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	}
+
+	job := &oapi.Job{
+		Id:             jobID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.Pending,
+		JobAgentConfig: map[string]interface{}{},
+		Metadata:       &metadata,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	err = writeJob(t.Context(), job, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Register cleanup
+	t.Cleanup(func() {
+		cleanupJobs(t, conn, jobID)
+	})
+
+	// Remove all metadata
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx for update: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	job.Metadata = nil
+	job.UpdatedAt = time.Now()
+
+	err = writeJob(t.Context(), job, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit update: %v", err)
+	}
+
+	// Verify metadata was removed
+	actualJobs, err := getJobs(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	validateRetrievedJobs(t, actualJobs, []*oapi.Job{job})
+
+	// Verify no metadata exists in database
+	var count int
+	err = conn.QueryRow(t.Context(),
+		"SELECT COUNT(*) FROM job_metadata WHERE job_id = $1",
+		jobID).Scan(&count)
+	if err != nil {
+		t.Fatalf("failed to check job_metadata: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected 0 metadata entries after removal, got %d", count)
+	}
+}
+
+// TestDBJobs_MultipleJobsWithDifferentMetadata tests multiple jobs with unique metadata
+func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	testStore.Repo().Releases.Set(releaseID, &release)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	now := time.Now()
+
+	// Job 1 with metadata
+	job1ID := uuid.New().String()
+	metadata1 := map[string]string{
+		"team":   "backend",
+		"region": "us-east-1",
+	}
+	job1 := &oapi.Job{
+		Id:             job1ID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.Pending,
+		JobAgentConfig: map[string]interface{}{},
+		Metadata:       &metadata1,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	// Job 2 with different metadata
+	job2ID := uuid.New().String()
+	metadata2 := map[string]string{
+		"team":    "frontend",
+		"region":  "us-west-2",
+		"cluster": "prod-1",
+	}
+	job2 := &oapi.Job{
+		Id:             job2ID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.InProgress,
+		JobAgentConfig: map[string]interface{}{},
+		Metadata:       &metadata2,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	// Job 3 with no metadata
+	job3ID := uuid.New().String()
+	job3 := &oapi.Job{
+		Id:             job3ID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.Successful,
+		JobAgentConfig: map[string]interface{}{},
+		Metadata:       nil,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	err = writeJob(t.Context(), job1, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors for job1, got %v", err)
+	}
+
+	err = writeJob(t.Context(), job2, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors for job2, got %v", err)
+	}
+
+	err = writeJob(t.Context(), job3, testStore, tx)
+	if err != nil {
+		t.Fatalf("expected no errors for job3, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Register cleanup
+	t.Cleanup(func() {
+		cleanupJobs(t, conn, job1ID, job2ID, job3ID)
+	})
+
+	// Verify all jobs with their unique metadata
+	actualJobs, err := getJobs(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	validateRetrievedJobs(t, actualJobs, []*oapi.Job{job1, job2, job3})
 }

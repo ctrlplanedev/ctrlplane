@@ -405,6 +405,9 @@ export interface components {
         [key: string]: unknown;
       };
       jobAgentId: string;
+      metadata?: {
+        [key: string]: string;
+      };
       releaseId: string;
       /** Format: date-time */
       startedAt?: string;
@@ -443,6 +446,7 @@ export interface components {
         | "id"
         | "jobAgentConfig"
         | "jobAgentId"
+        | "metadata"
         | "releaseId"
         | "startedAt"
         | "status"

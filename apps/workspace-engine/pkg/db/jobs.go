@@ -2,7 +2,9 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
@@ -21,14 +23,23 @@ const JOB_SELECT_QUERY = `
 		rj.release_id,
 		j.started_at,
 		j.status,
-		j.updated_at
+		j.updated_at,
+		COALESCE(
+			json_object_agg(
+				COALESCE(jm.key, ''), 
+				COALESCE(jm.value, '')
+			) FILTER (WHERE jm.key IS NOT NULL), 
+			'{}'::json
+		) as metadata
 	FROM job j
 	INNER JOIN release_job rj ON rj.job_id = j.id
 	INNER JOIN release r ON r.id = rj.release_id
 	INNER JOIN version_release vr ON vr.id = r.version_release_id
 	INNER JOIN release_target rt ON rt.id = vr.release_target_id
 	INNER JOIN resource res ON res.id = rt.resource_id
+	LEFT JOIN job_metadata jm ON jm.job_id = j.id
 	WHERE res.workspace_id = $1
+	GROUP BY j.id, j.completed_at, j.created_at, j.external_id, j.job_agent_id, rj.release_id, j.started_at, j.status, j.updated_at
 `
 
 func getJobs(ctx context.Context, workspaceID string) ([]*oapi.Job, error) {
@@ -91,6 +102,7 @@ func scanJobRow(rows pgx.Rows) (*oapi.Job, error) {
 	var startedAt, completedAt *time.Time
 	var createdAt, updatedAt time.Time
 	var statusStr string
+	var metadataJSON []byte
 	err := rows.Scan(
 		&completedAt,
 		&createdAt,
@@ -102,6 +114,7 @@ func scanJobRow(rows pgx.Rows) (*oapi.Job, error) {
 		&startedAt,
 		&statusStr,
 		&updatedAt,
+		&metadataJSON,
 	)
 	if err != nil {
 		return nil, err
@@ -114,7 +127,28 @@ func scanJobRow(rows pgx.Rows) (*oapi.Job, error) {
 
 	job.Status = convertJobStatusToEnum(statusStr)
 
+	if err := setJobMetadata(job, metadataJSON); err != nil {
+		return nil, err
+	}
+
 	return job, nil
+}
+
+func setJobMetadata(job *oapi.Job, metadataJSON []byte) error {
+	if len(metadataJSON) == 0 {
+		return nil
+	}
+
+	var metadataMap map[string]string
+	if err := json.Unmarshal(metadataJSON, &metadataMap); err != nil {
+		return err
+	}
+
+	// Only set metadata if it's not empty
+	if len(metadataMap) > 0 {
+		job.Metadata = &metadataMap
+	}
+	return nil
 }
 
 const JOB_UPSERT_QUERY = `
@@ -206,6 +240,45 @@ func writeJob(ctx context.Context, job *oapi.Job, store *store.Store, tx pgx.Tx)
 		if err := writeReleaseJob(ctx, release.UUID().String(), job.Id, tx); err != nil {
 			return err
 		}
+	}
+
+	// Handle metadata
+	if _, err := tx.Exec(ctx, "DELETE FROM job_metadata WHERE job_id = $1", job.Id); err != nil {
+		return fmt.Errorf("failed to delete existing job metadata: %w", err)
+	}
+
+	if job.Metadata != nil && len(*job.Metadata) > 0 {
+		if err := writeJobMetadata(ctx, job.Id, *job.Metadata, tx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeJobMetadata(ctx context.Context, jobId string, metadata map[string]string, tx pgx.Tx) error {
+	if len(metadata) == 0 {
+		return nil
+	}
+
+	valueStrings := make([]string, 0, len(metadata))
+	valueArgs := make([]interface{}, 0, len(metadata)*3)
+	i := 1
+	for k, v := range metadata {
+		valueStrings = append(valueStrings,
+			"($"+fmt.Sprintf("%d", i)+", $"+fmt.Sprintf("%d", i+1)+", $"+fmt.Sprintf("%d", i+2)+")",
+		)
+		valueArgs = append(valueArgs, jobId, k, v)
+		i += 3
+	}
+
+	query := "INSERT INTO job_metadata (job_id, key, value) VALUES " +
+		strings.Join(valueStrings, ", ") +
+		" ON CONFLICT (job_id, key) DO UPDATE SET value = EXCLUDED.value"
+
+	_, err := tx.Exec(ctx, query, valueArgs...)
+	if err != nil {
+		return err
 	}
 	return nil
 }

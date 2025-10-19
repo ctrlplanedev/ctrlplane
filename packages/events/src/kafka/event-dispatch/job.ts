@@ -84,6 +84,14 @@ export const getOapiJob = async (
 
   const { releaseId } = release;
 
+  const metadata = await db
+    .select()
+    .from(schema.jobMetadata)
+    .where(eq(schema.jobMetadata.jobId, job.id))
+    .then((rows) =>
+      Object.fromEntries(rows.map(({ key, value }) => [key, value])),
+    );
+
   return {
     id: job.id,
     releaseId,
@@ -95,6 +103,7 @@ export const getOapiJob = async (
     updatedAt: job.updatedAt.toISOString(),
     startedAt: job.startedAt?.toISOString(),
     completedAt: job.completedAt?.toISOString(),
+    metadata,
   };
 };
 
