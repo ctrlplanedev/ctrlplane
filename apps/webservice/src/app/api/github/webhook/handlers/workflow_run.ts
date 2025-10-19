@@ -4,11 +4,8 @@ import { buildConflictUpdateColumns, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
-import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
-
-const log = logger.child({ module: "github-webhook" });
 
 type Conclusion = Exclude<WorkflowRunEvent["workflow_run"]["conclusion"], null>;
 const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
@@ -68,11 +65,6 @@ const updateLinks = async (jobId: string, links: Record<string, string>) =>
     });
 
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
-  log.info("Handling github workflow run event", {
-    externalId: event.workflow_run.id,
-    event,
-  });
-
   const {
     id,
     status: externalStatus,
