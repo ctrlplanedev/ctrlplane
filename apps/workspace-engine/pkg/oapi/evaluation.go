@@ -38,3 +38,7 @@ func (r *RuleEvaluation) WithDetail(key string, value any) *RuleEvaluation {
 	r.Details[key] = value
 	return r
 }
+
+func (r *RuleEvaluation) AsArray() []*RuleEvaluation {
+	return []*RuleEvaluation{r}
+}

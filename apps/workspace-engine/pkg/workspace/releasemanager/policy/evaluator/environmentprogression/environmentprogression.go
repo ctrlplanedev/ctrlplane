@@ -10,7 +10,11 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
 
 var _ evaluator.VersionScopedEvaluator = &EnvironmentProgressionEvaluator{}
 
@@ -49,7 +53,7 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 	}
 
 	// Check if version succeeded in dependency environments
-	satisfied, reason, err := e.checkDependencyEnvironments(
+	result, err := e.checkDependencyEnvironments(
 		ctx,
 		version,
 		releaseTarget,
@@ -59,13 +63,17 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		return nil, fmt.Errorf("failed to check dependency environments: %w", err)
 	}
 
-	if !satisfied {
-		return results.
-			NewPendingResult(results.ActionTypeWait, reason).
+	if !result.Allowed {
+		r := results.
+			NewPendingResult(results.ActionTypeWait, result.Message).
 			WithDetail("dependency_environment_count", len(dependencyEnvs)).
 			WithDetail("version_id", version.Id).
 			WithDetail("deployment_id", releaseTarget.DeploymentId).
-			WithDetail("resource_id", releaseTarget.ResourceId), nil
+			WithDetail("resource_id", releaseTarget.ResourceId)
+		for key, detail := range result.Details {
+			r.WithDetail(key, detail)
+		}
+		return r, nil
 	}
 
 	return results.
@@ -121,7 +129,10 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	version *oapi.DeploymentVersion,
 	releaseTarget *oapi.ReleaseTarget,
 	dependencyEnvs []*oapi.Environment,
-) (bool, string, error) {
+) (*oapi.RuleEvaluation, error) {
+	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.checkDependencyEnvironments")
+	defer span.End()
+
 	var satisfiedCount int
 	var failureReasons []string
 
@@ -133,7 +144,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			releaseTarget,
 		)
 		if err != nil {
-			return false, "", err
+			return nil, fmt.Errorf("failed to check single environment: %w", err)
 		}
 
 		if satisfied {
@@ -146,23 +157,29 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	// By default, we require any dependency environment to succeed (OR logic)
 	// This is useful for regional deployments where you need it in ANY staging region
 	if satisfiedCount > 0 {
-		return true, "", nil
+		return results.NewAllowedResult("Version succeeded in dependency environment(s)").
+			WithDetail("dependency_environment_count", len(dependencyEnvs)).
+			WithDetail("version_id", version.Id), nil
 	}
 
 	// All dependency environments failed
 	if len(failureReasons) == 0 {
-		return false, "Version has not been deployed to any dependency environment", nil
+		return results.NewDeniedResult("Version has not been deployed to any dependency environment").
+			WithDetail("dependency_environment_count", len(dependencyEnvs)).
+			WithDetail("version_id", version.Id), nil
 	}
 
-	return false, fmt.Sprintf(
+	return results.NewPendingResult(results.ActionTypeWait, fmt.Sprintf(
 		"Version not successful in dependency environment(s): %v",
 		failureReasons,
-	), nil
+	)).
+		WithDetail("dependency_environment_count", len(dependencyEnvs)).
+		WithDetail("version_id", version.Id), nil
 }
 
 // checkSingleEnvironment checks if the version succeeded in a single environment
 func (e *EnvironmentProgressionEvaluator) checkSingleEnvironment(
-	ctx context.Context,
+	_ context.Context,
 	depEnv *oapi.Environment,
 	version *oapi.DeploymentVersion,
 	releaseTarget *oapi.ReleaseTarget,
@@ -206,7 +223,7 @@ func (e *EnvironmentProgressionEvaluator) checkSingleEnvironment(
 // evaluateJobSuccessCriteria evaluates if jobs meet the success criteria
 func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	jobs []*oapi.Job,
-	depEnv *oapi.Environment,
+	_ *oapi.Environment,
 ) (bool, string, error) {
 	if len(jobs) == 0 {
 		return false, "No jobs found", nil

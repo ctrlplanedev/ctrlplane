@@ -45,13 +45,13 @@ func setupTestStore() *store.Store {
 	jobAgentId := "agent-1"
 	description := "Test deployment"
 	deployment := &oapi.Deployment{
-		Id:             "deploy-1",
+		Id:             "deploy-1",	
 		Name:           "my-app",
 		Slug:           "my-app",
 		SystemId:       "system-1",
 		JobAgentId:     &jobAgentId,
 		Description:    &description,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: map[string]any{},
 	}
 	st.Deployments.Upsert(ctx, deployment)
 
@@ -61,7 +61,7 @@ func setupTestStore() *store.Store {
 		Identifier:  "test-resource",
 		Kind:        "service",
 		WorkspaceId: "workspace-1",
-		Config:      map[string]interface{}{},
+		Config:      map[string]any{},
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
@@ -77,7 +77,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	// Create a selector that matches staging
 	selector := oapi.Selector{}
 	err := selector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
+		Json: map[string]any{
 			"type":     "name",
 			"operator": "equals",
 			"value":    "staging",
