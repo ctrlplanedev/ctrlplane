@@ -19,7 +19,7 @@ var _ gob.GobDecoder = (*Workspace)(nil)
 func New(id string) *Workspace {
 	s := store.New()
 	rm := releasemanager.New(s)
-	cc := db.NewChangesetConsumer(id)
+	cc := db.NewChangesetConsumer(id, s)
 	ws := &Workspace{
 		ID:                id,
 		store:             s,

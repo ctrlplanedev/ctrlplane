@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -182,7 +184,11 @@ func convertOapiJobStatusToStr(status oapi.JobStatus) string {
 	}
 }
 
-func writeJob(ctx context.Context, job *oapi.Job, tx pgx.Tx) error {
+func writeJob(ctx context.Context, job *oapi.Job, store *store.Store, tx pgx.Tx) error {
+	release, ok := store.Releases.Get(job.ReleaseId)
+	if !ok {
+		return fmt.Errorf("release not found for job %s", job.Id)
+	}
 	statusStr := convertOapiJobStatusToStr(job.Status)
 	_, err := tx.Exec(
 		ctx,
@@ -201,7 +207,7 @@ func writeJob(ctx context.Context, job *oapi.Job, tx pgx.Tx) error {
 	}
 
 	if job.ReleaseId != "" {
-		if err := writeReleaseJob(ctx, job.ReleaseId, job.Id, tx); err != nil {
+		if err := writeReleaseJob(ctx, release.UUID().String(), job.Id, tx); err != nil {
 			return err
 		}
 	}

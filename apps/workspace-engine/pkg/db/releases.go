@@ -197,8 +197,8 @@ func writeVariableSetRelease(ctx context.Context, release *oapi.Release, release
 }
 
 const RELEASE_INSERT_QUERY = `
-	INSERT INTO release (version_release_id, variable_release_id)
-	VALUES ($1, $2)
+	INSERT INTO release (id, version_release_id, variable_release_id)
+	VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET version_release_id = EXCLUDED.version_release_id, variable_release_id = EXCLUDED.variable_release_id
 	RETURNING id
 `
 
@@ -218,7 +218,7 @@ func writeRelease(ctx context.Context, release *oapi.Release, workspaceID string
 		return err
 	}
 
-	_, err = tx.Exec(ctx, RELEASE_INSERT_QUERY, versionReleaseID, variableSetReleaseID)
+	_, err = tx.Exec(ctx, RELEASE_INSERT_QUERY, release.UUID().String(), versionReleaseID, variableSetReleaseID)
 	return err
 }
 
