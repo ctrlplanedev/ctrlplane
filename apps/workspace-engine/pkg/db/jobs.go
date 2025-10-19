@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -129,6 +131,20 @@ const JOB_UPSERT_QUERY = `
 		updated_at = EXCLUDED.updated_at
 `
 
+const RELEASE_JOB_CHECK_QUERY = `
+	SELECT EXISTS(SELECT 1 FROM release_job WHERE release_id = $1 AND job_id = $2)
+`
+
+const RELEASE_JOB_INSERT_QUERY = `
+	INSERT INTO release_job (release_id, job_id)
+	VALUES ($1, $2)
+`
+
+func writeReleaseJob(ctx context.Context, releaseId string, jobId string, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, RELEASE_JOB_INSERT_QUERY, releaseId, jobId)
+	return err
+}
+
 func convertOapiJobStatusToStr(status oapi.JobStatus) string {
 	switch status {
 	case oapi.Pending:
@@ -156,7 +172,11 @@ func convertOapiJobStatusToStr(status oapi.JobStatus) string {
 	}
 }
 
-func writeJob(ctx context.Context, job *oapi.Job, tx pgx.Tx) error {
+func writeJob(ctx context.Context, job *oapi.Job, store *store.Store, tx pgx.Tx) error {
+	release, ok := store.Releases.Get(job.ReleaseId)
+	if !ok {
+		return fmt.Errorf("release not found for job %s", job.Id)
+	}
 	statusStr := convertOapiJobStatusToStr(job.Status)
 	_, err := tx.Exec(
 		ctx,
@@ -170,7 +190,16 @@ func writeJob(ctx context.Context, job *oapi.Job, tx pgx.Tx) error {
 		job.StartedAt,
 		job.CompletedAt,
 		job.UpdatedAt)
-	return err
+	if err != nil {
+		return err
+	}
+
+	if job.ReleaseId != "" {
+		if err := writeReleaseJob(ctx, release.UUID().String(), job.Id, tx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 const DELETE_JOB_QUERY = `

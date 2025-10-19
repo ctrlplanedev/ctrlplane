@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
+	wsStore "workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -86,7 +87,7 @@ func validateRetrievedJobs(t *testing.T, actualJobs []*oapi.Job, expectedJobs []
 }
 
 // Helper to create prerequisites for a job
-func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn) (releaseID, jobAgentID string) {
+func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn, release *oapi.Release) (releaseUUID, jobAgentID string) {
 	t.Helper()
 
 	ctx := t.Context()
@@ -118,14 +119,8 @@ func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn
 		t.Fatalf("failed to commit: %v", err)
 	}
 
-	// Create a release
-	tx, err = conn.Begin(ctx)
-	if err != nil {
-		t.Fatalf("failed to begin tx: %v", err)
-	}
-	defer tx.Rollback(ctx)
-
-	release := &oapi.Release{
+	// Initialize release object with the created IDs
+	*release = oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
 			ResourceId:    resourceID,
 			EnvironmentId: environmentID,
@@ -141,6 +136,13 @@ func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn
 		Variables: map[string]oapi.LiteralValue{},
 	}
 
+	// Create the release in the database
+	tx, err = conn.Begin(ctx)
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(ctx)
+
 	if err := writeRelease(ctx, release, workspaceID, tx); err != nil {
 		t.Fatalf("failed to create release: %v", err)
 	}
@@ -149,15 +151,15 @@ func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn
 		t.Fatalf("failed to commit: %v", err)
 	}
 
-	// Get the release ID that was created
-	var createdReleaseID string
+	// Get the database release ID that was created
+	var dbReleaseID string
 	err = conn.QueryRow(ctx,
 		`SELECT r.id FROM release r
 		INNER JOIN version_release vr ON vr.id = r.version_release_id
 		INNER JOIN release_target rt ON rt.id = vr.release_target_id
 		WHERE rt.resource_id = $1 AND rt.environment_id = $2 AND rt.deployment_id = $3 AND vr.version_id = $4
 		LIMIT 1`,
-		resourceID, environmentID, deploymentID, versionID).Scan(&createdReleaseID)
+		resourceID, environmentID, deploymentID, versionID).Scan(&dbReleaseID)
 	if err != nil {
 		t.Fatalf("failed to get release id: %v", err)
 	}
@@ -165,30 +167,8 @@ func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn
 	// Keep systemID to avoid "declared but not used" error
 	_ = systemID
 
-	return createdReleaseID, jobAgentID
-}
-
-// Helper to create release_job association
-func createReleaseJobAssociation(t *testing.T, conn *pgxpool.Conn, releaseID, jobID string) {
-	t.Helper()
-	ctx := t.Context()
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		t.Fatalf("failed to begin tx: %v", err)
-	}
-	defer tx.Rollback(ctx)
-
-	_, err = tx.Exec(ctx,
-		"INSERT INTO release_job (release_id, job_id) VALUES ($1, $2)",
-		releaseID, jobID)
-	if err != nil {
-		t.Fatalf("failed to create release_job association: %v", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		t.Fatalf("failed to commit: %v", err)
-	}
+	// Return the deterministic UUID generated from the release
+	return release.UUID().String(), jobAgentID
 }
 
 // Helper to cleanup jobs after tests
@@ -221,7 +201,14 @@ func cleanupJobs(t *testing.T, conn *pgxpool.Conn, jobIDs ...string) {
 func TestDBJobs_BasicWrite(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
 
-	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn)
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
 
 	tx, err := conn.Begin(t.Context())
 	if err != nil {
@@ -246,7 +233,7 @@ func TestDBJobs_BasicWrite(t *testing.T) {
 		CompletedAt:    nil,
 	}
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -256,27 +243,43 @@ func TestDBJobs_BasicWrite(t *testing.T) {
 		t.Fatalf("failed to commit: %v", err)
 	}
 
-	// Create release_job association
-	createReleaseJobAssociation(t, conn, releaseID, jobID)
-
 	// Register cleanup
 	t.Cleanup(func() {
 		cleanupJobs(t, conn, jobID)
 	})
 
-	// Verify job was created
+	// Verify job was created and release_job association was automatically created
 	actualJobs, err := getJobs(t.Context(), workspaceID)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
 
 	validateRetrievedJobs(t, actualJobs, []*oapi.Job{job})
+
+	// Verify release_job association exists
+	var count int
+	err = conn.QueryRow(t.Context(),
+		"SELECT COUNT(*) FROM release_job WHERE release_id = $1 AND job_id = $2",
+		releaseID, jobID).Scan(&count)
+	if err != nil {
+		t.Fatalf("failed to check release_job: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 release_job association, got %d", count)
+	}
 }
 
 func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
 
-	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn)
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
 
 	// Create job
 	tx, err := conn.Begin(t.Context())
@@ -301,7 +304,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 		CompletedAt:    nil,
 	}
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -310,8 +313,6 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to commit: %v", err)
 	}
-
-	createReleaseJobAssociation(t, conn, releaseID, jobID)
 
 	// Register cleanup
 	t.Cleanup(func() {
@@ -333,7 +334,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 	job.JobAgentConfig = map[string]interface{}{"updated": "config"}
 	job.UpdatedAt = time.Now()
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -355,7 +356,14 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
 
-	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn)
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
 
 	// Create job in pending state
 	tx, err := conn.Begin(t.Context())
@@ -380,7 +388,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 		CompletedAt:    nil,
 	}
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -389,8 +397,6 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to commit: %v", err)
 	}
-
-	createReleaseJobAssociation(t, conn, releaseID, jobID)
 
 	// Register cleanup
 	t.Cleanup(func() {
@@ -409,7 +415,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	job.StartedAt = &startedAt
 	job.UpdatedAt = time.Now()
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -431,7 +437,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	job.CompletedAt = &completedAt
 	job.UpdatedAt = time.Now()
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -453,7 +459,14 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
 
-	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn)
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
 
 	// Create job
 	tx, err := conn.Begin(t.Context())
@@ -478,7 +491,7 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 		CompletedAt:    nil,
 	}
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -487,8 +500,6 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to commit: %v", err)
 	}
-
-	createReleaseJobAssociation(t, conn, releaseID, jobID)
 
 	// Register cleanup (will be no-op if test deletes the job)
 	t.Cleanup(func() {
@@ -530,7 +541,14 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
 
-	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn)
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
 
 	tx, err := conn.Begin(t.Context())
 	if err != nil {
@@ -570,12 +588,12 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 		CompletedAt:    nil,
 	}
 
-	err = writeJob(t.Context(), job1, tx)
+	err = writeJob(t.Context(), job1, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
 
-	err = writeJob(t.Context(), job2, tx)
+	err = writeJob(t.Context(), job2, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -584,9 +602,6 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to commit: %v", err)
 	}
-
-	createReleaseJobAssociation(t, conn, releaseID, job1ID)
-	createReleaseJobAssociation(t, conn, releaseID, job2ID)
 
 	// Register cleanup
 	t.Cleanup(func() {
@@ -605,7 +620,14 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
 
-	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn)
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
 
 	tx, err := conn.Begin(t.Context())
 	if err != nil {
@@ -637,7 +659,7 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 		CompletedAt: nil,
 	}
 
-	err = writeJob(t.Context(), job, tx)
+	err = writeJob(t.Context(), job, testStore, tx)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -646,8 +668,6 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to commit: %v", err)
 	}
-
-	createReleaseJobAssociation(t, conn, releaseID, jobID)
 
 	// Register cleanup
 	t.Cleanup(func() {
@@ -666,7 +686,14 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 func TestDBJobs_AllJobStatuses(t *testing.T) {
 	workspaceID, conn := setupTestWithWorkspace(t)
 
-	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn)
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
 
 	statuses := []oapi.JobStatus{
 		oapi.Pending,
@@ -706,7 +733,7 @@ func TestDBJobs_AllJobStatuses(t *testing.T) {
 			CompletedAt:    nil,
 		}
 
-		err = writeJob(t.Context(), job, tx)
+		err = writeJob(t.Context(), job, testStore, tx)
 		if err != nil {
 			t.Fatalf("expected no errors for status %s, got %v", status, err)
 		}
@@ -719,10 +746,9 @@ func TestDBJobs_AllJobStatuses(t *testing.T) {
 		t.Fatalf("failed to commit: %v", err)
 	}
 
-	// Create release_job associations
+	// Collect job IDs for cleanup
 	jobIDs := make([]string, 0, len(jobs))
 	for _, job := range jobs {
-		createReleaseJobAssociation(t, conn, releaseID, job.Id)
 		jobIDs = append(jobIDs, job.Id)
 	}
 
@@ -745,10 +771,24 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	workspaceID2, conn2 := setupTestWithWorkspace(t)
 
 	// Create prerequisites in workspace 1
-	releaseID1, jobAgentID1 := createJobPrerequisites(t, workspaceID1, conn1)
+	var release1 oapi.Release
+	releaseID1, jobAgentID1 := createJobPrerequisites(t, workspaceID1, conn1, &release1)
+
+	// Create store for workspace 1 (indexed by both hash ID and UUID)
+	testStore1 := wsStore.New()
+	testStore1.Releases.Upsert(t.Context(), &release1)
+	// Also index by UUID for job lookup
+	testStore1.Repo().Releases.Set(releaseID1, &release1)
 
 	// Create prerequisites in workspace 2
-	releaseID2, jobAgentID2 := createJobPrerequisites(t, workspaceID2, conn2)
+	var release2 oapi.Release
+	releaseID2, jobAgentID2 := createJobPrerequisites(t, workspaceID2, conn2, &release2)
+
+	// Create store for workspace 2 (indexed by both hash ID and UUID)
+	testStore2 := wsStore.New()
+	testStore2.Releases.Upsert(t.Context(), &release2)
+	// Also index by UUID for job lookup
+	testStore2.Repo().Releases.Set(releaseID2, &release2)
 
 	// Create job in workspace 1
 	tx1, err := conn1.Begin(t.Context())
@@ -772,7 +812,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 		CompletedAt:    nil,
 	}
 
-	err = writeJob(t.Context(), job1, tx1)
+	err = writeJob(t.Context(), job1, testStore1, tx1)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -781,8 +821,6 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to commit tx1: %v", err)
 	}
-
-	createReleaseJobAssociation(t, conn1, releaseID1, job1ID)
 
 	// Register cleanup for workspace 1
 	t.Cleanup(func() {
@@ -810,7 +848,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 		CompletedAt:    nil,
 	}
 
-	err = writeJob(t.Context(), job2, tx2)
+	err = writeJob(t.Context(), job2, testStore2, tx2)
 	if err != nil {
 		t.Fatalf("expected no errors, got %v", err)
 	}
@@ -819,8 +857,6 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to commit tx2: %v", err)
 	}
-
-	createReleaseJobAssociation(t, conn2, releaseID2, job2ID)
 
 	// Register cleanup for workspace 2
 	t.Cleanup(func() {
@@ -863,5 +899,169 @@ func TestDBJobs_EmptyWorkspace(t *testing.T) {
 
 	if len(actualJobs) != 0 {
 		t.Fatalf("expected 0 jobs, got %d", len(actualJobs))
+	}
+}
+
+// TestDBJobs_WriteAndRetrieveWithReleaseJob tests the complete flow of writing jobs
+// and retrieving them, ensuring release_job associations are automatically created
+func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	var release oapi.Release
+	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
+
+	// Create store and add release to it (indexed by both hash ID and UUID)
+	testStore := wsStore.New()
+	testStore.Releases.Upsert(t.Context(), &release)
+	// Also index by UUID for job lookup
+	testStore.Repo().Releases.Set(releaseID, &release)
+
+	// Create multiple jobs with different statuses
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	now := time.Now()
+
+	// Job 1: Pending
+	job1ID := uuid.New().String()
+	job1 := &oapi.Job{
+		Id:             job1ID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     nil,
+		Status:         oapi.Pending,
+		JobAgentConfig: map[string]interface{}{"attempt": 1.0},
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		StartedAt:      nil,
+		CompletedAt:    nil,
+	}
+
+	// Job 2: In Progress with started time
+	job2ID := uuid.New().String()
+	startedAt := now.Add(1 * time.Minute)
+	externalID2 := "github-run-123"
+	job2 := &oapi.Job{
+		Id:             job2ID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     &externalID2,
+		Status:         oapi.InProgress,
+		JobAgentConfig: map[string]interface{}{"attempt": 2.0},
+		CreatedAt:      now,
+		UpdatedAt:      now.Add(1 * time.Minute),
+		StartedAt:      &startedAt,
+		CompletedAt:    nil,
+	}
+
+	// Job 3: Successful with completed time
+	job3ID := uuid.New().String()
+	startedAt3 := now.Add(2 * time.Minute)
+	completedAt3 := now.Add(5 * time.Minute)
+	externalID3 := "github-run-456"
+	job3 := &oapi.Job{
+		Id:             job3ID,
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		ExternalId:     &externalID3,
+		Status:         oapi.Successful,
+		JobAgentConfig: map[string]interface{}{"attempt": 3.0, "retry": false},
+		CreatedAt:      now,
+		UpdatedAt:      now.Add(5 * time.Minute),
+		StartedAt:      &startedAt3,
+		CompletedAt:    &completedAt3,
+	}
+
+	// Write all jobs - should automatically create release_job associations
+	if err := writeJob(t.Context(), job1, testStore, tx); err != nil {
+		t.Fatalf("failed to write job1: %v", err)
+	}
+	if err := writeJob(t.Context(), job2, testStore, tx); err != nil {
+		t.Fatalf("failed to write job2: %v", err)
+	}
+	if err := writeJob(t.Context(), job3, testStore, tx); err != nil {
+		t.Fatalf("failed to write job3: %v", err)
+	}
+
+	if err := tx.Commit(t.Context()); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Register cleanup
+	t.Cleanup(func() {
+		cleanupJobs(t, conn, job1ID, job2ID, job3ID)
+	})
+
+	// Retrieve all jobs and verify they match what we wrote
+	actualJobs, err := getJobs(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("failed to get jobs: %v", err)
+	}
+
+	expectedJobs := []*oapi.Job{job1, job2, job3}
+	validateRetrievedJobs(t, actualJobs, expectedJobs)
+
+	// Verify that jobs are correctly linked to the release
+	var jobCount int
+	err = conn.QueryRow(t.Context(),
+		`SELECT COUNT(DISTINCT j.id) FROM job j
+		INNER JOIN release_job rj ON rj.job_id = j.id
+		WHERE rj.release_id = $1`,
+		releaseID).Scan(&jobCount)
+	if err != nil {
+		t.Fatalf("failed to count jobs for release: %v", err)
+	}
+	if jobCount != 3 {
+		t.Fatalf("expected 3 jobs linked to release, got %d", jobCount)
+	}
+
+	// Test updating a job and verify the release_job association persists
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx for update: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Update job1 to in-progress
+	updateStartedAt := time.Now()
+	job1.Status = oapi.InProgress
+	job1.StartedAt = &updateStartedAt
+	job1.UpdatedAt = time.Now()
+
+	if err := writeJob(t.Context(), job1, testStore, tx); err != nil {
+		t.Fatalf("failed to update job1: %v", err)
+	}
+
+	if err := tx.Commit(t.Context()); err != nil {
+		t.Fatalf("failed to commit update: %v", err)
+	}
+
+	// Verify the job was actually updated
+	updatedJobs, err := getJobs(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("failed to get jobs after update: %v", err)
+	}
+
+	var foundUpdatedJob *oapi.Job
+	for _, job := range updatedJobs {
+		if job.Id == job1ID {
+			foundUpdatedJob = job
+			break
+		}
+	}
+
+	if foundUpdatedJob == nil {
+		t.Fatalf("updated job not found")
+	}
+
+	if foundUpdatedJob.Status != oapi.InProgress {
+		t.Errorf("expected status %s, got %s", oapi.InProgress, foundUpdatedJob.Status)
+	}
+
+	if foundUpdatedJob.StartedAt == nil {
+		t.Error("expected StartedAt to be set after update")
 	}
 }

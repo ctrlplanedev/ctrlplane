@@ -1183,10 +1183,6 @@
                                           },
                                           "resourceId": {
                                              "type": "string"
-                                          },
-                                          "rolloutTime": {
-                                             "format": "date-time",
-                                             "type": "string"
                                           }
                                        },
                                        "type": "object"

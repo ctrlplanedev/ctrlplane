@@ -47,6 +47,16 @@ func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error
 			return err
 		}
 	}
+	for _, job := range initialWorkspaceState.Jobs() {
+		for _, initialRelease := range initialWorkspaceState.Releases() {
+			if initialRelease.UUID().String() == job.ReleaseId {
+				job.ReleaseId = initialRelease.ID()
+				break
+			}
+		}
+
+		ws.Jobs().Upsert(ctx, job)
+	}
 	for _, jobAgent := range initialWorkspaceState.JobAgents() {
 		ws.JobAgents().Upsert(ctx, jobAgent)
 	}

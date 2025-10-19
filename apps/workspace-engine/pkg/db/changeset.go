@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspaceID string) error {
+func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspaceID string, store *store.Store) error {
 	ctx, span := tracer.Start(ctx, "DBFlushChangeset")
 	defer span.End()
 
@@ -37,7 +38,7 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspace
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, change := range cs.Changes {
-		if err := applyChange(ctx, tx, change, workspaceID); err != nil {
+		if err := applyChange(ctx, tx, change, workspaceID, store); err != nil {
 			return err
 		}
 	}
@@ -51,7 +52,7 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspace
 	return nil
 }
 
-func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any], workspaceID string) error {
+func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any], workspaceID string, store *store.Store) error {
 	if e, ok := change.Entity.(*oapi.Resource); ok && e != nil {
 		if change.Type == changeset.ChangeTypeDelete {
 			return deleteResource(ctx, e.Id, conn)
@@ -133,7 +134,7 @@ func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any],
 		if change.Type == changeset.ChangeTypeDelete {
 			return deleteJob(ctx, e.Id, conn)
 		}
-		return writeJob(ctx, e, conn)
+		return writeJob(ctx, e, store, conn)
 	}
 
 	if e, ok := change.Entity.(*oapi.ReleaseTarget); ok && e != nil {
@@ -148,16 +149,18 @@ func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any],
 
 type DbChangesetConsumer struct {
 	workspaceID string
+	store       *store.Store
 }
 
 var _ changeset.ChangesetConsumer[any] = (*DbChangesetConsumer)(nil)
 
-func NewChangesetConsumer(workspaceID string) *DbChangesetConsumer {
+func NewChangesetConsumer(workspaceID string, store *store.Store) *DbChangesetConsumer {
 	return &DbChangesetConsumer{
 		workspaceID: workspaceID,
+		store:       store,
 	}
 }
 
 func (c *DbChangesetConsumer) FlushChangeset(ctx context.Context, changeset *changeset.ChangeSet[any]) error {
-	return FlushChangeset(ctx, changeset, c.workspaceID)
+	return FlushChangeset(ctx, changeset, c.workspaceID, c.store)
 }

@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 func (r *Release) ID() string {
@@ -37,6 +39,10 @@ func (r *Release) ID() string {
 	// Hash the concatenated string
 	hash := sha256.Sum256([]byte(sb.String()))
 	return hex.EncodeToString(hash[:])
+}
+
+func (r *Release) UUID() uuid.UUID {
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(r.ID()))
 }
 
 func toString(v any) string {
