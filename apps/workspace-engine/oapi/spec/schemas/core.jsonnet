@@ -6,7 +6,7 @@ local openapi = import '../lib/openapi.libsonnet';
     type: 'object',
     required: ['json'],
     properties: {
-      json: { type: 'object' },
+      json: { type: 'object', additionalProperties: true },
     },
   },
 

@@ -29,6 +29,7 @@ local openapi = import '../lib/openapi.libsonnet';
                 type: 'array',
                 items: {
                   type: 'object',
+                  required: ['id', 'resourceId', 'environmentId', 'deploymentId', 'environment', 'deployment', 'resource', 'jobs'],
                   properties: {
                     // ReleaseTarget fields (flattened)
                     id: { type: 'string' },
@@ -44,13 +45,13 @@ local openapi = import '../lib/openapi.libsonnet';
                       type: 'array',
                       items: {
                         type: 'object',
-                        required: ['id', 'createdAt', 'status'],
+                        required: ['id', 'createdAt', 'status', 'metadata'],
                         properties: {
                           id: { type: 'string' },
                           createdAt: { type: 'string', format: 'date-time' },
                           status: openapi.schemaRef('JobStatus'),
                           externalId: { type: 'string' },
-                          links: {
+                          metadata: {
                             type: 'object',
                             additionalProperties: { type: 'string' },
                           },

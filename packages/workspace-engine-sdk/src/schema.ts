@@ -381,6 +381,28 @@ export interface components {
       resourceSelector?: components["schemas"]["Selector"];
       systemId: string;
     };
+    EnvironmentProgressionRule: {
+      dependsOnEnvironmentSelector: components["schemas"]["Selector"];
+      id: string;
+      /**
+       * Format: int32
+       * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
+       */
+      maximumAgeHours?: number;
+      /**
+       * Format: int32
+       * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+       * @default 0
+       */
+      minimumSockTimeMinutes: number;
+      /**
+       * Format: float
+       * @default 100
+       */
+      minimumSuccessPercentage: number;
+      policyId: string;
+      successStatuses?: components["schemas"]["JobStatus"][];
+    };
     ErrorResponse: {
       /** @example Workspace not found */
       error?: string;
@@ -456,7 +478,9 @@ export interface components {
       job: components["schemas"]["Job"];
     } & (unknown | unknown);
     JsonSelector: {
-      json: Record<string, never>;
+      json: {
+        [key: string]: unknown;
+      };
     };
     LiteralValue:
       | components["schemas"]["BooleanValue"]
@@ -490,6 +514,7 @@ export interface components {
     PolicyRule: {
       anyApproval?: components["schemas"]["AnyApprovalRule"];
       createdAt: string;
+      environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
       id: string;
       policyId: string;
     };
@@ -704,23 +729,23 @@ export interface operations {
           "application/json": {
             environment: components["schemas"]["Environment"];
             releaseTargets: {
-              deployment?: components["schemas"]["Deployment"];
-              deploymentId?: string;
-              environment?: components["schemas"]["Environment"];
-              environmentId?: string;
-              id?: string;
-              jobs?: {
+              deployment: components["schemas"]["Deployment"];
+              deploymentId: string;
+              environment: components["schemas"]["Environment"];
+              environmentId: string;
+              id: string;
+              jobs: {
                 /** Format: date-time */
                 createdAt: string;
                 externalId?: string;
                 id: string;
-                links?: {
+                metadata: {
                   [key: string]: string;
                 };
                 status: components["schemas"]["JobStatus"];
               }[];
-              resource?: components["schemas"]["Resource"];
-              resourceId?: string;
+              resource: components["schemas"]["Resource"];
+              resourceId: string;
             }[];
           }[];
         };

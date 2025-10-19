@@ -1,207 +1,138 @@
 import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
-import { isPresent } from "ts-is-present";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { z } from "zod";
 
-import { and, eq, isNull, or, takeFirst } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { getRolloutInfoForReleaseTarget } from "@ctrlplane/rule-engine";
-import { getApplicablePoliciesWithoutResourceScope } from "@ctrlplane/rule-engine/db";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { protectedProcedure } from "../trpc";
+import { getWorkspaceEngineClient } from "../workspace-engine-client";
 
-const releaseTargetsComparator = (
-  a: {
-    jobs: { status: SCHEMA.JobStatus; createdAt: Date }[];
-    resource: { name: string };
-    rolloutTime?: Date;
-  },
-  b: {
-    jobs: { status: SCHEMA.JobStatus; createdAt: Date }[];
-    resource: { name: string };
-    rolloutTime?: Date;
-  },
-) => {
-  const statusA = a.jobs.at(0)?.status;
-  const statusB = b.jobs.at(0)?.status;
-
-  if (statusA == null && statusB != null) return 1;
-  if (statusA != null && statusB == null) return -1;
-
-  if (statusA === JobStatus.Failure && statusB !== JobStatus.Failure) return -1;
-  if (statusA !== JobStatus.Failure && statusB === JobStatus.Failure) return 1;
-
-  if (statusA != null && statusB != null && statusA !== statusB)
-    return statusA.localeCompare(statusB);
-
-  const createdAtA = a.jobs.at(0)?.createdAt ?? new Date(0);
-  const createdAtB = b.jobs.at(0)?.createdAt ?? new Date(0);
-
-  if (createdAtA.getTime() !== createdAtB.getTime())
-    return createdAtB.getTime() - createdAtA.getTime();
-
-  const rolloutTimeA = a.rolloutTime ?? new Date(0);
-  const rolloutTimeB = b.rolloutTime ?? new Date(0);
-  if (rolloutTimeA.getTime() !== rolloutTimeB.getTime())
-    return rolloutTimeA.getTime() - rolloutTimeB.getTime();
-
-  return a.resource.name.localeCompare(b.resource.name);
-};
-
-const getVersion = (db: Tx, versionId: string) =>
-  db
+const getWorkspaceId = async (tx: Tx, versionId: string) =>
+  tx
     .select()
     .from(SCHEMA.deploymentVersion)
-    .where(eq(SCHEMA.deploymentVersion.id, versionId))
-    .then(takeFirst);
-
-const getVersionSubquery = (db: Tx, versionId: string) =>
-  db
-    .select({
-      jobId: SCHEMA.job.id,
-      jobCreatedAt: SCHEMA.job.createdAt,
-      jobStatus: SCHEMA.job.status,
-      jobExternalId: SCHEMA.job.externalId,
-      jobMetadataKey: SCHEMA.jobMetadata.key,
-      jobMetadataValue: SCHEMA.jobMetadata.value,
-      releaseTargetId: SCHEMA.versionRelease.releaseTargetId,
-    })
-    .from(SCHEMA.versionRelease)
-    .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.release.versionReleaseId, SCHEMA.versionRelease.id),
-    )
-    .innerJoin(
-      SCHEMA.releaseJob,
-      eq(SCHEMA.releaseJob.releaseId, SCHEMA.release.id),
-    )
-    .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJob.jobId, SCHEMA.job.id))
-    .leftJoin(SCHEMA.jobMetadata, eq(SCHEMA.jobMetadata.jobId, SCHEMA.job.id))
-    .where(
-      and(
-        eq(SCHEMA.versionRelease.versionId, versionId),
-        or(
-          eq(SCHEMA.jobMetadata.key, ReservedMetadataKey.Links),
-          isNull(SCHEMA.jobMetadata.key),
-        ),
-      ),
-    )
-    .as("version_subquery");
-
-const getReleaseTargets = (db: Tx, version: SCHEMA.DeploymentVersion) => {
-  const versionSubquery = getVersionSubquery(db, version.id);
-
-  return db
-    .select()
-    .from(SCHEMA.releaseTarget)
-    .innerJoin(
-      SCHEMA.environment,
-      eq(SCHEMA.releaseTarget.environmentId, SCHEMA.environment.id),
-    )
     .innerJoin(
       SCHEMA.deployment,
-      eq(SCHEMA.releaseTarget.deploymentId, SCHEMA.deployment.id),
+      eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
     )
-    .innerJoin(
-      SCHEMA.resource,
-      eq(SCHEMA.resource.id, SCHEMA.releaseTarget.resourceId),
-    )
-    .leftJoin(
-      versionSubquery,
-      eq(versionSubquery.releaseTargetId, SCHEMA.releaseTarget.id),
-    )
-    .where(and(eq(SCHEMA.releaseTarget.deploymentId, version.deploymentId)));
+    .innerJoin(SCHEMA.system, eq(SCHEMA.deployment.systemId, SCHEMA.system.id))
+    .where(eq(SCHEMA.deploymentVersion.id, versionId))
+    .then(takeFirst)
+    .then(({ system }) => system.workspaceId);
+
+type Job = {
+  createdAt: Date;
+  externalId: string | null;
+  id: string;
+  links: Record<string, string>;
+  status: SCHEMA.JobStatus;
 };
 
-type ReleaseTarget = Awaited<ReturnType<typeof getReleaseTargets>>[number];
+type DeploymentVersionJobsListResponse = {
+  environment: SCHEMA.Environment;
+  releaseTargets: {
+    deployment: SCHEMA.Deployment;
+    environment: SCHEMA.Environment;
+    resource: SCHEMA.Resource;
+    id: string;
+    resourceId: string;
+    environmentId: string;
+    deploymentId: string;
+    desiredReleaseId: string | null;
+    desiredVersionId: string | null;
+    jobs: Job[];
+  }[];
+}[];
 
-const getTargetsGroupedByEnvironment = (
-  db: Tx,
-  releaseTargets: ReleaseTarget[],
-) =>
-  _.chain(releaseTargets)
-    .groupBy((row) => row.release_target.id)
-    .map((rowsByTarget) => {
-      const releaseTarget = rowsByTarget[0]!.release_target;
-      const { environment, deployment, resource } = rowsByTarget[0]!;
+const convertOapiSelectorToResourceCondition = (
+  selector?: WorkspaceEngine["schemas"]["Selector"],
+): ResourceCondition | null => {
+  if (selector == null) return null;
+  if ("json" in selector) return selector.json as ResourceCondition;
+  return null;
+};
 
-      const jobs = rowsByTarget
-        .map((row) => {
-          const { version_subquery } = row;
-          if (version_subquery == null) return null;
+const getJobLinks = (metadata: Record<string, string>) => {
+  const linksStr = metadata[ReservedMetadataKey.Links] ?? "{}";
 
-          const { jobMetadataValue } = version_subquery;
-          const links =
-            jobMetadataValue == null
-              ? ({} as Record<string, string>)
-              : (JSON.parse(jobMetadataValue) as Record<string, string>);
-          return {
-            id: version_subquery.jobId,
-            createdAt: version_subquery.jobCreatedAt,
-            status: version_subquery.jobStatus,
-            externalId: version_subquery.jobExternalId,
-            links,
-          };
-        })
-        .filter(isPresent)
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-      return { ...releaseTarget, jobs, environment, deployment, resource };
-    })
-    .groupBy((rt) => rt.environment.id)
-    .values()
-    .value();
-
-type GroupedTargetsByEnvironment = Awaited<
-  ReturnType<typeof getTargetsGroupedByEnvironment>
->[number];
-
-const getEnvironmentWithSortedTargets = async (
-  db: Tx,
-  targetsByEnvironment: GroupedTargetsByEnvironment,
-  version: SCHEMA.DeploymentVersion,
-) => {
-  const { environment, deployment } = targetsByEnvironment[0]!;
-  const policies = await getApplicablePoliciesWithoutResourceScope(
-    db,
-    environment.id,
-    deployment.id,
-  );
-  const rolloutPolicy = policies.find(
-    (p) => p.environmentVersionRollout != null,
-  );
-  if (rolloutPolicy == null) {
-    const sortedReleaseTargets = targetsByEnvironment.sort(
-      releaseTargetsComparator,
-    );
-    return { environment, releaseTargets: sortedReleaseTargets };
+  try {
+    const links = JSON.parse(linksStr) as Record<string, string>;
+    return links;
+  } catch (error) {
+    logger.error("Error parsing job links", {
+      error,
+      metadata,
+    });
+    return {};
   }
+};
 
-  const releaseTargetsWithRolloutInfoPromises = targetsByEnvironment.map(
-    async (target) => {
-      const rolloutInfo = await getRolloutInfoForReleaseTarget(
-        db,
-        target,
-        rolloutPolicy,
-        version,
-      );
-      const rolloutTime = rolloutInfo.rolloutTime ?? undefined;
-      return { ...target, rolloutTime };
-    },
-  );
+const convertOapiEnvironmentToSchema = (
+  environment: WorkspaceEngine["schemas"]["Environment"],
+): SCHEMA.Environment => ({
+  ...environment,
+  directory: "",
+  description: environment.description ?? null,
+  createdAt: new Date(environment.createdAt),
+  resourceSelector: convertOapiSelectorToResourceCondition(
+    environment.resourceSelector,
+  ),
+});
 
-  const releaseTargetsWithRolloutInfo = await Promise.all(
-    releaseTargetsWithRolloutInfoPromises,
-  );
+const convertOapiDeploymentToSchema = (
+  deployment: WorkspaceEngine["schemas"]["Deployment"],
+): SCHEMA.Deployment => ({
+  ...deployment,
+  resourceSelector: convertOapiSelectorToResourceCondition(
+    deployment.resourceSelector,
+  ),
+  description: deployment.description ?? "",
+  jobAgentId: deployment.jobAgentId ?? null,
+  retryCount: 0,
+  timeout: null,
+});
 
-  const sortedReleaseTargets = releaseTargetsWithRolloutInfo.sort(
-    releaseTargetsComparator,
-  );
+const convertOapiResourceToSchema = (
+  resource: WorkspaceEngine["schemas"]["Resource"],
+): SCHEMA.Resource => ({
+  ...resource,
+  providerId: resource.providerId ?? null,
+  createdAt: new Date(resource.createdAt),
+  deletedAt: resource.deletedAt ? new Date(resource.deletedAt) : null,
+  lockedAt: resource.lockedAt ? new Date(resource.lockedAt) : null,
+  updatedAt: resource.updatedAt ? new Date(resource.updatedAt) : null,
+});
 
-  return { environment, releaseTargets: sortedReleaseTargets };
+const convertOapiJobStatusToSchema = (
+  status: WorkspaceEngine["schemas"]["JobStatus"],
+): SCHEMA.JobStatus => {
+  switch (status) {
+    case "pending":
+      return "pending";
+    case "inProgress":
+      return "in_progress";
+    case "successful":
+      return "successful";
+    case "cancelled":
+      return "cancelled";
+    case "skipped":
+      return "skipped";
+    case "failure":
+      return "failure";
+    case "actionRequired":
+      return "action_required";
+    case "invalidJobAgent":
+      return "invalid_job_agent";
+    case "invalidIntegration":
+      return "invalid_integration";
+    case "externalRunNotFound":
+      return "external_run_not_found";
+  }
 };
 
 export const deploymentVersionJobsList = protectedProcedure
@@ -218,19 +149,43 @@ export const deploymentVersionJobsList = protectedProcedure
         id: input.versionId,
       }),
   })
-  .query(async ({ ctx, input: { versionId } }) => {
-    const version = await getVersion(ctx.db, versionId);
-    const releaseTargets = await getReleaseTargets(ctx.db, version);
-    const targetsByEnvironment = getTargetsGroupedByEnvironment(
-      ctx.db,
-      releaseTargets,
-    );
-    const environmentsWithSortedReleaseTargets = await Promise.all(
-      targetsByEnvironment.map((targetsByEnvironment) =>
-        getEnvironmentWithSortedTargets(ctx.db, targetsByEnvironment, version),
-      ),
-    );
-    return environmentsWithSortedReleaseTargets.sort((a, b) =>
-      a.environment.name.localeCompare(b.environment.name),
-    );
-  });
+  .query<DeploymentVersionJobsListResponse>(
+    async ({ ctx, input: { versionId } }) => {
+      const workspaceId = await getWorkspaceId(ctx.db, versionId);
+      const client = getWorkspaceEngineClient();
+      const resp = await client.GET(
+        "/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list",
+        {
+          params: {
+            path: {
+              workspaceId,
+              versionId,
+            },
+          },
+        },
+      );
+      return (resp.data ?? []).map((env) => ({
+        environment: convertOapiEnvironmentToSchema(env.environment),
+        releaseTargets: env.releaseTargets.map((releaseTarget) => ({
+          deployment: convertOapiDeploymentToSchema(releaseTarget.deployment),
+          environment: convertOapiEnvironmentToSchema(
+            releaseTarget.environment,
+          ),
+          resource: convertOapiResourceToSchema(releaseTarget.resource),
+          id: releaseTarget.id,
+          resourceId: releaseTarget.resourceId,
+          environmentId: releaseTarget.environmentId,
+          deploymentId: releaseTarget.deploymentId,
+          desiredReleaseId: null,
+          desiredVersionId: null,
+          jobs: (releaseTarget.jobs ?? []).map((job) => ({
+            createdAt: new Date(job.createdAt),
+            externalId: job.externalId ?? null,
+            id: job.id,
+            status: convertOapiJobStatusToSchema(job.status),
+            links: getJobLinks(job.metadata ?? {}),
+          })),
+        })),
+      }));
+    },
+  );
