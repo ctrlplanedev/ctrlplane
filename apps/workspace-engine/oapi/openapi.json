@@ -482,6 +482,7 @@
          "JsonSelector": {
             "properties": {
                "json": {
+                  "additionalProperties": true,
                   "type": "object"
                }
             },
@@ -1214,7 +1215,7 @@
                                                    "id": {
                                                       "type": "string"
                                                    },
-                                                   "links": {
+                                                   "metadata": {
                                                       "additionalProperties": {
                                                          "type": "string"
                                                       },
@@ -1227,7 +1228,8 @@
                                                 "required": [
                                                    "id",
                                                    "createdAt",
-                                                   "status"
+                                                   "status",
+                                                   "metadata"
                                                 ],
                                                 "type": "object"
                                              },
@@ -1240,6 +1242,16 @@
                                              "type": "string"
                                           }
                                        },
+                                       "required": [
+                                          "id",
+                                          "resourceId",
+                                          "environmentId",
+                                          "deploymentId",
+                                          "environment",
+                                          "deployment",
+                                          "resource",
+                                          "jobs"
+                                       ],
                                        "type": "object"
                                     },
                                     "type": "array"
