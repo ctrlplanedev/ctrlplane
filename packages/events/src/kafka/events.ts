@@ -186,7 +186,7 @@ export type GoEventPayload = {
   [Event.PolicyCreated]: WorkspaceEngine["schemas"]["Policy"];
   [Event.PolicyUpdated]: WorkspaceEngine["schemas"]["Policy"];
   [Event.PolicyDeleted]: WorkspaceEngine["schemas"]["Policy"];
-  [Event.JobUpdated]: WorkspaceEngine["schemas"]["Job"];
+  [Event.JobUpdated]: WorkspaceEngine["schemas"]["JobUpdateEvent"];
   [Event.UserApprovalRecordCreated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
   [Event.UserApprovalRecordUpdated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
   [Event.UserApprovalRecordDeleted]: WorkspaceEngine["schemas"]["UserApprovalRecord"];

@@ -433,6 +433,24 @@ export interface components {
       | "invalidIntegration"
       | "externalRunNotFound"
       | "successful";
+    JobUpdateEvent: {
+      agentId?: string;
+      externalId?: string;
+      fieldsToUpdate?: (
+        | "completedAt"
+        | "createdAt"
+        | "externalId"
+        | "id"
+        | "jobAgentConfig"
+        | "jobAgentId"
+        | "releaseId"
+        | "startedAt"
+        | "status"
+        | "updatedAt"
+      )[];
+      id?: string;
+      job: components["schemas"]["Job"];
+    } & (unknown | unknown);
     JsonSelector: {
       json: Record<string, never>;
     };

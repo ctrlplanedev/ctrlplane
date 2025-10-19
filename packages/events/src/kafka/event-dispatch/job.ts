@@ -105,7 +105,10 @@ const convertJobToGoEvent = async (
 ): Promise<GoMessage<keyof GoEventPayload>> => ({
   workspaceId,
   eventType,
-  data: await getOapiJob(job),
+  data: {
+    job: await getOapiJob(job),
+    id: job.id,
+  },
   timestamp: Date.now(),
 });
 
