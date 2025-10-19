@@ -8,7 +8,33 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+
+	"github.com/google/uuid"
 )
+
+func isStringUUID(s string) bool {
+	_, err := uuid.Parse(s)
+	return err == nil
+}
+
+func getInternalReleaseID(ws *workspace.Workspace, jobUpdateEvent *oapi.JobUpdateEvent) string {
+	eventReleaseID := jobUpdateEvent.Job.ReleaseId
+	if eventReleaseID == "" {
+		return ""
+	}
+
+	if !isStringUUID(eventReleaseID) {
+		return eventReleaseID
+	}
+
+	for _, release := range ws.Releases().Items() {
+		if release.UUID().String() == eventReleaseID {
+			return release.ID()
+		}
+	}
+
+	return ""
+}
 
 func HandleJobUpdated(
 	ctx context.Context,
@@ -19,6 +45,9 @@ func HandleJobUpdated(
 	if err := json.Unmarshal(event.Data, &jobUpdateEvent); err != nil {
 		return err
 	}
+
+	internalReleaseID := getInternalReleaseID(ws, jobUpdateEvent)
+	jobUpdateEvent.Job.ReleaseId = internalReleaseID
 
 	job, exists := getJob(ws, jobUpdateEvent)
 	if !exists {
@@ -45,14 +74,13 @@ func HandleJobUpdated(
 	return nil
 }
 
-
 func getJob(ws *workspace.Workspace, job *oapi.JobUpdateEvent) (*oapi.Job, bool) {
 	if job.Id != nil && *job.Id != "" {
 		if existing, exists := ws.Jobs().Get(*job.Id); exists {
 			return existing, true
 		}
 	}
-	
+
 	if job.AgentId == nil || *job.AgentId == "" {
 		return nil, false
 	}
@@ -64,4 +92,3 @@ func getJob(ws *workspace.Workspace, job *oapi.JobUpdateEvent) (*oapi.Job, bool)
 	// Try finding by job agent ID + external ID
 	return ws.Jobs().GetByJobAgentAndExternalId(*job.AgentId, *job.ExternalId)
 }
-

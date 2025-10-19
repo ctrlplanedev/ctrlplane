@@ -33,6 +33,10 @@ func (r *Releases) Get(id string) (*oapi.Release, bool) {
 	return r.repo.Releases.Get(id)
 }
 
+func (r *Releases) Items() map[string]*oapi.Release {
+	return r.repo.Releases.Items()
+}
+
 func (r *Releases) Remove(ctx context.Context, id string) {
 	release, ok := r.repo.Releases.Get(id)
 	if !ok {
