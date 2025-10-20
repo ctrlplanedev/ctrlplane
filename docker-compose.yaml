@@ -71,18 +71,6 @@ services:
     depends_on:
       - postgres
 
-  event-worker:
-    build:
-      context: .
-      dockerfile: ./apps/event-worker/Dockerfile
-
-    container_name: ctrlplane-event-worker
-    environment:
-      POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
-      VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
-    depends_on:
-      - postgres
-
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: ctrlplane-otel-collector
