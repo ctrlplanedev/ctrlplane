@@ -115,9 +115,9 @@ export class GithubDispatcher implements JobDispatcher {
   }
 
   @Trace()
-  async dispatchJob(job: schema.Job) {
-    const config = this.parseConfig(job, job.jobAgentConfig);
-    const ghEntity = await this.getGithubEntity(job, config);
-    await this.sendToGithub(job, config, ghEntity);
+  async dispatchJob(_job: schema.Job) {
+    // const config = this.parseConfig(job, job.jobAgentConfig);
+    // const ghEntity = await this.getGithubEntity(job, config);
+    // await this.sendToGithub(job, config, ghEntity);
   }
 }
