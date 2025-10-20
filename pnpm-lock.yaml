@@ -1368,6 +1368,15 @@ importers:
 
   packages/events:
     dependencies:
+      '@bufbuild/protobuf':
+        specifier: ^2.9.0
+        version: 2.9.0
+      '@connectrpc/connect':
+        specifier: ^2.1.0
+        version: 2.1.0(@bufbuild/protobuf@2.9.0)
+      '@connectrpc/connect-node':
+        specifier: ^2.1.0
+        version: 2.1.0(@bufbuild/protobuf@2.9.0)(@connectrpc/connect@2.1.0(@bufbuild/protobuf@2.9.0))
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db

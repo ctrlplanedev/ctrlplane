@@ -19,6 +19,9 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.9.0",
+    "@connectrpc/connect": "^2.1.0",
+    "@connectrpc/connect-node": "^2.1.0",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/rule-engine": "workspace:*",
