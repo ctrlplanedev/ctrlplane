@@ -1,9 +1,7 @@
 import { useState } from "react";
 import {
-  Download,
   Edit,
   MoreVertical,
-  Plus,
   Search,
   Server,
   Trash2,
@@ -11,23 +9,13 @@ import {
 } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +24,8 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import { Separator } from "~/components/ui/separator";
+import { SidebarTrigger } from "~/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -45,7 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { Textarea } from "~/components/ui/textarea";
 
 type Resource = {
   id: string;
@@ -58,7 +46,7 @@ type Resource = {
 };
 
 export default function Resources() {
-  const [resources, setResources] = useState<Resource[]>([
+  const resources = [
     {
       id: "1",
       name: "prod-api-server-01",
@@ -86,17 +74,9 @@ export default function Resources() {
       lastUpdated: "2025-10-18T09:20:00",
       description: "Development Redis cache",
     },
-  ]);
+  ];
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newResource, setNewResource] = useState<Partial<Resource>>({
-    name: "",
-    type: "",
-    status: "pending",
-    region: "",
-    description: "",
-  });
 
   const filteredResources = resources.filter(
     (resource) =>
@@ -104,31 +84,6 @@ export default function Resources() {
       resource.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       resource.region.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-
-  const handleAddResource = () => {
-    const resource: Resource = {
-      id: String(resources.length + 1),
-      name: newResource.name ?? "",
-      type: newResource.type ?? "",
-      status: newResource.status ?? "pending",
-      region: newResource.region ?? "",
-      lastUpdated: new Date().toISOString(),
-      description: newResource.description ?? "",
-    };
-    setResources([...resources, resource]);
-    setIsAddDialogOpen(false);
-    setNewResource({
-      name: "",
-      type: "",
-      status: "pending",
-      region: "",
-      description: "",
-    });
-  };
-
-  const handleDeleteResource = (id: string) => {
-    setResources(resources.filter((r) => r.id !== id));
-  };
 
   const getStatusColor = (status: Resource["status"]) => {
     switch (status) {
@@ -144,101 +99,24 @@ export default function Resources() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Server className="h-6 w-6" />
-          <div>
-            <h1 className="text-2xl font-semibold">Resources</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage your infrastructure resources
-            </p>
-          </div>
+    <>
+      <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
+        <div className="flex items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-[orientation=vertical]:h-4"
+          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Resources</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Resource
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Resource</DialogTitle>
-                <DialogDescription>
-                  Create a new resource in your infrastructure
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., prod-api-server-01"
-                    value={newResource.name}
-                    onChange={(e) =>
-                      setNewResource({ ...newResource, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="type">Type</Label>
-                  <Input
-                    id="type"
-                    placeholder="e.g., Compute Instance"
-                    value={newResource.type}
-                    onChange={(e) =>
-                      setNewResource({ ...newResource, type: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="region">Region</Label>
-                  <Input
-                    id="region"
-                    placeholder="e.g., us-east-1"
-                    value={newResource.region}
-                    onChange={(e) =>
-                      setNewResource({ ...newResource, region: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe this resource..."
-                    value={newResource.description}
-                    onChange={(e) =>
-                      setNewResource({
-                        ...newResource,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsAddDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleAddResource}>Create Resource</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
 
-      <div className="flex-1 space-y-4">
-        <div className="mb-6 flex items-center gap-4">
+        <div className="flex min-w-[350px] items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -249,122 +127,94 @@ export default function Resources() {
             />
           </div>
         </div>
+      </header>
 
-        <div className="mb-6 grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Resources</CardDescription>
-              <CardTitle className="text-4xl">{resources.length}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Active</CardDescription>
-              <CardTitle className="text-4xl">
-                {resources.filter((r) => r.status === "active").length}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Pending</CardDescription>
-              <CardTitle className="text-4xl">
-                {resources.filter((r) => r.status === "pending").length}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Resources</CardTitle>
-            <CardDescription>
-              A list of all resources in your infrastructure
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
+      <div className="flex flex-1 flex-col gap-4">
+        <div className="flex-1 space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 text-sm">
+                <TableHead className="text-muted-foreground">Name</TableHead>
+                <TableHead className="text-muted-foreground">Type</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Region</TableHead>
+                <TableHead className="text-muted-foreground">
+                  Last Updated
+                </TableHead>
+                <TableHead className="text-right text-muted-foreground">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredResources.length === 0 ? (
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Region</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableCell colSpan={6} className="py-8 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Server className="h-12 w-12 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        No resources found
+                      </p>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredResources.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Server className="h-12 w-12 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          No resources found
-                        </p>
+              ) : (
+                filteredResources.map((resource) => (
+                  <TableRow key={resource.id}>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div>{resource.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {resource.description}
+                        </div>
                       </div>
                     </TableCell>
+                    <TableCell>{resource.type}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={getStatusColor(
+                          resource.status as Resource["status"],
+                        )}
+                      >
+                        {resource.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{resource.region}</TableCell>
+                    <TableCell>
+                      {new Date(resource.lastUpdated).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Upload className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
-                ) : (
-                  filteredResources.map((resource) => (
-                    <TableRow key={resource.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div>{resource.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {resource.description}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{resource.type}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={getStatusColor(resource.status)}
-                        >
-                          {resource.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{resource.region}</TableCell>
-                      <TableCell>
-                        {new Date(resource.lastUpdated).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Upload className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDeleteResource(resource.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
