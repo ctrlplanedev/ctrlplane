@@ -11,6 +11,11 @@ export default [
       "deployments/:deploymentId",
       "routes/deployments/page.$deploymentId.tsx",
     ),
+    route(
+      "deployments/:deploymentId/versions",
+      "routes/deployments/page.$deploymentId.versions.tsx",
+    ),
     route("resources", "routes/resources.tsx"),
+    route("relationship-rules", "routes/relationship-rules.tsx"),
   ]),
 ] satisfies RouteConfig;

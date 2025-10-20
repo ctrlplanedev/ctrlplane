@@ -1,14 +1,21 @@
 import type { Edge, Node } from "reactflow";
-import { useCallback, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useCallback, useMemo } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 
-import { Button } from "~/components/ui/button";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "~/components/ui/breadcrumb";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "~/components/ui/resizable";
+import { Separator } from "~/components/ui/separator";
+import { SidebarTrigger } from "~/components/ui/sidebar";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
 import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
@@ -27,7 +34,6 @@ export default function DeploymentDetail() {
   const selectedVersionId = searchParams.get("version");
 
   const _deploymentId = useParams().deploymentId;
-  const [selectedTab, setSelectedTab] = useState("environments");
 
   // In a real app, fetch deployment data based on deploymentId
   const deployment = mockDeploymentDetail;
@@ -174,50 +180,45 @@ export default function DeploymentDetail() {
   }, [environments]);
 
   return (
-    <div className="">
-      <header className="shrink-0 border-b">
-        <div className="flex items-center justify-between gap-8 px-4 py-6">
-          <div className="flex items-center gap-4">
-            <div>
-              <Link to="/deployments">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+    <>
+      <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
+        <div className="flex items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-[orientation=vertical]:h-4"
+          />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbItem>
+                  <Link to={`/deployments`}>Deployments</Link>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
 
-            <div className="space-y-1">
-              <h1 className="text-xl font-bold">{deployment.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {deployment.description}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList>
-                <TabsTrigger
-                  value="environments"
-                  className="text-base text-muted-foreground data-[state=active]:text-foreground"
-                >
-                  Environments
-                </TabsTrigger>
-                <TabsTrigger
-                  value="versions"
-                  className="text-base text-muted-foreground data-[state=active]:text-foreground"
-                >
+        <div className="flex items-center gap-4">
+          <Tabs value="environments">
+            <TabsList>
+              <TabsTrigger value="environments" asChild>
+                <Link to={`/deployments/${deployment.id}`}>Environments</Link>
+              </TabsTrigger>
+              <TabsTrigger value="versions" asChild>
+                <Link to={`/deployments/${deployment.id}/versions`}>
                   Versions
-                </TabsTrigger>
-                <TabsTrigger
-                  value="activity"
-                  className="text-base text-muted-foreground data-[state=active]:text-foreground"
-                >
+                </Link>
+              </TabsTrigger>
+              <TabsTrigger value="activity" asChild>
+                <Link to={`/deployments/${deployment.id}/activity`}>
                   Activity
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+                </Link>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </header>
 
@@ -277,6 +278,6 @@ export default function DeploymentDetail() {
           )}
         </ResizablePanelGroup>
       </div>
-    </div>
+    </>
   );
 }
