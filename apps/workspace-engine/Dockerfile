@@ -38,7 +38,9 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# No runtime dependencies needed - librdkafka is statically linked
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy binary from builder
 COPY --from=builder /app/engine .
