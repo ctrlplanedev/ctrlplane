@@ -569,6 +569,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@ctrlplane/workspace-engine-sdk':
+        specifier: workspace:*
+        version: link:../../packages/workspace-engine-sdk
+      '@dagrejs/dagre':
+        specifier: ^1.1.5
+        version: 1.1.5
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 3.10.0(react-hook-form@7.54.2(react@19.0.0))
@@ -608,6 +614,9 @@ importers:
       '@radix-ui/react-progress':
         specifier: ^1.1.7
         version: 1.1.7(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@radix-ui/react-select':
+        specifier: ^2.2.5
+        version: 2.2.5(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@radix-ui/react-separator':
         specifier: ^1.1.7
         version: 1.1.7(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -674,6 +683,9 @@ importers:
       react-router:
         specifier: ^7.9.2
         version: 7.9.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      reactflow:
+        specifier: ^11.11.4
+        version: 11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       recharts:
         specifier: 2.15.4
         version: 2.15.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -931,7 +943,7 @@ importers:
         specifier: ^4.13.0
         version: 4.13.0
       reactflow:
-        specifier: ^11.11.3
+        specifier: ^11.11.4
         version: 11.11.4(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       recharts:
         specifier: 2.15.4
@@ -1667,7 +1679,7 @@ importers:
         version: 5.8.2
       vite-tsconfig-paths:
         specifier: ^5.1.4
-        version: 5.1.4(typescript@5.8.2)(vite@5.4.8(@types/node@24.8.1)(lightningcss@1.30.2)(terser@5.36.0))
+        version: 5.1.4(typescript@5.8.2)(vite@7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0))
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@24.8.1)(jsdom@25.0.1)(lightningcss@1.30.2)(terser@5.36.0)
@@ -1895,7 +1907,7 @@ importers:
         specifier: ^1.0.5
         version: 1.2.9(@types/react-dom@19.2.2(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.2.0(react@19.0.0))(react@19.0.0)
       '@radix-ui/react-select':
-        specifier: ^2.0.0
+        specifier: ^2.2.5
         version: 2.2.5(@types/react-dom@19.2.2(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.2.0(react@19.0.0))(react@19.0.0)
       '@radix-ui/react-separator':
         specifier: ^1.1.7
@@ -2817,6 +2829,13 @@ packages:
 
   '@dabh/diagnostics@2.0.3':
     resolution: {integrity: sha512-hrlQOIi7hAfzsMqlGSFyVucrx38O+j6wiGOf//H2ecvIEqYN4ADBSS2iLMh5UFyDunCNniUIPk/q3riFv45xRA==}
+
+  '@dagrejs/dagre@1.1.5':
+    resolution: {integrity: sha512-Ghgrh08s12DCL5SeiR6AoyE80mQELTWhJBRmXfFoqDiFkR458vPEdgTbbjA0T+9ETNxUblnD0QW55tfdvi5pjQ==}
+
+  '@dagrejs/graphlib@2.2.4':
+    resolution: {integrity: sha512-mepCf/e9+SKYy1d02/UkvSy6+6MoyXhVxP8lLDfA7BPE1X1d4dR0sZznmbM8/XVJ1GPM+Svnx7Xj6ZweByWUkw==}
+    engines: {node: '>17.0.0'}
 
   '@date-fns/tz@1.2.0':
     resolution: {integrity: sha512-LBrd7MiJZ9McsOgxqWX7AaxrDjcFVjWH/tIKJd7pnR7McaslGYOP1QmmiBXdJH/H/yLCT+rcQ7FaPBUxRGUtrg==}
@@ -14270,6 +14289,12 @@ snapshots:
       enabled: 2.0.0
       kuler: 2.0.0
 
+  '@dagrejs/dagre@1.1.5':
+    dependencies:
+      '@dagrejs/graphlib': 2.2.4
+
+  '@dagrejs/graphlib@2.2.4': {}
+
   '@date-fns/tz@1.2.0': {}
 
   '@date-fns/tz@1.4.1': {}
@@ -17014,6 +17039,35 @@ snapshots:
       '@types/react': 19.0.8
       '@types/react-dom': 19.2.2(@types/react@19.0.8)
 
+  '@radix-ui/react-select@2.2.5(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@radix-ui/number': 1.1.1
+      '@radix-ui/primitive': 1.1.2
+      '@radix-ui/react-collection': 1.1.7(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-context': 1.1.2(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-direction': 1.1.1(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-dismissable-layer': 1.1.10(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@radix-ui/react-focus-guards': 1.1.2(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-focus-scope': 1.1.7(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@radix-ui/react-id': 1.1.1(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-popper': 1.2.7(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@radix-ui/react-portal': 1.1.9(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@radix-ui/react-slot': 1.2.3(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-use-callback-ref': 1.1.1(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-use-previous': 1.1.1(@types/react@19.0.8)(react@19.0.0)
+      '@radix-ui/react-visually-hidden': 1.2.3(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      aria-hidden: 1.2.6
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+      react-remove-scroll: 2.7.1(@types/react@19.0.8)(react@19.0.0)
+    optionalDependencies:
+      '@types/react': 19.0.8
+      '@types/react-dom': 19.0.3(@types/react@19.0.8)
+
   '@radix-ui/react-select@2.2.5(@types/react-dom@19.2.2(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.2.0(react@19.0.0))(react@19.0.0)':
     dependencies:
       '@radix-ui/number': 1.1.1
@@ -17035,7 +17089,7 @@ snapshots:
       '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.0.8)(react@19.0.0)
       '@radix-ui/react-use-previous': 1.1.1(@types/react@19.0.8)(react@19.0.0)
       '@radix-ui/react-visually-hidden': 1.2.3(@types/react-dom@19.2.2(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.2.0(react@19.0.0))(react@19.0.0)
-      aria-hidden: 1.2.4
+      aria-hidden: 1.2.6
       react: 19.0.0
       react-dom: 19.2.0(react@19.0.0)
       react-remove-scroll: 2.7.1(@types/react@19.0.8)(react@19.0.0)
@@ -18464,6 +18518,17 @@ snapshots:
       '@react-types/shared': 3.30.0(react@19.0.0)
       react: 19.0.0
 
+  '@reactflow/background@11.3.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@reactflow/core': 11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      classcat: 5.0.5
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+      zustand: 4.5.5(@types/react@19.0.8)(immer@10.1.1)(react@19.0.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
   '@reactflow/background@11.3.14(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@reactflow/core': 11.11.4(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -18475,6 +18540,17 @@ snapshots:
       - '@types/react'
       - immer
 
+  '@reactflow/controls@11.2.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@reactflow/core': 11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      classcat: 5.0.5
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+      zustand: 4.5.5(@types/react@19.0.8)(immer@10.1.1)(react@19.0.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
   '@reactflow/controls@11.2.14(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@reactflow/core': 11.11.4(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -18482,6 +18558,23 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
       zustand: 4.5.5(@types/react@19.2.0)(immer@10.1.1)(react@19.2.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
+  '@reactflow/core@11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@types/d3': 7.4.3
+      '@types/d3-drag': 3.0.7
+      '@types/d3-selection': 3.0.10
+      '@types/d3-zoom': 3.0.8
+      classcat: 5.0.5
+      d3-drag: 3.0.0
+      d3-selection: 3.0.0
+      d3-zoom: 3.0.0
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+      zustand: 4.5.5(@types/react@19.0.8)(immer@10.1.1)(react@19.0.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -18503,6 +18596,21 @@ snapshots:
       - '@types/react'
       - immer
 
+  '@reactflow/minimap@11.7.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@reactflow/core': 11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@types/d3-selection': 3.0.10
+      '@types/d3-zoom': 3.0.8
+      classcat: 5.0.5
+      d3-selection: 3.0.0
+      d3-zoom: 3.0.0
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+      zustand: 4.5.5(@types/react@19.0.8)(immer@10.1.1)(react@19.0.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
   '@reactflow/minimap@11.7.14(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@reactflow/core': 11.11.4(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -18518,6 +18626,19 @@ snapshots:
       - '@types/react'
       - immer
 
+  '@reactflow/node-resizer@2.2.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@reactflow/core': 11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      classcat: 5.0.5
+      d3-drag: 3.0.0
+      d3-selection: 3.0.0
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+      zustand: 4.5.5(@types/react@19.0.8)(immer@10.1.1)(react@19.0.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
   '@reactflow/node-resizer@2.2.14(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@reactflow/core': 11.11.4(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -18527,6 +18648,17 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
       zustand: 4.5.5(@types/react@19.2.0)(immer@10.1.1)(react@19.2.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
+  '@reactflow/node-toolbar@1.3.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@reactflow/core': 11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      classcat: 5.0.5
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+      zustand: 4.5.5(@types/react@19.0.8)(immer@10.1.1)(react@19.0.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -24694,6 +24826,20 @@ snapshots:
 
   react@19.2.0: {}
 
+  reactflow@11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+    dependencies:
+      '@reactflow/background': 11.3.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@reactflow/controls': 11.2.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@reactflow/core': 11.11.4(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@reactflow/minimap': 11.7.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@reactflow/node-resizer': 2.2.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@reactflow/node-toolbar': 1.3.14(@types/react@19.0.8)(immer@10.1.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - immer
+
   reactflow@11.11.4(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       '@reactflow/background': 11.3.14(@types/react@19.2.0)(immer@10.1.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -26235,6 +26381,10 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.0.8
 
+  use-sync-external-store@1.2.2(react@19.0.0):
+    dependencies:
+      react: 19.0.0
+
   use-sync-external-store@1.2.2(react@19.2.0):
     dependencies:
       react: 19.2.0
@@ -26367,13 +26517,13 @@ snapshots:
       - tsx
       - yaml
 
-  vite-tsconfig-paths@5.1.4(typescript@5.8.2)(vite@5.4.8(@types/node@24.8.1)(lightningcss@1.30.2)(terser@5.36.0)):
+  vite-tsconfig-paths@5.1.4(typescript@5.8.2)(vite@7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0)):
     dependencies:
       debug: 4.4.1
       globrex: 0.1.2
       tsconfck: 3.1.3(typescript@5.8.2)
     optionalDependencies:
-      vite: 5.4.8(@types/node@24.8.1)(lightningcss@1.30.2)(terser@5.36.0)
+      vite: 7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -26427,6 +26577,24 @@ snapshots:
       terser: 5.36.0
       tsx: 4.20.3
       yaml: 2.6.0
+
+  vite@7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0):
+    dependencies:
+      esbuild: 0.25.6
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.44.2
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 24.8.1
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      lightningcss: 1.30.2
+      terser: 5.36.0
+      tsx: 4.20.3
+      yaml: 2.6.0
+    optional: true
 
   vitest@2.1.9(@types/node@22.13.10)(jsdom@25.0.1)(lightningcss@1.30.2)(terser@5.36.0):
     dependencies:
@@ -26772,6 +26940,14 @@ snapshots:
       zod: 3.24.2
 
   zod@3.24.2: {}
+
+  zustand@4.5.5(@types/react@19.0.8)(immer@10.1.1)(react@19.0.0):
+    dependencies:
+      use-sync-external-store: 1.2.2(react@19.0.0)
+    optionalDependencies:
+      '@types/react': 19.0.8
+      immer: 10.1.1
+      react: 19.0.0
 
   zustand@4.5.5(@types/react@19.2.0)(immer@10.1.1)(react@19.2.0):
     dependencies:

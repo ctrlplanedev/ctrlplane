@@ -83,7 +83,7 @@
     "react-intersection-observer": "^9.16.0",
     "react-use": "^17.6.0",
     "react-use-websocket": "^4.13.0",
-    "reactflow": "^11.11.3",
+    "reactflow": "^11.11.4",
     "recharts": "2.15.4",
     "rrule": "^2.8.1",
     "semver": "catalog:",
