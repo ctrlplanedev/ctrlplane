@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspaceID string, store *store.Store) error {
@@ -40,12 +39,9 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspace
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, change := range cs.Changes {
-		_, changeSpan := tracer.Start(ctx, "ApplyChange",
-			trace.WithAttributes(
-				attribute.String("change.type", string(change.Type)),
-				attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)),
-			),
-		)
+		_, changeSpan := tracer.Start(ctx, "ApplyChange")
+		changeSpan.SetAttributes(attribute.String("change.type", string(change.Type)))
+		changeSpan.SetAttributes(attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)))
 		if err := applyChange(ctx, tx, change, workspaceID, store); err != nil {
 			changeSpan.RecordError(err)
 			changeSpan.SetStatus(codes.Error, fmt.Sprintf("Failed to apply change: %v, change: %+v", err, change))
