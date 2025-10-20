@@ -40,16 +40,19 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspace
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, change := range cs.Changes {
-		span.AddEvent("Applying change", trace.WithAttributes(
-			attribute.String("change.type", string(change.Type)),
-			attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)),
-		))
-
+		_, changeSpan := tracer.Start(ctx, "ApplyChange",
+			trace.WithAttributes(
+				attribute.String("change.type", string(change.Type)),
+				attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)),
+			),
+		)
 		if err := applyChange(ctx, tx, change, workspaceID, store); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, fmt.Sprintf("Failed to apply change: %v, change: %+v", err, change))
+			changeSpan.RecordError(err)
+			changeSpan.SetStatus(codes.Error, fmt.Sprintf("Failed to apply change: %v, change: %+v", err, change))
+			changeSpan.End()
 			return err
 		}
+		changeSpan.End()
 	}
 
 	if err := tx.Commit(ctx); err != nil {
