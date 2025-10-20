@@ -135,6 +135,8 @@ func scanJobRow(rows pgx.Rows) (*oapi.Job, error) {
 }
 
 func setJobMetadata(job *oapi.Job, metadataJSON []byte) error {
+	job.Metadata = make(map[string]string)
+
 	if len(metadataJSON) == 0 {
 		return nil
 	}
@@ -144,7 +146,6 @@ func setJobMetadata(job *oapi.Job, metadataJSON []byte) error {
 		return err
 	}
 
-	// Only set metadata if it's not empty
 	if len(metadataMap) > 0 {
 		job.Metadata = metadataMap
 	}

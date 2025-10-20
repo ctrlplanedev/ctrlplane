@@ -73,6 +73,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 		Status:         oapi.Pending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
+		Metadata:       make(map[string]string),
 	}, nil
 }
 
