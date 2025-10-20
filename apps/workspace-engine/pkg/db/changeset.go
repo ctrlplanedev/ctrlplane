@@ -42,7 +42,7 @@ func FlushChangeset(ctx context.Context, cs *changeset.ChangeSet[any], workspace
 	for _, change := range cs.Changes {
 		span.AddEvent("Applying change", trace.WithAttributes(
 			attribute.String("change.type", string(change.Type)),
-			attribute.String("change.entity", fmt.Sprintf("%T", change.Entity)),
+			attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)),
 		))
 
 		if err := applyChange(ctx, tx, change, workspaceID, store); err != nil {

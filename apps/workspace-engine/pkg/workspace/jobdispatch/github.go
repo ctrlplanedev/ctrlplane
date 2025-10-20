@@ -4,14 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 
-	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v66/github"
 )
 
@@ -95,9 +97,74 @@ func (d *GithubDispatcher) getEnv(key string) string {
 	return os.Getenv(key)
 }
 
+// generateJWT creates a JWT token for GitHub App authentication
+// This matches what Node.js createAppAuth does internally
+func (d *GithubDispatcher) generateJWT(appID int64, privateKey []byte) (string, error) {
+	// Parse the private key
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	// Create the JWT claims (issued at time and expiration)
+	now := time.Now()
+	claims := jwt.RegisteredClaims{
+		IssuedAt:  jwt.NewNumericDate(now.Add(-60 * time.Second)), // 60 seconds in the past to allow for clock drift
+		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),  // Max 10 minutes
+		Issuer:    strconv.FormatInt(appID, 10),
+	}
+
+	// Create and sign the token
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	signedToken, err := token.SignedString(key)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign JWT: %w", err)
+	}
+
+	return signedToken, nil
+}
+
+// getInstallationToken exchanges JWT for an installation access token
+// This matches what Node.js octokit.auth() does
+func (d *GithubDispatcher) getInstallationToken(jwtToken string, installationID int) (string, error) {
+	url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+jwtToken)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to get installation token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("failed to get installation token: %s - %s", resp.Status, string(body))
+	}
+
+	var result struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode token response: %w", err)
+	}
+
+	return result.Token, nil
+}
+
 func (d *GithubDispatcher) createGithubClient(installationID int) (GithubClient, error) {
 	appIDStr := d.getEnv("GITHUB_BOT_APP_ID")
 	privateKey := d.getEnv("GITHUB_BOT_PRIVATE_KEY")
+	// Note: clientID and clientSecret are available but not needed for GitHub App auth
+	// They're used in Node.js but the actual authentication uses JWT + installation token
 
 	if appIDStr == "" || privateKey == "" {
 		return nil, fmt.Errorf("GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY")
@@ -108,18 +175,23 @@ func (d *GithubDispatcher) createGithubClient(installationID int) (GithubClient,
 		return nil, fmt.Errorf("invalid GITHUB_BOT_APP_ID: %w", err)
 	}
 
-	itr, err := ghinstallation.New(
-		http.DefaultTransport,
-		appID,
-		int64(installationID),
-		[]byte(privateKey),
-	)
+	// Step 1: Generate JWT token (like Node.js createAppAuth does)
+	jwtToken, err := d.generateJWT(appID, []byte(privateKey))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create GitHub installation transport: %w", err)
+		return nil, fmt.Errorf("failed to generate JWT: %w", err)
 	}
 
+	// Step 2: Get installation access token (like Node.js octokit.auth() does)
+	installationToken, err := d.getInstallationToken(jwtToken, installationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get installation token: %w", err)
+	}
+
+	// Step 3: Create GitHub client with the installation token (like Node.js does with Bearer token)
+	client := github.NewClient(nil).WithAuthToken(installationToken)
+
 	return &realGithubClient{
-		client: github.NewClient(&http.Client{Transport: itr}),
+		client: client,
 	}, nil
 }
 
