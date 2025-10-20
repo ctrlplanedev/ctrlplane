@@ -146,7 +146,7 @@ func setJobMetadata(job *oapi.Job, metadataJSON []byte) error {
 
 	// Only set metadata if it's not empty
 	if len(metadataMap) > 0 {
-		job.Metadata = &metadataMap
+		job.Metadata = metadataMap
 	}
 	return nil
 }
@@ -247,8 +247,8 @@ func writeJob(ctx context.Context, job *oapi.Job, store *store.Store, tx pgx.Tx)
 		return fmt.Errorf("failed to delete existing job metadata: %w", err)
 	}
 
-	if job.Metadata != nil && len(*job.Metadata) > 0 {
-		if err := writeJobMetadata(ctx, job.Id, *job.Metadata, tx); err != nil {
+	if len(job.Metadata) > 0 {
+		if err := writeJobMetadata(ctx, job.Id, job.Metadata, tx); err != nil {
 			return err
 		}
 	}

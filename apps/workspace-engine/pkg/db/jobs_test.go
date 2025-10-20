@@ -85,23 +85,36 @@ func validateRetrievedJobs(t *testing.T, actualJobs []*oapi.Job, expectedJobs []
 		}
 
 		// Validate metadata
-		if (actual.Metadata == nil) != (expected.Metadata == nil) {
-			t.Fatalf("expected metadata nil=%v, got nil=%v", expected.Metadata == nil, actual.Metadata == nil)
+		if len(actual.Metadata) != len(expected.Metadata) {
+			t.Fatalf("expected %d metadata entries, got %d", len(expected.Metadata), len(actual.Metadata))
 		}
-		if actual.Metadata != nil && expected.Metadata != nil {
-			if len(*actual.Metadata) != len(*expected.Metadata) {
-				t.Fatalf("expected %d metadata entries, got %d", len(*expected.Metadata), len(*actual.Metadata))
+		for key, expectedValue := range expected.Metadata {
+			actualValue, ok := actual.Metadata[key]
+			if !ok {
+				t.Fatalf("expected metadata key %s not found", key)
 			}
-			for key, expectedValue := range *expected.Metadata {
-				actualValue, ok := (*actual.Metadata)[key]
-				if !ok {
-					t.Fatalf("expected metadata key %s not found", key)
-				}
-				if actualValue != expectedValue {
-					t.Fatalf("expected metadata[%s] = %v, got %v", key, expectedValue, actualValue)
-				}
+			if actualValue != expectedValue {
+				t.Fatalf("expected metadata[%s] = %v, got %v", key, expectedValue, actualValue)
 			}
 		}
+
+		// if (actual.Metadata == nil) != (expected.Metadata == nil) {
+		// 	t.Fatalf("expected metadata nil=%v, got nil=%v", expected.Metadata == nil, actual.Metadata == nil)
+		// }
+		// if actual.Metadata != nil && expected.Metadata != nil {
+		// 	if len(*actual.Metadata) != len(*expected.Metadata) {
+		// 		t.Fatalf("expected %d metadata entries, got %d", len(*expected.Metadata), len(*actual.Metadata))
+		// 	}
+		// 	for key, expectedValue := range *expected.Metadata {
+		// 		actualValue, ok := (*actual.Metadata)[key]
+		// 		if !ok {
+		// 			t.Fatalf("expected metadata key %s not found", key)
+		// 		}
+		// 		if actualValue != expectedValue {
+		// 			t.Fatalf("expected metadata[%s] = %v, got %v", key, expectedValue, actualValue)
+		// 		}
+		// 	}
+		// }
 	}
 }
 
@@ -1119,7 +1132,7 @@ func TestDBJobs_BasicMetadata(t *testing.T) {
 		ExternalId:     nil,
 		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
-		Metadata:       &metadata,
+		Metadata:       metadata,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 		StartedAt:      nil,
@@ -1255,7 +1268,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 		ExternalId:     nil,
 		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
-		Metadata:       &initialMetadata,
+		Metadata:       initialMetadata,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 		StartedAt:      nil,
@@ -1291,7 +1304,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 		// "region" key removed from initial metadata would be replaced
 	}
 
-	job.Metadata = &updatedMetadata
+	job.Metadata = updatedMetadata
 	job.Status = oapi.InProgress
 	job.UpdatedAt = time.Now()
 
@@ -1360,7 +1373,7 @@ func TestDBJobs_MetadataRemoval(t *testing.T) {
 		ExternalId:     nil,
 		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
-		Metadata:       &metadata,
+		Metadata:       metadata,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 		StartedAt:      nil,
@@ -1456,7 +1469,7 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 		ExternalId:     nil,
 		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
-		Metadata:       &metadata1,
+		Metadata:       metadata1,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 		StartedAt:      nil,
@@ -1477,7 +1490,7 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 		ExternalId:     nil,
 		Status:         oapi.InProgress,
 		JobAgentConfig: map[string]interface{}{},
-		Metadata:       &metadata2,
+		Metadata:       metadata2,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 		StartedAt:      nil,

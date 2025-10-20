@@ -427,7 +427,7 @@ export interface components {
         [key: string]: unknown;
       };
       jobAgentId: string;
-      metadata?: {
+      metadata: {
         [key: string]: string;
       };
       releaseId: string;

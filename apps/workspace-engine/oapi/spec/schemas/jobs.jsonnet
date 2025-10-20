@@ -10,6 +10,7 @@ local Job = {
     'status',
     'createdAt',
     'updatedAt',
+    'metadata',
   ],
   properties: {
     id: { type: 'string' },

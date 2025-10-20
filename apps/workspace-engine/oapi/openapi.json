@@ -380,7 +380,8 @@
                "jobAgentConfig",
                "status",
                "createdAt",
-               "updatedAt"
+               "updatedAt",
+               "metadata"
             ],
             "type": "object"
          },

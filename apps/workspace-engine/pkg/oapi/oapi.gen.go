@@ -217,7 +217,7 @@ type Job struct {
 	Id             string                 `json:"id"`
 	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
 	JobAgentId     string                 `json:"jobAgentId"`
-	Metadata       *map[string]string     `json:"metadata,omitempty"`
+	Metadata       map[string]string      `json:"metadata"`
 	ReleaseId      string                 `json:"releaseId"`
 	StartedAt      *time.Time             `json:"startedAt,omitempty"`
 	Status         JobStatus              `json:"status"`
