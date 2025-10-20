@@ -17,5 +17,8 @@ export default [
     ),
     route("resources", "routes/resources.tsx"),
     route("relationship-rules", "routes/relationship-rules.tsx"),
+    route("projects", "routes/projects.tsx"),
+    route("runners", "routes/runners.tsx"),
+    route("providers", "routes/providers.tsx"),
   ]),
 ] satisfies RouteConfig;
