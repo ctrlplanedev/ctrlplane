@@ -22,7 +22,6 @@ applied sequentially to filter candidate releases.
 ## How It Works
 
 1. Rule evaluation process:
-
    - Starts with all available releases
    - Applies each rule sequentially
    - Updates the candidate list after each rule
@@ -30,7 +29,6 @@ applied sequentially to filter candidate releases.
    - After all rules pass, selects the final release
 
 2. Release selection follows these priorities:
-
    - Sequential upgrade releases get priority (oldest first)
    - Specified desired release if available
    - Otherwise, newest release by creation date
