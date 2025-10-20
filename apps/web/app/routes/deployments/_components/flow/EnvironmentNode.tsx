@@ -1,5 +1,6 @@
 import type { NodeProps } from "reactflow";
 import { Check, Loader2, ShieldAlert, X } from "lucide-react";
+import { useSearchParams } from "react-router";
 import { Handle, Position } from "reactflow";
 
 import { Badge } from "~/components/ui/badge";
@@ -37,8 +38,7 @@ type EnvironmentNodeData = {
   jobs: Job[];
   currentVersionsWithCounts: Array<{ tag: string; count: number }>;
   desiredVersionsWithCounts: Array<{ tag: string; count: number }>;
-  hasPolicyBlocks: boolean;
-  blockedVersionsMap: Array<{ versionTag: string; reasons: string[] }>;
+  blockedVersionsByVersionId?: Record<string, Array<{ reason: string }>>; // All blocked versions with reasons
 };
 
 export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
@@ -48,9 +48,12 @@ export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
     jobs,
     currentVersionsWithCounts = [],
     desiredVersionsWithCounts = [],
-    hasPolicyBlocks = false,
-    blockedVersionsMap = [],
+    blockedVersionsByVersionId = {},
   } = data;
+
+  // Get selected version from URL params
+  const [searchParams] = useSearchParams();
+  const selectedVersionId = searchParams.get("version");
 
   const successCount = jobs.filter((j) => j.status === "successful").length;
   const failedCount = jobs.filter((j) => j.status === "failure").length;
@@ -67,43 +70,53 @@ export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
     .join(",");
   const isTransitioning = currentTags !== desiredTags;
 
+  // Get blocked reasons for the selected version
+  const blockedVersionsForSelected = selectedVersionId
+    ? (blockedVersionsByVersionId[selectedVersionId] ?? [])
+    : [];
+
+  // Show policy blocks only when a version is selected and it's blocked
+  const showPolicyBlocks =
+    selectedVersionId && blockedVersionsForSelected.length > 0;
+
   return (
     <div className="min-w-[200px] rounded-lg border-2 border-primary/30 bg-card p-3 shadow-lg">
+      {/* Target Handle */}
       <Handle
         type="target"
         position={Position.Left}
         className="h-3 w-3 !bg-primary"
       />
+
+      {/* Policy Block Indicator on Handle */}
+      {showPolicyBlocks && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute -left-2 top-1/2 -translate-x-full -translate-y-1/2 bg-primary-foreground">
+                <div className="flex h-5 w-5 cursor-help items-center justify-center rounded-full border-2 border-amber-600 bg-amber-500/20 shadow-sm">
+                  <ShieldAlert className="h-3 w-3 text-amber-600" />
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <div className="space-y-1 text-xs">
+                <div className="font-semibold">
+                  Why this version is blocked:
+                </div>
+                <ul className="ml-2 space-y-0.5">
+                  {blockedVersionsForSelected.map((block, i) => (
+                    <li key={i}>• {block.reason}</li>
+                  ))}
+                </ul>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-semibold">{name}</div>
-          {hasPolicyBlocks && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <ShieldAlert className="h-4 w-4 cursor-help text-amber-600" />
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs">
-                  <div className="space-y-2 text-xs">
-                    <div className="font-semibold">Policy Blocks:</div>
-                    {blockedVersionsMap.map((bv) => (
-                      <div key={bv.versionTag} className="space-y-0.5">
-                        <div className="font-mono font-medium">
-                          {bv.versionTag}
-                        </div>
-                        <ul className="ml-2 space-y-0.5 text-muted-foreground">
-                          {bv.reasons.map((reason, i) => (
-                            <li key={i}>• {reason}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
+        <div className="text-sm font-semibold">{name}</div>
 
         {/* Version Display - Total Picture */}
         {currentVersionsWithCounts.length > 0 && (

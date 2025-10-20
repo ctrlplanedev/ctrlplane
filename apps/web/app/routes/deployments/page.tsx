@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 
-import type { Route } from "./+types/page";
 import { Badge } from "~/components/ui/badge";
 import {
   Breadcrumb,
@@ -38,7 +37,7 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Deployments - Ctrlplane" },
     { name: "description", content: "Manage your deployments" },
@@ -52,17 +51,6 @@ type DeploymentVersionStatus =
   | "ready"
   | "failed"
   | "rejected";
-type JobStatus =
-  | "cancelled"
-  | "skipped"
-  | "inProgress"
-  | "actionRequired"
-  | "pending"
-  | "failure"
-  | "invalidJobAgent"
-  | "invalidIntegration"
-  | "externalRunNotFound"
-  | "successful";
 
 // Mock deployment data aligned with ctrlplane
 // Note: Every commit can be a release, deployments happen frequently (every few minutes for ephemeral envs)
@@ -372,35 +360,9 @@ const getDeploymentHealth = (
 
 export default function Deployments() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [systemFilter, setSystemFilter] = useState<string>("all");
-
-  // Calculate summary statistics
-  const stats = {
-    total: mockDeployments.length,
-    healthy: mockDeployments.filter(
-      (d) => getDeploymentHealth(d.jobStatusSummary).status === "Healthy",
-    ).length,
-    progressing: mockDeployments.filter(
-      (d) => getDeploymentHealth(d.jobStatusSummary).status === "Progressing",
-    ).length,
-    degraded: mockDeployments.filter(
-      (d) => getDeploymentHealth(d.jobStatusSummary).status === "Degraded",
-    ).length,
-    totalActiveReleases: mockDeployments.reduce(
-      (sum, d) => sum + d.activeReleases,
-      0,
-    ),
-    totalResources: mockDeployments.reduce(
-      (sum, d) => sum + d.totalResources,
-      0,
-    ),
-    deploymentsLast24h: mockDeployments.reduce(
-      (sum, d) => sum + d.recentActivity.deploymentsLast24h,
-      0,
-    ),
-  };
 
   // Get unique systems for filter
   const systems = Array.from(new Set(mockDeployments.map((d) => d.systemName)));
@@ -494,11 +456,7 @@ export default function Deployments() {
 
         {/* Deployments Grid/List */}
         <div
-          className={
-            viewMode === "grid"
-              ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "flex flex-col gap-3"
-          }
+          className={"grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
         >
           {filteredDeployments.map((deployment) => {
             const health = getDeploymentHealth(deployment.jobStatusSummary);

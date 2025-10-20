@@ -27,6 +27,8 @@ type VersionCardProps = {
   };
   currentReleaseTargets: ReleaseTarget[];
   desiredReleaseTargets: ReleaseTarget[];
+  isSelected?: boolean;
+  onSelect?: () => void;
 };
 
 const getVersionStatusColor = (status: DeploymentVersionStatus) => {
@@ -62,6 +64,9 @@ const getVersionStatusIcon = (status: DeploymentVersionStatus) => {
 export const VersionCard: React.FC<VersionCardProps> = ({
   version,
   currentReleaseTargets,
+  desiredReleaseTargets: _desiredReleaseTargets,
+  isSelected = false,
+  onSelect,
 }) => {
   const hasActiveDeployments = currentReleaseTargets.length > 0;
 
@@ -71,7 +76,15 @@ export const VersionCard: React.FC<VersionCardProps> = ({
 
   if (!hasActiveDeployments) {
     return (
-      <div className="w-10 shrink-0 rounded-md border bg-card p-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
+      <div
+        onClick={onSelect}
+        className={cn(
+          "w-10 shrink-0 cursor-pointer rounded-md border bg-card p-3 text-sm text-muted-foreground transition-colors",
+          isSelected
+            ? "border-primary bg-primary/5 text-foreground ring-2 ring-primary/20"
+            : "hover:border-primary/50 hover:text-foreground",
+        )}
+      >
         <div className="flex rotate-90 items-center font-mono">
           <span className="flex w-[150px] items-center gap-2 overflow-ellipsis">
             <span className="shrink-0">
@@ -86,9 +99,13 @@ export const VersionCard: React.FC<VersionCardProps> = ({
 
   return (
     <div
+      onClick={onSelect}
       className={cn(
-        "flex shrink-0 flex-col gap-2 rounded-md border bg-card p-3 text-sm transition-colors",
-        "h-[175px] w-[180px] hover:border-primary/50",
+        "flex shrink-0 cursor-pointer flex-col gap-2 rounded-md border bg-card p-3 text-sm transition-colors",
+        "h-[175px] w-[180px]",
+        isSelected
+          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+          : "hover:border-primary/50",
       )}
     >
       <div className="space-y-1">

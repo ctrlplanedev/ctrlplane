@@ -1,8 +1,8 @@
 import type { Edge, Node } from "reactflow";
 import dagre from "@dagrejs/dagre";
 
-const defaultNodeWidth = 300;
-const defaultNodeHeight = 150;
+const defaultNodeWidth = 400;
+const defaultNodeHeight = 175;
 
 export const layoutNodes = (nodes: Node[], edges: Edge[]) => {
   const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
