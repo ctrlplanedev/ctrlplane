@@ -2,22 +2,17 @@ import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router";
-import ReactFlow, {
-  Background,
-  BackgroundVariant,
-  Controls,
-  ReactFlowProvider,
-  useEdgesState,
-  useNodesState,
-} from "reactflow";
-
-import "reactflow/dist/style.css";
 
 import { Button } from "~/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "~/components/ui/resizable";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { edgeTypes, nodeTypes } from "./_components/flow";
-import { layoutNodes } from "./_components/flow/layout";
+import { DeploymentFlow } from "./_components/DeploymentFlow";
 import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
+import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
 
 export function meta() {
@@ -28,8 +23,8 @@ export function meta() {
 }
 
 export default function DeploymentDetail() {
-  const [searchParams] = useSearchParams();
-  const _versionId = searchParams.get("version");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedVersionId = searchParams.get("version");
 
   const _deploymentId = useParams().deploymentId;
   const [selectedTab, setSelectedTab] = useState("environments");
@@ -37,6 +32,19 @@ export default function DeploymentDetail() {
   // In a real app, fetch deployment data based on deploymentId
   const deployment = mockDeploymentDetail;
   const environments = mockEnvironments;
+
+  // Handle version selection
+  const handleVersionSelect = useCallback(
+    (versionId: string) => {
+      if (selectedVersionId === versionId) {
+        // Deselect if clicking same version
+        setSearchParams({});
+      } else {
+        setSearchParams({ version: versionId });
+      }
+    },
+    [selectedVersionId, setSearchParams],
+  );
 
   // Create ReactFlow nodes for environments (left to right flow)
   const computedNodes: Node[] = useMemo(() => {
@@ -80,20 +88,19 @@ export default function DeploymentDetail() {
           {} as Record<string, number>,
         );
 
-        // Check if any release targets have blocked versions
-        const hasPolicyBlocks = envReleaseTargets.some(
-          (rt) =>
-            rt.version.blockedVersions && rt.version.blockedVersions.length > 0,
-        );
-
-        // Collect all blocked versions across all release targets
-        const blockedVersionsMap = new Map<string, Set<string>>();
+        // Collect ALL blocked versions for all versions
+        const blockedVersionsByVersionId: Record<
+          string,
+          Array<{ reason: string }>
+        > = {};
         envReleaseTargets.forEach((rt) => {
           rt.version.blockedVersions?.forEach((bv) => {
-            if (!blockedVersionsMap.has(bv.versionId)) {
-              blockedVersionsMap.set(bv.versionId, new Set());
+            if (!(bv.versionId in blockedVersionsByVersionId)) {
+              blockedVersionsByVersionId[bv.versionId] = [];
             }
-            blockedVersionsMap.get(bv.versionId)?.add(bv.reason);
+            blockedVersionsByVersionId[bv.versionId].push({
+              reason: bv.reason,
+            });
           });
         });
 
@@ -122,15 +129,7 @@ export default function DeploymentDetail() {
             jobs: envReleaseTargets.flatMap((rt) => rt.jobs),
             currentVersionsWithCounts,
             desiredVersionsWithCounts,
-            hasPolicyBlocks,
-            blockedVersionsMap: Array.from(blockedVersionsMap.entries()).map(
-              ([versionId, reasons]) => ({
-                versionTag:
-                  deployment.versions.find((v) => v.id === versionId)?.tag ??
-                  versionId,
-                reasons: Array.from(reasons),
-              }),
-            ),
+            blockedVersionsByVersionId,
           },
         };
       }),
@@ -174,32 +173,8 @@ export default function DeploymentDetail() {
     return connections;
   }, [environments]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(computedNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(computedEdges);
-
-  const onLayout = useCallback(
-    (cb?: () => void) => {
-      const { nodes: layoutedNodes, edges: layoutedEdges } = layoutNodes(
-        nodes,
-        edges,
-      );
-
-      setNodes(layoutedNodes as Node[]);
-      setEdges(layoutedEdges);
-
-      // Call callback after state updates (next frame)
-      if (cb) {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(cb);
-        });
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nodes, edges],
-  );
-
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="">
       <header className="shrink-0 border-b">
         <div className="flex items-center justify-between gap-8 px-4 py-6">
           <div className="flex items-center gap-4">
@@ -255,47 +230,52 @@ export default function DeploymentDetail() {
             const desiredReleaseTargets = deployment.releaseTargets.filter(
               (rt) => rt.version.desiredId === version.id,
             );
+            const isSelected = selectedVersionId === version.id;
+
             return (
               <VersionCard
                 key={version.id}
                 version={version}
                 currentReleaseTargets={currentReleaseTargets}
                 desiredReleaseTargets={desiredReleaseTargets}
+                isSelected={isSelected}
+                onSelect={() => handleVersionSelect(version.id)}
               />
             );
           })}
         </div>
       </div>
 
-      {/* Environment Flow Visualization */}
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="h-full w-full rounded-lg">
-          <ReactFlowProvider>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
-              fitView
-              onInit={(reactFlowInstance) => {
-                onLayout(() => {
-                  reactFlowInstance.fitView();
-                });
-              }}
-              minZoom={0.5}
-              maxZoom={1.5}
-              defaultEdgeOptions={{
-                type: "smoothstep",
-              }}
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-              <Controls />
-            </ReactFlow>
-          </ReactFlowProvider>
-        </div>
+      <div className="flex h-[calc(100vh-101px-207px-1rem)] min-h-0 flex-1">
+        <ResizablePanelGroup direction="horizontal">
+          {/* Main ReactFlow Panel */}
+          <ResizablePanel
+            defaultSize={selectedVersionId ? 70 : 100}
+            minSize={50}
+          >
+            <DeploymentFlow
+              computedNodes={computedNodes}
+              computedEdges={computedEdges}
+            />
+          </ResizablePanel>
+
+          {/* Version Actions Sidebar */}
+          {selectedVersionId && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+                <VersionActionsPanel
+                  version={
+                    deployment.versions.find((v) => v.id === selectedVersionId)!
+                  }
+                  environments={environments}
+                  releaseTargets={deployment.releaseTargets}
+                  onClose={() => setSearchParams({})}
+                />
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
       </div>
     </div>
   );
