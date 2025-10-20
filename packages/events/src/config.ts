@@ -3,7 +3,6 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    REDIS_URL: z.string(),
     KAFKA_BROKERS: z.string().default("localhost:9092"),
   },
   runtimeEnv: process.env,
