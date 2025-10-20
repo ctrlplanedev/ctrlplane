@@ -4,22 +4,28 @@ import { z } from "zod";
 import {
   buildConflictUpdateColumns,
   eq,
+  rulesAndTargets,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { dispatchQueueJob } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { getApplicablePolicies } from "@ctrlplane/rule-engine/db";
 import { Permission } from "@ctrlplane/validators/auth";
 import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 
-const getPolicyTargets = async (db: Tx, policyId: string) =>
-  db
-    .select()
-    .from(schema.policyTarget)
-    .where(eq(schema.policyTarget.policyId, policyId));
+const dispatchPolicyUpdated = (db: Tx, policyId: string) =>
+  db.query.policy
+    .findFirst({
+      where: eq(schema.policy.id, policyId),
+      with: rulesAndTargets,
+    })
+    .then((fullPolicy) => {
+      if (fullPolicy == null) return;
+      eventDispatcher.dispatchPolicyUpdated(fullPolicy, fullPolicy);
+    });
 
 export const policyVersionSelectorRouter = createTRPCRouter({
   byPolicyId: protectedProcedure
@@ -98,12 +104,7 @@ export const policyVersionSelectorRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const policyTargets = await getPolicyTargets(ctx.db, policyId);
-      for (const policyTarget of policyTargets)
-        dispatchQueueJob()
-          .toCompute()
-          .policyTarget(policyTarget)
-          .releaseTargetSelector();
+      dispatchPolicyUpdated(ctx.db, policyId);
 
       return vs;
     }),
@@ -136,12 +137,7 @@ export const policyVersionSelectorRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const policyTargets = await getPolicyTargets(ctx.db, policyId);
-      for (const policyTarget of policyTargets)
-        dispatchQueueJob()
-          .toCompute()
-          .policyTarget(policyTarget)
-          .releaseTargetSelector();
+      dispatchPolicyUpdated(ctx.db, policyId);
 
       return vs;
     }),

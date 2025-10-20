@@ -1,8 +1,7 @@
 import { z } from "zod";
 
-import { and, eq, inArray } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { dispatchQueueJob, eventDispatcher } from "@ctrlplane/events";
+import { eventDispatcher } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure } from "../../../trpc";
@@ -40,30 +39,6 @@ export const addRecord = protectedProcedure
       .values(recordsToInsert)
       .onConflictDoNothing()
       .returning();
-
-    const affectedReleaseTargets = await ctx.db
-      .select()
-      .from(SCHEMA.deploymentVersion)
-      .innerJoin(
-        SCHEMA.releaseTarget,
-        eq(
-          SCHEMA.deploymentVersion.deploymentId,
-          SCHEMA.releaseTarget.deploymentId,
-        ),
-      )
-      .where(
-        and(
-          eq(SCHEMA.deploymentVersion.id, deploymentVersionId),
-          environmentIds.length > 0
-            ? inArray(SCHEMA.releaseTarget.environmentId, environmentIds)
-            : undefined,
-        ),
-      )
-      .then((rows) => rows.map((row) => row.release_target));
-
-    await dispatchQueueJob()
-      .toEvaluate()
-      .releaseTargets(affectedReleaseTargets);
 
     await Promise.all(
       record.map((record) =>
