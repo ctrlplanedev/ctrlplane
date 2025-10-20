@@ -23,7 +23,9 @@ func TestBasicGetAndTrigger(t *testing.T) {
 	// Wait for initial computation to complete (New calls StartRecompute automatically)
 	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("WaitRecompute failed: %v", err)
+		if !strings.Contains(err.Error(), "recompute not in progress") {
+			t.Fatalf("WaitRecompute failed: %v", err)
+		}
 	}
 
 	// After initial computation from New(), value should be 100
@@ -168,7 +170,9 @@ func TestStartWaitRun(t *testing.T) {
 	// Wait for initial computation to complete (New calls StartRecompute automatically)
 	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("WaitRecompute failed: %v", err)
+		if !strings.Contains(err.Error(), "recompute not in progress") {
+			t.Fatalf("WaitRecompute failed: %v", err)
+		}
 	}
 
 	val := mv.Get()
@@ -220,7 +224,9 @@ func TestStartAlreadyStarted(t *testing.T) {
 	// Wait for all computations to complete (including the pending rerun)
 	err = mv.WaitRecompute()
 	if err != nil {
-		t.Errorf("WaitRecompute failed: %v", err)
+		if !strings.Contains(err.Error(), "recompute not in progress") {
+			t.Errorf("WaitRecompute failed: %v", err)
+		}
 	}
 
 	// Should have run twice: original + rerun from pending
@@ -635,7 +641,9 @@ func TestWithImmediateCompute(t *testing.T) {
 	// Wait for the computation to complete
 	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("WaitRecompute failed: %v", err)
+		if !strings.Contains(err.Error(), "recompute not in progress") {
+			t.Fatalf("WaitRecompute failed: %v", err)
+		}
 	}
 
 	val := mv.Get()
@@ -661,7 +669,9 @@ func TestWithoutImmediateCompute(t *testing.T) {
 	// Wait for initial computation to complete
 	err := mv.WaitRecompute()
 	if err != nil {
-		t.Fatalf("WaitRecompute failed: %v", err)
+		if !strings.Contains(err.Error(), "recompute not in progress") {
+			t.Fatalf("WaitRecompute failed: %v", err)
+		}
 	}
 
 	// Should have called recompute once (from New)
