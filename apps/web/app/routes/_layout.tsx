@@ -50,7 +50,7 @@ const navigationGroups = [
   {
     label: "Orchestration",
     items: [
-      { title: "Systems", to: "/systems", icon: LayoutDashboard },
+      { title: "Projects", to: "/projects", icon: LayoutDashboard },
       { title: "Deployments", to: "/deployments", icon: Rocket },
       { title: "Runners", to: "/runners", icon: Cpu },
       { title: "Policies", to: "/policies", icon: ShieldCheck },
