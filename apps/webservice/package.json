@@ -105,8 +105,8 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "catalog:node22",
     "@types/randomcolor": "^0.5.9",
-    "@types/react": "19.2.0",
-    "@types/react-dom": "19.2.0",
+    "@types/react": "catalog:react19",
+    "@types/react-dom": "catalog:react19",
     "@types/react-grid-layout": "^1.3.5",
     "@types/swagger-ui-react": "^4.19.0",
     "@types/uuid": "^10.0.0",
@@ -122,9 +122,6 @@
   },
   "prettier": "@ctrlplane/prettier-config",
   "pnpm": {
-    "overrides": {
-      "@types/react": "19.1.16",
-      "@types/react-dom": "19.0.3"
-    }
+    "overrides": {}
   }
 }
