@@ -5,6 +5,7 @@ import {
   Pause,
   XCircle,
 } from "lucide-react";
+import { useSearchParams } from "react-router";
 
 import type { ReleaseTarget } from "./types";
 import { Badge } from "~/components/ui/badge";
@@ -68,7 +69,10 @@ export const VersionCard: React.FC<VersionCardProps> = ({
   isSelected = false,
   onSelect,
 }) => {
-  const hasActiveDeployments = currentReleaseTargets.length > 0;
+  const [searchParams] = useSearchParams();
+  const versionId = searchParams.get("version");
+  const hasActiveDeployments =
+    currentReleaseTargets.length > 0 || versionId === version.id;
 
   const currentEnvironments = new Set(
     currentReleaseTargets.map((rt) => rt.environment.name),

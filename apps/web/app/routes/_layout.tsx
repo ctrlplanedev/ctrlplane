@@ -43,7 +43,9 @@ import {
   SidebarProvider,
   useSidebar,
 } from "~/components/ui/sidebar";
+import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+import { api } from "~/trpc";
 
 // Navigation groups
 const navigationGroups = [
@@ -68,16 +70,20 @@ const navigationGroups = [
   },
 ];
 
-type UserNavProps = {
-  user: {
-    avatar: string;
-    name: string;
-    email: string;
-  };
-};
-
-const UserNav: React.FC<UserNavProps> = ({ user }) => {
+const UserNav: React.FC = () => {
   const { isMobile } = useSidebar();
+  const { data: viewer, isLoading } = api.user.viewer.useQuery();
+
+  if (isLoading || viewer == null) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <Skeleton className="h-8 rounded-full" />
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -88,12 +94,15 @@ const UserNav: React.FC<UserNavProps> = ({ user }) => {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage
+                  src={viewer.image ?? undefined}
+                  alt={viewer.name ?? undefined}
+                />
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{viewer.name}</span>
+                <span className="truncate text-xs">{viewer.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -107,12 +116,15 @@ const UserNav: React.FC<UserNavProps> = ({ user }) => {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage
+                    src={viewer.image ?? undefined}
+                    alt={viewer.name ?? undefined}
+                  />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">{viewer.name}</span>
+                  <span className="truncate text-xs">{viewer.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -212,13 +224,7 @@ export default function AppLayout() {
         </SidebarContent>
 
         <SidebarFooter>
-          <UserNav
-            user={{
-              avatar: "https://github.com/shadcn.png",
-              name: "John Doe",
-              email: "john.doe@example.com",
-            }}
-          />
+          <UserNav />
         </SidebarFooter>
       </Sidebar>
 

@@ -18,6 +18,7 @@ import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
+import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
 import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
@@ -32,6 +33,7 @@ export function meta() {
 export default function DeploymentDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedVersionId = searchParams.get("version");
+  const selectedEnvironmentId = searchParams.get("env");
 
   const _deploymentId = useParams().deploymentId;
 
@@ -46,10 +48,25 @@ export default function DeploymentDetail() {
         // Deselect if clicking same version
         setSearchParams({});
       } else {
+        // Only show one panel at a time
         setSearchParams({ version: versionId });
       }
     },
     [selectedVersionId, setSearchParams],
+  );
+
+  // Handle environment selection
+  const handleEnvironmentSelect = useCallback(
+    (environmentId: string) => {
+      if (selectedEnvironmentId === environmentId) {
+        // Deselect if clicking same environment
+        setSearchParams({});
+      } else {
+        // Only show one panel at a time
+        setSearchParams({ env: environmentId });
+      }
+    },
+    [selectedEnvironmentId, setSearchParams],
   );
 
   // Create ReactFlow nodes for environments (left to right flow)
@@ -130,19 +147,21 @@ export default function DeploymentDetail() {
           type: "environment",
           position: { x: 0, y: 0 },
           data: {
+            id: environment.id,
             name: environment.name,
             resourceCount: envReleaseTargets.length,
             jobs: envReleaseTargets.flatMap((rt) => rt.jobs),
             currentVersionsWithCounts,
             desiredVersionsWithCounts,
             blockedVersionsByVersionId,
+            onSelect: () => handleEnvironmentSelect(environment.id),
           },
         };
       }),
     ];
 
     return nodes;
-  }, [environments, deployment]);
+  }, [environments, deployment, handleEnvironmentSelect]);
 
   // Create edges showing deployment progression (left to right)
   const computedEdges: Edge[] = useMemo(() => {
@@ -247,11 +266,11 @@ export default function DeploymentDetail() {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-101px-207px-1rem)] min-h-0 flex-1">
+      <div className="flex h-[calc(100vh-101px-207px-1rem)] min-h-0 flex-1 overflow-clip">
         <ResizablePanelGroup direction="horizontal">
           {/* Main ReactFlow Panel */}
           <ResizablePanel
-            defaultSize={selectedVersionId ? 70 : 100}
+            defaultSize={selectedVersionId || selectedEnvironmentId ? 70 : 100}
             minSize={50}
           >
             <DeploymentFlow
@@ -260,21 +279,34 @@ export default function DeploymentDetail() {
             />
           </ResizablePanel>
 
-          {/* Version Actions Sidebar */}
+          {/* Version Actions Dialog */}
           {selectedVersionId && (
-            <>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-                <VersionActionsPanel
-                  version={
-                    deployment.versions.find((v) => v.id === selectedVersionId)!
-                  }
-                  environments={environments}
-                  releaseTargets={deployment.releaseTargets}
-                  onClose={() => setSearchParams({})}
-                />
-              </ResizablePanel>
-            </>
+            <VersionActionsPanel
+              version={
+                deployment.versions.find((v) => v.id === selectedVersionId)!
+              }
+              environments={environments}
+              releaseTargets={deployment.releaseTargets}
+              open={!!selectedVersionId}
+              onOpenChange={(open) => {
+                if (!open) setSearchParams({});
+              }}
+            />
+          )}
+
+          {/* Environment Actions Dialog */}
+          {selectedEnvironmentId && (
+            <EnvironmentActionsPanel
+              environment={
+                environments.find((e) => e.id === selectedEnvironmentId)!
+              }
+              versions={deployment.versions}
+              releaseTargets={deployment.releaseTargets}
+              open={!!selectedEnvironmentId}
+              onOpenChange={(open) => {
+                if (!open) setSearchParams({});
+              }}
+            />
           )}
         </ResizablePanelGroup>
       </div>

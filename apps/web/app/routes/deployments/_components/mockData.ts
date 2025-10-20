@@ -5,21 +5,25 @@ export const mockEnvironments: Environment[] = [
     id: "env1",
     name: "production",
     description: "Production environment",
-    policies: [],
+    policies: [
+      "Manual Approval Required",
+      "Change Window: 2am-4am UTC",
+      "Staging Deployment Required",
+    ],
     dependsOnEnvironmentIds: ["env2"],
   },
   {
     id: "env2",
     name: "staging",
     description: "Staging environment for testing",
-    policies: [],
+    policies: ["QA Approval", "Automated Tests Pass"],
     dependsOnEnvironmentIds: ["env3"],
   },
   {
     id: "env3",
-    name: "dev-pr-123",
+    name: "qa",
     description: "Development environment for PR #123",
-    policies: [],
+    policies: ["Build Success"],
     dependsOnEnvironmentIds: [],
   },
   {
@@ -833,10 +837,358 @@ export const mockDeploymentDetail: DeploymentDetail = {
         },
       ],
     },
+    // Additional production resources
+    {
+      environment: { id: "env1", name: "production" },
+      resource: {
+        id: "r10",
+        name: "web-prod-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://prod/web-prod-1",
+      },
+      version: {
+        currentId: "v1",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j10",
+          status: "successful",
+          createdAt: "3 minutes ago",
+          startedAt: "3 minutes ago",
+          completedAt: "2 minutes ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env1", name: "production" },
+      resource: {
+        id: "r11",
+        name: "worker-prod-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://prod/worker-prod-1",
+      },
+      version: {
+        currentId: "v1",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j11",
+          status: "successful",
+          createdAt: "4 minutes ago",
+          startedAt: "4 minutes ago",
+          completedAt: "3 minutes ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env1", name: "production" },
+      resource: {
+        id: "r12",
+        name: "cache-prod-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://prod/cache-prod-1",
+      },
+      version: {
+        currentId: "v2",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j12",
+          status: "pending",
+          createdAt: "30 seconds ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env1", name: "production" },
+      resource: {
+        id: "r13",
+        name: "queue-prod-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://prod/queue-prod-1",
+      },
+      version: {
+        currentId: "v3",
+        desiredId: "v1",
+        blockedVersions: [
+          {
+            versionId: "v1",
+            reason: "Change window restriction - allowed only 2am-4am UTC",
+          },
+        ],
+      },
+      jobs: [],
+    },
+    // Additional staging resources
+    {
+      environment: { id: "env2", name: "staging" },
+      resource: {
+        id: "r14",
+        name: "web-staging-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://staging/web-staging-1",
+      },
+      version: {
+        currentId: "v1",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j14",
+          status: "successful",
+          createdAt: "2 minutes ago",
+          startedAt: "2 minutes ago",
+          completedAt: "1 minute ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env2", name: "staging" },
+      resource: {
+        id: "r15",
+        name: "worker-staging-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://staging/worker-staging-1",
+      },
+      version: {
+        currentId: "v2",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j15",
+          status: "inProgress",
+          createdAt: "45 seconds ago",
+          startedAt: "30 seconds ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env2", name: "staging" },
+      resource: {
+        id: "r16",
+        name: "cache-staging-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://staging/cache-staging-1",
+      },
+      version: {
+        currentId: "v3",
+        desiredId: "v2",
+      },
+      jobs: [
+        {
+          id: "j16",
+          status: "failure",
+          createdAt: "5 minutes ago",
+          startedAt: "5 minutes ago",
+          completedAt: "4 minutes ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env2", name: "staging" },
+      resource: {
+        id: "r17",
+        name: "queue-staging-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://staging/queue-staging-1",
+      },
+      version: {
+        currentId: "v1",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j17",
+          status: "successful",
+          createdAt: "3 minutes ago",
+          startedAt: "3 minutes ago",
+          completedAt: "2 minutes ago",
+        },
+      ],
+    },
+    // Additional QA resources
+    {
+      environment: { id: "env3", name: "qa" },
+      resource: {
+        id: "r18",
+        name: "web-qa-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://qa/web-qa-1",
+      },
+      version: {
+        currentId: "v1",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j18",
+          status: "successful",
+          createdAt: "6 minutes ago",
+          startedAt: "6 minutes ago",
+          completedAt: "5 minutes ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env3", name: "qa" },
+      resource: {
+        id: "r19",
+        name: "worker-qa-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://qa/worker-qa-1",
+      },
+      version: {
+        currentId: "v2",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j19",
+          status: "inProgress",
+          createdAt: "1 minute ago",
+          startedAt: "45 seconds ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env3", name: "qa" },
+      resource: {
+        id: "r20",
+        name: "cache-qa-1",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://qa/cache-qa-1",
+      },
+      version: {
+        currentId: "v1",
+        desiredId: "v1",
+      },
+      jobs: [
+        {
+          id: "j20",
+          status: "successful",
+          createdAt: "7 minutes ago",
+          startedAt: "7 minutes ago",
+          completedAt: "6 minutes ago",
+        },
+      ],
+    },
+    // Additional dev-pr-456 resources
+    {
+      environment: { id: "env4", name: "dev-pr-456" },
+      resource: {
+        id: "r21",
+        name: "web-dev-pr-456",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://dev/web-dev-pr-456",
+      },
+      version: {
+        currentId: "v2",
+        desiredId: "v2",
+      },
+      jobs: [
+        {
+          id: "j21",
+          status: "successful",
+          createdAt: "12 minutes ago",
+          startedAt: "12 minutes ago",
+          completedAt: "11 minutes ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env4", name: "dev-pr-456" },
+      resource: {
+        id: "r22",
+        name: "worker-dev-pr-456",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://dev/worker-dev-pr-456",
+      },
+      version: {
+        currentId: "v2",
+        desiredId: "v2",
+      },
+      jobs: [
+        {
+          id: "j22",
+          status: "successful",
+          createdAt: "11 minutes ago",
+          startedAt: "11 minutes ago",
+          completedAt: "10 minutes ago",
+        },
+      ],
+    },
+    // Additional dev-pr-789 resources
+    {
+      environment: { id: "env5", name: "dev-pr-789" },
+      resource: {
+        id: "r23",
+        name: "web-dev-pr-789",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://dev/web-dev-pr-789",
+      },
+      version: {
+        currentId: "v3",
+        desiredId: "v2",
+      },
+      jobs: [
+        {
+          id: "j23",
+          status: "pending",
+          createdAt: "5 minutes ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env5", name: "dev-pr-789" },
+      resource: {
+        id: "r24",
+        name: "worker-dev-pr-789",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://dev/worker-dev-pr-789",
+      },
+      version: {
+        currentId: "v3",
+        desiredId: "v3",
+      },
+      jobs: [
+        {
+          id: "j24",
+          status: "successful",
+          createdAt: "9 minutes ago",
+          startedAt: "9 minutes ago",
+          completedAt: "8 minutes ago",
+        },
+      ],
+    },
+    {
+      environment: { id: "env5", name: "dev-pr-789" },
+      resource: {
+        id: "r25",
+        name: "cache-dev-pr-789",
+        kind: "kubernetes-deployment",
+        identifier: "k8s://dev/cache-dev-pr-789",
+      },
+      version: {
+        currentId: "v4",
+        desiredId: "v3",
+      },
+      jobs: [
+        {
+          id: "j25",
+          status: "inProgress",
+          createdAt: "2 minutes ago",
+          startedAt: "1 minute ago",
+        },
+      ],
+    },
   ],
   stats: {
     totalReleases: 48,
-    totalResources: 12,
+    totalResources: 25,
     deploymentsLast24h: 48,
     successRate: 96.5,
   },

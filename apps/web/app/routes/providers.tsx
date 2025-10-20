@@ -1,4 +1,5 @@
 import { useState } from "react";
+import _ from "lodash";
 import {
   Cloud,
   Database,
@@ -6,7 +7,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Settings,
   Trash2,
 } from "lucide-react";
 
@@ -22,7 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
@@ -240,6 +239,8 @@ export default function Providers() {
     return `${diffDays}d ago`;
   };
 
+  const groupByType = _.groupBy(filteredProviders, (m) => m.type);
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
@@ -271,146 +272,169 @@ export default function Providers() {
         </div>
       </header>
 
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="text-muted-foreground">Provider</TableHead>
-            <TableHead className="text-muted-foreground">Type</TableHead>
-            <TableHead className="text-muted-foreground">Resources</TableHead>
-            <TableHead className="text-muted-foreground">
-              Resource Kinds
-            </TableHead>
-            <TableHead className="text-muted-foreground">Status</TableHead>
-            <TableHead className="text-muted-foreground">Last Synced</TableHead>
-            <TableHead className="text-right text-muted-foreground">
-              Actions
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredProviders.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="py-12 text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="rounded-full bg-muted p-4">
-                    <Cloud className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium">No providers found</p>
-                    <p className="text-sm text-muted-foreground">
-                      {searchQuery
-                        ? "Try adjusting your search"
-                        : "Get started by adding your first provider"}
-                    </p>
-                  </div>
-                  {!searchQuery && (
-                    <Button className="mt-2">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Provider
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ) : (
-            filteredProviders.map((provider) => (
-              <TableRow key={provider.id} className="hover:bg-muted/30">
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                      {provider.type === "kubernetes" ? (
-                        <Database className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <Cloud className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-medium">{provider.name}</div>
-                      {provider.metadata &&
-                        Object.keys(provider.metadata).length > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            {Object.entries(provider.metadata)[0][0]}:{" "}
-                            {Object.entries(provider.metadata)[0][1]}
-                          </div>
-                        )}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="secondary"
-                    className={getProviderTypeColor(provider.type)}
-                  >
-                    {provider.type.toUpperCase()}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      {provider.resourceCount}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      resources
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {provider.kinds.slice(0, 3).map((kind) => (
-                      <Badge key={kind} variant="outline" className="text-xs">
-                        {kind}
-                      </Badge>
-                    ))}
-                    {provider.kinds.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{provider.kinds.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="secondary"
-                    className={getStatusColor(provider.status)}
-                  >
-                    {provider.status === "syncing" && (
-                      <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-                    )}
-                    {provider.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatRelativeTime(provider.lastSyncedAt)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Sync Now
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Configure
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+      <div className="flex flex-1 flex-col gap-4">
+        {filteredProviders.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="rounded-full bg-muted p-4">
+                <Cloud className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div className="text-center">
+                <p className="font-medium">No providers found</p>
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery
+                    ? "Try adjusting your search"
+                    : "Get started by adding your first provider"}
+                </p>
+              </div>
+              {!searchQuery && (
+                <Button className="mt-2">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Provider
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="text-muted-foreground">
+                  Provider
+                </TableHead>
+                <TableHead className="text-muted-foreground">
+                  Resources
+                </TableHead>
+                <TableHead className="text-muted-foreground">
+                  Resource Kinds
+                </TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">
+                  Last Synced
+                </TableHead>
+                <TableHead className="text-right text-muted-foreground">
+                  Actions
+                </TableHead>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {Object.entries(groupByType).map(([type, providers]) => (
+                <>
+                  <TableRow
+                    key={`header-${type}`}
+                    className="bg-muted/30 text-xs hover:bg-muted/30"
+                  >
+                    <TableCell colSpan={6} className="py-2">
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant="secondary"
+                          className={getProviderTypeColor(type as ProviderType)}
+                        >
+                          {type.toUpperCase()}
+                        </Badge>
+                        <span className="text-muted-foreground">
+                          {providers.length} provider
+                          {providers.length !== 1 ? "s" : ""}
+                        </span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground">
+                          {providers.reduce(
+                            (sum, p) => sum + p.resourceCount,
+                            0,
+                          )}{" "}
+                          resources
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {providers.map((provider) => (
+                    <TableRow key={provider.id} className="hover:bg-muted/30">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                            {provider.type === "kubernetes" ? (
+                              <Database className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                              <Cloud className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium">{provider.name}</div>
+                            {provider.metadata &&
+                              Object.keys(provider.metadata).length > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  {Object.entries(provider.metadata)[0][0]}:{" "}
+                                  {Object.entries(provider.metadata)[0][1]}
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">
+                            {provider.resourceCount}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            resources
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {provider.kinds.slice(0, 3).map((kind) => (
+                            <Badge
+                              key={kind}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {kind}
+                            </Badge>
+                          ))}
+                          {provider.kinds.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{provider.kinds.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={getStatusColor(provider.status)}
+                        >
+                          {provider.status === "syncing" && (
+                            <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                          )}
+                          {provider.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatRelativeTime(provider.lastSyncedAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </>
   );
 }

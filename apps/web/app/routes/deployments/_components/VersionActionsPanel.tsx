@@ -1,12 +1,17 @@
-import { CheckCircle, Info, X } from "lucide-react";
+import { AlertCircle, Check, CheckCircle, Shield, XCircle } from "lucide-react";
 
 import type { DeploymentVersion, Environment, ReleaseTarget } from "./types";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 
@@ -14,266 +19,197 @@ type VersionActionsPanelProps = {
   version: DeploymentVersion;
   environments: Environment[];
   releaseTargets: ReleaseTarget[];
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+type EnvironmentDeploymentStatus = {
+  env: Environment;
+  onVersion: number; // Number of release targets currently on this version
+  total: number; // Total release targets in environment
+  cannotDeployReasons: Array<{ reason: string; count: number }>; // Reasons why some can't deploy
+};
+
+const EnvironmentRow: React.FC<EnvironmentDeploymentStatus> = ({
+  env,
+  onVersion,
+  total,
+  cannotDeployReasons,
+}) => {
+  const isFullyDeployed = onVersion === total && total > 0;
+  const isPartiallyDeployed = onVersion > 0 && onVersion < total;
+  const isNotDeployed = onVersion === 0;
+  const hasBlockedResources = cannotDeployReasons.length > 0;
+
+  return (
+    <div className="rounded border p-2.5">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="text-sm font-medium">{env.name}</span>
+            {isFullyDeployed && (
+              <Badge className="border-green-500/20 bg-green-500/10 py-0 text-[10px] text-green-600">
+                <CheckCircle className="mr-0.5 h-2.5 w-2.5" />
+                Fully Deployed
+              </Badge>
+            )}
+          </div>
+
+          <div className="mb-2 flex items-baseline gap-1.5">
+            <span className="text-lg font-semibold">
+              {onVersion}
+              <span className="text-muted-foreground">/{total}</span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              resource{total !== 1 ? "s" : ""} on this version
+            </span>
+          </div>
+
+          {/* Status Messages */}
+          <div className="space-y-1">
+            {isFullyDeployed && (
+              <div className="flex items-center gap-1.5 text-xs text-green-600">
+                <Check className="h-3 w-3" />
+                All resources deployed successfully
+              </div>
+            )}
+
+            {isPartiallyDeployed && !hasBlockedResources && (
+              <div className="flex items-center gap-1.5 text-xs text-blue-600">
+                <AlertCircle className="h-3 w-3" />
+                Can deploy to {total - onVersion} more resource
+                {total - onVersion !== 1 ? "s" : ""}
+              </div>
+            )}
+
+            {isNotDeployed && !hasBlockedResources && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <AlertCircle className="h-3 w-3" />
+                Not yet deployed to this environment
+              </div>
+            )}
+
+            {hasBlockedResources && (
+              <div className="space-y-1">
+                {cannotDeployReasons.map((reason, idx) => (
+                  <Tooltip key={idx}>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1.5 text-xs text-amber-600">
+                        <Shield className="h-3 w-3" />
+                        <span>
+                          {reason.count} resource{reason.count !== 1 ? "s" : ""}{" "}
+                          blocked: {reason.reason}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-sm">
+                      <div className="text-[11px]">
+                        {reason.reason} - preventing deployment to{" "}
+                        {reason.count} resource{reason.count !== 1 ? "s" : ""}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Status Icon */}
+        <div className="ml-2 flex items-center">
+          {isFullyDeployed ? (
+            <CheckCircle className="h-5 w-5 text-green-600" />
+          ) : hasBlockedResources && onVersion === 0 ? (
+            <XCircle className="h-5 w-5 text-amber-600" />
+          ) : (
+            <AlertCircle className="h-5 w-5 text-blue-600" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export const VersionActionsPanel: React.FC<VersionActionsPanelProps> = ({
   version,
   environments,
   releaseTargets,
-  onClose,
+  open,
+  onOpenChange,
 }) => {
-  // Calculate deployment status per environment
-  const envStatus = environments.map((env) => {
-    const rts = releaseTargets.filter((rt) => rt.environment.id === env.id);
-    const currentCount = rts.filter(
-      (rt) => rt.version.currentId === version.id,
-    ).length;
-    const desiredCount = rts.filter(
-      (rt) => rt.version.desiredId === version.id,
-    ).length;
-
-    // Get blocked release targets with their reasons
-    const blockedReleaseTargets = rts.filter((rt) =>
-      rt.version.blockedVersions?.some((bv) => bv.versionId === version.id),
-    );
-    const blockedCount = blockedReleaseTargets.length;
-
-    // Collect all unique block reasons for this environment
-    const blockReasons = new Map<string, Set<string>>();
-    blockedReleaseTargets.forEach((rt) => {
-      const blocked = rt.version.blockedVersions?.find(
-        (bv) => bv.versionId === version.id,
+  // Calculate deployment status for each environment
+  const environmentStatuses: EnvironmentDeploymentStatus[] = environments.map(
+    (env) => {
+      const envReleaseTargets = releaseTargets.filter(
+        (rt) => rt.environment.id === env.id,
       );
-      if (blocked) {
-        if (!blockReasons.has(blocked.reason)) {
-          blockReasons.set(blocked.reason, new Set());
+      const total = envReleaseTargets.length;
+
+      // Count how many are currently on this version
+      const onVersion = envReleaseTargets.filter(
+        (rt) => rt.version.currentId === version.id,
+      ).length;
+
+      // Find resources that cannot deploy this version and why
+      const blockReasonsMap = new Map<string, number>();
+      envReleaseTargets.forEach((rt) => {
+        const blockForVersion = rt.version.blockedVersions?.find(
+          (bv) => bv.versionId === version.id,
+        );
+        if (blockForVersion) {
+          const currentCount = blockReasonsMap.get(blockForVersion.reason) ?? 0;
+          blockReasonsMap.set(blockForVersion.reason, currentCount + 1);
         }
-        blockReasons.get(blocked.reason)?.add(rt.resource.name);
-      }
-    });
+      });
 
-    const total = rts.length;
-
-    return {
-      env,
-      currentCount,
-      desiredCount,
-      blockedCount,
-      total,
-      blockReasons: Array.from(blockReasons.entries()).map(
-        ([reason, resources]) => ({
+      const cannotDeployReasons = Array.from(blockReasonsMap.entries()).map(
+        ([reason, count]) => ({
           reason,
-          resources: Array.from(resources),
+          count,
         }),
-      ),
-    };
-  });
+      );
 
-  const totalCurrent = envStatus.reduce((sum, e) => sum + e.currentCount, 0);
-  const totalDesired = envStatus.reduce((sum, e) => sum + e.desiredCount, 0);
-  const totalBlocked = envStatus.reduce((sum, e) => sum + e.blockedCount, 0);
+      return {
+        env,
+        onVersion,
+        total,
+        cannotDeployReasons,
+      };
+    },
+  );
+
+  // Calculate summary stats
+  const totalResources = environmentStatuses.reduce(
+    (sum, e) => sum + e.total,
+    0,
+  );
+  const totalOnVersion = environmentStatuses.reduce(
+    (sum, e) => sum + e.onVersion,
+    0,
+  );
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto border-l bg-background">
-      <div className="flex items-center justify-between border-b p-4">
-        <div className="space-y-1">
-          <div className="font-mono text-lg font-semibold">{version.tag}</div>
-          <div className="text-xs text-muted-foreground">
-            Where is this version deployed?
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
+        <DialogHeader className="border-b p-4">
+          <DialogTitle className="font-mono text-base">
+            {version.tag}
+          </DialogTitle>
+          <DialogDescription className="text-[10px]">
+            Deployed to {totalOnVersion} of {totalResources} total resources
+            across all environments
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Scrollable Content */}
+        <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-4 pb-4">
+          <div className="space-y-2.5 pt-4">
+            {environmentStatuses.map((status) => (
+              <EnvironmentRow key={status.env.id} {...status} />
+            ))}
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="h-8 w-8"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Scrollable Content */}
-      <div className="flex-1">
-        <div className="space-y-6 p-4">
-          {/* Overall Summary */}
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Overall Status</div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <span className="text-muted-foreground">
-                  Currently running on
-                </span>
-                <span className="font-semibold">{totalCurrent} resources</span>
-              </div>
-              {totalDesired > 0 && (
-                <div className="flex items-center justify-between rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
-                  <span className="text-blue-600">Should be running on</span>
-                  <span className="font-semibold text-blue-600">
-                    {totalDesired} resources
-                  </span>
-                </div>
-              )}
-              {totalBlocked > 0 && (
-                <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-                  <span className="text-amber-600">Blocked by policies</span>
-                  <span className="font-semibold text-amber-600">
-                    {totalBlocked} resources
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Per-environment breakdown */}
-          <div className="space-y-3">
-            <div className="text-sm font-semibold">By Environment</div>
-            {envStatus
-              .filter(
-                (e) =>
-                  e.currentCount > 0 ||
-                  e.desiredCount > 0 ||
-                  e.blockedCount > 0,
-              ) // Only show relevant envs
-              .map(
-                ({
-                  env,
-                  currentCount,
-                  desiredCount,
-                  blockedCount,
-                  total,
-                  blockReasons,
-                }) => {
-                  const isFullyDeployed =
-                    currentCount === total &&
-                    desiredCount === 0 &&
-                    blockedCount === 0;
-                  const canDeploy =
-                    desiredCount > currentCount && blockedCount === 0;
-                  const hasBlocks = blockedCount > 0;
-
-                  return (
-                    <div
-                      key={env.id}
-                      className="space-y-3 rounded-lg border p-3"
-                    >
-                      {/* Environment name and status */}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="text-sm font-medium">{env.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {total} total resources
-                          </div>
-                        </div>
-                        {isFullyDeployed && (
-                          <Badge className="border-green-500/20 bg-green-500/10 text-green-600">
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            Complete
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Deployment breakdown */}
-                      <div className="space-y-2">
-                        {currentCount > 0 && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              ✓ Currently running
-                            </span>
-                            <span className="font-medium">
-                              {currentCount} resources
-                            </span>
-                          </div>
-                        )}
-
-                        {desiredCount > 0 && desiredCount !== currentCount && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-blue-600">
-                              → Should be running on
-                            </span>
-                            <span className="font-medium text-blue-600">
-                              {desiredCount} resources
-                            </span>
-                          </div>
-                        )}
-
-                        {hasBlocks && (
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-1">
-                              <span className="text-amber-600">
-                                🛡️ Blocked by policies
-                              </span>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-3.5 w-3.5 cursor-help text-amber-600" />
-                                  </TooltipTrigger>
-                                  <TooltipContent
-                                    side="left"
-                                    className="max-w-sm"
-                                  >
-                                    <div className="space-y-2 text-xs">
-                                      <div className="font-semibold">
-                                        Policy Blocks:
-                                      </div>
-                                      {blockReasons.map((br, i) => (
-                                        <div key={i} className="space-y-1">
-                                          <div className="font-medium text-amber-600">
-                                            {br.reason}
-                                          </div>
-                                          <div className="text-muted-foreground">
-                                            Affects: {br.resources.join(", ")}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                            <span className="font-medium text-amber-600">
-                              {blockedCount} resources
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action */}
-                      {canDeploy && (
-                        <div className="border-t pt-2">
-                          <Button size="sm" className="w-full">
-                            Deploy to {desiredCount - currentCount} more{" "}
-                            {desiredCount - currentCount === 1
-                              ? "resource"
-                              : "resources"}
-                          </Button>
-                        </div>
-                      )}
-
-                      {hasBlocks && (
-                        <div className="border-t pt-2 text-xs text-muted-foreground">
-                          Cannot deploy due to policy restrictions
-                        </div>
-                      )}
-                    </div>
-                  );
-                },
-              )}
-
-            {/* No deployments message */}
-            {envStatus.every(
-              (e) =>
-                e.currentCount === 0 &&
-                e.desiredCount === 0 &&
-                e.blockedCount === 0,
-            ) && (
-              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                This version is not deployed to any environment
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

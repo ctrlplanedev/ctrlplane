@@ -9,6 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@ctrlplane/api": "workspace:*",
     "@ctrlplane/workspace-engine-sdk": "workspace:*",
     "@dagrejs/dagre": "^1.1.5",
     "@hookform/resolvers": "catalog:",
@@ -34,6 +35,9 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-router/node": "^7.9.2",
     "@react-router/serve": "^7.9.2",
+    "@tanstack/react-query": "^5.81.5",
+    "@trpc/client": "11.0.0-rc.364",
+    "@trpc/react-query": "11.0.0-rc.364",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

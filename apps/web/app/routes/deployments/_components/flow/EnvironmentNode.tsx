@@ -39,6 +39,7 @@ type EnvironmentNodeData = {
   currentVersionsWithCounts: Array<{ tag: string; count: number }>;
   desiredVersionsWithCounts: Array<{ tag: string; count: number }>;
   blockedVersionsByVersionId?: Record<string, Array<{ reason: string }>>; // All blocked versions with reasons
+  onSelect?: () => void;
 };
 
 export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
@@ -49,6 +50,7 @@ export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
     currentVersionsWithCounts = [],
     desiredVersionsWithCounts = [],
     blockedVersionsByVersionId = {},
+    onSelect,
   } = data;
 
   // Get selected version from URL params
@@ -80,7 +82,10 @@ export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
     selectedVersionId && blockedVersionsForSelected.length > 0;
 
   return (
-    <div className="min-w-[200px] rounded-lg border-2 border-primary/30 bg-card p-3 shadow-lg">
+    <div
+      className="min-w-[200px] cursor-pointer rounded-lg border-2 border-primary/30 bg-card p-3 shadow-lg transition-all hover:border-primary/50 hover:shadow-xl"
+      onClick={onSelect}
+    >
       {/* Target Handle */}
       <Handle
         type="target"
