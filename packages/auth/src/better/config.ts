@@ -34,4 +34,5 @@ export const auth = betterAuth({
       clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
     },
   },
+  advanced: { generateId: false },
 });

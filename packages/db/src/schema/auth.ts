@@ -89,7 +89,7 @@ export const accountRelations = relations(account, ({ one }) => ({
 }));
 
 export const session = pgTable("session", {
-  id: text("id").primaryKey(),
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
   token: text("session_token").notNull().unique(),
   userId: uuid("user_id")
     .notNull()
@@ -110,7 +110,7 @@ export const sessionRelations = relations(session, ({ one }) => ({
 }));
 
 export const verification = pgTable("verification", {
-  id: text("id").primaryKey(),
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),

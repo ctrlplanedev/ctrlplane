@@ -1,5 +1,5 @@
 {
-  "id": "e69a81a9-9da9-4ff6-821b-e599787cad2b",
+  "id": "f8dafff6-e60f-4f0d-81e3-a3cd24b40245",
   "prevId": "d545bdf2-a6b7-4355-8e01-2dc0a7e822be",
   "version": "7",
   "dialect": "postgresql",
@@ -114,9 +114,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "session_token": {
           "name": "session_token",
@@ -371,9 +372,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "identifier": {
           "name": "identifier",
