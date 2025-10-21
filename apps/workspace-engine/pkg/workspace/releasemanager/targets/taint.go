@@ -90,15 +90,6 @@ func (tp *TaintProcessor) processChanges(changeSet *changeset.ChangeSet[any]) {
 			tp.taintByResourceId(entity.Id)
 
 		case *oapi.Job:
-			oapiJob, ok := oapi.ConvertToOapiJob(entity)
-			if !ok {
-				continue
-			}
-
-			if oapiJob.Status != oapi.Successful {
-				continue
-			}
-
 			rel, ok := tp.store.Releases.Get(entity.ReleaseId)
 			if !ok {
 				continue

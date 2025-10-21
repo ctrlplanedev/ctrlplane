@@ -101,17 +101,21 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	// Act: Try to deploy same release again
 	result, err := evaluator.Evaluate(ctx, previousRelease)
 
-	// Assert: Should ALLOW retry because failed jobs are ignored by validJobStatuses filter
+	// Assert: Should DENY retry because failed jobs are now considered (validJobStatuses filter removed)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Allowed {
-		t.Errorf("expected allowed for retry after failure (failed jobs are ignored), got denied: %s", result.Message)
+	if result.Allowed {
+		t.Errorf("expected denied for retry after failure (failed jobs are now tracked), got allowed: %s", result.Message)
 	}
 
-	if result.Message != "No previous deployment found" {
-		t.Errorf("expected 'No previous deployment found' since failed jobs are filtered out, got '%s'", result.Message)
+	if result.Details["existing_job_id"] != "job-1" {
+		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
+	}
+
+	if result.Details["job_status"] != string(oapi.Failure) {
+		t.Errorf("expected job_status=failure, got %v", result.Details["job_status"])
 	}
 }
 
@@ -290,7 +294,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	}
 }
 
-func TestSkipDeployedEvaluator_CancelledJobAllowsRedeploy(t *testing.T) {
+func TestSkipDeployedEvaluator_CancelledJobPreventsRedeploy(t *testing.T) {
 	// Setup: Previous job was cancelled
 	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
@@ -327,17 +331,21 @@ func TestSkipDeployedEvaluator_CancelledJobAllowsRedeploy(t *testing.T) {
 	// Act: Try to deploy same release again
 	result, err := evaluator.Evaluate(ctx, release)
 
-	// Assert: Should ALLOW retry because cancelled jobs are ignored by validJobStatuses filter
+	// Assert: Should DENY retry because cancelled jobs are now considered (validJobStatuses filter removed)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Allowed {
-		t.Errorf("expected allowed for retry after cancellation (cancelled jobs are ignored), got denied: %s", result.Message)
+	if result.Allowed {
+		t.Errorf("expected denied for retry after cancellation (cancelled jobs are now tracked), got allowed: %s", result.Message)
 	}
 
-	if result.Message != "No previous deployment found" {
-		t.Errorf("expected 'No previous deployment found' since cancelled jobs are filtered out, got '%s'", result.Message)
+	if result.Details["existing_job_id"] != "job-1" {
+		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
+	}
+
+	if result.Details["job_status"] != string(oapi.Cancelled) {
+		t.Errorf("expected job_status=cancelled, got %v", result.Details["job_status"])
 	}
 }
 
@@ -630,8 +638,8 @@ func TestSkipDeployedEvaluator_PendingJobPreventsRedeploy(t *testing.T) {
 	}
 }
 
-func TestSkipDeployedEvaluator_IgnoresInvalidJobStatuses(t *testing.T) {
-	// Test that jobs with invalid statuses (failed, cancelled, etc.) are ignored
+func TestSkipDeployedEvaluator_ConsidersAllJobStatuses(t *testing.T) {
+	// Test that jobs with all statuses (failed, cancelled, skipped, etc.) are now considered
 	st := setupStoreWithResource(t, "resource-1")
 	ctx := context.Background()
 
@@ -664,7 +672,7 @@ func TestSkipDeployedEvaluator_IgnoresInvalidJobStatuses(t *testing.T) {
 		t.Fatalf("Failed to upsert new release: %v", err)
 	}
 
-	// Create jobs with various invalid statuses
+	// Create jobs with various statuses - the most recent is skipped
 	completedAt := time.Now()
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-failed",
@@ -686,7 +694,7 @@ func TestSkipDeployedEvaluator_IgnoresInvalidJobStatuses(t *testing.T) {
 		Id:          "job-skipped",
 		ReleaseId:   oldRelease.ID(),
 		Status:      oapi.Skipped,
-		CreatedAt:   time.Now().Add(-1 * time.Hour),
+		CreatedAt:   time.Now().Add(-1 * time.Hour), // Most recent
 		CompletedAt: &completedAt,
 	})
 
@@ -695,16 +703,91 @@ func TestSkipDeployedEvaluator_IgnoresInvalidJobStatuses(t *testing.T) {
 	// Act: Try to deploy new release
 	result, err := evaluator.Evaluate(ctx, newRelease)
 
-	// Assert: Should ALLOW because all previous jobs have invalid statuses and are ignored
+	// Assert: Should ALLOW because it's a different release, but should recognize the previous job
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if !result.Allowed {
-		t.Errorf("expected allowed when only invalid status jobs exist, got denied: %s", result.Message)
+		t.Errorf("expected allowed for different release, got denied: %s", result.Message)
 	}
 
-	if result.Message != "No previous deployment found" {
-		t.Errorf("expected 'No previous deployment found' since invalid jobs are filtered out, got '%s'", result.Message)
+	// The most recent job should be recognized (job-skipped with oldRelease)
+	if result.Details["previous_release_id"] != oldRelease.ID() {
+		t.Errorf("expected previous_release_id=%s (from most recent job), got %v", oldRelease.ID(), result.Details["previous_release_id"])
+	}
+}
+
+func TestSkipDeployedEvaluator_AllJobStatusesPreventRedeployOfSameRelease(t *testing.T) {
+	// Test that ANY job status prevents re-deploying the same release
+	ctx := context.Background()
+
+	statuses := []oapi.JobStatus{
+		oapi.Pending,
+		oapi.InProgress,
+		oapi.Successful,
+		oapi.Failure,
+		oapi.Cancelled,
+		oapi.Skipped,
+		oapi.ActionRequired,
+		oapi.ExternalRunNotFound,
+		oapi.InvalidIntegration,
+		oapi.InvalidJobAgent,
+	}
+
+	for _, status := range statuses {
+		t.Run(string(status), func(t *testing.T) {
+			st := setupStoreWithResource(t, "resource-1")
+
+			releaseTarget := &oapi.ReleaseTarget{
+				DeploymentId:  "deployment-1",
+				EnvironmentId: "env-1",
+				ResourceId:    "resource-1",
+			}
+
+			release := &oapi.Release{
+				ReleaseTarget: *releaseTarget,
+				Version: oapi.DeploymentVersion{
+					Id:  "version-1",
+					Tag: "v1.0.0",
+				},
+			}
+
+			if err := st.Releases.Upsert(ctx, release); err != nil {
+				t.Fatalf("Failed to upsert release: %v", err)
+			}
+
+			// Create job with the given status
+			completedAt := time.Now()
+			st.Jobs.Upsert(ctx, &oapi.Job{
+				Id:          "job-1",
+				ReleaseId:   release.ID(),
+				Status:      status,
+				CreatedAt:   time.Now().Add(-1 * time.Hour),
+				CompletedAt: &completedAt,
+			})
+
+			evaluator := NewSkipDeployedEvaluator(st)
+
+			// Act: Try to deploy the same release again
+			result, err := evaluator.Evaluate(ctx, release)
+
+			// Assert: Should DENY regardless of job status
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if result.Allowed {
+				t.Errorf("expected denied for retry with status %s, got allowed: %s", status, result.Message)
+			}
+
+			if result.Details["existing_job_id"] != "job-1" {
+				t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
+			}
+
+			if result.Details["job_status"] != string(status) {
+				t.Errorf("expected job_status=%s, got %v", status, result.Details["job_status"])
+			}
+		})
 	}
 }
