@@ -38,6 +38,7 @@
     "@ctrlplane/validators": "workspace:*",
     "@node-rs/bcrypt": "^1.10.0",
     "@t3-oss/env-nextjs": "catalog:",
+    "better-auth": "^1.3.28",
     "lodash": "catalog:",
     "next": "catalog:",
     "next-auth": "catalog:",

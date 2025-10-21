@@ -1,6 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   integer,
   pgEnum,
   pgTable,
@@ -28,7 +29,7 @@ export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("emailVerified", { withTimezone: true }),
+  emailVerified: boolean("email_verified").notNull().default(false),
   image: varchar("image", { length: 255 }),
   activeWorkspaceId: uuid("active_workspace_id")
     .references(() => workspace.id, { onDelete: "set null" })
@@ -60,22 +61,19 @@ export const account = pgTable(
     userId: uuid("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    type: varchar("type", { length: 255 })
-      .$type<"email" | "oauth" | "oidc" | "webauthn">()
-      .notNull(),
-    provider: varchar("provider", { length: 255 }).notNull(),
-    providerAccountId: varchar("providerAccountId", { length: 255 }).notNull(),
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: varchar("token_type", { length: 255 }),
+    providerId: varchar("provider", { length: 255 }).notNull(),
+    accountId: varchar("providerAccountId", { length: 255 }).notNull(),
+    refreshToken: text("refresh_token"),
+    accessToken: text("access_token"),
+    accessTokenExpiresAt: integer("expires_at"),
     scope: varchar("scope", { length: 255 }),
-    id_token: text("id_token"),
-    session_state: text("session_state"),
+    idToken: text("id_token"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (account) => ({
     compoundKey: primaryKey({
-      columns: [account.provider, account.providerAccountId],
+      columns: [account.providerId, account.accountId],
     }),
   }),
 );
@@ -85,11 +83,13 @@ export const accountRelations = relations(account, ({ one }) => ({
 }));
 
 export const session = pgTable("session", {
-  sessionToken: text("sessionToken").notNull().primaryKey(),
+  token: text("sessionToken").notNull().primaryKey(),
   userId: uuid("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
 
 export const sessionRelations = relations(session, ({ one }) => ({

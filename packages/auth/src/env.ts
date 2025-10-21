@@ -4,6 +4,8 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
+    BASE_URL: z.string().url().default("http://localhost:3000"),
+
     AUTH_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string().min(1)

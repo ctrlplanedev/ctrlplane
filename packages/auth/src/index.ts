@@ -5,6 +5,8 @@ import { authConfig } from "./config.js";
 export * from "./config.js";
 export type { Session } from "next-auth";
 
+export * from "./better/index.js";
+
 const {
   handlers: { GET, POST },
   auth,
