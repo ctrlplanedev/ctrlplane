@@ -6,8 +6,12 @@ import * as schema from "@ctrlplane/db/schema";
 
 import { env } from "../env.js";
 
-export const isGoogleAuthEnabled = true;
-// env.AUTH_GOOGLE_CLIENT_ID != null && env.AUTH_GOOGLE_CLIENT_ID !== "";
+export const isGoogleAuthEnabled =
+  env.AUTH_GOOGLE_CLIENT_ID != null &&
+  env.AUTH_GOOGLE_CLIENT_ID !== "" &&
+  env.AUTH_GOOGLE_CLIENT_SECRET != null &&
+  env.AUTH_GOOGLE_CLIENT_SECRET !== "";
+
 export const isOIDCAuthEnabled = false;
 // env.AUTH_OIDC_CLIENT_ID != null && env.AUTH_OIDC_ISSUER !== "";
 export const isCredentialsAuthEnabled = false;
@@ -29,9 +33,8 @@ export const auth = betterAuth({
   secret: env.AUTH_SECRET,
   socialProviders: {
     google: {
-      enabled: true,
       clientId: env.AUTH_GOOGLE_CLIENT_ID ?? "",
-      clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
+      clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET ?? "",
     },
   },
   advanced: { generateId: false },
