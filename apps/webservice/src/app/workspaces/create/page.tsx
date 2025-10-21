@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IconCheck } from "@tabler/icons-react";
-import { signOut, useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import slugify from "slugify";
 import { z } from "zod";
 
+import { authClient, signOut } from "@ctrlplane/auth";
 import { workspaceSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
@@ -36,7 +36,7 @@ const workspaceForm = z.object(workspaceSchema.shape);
 type WorkspaceFormValues = z.infer<typeof workspaceForm>;
 
 export default function WorkspaceCreate() {
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const create = api.workspace.create.useMutation();
   const router = useRouter();
 

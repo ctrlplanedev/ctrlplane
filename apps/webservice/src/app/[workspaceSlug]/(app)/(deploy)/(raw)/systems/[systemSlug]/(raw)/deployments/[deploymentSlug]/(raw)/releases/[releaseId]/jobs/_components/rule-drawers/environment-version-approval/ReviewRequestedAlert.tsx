@@ -2,8 +2,8 @@
 
 import { IconAlertTriangle } from "@tabler/icons-react";
 import _ from "lodash";
-import { useSession } from "next-auth/react";
 
+import { authClient } from "@ctrlplane/auth";
 import * as schema from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 
@@ -58,11 +58,11 @@ export const ReviewRequestedAlert: React.FC<{
   approvalState: ApprovalState;
 }> = ({ approvalState }) => {
   const { environment, version } = approvalState;
-  const session = useSession();
+  const { data: session } = authClient.useSession();
   const utils = api.useUtils();
-  if (session.status !== "authenticated") return null;
+  if (session == null) return null;
 
-  const { user } = session.data;
+  const { user } = session;
   const isReviewRequired = isUserReviewRequired(approvalState, user.id);
   if (!isReviewRequired) return null;
 

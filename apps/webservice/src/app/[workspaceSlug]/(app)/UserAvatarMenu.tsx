@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { IconLogout, IconSettings, IconUser } from "@tabler/icons-react";
-import { signOut } from "next-auth/react";
 
+import { signOut } from "@ctrlplane/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import {
   DropdownMenu,
@@ -30,7 +30,13 @@ export const UserAvatarMenu = ({
   viewer,
 }: UserAvatarMenuProps) => {
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/login" });
+    await signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          window.location.href = "/login";
+        },
+      },
+    });
   };
 
   const profileUrl = urls.workspace(workspaceSlug).accountSettings().profile();

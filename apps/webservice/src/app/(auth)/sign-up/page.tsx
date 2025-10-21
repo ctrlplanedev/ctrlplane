@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { IconExternalLink } from "@tabler/icons-react";
 
-import { auth, isCredentialsAuthEnabled } from "@ctrlplane/auth";
+import { auth, isCredentialsAuthEnabled } from "@ctrlplane/auth/server";
 import { Button } from "@ctrlplane/ui/button";
 
 import { SignUpCard } from "./SignUpCard";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export default async function SignUpPage() {
   if (!isCredentialsAuthEnabled) redirect("/login");
 
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session != null) redirect("/");
 
   return (

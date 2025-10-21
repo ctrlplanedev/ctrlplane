@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -9,7 +10,7 @@ import {
   isCredentialsAuthEnabled,
   isGoogleAuthEnabled,
   isOIDCAuthEnabled,
-} from "@ctrlplane/auth";
+} from "@ctrlplane/auth/server";
 import { Button } from "@ctrlplane/ui/button";
 
 import { LoginCard } from "./LoginCard";
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LoginPage() {
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session != null) redirect("/");
 
   return (

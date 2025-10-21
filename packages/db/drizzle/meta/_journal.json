@@ -911,6 +911,13 @@
       "when": 1752777426907,
       "tag": "0129_free_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "7",
+      "when": 1761081009919,
+      "tag": "0130_striped_komodo",
+      "breakpoints": true
     }
   ]
 }

@@ -8,8 +8,8 @@ import type {
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconAt, IconX } from "@tabler/icons-react";
-import { useSession } from "next-auth/react";
 
+import { authClient } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -113,10 +113,10 @@ export const WorkspaceDomainMatching: React.FC<{
   roles: Role[];
   domainMatching: WorkspaceEmailDomainMatching[];
 }> = ({ roles, domainMatching, workspace }) => {
-  const viewer = useSession();
+  const { data: session } = authClient.useSession();
   const remove = api.workspace.emailDomainMatching.remove.useMutation();
   const router = useRouter();
-  const currentEmail = viewer.data?.user.email;
+  const currentEmail = session?.user.email;
   return (
     <div>
       <div className="flex items-center">

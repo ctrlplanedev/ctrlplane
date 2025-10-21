@@ -9,12 +9,10 @@ import type { Viewport } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
-import { auth } from "@ctrlplane/auth";
 import { cn } from "@ctrlplane/ui";
 import { Toaster } from "@ctrlplane/ui/toast";
 
 import { TRPCReactProvider } from "~/trpc/react";
-import SessionProvider from "./SessionProvider";
 
 export const metadata = {
   title: { default: "Ctrlplane" },
@@ -28,7 +26,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <body
@@ -38,9 +35,7 @@ export default async function RootLayout({
           GeistMono.variable,
         )}
       >
-        <SessionProvider session={session}>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-        </SessionProvider>
+        <TRPCReactProvider>{children}</TRPCReactProvider>
         <Toaster />
       </body>
     </html>

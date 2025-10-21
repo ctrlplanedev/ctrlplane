@@ -10,9 +10,9 @@ import {
   IconLockAccess,
   IconMail,
 } from "@tabler/icons-react";
-import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
 
+import { signIn as betterAuthSignIn } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Card,
@@ -35,6 +35,9 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Separator } from "@ctrlplane/ui/separator";
 import * as schema from "@ctrlplane/validators/auth";
+
+const signInGoogle = async () =>
+  betterAuthSignIn.social({ provider: "google" });
 
 export const LoginCard: React.FC<{
   isCredentialsAuthEnabled: boolean;
@@ -69,15 +72,14 @@ export const LoginCard: React.FC<{
     setLoading(true);
 
     try {
-      await signIn("credentials", {
-        ...data,
-        redirect: false,
-      }).then((response) => {
-        if (response?.error) throw new Error(response.error);
-        const redirectUrl = acceptToken ? `/join/${acceptToken}` : "/";
-        router.push(redirectUrl);
+      await betterAuthSignIn.email({
+        email: data.email,
+        password: data.password,
+        callbackURL: acceptToken ? `/join/${acceptToken}` : "/",
       });
-    } catch {
+      const redirectUrl = acceptToken ? `/join/${acceptToken}` : "/";
+      router.push(redirectUrl);
+    } catch (error) {
       form.setError("root", {
         message: "Sign in failed. Please check your credentials and try again.",
       });
@@ -191,7 +193,7 @@ export const LoginCard: React.FC<{
           <div className="space-y-3">
             {isGoogleEnabled && (
               <Button
-                onClick={() => signIn("google")}
+                onClick={signInGoogle}
                 variant="outline"
                 className="h-10 w-full gap-2 border-border/50 bg-white text-neutral-900 hover:bg-neutral-50 hover:text-neutral-900"
               >
@@ -202,7 +204,7 @@ export const LoginCard: React.FC<{
 
             {isOidcEnabled && (
               <Button
-                onClick={() => signIn("oidc")}
+                onClick={() => betterAuthSignIn.social({ provider: "oidc" })}
                 variant="outline"
                 className="h-10 w-full gap-2 border-border/50 bg-background/50 text-foreground backdrop-blur-sm hover:bg-background/70 hover:text-foreground"
               >

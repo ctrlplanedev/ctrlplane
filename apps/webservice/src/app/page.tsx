@@ -1,11 +1,12 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth } from "@ctrlplane/auth";
+import { auth } from "@ctrlplane/auth/server";
 
 import { api } from "~/trpc/server";
 
 export default async function SystemPage() {
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session == null) redirect("/login");
   const workspaces = await api.workspace.list();
   if (workspaces.length === 0) redirect("/workspaces/create");

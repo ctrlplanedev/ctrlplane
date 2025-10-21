@@ -1,10 +1,9 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
-  integer,
+  boolean,
   pgEnum,
   pgTable,
-  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -28,7 +27,7 @@ export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("emailVerified", { withTimezone: true }),
+  emailVerified: boolean("email_verified").notNull().default(false),
   image: varchar("image", { length: 255 }),
   activeWorkspaceId: uuid("active_workspace_id")
     .references(() => workspace.id, { onDelete: "set null" })
@@ -40,6 +39,10 @@ export const user = pgTable("user", {
     .notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
 
@@ -54,47 +57,69 @@ export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
 }));
 
-export const account = pgTable(
-  "account",
-  {
-    userId: uuid("userId")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    type: varchar("type", { length: 255 })
-      .$type<"email" | "oauth" | "oidc" | "webauthn">()
-      .notNull(),
-    provider: varchar("provider", { length: 255 }).notNull(),
-    providerAccountId: varchar("providerAccountId", { length: 255 }).notNull(),
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: varchar("token_type", { length: 255 }),
-    scope: varchar("scope", { length: 255 }),
-    id_token: text("id_token"),
-    session_state: text("session_state"),
-  },
-  (account) => ({
-    compoundKey: primaryKey({
-      columns: [account.provider, account.providerAccountId],
-    }),
+export const account = pgTable("account", {
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  providerId: varchar("provider_id", { length: 255 }).notNull(),
+  accountId: varchar("account_id", { length: 255 }).notNull(),
+  refreshToken: text("refresh_token"),
+  accessToken: text("access_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", {
+    withTimezone: true,
   }),
-);
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", {
+    withTimezone: true,
+  }),
+  scope: varchar("scope", { length: 255 }),
+  idToken: text("id_token"),
+  password: text("password"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => /* @__PURE__ */ new Date()),
+});
 
 export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, { fields: [account.userId], references: [user.id] }),
 }));
 
 export const session = pgTable("session", {
-  sessionToken: text("sessionToken").notNull().primaryKey(),
-  userId: uuid("userId")
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  token: text("session_token").notNull().unique(),
+  userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires", { withTimezone: true }).notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
 });
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] }),
 }));
+
+export const verification = pgTable("verification", {
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+});
 
 export const userApiKey = pgTable(
   "user_api_key",

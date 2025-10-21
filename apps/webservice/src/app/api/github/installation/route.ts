@@ -7,7 +7,7 @@ import {
   UNAUTHORIZED,
 } from "http-status";
 
-import { auth } from "@ctrlplane/auth";
+import { auth } from "@ctrlplane/auth/server";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { githubEntity, jobAgent, user, workspace } from "@ctrlplane/db/schema";
@@ -94,7 +94,7 @@ export const GET = async (req: NextRequest) => {
       { status: BAD_REQUEST },
     );
 
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: req.headers });
   if (session == null)
     return NextResponse.json(
       { error: "Authentication required" },

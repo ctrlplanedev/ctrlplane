@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { v3 } from "murmurhash";
 import colors from "tailwindcss/colors";
 
-import { auth } from "@ctrlplane/auth";
+import { auth } from "@ctrlplane/auth/server";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { workspace, workspaceInviteToken } from "@ctrlplane/db/schema";
@@ -38,7 +39,7 @@ export default async function JoinPage(props: {
 
   if (token == null) notFound();
 
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session == null)
     redirect(`/login?acceptToken=${params.workspaceInviteToken}`);
 

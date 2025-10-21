@@ -5,9 +5,16 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": {
+        "react-server": "./src/index.rsc.ts",
+        "default": "./src/index.ts"
+      },
       "react-server": "./dist/index.rsc.js",
-      "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./src/better/server.ts",
+      "default": "./dist/better/server.js"
     },
     "./better": {
       "types": "./src/better/index.ts",
@@ -38,6 +45,7 @@
     "@ctrlplane/validators": "workspace:*",
     "@node-rs/bcrypt": "^1.10.0",
     "@t3-oss/env-nextjs": "catalog:",
+    "better-auth": "^1.3.28",
     "lodash": "catalog:",
     "next": "catalog:",
     "next-auth": "catalog:",
