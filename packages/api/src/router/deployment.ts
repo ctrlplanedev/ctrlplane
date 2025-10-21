@@ -1,4 +1,4 @@
-import _ from "lodash-es";
+import _ from "lodash";
 import { z } from "zod";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsup && tsc-alias -p tsconfig.json",
     "clean": "rm -rf .turbo node_modules",
     "dev": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
@@ -47,6 +47,8 @@
     "@types/ws": "^8.5.10",
     "eslint": "catalog:",
     "prettier": "catalog:",
+    "tsc-alias": "^1.8.10",
+    "tsup": "^8.3.5",
     "tsx": "catalog:",
     "typescript": "catalog:"
   },

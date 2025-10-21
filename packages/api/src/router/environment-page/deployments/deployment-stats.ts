@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import _ from "lodash-es";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, desc, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";

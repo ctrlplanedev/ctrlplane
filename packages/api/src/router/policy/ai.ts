@@ -1,6 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
-import _ from "lodash-es";
+import _ from "lodash";
 import { z } from "zod";
 
 import { Permission } from "@ctrlplane/validators/auth";

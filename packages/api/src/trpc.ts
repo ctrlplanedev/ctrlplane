@@ -1,7 +1,7 @@
 import type { Session } from "@ctrlplane/auth";
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import { initTRPC, TRPCError } from "@trpc/server";
-import _ from "lodash-es";
+import _ from "lodash";
 import superjson from "superjson";
 import { isPresent } from "ts-is-present";
 import { ZodError } from "zod";

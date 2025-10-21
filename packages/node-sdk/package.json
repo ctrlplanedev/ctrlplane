@@ -28,7 +28,7 @@
     "@types/node": "catalog:node22",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "tsup": "^8.2.4",
+    "tsup": "^8.3.5",
     "typescript": "catalog:"
   },
   "publishConfig": {

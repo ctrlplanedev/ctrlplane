@@ -1,12 +1,9 @@
 import { ExpressAuth } from "@auth/express";
 import GitHub from "@auth/express/providers/github";
-import * as trpcExpress from "@trpc/server/adapters/express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-
-import { appRouter, createTRPCContext } from "@ctrlplane/api";
 
 const app = express();
 
@@ -24,22 +21,17 @@ app.use(cookieParser());
 app.set("trust proxy", true);
 app.use("/api/auth/*splat", ExpressAuth({ providers: [GitHub] }));
 
-app.use(
-  "/api/trpc",
-  trpcExpress.createExpressMiddleware({
-    router: appRouter,
-    createContext: ({ req }) =>
-      createTRPCContext({
-        session: req.session,
-        headers: new Headers(req.headers as any),
-      }),
-  }),
-);
-
-// Health check endpoint
-app.get("/api/v1", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
+// app.use(
+//   "/api/trpc",
+//   trpcExpress.createExpressMiddleware({
+//     router: appRouter,
+//     createContext: ({ req }) =>
+//       createTRPCContext({
+//         session: req.session,
+//         headers: new Headers(req.headers as any),
+//       }),
+//   }),
+// );
 
 // OpenAPI routes (if you add any paths to openapi.json, they'll be handled here)
 // const api = new OpenAPIBackend({ definition: "./openapi/openapi.json" });

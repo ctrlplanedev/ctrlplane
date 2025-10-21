@@ -1,6 +1,6 @@
 import { hashSync } from "@node-rs/bcrypt";
 import { TRPCError } from "@trpc/server";
-import { omit } from "lodash-es";
+import { omit } from "lodash";
 import { z } from "zod";
 
 import { signOut } from "@ctrlplane/auth";
