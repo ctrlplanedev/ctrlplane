@@ -18,7 +18,6 @@ export const createTRPCContext = (opts: {
   headers: Headers;
   session: Session | null;
 }) => {
-  logger.info("createTRPCContext", { opts });
   const session = opts.session;
   const trpcSource = opts.headers.get("x-trpc-source") ?? "unknown";
   return { trpcSource, session, db };
@@ -149,7 +148,6 @@ const authzProcedure = authnProcedure.use(
       .from(schema.user)
       .where(eq(schema.user.id, ctx.session.user.id))
       .then(takeFirst);
-    logger.info("user", { user });
     if (user.systemRole === "admin") return next();
 
     const { authorizationCheck } = meta ?? {};

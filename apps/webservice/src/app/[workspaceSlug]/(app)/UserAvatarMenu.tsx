@@ -31,7 +31,11 @@ export const UserAvatarMenu = ({
 }: UserAvatarMenuProps) => {
   const handleSignOut = async () => {
     await signOut({
-      fetchOptions: { onSuccess: () => (window.location.href = "/login") },
+      fetchOptions: {
+        onSuccess: () => {
+          window.location.href = "/login";
+        },
+      },
     });
   };
 
