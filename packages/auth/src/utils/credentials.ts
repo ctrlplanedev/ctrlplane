@@ -1,4 +1,4 @@
-import { compareSync } from "bcryptjs";
+import { verifySync } from "@node-rs/bcrypt";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -16,6 +16,6 @@ export const getUserByCredentials = async (email: string, password: string) => {
   if (user == null) return new Error("Invalid credentials");
   const { passwordHash } = user;
   if (passwordHash == null) return new Error("Invalid credentials");
-  const isPasswordCorrect = compareSync(password, passwordHash);
+  const isPasswordCorrect = verifySync(password, passwordHash);
   return isPasswordCorrect ? user : new Error("Invalid credentials");
 };

@@ -1,5 +1,5 @@
 import { eachDayOfInterval, format, subDays } from "date-fns";
-import _ from "lodash";
+import _ from "lodash-es";
 import { z } from "zod";
 
 import {
