@@ -9,7 +9,8 @@ import * as winston from "winston";
  * Provides a configured `logger` and helpers to wrap functions/spans.
  */
 /** Re-export commonly used OpenTelemetry types and helpers. */
-export { trace, Tracer, Span, SpanStatusCode };
+export { trace, SpanStatusCode };
+export type { Tracer, Span };
 
 const { LOG_LEVEL, NODE_ENV } = process.env;
 
