@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { auth } from "@ctrlplane/auth";
@@ -14,7 +15,7 @@ export default async function WorkspaceSettingMembersPage(props: {
   params: Promise<{ workspaceSlug: string }>;
 }) {
   const params = await props.params;
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session == null) notFound();
 
   const { workspaceSlug } = params;

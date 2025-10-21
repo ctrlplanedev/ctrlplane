@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export default async function SignUpPage() {
   if (!isCredentialsAuthEnabled) redirect("/login");
 
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session != null) redirect("/");
 
   return (

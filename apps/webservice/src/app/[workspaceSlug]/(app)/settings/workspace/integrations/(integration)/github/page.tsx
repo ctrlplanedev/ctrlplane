@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiGithub } from "@icons-pack/react-simple-icons";
@@ -27,7 +28,7 @@ export default async function GitHubIntegrationPage(props: {
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session == null) redirect("/login");
 
   const baseUrl = env.BASE_URL;

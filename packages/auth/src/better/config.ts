@@ -5,7 +5,16 @@ import { db } from "@ctrlplane/db/client";
 
 import { env } from "../env.js";
 
-export const betterAuthConfig = betterAuth({
+export const isGoogleAuthEnabled = true;
+// env.AUTH_GOOGLE_CLIENT_ID != null && env.AUTH_GOOGLE_CLIENT_ID !== "";
+export const isOIDCAuthEnabled = false;
+// env.AUTH_OIDC_CLIENT_ID != null && env.AUTH_OIDC_ISSUER !== "";
+export const isCredentialsAuthEnabled = false;
+// env.AUTH_CREDENTIALS_ENABLED === "auto"
+//   ? !isGoogleAuthEnabled && !isOIDCAuthEnabled
+//   : env.AUTH_CREDENTIALS_ENABLED === "true";
+
+export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
   socialProviders: {
     google: {

@@ -1,4 +1,5 @@
 import React from "react";
+import { headers } from "next/headers";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { SiGithub } from "@icons-pack/react-simple-icons";
@@ -17,7 +18,7 @@ export default async function AccountSettingProfilePage(props: {
 }) {
   const params = await props.params;
   const { workspaceSlug } = params;
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session == null) redirect("/login");
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();

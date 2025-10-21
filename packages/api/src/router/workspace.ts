@@ -194,43 +194,55 @@ export const workspaceRouter = createTRPCRouter({
       .then((rows) => rows.map((r) => r.workspace)),
   ),
 
-  bySlug: protectedProcedure.input(z.string()).query(async ({ ctx, input }) =>
-    ctx.db
+  bySlug: protectedProcedure.input(z.string()).query(async ({ ctx, input }) => {
+    const u = await ctx.db
+      .select()
+      .from(user)
+      .where(eq(user.id, ctx.session.user.id))
+      .then(takeFirst);
+
+    return ctx.db
       .select()
       .from(workspace)
       .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
       .where(
         and(
           eq(workspace.slug, input),
-          ctx.session.user.systemRole === "admin"
+          u.systemRole === "admin"
             ? undefined
             : eq(entityRole.entityId, ctx.session.user.id),
         ),
       )
       .limit(1)
       .then(takeFirstOrNull)
-      .then((workspace) => workspace?.workspace ?? null),
-  ),
+      .then((workspace) => workspace?.workspace ?? null);
+  }),
 
   byId: protectedProcedure
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) =>
-      ctx.db
+    .query(async ({ ctx, input }) => {
+      const u = await ctx.db
+        .select()
+        .from(user)
+        .where(eq(user.id, ctx.session.user.id))
+        .then(takeFirst);
+
+      return ctx.db
         .select()
         .from(workspace)
         .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
         .where(
           and(
             eq(workspace.id, input),
-            ctx.session.user.systemRole === "admin"
+            u.systemRole === "admin"
               ? undefined
-              : eq(entityRole.entityId, ctx.session.user.id),
+              : eq(entityRole.entityId, u.id),
           ),
         )
         .limit(1)
         .then(takeFirstOrNull)
-        .then((w) => w?.workspace ?? null),
-    ),
+        .then((w) => w?.workspace ?? null);
+    }),
 
   resourceKinds: protectedProcedure
     .meta({

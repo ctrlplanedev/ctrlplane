@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -16,7 +17,7 @@ import { LoginCard } from "../../LoginCard";
 export const metadata: Metadata = { title: "Ctrlplane Login" };
 
 export default async function WorkflowInvitePage() {
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (session != null) redirect("/");
 
   return (

@@ -1,7 +1,7 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@ctrlplane/api";
-import { betterAuthConfig } from "@ctrlplane/auth";
+import { auth } from "@ctrlplane/auth/better";
 import { logger } from "@ctrlplane/logger";
 
 /**
@@ -23,9 +23,7 @@ export const OPTIONS = () => {
 };
 
 const handler = async (req: Request) => {
-  const session = await betterAuthConfig.api.getSession({
-    headers: req.headers,
-  });
+  const session = await auth.api.getSession({ headers: req.headers });
 
   const response = await fetchRequestHandler({
     endpoint: "/api/trpc",

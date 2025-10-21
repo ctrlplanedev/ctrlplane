@@ -94,7 +94,7 @@ export const GET = async (req: NextRequest) => {
       { status: BAD_REQUEST },
     );
 
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: req.headers });
   if (session == null)
     return NextResponse.json(
       { error: "Authentication required" },
