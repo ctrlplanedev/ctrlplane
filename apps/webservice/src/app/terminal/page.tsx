@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -17,7 +18,9 @@ export const metadata = {
 export default function TerminalPage() {
   return (
     <TerminalSessionsProvider>
-      <LoadSessionFromParams />
+      <Suspense fallback={null}>
+        <LoadSessionFromParams />
+      </Suspense>
       <div className="flex h-[100vh] flex-col">
         <div className="flex h-9 items-center border-b px-2">
           <TerminalTabs />
