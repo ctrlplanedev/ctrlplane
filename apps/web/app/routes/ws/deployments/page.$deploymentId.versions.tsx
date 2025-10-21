@@ -36,7 +36,7 @@ export function meta() {
 }
 
 export default function DeploymentVersions() {
-  const _deploymentId = useParams().deploymentId;
+  const { workspaceSlug, deploymentId: _ } = useParams();
 
   // In a real app, fetch deployment data based on deploymentId
   const deployment = mockDeploymentDetail;
@@ -83,11 +83,11 @@ export default function DeploymentVersions() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbItem>
-                  <Link to={`/deployments`}>Deployments</Link>
+                  <Link to={`/${workspaceSlug}/deployments`}>Deployments</Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <Link to={`/deployments/${deployment.id}`}>
+                  <Link to={`/${workspaceSlug}/deployments/${deployment.id}`}>
                     {deployment.name}
                   </Link>
                 </BreadcrumbItem>
@@ -210,7 +210,7 @@ export default function DeploymentVersions() {
               <TableCell>
                 <div className="flex gap-2">
                   <Link
-                    to={`/deployments/${deployment.id}?version=${version.id}`}
+                    to={`/${workspaceSlug}/deployments/${deployment.id}?version=${version.id}`}
                   >
                     <Button variant="ghost" size="sm">
                       View

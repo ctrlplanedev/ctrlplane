@@ -9,7 +9,7 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useParams } from "react-router";
 
 import { Badge } from "~/components/ui/badge";
 import {
@@ -359,6 +359,7 @@ const getDeploymentHealth = (
 };
 
 export default function Deployments() {
+  const { workspaceSlug } = useParams();
   const [searchQuery, setSearchQuery] = useState("");
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -455,7 +456,10 @@ export default function Deployments() {
           {filteredDeployments.map((deployment) => {
             const health = getDeploymentHealth(deployment.jobStatusSummary);
             return (
-              <Link key={deployment.id} to={`/deployments/${deployment.id}`}>
+              <Link
+                key={deployment.id}
+                to={`/${workspaceSlug}/deployments/${deployment.id}`}
+              >
                 <Card className="group cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">

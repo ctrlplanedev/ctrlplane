@@ -9,11 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "~/components/ui/resizable";
+import { ResizablePanel, ResizablePanelGroup } from "~/components/ui/resizable";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
@@ -31,11 +27,10 @@ export function meta() {
 }
 
 export default function DeploymentDetail() {
+  const { workspaceSlug, deploymentId: _ } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedVersionId = searchParams.get("version");
   const selectedEnvironmentId = searchParams.get("env");
-
-  const _deploymentId = useParams().deploymentId;
 
   // In a real app, fetch deployment data based on deploymentId
   const deployment = mockDeploymentDetail;
@@ -211,7 +206,7 @@ export default function DeploymentDetail() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbItem>
-                  <Link to={`/deployments`}>Deployments</Link>
+                  <Link to={`/${workspaceSlug}/deployments`}>Deployments</Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
