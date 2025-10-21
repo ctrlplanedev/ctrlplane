@@ -76,5 +76,5 @@ func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, nu
 		}
 	}
 
-	return workspaceIDs, nil
+	return result, nil
 }

@@ -30,7 +30,7 @@ func New(id string) *Workspace {
 	return ws
 }
 
-func NewTestWorkspace(id string) *Workspace {
+func NewNoFlush(id string) *Workspace {
 	s := store.New()
 	rm := releasemanager.New(s)
 	cc := changeset.NewNoopChangesetConsumer()
@@ -211,10 +211,10 @@ func GetWorkspace(id string) *Workspace {
 	return workspace
 }
 
-func GetTestWorkspace(id string) *Workspace {
+func GetNoFlushWorkspace(id string) *Workspace {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
-		workspace = NewTestWorkspace(id)
+		workspace = NewNoFlush(id)
 		workspaces.Set(id, workspace)
 	}
 	return workspace
@@ -267,12 +267,34 @@ func CreateWorkspaceLoader(
 	discoverer kafka.WorkspaceIDDiscoverer,
 ) WorkspaceLoader {
 	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
-		workspaceIDs, err := kafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
-		if err != nil {
-			return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
+		var allWorkspaceIDs []string
+		var err error
+		
+		// Use discoverer if provided, otherwise use default implementation
+		if discoverer != nil {
+			// Collect workspace IDs for each assigned partition
+			workspaceIDSet := make(map[string]bool)
+			for _, partition := range assignedPartitions {
+				partitionWorkspaces, discErr := discoverer(ctx, partition, numPartitions)
+				if discErr != nil {
+					return fmt.Errorf("failed to discover workspace IDs for partition %d: %w", partition, discErr)
+				}
+				for _, wsID := range partitionWorkspaces {
+					workspaceIDSet[wsID] = true
+				}
+			}
+			// Convert set to slice
+			for wsID := range workspaceIDSet {
+				allWorkspaceIDs = append(allWorkspaceIDs, wsID)
+			}
+		} else {
+			allWorkspaceIDs, err = kafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
+			if err != nil {
+				return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
+			}
 		}
 
-		for _, workspaceID := range workspaceIDs {
+		for _, workspaceID := range allWorkspaceIDs {
 			ws := GetWorkspace(workspaceID)
 			if err := ws.LoadFromStorage(ctx, storage, fmt.Sprintf("%s.gob", workspaceID)); err != nil {
 				return fmt.Errorf("failed to load workspace %s: %w", workspaceID, err)

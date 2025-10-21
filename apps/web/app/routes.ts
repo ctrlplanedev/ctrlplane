@@ -1,10 +1,9 @@
 import type { RouteConfig } from "@react-router/dev/routes";
-import { index, route } from "@react-router/dev/routes";
+import { route } from "@react-router/dev/routes";
 
 export default [
   route("", "routes/protected.tsx", [
     route(":workspaceSlug", "routes/ws/_layout.tsx", [
-      index("routes/ws/home.tsx"),
       route("deployments", "routes/ws/deployments/page.tsx", {
         id: "deployments.page",
       }),
@@ -24,4 +23,6 @@ export default [
       route("policies", "routes/ws/policies.tsx"),
     ]),
   ]),
+  route("login", "routes/auth/login.tsx"),
+  route("sign-up", "routes/auth/signup.tsx"),
 ] satisfies RouteConfig;

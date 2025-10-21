@@ -42,7 +42,7 @@ func NewTestWorkspace(
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
-	ws := workspace.GetTestWorkspace(workspaceID)
+	ws := workspace.GetNoFlushWorkspace(workspaceID)
 
 	tw := &TestWorkspace{}
 	tw.t = t
