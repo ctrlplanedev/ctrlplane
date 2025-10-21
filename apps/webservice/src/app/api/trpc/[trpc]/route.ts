@@ -1,7 +1,7 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@ctrlplane/api";
-import { auth } from "@ctrlplane/auth";
+import { betterAuthConfig } from "@ctrlplane/auth";
 import { logger } from "@ctrlplane/logger";
 
 /**
@@ -22,16 +22,16 @@ export const OPTIONS = () => {
   return response;
 };
 
-const handler = auth(async (req) => {
+const handler = async (req: Request) => {
+  const session = await betterAuthConfig.api.getSession({
+    headers: req.headers,
+  });
+
   const response = await fetchRequestHandler({
     endpoint: "/api/trpc",
     router: appRouter,
     req,
-    createContext: () =>
-      createTRPCContext({
-        session: req.auth,
-        headers: req.headers,
-      }),
+    createContext: () => createTRPCContext({ headers: req.headers, session }),
     onError({ error, path }) {
       logger.error(`tRPC Error on ${path}`, { label: "trpc", path, error });
       console.error(error);
@@ -40,6 +40,6 @@ const handler = auth(async (req) => {
 
   setCorsHeaders(response);
   return response;
-});
+};
 
 export { handler as GET, handler as POST };

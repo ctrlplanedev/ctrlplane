@@ -1,4 +1,5 @@
-import type { Session } from "@ctrlplane/auth";
+// import type { } from "@ctrlplane/auth";
+import type { betterAuthConfig } from "@ctrlplane/auth";
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import { initTRPC, TRPCError } from "@trpc/server";
 import _ from "lodash";
@@ -7,8 +8,12 @@ import { isPresent } from "ts-is-present";
 import { ZodError } from "zod";
 
 import { can } from "@ctrlplane/auth/utils";
+import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 import { logger, makeWithSpan, SpanStatusCode, trace } from "@ctrlplane/logger";
+
+type Session = Awaited<ReturnType<typeof betterAuthConfig.api.getSession>>;
 
 export const createTRPCContext = (opts: {
   headers: Headers;
@@ -128,7 +133,7 @@ const spanProcedure = loggedProcedure.use(
 export const publicProcedure = spanProcedure;
 
 const authnProcedure = spanProcedure.use(({ ctx, next }) => {
-  if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+  if (ctx.session == null) throw new TRPCError({ code: "UNAUTHORIZED" });
   return next({
     ctx: {
       // infers the `session` as non-nullable
@@ -139,7 +144,12 @@ const authnProcedure = spanProcedure.use(({ ctx, next }) => {
 
 const authzProcedure = authnProcedure.use(
   async ({ ctx, meta, path, getRawInput, next }) => {
-    if (ctx.session.user.systemRole === "admin") return next();
+    const user = await db
+      .select()
+      .from(schema.user)
+      .where(eq(schema.user.id, ctx.session.user.id))
+      .then(takeFirst);
+    if (user.systemRole === "admin") return next();
 
     const { authorizationCheck } = meta ?? {};
     if (authorizationCheck != null) {
