@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/pty-proxy",
+  "name": "@ctrlplane/web-api",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,10 +11,10 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@auth/express": "^0.12.0",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
-    "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
@@ -26,7 +26,6 @@
     "ms": "catalog:",
     "next-auth": "catalog:",
     "uuid": "^10.0.0",
-    "ws": "^8.17.0",
     "zod": "catalog:"
   },
   "devDependencies": {

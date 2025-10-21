@@ -1,11 +1,8 @@
 import {
   BadgeCheck,
-  Bell,
-  ChevronDown,
   ChevronRight,
   ChevronsUpDown,
   Cpu,
-  CreditCard,
   Eye,
   LayoutDashboard,
   LayoutGrid,
@@ -43,9 +40,9 @@ import {
   SidebarProvider,
   useSidebar,
 } from "~/components/ui/sidebar";
-import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 import { api } from "~/trpc";
+import { WorkspaceSelector } from "./_components/WorkspaceSelector";
 
 // Navigation groups
 const navigationGroups = [
@@ -70,19 +67,12 @@ const navigationGroups = [
   },
 ];
 
-const UserNav: React.FC = () => {
+const UserNav: React.FC<{
+  viewer: { image: string | null; name: string | null; email: string };
+}> = ({ viewer }) => {
   const { isMobile } = useSidebar();
-  const { data: viewer, isLoading } = api.user.viewer.useQuery();
 
-  if (isLoading || viewer == null) {
-    return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <Skeleton className="h-8 rounded-full" />
-        </SidebarMenuItem>
-      </SidebarMenu>
-    );
-  }
+  const signOut = api.user.auth.signOut.useMutation();
 
   return (
     <SidebarMenu>
@@ -134,17 +124,9 @@ const UserNav: React.FC = () => {
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut.mutate()}>
               <LogOut />
               Log out
             </DropdownMenuItem>
@@ -157,28 +139,22 @@ const UserNav: React.FC = () => {
 
 export default function AppLayout() {
   const path = useLocation();
+  const { data: viewer } = api.user.viewer.useQuery();
+  const { data: workspaces = [] } = api.workspace.list.useQuery();
+
   return (
     <SidebarProvider>
       <Sidebar variant="inset">
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton>
-                    Select Workspace
-                    <ChevronDown className="ml-auto" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-popper-anchor-width]">
-                  <DropdownMenuItem>
-                    <span>Acme Inc</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Acme Corp.</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {viewer != null && (
+                <WorkspaceSelector
+                  viewer={viewer}
+                  activeWorkspaceId={viewer.activeWorkspaceId}
+                  workspaces={workspaces}
+                />
+              )}
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
@@ -224,7 +200,7 @@ export default function AppLayout() {
         </SidebarContent>
 
         <SidebarFooter>
-          <UserNav />
+          {viewer != null && <UserNav viewer={viewer} />}
         </SidebarFooter>
       </Sidebar>
 

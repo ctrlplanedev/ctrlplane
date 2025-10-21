@@ -3,6 +3,7 @@ import { hashSync } from "bcryptjs";
 import { omit } from "lodash";
 import { z } from "zod";
 
+import { signOut } from "@ctrlplane/auth";
 import { can, generateApiKey, hash } from "@ctrlplane/auth/utils";
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -26,6 +27,9 @@ export const profileRouter = createTRPCRouter({
 });
 
 const authRouter = createTRPCRouter({
+  signOut: protectedProcedure.mutation(async () => {
+    await signOut();
+  }),
   signUp: publicProcedure
     .input(signInSchema.extend({ name: z.string() }))
     .mutation(async ({ ctx, input }) => {

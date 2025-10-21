@@ -9,6 +9,10 @@
       "types": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./better": {
+      "types": "./src/better/index.ts",
+      "default": "./dist/better/index.js"
+    },
     "./utils": {
       "types": "./src/utils/index.ts",
       "default": "./dist/utils/index.js"
