@@ -13,7 +13,13 @@ import {
   Server,
   ShieldCheck,
 } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import {
+  Navigate,
+  NavLink,
+  Outlet,
+  useLocation,
+  useParams,
+} from "react-router";
 
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
@@ -137,10 +143,14 @@ const UserNav: React.FC<{
   );
 };
 
-export default function AppLayout() {
+export default function WorkspaceLayout() {
   const path = useLocation();
+  const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
   const { data: viewer } = api.user.viewer.useQuery();
   const { data: workspaces = [] } = api.workspace.list.useQuery();
+
+  if (path.pathname === `/${workspaceSlug}`)
+    return <Navigate to={`/${workspaceSlug}/deployments`} />;
 
   return (
     <SidebarProvider>
@@ -166,7 +176,8 @@ export default function AppLayout() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.items.map((item) => {
-                    const isActive = path.pathname.startsWith(item.to);
+                    const url = `/${workspaceSlug}${item.to}`;
+                    const isActive = path.pathname.startsWith(url);
                     return (
                       <SidebarMenuItem key={item.to}>
                         <SidebarMenuButton
@@ -176,10 +187,7 @@ export default function AppLayout() {
                             isActive ? "" : "text-muted-foreground",
                           )}
                         >
-                          <NavLink
-                            to={item.to}
-                            className="flex items-center gap-2"
-                          >
+                          <NavLink to={url} className="flex items-center gap-2">
                             <item.icon />
                             <span>{item.title}</span>
                             <span className="flex-1" />
