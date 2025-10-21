@@ -3,13 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsup && tsc-alias -p tsconfig.json",
+    "build": "tsc && tsc-alias",
     "clean": "rm -rf .turbo node_modules",
     "dev": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
     "generate": "jsonnet openapi/main.jsonnet > openapi/openapi.json",
     "format": "prettier --check . --ignore-path ../../.gitignore && jsonnetfmt -i ./**/*.jsonnet",
-    "with-env": "dotenv -e ../../.env --"
+    "with-env": "dotenv -e ../../.env --",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@auth/express": "^0.12.0",
@@ -47,8 +48,7 @@
     "@types/ws": "^8.5.10",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "tsc-alias": "^1.8.10",
-    "tsup": "^8.3.5",
+    "tsc-alias": "^1.8.16",
     "tsx": "catalog:",
     "typescript": "catalog:"
   },

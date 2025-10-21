@@ -2,6 +2,8 @@
   "extends": "@ctrlplane/tsconfig/base.json",
   "compilerOptions": {
     "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "noEmit": false,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",

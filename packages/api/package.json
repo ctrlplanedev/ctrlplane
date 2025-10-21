@@ -41,6 +41,7 @@
     "@t3-oss/env-core": "catalog:",
     "@trpc/server": "11.0.0-rc.364",
     "date-fns": "catalog:",
+    "express-openapi-validator": "^5.6.0",
     "google-auth-library": "^9.13.0",
     "googleapis": "^144.0.0",
     "js-yaml": "^4.1.0",

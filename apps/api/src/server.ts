@@ -3,6 +3,7 @@ import GitHub from "@auth/express/providers/github";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import * as OpenApiValidator from "express-openapi-validator";
 import helmet from "helmet";
 
 const app = express();
@@ -21,22 +22,18 @@ app.use(cookieParser());
 app.set("trust proxy", true);
 app.use("/api/auth/*splat", ExpressAuth({ providers: [GitHub] }));
 
-// app.use(
-//   "/api/trpc",
-//   trpcExpress.createExpressMiddleware({
-//     router: appRouter,
-//     createContext: ({ req }) =>
-//       createTRPCContext({
-//         session: req.session,
-//         headers: new Headers(req.headers as any),
-//       }),
-//   }),
-// );
-
 // OpenAPI routes (if you add any paths to openapi.json, they'll be handled here)
 // const api = new OpenAPIBackend({ definition: "./openapi/openapi.json" });
 // api.register({});
 // api.init();
 // app.use("/api/v1", (req, res) => api.handleRequest(req as any, req as any, res));
+
+app.use(
+  OpenApiValidator.middleware({
+    apiSpec: "./openapi/openapi.json",
+    validateRequests: true,
+    validateResponses: true,
+  }),
+);
 
 export { app };

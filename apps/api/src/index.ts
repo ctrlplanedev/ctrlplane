@@ -1,5 +1,5 @@
-import { env } from "./config.js";
-import { app } from "./server.js";
+import { env } from "@/config.js";
+import { app } from "@/server.js";
 
 const { PORT } = env;
 
