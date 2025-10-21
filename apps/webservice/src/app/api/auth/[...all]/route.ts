@@ -1,1 +1,1 @@
-export { GET, POST } from "@ctrlplane/auth";
+export { GET, POST } from "@ctrlplane/auth/server";

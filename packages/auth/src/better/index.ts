@@ -1,7 +1,5 @@
-import type { auth } from "./config.js";
-
-export * from "./config.js";
-
+// Client-safe exports only - no database imports
 export { authClient, signIn, signOut, useSession } from "./client.js";
-export { GET, POST } from "./route.js";
-export type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
+
+// Re-export type from server for convenience
+export type { Session } from "./server.js";

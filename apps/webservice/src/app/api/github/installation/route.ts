@@ -7,7 +7,7 @@ import {
   UNAUTHORIZED,
 } from "http-status";
 
-import { auth } from "@ctrlplane/auth";
+import { auth } from "@ctrlplane/auth/server";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { githubEntity, jobAgent, user, workspace } from "@ctrlplane/db/schema";

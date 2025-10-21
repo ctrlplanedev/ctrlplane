@@ -4,7 +4,7 @@ import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { SiGithub } from "@icons-pack/react-simple-icons";
 
-import { auth } from "@ctrlplane/auth";
+import { auth } from "@ctrlplane/auth/server";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 

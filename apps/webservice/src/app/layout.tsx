@@ -10,7 +10,7 @@ import { headers } from "next/headers";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
-import { auth } from "@ctrlplane/auth";
+import { auth } from "@ctrlplane/auth/server";
 import { cn } from "@ctrlplane/ui";
 import { Toaster } from "@ctrlplane/ui/toast";
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { IconExternalLink } from "@tabler/icons-react";
 
-import { auth, isCredentialsAuthEnabled } from "@ctrlplane/auth";
+import { auth, isCredentialsAuthEnabled } from "@ctrlplane/auth/server";
 import { Button } from "@ctrlplane/ui/button";
 
 import { SignUpCard } from "./SignUpCard";

@@ -1,7 +1,7 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@ctrlplane/api";
-import { auth } from "@ctrlplane/auth/better";
+import { auth } from "@ctrlplane/auth/server";
 import { logger } from "@ctrlplane/logger";
 
 /**

@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import { db } from "@ctrlplane/db/client";
+import * as schema from "@ctrlplane/db/schema";
 
 import { env } from "../env.js";
 
@@ -15,18 +16,22 @@ export const isCredentialsAuthEnabled = false;
 //   : env.AUTH_CREDENTIALS_ENABLED === "true";
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: "pg" }),
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: {
+      user: schema.user,
+      session: schema.session,
+      account: schema.account,
+      verification: schema.verification,
+    },
+  }),
+  baseURL: env.BASE_URL,
+  secret: env.AUTH_SECRET,
   socialProviders: {
     google: {
       enabled: true,
       clientId: env.AUTH_GOOGLE_CLIENT_ID ?? "",
       clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
-    },
-  },
-  session: {
-    fields: {
-      expiresAt: "expires",
-      token: "sessionToken",
     },
   },
 });

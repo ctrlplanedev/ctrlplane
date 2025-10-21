@@ -1,5 +1,4 @@
-// import type { } from "@ctrlplane/auth";
-import type { auth } from "@ctrlplane/auth/better";
+import type { auth } from "@ctrlplane/auth/server";
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import { initTRPC, TRPCError } from "@trpc/server";
 import _ from "lodash";

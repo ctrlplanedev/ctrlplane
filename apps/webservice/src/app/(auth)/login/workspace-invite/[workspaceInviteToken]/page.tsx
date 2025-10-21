@@ -9,7 +9,7 @@ import {
   isCredentialsAuthEnabled,
   isGoogleAuthEnabled,
   isOIDCAuthEnabled,
-} from "@ctrlplane/auth";
+} from "@ctrlplane/auth/server";
 import { Button } from "@ctrlplane/ui/button";
 
 import { LoginCard } from "../../LoginCard";

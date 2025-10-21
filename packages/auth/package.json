@@ -5,9 +5,16 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": {
+        "react-server": "./src/index.rsc.ts",
+        "default": "./src/index.ts"
+      },
       "react-server": "./dist/index.rsc.js",
-      "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./src/better/server.ts",
+      "default": "./dist/better/server.js"
     },
     "./better": {
       "types": "./src/better/index.ts",
