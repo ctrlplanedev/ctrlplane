@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IconLockAccess, IconMail, IconUser } from "@tabler/icons-react";
-import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
 
+import { signIn } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Card,
@@ -67,19 +67,18 @@ export const SignUpCard: React.FC = () => {
 
     signUp
       .mutateAsync(data)
-      .then(() =>
-        signIn("credentials", {
-          ...data,
-          redirect: false,
-        }).then((response) => {
-          if (response?.error) throw new Error(response.error);
-          if (acceptToken) {
-            router.push(`/join/${acceptToken}`);
-            return;
-          }
-          router.refresh();
-        }),
-      )
+      .then(async () => {
+        await signIn.email({
+          email: data.email,
+          password: data.password,
+          callbackURL: acceptToken ? `/join/${acceptToken}` : "/",
+        });
+        if (acceptToken) {
+          router.push(`/join/${acceptToken}`);
+          return;
+        }
+        router.refresh();
+      })
       .catch((error) => {
         console.error("Sign up error:", error);
         form.setError("root", {

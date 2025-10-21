@@ -10,7 +10,6 @@ import {
   IconLockAccess,
   IconMail,
 } from "@tabler/icons-react";
-import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
 
 import { signIn as betterAuthSignIn } from "@ctrlplane/auth";
@@ -73,15 +72,14 @@ export const LoginCard: React.FC<{
     setLoading(true);
 
     try {
-      await signIn("credentials", {
-        ...data,
-        redirect: false,
-      }).then((response) => {
-        if (response?.error) throw new Error(response.error);
-        const redirectUrl = acceptToken ? `/join/${acceptToken}` : "/";
-        router.push(redirectUrl);
+      await betterAuthSignIn.email({
+        email: data.email,
+        password: data.password,
+        callbackURL: acceptToken ? `/join/${acceptToken}` : "/",
       });
-    } catch {
+      const redirectUrl = acceptToken ? `/join/${acceptToken}` : "/";
+      router.push(redirectUrl);
+    } catch (error) {
       form.setError("root", {
         message: "Sign in failed. Please check your credentials and try again.",
       });
@@ -206,7 +204,7 @@ export const LoginCard: React.FC<{
 
             {isOidcEnabled && (
               <Button
-                onClick={() => signIn("oidc")}
+                onClick={() => betterAuthSignIn.social({ provider: "oidc" })}
                 variant="outline"
                 className="h-10 w-full gap-2 border-border/50 bg-background/50 text-foreground backdrop-blur-sm hover:bg-background/70 hover:text-foreground"
               >
