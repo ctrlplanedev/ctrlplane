@@ -13,8 +13,8 @@
       }
     ],
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
-    "module": "esnext"
-    // "skipLibCheck": true
+    "module": "esnext",
+    "skipLibCheck": true
   },
   "include": [
     "next-env.d.ts",
