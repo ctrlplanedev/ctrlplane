@@ -3,7 +3,6 @@ package skipdeployed
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -23,12 +22,6 @@ func NewSkipDeployedEvaluator(store *store.Store) *SkipDeployedEvaluator {
 	return &SkipDeployedEvaluator{
 		store: store,
 	}
-}
-
-var validJobStatuses = []oapi.JobStatus{
-	oapi.Pending,
-	oapi.InProgress,
-	oapi.Successful,
 }
 
 // Evaluate checks if the release has already been attempted.
@@ -56,10 +49,6 @@ func (e *SkipDeployedEvaluator) Evaluate(
 		// If the job was created before the target was created, ignore it
 		if job.CreatedAt.Before(target.CreatedAt) {
 			// resource might be added, then deleted and readded, so we need to ignore jobs created before the target was created
-			continue
-		}
-
-		if !slices.Contains(validJobStatuses, job.Status) {
 			continue
 		}
 
