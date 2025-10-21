@@ -1,8 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
-import type * as PB from "../workspace-engine/types/index.js";
-
 export enum Event {
   SystemCreated = "system.created",
   SystemUpdated = "system.updated",
@@ -171,9 +169,9 @@ export type GoEventPayload = {
   [Event.DeploymentVariableCreated]: WorkspaceEngine["schemas"]["DeploymentVariable"];
   [Event.DeploymentVariableUpdated]: WorkspaceEngine["schemas"]["DeploymentVariable"];
   [Event.DeploymentVariableDeleted]: WorkspaceEngine["schemas"]["DeploymentVariable"];
-  [Event.DeploymentVariableValueCreated]: PB.DeploymentVariableValue;
-  [Event.DeploymentVariableValueUpdated]: PB.DeploymentVariableValue;
-  [Event.DeploymentVariableValueDeleted]: PB.DeploymentVariableValue;
+  // [Event.DeploymentVariableValueCreated]: PB.DeploymentVariableValue;
+  // [Event.DeploymentVariableValueUpdated]: PB.DeploymentVariableValue;
+  // [Event.DeploymentVariableValueDeleted]: PB.DeploymentVariableValue;
   [Event.DeploymentVersionCreated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionUpdated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionDeleted]: WorkspaceEngine["schemas"]["DeploymentVersion"];
