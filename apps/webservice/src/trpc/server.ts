@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 
 import { createCaller, createTRPCContext } from "@ctrlplane/api";
 import { auth } from "@ctrlplane/auth/server";
-import { logger } from "@ctrlplane/logger";
 
 /**
  * This wraps the `createTRPCContext` helper and provides the required context for the tRPC API when
@@ -13,9 +12,7 @@ const createContext = cache(async () => {
   const originalHeads = await headers();
   const heads = new Headers(originalHeads);
   heads.set("x-trpc-source", "rsc");
-  logger.info("createContext heads", { heads });
   const session = await auth.api.getSession({ headers: heads });
-  logger.info("createContext", { session, heads });
   return createTRPCContext({ session, headers: heads });
 });
 

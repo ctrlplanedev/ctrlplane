@@ -6,11 +6,9 @@ import "react-resizable/css/styles.css";
 import "./react-grid-layout.css";
 
 import type { Viewport } from "next";
-import { headers } from "next/headers";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
-import { auth } from "@ctrlplane/auth/server";
 import { cn } from "@ctrlplane/ui";
 import { Toaster } from "@ctrlplane/ui/toast";
 
@@ -28,7 +26,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <body
