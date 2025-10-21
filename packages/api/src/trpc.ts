@@ -1,4 +1,4 @@
-import type { auth } from "@ctrlplane/auth/server";
+import type { Session } from "@ctrlplane/auth/server";
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import { initTRPC, TRPCError } from "@trpc/server";
 import _ from "lodash";
@@ -11,8 +11,6 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger, makeWithSpan, SpanStatusCode, trace } from "@ctrlplane/logger";
-
-type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
 
 export const createTRPCContext = (opts: {
   headers: Headers;
