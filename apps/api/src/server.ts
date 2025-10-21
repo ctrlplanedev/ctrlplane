@@ -1,10 +1,13 @@
 import { ExpressAuth } from "@auth/express";
 import GitHub from "@auth/express/providers/github";
+import * as trpcExpress from "@trpc/server/adapters/express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import * as OpenApiValidator from "express-openapi-validator";
 import helmet from "helmet";
+
+import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
 const app = express();
 
@@ -33,6 +36,14 @@ app.use(
     apiSpec: "./openapi/openapi.json",
     validateRequests: true,
     validateResponses: true,
+  }),
+);
+
+app.use(
+  "/api/internal/trpc",
+  trpcExpress.createExpressMiddleware({
+    router: appRouter,
+    createContext: () => createTRPCContext(),
   }),
 );
 

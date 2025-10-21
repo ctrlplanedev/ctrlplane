@@ -1,0 +1,12 @@
+{
+  "extends": "@ctrlplane/tsconfig/internal-package.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "./dist",
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+  },
+  "include": ["src/**/*"]
+}

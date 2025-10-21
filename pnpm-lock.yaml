@@ -104,6 +104,10 @@ catalogs:
     react-dom:
       specifier: 19.2.0
       version: 19.2.0
+  zod4:
+    zod:
+      specifier: 4.1.12
+      version: 4.1.12
 
 overrides:
   globby@10.0.2: ^11.1.0
@@ -136,24 +140,12 @@ importers:
       '@auth/express':
         specifier: ^0.12.0
         version: 0.12.0(express@5.1.0)(nodemailer@6.10.1)
-      '@ctrlplane/api':
-        specifier: workspace:*
-        version: link:../../packages/api
       '@ctrlplane/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@ctrlplane/db':
+      '@ctrlplane/trpc':
         specifier: workspace:*
-        version: link:../../packages/db
-      '@ctrlplane/events':
-        specifier: workspace:*
-        version: link:../../packages/events
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../../packages/validators
+        version: link:../../packages/trpc
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
@@ -348,61 +340,6 @@ importers:
       '@types/node':
         specifier: catalog:node22
         version: 22.13.10
-      eslint:
-        specifier: 'catalog:'
-        version: 9.11.1(jiti@2.6.1)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.6.2
-      tsx:
-        specifier: 'catalog:'
-        version: 4.19.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.8.2
-
-  apps/jobs:
-    dependencies:
-      '@ctrlplane/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@ctrlplane/events':
-        specifier: workspace:*
-        version: link:../../packages/events
-      '@ctrlplane/job-dispatch':
-        specifier: workspace:*
-        version: link:../../packages/job-dispatch
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../../packages/validators
-      cron:
-        specifier: ^3.1.7
-        version: 3.5.0
-      lodash:
-        specifier: 'catalog:'
-        version: 4.17.21
-      ts-is-present:
-        specifier: 'catalog:'
-        version: 1.2.2
-      zod:
-        specifier: 'catalog:'
-        version: 3.24.2
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:^
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:^
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/lodash':
-        specifier: 'catalog:'
-        version: 4.17.12
       eslint:
         specifier: 'catalog:'
         version: 9.11.1(jiti@2.6.1)
@@ -1782,6 +1719,64 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 3.24.2
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: catalog:node22
+        version: 22.13.10
+      eslint:
+        specifier: 'catalog:'
+        version: 9.11.1(jiti@2.6.1)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.2
+
+  packages/trpc:
+    dependencies:
+      '@ctrlplane/db':
+        specifier: workspace:*
+        version: link:../db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../events
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@ctrlplane/secrets':
+        specifier: workspace:*
+        version: link:../secrets
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../validators
+      '@ctrlplane/workspace-engine-sdk':
+        specifier: workspace:*
+        version: link:../workspace-engine-sdk
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.11.1(typescript@5.8.2)(zod@4.1.12)
+      '@trpc/server':
+        specifier: 11.0.0-rc.364
+        version: 11.0.0-rc.364
+      superjson:
+        specifier: 'catalog:'
+        version: 2.2.2
+      ts-is-present:
+        specifier: 'catalog:'
+        version: 1.2.2
+      zod:
+        specifier: catalog:zod4
+        version: 4.1.12
     devDependencies:
       '@ctrlplane/eslint-config':
         specifier: workspace:*
@@ -13308,6 +13303,9 @@ packages:
   zod@3.24.2:
     resolution: {integrity: sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==}
 
+  zod@4.1.12:
+    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
+
   zustand@4.5.5:
     resolution: {integrity: sha512-+0PALYNJNgK6hldkgDq2vLrw5f6g/jCInz52n9RTpropGgeAf/ioFUCdtsjCqu4gNhW9D01rUQBROoRjdzyn2Q==}
     engines: {node: '>=12.7.0'}
@@ -19477,6 +19475,12 @@ snapshots:
   '@t3-oss/env-core@0.11.1(typescript@5.8.2)(zod@3.24.2)':
     dependencies:
       zod: 3.24.2
+    optionalDependencies:
+      typescript: 5.8.2
+
+  '@t3-oss/env-core@0.11.1(typescript@5.8.2)(zod@4.1.12)':
+    dependencies:
+      zod: 4.1.12
     optionalDependencies:
       typescript: 5.8.2
 
@@ -26816,6 +26820,8 @@ snapshots:
       zod: 3.24.2
 
   zod@3.24.2: {}
+
+  zod@4.1.12: {}
 
   zustand@4.5.5(@types/react@19.2.2)(immer@10.1.1)(react@19.2.0):
     dependencies:

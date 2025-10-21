@@ -14,12 +14,8 @@
   },
   "dependencies": {
     "@auth/express": "^0.12.0",
-    "@ctrlplane/api": "workspace:*",
     "@ctrlplane/auth": "workspace:*",
-    "@ctrlplane/db": "workspace:*",
-    "@ctrlplane/events": "workspace:*",
-    "@ctrlplane/logger": "workspace:*",
-    "@ctrlplane/validators": "workspace:*",
+    "@ctrlplane/trpc": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "@trpc/server": "11.0.0-rc.364",
     "bcryptjs": "^2.4.3",
