@@ -93,7 +93,6 @@ func (s *Store) GobDecode(data []byte) error {
 	s.ResourceVariables = NewResourceVariables(s)
 	s.ResourceProviders = NewResourceProviders(s)
 	s.Policies = NewPolicies(s)
-	s.ReleaseTargets = NewReleaseTargets(s)
 	s.DeploymentVersions = NewDeploymentVersions(s)
 	s.Systems = NewSystems(s)
 	s.DeploymentVariables = NewDeploymentVariables(s)
@@ -108,6 +107,11 @@ func (s *Store) GobDecode(data []byte) error {
 	// Reinitialize materialized views for environments and deployments
 	s.Environments.ReinitializeMaterializedViews()
 	s.Deployments.ReinitializeMaterializedViews()
+
+	// Initialize ReleaseTargets after materialized views are ready
+	// This is important because ReleaseTargets.computeTargets() depends on
+	// deployments.Resources() which requires the materialized views to exist
+	s.ReleaseTargets = NewReleaseTargets(s)
 
 	return nil
 }

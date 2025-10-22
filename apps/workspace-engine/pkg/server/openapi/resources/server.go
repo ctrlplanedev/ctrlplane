@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"fmt"
 	"net/http"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -59,13 +60,23 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		resourceSlice = append(resourceSlice, resource)
 	}
 
-	// Filter resources using the selector
-	matchedResourcesMap, err := selector.FilterResources(c.Request.Context(), body.Filter, resourceSlice)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Failed to filter resources: " + err.Error(),
-		})
-		return
+	fmt.Println(allResources)
+
+	var matchedResourcesMap map[string]*oapi.Resource
+	if body.Filter != nil {
+		// Filter resources using the selector
+		matchedResourcesMap, err = selector.FilterResources(c.Request.Context(), body.Filter, resourceSlice)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Failed to filter resources: " + err.Error(),
+			})
+			return
+		}
+	} else {
+		matchedResourcesMap = make(map[string]*oapi.Resource)
+		for _, resource := range resourceSlice {
+			matchedResourcesMap[resource.Id] = resource
+		}
 	}
 
 	// Convert map back to slice for response
@@ -87,14 +98,8 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 	total := len(matchedResources)
 	
 	// Apply pagination
-	start := offset
-	if start > total {
-		start = total
-	}
-	end := start + limit
-	if end > total {
-		end = total
-	}
+	start := min(offset, total)
+	end := min(start + limit, total)
 	paginatedResources := matchedResources[start:end]
 
 	c.JSON(http.StatusOK, gin.H{

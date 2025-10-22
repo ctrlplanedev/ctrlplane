@@ -1,17 +1,13 @@
 package cel
 
 import (
+	"encoding/json"
 	"fmt"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector/langs/util"
 
 	"github.com/google/cel-go/cel"
 )
-
-type Context struct {
-	Resource    oapi.Resource    `json:"resource"`
-	Deployment  oapi.Deployment  `json:"deployment"`
-	Environment oapi.Environment `json:"environment"`
-}
 
 var Env, _ = cel.NewEnv(
 	cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
@@ -19,7 +15,7 @@ var Env, _ = cel.NewEnv(
 	cel.Variable("environment", cel.MapType(cel.StringType, cel.AnyType)),
 )
 
-func Compile(expression string) (*CelSelector, error) {
+func Compile(expression string) (util.MatchableCondition, error) {
 	ast, iss := Env.Compile(expression)
 	if iss.Err() != nil {
 		return nil, iss.Err()
@@ -35,8 +31,37 @@ type CelSelector struct {
 	Program cel.Program
 }
 
-func (s *CelSelector) Matches(ctx *Context) (bool, error) {
-	val, _, err := s.Program.Eval(ctx)
+func (s *CelSelector) Matches(entity any) (bool, error) {	
+	celCtx := map[string]any{
+		"resource":    map[string]any{},
+		"deployment":  map[string]any{},
+		"environment": map[string]any{},
+	}
+
+	entityAsMap, err := structToMap(entity)
+	if err != nil {
+		return false, fmt.Errorf("failed to convert entity: %w", err)
+	}
+
+	_, isPointerResource := entity.(*oapi.Resource)
+	_, isResource := entity.(oapi.Resource)
+	if isPointerResource || isResource {
+		celCtx["resource"] = entityAsMap
+	}
+	 
+	_, isPointerDeployment := entity.(*oapi.Deployment)
+	_, isDeployment := entity.(oapi.Deployment)
+	if isPointerDeployment || isDeployment {
+		celCtx["deployment"] = entityAsMap
+	}
+
+	_, isPointerEnvironment := entity.(*oapi.Environment)
+	_, isEnvironment := entity.(oapi.Environment)
+	if isPointerEnvironment || isEnvironment {
+		celCtx["environment"] = entityAsMap
+	}
+
+	val, _, err := s.Program.Eval(celCtx)
 	if err != nil {
 		return false, err
 	}
@@ -46,4 +71,18 @@ func (s *CelSelector) Matches(ctx *Context) (bool, error) {
 		return false, fmt.Errorf("result is not a boolean")
 	}
 	return boolVal, nil
+}
+
+// structToMap converts a struct to a map using JSON marshaling
+// This is necessary because CEL cannot work with Go structs directly
+func structToMap(v any) (map[string]any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }

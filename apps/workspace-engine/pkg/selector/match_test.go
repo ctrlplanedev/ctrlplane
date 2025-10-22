@@ -448,14 +448,14 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:       "simple property check - returns false due to line 37-39 logic",
+			name:       "simple property check",
 			expression: "resource.name == 'production-server'",
 			resource: oapi.Resource{
 				Id:   "1",
 				Name: "production-server",
 				Kind: "server",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -466,7 +466,7 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 				Name: "staging-server",
 				Kind: "server",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: false,
 			wantErr:   false,
 		},
 		{
@@ -477,7 +477,7 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 				Name: "postgres",
 				Kind: "database",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -488,7 +488,7 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 				Name: "prod-api",
 				Kind: "service",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -499,7 +499,7 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 				Name: "prod-api",
 				Kind: "deployment",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: false,
 			wantErr:   false,
 		},
 		{
@@ -510,7 +510,7 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 				Name: "prod-api",
 				Kind: "service",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -523,7 +523,7 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 					"env": "production",
 				},
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -536,7 +536,7 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 					"env": "staging",
 				},
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: false,
 			wantErr:   false,
 		},
 	}
@@ -578,7 +578,7 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 				Slug:           "api-deployment",
 				JobAgentConfig: map[string]interface{}{},
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -591,7 +591,7 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 				Slug:           "prod-api",
 				JobAgentConfig: map[string]interface{}{},
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -604,7 +604,7 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 				Slug:           "staging-api",
 				JobAgentConfig: map[string]interface{}{},
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: false,
 			wantErr:   false,
 		},
 	}
@@ -645,7 +645,7 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 				SystemId:  "sys1",
 				CreatedAt: "2024-01-01T00:00:00Z",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -657,7 +657,7 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 				SystemId:  "sys1",
 				CreatedAt: "2024-01-01T00:00:00Z",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: false,
 			wantErr:   false,
 		},
 		{
@@ -669,7 +669,7 @@ func TestMatch_CelSelector_Environment(t *testing.T) {
 				SystemId:  "sys1",
 				CreatedAt: "2024-01-01T00:00:00Z",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 	}
@@ -725,18 +725,12 @@ func TestMatch_InvalidCelExpression(t *testing.T) {
 		Kind: "service",
 	}
 
-	// Due to the bug on line 37-39, non-empty CEL expressions return false
-	// without compiling/executing, so no error is returned
-	match, err := Match(ctx, selector, resource)
+	// Invalid CEL expressions should return an error during compilation
+	_, err := Match(ctx, selector, resource)
 
-	if err != nil {
-		t.Errorf("Match() unexpected error = %v (CEL not compiled due to line 37-39)", err)
+	if err == nil {
+		t.Errorf("Match() expected error for invalid CEL syntax, got nil")
 		return
-	}
-
-	// The function returns false for non-empty CEL without validation
-	if match {
-		t.Errorf("Match() = true, want false")
 	}
 }
 
@@ -827,7 +821,7 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 				Name: "prod-api",
 				Kind: "service",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -838,7 +832,7 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 				Name: "prod-api",
 				Kind: "deployment",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: false,
 			wantErr:   false,
 		},
 		{
@@ -852,7 +846,7 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 					"env": "production",
 				},
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -863,7 +857,7 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 				Name: "api",
 				Kind: "service",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: true,
 			wantErr:   false,
 		},
 		{
@@ -874,7 +868,7 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 				Name: "db",
 				Kind: "database",
 			},
-			wantMatch: false, // Current behavior: returns false for non-empty CEL
+			wantMatch: false,
 			wantErr:   false,
 		},
 	}

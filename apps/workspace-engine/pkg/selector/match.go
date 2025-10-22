@@ -7,52 +7,51 @@ import (
 	"workspace-engine/pkg/selector/langs/cel"
 	"workspace-engine/pkg/selector/langs/jsonselector"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
+	"workspace-engine/pkg/selector/langs/util"
 )
 
-func Match(ctx context.Context, selector *oapi.Selector, item any) (bool, error) {
+func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCondition, error) {
 	jsonSelector, err := selector.AsJsonSelector()
 	if err != nil {
-		return false, fmt.Errorf("selector is not a json selector")
+		return nil, fmt.Errorf("selector is not a json selector")
 	}
 
 	if len(jsonSelector.Json) != 0 {
 		unknownCondition, err := unknown.ParseFromMap(jsonSelector.Json)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 
 		condition, err := jsonselector.ConvertToSelector(ctx, unknownCondition)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 
-		return condition.Matches(item)
+		return condition, nil
 	}
 
 	cselSelector, err := selector.AsCelSelector()
 	if err != nil {
-		return false, fmt.Errorf("selector is not a cel selector")
+		return nil, fmt.Errorf("selector is not a cel selector")
 	}
 
-	if cselSelector.Cel != "" {
-		return false, nil
-	}
-
-	celCtx := &cel.Context{}
-	if oresource, ok := item.(oapi.Resource); ok {
-		celCtx.Resource = oresource
-	}
-	if odeployment, ok := item.(oapi.Deployment); ok {
-		celCtx.Deployment = odeployment
-	}
-	if oenvironment, ok := item.(oapi.Environment); ok {
-		celCtx.Environment = oenvironment
+	if cselSelector.Cel == "" {
+		return nil, fmt.Errorf("cel selector is empty")
 	}
 
 	condition, err := cel.Compile(cselSelector.Cel)
 	if err != nil {
+		return nil, err
+	}
+	return condition, nil
+
+}
+
+func Match(ctx context.Context, selector *oapi.Selector, item any) (bool, error) {
+	matchable, err := Matchable(ctx, selector)
+	if err != nil {
 		return false, err
 	}
 
-	return condition.Matches(celCtx)
+	return matchable.Matches(item)
 }

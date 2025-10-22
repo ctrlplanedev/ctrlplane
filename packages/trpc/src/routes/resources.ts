@@ -25,11 +25,14 @@ export const resourcesRouter = router({
     )
     .query(async ({ input }) => {
       const { workspaceId, selector, limit, offset } = input;
-      return wsEngine
-        .POST("/v1/workspaces/{workspaceId}/resources/query", {
+      const result = await wsEngine.POST(
+        "/v1/workspaces/{workspaceId}/resources/query",
+        {
           body: { filter: selector },
           params: { path: { workspaceId }, query: { limit, offset } },
-        })
-        .then((res) => res.data);
+        },
+      );
+
+      return result.data;
     }),
 });

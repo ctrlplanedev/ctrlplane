@@ -93,7 +93,7 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 	}
 
 	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
-	
+
 	// Load workspaces and seek to stored offsets if workspace loader is provided
 	if workspaceLoader != nil {
 		if err := loadWorkspaces(ctx, consumer, assignedPartitions, workspaceLoader); err != nil {

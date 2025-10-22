@@ -65,7 +65,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		found := false
 
 		for _, value := range values {
-			ok, err := selector.FilterMatchingResources(ctx, value.ResourceSelector, resource)
+			ok, err := selector.Match(ctx, value.ResourceSelector, resource)
 			if err != nil {
 				return nil, fmt.Errorf("failed to filter matching resources: %w", err)
 			}
