@@ -2026,6 +2026,331 @@
             "summary": "Get resources for an environment"
          }
       },
+      "/v1/workspaces/{workspaceId}/job-agents": {
+         "get": {
+            "description": "Returns a list of job agents.",
+            "operationId": "getJobAgents",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/JobAgent"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get job agents"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}": {
+         "get": {
+            "description": "Returns a specific job agent by ID.",
+            "operationId": "getJobAgent",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job agent",
+                  "in": "path",
+                  "name": "jobAgentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "summary": "Get job agent"
+         },
+         "responses": {
+            "200": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/JobAgent"
+                     }
+                  }
+               },
+               "description": "The requested job agent"
+            },
+            "400": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Invalid request"
+            },
+            "404": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Resource not found"
+            }
+         }
+      },
+      "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs": {
+         "get": {
+            "description": "Returns a list of jobs for a job agent.",
+            "operationId": "getJobsForJobAgent",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job agent",
+                  "in": "path",
+                  "name": "jobAgentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "summary": "Get jobs for a job agent"
+         },
+         "responses": {
+            "200": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "items": {
+                              "items": {
+                                 "$ref": "#/components/schemas/Job"
+                              },
+                              "type": "array"
+                           },
+                           "limit": {
+                              "description": "Maximum number of items returned",
+                              "type": "integer"
+                           },
+                           "offset": {
+                              "description": "Number of items skipped",
+                              "type": "integer"
+                           },
+                           "total": {
+                              "description": "Total number of items available",
+                              "type": "integer"
+                           }
+                        },
+                        "required": [
+                           "items",
+                           "total",
+                           "limit",
+                           "offset"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "description": "Paginated list of items"
+            },
+            "400": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Invalid request"
+            },
+            "404": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Resource not found"
+            }
+         }
+      },
+      "/v1/workspaces/{workspaceId}/jobs/{jobId}": {
+         "get": {
+            "description": "Returns a specific job by ID.",
+            "operationId": "getJob",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job",
+                  "in": "path",
+                  "name": "jobId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Job"
+                        }
+                     }
+                  },
+                  "description": "Get job"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get job"
+         }
+      },
       "/v1/workspaces/{workspaceId}/policies": {
          "get": {
             "description": "Returns a list of policies for workspace {workspaceId}.",

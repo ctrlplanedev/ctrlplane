@@ -526,6 +526,24 @@ type GetEnvironmentResourcesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// GetJobAgentsParams defines parameters for GetJobAgents.
+type GetJobAgentsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetJobsForJobAgentParams defines parameters for GetJobsForJobAgent.
+type GetJobsForJobAgentParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // QueryResourcesJSONBody defines parameters for QueryResources.
 type QueryResourcesJSONBody struct {
 	Filter *Selector `json:"filter,omitempty"`
@@ -1195,6 +1213,18 @@ type ServerInterface interface {
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
 	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string, params GetEnvironmentResourcesParams)
+	// Get job agents
+	// (GET /v1/workspaces/{workspaceId}/job-agents)
+	GetJobAgents(c *gin.Context, workspaceId string, params GetJobAgentsParams)
+	// Get job agent
+	// (GET /v1/workspaces/{workspaceId}/job-agents/{jobAgentId})
+	GetJobAgent(c *gin.Context, workspaceId string, jobAgentId string)
+	// Get jobs for a job agent
+	// (GET /v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs)
+	GetJobsForJobAgent(c *gin.Context, workspaceId string, jobAgentId string, params GetJobsForJobAgentParams)
+	// Get job
+	// (GET /v1/workspaces/{workspaceId}/jobs/{jobId})
+	GetJob(c *gin.Context, workspaceId string, jobId string)
 	// List policies
 	// (GET /v1/workspaces/{workspaceId}/policies)
 	ListPolicies(c *gin.Context, workspaceId string)
@@ -1635,6 +1665,167 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId, params)
 }
 
+// GetJobAgents operation middleware
+func (siw *ServerInterfaceWrapper) GetJobAgents(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetJobAgentsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobAgents(c, workspaceId, params)
+}
+
+// GetJobAgent operation middleware
+func (siw *ServerInterfaceWrapper) GetJobAgent(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "jobAgentId" -------------
+	var jobAgentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobAgentId", c.Param("jobAgentId"), &jobAgentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobAgentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobAgent(c, workspaceId, jobAgentId)
+}
+
+// GetJobsForJobAgent operation middleware
+func (siw *ServerInterfaceWrapper) GetJobsForJobAgent(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "jobAgentId" -------------
+	var jobAgentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobAgentId", c.Param("jobAgentId"), &jobAgentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobAgentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetJobsForJobAgentParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobsForJobAgent(c, workspaceId, jobAgentId, params)
+}
+
+// GetJob operation middleware
+func (siw *ServerInterfaceWrapper) GetJob(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "jobId" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobId", c.Param("jobId"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJob(c, workspaceId, jobId)
+}
+
 // ListPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
 
@@ -1928,6 +2119,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents", wrapper.GetJobAgents)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents/:jobAgentId", wrapper.GetJobAgent)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents/:jobAgentId/jobs", wrapper.GetJobsForJobAgent)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs/:jobId", wrapper.GetJob)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies", wrapper.ListPolicies)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)

@@ -16,7 +16,9 @@
     (import 'paths/deployment.jsonnet') +
     (import 'paths/deployment-version.jsonnet') +
     (import 'paths/environment.jsonnet') +
-    (import 'paths/system.jsonnet'),
+    (import 'paths/system.jsonnet') +
+    (import 'paths/job-agents.jsonnet') +
+    (import 'paths/jobs.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),

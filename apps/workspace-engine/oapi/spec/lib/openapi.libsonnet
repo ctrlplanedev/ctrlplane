@@ -17,6 +17,8 @@
   environmentIdParam():: self.stringParam('environmentId', 'ID of the environment'),
   systemIdParam():: self.stringParam('systemId', 'ID of the system'),
   releaseTargetIdParam():: self.stringParam('releaseTargetId', 'ID of the release target'),
+  jobAgentIdParam():: self.stringParam('jobAgentId', 'ID of the job agent'),
+  jobIdParam():: self.stringParam('jobId', 'ID of the job'),
   
   entityTypeParam():: {
     name: 'entityType',

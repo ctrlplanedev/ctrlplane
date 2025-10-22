@@ -100,15 +100,20 @@ export default function Resources() {
           </Breadcrumb>
         </div>
 
-        <div className="flex min-w-[350px] items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search resources..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant="outline" className="h-9">
+            {resources?.total} resource{resources?.total === 1 ? "" : "s"}
+          </Badge>
+          <div className="flex min-w-[350px] items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search resources..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
         </div>
       </header>
