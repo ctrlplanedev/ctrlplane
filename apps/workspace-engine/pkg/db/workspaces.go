@@ -123,7 +123,7 @@ func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) (*WorkspaceSn
 
 const WORKSPACE_SNAPSHOT_INSERT_QUERY = `
 	INSERT INTO workspace_snapshot (workspace_id, path, timestamp, partition, num_partitions)
-	VALUES ($1, $2)
+	VALUES ($1, $2, $3, $4, $5)
 `
 
 func WriteWorkspaceSnapshot(ctx context.Context, workspaceID string, snapshot *WorkspaceSnapshot) error {

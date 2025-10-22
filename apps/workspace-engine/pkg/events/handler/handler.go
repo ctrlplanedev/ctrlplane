@@ -149,12 +149,12 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	// Execute the handler
 	var ws *workspace.Workspace
+	changeSet := changeset.NewChangeSet[any]()
 
 	if workspace.IsGCSStorageEnabled() {
 		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 	}
 
-	changeSet := changeset.NewChangeSet[any]()
 	if !workspace.IsGCSStorageEnabled() {
 		wsExists := workspace.Exists(rawEvent.WorkspaceID)
 		if wsExists {
@@ -171,8 +171,8 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 			workspace.Set(rawEvent.WorkspaceID, ws)
 			changeSet.IsInitialLoad = true
 		}
-		ctx = changeset.WithChangeSet(ctx, changeSet)
 	}
+	ctx = changeset.WithChangeSet(ctx, changeSet)
 
 	if err := handler(ctx, ws, rawEvent); err != nil {
 		span.RecordError(err)
