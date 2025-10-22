@@ -1,0 +1,1 @@
+ALTER TABLE "workspace_snapshot" ADD COLUMN "path" text NOT NULL;

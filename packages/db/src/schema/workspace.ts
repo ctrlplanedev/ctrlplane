@@ -101,6 +101,7 @@ export const workspaceSnapshot = pgTable("workspace_snapshot", {
   workspaceId: uuid("workspace_id")
     .notNull()
     .references(() => workspace.id, { onDelete: "cascade" }),
+  path: text("path").notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
   partition: integer("partition").notNull(),
   numPartitions: integer("num_partitions").notNull(),
