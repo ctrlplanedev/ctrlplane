@@ -149,23 +149,29 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	// Execute the handler
 	var ws *workspace.Workspace
 
-	wsExists := workspace.Exists(rawEvent.WorkspaceID)
-	if wsExists {
+	if workspace.IsGCSStorageEnabled() {
 		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 	}
+
 	changeSet := changeset.NewChangeSet[any]()
-	if !wsExists {
-		ws = workspace.New(rawEvent.WorkspaceID)
-		if err := workspace.PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "failed to load workspace")
-			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
-			return nil, fmt.Errorf("failed to load workspace: %w", err)
+	if !workspace.IsGCSStorageEnabled() {
+		wsExists := workspace.Exists(rawEvent.WorkspaceID)
+		if wsExists {
+			ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 		}
-		workspace.Set(rawEvent.WorkspaceID, ws)
-		changeSet.IsInitialLoad = true
+		if !wsExists {
+			ws = workspace.New(rawEvent.WorkspaceID)
+			if err := workspace.PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "failed to load workspace")
+				log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
+				return nil, fmt.Errorf("failed to load workspace: %w", err)
+			}
+			workspace.Set(rawEvent.WorkspaceID, ws)
+			changeSet.IsInitialLoad = true
+		}
+		ctx = changeset.WithChangeSet(ctx, changeSet)
 	}
-	ctx = changeset.WithChangeSet(ctx, changeSet)
 
 	if err := handler(ctx, ws, rawEvent); err != nil {
 		span.RecordError(err)
@@ -202,11 +208,13 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		return ws, nil
 	}
 
-	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to flush changeset")
-		log.Error("Failed to flush changeset", "error", err)
-		return nil, fmt.Errorf("failed to flush changeset: %w", err)
+	if !workspace.IsGCSStorageEnabled() {
+		if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to flush changeset")
+			log.Error("Failed to flush changeset", "error", err)
+			return nil, fmt.Errorf("failed to flush changeset: %w", err)
+		}
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")
