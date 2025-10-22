@@ -1355,7 +1355,7 @@
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources": {
          "get": {
-            "description": "Returns a list of resources for deployment {deploymentId}.",
+            "description": "Returns a paginated list of resources for deployment {deploymentId}.",
             "operationId": "getDeploymentResources",
             "parameters": [
                {
@@ -1375,6 +1375,29 @@
                   "schema": {
                      "type": "string"
                   }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
                }
             ],
             "responses": {
@@ -1383,18 +1406,36 @@
                      "application/json": {
                         "schema": {
                            "properties": {
-                              "resources": {
+                              "items": {
                                  "items": {
                                     "$ref": "#/components/schemas/Resource"
                                  },
                                  "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
                               }
                            },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
                            "type": "object"
                         }
                      }
                   },
-                  "description": "A list of resources"
+                  "description": "Paginated list of items"
                },
                "404": {
                   "content": {
@@ -1544,7 +1585,7 @@
       },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
          "get": {
-            "description": "Returns a list of resources for environment {environmentId}.",
+            "description": "Returns a paginated list of resources for environment {environmentId}.",
             "operationId": "getEnvironmentResources",
             "parameters": [
                {
@@ -1564,6 +1605,29 @@
                   "schema": {
                      "type": "string"
                   }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
                }
             ],
             "responses": {
@@ -1572,18 +1636,36 @@
                      "application/json": {
                         "schema": {
                            "properties": {
-                              "resources": {
+                              "items": {
                                  "items": {
                                     "$ref": "#/components/schemas/Resource"
                                  },
                                  "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
                               }
                            },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
                            "type": "object"
                         }
                      }
                   },
-                  "description": "A list of resources"
+                  "description": "Paginated list of items"
                },
                "404": {
                   "content": {
@@ -1879,7 +1961,7 @@
       },
       "/v1/workspaces/{workspaceId}/resources/query": {
          "post": {
-            "description": "Returns resources that match the provided CEL expression. Use the \"resource\" variable in your expression to access resource properties.",
+            "description": "Returns paginated resources that match the provided CEL expression. Use the \"resource\" variable in your expression to access resource properties.",
             "operationId": "queryResources",
             "parameters": [
                {
@@ -1890,13 +1972,41 @@
                   "schema": {
                      "type": "string"
                   }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
                }
             ],
             "requestBody": {
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/Selector"
+                        "properties": {
+                           "filter": {
+                              "$ref": "#/components/schemas/Selector"
+                           }
+                        },
+                        "type": "object"
                      }
                   }
                },
@@ -1908,18 +2018,36 @@
                      "application/json": {
                         "schema": {
                            "properties": {
-                              "resources": {
+                              "items": {
                                  "items": {
                                     "$ref": "#/components/schemas/Resource"
                                  },
                                  "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
                               }
                            },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
                            "type": "object"
                         }
                      }
                   },
-                  "description": "List of matching resources"
+                  "description": "Paginated list of items"
                },
                "400": {
                   "content": {

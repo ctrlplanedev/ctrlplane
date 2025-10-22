@@ -1,7 +1,6 @@
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { requireAuth } from "@/middleware/auth.js";
-import { errorHandler } from "@/middleware/error-handler.js";
 import { createV1Router } from "@/routes/index.js";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { toNodeHandler } from "better-auth/node";
@@ -30,6 +29,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+app.use((req, res, next) => {
+  res.on("finish", () => {
+    console.log(`${res.statusCode} - ${req.method} ${req.originalUrl}`);
+  });
+  next();
+});
+
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 // Optional: OpenAPI validation middleware
@@ -38,7 +44,7 @@ app.use(
     apiSpec: join(__dirname, "../openapi/openapi.json"),
     validateRequests: true,
     validateResponses: true,
-    ignorePaths: /\/api\/(auth|internal)/,
+    ignorePaths: /\/api\/(auth|internal|trpc)/,
   }),
 );
 
@@ -49,14 +55,27 @@ app.use("/api/v1", requireAuth);
 app.use("/api/v1", createV1Router());
 
 app.use(
-  "/api/internal/trpc",
+  "/api/trpc",
   trpcExpress.createExpressMiddleware({
     router: appRouter,
-    createContext: () => createTRPCContext(),
+    createContext: async (opts) => {
+      console.log("createContext");
+      const headers = Object.fromEntries(
+        Object.entries(opts.req.headers)
+          .filter(([_, v]) => typeof v === "string")
+          .map(([k, v]) => [k, v as string]),
+      );
+
+      const session =
+        (await auth.api.getSession({
+          headers: new Headers(headers),
+        })) ?? null;
+
+      console.log("session", session?.user.id);
+
+      return createTRPCContext(session);
+    },
   }),
 );
-
-// Global error handler - must be last
-app.use(errorHandler);
 
 export { app };

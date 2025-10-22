@@ -30,7 +30,7 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 	c.JSON(http.StatusOK, deployment)
 }
 
-func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string) {
+func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetDeploymentResourcesParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -52,7 +52,33 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 		resourceList = append(resourceList, resource)
 	}
 
+	// Get pagination parameters with defaults
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(resourceList)
+	
+	// Apply pagination
+	start := offset
+	if start > total {
+		start = total
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+	paginatedResources := resourceList[start:end]
+
 	c.JSON(http.StatusOK, gin.H{
-		"resources": resourceList,
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  paginatedResources,
 	})
 }

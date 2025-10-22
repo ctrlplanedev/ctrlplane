@@ -6,10 +6,12 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "generate": "openapi-typescript ../../apps/api/openapi/openapi.json -o app/api/openapi.ts"
   },
   "dependencies": {
-    "@ctrlplane/api": "workspace:*",
+    "@ctrlplane/auth": "workspace:*",
+    "@ctrlplane/trpc": "workspace:*",
     "@ctrlplane/workspace-engine-sdk": "workspace:*",
     "@dagrejs/dagre": "^1.1.5",
     "@hookform/resolvers": "catalog:",
@@ -38,6 +40,7 @@
     "@tanstack/react-query": "^5.81.5",
     "@trpc/client": "11.0.0-rc.364",
     "@trpc/react-query": "11.0.0-rc.364",
+    "better-auth": "^1.3.28",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -45,6 +48,7 @@
     "isbot": "^5.1.31",
     "lucide-react": "^0.441.0",
     "next-themes": "^0.3.0",
+    "openapi-fetch": "^0.13.8",
     "react": "catalog:react19",
     "react-day-picker": "^9.11.1",
     "react-dom": "catalog:react19",
@@ -60,6 +64,7 @@
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
+    "@openapitools/openapi-generator-cli": "^2.21.0",
     "@react-router/dev": "^7.9.2",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22",

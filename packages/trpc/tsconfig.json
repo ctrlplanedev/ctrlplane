@@ -5,7 +5,7 @@
     "outDir": "./dist",
     "noEmit": false,
     "declaration": true,
-    "emitDeclarationOnly": true,
+    "emitDeclarationOnly": false,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
   "include": ["src/**/*"]

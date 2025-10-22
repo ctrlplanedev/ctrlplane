@@ -11,7 +11,7 @@ import type { Route } from "./+types/root";
 
 import "./app.css";
 
-import { TRPCReactProvider } from "./trpc";
+import { TRPCReactProvider } from "./api/trpc";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

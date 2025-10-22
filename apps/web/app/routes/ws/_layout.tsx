@@ -18,9 +18,12 @@ import {
   NavLink,
   Outlet,
   useLocation,
+  useNavigate,
   useParams,
 } from "react-router";
 
+import { authClient } from "~/api/auth-client";
+import { trpc } from "~/api/trpc";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -47,7 +50,6 @@ import {
   useSidebar,
 } from "~/components/ui/sidebar";
 import { cn } from "~/lib/utils";
-import { api } from "~/trpc";
 import { WorkspaceSelector } from "./_components/WorkspaceSelector";
 
 // Navigation groups
@@ -77,8 +79,17 @@ const UserNav: React.FC<{
   viewer: { image: string | null; name: string | null; email: string };
 }> = ({ viewer }) => {
   const { isMobile } = useSidebar();
+  const navigate = useNavigate();
 
-  const signOut = api.user.auth.signOut.useMutation();
+  const signOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          navigate("/login");
+        },
+      },
+    });
+  };
 
   return (
     <SidebarMenu>
@@ -132,7 +143,7 @@ const UserNav: React.FC<{
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut.mutate()}>
+            <DropdownMenuItem onClick={() => signOut()}>
               <LogOut />
               Log out
             </DropdownMenuItem>
@@ -146,8 +157,8 @@ const UserNav: React.FC<{
 export default function WorkspaceLayout() {
   const path = useLocation();
   const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
-  const { data: viewer } = api.user.viewer.useQuery();
-  const { data: workspaces = [] } = api.workspace.list.useQuery();
+  const { data: viewer } = trpc.user.session.useQuery();
+  const workspaces = viewer?.workspaces ?? [];
 
   if (path.pathname === `/${workspaceSlug}`)
     return <Navigate to={`/${workspaceSlug}/deployments`} />;

@@ -481,11 +481,43 @@ type Value struct {
 	union json.RawMessage
 }
 
+// GetDeploymentResourcesParams defines parameters for GetDeploymentResources.
+type GetDeploymentResourcesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetEnvironmentResourcesParams defines parameters for GetEnvironmentResources.
+type GetEnvironmentResourcesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// QueryResourcesJSONBody defines parameters for QueryResources.
+type QueryResourcesJSONBody struct {
+	Filter *Selector `json:"filter,omitempty"`
+}
+
+// QueryResourcesParams defines parameters for QueryResources.
+type QueryResourcesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
 
 // QueryResourcesJSONRequestBody defines body for QueryResources for application/json ContentType.
-type QueryResourcesJSONRequestBody = Selector
+type QueryResourcesJSONRequestBody QueryResourcesJSONBody
 
 // AsJobUpdateEvent0 returns the union data inside the JobUpdateEvent as a JobUpdateEvent0
 func (t JobUpdateEvent) AsJobUpdateEvent0() (JobUpdateEvent0, error) {
@@ -1117,7 +1149,7 @@ type ServerInterface interface {
 	GetDeployment(c *gin.Context, workspaceId string, deploymentId string)
 	// Get resources for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
-	GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string)
+	GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string, params GetDeploymentResourcesParams)
 	// Get related entities for a given entity
 	// (GET /v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships)
 	GetRelatedEntities(c *gin.Context, workspaceId string, relatableEntityType RelatableEntityType, entityId string)
@@ -1126,7 +1158,7 @@ type ServerInterface interface {
 	GetEnvironment(c *gin.Context, workspaceId string, environmentId string)
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
-	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string)
+	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string, params GetEnvironmentResourcesParams)
 	// List policies
 	// (GET /v1/workspaces/{workspaceId}/policies)
 	ListPolicies(c *gin.Context, workspaceId string)
@@ -1144,7 +1176,7 @@ type ServerInterface interface {
 	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetId string)
 	// Query resources with CEL expression
 	// (POST /v1/workspaces/{workspaceId}/resources/query)
-	QueryResources(c *gin.Context, workspaceId string)
+	QueryResources(c *gin.Context, workspaceId string, params QueryResourcesParams)
 	// Get resource by identifier
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
 	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
@@ -1264,6 +1296,25 @@ func (siw *ServerInterfaceWrapper) GetDeploymentResources(c *gin.Context) {
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDeploymentResourcesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -1271,7 +1322,7 @@ func (siw *ServerInterfaceWrapper) GetDeploymentResources(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetDeploymentResources(c, workspaceId, deploymentId)
+	siw.Handler.GetDeploymentResources(c, workspaceId, deploymentId, params)
 }
 
 // GetRelatedEntities operation middleware
@@ -1372,6 +1423,25 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetEnvironmentResourcesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -1379,7 +1449,7 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId)
+	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId, params)
 }
 
 // ListPolicies operation middleware
@@ -1543,6 +1613,25 @@ func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QueryResourcesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -1550,7 +1639,7 @@ func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.QueryResources(c, workspaceId)
+	siw.Handler.QueryResources(c, workspaceId, params)
 }
 
 // GetResourceByIdentifier operation middleware

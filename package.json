@@ -44,6 +44,7 @@
       "core-js-pure",
       "esbuild",
       "msgpackr-extract",
+      "protobufjs",
       "sharp",
       "tree-sitter",
       "tree-sitter-json",

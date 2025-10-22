@@ -31,6 +31,32 @@
   
   entityIdParam():: self.stringParam('entityId', 'ID of the entity'),
   
+  // Pagination parameters
+  limitParam(defaultValue = 50):: {
+    name: 'limit',
+    'in': 'query',
+    required: false,
+    description: 'Maximum number of items to return',
+    schema: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 1000,
+      default: defaultValue,
+    },
+  },
+  
+  offsetParam():: {
+    name: 'offset',
+    'in': 'query',
+    required: false,
+    description: 'Number of items to skip',
+    schema: {
+      type: 'integer',
+      minimum: 0,
+      default: 0,
+    },
+  },
+  
   // Response helpers
   schemaRef(name, nullable = false):: (
     if nullable then
@@ -45,6 +71,35 @@
       content: {
         'application/json': {
           schema: schema,
+        },
+      },
+    },
+  },
+  
+  paginatedResponse(itemsSchema, description = "Paginated list of items"):: {
+    '200': {
+      description: description,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              items: itemsSchema,
+              total: {
+                type: 'integer',
+                description: 'Total number of items available',
+              },
+              limit: {
+                type: 'integer',
+                description: 'Maximum number of items returned',
+              },
+              offset: {
+                type: 'integer',
+                description: 'Number of items skipped',
+              },
+            },
+            required: ['items', 'total', 'limit', 'offset'],
+          },
         },
       },
     },

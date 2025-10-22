@@ -5,21 +5,17 @@ local openapi = import '../lib/openapi.libsonnet';
     get: {
       summary: 'Get resources for an environment',
       operationId: 'getEnvironmentResources',
-      description: 'Returns a list of resources for environment {environmentId}.',
+      description: 'Returns a paginated list of resources for environment {environmentId}.',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.environmentIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
       ],
-      responses: openapi.okResponse(
-        'A list of resources',
+      responses: openapi.paginatedResponse(
         {
-          type: 'object',
-          properties: {
-            resources: {
-              type: 'array',
-              items: openapi.schemaRef('Resource'),
-            },
-          },
+          type: 'array',
+          items: openapi.schemaRef('Resource'),
         }
       ) + openapi.notFoundResponse(),
     },
@@ -29,21 +25,17 @@ local openapi = import '../lib/openapi.libsonnet';
     get: {
       summary: 'Get resources for a deployment',
       operationId: 'getDeploymentResources',
-      description: 'Returns a list of resources for deployment {deploymentId}.',
+      description: 'Returns a paginated list of resources for deployment {deploymentId}.',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
       ],
-      responses: openapi.okResponse(
-        'A list of resources',
+      responses: openapi.paginatedResponse(
         {
-          type: 'object',
-          properties: {
-            resources: {
-              type: 'array',
-              items: openapi.schemaRef('Resource'),
-            },
-          },
+          type: 'array',
+          items: openapi.schemaRef('Resource'),
         }
       ) + openapi.notFoundResponse(),
     },
@@ -69,28 +61,24 @@ local openapi = import '../lib/openapi.libsonnet';
     post: {
       summary: 'Query resources with CEL expression',
       operationId: 'queryResources',
-      description: 'Returns resources that match the provided CEL expression. Use the "resource" variable in your expression to access resource properties.',
+      description: 'Returns paginated resources that match the provided CEL expression. Use the "resource" variable in your expression to access resource properties.',
       parameters: [
         openapi.workspaceIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
       ],
       requestBody: {
         required: true,
         content: {
           'application/json': {
-            schema: openapi.schemaRef('Selector'),
+            schema: { type: 'object', properties: { filter: openapi.schemaRef('Selector') } },
           },
         },
       },
-      responses: openapi.okResponse(
-        'List of matching resources',
+      responses: openapi.paginatedResponse(
         {
-          type: 'object',
-          properties: {
-            resources: {
-              type: 'array',
-              items: openapi.schemaRef('Resource'),
-            },
-          },
+          type: 'array',
+          items: openapi.schemaRef('Resource'),
         }
       ) + openapi.badRequestResponse(),
     },

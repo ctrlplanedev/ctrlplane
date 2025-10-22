@@ -34,7 +34,7 @@ func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, 
 	})
 }
 
-func (r *Resources) QueryResources(c *gin.Context, workspaceId string) {
+func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oapi.QueryResourcesParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -44,8 +44,8 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string) {
 	}
 
 	// Parse request body
-	var sel oapi.Selector
-	if err := c.ShouldBindJSON(&sel); err != nil {
+	var body oapi.QueryResourcesJSONBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid request body: " + err.Error(),
 		})
@@ -60,7 +60,7 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string) {
 	}
 
 	// Filter resources using the selector
-	matchedResourcesMap, err := selector.FilterResources(c.Request.Context(), &sel, resourceSlice)
+	matchedResourcesMap, err := selector.FilterResources(c.Request.Context(), body.Filter, resourceSlice)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to filter resources: " + err.Error(),
@@ -74,7 +74,33 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string) {
 		matchedResources = append(matchedResources, resource)
 	}
 
+	// Get pagination parameters with defaults
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(matchedResources)
+	
+	// Apply pagination
+	start := offset
+	if start > total {
+		start = total
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+	paginatedResources := matchedResources[start:end]
+
 	c.JSON(http.StatusOK, gin.H{
-		"resources": matchedResources,
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  paginatedResources,
 	})
 }

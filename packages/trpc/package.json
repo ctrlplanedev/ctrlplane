@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/events": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
@@ -27,6 +28,7 @@
     "@ctrlplane/workspace-engine-sdk": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "@trpc/server": "11.0.0-rc.364",
+    "better-auth": "^1.3.28",
     "superjson": "catalog:",
     "ts-is-present": "catalog:",
     "zod": "catalog:zod4"

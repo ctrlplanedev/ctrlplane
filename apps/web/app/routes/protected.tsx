@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useParams } from "react-router";
 
-import { api } from "~/trpc";
+import { trpc } from "~/api/trpc";
 
 function LoadingScreen() {
   return (
@@ -14,18 +14,15 @@ function LoadingScreen() {
 }
 
 export default function ProtectedLayout() {
-  const { data: viewer, isLoading: isViewerLoading } =
-    api.user.viewer.useQuery();
-  const { data: workspaces = [], isLoading: isWorkspacesLoading } =
-    api.workspace.list.useQuery();
+  const { data: viewer, isLoading } = trpc.user.session.useQuery();
+  const workspaces = viewer?.workspaces ?? [];
 
   const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
 
-  const loading = isViewerLoading || isWorkspacesLoading;
-  if (loading) return <LoadingScreen />;
-  if (!viewer) return <Navigate to="/login" />;
+  if (isLoading) return <LoadingScreen />;
+  if (viewer == null) return <Navigate to="/login" />;
 
-  const activeWorkspaceId = viewer.activeWorkspaceId;
+  const { activeWorkspaceId } = viewer;
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   if (!activeWorkspace) return <Navigate to="/workspaces/create" />;
 
