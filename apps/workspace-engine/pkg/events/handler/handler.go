@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/workspace"
 
@@ -83,6 +84,7 @@ type RawEvent struct {
 	EventType   EventType       `json:"eventType"`
 	WorkspaceID string          `json:"workspaceId"`
 	Data        json.RawMessage `json:"data,omitempty"`
+	Timestamp   int64           `json:"timestamp"`
 }
 
 // Handler defines the interface for processing events
@@ -93,12 +95,17 @@ type HandlerRegistry map[EventType]Handler
 
 // EventListener listens for events on the queue and routes them to appropriate handlers
 type EventListener struct {
-	handlers HandlerRegistry
+	handlers       HandlerRegistry
+	workspaceSaver workspace.WorkspaceSaver
 }
 
 // NewEventListener creates a new event listener with the provided handlers
 func NewEventListener(handlers HandlerRegistry) *EventListener {
 	return &EventListener{handlers: handlers}
+}
+
+func NewEventListenerWithWorkspaceSaver(handlers HandlerRegistry, workspaceSaver workspace.WorkspaceSaver) *EventListener {
+	return &EventListener{handlers: handlers, workspaceSaver: workspaceSaver}
 }
 
 // ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler
@@ -178,6 +185,22 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	}
 
 	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
+
+	if el.workspaceSaver != nil {
+		timestampStr := time.Unix(rawEvent.Timestamp, 0).Format(time.RFC3339)
+		if err := el.workspaceSaver(ctx, ws.ID, timestampStr); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to save workspace")
+			log.Error("Failed to save workspace", "error", err, "workspaceID", ws.ID)
+			return nil, fmt.Errorf("failed to save workspace: %w", err)
+		}
+
+		span.SetStatus(codes.Ok, "event processed successfully")
+		log.Debug("Successfully processed event",
+			"eventType", rawEvent.EventType)
+
+		return ws, nil
+	}
 
 	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
 		span.RecordError(err)

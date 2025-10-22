@@ -16,6 +16,7 @@ import (
 	"workspace-engine/pkg/events/handler/system"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/userapprovalrecords"
+	"workspace-engine/pkg/workspace"
 )
 
 var handlers = handler.HandlerRegistry{
@@ -78,4 +79,8 @@ var handlers = handler.HandlerRegistry{
 
 func NewEventHandler() *handler.EventListener {
 	return handler.NewEventListener(handlers)
+}
+
+func NewEventHandlerWithWorkspaceSaver(workspaceSaver workspace.WorkspaceSaver) *handler.EventListener {
+	return handler.NewEventListenerWithWorkspaceSaver(handlers, workspaceSaver)
 }

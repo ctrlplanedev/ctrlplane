@@ -256,7 +256,122 @@ func (w *Workspace) LoadFromStorage(ctx context.Context, storage StorageClient, 
 	return nil
 }
 
+func (w *Workspace) SaveToGCS(ctx context.Context, workspaceID string, timestamp string, partition int32, numPartitions int32) error {
+	if !IsGCSStorageEnabled() {
+		return nil
+	}
+
+	data, err := w.GobEncode()
+	if err != nil {
+		return fmt.Errorf("failed to encode workspace: %w", err)
+	}
+
+	if err := PutWorkspaceSnapshot(ctx, workspaceID, timestamp, partition, numPartitions, data); err != nil {
+		return fmt.Errorf("failed to put workspace snapshot: %w", err)
+	}
+
+	return nil
+}
+
+func (w *Workspace) LoadFromGCS(ctx context.Context, workspaceID string) error {
+	if !IsGCSStorageEnabled() {
+		return nil
+	}
+
+	data, err := GetWorkspaceSnapshot(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace snapshot: %w", err)
+	}
+
+	if data == nil {
+		return nil
+	}
+
+	if err := w.GobDecode(data); err != nil {
+		return fmt.Errorf("failed to decode workspace: %w", err)
+	}
+
+	return nil
+}
+
+type WorkspaceSaver func(ctx context.Context, workspaceID string, timestamp string) error
+
+func CreateGCSWorkspaceSaver(numPartitions int32) WorkspaceSaver {
+	return func(ctx context.Context, workspaceID string, timestamp string) error {
+		ws := GetWorkspace(workspaceID)
+		partition := kafka.PartitionForWorkspace(workspaceID, numPartitions)
+		if err := ws.SaveToGCS(ctx, workspaceID, timestamp, partition, numPartitions); err != nil {
+			return fmt.Errorf("failed to save workspace %s to S3: %w", workspaceID, err)
+		}
+		return nil
+	}
+}
+
 type WorkspaceLoader func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error
+
+// getAssignedWorkspaceIDs retrieves workspace IDs for the assigned partitions.
+// Uses the provided discoverer if available, otherwise falls back to the default implementation.
+func getAssignedWorkspaceIDs(
+	ctx context.Context,
+	assignedPartitions []int32,
+	numPartitions int32,
+	discoverer kafka.WorkspaceIDDiscoverer,
+) ([]string, error) {
+	var allWorkspaceIDs []string
+
+	// Use discoverer if provided, otherwise use default implementation
+	if discoverer != nil {
+		// Collect workspace IDs for each assigned partition
+		workspaceIDSet := make(map[string]bool)
+		for _, partition := range assignedPartitions {
+			partitionWorkspaces, err := discoverer(ctx, partition, numPartitions)
+			if err != nil {
+				return nil, fmt.Errorf("failed to discover workspace IDs for partition %d: %w", partition, err)
+			}
+			for _, wsID := range partitionWorkspaces {
+				workspaceIDSet[wsID] = true
+			}
+		}
+		// Convert set to slice
+		for wsID := range workspaceIDSet {
+			allWorkspaceIDs = append(allWorkspaceIDs, wsID)
+		}
+	} else {
+		var err error
+		allWorkspaceIDs, err = kafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get assigned workspace IDs: %w", err)
+		}
+	}
+
+	return allWorkspaceIDs, nil
+}
+
+// CreateGCSWorkspaceLoader creates a workspace loader function that:
+// 1. Discovers all available workspace IDs
+// 2. Determines which workspaces belong to which partitions
+// 3. Loads workspaces for the assigned partitions from S3
+func CreateGCSWorkspaceLoader(
+	discoverer kafka.WorkspaceIDDiscoverer,
+) WorkspaceLoader {
+	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
+		allWorkspaceIDs, err := getAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions, discoverer)
+		if err != nil {
+			return err
+		}
+
+		for _, workspaceID := range allWorkspaceIDs {
+			ws := GetWorkspace(workspaceID)
+			if err := ws.LoadFromGCS(ctx, workspaceID); err != nil {
+				return fmt.Errorf("failed to load workspace %s from S3: %w", workspaceID, err)
+			}
+
+			Set(workspaceID, ws)
+		}
+
+		return nil
+	}
+}
 
 // CreateWorkspaceLoader creates a workspace loader function that:
 // 1. Discovers all available workspace IDs
@@ -267,31 +382,9 @@ func CreateWorkspaceLoader(
 	discoverer kafka.WorkspaceIDDiscoverer,
 ) WorkspaceLoader {
 	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
-		var allWorkspaceIDs []string
-		var err error
-
-		// Use discoverer if provided, otherwise use default implementation
-		if discoverer != nil {
-			// Collect workspace IDs for each assigned partition
-			workspaceIDSet := make(map[string]bool)
-			for _, partition := range assignedPartitions {
-				partitionWorkspaces, discErr := discoverer(ctx, partition, numPartitions)
-				if discErr != nil {
-					return fmt.Errorf("failed to discover workspace IDs for partition %d: %w", partition, discErr)
-				}
-				for _, wsID := range partitionWorkspaces {
-					workspaceIDSet[wsID] = true
-				}
-			}
-			// Convert set to slice
-			for wsID := range workspaceIDSet {
-				allWorkspaceIDs = append(allWorkspaceIDs, wsID)
-			}
-		} else {
-			allWorkspaceIDs, err = kafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
-			if err != nil {
-				return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
-			}
+		allWorkspaceIDs, err := getAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions, discoverer)
+		if err != nil {
+			return err
 		}
 
 		for _, workspaceID := range allWorkspaceIDs {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/events"
+	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 
@@ -29,13 +30,28 @@ func getEnv(varName string, defaultValue string) string {
 	return v
 }
 
+func getEventHandler(numPartitions int32) *handler.EventListener {
+	if workspace.IsGCSStorageEnabled() {
+		return events.NewEventHandlerWithWorkspaceSaver(workspace.CreateGCSWorkspaceSaver(numPartitions))
+	}
+	return events.NewEventHandler()
+}
+
 // RunConsumer starts the Kafka consumer without offset resume
 // Uses default Kafka offsets (committed offsets or 'earliest')
 func RunConsumer(ctx context.Context) error {
-	return RunConsumerWithWorkspaceLoader(ctx, nil)
+	if workspace.IsGCSStorageEnabled() {
+		return runConsumerWithGCSStore(ctx)
+	}
+	return RunConsumerWithWorkspaceStore(ctx, nil)
 }
 
-// RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
+func runConsumerWithGCSStore(ctx context.Context) error {
+	workspaceLoader := workspace.CreateGCSWorkspaceLoader(nil)
+	return RunConsumerWithWorkspaceStore(ctx, workspaceLoader)
+}
+
+// RunConsumerWithWorkspaceStore starts the Kafka consumer with workspace-based offset resume
 //
 // Flow:
 //  1. Connect to Kafka and subscribe to topic
@@ -43,7 +59,7 @@ func RunConsumer(ctx context.Context) error {
 //  3. Load workspaces for assigned partitions (if workspaceLoader provided)
 //  4. Seek to stored offsets per partition
 //  5. Start consuming and processing messages
-func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspace.WorkspaceLoader) error {
+func RunConsumerWithWorkspaceStore(ctx context.Context, workspaceLoader workspace.WorkspaceLoader) error {
 	// Initialize Kafka consumer
 	consumer, err := createConsumer()
 	if err != nil {
@@ -105,7 +121,7 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 	log.Info("Started Kafka consumer for ctrlplane-events")
 
 	// Start consuming messages
-	handler := events.NewEventHandler()
+	handler := getEventHandler(numPartitions)
 
 	for {
 		// Check for cancellation
