@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
@@ -273,6 +274,8 @@ func (w *Workspace) SaveToGCS(ctx context.Context, workspaceID string, timestamp
 	return nil
 }
 
+var ErrWorkspaceSnapshotNotFound = errors.New("workspace snapshot not found")
+
 func (w *Workspace) LoadFromGCS(ctx context.Context, workspaceID string) error {
 	if !IsGCSStorageEnabled() {
 		return nil
@@ -284,7 +287,7 @@ func (w *Workspace) LoadFromGCS(ctx context.Context, workspaceID string) error {
 	}
 
 	if data == nil {
-		return nil
+		return ErrWorkspaceSnapshotNotFound
 	}
 
 	if err := w.GobDecode(data); err != nil {
@@ -365,11 +368,21 @@ func CreateGCSWorkspaceLoader(
 
 		for _, workspaceID := range allWorkspaceIDs {
 			ws := GetWorkspace(workspaceID)
-			if err := ws.LoadFromGCS(ctx, workspaceID); err != nil {
-				return fmt.Errorf("failed to load workspace %s from GCS: %w", workspaceID, err)
+			err := ws.LoadFromGCS(ctx, workspaceID)
+			if err == nil {
+				Set(workspaceID, ws)
+				continue
 			}
 
-			Set(workspaceID, ws)
+			if err == ErrWorkspaceSnapshotNotFound {
+				if err := PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
+					return fmt.Errorf("failed to populate workspace %s with initial state: %w", workspaceID, err)
+				}
+				Set(workspaceID, ws)
+				continue
+			}
+
+			return fmt.Errorf("failed to load workspace %s from GCS: %w", workspaceID, err)
 		}
 
 		return nil
