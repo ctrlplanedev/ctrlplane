@@ -2,6 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -93,4 +94,14 @@ export const createWorkspaceEmailDomainMatching = createInsertSchema(
   domain: true,
   verificationEmail: true,
   createdAt: true,
+});
+
+export const workspaceSnapshot = pgTable("workspace_snapshot", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspace.id, { onDelete: "cascade" }),
+  timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
+  partition: integer("partition").notNull(),
+  numPartitions: integer("num_partitions").notNull(),
 });
