@@ -16,7 +16,7 @@
   deploymentIdParam():: self.stringParam('deploymentId', 'ID of the deployment'),
   environmentIdParam():: self.stringParam('environmentId', 'ID of the environment'),
   systemIdParam():: self.stringParam('systemId', 'ID of the system'),
-  releaseTargetIdParam():: self.stringParam('releaseTargetId', 'ID of the release target'),
+  releaseTargetKeyParam():: self.stringParam('releaseTargetKey', 'Key of the release target'),
   jobAgentIdParam():: self.stringParam('jobAgentId', 'ID of the job agent'),
   jobIdParam():: self.stringParam('jobId', 'ID of the job'),
   
@@ -56,6 +56,16 @@
       type: 'integer',
       minimum: 0,
       default: 0,
+    },
+  },
+
+  celParam():: {
+    name: 'cel',
+    'in': 'query',
+    required: false,
+    description: 'CEL expression to filter the results',
+    schema: {
+      type: 'string',
     },
   },
   

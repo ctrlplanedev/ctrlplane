@@ -61,6 +61,12 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 		celCtx["environment"] = entityAsMap
 	}
 
+	_, isJob := entity.(oapi.Job)
+	_, isPointerJob := entity.(*oapi.Job)
+	if isJob || isPointerJob {
+		celCtx["job"] = entityAsMap
+	}
+
 	val, _, err := s.Program.Eval(celCtx)
 	if err != nil {
 		return false, err

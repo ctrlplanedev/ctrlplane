@@ -2572,7 +2572,124 @@
             "summary": "Evaluate policies for a release target"
          }
       },
-      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies": {
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/jobs": {
+         "get": {
+            "description": "Returns a list of jobs for a release target {releaseTargetKey}.",
+            "operationId": "getJobsForReleaseTarget",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Key of the release target",
+                  "in": "path",
+                  "name": "releaseTargetKey",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "CEL expression to filter the results",
+                  "in": "query",
+                  "name": "cel",
+                  "required": false,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Job"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get jobs for a release target"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies": {
          "get": {
             "description": "Returns a list of policies for a release target {releaseTargetId}.",
             "operationId": "getPoliciesForReleaseTarget",
@@ -2587,9 +2704,9 @@
                   }
                },
                {
-                  "description": "ID of the release target",
+                  "description": "Key of the release target",
                   "in": "path",
-                  "name": "releaseTargetId",
+                  "name": "releaseTargetKey",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -2821,11 +2938,35 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/System"
+                           "properties": {
+                              "deployments": {
+                                 "description": "Deployments associated with the system",
+                                 "items": {
+                                    "$ref": "#/components/schemas/Deployment"
+                                 },
+                                 "type": "array"
+                              },
+                              "environments": {
+                                 "description": "Environments associated with the system",
+                                 "items": {
+                                    "$ref": "#/components/schemas/Environment"
+                                 },
+                                 "type": "array"
+                              },
+                              "system": {
+                                 "$ref": "#/components/schemas/System"
+                              }
+                           },
+                           "required": [
+                              "system",
+                              "environments",
+                              "deployments"
+                           ],
+                           "type": "object"
                         }
                      }
                   },
-                  "description": "The requested system"
+                  "description": "The requested system with its environments and deployments"
                },
                "400": {
                   "content": {

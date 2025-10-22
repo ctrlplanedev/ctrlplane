@@ -544,6 +544,18 @@ type GetJobsForJobAgentParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// GetJobsForReleaseTargetParams defines parameters for GetJobsForReleaseTarget.
+type GetJobsForReleaseTargetParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Cel CEL expression to filter the results
+	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
+}
+
 // QueryResourcesJSONBody defines parameters for QueryResources.
 type QueryResourcesJSONBody struct {
 	Filter *Selector `json:"filter,omitempty"`
@@ -1237,9 +1249,12 @@ type ServerInterface interface {
 	// Evaluate policies for a release target
 	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
 	EvaluateReleaseTarget(c *gin.Context, workspaceId string)
+	// Get jobs for a release target
+	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/jobs)
+	GetJobsForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string, params GetJobsForReleaseTargetParams)
 	// Get policies for a release target
-	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies)
-	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetId string)
+	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies)
+	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string)
 	// Query resources with CEL expression
 	// (POST /v1/workspaces/{workspaceId}/resources/query)
 	QueryResources(c *gin.Context, workspaceId string, params QueryResourcesParams)
@@ -1940,6 +1955,66 @@ func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 	siw.Handler.EvaluateReleaseTarget(c, workspaceId)
 }
 
+// GetJobsForReleaseTarget operation middleware
+func (siw *ServerInterfaceWrapper) GetJobsForReleaseTarget(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseTargetKey" -------------
+	var releaseTargetKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetKey", c.Param("releaseTargetKey"), &releaseTargetKey, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetKey: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetJobsForReleaseTargetParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "cel" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "cel", c.Request.URL.Query(), &params.Cel)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter cel: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobsForReleaseTarget(c, workspaceId, releaseTargetKey, params)
+}
+
 // GetPoliciesForReleaseTarget operation middleware
 func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 
@@ -1954,12 +2029,12 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 		return
 	}
 
-	// ------------- Path parameter "releaseTargetId" -------------
-	var releaseTargetId string
+	// ------------- Path parameter "releaseTargetKey" -------------
+	var releaseTargetKey string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetId", c.Param("releaseTargetId"), &releaseTargetId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetKey", c.Param("releaseTargetKey"), &releaseTargetKey, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetId: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetKey: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1970,7 +2045,7 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetId)
+	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetKey)
 }
 
 // QueryResources operation middleware
@@ -2127,7 +2202,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetId/policies", wrapper.GetPoliciesForReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)

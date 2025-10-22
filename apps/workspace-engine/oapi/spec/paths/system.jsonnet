@@ -10,7 +10,26 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.systemIdParam(),
       ],
-      responses: openapi.okResponse(openapi.schemaRef('System'), 'The requested system')
+      responses: openapi.okResponse(
+                   {
+                     type: 'object',
+                     required: ['system', 'environments', 'deployments'],
+                     properties: {
+                       system: openapi.schemaRef('System'),
+                       environments: {
+                         type: 'array',
+                         items: openapi.schemaRef('Environment'),
+                         description: 'Environments associated with the system',
+                       },
+                       deployments: {
+                         type: 'array',
+                         items: openapi.schemaRef('Deployment'),
+                         description: 'Deployments associated with the system',
+                       },
+                     },
+                   },
+                   'The requested system with its environments and deployments'
+                 )
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

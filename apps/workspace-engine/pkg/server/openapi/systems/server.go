@@ -2,6 +2,7 @@ package systems
 
 import (
 	"net/http"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 
 	"github.com/gin-gonic/gin"
@@ -26,5 +27,25 @@ func (s *Systems) GetSystem(c *gin.Context, workspaceId string, systemId string)
 		return
 	}
 
-	c.JSON(http.StatusOK, system)
+	environments := ws.Environments().Items()
+	environmentsList := make([]*oapi.Environment, 0, len(environments))
+	for _, environment := range environments {
+		if environment.SystemId == systemId {
+			environmentsList = append(environmentsList, environment)
+		}
+	}
+
+	deployments := ws.Deployments().Items()
+	deploymentsList := make([]*oapi.Deployment, 0, len(deployments))
+	for _, deployment := range deployments {
+		if deployment.SystemId == systemId {
+			deploymentsList = append(deploymentsList, deployment)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"system":       system,
+		"environments": environmentsList,
+		"deployments":  deploymentsList,
+	})
 }

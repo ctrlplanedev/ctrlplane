@@ -165,3 +165,7 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.Policy, error) {
 	return r.computePolicies(ctx, releaseTarget)
 }
+
+func (r *ReleaseTargets) Get(key string) *oapi.ReleaseTarget {
+	return r.targets.Get()[key]
+}

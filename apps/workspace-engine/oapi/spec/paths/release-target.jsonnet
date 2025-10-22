@@ -29,14 +29,14 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetId}/policies': {
+  '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies': {
     get: {
       summary: 'Get policies for a release target',
       operationId: 'getPoliciesForReleaseTarget',
       description: 'Returns a list of policies for a release target {releaseTargetId}.',
       parameters: [
         openapi.workspaceIdParam(),
-        openapi.releaseTargetIdParam(),
+        openapi.releaseTargetKeyParam(),
       ],
       responses: openapi.okResponse(
         {
@@ -50,6 +50,23 @@ local openapi = import '../lib/openapi.libsonnet';
         },
         'A list of policies',
       ) + openapi.notFoundResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/jobs': {
+    get: {
+      summary: 'Get jobs for a release target',
+      operationId: 'getJobsForReleaseTarget',
+      description: 'Returns a list of jobs for a release target {releaseTargetKey}.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.releaseTargetKeyParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+        openapi.celParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Job'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }
