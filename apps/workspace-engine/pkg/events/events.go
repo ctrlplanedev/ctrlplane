@@ -81,6 +81,7 @@ func NewEventHandler() *handler.EventListener {
 	return handler.NewEventListener(handlers)
 }
 
+// NewEventHandlerWithWorkspaceSaver creates a new event handler with a workspace saver
 func NewEventHandlerWithWorkspaceSaver(workspaceSaver workspace.WorkspaceSaver) *handler.EventListener {
 	return handler.NewEventListenerWithWorkspaceSaver(handlers, workspaceSaver)
 }

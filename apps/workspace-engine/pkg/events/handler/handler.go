@@ -104,6 +104,7 @@ func NewEventListener(handlers HandlerRegistry) *EventListener {
 	return &EventListener{handlers: handlers}
 }
 
+// NewEventListenerWithWorkspaceSaver creates a new event listener with the provided handlers and workspace saver
 func NewEventListenerWithWorkspaceSaver(handlers HandlerRegistry, workspaceSaver workspace.WorkspaceSaver) *EventListener {
 	return &EventListener{handlers: handlers, workspaceSaver: workspaceSaver}
 }

@@ -294,19 +294,22 @@ func (w *Workspace) LoadFromGCS(ctx context.Context, workspaceID string) error {
 	return nil
 }
 
+// WorkspaceSaver is a function that saves workspace state to an external storage
 type WorkspaceSaver func(ctx context.Context, workspaceID string, timestamp string) error
 
+// CreateGCSWorkspaceSaver creates a new workspace saver that saves workspace state to GCS
 func CreateGCSWorkspaceSaver(numPartitions int32) WorkspaceSaver {
 	return func(ctx context.Context, workspaceID string, timestamp string) error {
 		ws := GetWorkspace(workspaceID)
 		partition := kafka.PartitionForWorkspace(workspaceID, numPartitions)
 		if err := ws.SaveToGCS(ctx, workspaceID, timestamp, partition, numPartitions); err != nil {
-			return fmt.Errorf("failed to save workspace %s to S3: %w", workspaceID, err)
+			return fmt.Errorf("failed to save workspace %s to GCS: %w", workspaceID, err)
 		}
 		return nil
 	}
 }
 
+// WorkspaceLoader is a function that loads workspace state from an external storage
 type WorkspaceLoader func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error
 
 // getAssignedWorkspaceIDs retrieves workspace IDs for the assigned partitions.
@@ -350,7 +353,7 @@ func getAssignedWorkspaceIDs(
 // CreateGCSWorkspaceLoader creates a workspace loader function that:
 // 1. Discovers all available workspace IDs
 // 2. Determines which workspaces belong to which partitions
-// 3. Loads workspaces for the assigned partitions from S3
+// 3. Loads workspaces for the assigned partitions from GCS
 func CreateGCSWorkspaceLoader(
 	discoverer kafka.WorkspaceIDDiscoverer,
 ) WorkspaceLoader {
@@ -363,7 +366,7 @@ func CreateGCSWorkspaceLoader(
 		for _, workspaceID := range allWorkspaceIDs {
 			ws := GetWorkspace(workspaceID)
 			if err := ws.LoadFromGCS(ctx, workspaceID); err != nil {
-				return fmt.Errorf("failed to load workspace %s from S3: %w", workspaceID, err)
+				return fmt.Errorf("failed to load workspace %s from GCS: %w", workspaceID, err)
 			}
 
 			Set(workspaceID, ws)
