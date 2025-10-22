@@ -8,6 +8,7 @@ import (
 
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/workspace"
+	wskafka "workspace-engine/pkg/workspace/kafka"
 
 	"github.com/charmbracelet/log"
 )
@@ -50,19 +51,51 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 	}
 	defer consumer.Close()
 
+	// Check broker connectivity and topic existence
+	log.Info("Checking Kafka broker connectivity...")
+	metadata, err := consumer.GetMetadata(&Topic, false, 10000)
+	if err != nil {
+		log.Error("Failed to get Kafka metadata - broker may not be reachable", "error", err)
+		return fmt.Errorf("kafka metadata error: %w", err)
+	}
+	
+	topicInfo, topicExists := metadata.Topics[Topic]
+	if !topicExists {
+		log.Error("Topic does not exist", "topic", Topic)
+		return fmt.Errorf("kafka topic '%s' does not exist - please create it before starting the consumer", Topic)
+	}
+	log.Info("Topic exists", "topic", Topic, "partitions", len(topicInfo.Partitions))
+	
 	// Subscribe to topic
+	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID)
 	if err := consumer.SubscribeTopics([]string{Topic}, nil); err != nil {
 		log.Error("Failed to subscribe", "error", err)
 		return err
 	}
+	log.Info("Successfully subscribed to topic", "topic", Topic)
+	
+	assignedPartitions, err := waitForPartitionAssignment(ctx, consumer)
+	if err != nil {
+		return fmt.Errorf("failed to wait for partition assignment: %w", err)
+	}
 
+	// Get total partition count
+	numPartitions, err := getTopicPartitionCount(consumer)
+	if err != nil {
+		return fmt.Errorf("failed to get topic partition count: %w", err)
+	}
+	log.Info("Partition assignment complete", "assigned", assignedPartitions)
+
+
+	allWorkspaceIDs, err := wskafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
+	if err != nil {
+		return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
+	}
+
+	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
+	
 	// Load workspaces and seek to stored offsets if workspace loader is provided
 	if workspaceLoader != nil {
-		assignedPartitions, err := waitForPartitionAssignment(consumer)
-		if err != nil {
-			return fmt.Errorf("failed to wait for partition assignment: %w", err)
-		}
-
 		if err := loadWorkspaces(ctx, consumer, assignedPartitions, workspaceLoader); err != nil {
 			return fmt.Errorf("failed to load workspaces: %w", err)
 		}

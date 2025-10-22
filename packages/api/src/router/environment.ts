@@ -259,6 +259,9 @@ export const environmentRouter = createTRPCRouter({
         "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources",
         {
           params: {
+            query: {
+              limit: 1_000,
+            },
             path: {
               workspaceId,
               environmentId: input,
@@ -267,6 +270,6 @@ export const environmentRouter = createTRPCRouter({
         },
       );
 
-      return resp.data?.resources ?? [];
+      return resp.data?.items ?? [];
     }),
 });
