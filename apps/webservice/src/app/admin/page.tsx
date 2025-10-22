@@ -132,7 +132,7 @@ export default async function AdminPage() {
                 <TableCell>{workspace.id}</TableCell>
                 <TableCell>
                   <Link
-                    href={`/workspace/${workspace.slug}`}
+                    href={`/${workspace.slug}`}
                     className="text-blue-400 hover:text-blue-500"
                   >
                     {workspace.name} ({workspace.slug})

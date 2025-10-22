@@ -12,8 +12,8 @@ import {
 import { ResizablePanel, ResizablePanelGroup } from "~/components/ui/resizable";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
-import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
+import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
 import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
@@ -216,23 +216,7 @@ export default function DeploymentDetail() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Tabs value="environments">
-            <TabsList>
-              <TabsTrigger value="environments" asChild>
-                <Link to={`/deployments/${deployment.id}`}>Environments</Link>
-              </TabsTrigger>
-              <TabsTrigger value="versions" asChild>
-                <Link to={`/deployments/${deployment.id}/versions`}>
-                  Versions
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger value="activity" asChild>
-                <Link to={`/deployments/${deployment.id}/activity`}>
-                  Activity
-                </Link>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <DeploymentsNavbarTabs deploymentId={deployment.id} />
         </div>
       </header>
 

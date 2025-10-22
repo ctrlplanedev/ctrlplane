@@ -37,10 +37,10 @@ export const WorkspaceSelector: React.FC<{
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
-        <NavLink to={`/workspaces/${workspace.slug}/settings`}>
+        <NavLink to={`/${workspace.slug}/settings/general`}>
           <DropdownMenuItem>Workspace settings</DropdownMenuItem>
         </NavLink>
-        <NavLink to={`/workspaces/${workspace.slug}/members`}>
+        <NavLink to={`/${workspace.slug}/settings/members`}>
           <DropdownMenuItem>Invite and manage users</DropdownMenuItem>
         </NavLink>
 

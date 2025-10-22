@@ -145,18 +145,31 @@ export const workspaceRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.WorkspaceGet)
+          .perform(Permission.WorkspaceUpdate)
           .on({ type: "workspace", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateWorkspace }))
-    .mutation(async ({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      // If slug is being updated, check if it's already taken by another workspace
+      if (input.data.slug) {
+        const existingWorkspace = await ctx.db
+          .select()
+          .from(workspace)
+          .where(eq(workspace.slug, input.data.slug))
+          .then(takeFirstOrNull);
+
+        if (existingWorkspace && existingWorkspace.id !== input.id) {
+          throw new Error("This workspace slug is already taken");
+        }
+      }
+
+      return ctx.db
         .update(workspace)
         .set(input.data)
         .where(eq(workspace.id, input.id))
         .returning()
-        .then(takeFirst),
-    ),
+        .then(takeFirst);
+    }),
 
   create: protectedProcedure
     .input(createWorkspace)

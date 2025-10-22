@@ -15,12 +15,30 @@ export default [
         "deployments/:deploymentId/versions",
         "routes/ws/deployments/page.$deploymentId.versions.tsx",
       ),
+
+      route(
+        "deployments/:deploymentId/settings",
+        "routes/ws/deployments/settings/_layout.tsx",
+        [
+          route(
+            "settings",
+            "routes/ws/deployments/settings/page.$deploymentId.settings.tsx",
+          ),
+        ],
+      ),
+
       route("resources", "routes/ws/resources.tsx"),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
       route("projects", "routes/ws/projects.tsx"),
       route("runners", "routes/ws/runners.tsx"),
       route("providers", "routes/ws/providers.tsx"),
       route("policies", "routes/ws/policies.tsx"),
+
+      route("settings", "routes/ws/settings/_layout.tsx", [
+        route("general", "routes/ws/settings/general.tsx"),
+        route("members", "routes/ws/settings/members.tsx"),
+        route("api-keys", "routes/ws/settings/api-keys.tsx"),
+      ]),
     ]),
   ]),
   route("login", "routes/auth/login.tsx"),

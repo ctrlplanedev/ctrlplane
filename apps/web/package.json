@@ -10,6 +10,7 @@
     "generate": "openapi-typescript ../../apps/api/openapi/openapi.json -o app/api/openapi.ts"
   },
   "dependencies": {
+    "@ctrlplane/api": "workspace:*",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/trpc": "workspace:*",
     "@ctrlplane/workspace-engine-sdk": "workspace:*",
